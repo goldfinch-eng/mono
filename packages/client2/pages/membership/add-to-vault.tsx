@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
-import { ReactNode, useEffect, useState } from "react";
+import { Children, ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -238,6 +238,27 @@ export function AddToVault({
               ) : null}
             </div>
           </div>
+          <div>
+            <SectionHeading leftText="Projected Member Rewards" />
+            <AssetBox
+              asset={{
+                name: "Estimated Member Rewards",
+                description: "(Monthly Average)",
+                usdcAmount: {
+                  token: SupportedCrypto.Usdc,
+                  amount: BigNumber.from(0),
+                },
+                nativeAmount: {
+                  token: SupportedCrypto.Fidu,
+                  amount: BigNumber.from(0),
+                },
+              }}
+              changeAmount={{
+                token: SupportedCrypto.Usdc,
+                amount: BigNumber.from("1000000"),
+              }}
+            />
+          </div>
         </div>
         <div className={step === "review" ? undefined : "hidden"}>
           <div className="mb-8">
@@ -291,37 +312,43 @@ export function AddToVault({
               ))}
             </div>
           </div>
-        </div>
-        <div className="mb-8">
-          <SectionHeading leftText="Vault earnings" />
-          <TwoGrid>
-            <GridItem
-              heading="Est. share of member rewards"
-              value="0.69%"
-              tooltip="The estimated percentage of overall Member Rewards you will receive this cycle, based on what percentage of the Member Vault's overall balance your position represents."
-            />
-            <GridItem
-              heading="Projected member rewards"
-              value="$420.69"
-              parenthesisText="Monthly avg."
-              tooltip="The estimated value of Member Rewards you will receive on an average monthly basis, based on weekly cycle estimates."
-            />
-            {step === "review" ? (
-              <>
-                <GridItem
-                  heading="Assets active as of"
-                  value="October 4"
-                  tooltip="The date that your capital will start actively earning Member Rewards in the vault."
-                />
-                <GridItem
-                  heading="First distribution at this rate"
-                  value="October 11"
-                  tooltip="Lorem ipsum"
-                />
-              </>
-            ) : null}
-          </TwoGrid>
-          {step === "review" ? (
+          <div className="mb-8">
+            <SectionHeading leftText="Projected Member Rewards" />
+            <Summary>
+              <AssetBox
+                omitWrapperStyle
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly Average)",
+                  usdcAmount: {
+                    token: SupportedCrypto.Usdc,
+                    amount: BigNumber.from(0),
+                  },
+                  nativeAmount: {
+                    token: SupportedCrypto.Fidu,
+                    amount: BigNumber.from(0),
+                  },
+                }}
+                changeAmount={{
+                  token: SupportedCrypto.Usdc,
+                  amount: BigNumber.from("1000000"),
+                }}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  Your next Member Rewards cycle begins
+                  <InfoIconTooltip content="The date that your capital will start actively earning Member Rewards in the vault." />
+                </div>
+                <div className="text-lg font-medium">October 4</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  Your next Member Rewards cycle begins
+                  <InfoIconTooltip content="Date that your Member Reward distribution will reflect rewards earned by the new assets you are adding to the vault." />
+                </div>
+                <div className="text-lg font-medium">October 11</div>
+              </div>
+            </Summary>
             <div className="mt-2 text-xs">
               By clicking continue below, I agree to lorem ipsum dolor sit amet,
               consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
@@ -330,7 +357,7 @@ export function AddToVault({
               consequat. Duis aute irure dolor in reprehenderit in voluptate
               velit esse cillum dolore eu fugiat nulla pariatur.
             </div>
-          ) : null}
+          </div>
         </div>
       </Form>
     </Modal>
@@ -354,40 +381,12 @@ export function SectionHeading({
   );
 }
 
-function TwoGrid({ children }: { children: ReactNode }) {
+export function Summary({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-sand-200 bg-sand-200">
-      {children}
-    </div>
-  );
-}
-
-function GridItem({
-  heading,
-  value,
-  tooltip,
-  parenthesisText,
-}: {
-  heading: string;
-  value: string;
-  tooltip?: string;
-  parenthesisText?: string;
-}) {
-  return (
-    <div className="bg-white py-6 px-5">
-      <div className="mb-3 flex items-center gap-2">
-        <div className="text-sm text-sand-600">{heading}</div>
-        {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
-      </div>
-      <div>
-        <span className="text-lg font-medium">{value}</span>
-        {parenthesisText ? (
-          <>
-            {" "}
-            <span className="text-sm text-sand-500">({parenthesisText})</span>
-          </>
-        ) : null}
-      </div>
+    <div className="divide-y divide-sand-200 rounded border border-sand-200 bg-white">
+      {Children.map(children, (child) => (
+        <div className="px-5 py-6">{child}</div>
+      ))}
     </div>
   );
 }

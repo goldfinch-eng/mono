@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers";
-import { useState, useEffect, ReactNode, Children } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -12,7 +12,7 @@ import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
 
-import { SectionHeading } from "./add-to-vault";
+import { SectionHeading, Summary } from "./add-to-vault";
 import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
 
 type VaultedGfi = {
@@ -347,15 +347,5 @@ export function RemoveFromVault({
         </div>
       </Form>
     </Modal>
-  );
-}
-
-function Summary({ children }: { children: ReactNode }) {
-  return (
-    <div className="divide-y divide-sand-300 rounded bg-white">
-      {Children.map(children, (child) => (
-        <div className="px-5 py-6">{child}</div>
-      ))}
-    </div>
   );
 }
