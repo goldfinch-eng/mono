@@ -175,6 +175,11 @@ export default function MembershipPage() {
       ) : (
         <>
           <div className="mb-16">Chart goes here</div>
+          <div className="mb-16" style={{ aspectRatio: "2272 / 752" }}>
+            <video autoPlay muted loop>
+              <source src="/membership/intro-animation.mp4" type="video/mp4" />
+            </video>
+          </div>
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
             <div className="flex flex-col items-stretch justify-between gap-10 lg:flex-row lg:items-start">
