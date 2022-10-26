@@ -179,7 +179,12 @@ export function GfiBox({ maxGfi, fiatPerGfi, ...rest }: GfiBoxProps) {
     }
   };
   return (
-    <div className={clsx("rounded border bg-white py-6 px-5", "border-white")}>
+    <div
+      className={clsx(
+        "rounded border bg-white py-6 px-5",
+        usdcEquivalent.amount.isZero() ? "border-white" : "border-black"
+      )}
+    >
       <AssetBox
         omitWrapperStyle
         nativeAmountIsPrimary
