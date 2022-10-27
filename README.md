@@ -65,13 +65,11 @@ See "One time setup" in "Frontend Development" for an example of this.
 ## Developing
 
 ### Smart Contract Development
-
 All contracts are located under `packages/protocol/contracts`
 1. Make your changes
 2. Write tests, which should be placed under `packages/protocol/test`
     - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
 3. Write great commit messages, and put up your PR!
-
 
 
 ### Frontend Development
