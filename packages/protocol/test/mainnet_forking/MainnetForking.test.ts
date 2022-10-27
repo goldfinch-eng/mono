@@ -462,7 +462,7 @@ describe("mainnet forking tests", async function () {
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         requestsBeforeLiquidation[i] = await seniorPool.withdrawalRequest(i + 1)
       }
-      await advanceAndMineBlock({toSecond: (await seniorPool.currentEpoch()).endsAt})
+      await advanceAndMineBlock({seconds: await seniorPool.epochDuration()})
 
       const epoch2UsdcAllocated = usdcAvailable
       const epoch2FiduRequested = fiduRequested

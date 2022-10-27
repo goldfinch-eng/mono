@@ -286,21 +286,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
-  function currentEpoch() public view override returns (Epoch memory) {
-    (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
-    return e;
-  }
-
-  /// @inheritdoc ISeniorPoolEpochWithdrawals
   function withdrawalRequest(uint256 tokenId) external view override returns (WithdrawalRequest memory) {
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
     return _previewWithdrawRequestCheckpoint(wr);
-  }
-
-  /// @inheritdoc ISeniorPoolEpochWithdrawals
-  function previewWithdrawal(uint256 tokenId) public view override returns (uint256) {
-    WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
-    return _previewWithdrawRequestCheckpoint(wr).usdcWithdrawable;
   }
 
   // internal view functions
@@ -508,7 +496,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 currentShares = fidu.balanceOf(msg.sender);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
-    // require(usdcAmount <= config.getUSDC().balanceOf(address(this)).sub(usdcAllocatedNotWithdrawn), "IB");
 
     _usdcAvailable = _usdcAvailable.sub(usdcAmount, "IB");
     // Send to reserves
@@ -538,7 +525,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
-  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant {
+  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant returns (uint256) {
     require(_isValidPool(pool), "Pool must be valid");
     _applyEpochCheckpoints();
 
@@ -556,9 +543,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 sliceIndex = nSlices.sub(1);
     uint256 seniorTrancheId = _sliceIndexToSeniorTrancheId(sliceIndex);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
-    pool.deposit(seniorTrancheId, amount);
+    uint256 poolToken = pool.deposit(seniorTrancheId, amount);
 
     emit InvestmentMadeInSenior(address(pool), amount);
+
+    return poolToken;
   }
 
   /**

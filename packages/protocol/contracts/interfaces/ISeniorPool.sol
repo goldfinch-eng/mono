@@ -30,7 +30,7 @@ abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
    */
   function withdrawInFidu(uint256 fiduAmount) external virtual returns (uint256 amount);
 
-  function invest(ITranchedPool pool) public virtual;
+  function invest(ITranchedPool pool) public virtual returns (uint256);
 
   function estimateInvestment(ITranchedPool pool) public view virtual returns (uint256);
 

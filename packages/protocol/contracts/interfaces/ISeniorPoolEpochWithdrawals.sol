@@ -45,9 +45,6 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice Update epoch duration
   function setEpochDuration(uint256 newEpochDuration) external;
 
-  /// @notice Get the epoch at `block.timestamp`
-  function currentEpoch() external view returns (Epoch memory);
-
   /// @notice Get request by tokenId. A request is considered active if epochCursor > 0.
   function withdrawalRequest(uint256 tokenId) external view returns (WithdrawalRequest memory);
 
@@ -77,9 +74,6 @@ interface ISeniorPoolEpochWithdrawals {
    * Caller must own tokenId
    */
   function claimWithdrawalRequest(uint256 tokenId) external returns (uint256 usdcReceived);
-
-  /// @notice Preview how much usdc would be received if a withdrawal for tokenId were executed
-  function previewWithdrawal(uint256 tokenId) external view returns (uint256 usdcReceived);
 
   /// @notice Emitted when the epoch duration is changed
   event EpochDurationChanged(uint256 newDuration);

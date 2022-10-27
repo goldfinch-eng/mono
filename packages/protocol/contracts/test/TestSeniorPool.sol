@@ -4,44 +4,7 @@ pragma solidity 0.6.12;
 
 pragma experimental ABIEncoderV2;
 
-import "../protocol/core/SeniorPool.sol";
-import {IERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-
-// Contract that simply acts as a middle man between an EOA and SeniorPool, useful for testing
-// scenarios where the user interacts with the SeniorPool via a smart contract
-contract TestSeniorPoolCaller {
-  TestSeniorPool private immutable seniorPool;
-
-  constructor(
-    TestSeniorPool _seniorPool,
-    IERC20 usdc,
-    IERC20 fidu
-  ) public {
-    seniorPool = _seniorPool;
-    usdc.approve(address(_seniorPool), type(uint256).max);
-    fidu.approve(address(_seniorPool), type(uint256).max);
-  }
-
-  function deposit(uint256 usdcAmount) public {
-    seniorPool.deposit(usdcAmount);
-  }
-
-  function requestWithdrawal(uint256 fiduAmount) public {
-    seniorPool.requestWithdrawal(fiduAmount);
-  }
-
-  function addToWithdrawalRequest(uint256 fiduAmount, uint256 tokenId) public {
-    seniorPool.addToWithdrawalRequest(fiduAmount, tokenId);
-  }
-
-  function cancelWithdrawalRequest(uint256 tokenId) public {
-    seniorPool.cancelWithdrawalRequest(tokenId);
-  }
-
-  function claimWithdrawalRequest(uint256 tokenId) public {
-    seniorPool.claimWithdrawalRequest(tokenId);
-  }
-}
+import {SeniorPool} from "../protocol/core/SeniorPool.sol";
 
 contract TestSeniorPool is SeniorPool {
   function _getNumShares(uint256 amount) public view returns (uint256) {
