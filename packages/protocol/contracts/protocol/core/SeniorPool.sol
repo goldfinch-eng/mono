@@ -121,7 +121,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     _epochDuration = 2 weeks;
     _usdcAvailable = config.getUSDC().balanceOf(address(this));
     _epochs[0].endsAt = block.timestamp;
-    _initializeNextEpochFrom(_epochs[0]);
+    _applyInitializeNextEpochFrom(_epochs[0]);
   }
 
   /*================================================================================
@@ -376,13 +376,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   /**
    * @notice Initialize the next epoch using a given epoch by carrying forward its oustanding fidu
    */
-  function _initializeNextEpochFrom(Epoch storage previousEpoch) internal returns (Epoch storage) {
-    Epoch storage nextEpoch = _epochs[++_checkpointedEpochId];
+  function _applyInitializeNextEpochFrom(Epoch storage previousEpoch) internal returns (Epoch storage) {
+    _epochs[++_checkpointedEpochId] = _initializeNextEpochFrom(previousEpoch);
+    return _epochs[_checkpointedEpochId];
+  }
 
+  function _initializeNextEpochFrom(Epoch memory previousEpoch) internal view returns (Epoch memory) {
+    Epoch memory nextEpoch;
     nextEpoch.endsAt = previousEpoch.endsAt.add(_epochDuration);
     uint256 fiduToCarryOverFromLastEpoch = previousEpoch.fiduRequested.sub(previousEpoch.fiduLiquidated);
     nextEpoch.fiduRequested = fiduToCarryOverFromLastEpoch;
-
     return nextEpoch;
   }
 
@@ -437,7 +440,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     epoch.endsAt = checkpointedEpoch.endsAt;
 
     _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
-    Epoch storage newEpoch = _initializeNextEpochFrom(epoch);
+    Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
     emit EpochEnded(_checkpointedEpochId, epoch.endsAt, epoch.usdcAllocated, epoch.fiduLiquidated);
@@ -615,6 +618,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
     uint256 usdcThatWillBeAllocatedToLatestEpoch = e.usdcAllocated;
     return _usdcAvailable.sub(usdcThatWillBeAllocatedToLatestEpoch);
+  }
+
+  /// @inheritdoc ISeniorPoolEpochWithdrawals
+  function currentEpoch() external view override returns (Epoch memory) {
+    (Epoch memory e, bool checkpointed) = _previewEpochCheckpoint(_headEpoch());
+    if (checkpointed) e = _initializeNextEpochFrom(e);
+    return e;
   }
 
   /**

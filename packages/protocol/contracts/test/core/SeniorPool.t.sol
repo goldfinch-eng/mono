@@ -1554,6 +1554,31 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   /*================================================================================
+  currentEpoch
+  ================================================================================*/
+
+  function testCurrentEpochReturnsCurrentEpoch() public {
+    assertZero(sp.currentEpoch().fiduRequested);
+    assertZero(sp.currentEpoch().fiduLiquidated);
+    assertZero(sp.currentEpoch().usdcAllocated);
+
+    uint256 shares = depositToSpFrom(GF_OWNER, usdcVal(100));
+    uint256 token = requestWithdrawalFrom(GF_OWNER, shares / 2);
+
+    assertEq(sp.currentEpoch().fiduRequested, shares / 2, "1");
+    assertZero(sp.currentEpoch().fiduLiquidated, "2");
+    assertZero(sp.currentEpoch().usdcAllocated, "3");
+
+    uint256 oldEndsAt = sp.currentEpoch().endsAt;
+    vm.warp(block.timestamp + sp.epochDuration());
+
+    assertZero(sp.currentEpoch().fiduRequested);
+    assertZero(sp.currentEpoch().fiduLiquidated);
+    assertZero(sp.currentEpoch().usdcAllocated);
+    assertEq(sp.currentEpoch().endsAt, oldEndsAt + sp.epochDuration());
+  }
+
+  /*================================================================================
   Claim Withdrawal Request Access Control Tests
   ================================================================================*/
 
@@ -2352,7 +2377,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.epochDuration(), epochDuration);
   }
 
-  function testSetEpochDurationReversForNonAdmin(address user) public impersonating(user) {
+  function testSetEpochDurationReversForNonAdmin(address user) public onlyAllowListed(user) impersonating(user) {
     vm.expectRevert("Must have admin role to perform this action");
     sp.setEpochDuration(1 days);
   }

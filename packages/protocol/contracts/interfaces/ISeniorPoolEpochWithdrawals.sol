@@ -45,6 +45,9 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice Update epoch duration
   function setEpochDuration(uint256 newEpochDuration) external;
 
+  /// @notice The current withdrawal epoch
+  function currentEpoch() external view returns (Epoch memory);
+
   /// @notice Get request by tokenId. A request is considered active if epochCursor > 0.
   function withdrawalRequest(uint256 tokenId) external view returns (WithdrawalRequest memory);
 
