@@ -35,6 +35,14 @@ npm install
 npx lerna bootstrap
 ```
 
+#### Foundry Setup
+We use both Foundry and Hardhat for our tests. Hardhat will already be set up, but there's some extra steps for getting Foundry prepared:
+- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
+- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
+  - This will set up foundry and prepare the git submodules
+- Now you can run `forge test` in `packages/protocol`!
+- In the future, you should run `forge install` in `packages/protocol` to update your forge dependencies.
+
 ##### Troubleshooting
 
 ###### File Table Overflow
@@ -57,18 +65,16 @@ See "One time setup" in "Frontend Development" for an example of this.
 ## Developing
 
 ### Smart Contract Development
+
+Follow the [Foundry Setup](#Foundry Setup) section before starting Smart Contract Development.
+
 All contracts are located under `packages/protocol/contracts`
 1. Make your changes
 2. Write tests, which should be placed under `packages/protocol/test`
     - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
 3. Write great commit messages, and put up your PR!
 
-#### One time setup
-We use both Foundry and Hardhat for our tests. Hardhat will already be set up, but there's some extra steps for getting Foundry prepared:
-- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
-- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
-  - This will set up foundry and prepare the git submodules
-- Now you can run `forge test` in `packages/protocol`!
+
 
 ### Frontend Development
 - `npm run start:local`
