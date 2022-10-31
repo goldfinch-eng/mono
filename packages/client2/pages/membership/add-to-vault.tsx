@@ -11,6 +11,7 @@ import {
   Link,
   Modal,
 } from "@/components/design-system";
+import { CONTRACT_ADDRESSES } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
@@ -117,10 +118,6 @@ export function AddToVault({
       provider,
     });
     const gfiContract = await getContract({ name: "GFI", provider });
-    const stakingRewardsContract = await getContract({
-      name: "StakingRewards",
-      provider,
-    });
 
     if (!gfiToVault.amount.isZero()) {
       await approveErc20IfRequired({
@@ -129,28 +126,27 @@ export function AddToVault({
         erc20Contract: gfiContract,
         amount: gfiToVault.amount,
       });
-      await toastTransaction({
-        transaction: membershipContract.depositGFI(gfiToVault.amount),
-        pendingPrompt: `Depositing ${formatCrypto(
-          gfiToVault
-        )} in the membership vault`,
-        successPrompt: `Successfully deposited ${formatCrypto(
-          gfiToVault
-        )} in the membership vault`,
-      });
     }
-    if (stakedPositionsToVault.length > 0) {
-      for (const stakedPosition of stakedPositionsToVault) {
-        await toastTransaction({
-          transaction: membershipContract.depositCapitalERC721(
-            stakingRewardsContract.address,
-            stakedPosition.id
-          ),
-          pendingPrompt: `Depositing staked position (id: ${stakedPosition.id}) into the vault`,
-          successPrompt: `Successfully deposited staked position (id: ${stakedPosition.id}) into the vault`,
-        });
-      }
-    }
+    const capitalDeposits = stakedPositionsToVault
+      .map((s) => ({
+        assetAddress: CONTRACT_ADDRESSES.StakingRewards,
+        id: s.id,
+      }))
+      .concat(
+        poolTokensToVault.map((p) => ({
+          assetAddress: CONTRACT_ADDRESSES.PoolTokens,
+          id: p.id,
+        }))
+      );
+    const transaction = membershipContract.depositMultiple({
+      gfi: gfiToVault.amount,
+      capitalDeposits,
+    });
+    await toastTransaction({
+      transaction,
+      pendingPrompt: "Depositing your assets into the vault",
+      successPrompt: "Successfully deposited your assets into the vault",
+    });
     await apolloClient.refetchQueries({ include: "active" });
 
     // alert(

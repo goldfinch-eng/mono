@@ -71,6 +71,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
+  PoolTokens: () =>
+    import("@/types/ethers-contracts/factories/PoolTokens__factory").then(
+      (module) => module.PoolTokens__factory.connect
+    ),
   MembershipOrchestrator: () =>
     import(
       "@/types/ethers-contracts/factories/MembershipOrchestrator__factory"
