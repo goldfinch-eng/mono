@@ -324,6 +324,12 @@ type CommunityRewardsToken @entity {
   endTime: BigInt!
 }
 
+type MembershipEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # The epoch number
+  totalRewards: BigInt! # Measured in FIDU
+}
+
 type VaultedGfi @entity {
   id: ID!
   user: User!

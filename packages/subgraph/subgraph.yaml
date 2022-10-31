@@ -321,6 +321,27 @@ dataSources:
       file: ./src/mappings/curve_fidu_usdc.ts
 
   - kind: ethereum/contract
+    name: MembershipCollector
+    network: mainnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: MembershipCollector
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - MembershipEpoch
+      abis:
+        - name: MembershipCollector
+          file: ./abis/MembershipCollector.json
+      eventHandlers:
+        - event: EpochFinalized(indexed uint256,uint256)
+          handler: handleEpochFinalized
+      file: ./src/mappings/membership/membership_collector.ts
+
+  - kind: ethereum/contract
     name: GFILedger
     network: mainnet
     source:
