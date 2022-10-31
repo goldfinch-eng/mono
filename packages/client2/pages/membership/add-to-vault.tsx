@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { Children, ReactNode, useEffect, useState } from "react";
@@ -11,13 +11,21 @@ import {
   Link,
   Modal,
 } from "@/components/design-system";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
   CryptoAmount,
   MembershipPageQuery,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
+import {
+  approveErc20IfRequired,
+  gfiToUsdc,
+  sharesToUsdc,
+  sum,
+} from "@/lib/pools";
+import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 import { AssetBox, GfiBox, AssetPicker } from "./asset-box";
 
@@ -97,16 +105,63 @@ export function AddToVault({
     ).amount.add(sum("principalAmount", poolTokensToVault)),
   };
 
-  const onSubmit = () => {
-    alert(
-      `Confirming with ${formatCrypto(
-        gfiToVault
-      )} staked positions ${stakedPositionsToVault
-        .map((s) => s.id)
-        .join(", ")}, pool tokens ${poolTokensToVault
-        .map((p) => p.id)
-        .join(", ")}`
-    );
+  const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
+
+  const onSubmit = async () => {
+    if (!provider || !account) {
+      throw new Error("Wallet not connected properly");
+    }
+    const membershipContract = await getContract({
+      name: "MembershipOrchestrator",
+      provider,
+    });
+    const gfiContract = await getContract({ name: "GFI", provider });
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
+
+    if (!gfiToVault.amount.isZero()) {
+      await approveErc20IfRequired({
+        account,
+        spender: membershipContract.address,
+        erc20Contract: gfiContract,
+        amount: gfiToVault.amount,
+      });
+      await toastTransaction({
+        transaction: membershipContract.depositGFI(gfiToVault.amount),
+        pendingPrompt: `Depositing ${formatCrypto(
+          gfiToVault
+        )} in the membership vault`,
+        successPrompt: `Successfully deposited ${formatCrypto(
+          gfiToVault
+        )} in the membership vault`,
+      });
+    }
+    if (stakedPositionsToVault.length > 0) {
+      for (const stakedPosition of stakedPositionsToVault) {
+        await toastTransaction({
+          transaction: membershipContract.depositCapitalERC721(
+            stakingRewardsContract.address,
+            stakedPosition.id
+          ),
+          pendingPrompt: `Depositing staked position (id: ${stakedPosition.id}) into the vault`,
+          successPrompt: `Successfully deposited staked position (id: ${stakedPosition.id}) into the vault`,
+        });
+      }
+    }
+    await apolloClient.refetchQueries({ include: "active" });
+
+    // alert(
+    //   `Confirming with ${formatCrypto(
+    //     gfiToVault
+    //   )} staked positions ${stakedPositionsToVault
+    //     .map((s) => s.id)
+    //     .join(", ")}, pool tokens ${poolTokensToVault
+    //     .map((p) => p.id)
+    //     .join(", ")}`
+    // );
   };
 
   const [step, setStep] = useState<"select" | "review">("select");

@@ -71,6 +71,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
+  MembershipOrchestrator: () =>
+    import(
+      "@/types/ethers-contracts/factories/MembershipOrchestrator__factory"
+    ).then((module) => module.MembershipOrchestrator__factory.connect),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

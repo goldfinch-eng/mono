@@ -323,3 +323,18 @@ type CommunityRewardsToken @entity {
   startTime: BigInt!
   endTime: BigInt!
 }
+
+type VaultedGfi @entity {
+  id: ID!
+  user: User!
+  amount: BigInt!
+  vaultedAt: Int!
+}
+
+# type VaultedStakedPosition @entity {
+#   id: ID!
+#   user: User!
+#   usdcEquivalent: BigInt!
+#   vaultedAt: Int!
+#   seniorPoolStakedPosition: SeniorPoolStakedPosition!
+# }
