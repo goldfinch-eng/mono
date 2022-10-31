@@ -73,6 +73,11 @@ gql`
         name @client
       }
     }
+
+    vaultedGfis(where: { user: $userId, amount_gt: 0 }) {
+      id
+      amount
+    }
   }
 `;
 

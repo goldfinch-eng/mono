@@ -11,7 +11,6 @@ import {
   Link,
   Modal,
 } from "@/components/design-system";
-import { CONTRACT_ADDRESSES } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
@@ -21,6 +20,7 @@ import {
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
+  approveErc721IfRequired,
   gfiToUsdc,
   sharesToUsdc,
   sum,
@@ -86,7 +86,7 @@ export function AddToVault({
     watch,
     handleSubmit,
     trigger,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = rhfMethods;
   const gfiToVault = stringToCryptoAmount(
     watch("gfiToVault"),
@@ -118,6 +118,14 @@ export function AddToVault({
       provider,
     });
     const gfiContract = await getContract({ name: "GFI", provider });
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
+    const poolTokensContract = await getContract({
+      name: "PoolTokens",
+      provider,
+    });
 
     if (!gfiToVault.amount.isZero()) {
       await approveErc20IfRequired({
@@ -127,14 +135,33 @@ export function AddToVault({
         amount: gfiToVault.amount,
       });
     }
+    if (stakedPositionsToVault.length > 0) {
+      for (const stakedPosition of stakedPositionsToVault) {
+        await approveErc721IfRequired({
+          to: membershipContract.address,
+          tokenId: stakedPosition.id,
+          erc721Contract: stakingRewardsContract,
+        });
+      }
+    }
+    if (poolTokensToVault.length > 0) {
+      for (const poolToken of poolTokensToVault) {
+        await approveErc721IfRequired({
+          to: membershipContract.address,
+          tokenId: poolToken.id,
+          erc721Contract: poolTokensContract,
+        });
+      }
+    }
+
     const capitalDeposits = stakedPositionsToVault
       .map((s) => ({
-        assetAddress: CONTRACT_ADDRESSES.StakingRewards,
+        assetAddress: stakingRewardsContract.address,
         id: s.id,
       }))
       .concat(
         poolTokensToVault.map((p) => ({
-          assetAddress: CONTRACT_ADDRESSES.PoolTokens,
+          assetAddress: poolTokensContract.address,
           id: p.id,
         }))
       );
@@ -148,16 +175,11 @@ export function AddToVault({
       successPrompt: "Successfully deposited your assets into the vault",
     });
     await apolloClient.refetchQueries({ include: "active" });
-
-    // alert(
-    //   `Confirming with ${formatCrypto(
-    //     gfiToVault
-    //   )} staked positions ${stakedPositionsToVault
-    //     .map((s) => s.id)
-    //     .join(", ")}, pool tokens ${poolTokensToVault
-    //     .map((p) => p.id)
-    //     .join(", ")}`
-    // );
+    onClose();
+    setTimeout(() => {
+      setStep("select");
+      reset();
+    }, 250);
   };
 
   const [step, setStep] = useState<"select" | "review">("select");
@@ -192,8 +214,10 @@ export function AddToVault({
           <div className="text-xs">{step === "select" ? 1 : 2} of 2</div>
           <div className="w-28 text-right">
             <Button
+              isLoading={isSubmitting}
               colorScheme="primary"
               disabled={
+                isSubmitting ||
                 Object.keys(errors).length > 0 ||
                 (gfiToVault.amount.isZero() &&
                   stakedPositionsToVault.length === 0 &&

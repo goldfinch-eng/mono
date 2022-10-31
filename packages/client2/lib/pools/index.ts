@@ -14,7 +14,7 @@ import {
   SeniorPoolStakedPosition,
   CryptoAmount,
 } from "@/lib/graphql/generated";
-import type { Erc20 } from "@/types/ethers-contracts";
+import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
@@ -226,6 +226,29 @@ export async function approveErc20IfRequired({
       pendingPrompt: "Awaiting approval to spend tokens.",
       successPrompt: "Successfully approved spending.",
       errorPrompt: "Failed to approved spending",
+    });
+  }
+}
+
+/**
+ * utility function that will perform an ERC721 approval if it's necessary, and will toast messages for the approval too. Very similar to approveErc20IfRequired
+ */
+export async function approveErc721IfRequired({
+  to,
+  tokenId,
+  erc721Contract,
+}: {
+  to: string;
+  tokenId: string;
+  erc721Contract: Pick<Erc721, "getApproved" | "approve">;
+}) {
+  const isApprovalRequired = (await erc721Contract.getApproved(tokenId)) !== to;
+  if (isApprovalRequired) {
+    await toastTransaction({
+      transaction: erc721Contract.approve(to, tokenId),
+      pendingPrompt: `Awaiting approval to transfer token ${tokenId}`,
+      successPrompt: `Approved transfer of token ${tokenId}`,
+      errorPrompt: `Failed to approve transfer of token ${tokenId}`,
     });
   }
 }
