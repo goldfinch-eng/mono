@@ -1,3 +1,4 @@
+import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -9,16 +10,21 @@ import {
   Modal,
 } from "@/components/design-system";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import { SupportedCrypto } from "@/lib/graphql/generated";
+import {
+  SupportedCrypto,
+  VaultedGfiFieldsFragment,
+} from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
 
 import { SectionHeading, Summary } from "./add-to-vault";
 import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
 
-type VaultedGfi = {
-  id: string; // positionId
-  amount: BigNumber;
-};
+export const VAULTED_GFI_FIELDS = gql`
+  fragment VaultedGfiFields on VaultedGfi {
+    id
+    amount
+  }
+`;
 
 type VaultedStakedPosition = {
   id: string; // positionId
@@ -43,7 +49,7 @@ type VaultedPoolToken = {
 interface RemoveFromVaultProps {
   isOpen: boolean;
   onClose: () => void;
-  vaultedGfi: VaultedGfi;
+  vaultedGfi: VaultedGfiFieldsFragment[];
   fiatPerGfi: number;
   vaultedStakedPositions: VaultedStakedPosition[];
   vaultedPoolTokens: VaultedPoolToken[];
@@ -173,13 +179,16 @@ export function RemoveFromVault({
               leftText="Step 1: Choose an amount of GFI"
               rightText={formatCrypto({
                 token: SupportedCrypto.Gfi,
-                amount: vaultedGfi.amount,
+                amount: sum("amount", vaultedGfi),
               })}
             />
             <GfiBox
               control={control}
               name="gfiToUnvault"
-              maxGfi={{ token: SupportedCrypto.Gfi, amount: vaultedGfi.amount }}
+              maxGfi={{
+                token: SupportedCrypto.Gfi,
+                amount: sum("amount", vaultedGfi),
+              }}
               fiatPerGfi={fiatPerGfi}
             />
           </div>

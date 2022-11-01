@@ -26,9 +26,10 @@ import {
   AssetGroupButton,
 } from "./asset-group";
 import { Explainer } from "./explainer";
-import { RemoveFromVault } from "./remove-from-vault";
+import { RemoveFromVault, VAULTED_GFI_FIELDS } from "./remove-from-vault";
 
 gql`
+  ${VAULTED_GFI_FIELDS}
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -77,6 +78,7 @@ gql`
     vaultedGfis(where: { user: $userId, amount_gt: 0 }) {
       id
       amount
+      ...VaultedGfiFields
     }
   }
 `;
@@ -122,8 +124,8 @@ export default function MembershipPage() {
 
   //TODO real data lol
   const vaultedGfi = {
-    id: "69",
-    amount: BigNumber.from("420000000000000000000"),
+    token: SupportedCrypto.Gfi,
+    amount: sum("amount", data?.vaultedGfis),
   };
   const vaultedStakedPositions = [
     {
@@ -486,7 +488,7 @@ export default function MembershipPage() {
             <RemoveFromVault
               isOpen={isRemoveFromVaultOpen}
               onClose={() => setIsRemoveFromVaultOpen(false)}
-              vaultedGfi={vaultedGfi}
+              vaultedGfi={data.vaultedGfis}
               fiatPerGfi={data.gfiPrice.price.amount}
               vaultedStakedPositions={vaultedStakedPositions}
               vaultedPoolTokens={vaultedPoolTokens}
