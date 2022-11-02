@@ -8,7 +8,7 @@ interface BreadcrumbProps {
   /**
    * Optional image to show beside the breadcrumb: URL, PNG string, or Static import
    */
-  image?: string;
+  image?: string | null;
 
   /**
    * The title of the breadcrumb
@@ -28,7 +28,7 @@ export function Breadcrumb({ image, label, link }: BreadcrumbProps) {
         <Image
           src={image}
           alt={label || ""}
-          className="mr-3 overflow-hidden rounded-full"
+          className="mr-3 h-8 w-8 overflow-hidden rounded-full object-contain"
           width={32}
           height={32}
         />

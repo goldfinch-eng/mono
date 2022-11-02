@@ -1,5 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -21,6 +22,8 @@ import {
 import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
+
+import WithdrawRequestModal from "./withdraw-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -46,7 +49,9 @@ export function SeniorPoolWithDrawalPanel({
   stakedPositions = [],
   seniorPoolLiquidity,
 }: SeniorPoolWithdrawalPanelProps) {
+  const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
   const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
+  const totalUserStakedFidu = sumStakedShares(stakedPositions);
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
     seniorPoolSharePrice
@@ -59,7 +64,7 @@ export function SeniorPoolWithDrawalPanel({
   const { provider } = useWallet();
 
   const rhfMethods = useForm<FormFields>();
-  const { control, setValue } = rhfMethods;
+  const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
     if (!provider) {
@@ -165,16 +170,6 @@ export function SeniorPoolWithDrawalPanel({
     }
   };
 
-  const handleMax = () => {
-    setValue(
-      "amount",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxWithdrawableUsdc },
-        { includeSymbol: false }
-      )
-    );
-  };
-
   const validateAmount = async (value: string) => {
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.lte(BigNumber.from(0))) {
@@ -189,62 +184,87 @@ export function SeniorPoolWithDrawalPanel({
   };
 
   return (
-    <div className="rounded-xl bg-sunrise-01 p-5 text-white">
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between gap-1 text-sm">
-          <div>Available to withdraw</div>
-          <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
-        </div>
-        <div className="flex items-center gap-3 text-5xl">
-          {formatCrypto({
-            token: SupportedCrypto.Usdc,
-            amount: maxWithdrawableUsdc,
-          })}
-          <Icon name="Usdc" size="sm" />
-        </div>
-      </div>
-      <div className="mb-9">
-        <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-          <div>Your senior pool position</div>
-          <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xl">
+    <>
+      <div className="rounded-xl bg-midnight-01 p-5 text-white">
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between gap-1 text-sm">
+            <div>Available to withdraw</div>
+            <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
+          </div>
+          <div className="flex items-center gap-3 text-5xl">
             {formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: totalSharesUsdc,
+              amount: maxWithdrawableUsdc,
             })}
+            <Icon name="Usdc" size="sm" />
           </div>
-          <Icon name="Usdc" size="sm" />
         </div>
-      </div>
-      <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-        <div className="mb-3">
-          <DollarInput
-            name="amount"
-            label="Withdrawal amount"
-            control={control}
-            textSize="xl"
-            colorScheme="dark"
-            rules={{ required: "Required", validate: validateAmount }}
-            labelClassName="!mb-3 text-sm"
-            onMaxClick={handleMax}
-          />
+        <div className="mb-9">
+          <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+            <div>Your senior pool position</div>
+            <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-xl">
+              {formatCrypto({
+                token: SupportedCrypto.Usdc,
+                amount: totalSharesUsdc,
+              })}
+            </div>
+            <Icon name="Usdc" size="sm" />
+          </div>
         </div>
-        <div className="mb-3 text-sm">
-          Please be aware that Goldfinch charges a withdrawal fee of 0.5%
-        </div>
+
         <Button
           colorScheme="secondary"
           size="xl"
           className="block w-full"
           type="submit"
+          disabled
         >
           Withdraw
         </Button>
-      </Form>
-    </div>
+
+        <div className="flex justify-center">
+          <Button
+            onClick={() => {
+              setWithrawModalOpen(true);
+            }}
+            className="mx-auto !bg-transparent underline hover:!bg-transparent"
+          >
+            Request withdrawal
+          </Button>
+        </div>
+      </div>
+
+      <WithdrawRequestModal
+        balanceWallet={fiduBalance}
+        balanceStaked={{
+          amount: totalUserStakedFidu,
+          token: SupportedCrypto.Fidu,
+        }}
+        balanceVaulted={{
+          amount: BigNumber.from(0),
+          token: SupportedCrypto.Fidu,
+        }}
+        isOpen={withdrawModalOpen}
+        onClose={() => {
+          setWithrawModalOpen(false);
+        }}
+      />
+    </>
   );
+}
+
+function sumStakedShares(
+  staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
+): BigNumber {
+  const totalStaked = staked.reduce(
+    (previous, current) => previous.add(current.amount),
+    BigNumber.from(0)
+  );
+
+  return totalStaked;
 }
 
 function sumTotalShares(

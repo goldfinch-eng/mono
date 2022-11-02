@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   StakedPositionType,
@@ -46,7 +45,7 @@ export function UnstakeForm({
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<UnstakeFormFields>();
-  const { control, setValue } = rhfMethods;
+  const { control } = rhfMethods;
 
   if (positions.some((p) => p.positionType !== positionType)) {
     throw new Error(
@@ -80,13 +79,6 @@ export function UnstakeForm({
 
       await onComplete(); // Update the new totals after each unstake
     }
-  };
-
-  const handleMax = () => {
-    setValue(
-      "amount",
-      formatCrypto(max, { includeSymbol: false, useMaximumPrecision: true })
-    );
   };
 
   const validateMax = async (value: string) => {
@@ -123,7 +115,7 @@ export function UnstakeForm({
             }
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            onMaxClick={handleMax}
+            maxValue={max.amount}
           />
         </div>
 

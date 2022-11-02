@@ -40,7 +40,6 @@ export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    agreement @client
     remainingJuniorCapacity
     estimatedLeverageRatio
     allowedUidTypes
@@ -73,6 +72,7 @@ interface SupplyPanelProps {
    * This is necessary for zapping functionality. Senior pool staked position amounts are measured in FIDU, but we need to show the amounts to users in USDC.
    */
   seniorPoolSharePrice: BigNumber;
+  agreement?: string | null;
 }
 
 interface SupplyForm {
@@ -86,7 +86,6 @@ export default function SupplyPanel({
     id: tranchedPoolAddress,
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
-    agreement,
     remainingJuniorCapacity,
     allowedUidTypes,
   },
@@ -94,6 +93,7 @@ export default function SupplyPanel({
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
   seniorPoolSharePrice,
+  agreement,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
@@ -113,24 +113,7 @@ export default function SupplyPanel({
   const rhfMethods = useForm<SupplyForm>({
     defaultValues: { source: "wallet" },
   });
-  const { control, watch, register, setValue } = rhfMethods;
-
-  const handleMax = async () => {
-    if (!account) {
-      return;
-    }
-    const userUsdcBalance = availableBalance;
-    const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
-      ? userUsdcBalance
-      : remainingJuniorCapacity;
-    setValue(
-      "supply",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxAvailable },
-        { includeSymbol: false }
-      )
-    );
-  };
+  const { control, watch, register } = rhfMethods;
 
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
@@ -442,7 +425,11 @@ export default function SupplyPanel({
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"
             textSize="xl"
-            onMaxClick={handleMax}
+            maxValue={
+              availableBalance.lt(remainingJuniorCapacity)
+                ? availableBalance
+                : remainingJuniorCapacity
+            }
             className="mb-4"
             labelClassName="!text-sm !mb-3"
           />
@@ -467,7 +454,9 @@ export default function SupplyPanel({
             acknowledge that (i) I am electronically signing and becoming a
             party to the{" "}
             {agreement ? (
-              <Link href={agreement}>Loan Agreement</Link>
+              <Link href={agreement} target="_blank" rel="noreferrer">
+                Loan Agreement
+              </Link>
             ) : (
               "Loan Agreement"
             )}{" "}

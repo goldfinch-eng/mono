@@ -138,8 +138,6 @@ dataSources:
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
-        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
-          handler: handleStaked
         - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
           handler: handleStaked1
         - event: Unstaked(indexed address,indexed uint256,uint256)
@@ -298,6 +296,27 @@ dataSources:
         - event: GrantAccepted(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint256,uint256)
           handler: handleGrantAccepted
       file: ./src/mappings/backer_merkle_distributor.ts
+
+  - kind: ethereum/contract
+    name: CurveFiduUSDC
+    network: mainnet
+    source:
+      address: "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
+      abi: CurveFiduUSDC
+      startBlock: 14669331
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Transaction
+      abis:
+        - name: CurveFiduUSDC
+          file: ./abis/CurveFiduUSDC.json
+      eventHandlers:
+        - event: TokenExchange(indexed address,uint256,uint256,uint256,uint256)
+          handler: handleTokenExchange
+      file: ./src/mappings/curve_fidu_usdc.ts
 
 templates:
   - name: TranchedPool
