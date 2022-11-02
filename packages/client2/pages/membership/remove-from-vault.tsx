@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -9,12 +9,17 @@ import {
   InfoIconTooltip,
   Modal,
 } from "@/components/design-system";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
   SupportedCrypto,
   VaultedGfiFieldsFragment,
+  VaultedStakedPositionFieldsFragment,
+  VaultedPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
+import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 import { SectionHeading, Summary } from "./add-to-vault";
 import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
@@ -26,33 +31,37 @@ export const VAULTED_GFI_FIELDS = gql`
   }
 `;
 
-type VaultedStakedPosition = {
-  id: string; // positionId
-  usdcEquivalent: BigNumber;
-  seniorPoolStakedPosition: {
-    id: string;
-    amount: BigNumber; // FIDU
-  };
-};
+export const VAULTED_STAKED_POSITION_FIELDS = gql`
+  fragment VaultedStakedPositionFields on VaultedStakedPosition {
+    id
+    usdcEquivalent
+    seniorPoolStakedPosition {
+      id
+      amount
+    }
+  }
+`;
 
-type VaultedPoolToken = {
-  id: string;
-  usdcEquivalent: BigNumber;
-  poolToken: {
-    id: string;
-    tranchedPool: {
-      id: string;
-      name: string;
-    };
-  };
-};
+export const VAULTED_POOL_TOKEN_FIELDS = gql`
+  fragment VaultedPoolTokenFields on VaultedPoolToken {
+    id
+    usdcEquivalent
+    poolToken {
+      id
+      tranchedPool {
+        id
+        name @client
+      }
+    }
+  }
+`;
 interface RemoveFromVaultProps {
   isOpen: boolean;
   onClose: () => void;
   vaultedGfi: VaultedGfiFieldsFragment[];
   fiatPerGfi: number;
-  vaultedStakedPositions: VaultedStakedPosition[];
-  vaultedPoolTokens: VaultedPoolToken[];
+  vaultedStakedPositions: VaultedStakedPositionFieldsFragment[];
+  vaultedPoolTokens: VaultedPoolTokenFieldsFragment[];
 }
 
 export function RemoveFromVault({
@@ -79,7 +88,7 @@ export function RemoveFromVault({
     watch,
     handleSubmit,
     trigger,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = rhfMethods;
   const gfiToUnvault = stringToCryptoAmount(
     watch("gfiToUnvault"),
@@ -98,16 +107,37 @@ export function RemoveFromVault({
       .add(sum("usdcEquivalent", poolTokensToUnvault).mul("1000000000000")),
   };
 
-  const onSubmit = () => {
-    alert(
-      `Confirming with ${formatCrypto(
-        gfiToUnvault
-      )} staked positions ${stakedPositionsToUnvault
-        .map((s) => s.id)
-        .join(", ")}, pool tokens ${poolTokensToUnvault
-        .map((p) => p.id)
-        .join(", ")}`
-    );
+  const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
+
+  const onSubmit = async () => {
+    if (!account || !provider) {
+      throw new Error("Wallet not connected properly");
+    }
+    const membershipContract = await getContract({
+      name: "MembershipOrchestrator",
+      provider,
+    });
+
+    const capitalPositions = stakedPositionsToUnvault
+      .map((s) => s.id)
+      .concat(poolTokensToUnvault.map((p) => p.id));
+    const transaction = membershipContract.withdrawMultiple({
+      gfiPositions: [], // TODO fill this out. GFI needs to change checkboxes
+      capitalPositions,
+    });
+    await toastTransaction({
+      transaction,
+      pendingPrompt: "Withdrawing your assets from the vault.",
+      successPrompt: "Successfully withdrew your assets from the vault.",
+      errorPrompt: "Failed to withdraw your assets from the vault.",
+    });
+    await apolloClient.refetchQueries({ include: "active" });
+    onClose();
+    setTimeout(() => {
+      setStep("select");
+      reset();
+    }, 250);
   };
 
   useEffect(() => {
@@ -139,8 +169,10 @@ export function RemoveFromVault({
           <div className="text-xs">{step === "select" ? 1 : 2} of 2</div>
           <div className="w-28 text-right">
             <Button
+              isLoading={isSubmitting}
               colorScheme="primary"
               disabled={
+                isSubmitting ||
                 Object.keys(errors).length > 0 ||
                 (gfiToUnvault.amount.isZero() &&
                   stakedPositionsToUnvault.length === 0 &&

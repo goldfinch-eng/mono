@@ -337,10 +337,18 @@ type VaultedGfi @entity {
   vaultedAt: Int!
 }
 
-# type VaultedStakedPosition @entity {
-#   id: ID!
-#   user: User!
-#   usdcEquivalent: BigInt!
-#   vaultedAt: Int!
-#   seniorPoolStakedPosition: SeniorPoolStakedPosition!
-# }
+type VaultedStakedPosition @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+}
+
+type VaultedPoolToken @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  poolToken: TranchedPoolToken!
+}

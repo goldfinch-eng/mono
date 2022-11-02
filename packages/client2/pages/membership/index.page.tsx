@@ -26,10 +26,17 @@ import {
   AssetGroupButton,
 } from "./asset-group";
 import { Explainer } from "./explainer";
-import { RemoveFromVault, VAULTED_GFI_FIELDS } from "./remove-from-vault";
+import {
+  RemoveFromVault,
+  VAULTED_GFI_FIELDS,
+  VAULTED_STAKED_POSITION_FIELDS,
+  VAULTED_POOL_TOKEN_FIELDS,
+} from "./remove-from-vault";
 
 gql`
   ${VAULTED_GFI_FIELDS}
+  ${VAULTED_STAKED_POSITION_FIELDS}
+  ${VAULTED_POOL_TOKEN_FIELDS}
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -80,6 +87,14 @@ gql`
       amount
       ...VaultedGfiFields
     }
+    vaultedStakedPositions(where: { user: $userId }) {
+      id
+      ...VaultedStakedPositionFields
+    }
+    vaultedPoolTokens(where: { user: $userId }) {
+      id
+      ...VaultedPoolTokenFields
+    }
   }
 `;
 
@@ -127,29 +142,6 @@ export default function MembershipPage() {
     token: SupportedCrypto.Gfi,
     amount: sum("amount", data?.vaultedGfis),
   };
-  const vaultedStakedPositions = [
-    {
-      id: "69",
-      usdcEquivalent: BigNumber.from("69420000000"),
-      seniorPoolStakedPosition: {
-        id: "1",
-        amount: BigNumber.from("69400000000000000000000"),
-      },
-    },
-  ];
-  const vaultedPoolTokens = [
-    {
-      id: "420",
-      usdcEquivalent: BigNumber.from("1000000000"),
-      poolToken: {
-        id: "2",
-        tranchedPool: {
-          id: "10",
-          name: "Pug Pool #1",
-        },
-      },
-    },
-  ];
 
   const [isRemoveFromVaultOpen, setIsRemoveFromVaultOpen] = useState(false);
 
@@ -399,15 +391,15 @@ export default function MembershipPage() {
                     right={formatCrypto({
                       token: SupportedCrypto.Usdc,
                       amount: sum("usdcEquivalent", [
-                        ...vaultedStakedPositions,
-                        ...vaultedPoolTokens,
+                        ...data.vaultedStakedPositions,
+                        ...data.vaultedPoolTokens,
                       ]),
                     })}
                   />
-                  {vaultedStakedPositions.length > 0 ||
-                  vaultedPoolTokens.length > 0 ? (
+                  {data.vaultedStakedPositions.length > 0 ||
+                  data.vaultedPoolTokens.length > 0 ? (
                     <div className="space-y-2">
-                      {vaultedStakedPositions.map((vsp) => (
+                      {data.vaultedStakedPositions.map((vsp) => (
                         <AssetBox
                           key={vsp.id}
                           asset={{
@@ -424,7 +416,7 @@ export default function MembershipPage() {
                           }}
                         />
                       ))}
-                      {vaultedPoolTokens.map((vpt) => (
+                      {data.vaultedPoolTokens.map((vpt) => (
                         <AssetBox
                           key={vpt.id}
                           asset={{
@@ -457,8 +449,8 @@ export default function MembershipPage() {
                   onClick={() => setIsRemoveFromVaultOpen(true)}
                   disabled={
                     vaultedGfi.amount.isZero() &&
-                    vaultedStakedPositions.length === 0 &&
-                    vaultedPoolTokens.length === 0
+                    data.vaultedStakedPositions.length === 0 &&
+                    data.vaultedPoolTokens.length === 0
                   }
                 >
                   Select assets to remove
@@ -490,8 +482,8 @@ export default function MembershipPage() {
               onClose={() => setIsRemoveFromVaultOpen(false)}
               vaultedGfi={data.vaultedGfis}
               fiatPerGfi={data.gfiPrice.price.amount}
-              vaultedStakedPositions={vaultedStakedPositions}
-              vaultedPoolTokens={vaultedPoolTokens}
+              vaultedStakedPositions={data.vaultedStakedPositions}
+              vaultedPoolTokens={data.vaultedPoolTokens}
             />
           </div>
         </>
