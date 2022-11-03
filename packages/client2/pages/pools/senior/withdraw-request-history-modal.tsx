@@ -8,6 +8,7 @@ import {
   useWithdrawRequestTransactionsQuery,
   TransactionCategory,
   SupportedCrypto,
+  EpochInfo,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 

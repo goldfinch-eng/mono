@@ -68,7 +68,7 @@ export default function WithdrawCancelRequestModal({
           Confirm withdrawal request
         </h5>
         <div className="mb-2 flex flex-wrap rounded border border-sand-200 bg-white">
-          <div className="w-1/2 border-r border-sand-200 p-5">
+          <div className="w-1/2 border-r border-b border-sand-200 p-5">
             <div className="mb-3 text-sm">Current request</div>
             <div className="text-lg">
               {formatCrypto(
@@ -80,7 +80,7 @@ export default function WithdrawCancelRequestModal({
               )}
             </div>
           </div>
-          <div className="w-1/2 p-5">
+          <div className="w-1/2 border-b border-sand-200 p-5">
             <div className="mb-3 text-sm">New request</div>
             <div className="text-lg">
               {formatCrypto(
