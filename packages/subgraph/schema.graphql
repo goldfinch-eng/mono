@@ -328,6 +328,7 @@ type MembershipEpoch @entity(immutable: true) {
   id: ID!
   epoch: BigInt! # The epoch number
   totalRewards: BigInt! # Measured in FIDU
+  finalizedAt: Int!
 }
 
 type VaultedGfi @entity {

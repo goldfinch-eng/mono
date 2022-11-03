@@ -75,6 +75,10 @@ const addresses = {
     networkName === "localhost"
       ? contracts.MembershipOrchestrator.address
       : "0x0000000000000000000000000000000000000000", // TODO membership not deployed on mainnet yet
+  ERC20Splitter:
+    networkName === "localhost"
+      ? contracts.ERC20Splitter.address
+      : "0x0000000000000000000000000000000000000000", // TODO membership not deployed on mainnet yet (not that this one really matters, it's used in a devtool)
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

@@ -32,6 +32,7 @@ import {
   VAULTED_STAKED_POSITION_FIELDS,
   VAULTED_POOL_TOKEN_FIELDS,
 } from "./remove-from-vault";
+import { RewardClaimer } from "./reward-claimer";
 
 gql`
   ${VAULTED_GFI_FIELDS}
@@ -173,6 +174,7 @@ export default function MembershipPage() {
         <div>Loading...</div>
       ) : (
         <>
+          <RewardClaimer sharePrice={sharePrice} className="mb-4" />
           <div
             className="mb-16 rounded-lg border border-sand-200 p-8"
             style={{ aspectRatio: "2272 / 752" }}

@@ -4,6 +4,8 @@ import { Button } from "@/components/design-system";
 import { SERVER_URL } from "@/constants";
 import { openVerificationModal } from "@/lib/state/actions";
 
+import { MembershipEpochButton } from "./membership-epoch-button";
+
 export default function DevToolsButtons({
   account,
   setPanel,
@@ -155,6 +157,9 @@ export default function DevToolsButtons({
           <Button size="lg" onClick={() => openVerificationModal()}>
             Begin verification flow
           </Button>
+        </div>
+        <div className="px-2">
+          <MembershipEpochButton />
         </div>
       </div>
     </div>
