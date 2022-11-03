@@ -70,8 +70,7 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
-
-  withdrawalRequest: WithdrawalRequest @derivedFrom(field: "user")
+  withdrawalTransactions: [WithdrawalTransaction!]! @derivedFrom(field: "user")
 
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
@@ -329,9 +328,18 @@ type CommunityRewardsToken @entity {
   endTime: BigInt!
 }
 
-type WithdrawalRequest @entity {
-  id: String!
+type WithdrawalTransaction @entity {
+  id: Bytes!
   epochId: BigInt!
   user: User!
-  amount: BigInt!
+  amount: BigInt
+  category: WithdrawalTransactionCategory!
+  timestamp: Int!
+  blockNumber: Int!
+}
+
+enum WithdrawalTransactionCategory {
+  WITHDRAWAL_REQUEST
+  ADD_TO_WITHDRAWAL_REQUEST
+  CANCEL_WITHDRAWAL_REQUEST
 }

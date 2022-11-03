@@ -173,7 +173,7 @@ export default function WithdrawRequestModal({
                 as="a"
                 className="block w-full"
                 iconRight="ArrowSmRight"
-                href="/vault"
+                href="/membership"
               >
                 Go to Vault page
               </Button>
