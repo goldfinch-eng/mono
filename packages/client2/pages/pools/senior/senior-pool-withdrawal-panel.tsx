@@ -16,6 +16,7 @@ import { sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import WithdrawCancelRequestModal from "./withdraw-cancel-request-modal";
+import WithdrawRequestHistoryModal from "./withdraw-request-history-modal";
 import WithdrawRequestModal from "./withdraw-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
@@ -46,6 +47,7 @@ export function SeniorPoolWithDrawalPanel({
   const { provider } = useWallet();
   const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
@@ -198,7 +200,7 @@ export function SeniorPoolWithDrawalPanel({
               <div className="text-sm">
                 <Button
                   onClick={() => {
-                    setWithrawModalOpen(true);
+                    setHistoryModalOpen(true);
                   }}
                   className="!bg-transparent !p-0 underline hover:!bg-transparent"
                 >
@@ -247,6 +249,14 @@ export function SeniorPoolWithDrawalPanel({
           </div>
         )}
       </div>
+
+      <WithdrawRequestHistoryModal
+        currentEpoch={currentEpoch}
+        isOpen={historyModalOpen}
+        onClose={() => {
+          setHistoryModalOpen(false);
+        }}
+      />
 
       <WithdrawCancelRequestModal
         withdrawalToken={withdrawalToken}

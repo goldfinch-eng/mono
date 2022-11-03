@@ -1,4 +1,4 @@
-import {Address, store, log} from "@graphprotocol/graph-ts"
+import {Address, store} from "@graphprotocol/graph-ts"
 import {
   SeniorPool,
   DepositMade,
@@ -111,8 +111,6 @@ export function handleWithdrawalRequest(event: WithdrawalRequested): void {
   transaction.save()
 
   const user = getOrInitUser(event.params.operator)
-
-  log.info("Amount: {}", [event.params.fiduRequested.toString()])
 
   // Create withdrawl request for user with preset ID
   const request = new WithdrawalRequest(`WithdrawalRequest:${event.params.operator.toHexString()}`)
