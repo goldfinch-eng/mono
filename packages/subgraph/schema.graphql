@@ -250,6 +250,7 @@ enum TransactionCategory {
   UID_MINTED
   CURVE_FIDU_BUY
   CURVE_FIDU_SELL
+  MEMBERSHIP_REWARDS_CLAIMED
 }
 
 enum SupportedCrypto {

@@ -387,6 +387,27 @@ dataSources:
           handler: handleCapitalWithdrawal
       file: ./src/mappings/membership/capital_ledger.ts
 
+  - kind: ethereum/contract
+    name: MembershipDirector
+    network: mainnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: MembershipDirector
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Transaction
+      abis:
+        - name: MembershipDirector
+          file: ./abis/MembershipDirector.json
+      eventHandlers:
+        - event: RewardsClaimed(indexed address,uint256)
+          handler: handleRewardsClaimed
+      file: ./src/mappings/membership/membership_director.ts
+
 templates:
   - name: TranchedPool
     kind: ethereum/contract

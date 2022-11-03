@@ -270,6 +270,7 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards Claimed",
 };
 
 export function getTransactionLabel(transaction: {
@@ -293,6 +294,7 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards",
 };
 
 /**
@@ -321,6 +323,7 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.UidMinted]: "Checkmark",
   [TransactionCategory.CurveFiduBuy]: "ArrowUp",
   [TransactionCategory.CurveFiduSell]: "ArrowDown",
+  [TransactionCategory.MembershipRewardsClaimed]: "ArrowUp",
 };
 
 /**
