@@ -1,6 +1,7 @@
+import { useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button, Form, InfoIconTooltip } from "@/components/design-system";
@@ -22,24 +23,26 @@ export function RewardClaimer({ sharePrice, className }: RewardClaimerProps) {
     amount: BigNumber.from(0),
   });
   const { account, provider } = useWallet();
-  useEffect(() => {
-    const asyncEffect = async () => {
-      if (provider && account) {
-        const membershipContract = await getContract({
-          name: "MembershipOrchestrator",
-          provider,
-        });
-        const claimableFiduAmount = await membershipContract.claimableRewards(
-          account
-        );
-        setClaimable({
-          token: SupportedCrypto.Fidu,
-          amount: claimableFiduAmount,
-        });
-      }
-    };
-    asyncEffect();
+  const apolloClient = useApolloClient();
+  const updateClaimable = useCallback(async () => {
+    if (!provider || !account) {
+      return;
+    }
+    const membershipContract = await getContract({
+      name: "MembershipOrchestrator",
+      provider,
+    });
+    const claimableFiduAmount = await membershipContract.claimableRewards(
+      account
+    );
+    setClaimable({
+      token: SupportedCrypto.Fidu,
+      amount: claimableFiduAmount,
+    });
   }, [provider, account]);
+  useEffect(() => {
+    updateClaimable();
+  }, [updateClaimable]);
 
   const rhfMethods = useForm();
 
@@ -52,7 +55,9 @@ export function RewardClaimer({ sharePrice, className }: RewardClaimerProps) {
       provider,
     });
     const transaction = membershipContract.collectRewards(account);
-    toastTransaction({ transaction });
+    await toastTransaction({ transaction });
+    await updateClaimable();
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   if (claimable.amount.isZero()) {
