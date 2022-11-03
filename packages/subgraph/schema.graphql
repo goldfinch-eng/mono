@@ -71,6 +71,8 @@ type User @entity {
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
 
+  withdrawalRequest: WithdrawalRequest @derivedFrom(field: "user")
+
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
 
@@ -225,6 +227,9 @@ enum TransactionCategory {
   SENIOR_POOL_STAKE
   SENIOR_POOL_WITHDRAWAL
   SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
+  SENIOR_POOL_WITHDRAWAL_REQUEST
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST
   # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction
   # category, because UnstakedAndWithdrew and UnstakedAndWithdrewMultiple events are emitted by
   # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we
@@ -322,4 +327,11 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
+}
+
+type WithdrawalRequest @entity {
+  id: String!
+  epochId: BigInt!
+  user: User!
+  amount: BigInt!
 }

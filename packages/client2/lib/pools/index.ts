@@ -246,6 +246,11 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]:
+    "Withdrawl Request Increased",
+  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]:
+    "Cancel Withdrawl Request",
+  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawl Request",
 };
 
 export function getTransactionLabel(transaction: {
@@ -269,6 +274,9 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "Increase Withdrawl",
+  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawl",
+  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawl Request",
 };
 
 /**
@@ -297,6 +305,9 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.UidMinted]: "Checkmark",
   [TransactionCategory.CurveFiduBuy]: "ArrowUp",
   [TransactionCategory.CurveFiduSell]: "ArrowDown",
+  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "ArrowDown",
+  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "X",
+  [TransactionCategory.SeniorPoolWithdrawalRequest]: "ArrowDown",
 };
 
 /**

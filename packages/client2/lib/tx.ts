@@ -67,6 +67,9 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
           case TransactionCategory.UidMinted:
           case TransactionCategory.CurveFiduBuy:
           case TransactionCategory.CurveFiduSell:
+          case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
+          case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
+          case TransactionCategory.SeniorPoolWithdrawalRequest:
             break;
           default:
             assertUnreachable(curr.category);
@@ -97,6 +100,9 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
       case TransactionCategory.UidMinted:
       case TransactionCategory.CurveFiduBuy:
       case TransactionCategory.CurveFiduSell:
+      case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
+      case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
+      case TransactionCategory.SeniorPoolWithdrawalRequest:
         return true;
       default:
         return assertUnreachable(tx.category);

@@ -10,6 +10,18 @@ module.exports = {
   ],
   theme: {
     colors: {
+      twilight: {
+        50: "#F4F6FE",
+        100: "#E4E6F4",
+        200: "#DBDEEE",
+        300: "#C3C7E1",
+        400: "#9BA0C0",
+        500: "#6B7091",
+        600: "#4C5172",
+        700: "#3A3E5F",
+        800: "#1F2445",
+        900: "#1D213B",
+      },
       sand: {
         50: "#FAFAF9",
         100: "#F5F5F4",
@@ -107,6 +119,9 @@ module.exports = {
         700: "#396161",
         800: "#204949",
         900: "#113535",
+      },
+      redclay: {
+        500: "#CA5E5A",
       },
       transparent: "transparent",
       current: "currentColor",

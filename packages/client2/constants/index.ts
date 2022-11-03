@@ -15,6 +15,8 @@ export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 
+export const WITHDRAW_REQUEST_FEE = 0.12;
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,

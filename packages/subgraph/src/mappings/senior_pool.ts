@@ -1,4 +1,4 @@
-import {Address} from "@graphprotocol/graph-ts"
+import {Address, store, log} from "@graphprotocol/graph-ts"
 import {
   SeniorPool,
   DepositMade,
@@ -9,11 +9,15 @@ import {
   PrincipalWrittenDown,
   ReserveFundsCollected,
   WithdrawalMade,
+  WithdrawalRequested,
+  WithdrawalAddedTo,
+  WithdrawalCanceled,
 } from "../../generated/SeniorPool/SeniorPool"
+import {WithdrawalRequest} from "../../generated/schema"
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
-import {handleDeposit} from "../entities/user"
+import {handleDeposit, getOrInitUser} from "../entities/user"
 import {getAddressFromConfig} from "../utils"
 
 // Helper function to extract the StakingRewards address from the config on Senior Pool
@@ -95,4 +99,63 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
     transaction.save()
   }
+}
+
+export function handleWithdrawalRequest(event: WithdrawalRequested): void {
+  updatePoolStatus(event.address)
+
+  // Create transaction
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL_REQUEST", event.params.operator)
+  transaction.sentAmount = event.params.fiduRequested
+  transaction.sentToken = "FIDU"
+  transaction.save()
+
+  const user = getOrInitUser(event.params.operator)
+
+  log.info("Amount: {}", [event.params.fiduRequested.toString()])
+
+  // Create withdrawl request for user with preset ID
+  const request = new WithdrawalRequest(`WithdrawalRequest:${event.params.operator.toHexString()}`)
+  request.epochId = event.params.epochId
+  request.amount = event.params.fiduRequested
+  request.user = user.id
+  request.save()
+}
+
+export function handleAddToWithdrawalRequest(event: WithdrawalAddedTo): void {
+  updatePoolStatus(event.address)
+
+  const request = WithdrawalRequest.load(`WithdrawalRequest:${event.params.operator.toHexString()}`)
+
+  if (request !== null) {
+    // Create transaction
+    const transaction = createTransactionFromEvent(
+      event,
+      "SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST",
+      event.params.operator
+    )
+
+    transaction.sentAmount = event.params.fiduRequested
+    transaction.sentToken = "FIDU"
+    transaction.save()
+
+    // Save total amount
+    request.epochId = event.params.epochId
+    request.amount = request.amount.plus(event.params.fiduRequested)
+    request.save()
+  }
+}
+
+export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void {
+  updatePoolStatus(event.address)
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST", event.params.operator)
+
+  transaction.receivedAmount = event.params.fiduCanceled
+  transaction.receivedToken = "FIDU"
+  transaction.save()
+
+  const user = getOrInitUser(event.params.operator)
+
+  store.remove("WithdrawalRequest", `WithdrawalRequest:${event.params.operator.toHexString()}`)
 }

@@ -105,7 +105,12 @@ type Viewer {
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
   curveLpBalance: CryptoAmount
+  withdrawalToken: BigInt
   gfiGrants: [GfiGrant!]!
+}
+
+type EpochInfo {
+  endTime: BigInt!
 }
 
 type BlockInfo {
@@ -125,4 +130,5 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo
   curvePool: CurvePool!
+  currentEpoch: EpochInfo
 }

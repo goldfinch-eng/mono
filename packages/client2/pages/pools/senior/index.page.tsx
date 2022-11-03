@@ -40,6 +40,9 @@ gql`
       seniorPoolStakedPositions(where: { positionType: Fidu }) {
         ...SeniorPoolWithdrawalPanelPositionFields
       }
+      withdrawalRequest {
+        amount
+      }
     }
     seniorPools(first: 1) {
       id
@@ -62,6 +65,10 @@ gql`
         token
         amount
       }
+      withdrawalToken
+    }
+    currentEpoch @client {
+      endTime
     }
   }
 `;
@@ -161,8 +168,11 @@ export default function SeniorPoolPage() {
               />
             ) : null}
 
-            {data && shouldShowWithdrawal && (
+            {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithDrawalPanel
+                currentRequest={data.user?.withdrawalRequest?.amount}
+                currentEpoch={data.currentEpoch}
+                withdrawalToken={data.viewer.withdrawalToken}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={user?.seniorPoolStakedPositions}

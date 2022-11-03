@@ -54,6 +54,26 @@ export const viewerResolvers: Resolvers[string] = {
     }
     return viewer.account;
   },
+  async withdrawalToken(): Promise<BigNumber | null> {
+    const provider = await getProvider();
+    const account = await provider.getSigner().getAddress();
+
+    const contract = await getContract({
+      name: "WithdrawalRequestToken",
+      provider,
+    });
+
+    const balance = await contract.balanceOf(account);
+
+    if (balance.gt(BigNumber.from("0"))) {
+      // Get first token Id of user
+      const tokenId = await contract.tokenOfOwnerByIndex(account, 0);
+
+      return tokenId;
+    }
+
+    return null;
+  },
   async gfiBalance(): Promise<CryptoAmount | null> {
     return erc20Balance(SupportedCrypto.Gfi);
   },

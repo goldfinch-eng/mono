@@ -71,6 +71,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
+  WithdrawalRequestToken: () =>
+    import(
+      "@/types/ethers-contracts/factories/WithdrawalRequestToken__factory"
+    ).then((module) => module.WithdrawalRequestToken__factory.connect),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;
