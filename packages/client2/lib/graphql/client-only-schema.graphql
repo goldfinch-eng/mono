@@ -123,6 +123,6 @@ extend type Query {
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo!
   curvePool: CurvePool!
 }

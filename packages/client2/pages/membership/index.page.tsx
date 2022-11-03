@@ -83,6 +83,10 @@ gql`
       }
     }
 
+    currentBlock @client {
+      timestamp
+    }
+
     vaultedGfis(where: { user: $userId, amount_gt: 0 }) {
       id
       amount
@@ -478,6 +482,7 @@ export default function MembershipPage() {
                   amount: BigNumber.from(0),
                 }
               }
+              currentBlockTimestampMs={data.currentBlock.timestamp * 1000}
             />
             <RemoveFromVault
               isOpen={isRemoveFromVaultOpen}

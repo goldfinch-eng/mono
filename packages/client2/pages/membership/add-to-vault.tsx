@@ -1,5 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
+import { format } from "date-fns";
 import { BigNumber } from "ethers";
 import { Children, ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,6 +19,7 @@ import {
   MembershipPageQuery,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { epochFinalizedDate } from "@/lib/membership";
 import {
   approveErc20IfRequired,
   approveErc721IfRequired,
@@ -53,6 +55,7 @@ interface AddToVaultProps {
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
   unstakedFidu: CryptoAmount;
+  currentBlockTimestampMs: number;
 }
 
 export function AddToVault({
@@ -64,6 +67,7 @@ export function AddToVault({
   sharePrice,
   vaultablePoolTokens,
   unstakedFidu,
+  currentBlockTimestampMs,
 }: AddToVaultProps) {
   const capitalTotal = {
     token: SupportedCrypto.Usdc,
@@ -414,14 +418,24 @@ export function AddToVault({
                   Your next Member Rewards cycle begins
                   <InfoIconTooltip content="The date that your capital will start actively earning Member Rewards in the vault." />
                 </div>
-                <div className="text-lg font-medium">October 4</div>
+                <div className="text-lg font-medium">
+                  {format(
+                    epochFinalizedDate(currentBlockTimestampMs),
+                    "LLLL d, yyyy"
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
-                  Your next Member Rewards cycle begins
+                  Your next Member Rewards distribution
                   <InfoIconTooltip content="Date that your Member Reward distribution will reflect rewards earned by the new assets you are adding to the vault." />
                 </div>
-                <div className="text-lg font-medium">October 11</div>
+                <div className="text-lg font-medium">
+                  {format(
+                    epochFinalizedDate(currentBlockTimestampMs, 2),
+                    "LLLL d, yyyy"
+                  )}
+                </div>
               </div>
             </Summary>
             <div className="mt-2 text-xs">
