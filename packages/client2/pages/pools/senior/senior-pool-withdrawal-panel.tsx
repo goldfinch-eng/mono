@@ -46,6 +46,7 @@ export function SeniorPoolWithDrawalPanel({
   const { provider } = useWallet();
   const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
   const totalSharesUsdc = sharesToUsdc(
@@ -83,13 +84,21 @@ export function SeniorPoolWithDrawalPanel({
 
   const withdrawWithToken = async () => {
     if (withdrawalToken && provider) {
+      setIsWithdrawing(true);
+
       const seniorPoolContract = await getContract({
         name: "SeniorPool",
         provider,
       });
 
-      await seniorPoolContract.claimWithdrawalRequest(withdrawalToken);
-      await apolloClient.refetchQueries({ include: "active" });
+      try {
+        await seniorPoolContract.claimWithdrawalRequest(withdrawalToken);
+        await apolloClient.refetchQueries({ include: "active" });
+
+        setIsWithdrawing(false);
+      } catch (e) {
+        setIsWithdrawing(false);
+      }
     }
   };
 
@@ -138,7 +147,10 @@ export function SeniorPoolWithDrawalPanel({
           className="mb-2 block w-full"
           type="submit"
           onClick={withdrawWithToken}
-          disabled={withdrawableAmount.lte(BigNumber.from("0"))}
+          isLoading={isWithdrawing}
+          disabled={
+            withdrawableAmount.lte(BigNumber.from("0")) || isWithdrawing
+          }
         >
           Withdraw USDC
         </Button>
