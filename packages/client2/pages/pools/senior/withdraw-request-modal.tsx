@@ -223,7 +223,10 @@ export default function WithdrawRequestModal({
                             .add(currentRequest),
                           token: SupportedCrypto.Fidu,
                         })
-                      : null}
+                      : formatCrypto({
+                          amount: BigNumber.from("0"),
+                          token: SupportedCrypto.Fidu,
+                        })}
                   </div>
                 </div>
               </>
@@ -232,15 +235,15 @@ export default function WithdrawRequestModal({
                 <div className="flex-1 border-r border-sand-200 p-5">
                   <div className="mb-3 text-sm">Total FIDU requested</div>
                   <div className="text-xl">
-                    {watchFields[0]
-                      ? formatCrypto({
-                          amount: utils.parseUnits(
-                            watchFields[0],
-                            FIDU_DECIMALS
-                          ),
-                          token: SupportedCrypto.Fidu,
-                        })
-                      : null}
+                    {formatCrypto(
+                      {
+                        amount: watchFields[0]
+                          ? utils.parseUnits(watchFields[0], FIDU_DECIMALS)
+                          : BigNumber.from("0"),
+                        token: SupportedCrypto.Fidu,
+                      },
+                      { includeToken: true }
+                    )}
                   </div>
                 </div>
               </>
