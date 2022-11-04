@@ -490,6 +490,7 @@ export default function MembershipPage() {
               vaultedGfi={data.vaultedGfis}
               fiatPerGfi={data.gfiPrice.price.amount}
               vaultedStakedPositions={data.vaultedStakedPositions}
+              sharePrice={sharePrice}
               vaultedPoolTokens={data.vaultedPoolTokens}
             />
           </div>

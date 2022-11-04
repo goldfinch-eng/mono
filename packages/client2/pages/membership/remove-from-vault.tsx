@@ -16,13 +16,20 @@ import {
   VaultedGfiFieldsFragment,
   VaultedStakedPositionFieldsFragment,
   VaultedPoolTokenFieldsFragment,
+  CryptoAmount,
 } from "@/lib/graphql/generated";
-import { gfiToUsdc, sum } from "@/lib/pools";
+import { calculateNewMonthlyMembershipReward } from "@/lib/membership";
+import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 import { SectionHeading, Summary } from "./add-to-vault";
-import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
+import {
+  AssetBox,
+  AssetBoxPlaceholder,
+  AssetPicker,
+  GfiBox,
+} from "./asset-box";
 
 export const VAULTED_GFI_FIELDS = gql`
   fragment VaultedGfiFields on VaultedGfi {
@@ -61,6 +68,7 @@ interface RemoveFromVaultProps {
   vaultedGfi: VaultedGfiFieldsFragment[];
   fiatPerGfi: number;
   vaultedStakedPositions: VaultedStakedPositionFieldsFragment[];
+  sharePrice: BigNumber;
   vaultedPoolTokens: VaultedPoolTokenFieldsFragment[];
 }
 
@@ -70,6 +78,7 @@ export function RemoveFromVault({
   vaultedGfi,
   fiatPerGfi,
   vaultedStakedPositions,
+  sharePrice,
   vaultedPoolTokens,
 }: RemoveFromVaultProps) {
   const [step, setStep] = useState<"select" | "review">("select");
@@ -100,15 +109,52 @@ export function RemoveFromVault({
   const poolTokensToUnvault = vaultedPoolTokens.filter((p) =>
     watch("poolTokensToUnvault").includes(p.id)
   );
-  const fakeFidu = {
-    token: SupportedCrypto.Fidu,
-    amount: gfiToUnvault.amount
-      .add(sum("usdcEquivalent", stakedPositionsToUnvault).mul("1000000000000"))
-      .add(sum("usdcEquivalent", poolTokensToUnvault).mul("1000000000000")),
+  const capitalToBeRemoved = {
+    token: SupportedCrypto.Usdc,
+    amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
+      sum("usdcEquivalent", poolTokensToUnvault)
+    ),
   };
 
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
+
+  const [rewardProjection, setRewardProjection] = useState<{
+    newMonthlyReward: CryptoAmount;
+    diff: CryptoAmount;
+  }>();
+  useEffect(
+    () => {
+      const asyncEffect = async () => {
+        if (!account || !provider) {
+          return;
+        }
+
+        setRewardProjection(undefined);
+        const projection = await calculateNewMonthlyMembershipReward(
+          account,
+          provider,
+          gfiToUnvault.amount.mul("-1"),
+          capitalToBeRemoved.amount.mul("-1")
+        );
+
+        // Minimum wait time to smooth out the animation
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        setRewardProjection(projection);
+      };
+      asyncEffect();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      account,
+      provider,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      gfiToUnvault.amount.toString(),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      capitalToBeRemoved.amount.toString(),
+    ]
+  );
 
   const onSubmit = async () => {
     if (!account || !provider) {
@@ -265,21 +311,27 @@ export function RemoveFromVault({
           </div>
           <div className="mb-8">
             <SectionHeading leftText="Projected Member Rewards" />
-            <AssetBox
-              asset={{
-                name: "Estimated Member Rewards",
-                description: "(Monthly average)",
-                nativeAmount: fakeFidu,
-                usdcAmount: {
-                  token: SupportedCrypto.Usdc,
-                  amount: BigNumber.from(0),
-                },
-              }}
-              changeAmount={{
-                token: SupportedCrypto.Usdc,
-                amount: BigNumber.from("-100000000"),
-              }}
-            />
+            {rewardProjection ? (
+              <AssetBox
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly Average)",
+                  usdcAmount: sharesToUsdc(
+                    rewardProjection.newMonthlyReward.amount,
+                    sharePrice
+                  ),
+                  nativeAmount: rewardProjection.newMonthlyReward,
+                }}
+                changeAmount={rewardProjection.diff}
+              />
+            ) : (
+              <AssetBoxPlaceholder
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly Average)",
+                }}
+              />
+            )}
           </div>
         </div>
         <div className={step === "select" ? "hidden" : undefined}>
@@ -301,12 +353,7 @@ export function RemoveFromVault({
           <div className="mb-8">
             <SectionHeading
               leftText="Capital to be removed"
-              rightText={formatCrypto({
-                token: SupportedCrypto.Usdc,
-                amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
-                  sum("usdcEquivalent", poolTokensToUnvault)
-                ),
-              })}
+              rightText={formatCrypto(capitalToBeRemoved)}
             />
             <div className="space-y-2">
               {stakedPositionsToUnvault.map((vsp) => (
@@ -344,23 +391,30 @@ export function RemoveFromVault({
           <div>
             <SectionHeading leftText="Projected Member Rewards" />
             <Summary>
-              <AssetBox
-                omitWrapperStyle
-                asset={{
-                  name: "Estimated Member Rewards",
-                  description: "(Monthly average)",
-                  nativeAmount: fakeFidu,
-                  usdcAmount: {
-                    token: SupportedCrypto.Usdc,
-                    amount: BigNumber.from(0),
-                  },
-                }}
-                changeAmount={{
-                  token: SupportedCrypto.Usdc,
-                  amount: BigNumber.from("-100000000"),
-                }}
-              />
+              {rewardProjection ? (
+                <AssetBox
+                  omitWrapperStyle
+                  asset={{
+                    name: "Estimated Member Rewards",
+                    description: "(Monthly Average)",
+                    usdcAmount: sharesToUsdc(
+                      rewardProjection.newMonthlyReward.amount,
+                      sharePrice
+                    ),
+                    nativeAmount: rewardProjection.newMonthlyReward,
+                  }}
+                  changeAmount={rewardProjection.diff}
+                />
+              ) : (
+                <AssetBoxPlaceholder
+                  asset={{
+                    name: "Estimated Member Rewards",
+                    description: "(Monthly Average)",
+                  }}
+                />
+              )}
               <div className="flex items-center justify-between">
+                {/* TODO forfeit amount */}
                 <div className="flex items-center gap-2 text-sm">
                   Rewards forfeited
                   <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />

@@ -11,6 +11,7 @@ import {
   Icon,
   IconNameType,
   InfoIconTooltip,
+  Shimmer,
 } from "@/components/design-system";
 import { GFI_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
@@ -64,26 +65,23 @@ export function AssetBox({
               nativeAmountIsPrimary && nativeAmount ? nativeAmount : usdcAmount
             )}
           </div>
-          {changeAmount ? (
+          {changeAmount && !changeAmount.amount.isZero() ? (
             <div
               className={clsx(
                 "ml-1 text-sm",
-                changeAmount.amount.isZero()
-                  ? null
-                  : changeAmount.amount.isNegative()
+
+                changeAmount.amount.isNegative()
                   ? "text-clay-500"
                   : "text-mint-450"
               )}
             >
               ({formatCrypto(changeAmount)})
-              {changeAmount.amount.isZero() ? null : (
-                <Icon
-                  size="xs"
-                  name={
-                    changeAmount.amount.isNegative() ? "ArrowDown" : "ArrowUp"
-                  }
-                />
-              )}
+              <Icon
+                size="xs"
+                name={
+                  changeAmount.amount.isNegative() ? "ArrowDown" : "ArrowUp"
+                }
+              />
             </div>
           ) : null}
         </div>
@@ -101,6 +99,38 @@ export function AssetBox({
           {notice}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export function AssetBoxPlaceholder({ asset }: { asset: Partial<Asset> }) {
+  const { name, description, usdcAmount, nativeAmount } = asset;
+  return (
+    <div className="w-full rounded border border-white bg-white px-5 py-6">
+      <div className="mb-1 flex justify-between gap-4">
+        {name ? (
+          <div className="text-lg">{name}</div>
+        ) : (
+          <Shimmer style={{ width: "16ch" }} />
+        )}
+        {usdcAmount ? (
+          <div className="text-lg font-medium">{formatCrypto(usdcAmount)}</div>
+        ) : (
+          <Shimmer style={{ width: "10ch" }} />
+        )}
+      </div>
+      <div className="flex justify-between gap-4 text-xs font-medium text-sand-400">
+        {description ? (
+          <div>{description}</div>
+        ) : (
+          <Shimmer style={{ width: "32ch" }} />
+        )}
+        {nativeAmount ? (
+          <div>{formatCrypto(nativeAmount)}</div>
+        ) : (
+          <Shimmer style={{ width: "16ch" }} />
+        )}
+      </div>
     </div>
   );
 }

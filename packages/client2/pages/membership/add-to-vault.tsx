@@ -2,7 +2,7 @@ import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { format } from "date-fns";
 import { BigNumber } from "ethers";
-import { Children, ReactNode, useEffect, useState } from "react";
+import { Children, ReactNode, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -19,7 +19,10 @@ import {
   MembershipPageQuery,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { epochFinalizedDate } from "@/lib/membership";
+import {
+  calculateNewMonthlyMembershipReward,
+  epochFinalizedDate,
+} from "@/lib/membership";
 import {
   approveErc20IfRequired,
   approveErc721IfRequired,
@@ -30,7 +33,12 @@ import {
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import { AssetBox, GfiBox, AssetPicker } from "./asset-box";
+import {
+  AssetBox,
+  GfiBox,
+  AssetPicker,
+  AssetBoxPlaceholder,
+} from "./asset-box";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
@@ -102,16 +110,55 @@ export function AddToVault({
   const poolTokensToVault = vaultablePoolTokens.filter((p) =>
     watch("poolTokensToVault").includes(p.id)
   );
-  const selectedCapitalTotal = {
-    token: SupportedCrypto.Usdc,
-    amount: sharesToUsdc(
-      sum("amount", stakedPositionsToVault),
-      sharePrice
-    ).amount.add(sum("principalAmount", poolTokensToVault)),
-  };
+  const selectedCapitalTotal = useMemo(
+    () => ({
+      token: SupportedCrypto.Usdc,
+      amount: sharesToUsdc(
+        sum("amount", stakedPositionsToVault),
+        sharePrice
+      ).amount.add(sum("principalAmount", poolTokensToVault)),
+    }),
+    [stakedPositionsToVault, poolTokensToVault, sharePrice]
+  );
 
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
+
+  const [rewardProjection, setRewardProjection] = useState<{
+    newMonthlyReward: CryptoAmount;
+    diff: CryptoAmount;
+  }>();
+  useEffect(
+    () => {
+      const asyncEffect = async () => {
+        if (!account || !provider) {
+          return;
+        }
+        setRewardProjection(undefined);
+        const projection = await calculateNewMonthlyMembershipReward(
+          account,
+          provider,
+          gfiToVault.amount,
+          selectedCapitalTotal.amount
+        );
+
+        // Minimum wait time to smooth out the animation
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        setRewardProjection(projection);
+      };
+      asyncEffect();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      account,
+      provider,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      gfiToVault.amount.toString(),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      selectedCapitalTotal.amount.toString(),
+    ]
+  );
 
   const onSubmit = async () => {
     if (!provider || !account) {
@@ -319,24 +366,27 @@ export function AddToVault({
           </div>
           <div>
             <SectionHeading leftText="Projected Member Rewards" />
-            <AssetBox
-              asset={{
-                name: "Estimated Member Rewards",
-                description: "(Monthly Average)",
-                usdcAmount: {
-                  token: SupportedCrypto.Usdc,
-                  amount: BigNumber.from(0),
-                },
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: BigNumber.from(0),
-                },
-              }}
-              changeAmount={{
-                token: SupportedCrypto.Usdc,
-                amount: BigNumber.from("1000000"),
-              }}
-            />
+            {rewardProjection ? (
+              <AssetBox
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly Average)",
+                  usdcAmount: sharesToUsdc(
+                    rewardProjection.newMonthlyReward.amount,
+                    sharePrice
+                  ),
+                  nativeAmount: rewardProjection.newMonthlyReward,
+                }}
+                changeAmount={rewardProjection.diff}
+              />
+            ) : (
+              <AssetBoxPlaceholder
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly Average)",
+                }}
+              />
+            )}
           </div>
         </div>
         <div className={step === "review" ? undefined : "hidden"}>
@@ -394,25 +444,28 @@ export function AddToVault({
           <div className="mb-8">
             <SectionHeading leftText="Projected Member Rewards" />
             <Summary>
-              <AssetBox
-                omitWrapperStyle
-                asset={{
-                  name: "Estimated Member Rewards",
-                  description: "(Monthly Average)",
-                  usdcAmount: {
-                    token: SupportedCrypto.Usdc,
-                    amount: BigNumber.from(0),
-                  },
-                  nativeAmount: {
-                    token: SupportedCrypto.Fidu,
-                    amount: BigNumber.from(0),
-                  },
-                }}
-                changeAmount={{
-                  token: SupportedCrypto.Usdc,
-                  amount: BigNumber.from("1000000"),
-                }}
-              />
+              {rewardProjection ? (
+                <AssetBox
+                  omitWrapperStyle
+                  asset={{
+                    name: "Estimated Member Rewards",
+                    description: "(Monthly Average)",
+                    usdcAmount: sharesToUsdc(
+                      rewardProjection.newMonthlyReward.amount,
+                      sharePrice
+                    ),
+                    nativeAmount: rewardProjection.newMonthlyReward,
+                  }}
+                  changeAmount={rewardProjection.diff}
+                />
+              ) : (
+                <AssetBoxPlaceholder
+                  asset={{
+                    name: "Estimated Member Rewards",
+                    description: "(Monthly Average)",
+                  }}
+                />
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   Your next Member Rewards cycle begins
