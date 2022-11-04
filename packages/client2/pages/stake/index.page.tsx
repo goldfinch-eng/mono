@@ -50,6 +50,13 @@ gql`
         ...UnstakeFormPositionFields
         ...MigrateFormPositionFields
       }
+      vaultedStakedPositions {
+        id
+        seniorPoolStakedPosition {
+          id
+          amount
+        }
+      }
     }
     seniorPools(first: 1) {
       id
@@ -96,8 +103,13 @@ export default function StakePage() {
 
   const fiduPositions = data?.user?.stakedFiduPositions ?? [];
   const curvePositions = data?.user?.stakedCurvePositions ?? [];
+  const vaultedFiduPositions =
+    data?.user?.vaultedStakedPositions.map((v) => v.seniorPoolStakedPosition) ??
+    [];
   const fiduStaked = {
-    amount: sum("amount", fiduPositions),
+    amount: sum("amount", fiduPositions).add(
+      sum("amount", vaultedFiduPositions)
+    ),
     token: SupportedCrypto.Fidu,
   };
   const curveStaked = {
@@ -216,10 +228,10 @@ export default function StakePage() {
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
-                        max={fiduStaked}
                         positions={fiduPositions}
                         positionType={StakedPositionType.Fidu}
                         onComplete={refetch}
+                        showVaultWarning={vaultedFiduPositions.length > 0}
                       />
                     </Tab.Panel>
                     <Tab.Panel>
@@ -229,13 +241,13 @@ export default function StakePage() {
                         on Goldfinch.
                       </Paragraph>
                       <MigrateForm
-                        fiduStaked={fiduStaked}
                         usdcBalance={usdcBalance}
                         positions={fiduPositions}
                         sharePrice={
                           data.seniorPools[0].latestPoolStatus.sharePrice
                         }
                         onComplete={refetch}
+                        showVaultWarning={vaultedFiduPositions.length > 0}
                       />
                     </Tab.Panel>
                   </Tab.Panels>
@@ -271,7 +283,6 @@ export default function StakePage() {
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
-                        max={curveStaked}
                         positions={curvePositions}
                         positionType={StakedPositionType.CurveLp}
                         onComplete={refetch}

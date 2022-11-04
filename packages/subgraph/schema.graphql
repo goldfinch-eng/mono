@@ -58,8 +58,10 @@ type SeniorPoolStatus @entity {
 type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
+  vaultedStakedPositions: [VaultedStakedPosition!]! @derivedFrom(field: "user")
 
   tranchedPoolTokens: [TranchedPoolToken!]!
+  vaultedPoolTokens: [VaultedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
