@@ -116,5 +116,16 @@ interface ISeniorPoolEpochWithdrawals {
   );
 
   /// @notice Emitted when an epoch has been checkpointed
-  event EpochEnded(uint256 indexed epochId, uint256 endTime, uint256 usdcAllocated, uint256 fiduLiquidated);
+  /// @param epochId id of epoch that ended
+  /// @param endTime timestamp the epoch ended
+  /// @param fiduRequested amount of FIDU oustanding when the epoch ended
+  /// @param usdcAllocated amount of USDC allocated to liquidate FIDU
+  /// @param fiduLiquidated amount of FIDU liquidated using `usdcAllocated`
+  event EpochEnded(
+    uint256 indexed epochId,
+    uint256 endTime,
+    uint256 fiduRequested,
+    uint256 usdcAllocated,
+    uint256 fiduLiquidated
+  );
 }

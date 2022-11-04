@@ -443,7 +443,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
-    emit EpochEnded(_checkpointedEpochId, epoch.endsAt, epoch.usdcAllocated, epoch.fiduLiquidated);
+    emit EpochEnded(_checkpointedEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
     return newEpoch;
   }
 
