@@ -6,6 +6,10 @@ import { CryptoAmount, SupportedCrypto } from "./graphql/generated";
 
 export const MEMBERSHIP_EPOCH_MS = 604800000;
 
+export function getEpochNumber(timestampMs: number) {
+  return Math.floor(timestampMs / MEMBERSHIP_EPOCH_MS);
+}
+
 export function epochFinalizedDate(
   currentTimestampMs: number,
   /**
@@ -14,8 +18,7 @@ export function epochFinalizedDate(
   epochsFromNow = 1
 ): Date {
   return new Date(
-    (Math.floor(currentTimestampMs / MEMBERSHIP_EPOCH_MS) + epochsFromNow) *
-      MEMBERSHIP_EPOCH_MS
+    (getEpochNumber(currentTimestampMs) + epochsFromNow) * MEMBERSHIP_EPOCH_MS
   );
 }
 
@@ -41,6 +44,7 @@ export async function calculateNewMonthlyMembershipReward(
   const membershipScoreDiff = newMembershipScore.sub(oldMembershipScore);
   const [, totalMemberScore] =
     await membershipOrchestratorContract.totalMemberScores();
+  const newTotalMemberScore = totalMemberScore.add(membershipScoreDiff);
   const oldMonthlyReward =
     oldMembershipScore.isZero() || totalMemberScore.isZero()
       ? BigNumber.from(0)
@@ -50,11 +54,7 @@ export async function calculateNewMonthlyMembershipReward(
           .mul("4");
   const newMonthlyReward = newMembershipScore
     .mul(previousEpochRewardTotal)
-    .div(
-      totalMemberScore.add(membershipScoreDiff).isZero()
-        ? BigNumber.from(1)
-        : totalMemberScore.add(membershipScoreDiff)
-    )
+    .div(newTotalMemberScore.isZero() ? BigNumber.from(1) : newTotalMemberScore)
     .mul("4");
 
   return {
@@ -67,4 +67,43 @@ export async function calculateNewMonthlyMembershipReward(
       amount: newMonthlyReward.sub(oldMonthlyReward),
     },
   };
+}
+
+export async function estimateForfeiture(
+  account: string,
+  provider: JsonRpcProvider,
+  newGfi: BigNumber,
+  newCapital: BigNumber
+) {
+  const membershipOrchestratorContract = await getContract({
+    name: "MembershipOrchestrator",
+    provider,
+  });
+  const { timestamp } = await provider.getBlock("latest");
+  const epoch = getEpochNumber(timestamp * 1000);
+  const epochRewardsThusFar =
+    await membershipOrchestratorContract.estimateRewardsFor(epoch);
+
+  const [, oldMemberScore] = await membershipOrchestratorContract.memberScoreOf(
+    account
+  );
+  const newMemberScore =
+    await membershipOrchestratorContract.estimateMemberScore(
+      account,
+      newGfi,
+      newCapital
+    );
+  const memberScoreDiff = newMemberScore.sub(oldMemberScore);
+  const [, oldTotalMemberScore] =
+    await membershipOrchestratorContract.totalMemberScores();
+  const newTotalMemberScore = oldTotalMemberScore.add(memberScoreDiff);
+
+  const oldExpectedReward = oldTotalMemberScore.isZero()
+    ? BigNumber.from(0)
+    : epochRewardsThusFar.mul(oldMemberScore).div(oldTotalMemberScore);
+  const newExpectedReward = newTotalMemberScore.isZero()
+    ? BigNumber.from(0)
+    : epochRewardsThusFar.mul(newMemberScore).div(newTotalMemberScore);
+
+  return newExpectedReward.sub(oldExpectedReward).abs();
 }

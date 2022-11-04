@@ -18,7 +18,10 @@ import {
   VaultedPoolTokenFieldsFragment,
   CryptoAmount,
 } from "@/lib/graphql/generated";
-import { calculateNewMonthlyMembershipReward } from "@/lib/membership";
+import {
+  calculateNewMonthlyMembershipReward,
+  estimateForfeiture,
+} from "@/lib/membership";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -123,12 +126,27 @@ export function RemoveFromVault({
     newMonthlyReward: CryptoAmount;
     diff: CryptoAmount;
   }>();
+  const [forfeited, setForfeited] = useState<CryptoAmount>({
+    token: SupportedCrypto.Fidu,
+    amount: BigNumber.from(0),
+  });
   useEffect(
     () => {
       const asyncEffect = async () => {
         if (!account || !provider) {
           return;
         }
+
+        const estimatedForfeiture = await estimateForfeiture(
+          account,
+          provider,
+          gfiToUnvault.amount.mul("-1"),
+          capitalToBeRemoved.amount.mul("-1")
+        );
+        setForfeited({
+          token: SupportedCrypto.Fidu,
+          amount: estimatedForfeiture,
+        });
 
         setRewardProjection(undefined);
         const projection = await calculateNewMonthlyMembershipReward(
@@ -414,12 +432,13 @@ export function RemoveFromVault({
                 />
               )}
               <div className="flex items-center justify-between">
-                {/* TODO forfeit amount */}
                 <div className="flex items-center gap-2 text-sm">
                   Rewards forfeited
                   <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />
                 </div>
-                <div className="text-lg font-medium text-clay-500">$420.69</div>
+                <div className="text-lg font-medium text-clay-500">
+                  {formatCrypto(sharesToUsdc(forfeited.amount, sharePrice))}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">

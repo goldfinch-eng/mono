@@ -8,7 +8,7 @@ import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-export function MembershipEpochButton() {
+export function MembershipRewardDistributionButton() {
   const rhfMethods = useForm();
   const { provider, account } = useWallet();
   const onSubmit = async () => {
@@ -41,7 +41,7 @@ export function MembershipEpochButton() {
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <Button size="lg" type="submit">
-        Finalize Membership Epoch
+        Distribute to Member Rewards
       </Button>
     </Form>
   );
