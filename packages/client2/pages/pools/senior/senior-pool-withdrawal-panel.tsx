@@ -114,9 +114,12 @@ export function SeniorPoolWithDrawalPanel({
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">
-              {withdrawalStatus?.usdcWithdrawable
-                ? formatCrypto(withdrawalStatus?.usdcWithdrawable)
-                : null}
+              {formatCrypto(
+                withdrawalStatus?.usdcWithdrawable || {
+                  amount: BigNumber.from("0"),
+                  token: SupportedCrypto.Usdc,
+                }
+              )}
             </div>
             <Icon name="Usdc" size="sm" />
           </div>
@@ -129,9 +132,11 @@ export function SeniorPoolWithDrawalPanel({
           onClick={withdrawWithToken}
           isLoading={isWithdrawing}
           disabled={
+            !withdrawalStatus ||
             withdrawalStatus?.usdcWithdrawable?.amount.lte(
               BigNumber.from("0")
-            ) || isWithdrawing
+            ) ||
+            isWithdrawing
           }
         >
           Withdraw USDC
