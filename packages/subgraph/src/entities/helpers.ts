@@ -8,18 +8,12 @@ import {getOrInitUser} from "./user"
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
-const USDC_DECIMAL_PLACES = 6
-const USDC_DECIMALS = BigInt.fromI32(10).pow(USDC_DECIMAL_PLACES as u8)
 const ONE = BigInt.fromString("1")
 const ZERO = BigInt.fromString("0")
 const ONE_HUNDRED = BigDecimal.fromString("100")
 
 export function fiduFromAtomic(amount: BigInt): BigInt {
   return amount.div(FIDU_DECIMALS)
-}
-
-export function usdcWithFiduPrecision(amount: BigInt): BigInt {
-  return amount.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS)
 }
 
 export function getTotalDeposited(
@@ -176,5 +170,7 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   transaction.category = category
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
+  transaction.amount = BigInt.zero() // just a sane default
+  transaction.amountToken = "USDC" // just a sane default
   return transaction
 }

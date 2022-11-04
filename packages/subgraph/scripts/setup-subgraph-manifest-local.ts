@@ -16,8 +16,7 @@ const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgr
 for (let dataSource of subgraphManifest.dataSources) {
   dataSource.network = "localhost"
   delete dataSource.source.startBlock
-  dataSource.source.address =
-    localhostContracts[dataSource.name as ContractName]?.address ?? "0x0000000000000000000000000000000000000000"
+  dataSource.source.address = localhostContracts[dataSource.name as ContractName].address
 }
 
 for (let dataSource of subgraphManifest.templates) {

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
+import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   StakedPositionType,
@@ -32,7 +33,7 @@ export function StakeForm({
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<StakeFormFields>();
-  const { control } = rhfMethods;
+  const { control, setValue } = rhfMethods;
 
   const onSubmit = async (data: StakeFormFields) => {
     if (!account || !provider) {
@@ -75,6 +76,13 @@ export function StakeForm({
     await onComplete();
   };
 
+  const handleMax = async () => {
+    setValue(
+      "amount",
+      formatCrypto(max, { includeSymbol: false, useMaximumPrecision: true })
+    );
+  };
+
   const validateMax = async (value: string) => {
     const parsedValue = utils.parseUnits(
       value,
@@ -109,7 +117,7 @@ export function StakeForm({
             }
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            maxValue={max.amount}
+            onMaxClick={handleMax}
           />
         </div>
 

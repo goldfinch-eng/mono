@@ -65,8 +65,6 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
           case TransactionCategory.TranchedPoolRepayment:
           case TransactionCategory.TranchedPoolWithdrawal:
           case TransactionCategory.UidMinted:
-          case TransactionCategory.CurveFiduBuy:
-          case TransactionCategory.CurveFiduSell:
             break;
           default:
             assertUnreachable(curr.category);
@@ -95,8 +93,6 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
       case TransactionCategory.TranchedPoolRepayment:
       case TransactionCategory.TranchedPoolWithdrawal:
       case TransactionCategory.UidMinted:
-      case TransactionCategory.CurveFiduBuy:
-      case TransactionCategory.CurveFiduSell:
         return true;
       default:
         return assertUnreachable(tx.category);

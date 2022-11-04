@@ -5,7 +5,6 @@ import { ReactNode, Fragment } from "react";
 import { Icon } from "../icon";
 
 export interface ModalProps {
-  className?: string;
   /**
    * Controls whether or not the modal is currently open. Do not conditionally render the <Modal> component, otherwise the closing animation can't work.
    */
@@ -27,10 +26,6 @@ export interface ModalProps {
    */
   title: ReactNode;
   /**
-   * Size of heading above
-   */
-  titleSize: "md" | "lg";
-  /**
    * Gives a screen-reader accessible description to this modal.
    */
   description?: string;
@@ -41,12 +36,10 @@ export interface ModalProps {
 }
 
 export function Modal({
-  className,
   isOpen,
   onClose,
   children,
   size = "md",
-  titleSize = "md",
   title,
   description,
   divider = true,
@@ -54,6 +47,7 @@ export function Modal({
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog
+        open={isOpen}
         onClose={onClose}
         className="fixed inset-0 z-10 flex items-center justify-center"
       >
@@ -79,8 +73,7 @@ export function Modal({
         >
           <div
             className={clsx(
-              className,
-              "relative mx-2 my-4 w-full rounded-xl bg-white py-6 shadow-2xl",
+              "relative mx-2 my-4 w-full rounded-xl border border-sand-100 bg-white py-6 shadow-2xl",
               size === "xs"
                 ? "max-w-screen-xs"
                 : size === "sm"
@@ -99,12 +92,7 @@ export function Modal({
               )}
             >
               <div>
-                <Dialog.Title
-                  className={clsx(
-                    "font-semibold",
-                    titleSize === "lg" ? "text-3xl font-normal" : "text-lg"
-                  )}
-                >
+                <Dialog.Title className="text-lg font-semibold">
                   {title}
                 </Dialog.Title>
                 {description && (

@@ -3,12 +3,9 @@ import { format } from "date-fns";
 import { useCallback } from "react";
 
 import { Link, ShimmerLines, Table, Icon } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
-  SupportedCrypto,
-  SupportedNft,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
@@ -28,15 +25,8 @@ gql`
       id
       transactionHash
       category
-      sentAmount
-      sentToken
-      sentNftId
-      sentNftType
-      receivedAmount
-      receivedToken
-      receivedNftId
-      receivedNftType
-      fiduPrice
+      amount
+      amountToken
       timestamp
       tranchedPool {
         id
@@ -45,9 +35,13 @@ gql`
   }
 `;
 
-const curvePoolCategories = [
-  TransactionCategory.CurveFiduBuy,
-  TransactionCategory.CurveFiduSell,
+const subtractiveIconTransactionCategories = [
+  TransactionCategory.SeniorPoolRedemption,
+  TransactionCategory.SeniorPoolUnstake,
+  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
+  TransactionCategory.SeniorPoolWithdrawal,
+  TransactionCategory.TranchedPoolDrawdown,
+  TransactionCategory.TranchedPoolWithdrawal,
 ];
 
 const seniorPoolCategories = [
@@ -80,86 +74,22 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
 
   const rows = (isPreview ? filteredTxs.slice(0, 5) : filteredTxs).map(
     (transaction) => {
-      let sentAmount = null,
-        receivedAmount = null;
-
-      if (transaction.sentNftType === SupportedNft.PoolToken) {
-        sentAmount = (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentNftId}`}
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-            >
-              {`Pool Token ID: ${transaction.sentNftId}`}
-            </Link>
-          </div>
-        );
-      } else if (transaction.sentNftType === SupportedNft.StakingToken) {
-        sentAmount = (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentNftId}`}
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-            >
-              {`Staked Token ID: ${transaction.sentNftId}`}
-            </Link>
-          </div>
-        );
-      } else if (
-        transaction.sentToken &&
-        transaction.sentAmount &&
-        !transaction.sentAmount.isZero()
-      ) {
-        sentAmount = (
+      const amount =
+        transaction.amount && !transaction.amount.isZero() ? (
           <FormatWithIcon
             cryptoAmount={{
-              token: transaction.sentToken,
-              amount: transaction.sentAmount,
+              token: transaction.amountToken,
+              amount: transaction.amount,
             }}
+            prefix={
+              subtractiveIconTransactionCategories.includes(
+                transaction.category
+              )
+                ? "-"
+                : "+"
+            }
           />
-        );
-      }
-
-      if (transaction.receivedNftType === SupportedNft.PoolToken) {
-        receivedAmount = (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedNftId}`}
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-            >
-              {`Pool Token ID: ${transaction.receivedNftId}`}
-            </Link>
-          </div>
-        );
-      } else if (transaction.receivedNftType === SupportedNft.StakingToken) {
-        receivedAmount = (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedNftId}`}
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-            >
-              {`Staked Token ID: ${transaction.receivedNftId}`}
-            </Link>
-          </div>
-        );
-      } else if (
-        transaction.receivedToken &&
-        transaction.receivedAmount &&
-        !transaction.receivedAmount.isZero()
-      ) {
-        receivedAmount = (
-          <FormatWithIcon
-            cryptoAmount={{
-              token: transaction.receivedToken,
-              amount: transaction.receivedAmount,
-            }}
-          />
-        );
-      }
+        ) : null;
 
       const date = new Date(transaction.timestamp * 1000);
 
@@ -174,19 +104,8 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         <div key={`${transaction.id}-date`} className="text-left">
           {format(date, "MMM d, y")}
         </div>,
-        <div key={`${transaction.id}-sent`} className="text-left">
-          {sentAmount || "--"}
-        </div>,
-        <div key={`${transaction.id}-received`} className="text-left">
-          {receivedAmount || "--"}
-        </div>,
-        <div key={`${transaction.id}-price`} className="text-left">
-          {(transaction.fiduPrice &&
-            formatCrypto({
-              amount: transaction.fiduPrice,
-              token: SupportedCrypto.Fidu,
-            })) ||
-            "--"}
+        <div key={`${transaction.id}-amount`} className="text-left">
+          {amount}
         </div>,
         <div key={`${transaction.id}-pool`} className="text-left">
           {transaction.tranchedPool ? (
@@ -204,15 +123,6 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
               className="text-sand-400"
             >
               Senior Pool
-            </Link>
-          ) : curvePoolCategories.includes(transaction.category) ? (
-            <Link
-              href="https://curve.fi/factory-crypto/23"
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-              target={"_blank"}
-            >
-              Curve Pool
             </Link>
           ) : null}
         </div>,
@@ -255,7 +165,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
     </div>
   ) : (
     <Table
-      headings={["Type", "Date", "Sent", "Received", "Price", "Links", ""]}
+      headings={["Type", "Date", "Amount", "Link", ""]}
       rows={rows}
       onScrollBottom={!isPreview ? onScrollBottom : undefined}
     />

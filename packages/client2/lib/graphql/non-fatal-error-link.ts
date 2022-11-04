@@ -1,12 +1,5 @@
 import { ApolloLink } from "@apollo/client";
-import {
-  Kind,
-  ArgumentNode,
-  DefinitionNode,
-  OperationDefinitionNode,
-  StringValueNode,
-  EnumValueNode,
-} from "graphql";
+import { Kind, ArgumentNode, DefinitionNode } from "graphql";
 
 const nonFatalErrorArgNode: ArgumentNode = {
   kind: Kind.ARGUMENT,
@@ -30,23 +23,6 @@ const nonFatalErrorArgNode: ArgumentNode = {
  * to opt in to non-fatal errors by default.
  */
 export const nonFatalErrorLink = new ApolloLink((operation, forward) => {
-  // Do not add subgraphError on CMS calls
-  const isCMSOperation = !!(
-    (
-      operation.query.definitions.find(
-        (definition) => definition.kind === "OperationDefinition"
-      ) as OperationDefinitionNode
-    )?.directives
-      ?.find((directive) => directive.name?.value === "api")
-      ?.arguments?.find(
-        (argument) => (argument.value as EnumValueNode)?.value === "cms"
-      )?.value as StringValueNode
-  )?.value;
-
-  if (isCMSOperation) {
-    return forward(operation);
-  }
-
   const queryCopy = { ...operation.query };
   queryCopy.definitions = queryCopy.definitions.map((definitionNode) => {
     if (definitionNode.kind !== Kind.OPERATION_DEFINITION) {

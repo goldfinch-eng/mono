@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
-
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -8,14 +7,13 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
-import {IGFI} from "../../interfaces/IGFI.sol";
 
 /**
  * @title GFI
  * @notice GFI is Goldfinch's governance token.
  * @author Goldfinch
  */
-contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable, IGFI {
+contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable {
   using SafeMath for uint256;
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -23,7 +21,7 @@ contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable, IGFI {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
   /// The maximum number of tokens that can be minted
-  uint256 public override cap;
+  uint256 public cap;
 
   event CapUpdated(address indexed who, uint256 cap);
 
@@ -48,7 +46,7 @@ contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable, IGFI {
    * @notice create and send tokens to a specified address
    * @dev this function will fail if the caller attempts to mint over the current cap
    */
-  function mint(address account, uint256 amount) public override onlyMinter whenNotPaused {
+  function mint(address account, uint256 amount) public onlyMinter whenNotPaused {
     require(mintingAmountIsWithinCap(amount), "Cannot mint more than cap");
     _mint(account, amount);
   }
@@ -57,7 +55,7 @@ contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable, IGFI {
    * @notice sets the maximum number of tokens that can be minted
    * @dev the cap must be greater than the current total supply
    */
-  function setCap(uint256 _cap) external override onlyOwner {
+  function setCap(uint256 _cap) external onlyOwner {
     require(_cap >= totalSupply(), "Cannot decrease the cap below existing supply");
     cap = _cap;
     emit CapUpdated(_msgSender(), cap);

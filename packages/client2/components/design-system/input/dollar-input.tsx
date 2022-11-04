@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
@@ -9,7 +8,6 @@ import {
   GFI_DECIMALS,
   USDC_DECIMALS,
 } from "@/constants";
-import { formatCrypto, formatFiat } from "@/lib/format";
 import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import { Input } from "./input";
@@ -26,13 +24,9 @@ type DollarInputProps = ComponentProps<typeof Input> &
   UseControllerProps<any> & {
     unit?: Unit;
     /**
-     * A BigNumber (or a promise that resolves to a BigNumber) that serves as the value used when the max button is clicked. Note that this is subject to the `unit` prop, and more importantly, this doesn't provide validation. Form validation is still handled through typical React Hook Form functions.
+     * If this prop is included, a "MAX" button will be included on the input. When that button is clicked, this callback will be invoked.
      */
-    maxValue?: BigNumber | (() => Promise<BigNumber>);
-    /**
-     * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
-     */
-    onMaxClick?: (n?: BigNumber) => void;
+    onMaxClick?: () => void;
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
@@ -48,7 +42,6 @@ const unitProperties: Record<Unit, { mask: string; scale: number }> = {
 
 export function DollarInput({
   unit = SupportedCrypto.Usdc,
-  maxValue,
   onMaxClick,
   name,
   rules,
@@ -84,30 +77,10 @@ export function DollarInput({
       onAccept={onChange}
       lazy={false}
       decoration={
-        maxValue || onMaxClick ? (
+        onMaxClick ? (
           <button
             type="button"
-            onClick={async () => {
-              if (maxValue) {
-                const max =
-                  typeof maxValue === "function" ? await maxValue() : maxValue;
-                const formatted: string =
-                  unit === SupportedFiat.Usd
-                    ? formatFiat({ symbol: unit, amount: max.toNumber() })
-                    : formatCrypto(
-                        { token: unit, amount: max },
-                        {
-                          useMaximumPrecision: true,
-                          includeSymbol: false,
-                          includeToken: false,
-                        }
-                      );
-                onChange(formatted.replaceAll(",", ""));
-                onMaxClick?.(max);
-              } else {
-                onMaxClick?.();
-              }
-            }}
+            onClick={onMaxClick}
             className="block rounded-md border border-sky-500 p-2 text-[10px] uppercase leading-none"
           >
             Max

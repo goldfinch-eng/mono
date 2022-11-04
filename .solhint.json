@@ -10,7 +10,7 @@
       "ignoreContractKind": ["interface"],
       "ignoreVisibility": ["internal", "private"],
       "required": {
-        "**/contracts/**": ["onlyAdmin"]
+        "*": ["onlyAdmin"]
       },
       "override": {
         "**/PoolTokens.sol:PoolTokens": {

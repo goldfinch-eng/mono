@@ -78,7 +78,7 @@ export function SeniorPoolSupplyPanel({
   const rhfMethods = useForm<FormFields>({
     defaultValues: { isStaking: true },
   });
-  const { control, register, watch } = rhfMethods;
+  const { control, register, watch, setValue } = rhfMethods;
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
@@ -202,6 +202,15 @@ export function SeniorPoolSupplyPanel({
         user
       );
 
+  const handleMax = async () => {
+    if (!account || !provider) {
+      return;
+    }
+    const usdcContract = await getContract({ name: "USDC", provider });
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
+  };
+
   const validateMaximumAmount = async (value: string) => {
     if (!account || !provider) {
       return;
@@ -236,7 +245,7 @@ export function SeniorPoolSupplyPanel({
   }, [account, provider]);
 
   return (
-    <div className="rounded-xl bg-midnight-01 p-5 text-white">
+    <div className="rounded-xl bg-sunrise-02 p-5 text-white">
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm">Total est. APY</span>
         <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
@@ -351,19 +360,7 @@ export function SeniorPoolSupplyPanel({
                 <span className="text-xs">Balance: {availableBalance}</span>
               }
               className="mb-4"
-              maxValue={async () => {
-                if (!account || !provider) {
-                  throw new Error(
-                    "Wallet not connected when trying to compute max"
-                  );
-                }
-                const usdcContract = await getContract({
-                  name: "USDC",
-                  provider,
-                });
-                const userUsdcBalance = await usdcContract.balanceOf(account);
-                return userUsdcBalance;
-              }}
+              onMaxClick={handleMax}
               rules={{ required: "Required", validate: validateMaximumAmount }}
             />
             <Checkbox

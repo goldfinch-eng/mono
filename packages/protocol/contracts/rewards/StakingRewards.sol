@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
-
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
@@ -26,7 +25,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   using SafeERC20 for IERC20;
   using ConfigHelper for GoldfinchConfig;
 
-  using StakingRewardsVesting for Rewards;
+  using StakingRewardsVesting for StakingRewardsVesting.Rewards;
 
   enum LockupPeriod {
     SixMonths,
@@ -550,7 +549,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     positions[tokenId] = StakedPosition({
       positionType: positionType,
       amount: amount,
-      rewards: Rewards({
+      rewards: StakingRewardsVesting.Rewards({
         totalUnvested: 0,
         totalVested: 0,
         totalPreviouslyVested: 0,
@@ -810,7 +809,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     if (tokenId != 0) {
       uint256 additionalRewards = earnedSinceLastCheckpoint(tokenId);
 
-      Rewards storage rewards = positions[tokenId].rewards;
+      StakingRewardsVesting.Rewards storage rewards = positions[tokenId].rewards;
       rewards.totalUnvested = rewards.totalUnvested.add(additionalRewards);
       rewards.checkpoint();
 
@@ -835,4 +834,43 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function canWithdraw(uint256 tokenId) internal view returns (bool) {
     return positions[tokenId].positionType == StakedPositionType.Fidu;
   }
+
+  /* ========== EVENTS ========== */
+
+  event RewardAdded(uint256 reward);
+  event Staked(
+    address indexed user,
+    uint256 indexed tokenId,
+    uint256 amount,
+    StakedPositionType positionType,
+    uint256 baseTokenExchangeRate
+  );
+  event DepositedAndStaked(address indexed user, uint256 depositedAmount, uint256 indexed tokenId, uint256 amount);
+  event DepositedToCurve(address indexed user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokensReceived);
+  event DepositedToCurveAndStaked(
+    address indexed user,
+    uint256 fiduAmount,
+    uint256 usdcAmount,
+    uint256 indexed tokenId,
+    uint256 amount
+  );
+  event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
+  event UnstakedMultiple(address indexed user, uint256[] tokenIds, uint256[] amounts);
+  event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
+  event UnstakedAndWithdrewMultiple(
+    address indexed user,
+    uint256 usdcReceivedAmount,
+    uint256[] tokenIds,
+    uint256[] amounts
+  );
+  event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
+  event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
 }

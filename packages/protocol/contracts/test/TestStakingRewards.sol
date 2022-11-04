@@ -42,7 +42,7 @@ contract TestStakingRewards is StakingRewards {
     positions[tokenId] = StakedPosition({
       positionType: positionType,
       amount: amount,
-      rewards: Rewards({
+      rewards: StakingRewardsVesting.Rewards({
         totalUnvested: 0,
         totalVested: 0,
         totalPreviouslyVested: 0,

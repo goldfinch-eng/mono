@@ -38,9 +38,6 @@ export function handleTransferSingle(event: TransferSingle): void {
 
   const transaction = createTransactionFromEvent(event, "UID_MINTED", event.params.to)
   transaction.user = transaction.category = "UID_MINTED"
-  // UID NFTs actually don't have a unique ID; they're semi-fungible.
-  transaction.receivedNftId = event.params.id.toString()
-  transaction.sentNftId = event.params.id.toString()
-  transaction.receivedNftType = "UID"
+  transaction.amountToken = "USDC" // (Meaningless value for the sake of the type definition.)
   transaction.save()
 }

@@ -4,10 +4,27 @@ extend type SeniorPool {
   icon: String!
 }
 
+type Borrower {
+  name: String!
+  orgType: String!
+  website: String!
+  linkedIn: String!
+  twitter: String
+  logo: String!
+  headerColor: String!
+  bio: String!
+  highlights: [String!]!
+}
+
 extend type TranchedPool {
   name: String!
-  borrowerName: String!
-  borrowerLogo: String!
+  category: String!
+  description: String!
+  highlights: [String!]
+  icon: String!
+  agreement: String
+  dataroom: String
+  borrower: Borrower!
 }
 
 extend type CreditLine {
@@ -118,11 +135,22 @@ type CurvePool {
   usdcPerLpToken: BigDecimal!
 }
 
+type BackerSecondaryMarketStat {
+  tokenCount: Int!
+  onSaleCount: Int!
+}
+
+type BackerSecondaryMarket {
+  collectionStats: BackerSecondaryMarketStat!
+  poolStats(poolAddress: String!): BackerSecondaryMarketStat!
+}
+
 extend type Query {
   viewer: Viewer!
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
+  backerSecondaryMarket: BackerSecondaryMarket!
   currentBlock: BlockInfo
   curvePool: CurvePool!
 }

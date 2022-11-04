@@ -13,7 +13,6 @@
 
 const nextEnv = require("@next/env");
 const env = nextEnv.loadEnvConfig(".");
-
 const graphQlApiUrl =
   typeof env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
     ? env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL
@@ -26,22 +25,9 @@ if (!graphQlApiUrl) {
   throw new Error("Could not determine GraphQL API URL");
 }
 
-const cmsApiUrl =
-  typeof env.combinedEnv.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
-    ? env.combinedEnv.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
-    : env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? ""
-    : env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "localhost"
-    ? "http://localhost:3010/api/graphql"
-    : null;
-if (!cmsApiUrl) {
-  throw new Error("Could not determine CMS API URL");
-}
-
 module.exports = {
   schema: [
     graphQlApiUrl, // ./lib/graphql/schema.json in case of emergency (see above note)
-    cmsApiUrl,
     "./lib/graphql/client-only-schema.graphql",
   ],
   documents: [

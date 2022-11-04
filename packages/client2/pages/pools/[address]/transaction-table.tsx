@@ -37,15 +37,15 @@ gql`
         id
       }
       category
-      sentAmount
-      sentToken
-      receivedAmount
-      receivedToken
+      amount
+      amountToken
       timestamp
       tranchedPool {
         id
-        borrowerName @client
-        borrowerLogo @client
+        borrower @client {
+          name
+          logo
+        }
       }
     }
   }
@@ -61,8 +61,6 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolRedemption,
 ];
 
-const sentTokenCategories = [TransactionCategory.TranchedPoolDeposit];
-
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
     useTranchedPoolTransactionTableQuery({
@@ -75,20 +73,20 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
 
   const rows = filteredTxs.map((transaction) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const tranchedPool = transaction.tranchedPool!;
+    const borrower = transaction.tranchedPool!.borrower;
 
     const user =
       transaction.category === TransactionCategory.TranchedPoolDrawdown ||
       transaction.category === TransactionCategory.TranchedPoolRepayment ? (
         <div className="flex items-center gap-2">
           <Image
-            src={tranchedPool.borrowerLogo}
+            src={borrower.logo}
             alt=""
             width={24}
             height={24}
             className="shrink-0 overflow-hidden rounded-full"
           />
-          <span>{tranchedPool.borrowerName}</span>
+          <span>{borrower.name}</span>
         </div>
       ) : transaction.category === TransactionCategory.SeniorPoolRedemption ? (
         <div className="flex items-center gap-2">
@@ -99,27 +97,17 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         <Address address={transaction.user.id} />
       );
 
-    let tokenToDisplay = transaction.receivedToken;
-    let amountToDisplay = transaction.receivedAmount;
-
-    if (sentTokenCategories.includes(transaction.category)) {
-      tokenToDisplay = transaction.sentToken;
-      amountToDisplay = transaction.sentAmount;
-    }
-
     const amount =
-      tokenToDisplay && amountToDisplay
-        ? (subtractiveIconTransactionCategories.includes(transaction.category)
-            ? "-"
-            : "+") +
-          formatCrypto(
-            {
-              token: tokenToDisplay,
-              amount: amountToDisplay,
-            },
-            { includeToken: true }
-          )
-        : null;
+      (subtractiveIconTransactionCategories.includes(transaction.category)
+        ? "-"
+        : "+") +
+      formatCrypto(
+        {
+          token: transaction.amountToken,
+          amount: transaction.amount,
+        },
+        { includeToken: true }
+      );
 
     const date = new Date(transaction.timestamp * 1000);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // solhint-disable-next-line max-line-length
 // Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/contracts/interfaces/IMerkleDistributor.sol.
-pragma solidity >=0.6.12;
+pragma solidity 0.6.12;
 
 /// @notice Enables the transfer of GFI rewards (referred to as a "grant"), if the grant details exist in this
 /// contract's Merkle root.

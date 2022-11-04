@@ -11,7 +11,7 @@ import {
 } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { formatPercent } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -32,7 +32,8 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<CurveForm>();
-  const { control, watch, register, setError, clearErrors } = rhfMethods;
+  const { control, setValue, watch, register, setError, clearErrors } =
+    rhfMethods;
 
   const onSubmit = async (data: CurveForm) => {
     if (!account || !provider) {
@@ -86,6 +87,13 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
     }
 
     await onComplete();
+  };
+
+  const handleMax = async () => {
+    setValue(
+      "amount",
+      formatCrypto(balance, { includeSymbol: false, useMaximumPrecision: true })
+    );
   };
 
   const validateMax = async (value: string) => {
@@ -201,7 +209,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
             unit={balance.token}
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            maxValue={balance.amount}
+            onMaxClick={handleMax}
           />
         </div>
 

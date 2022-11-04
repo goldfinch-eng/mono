@@ -7,128 +7,6 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "previousImplementation",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        }
-      ],
-      "name": "ProxyImplementationUpdated",
-      "type": "event"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "fallback"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes4",
-          "name": "id",
-          "type": "bytes4"
-        }
-      ],
-      "name": "supportsInterface",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        }
-      ],
-      "name": "upgradeTo",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        },
-        {
-          "internalType": "bytes",
-          "name": "data",
-          "type": "bytes"
-        }
-      ],
-      "name": "upgradeToAndCall",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "receive"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
           "name": "capitalProvider",
           "type": "address"
         },
@@ -152,44 +30,19 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "newDuration",
-          "type": "uint256"
-        }
-      ],
-      "name": "EpochDurationChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
-          "internalType": "uint256",
-          "name": "epochId",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "who",
+          "type": "address"
         },
         {
           "indexed": false,
-          "internalType": "uint256",
-          "name": "endTime",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "usdcAllocated",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fiduLiquidated",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "configAddress",
+          "type": "address"
         }
       ],
-      "name": "EpochEnded",
+      "name": "GoldfinchConfigUpdated",
       "type": "event"
     },
     {
@@ -324,25 +177,6 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "ReserveSharesCollected",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
           "internalType": "bytes32",
           "name": "role",
           "type": "bytes32"
@@ -406,80 +240,6 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint256",
-          "name": "epochId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "operator",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "kycAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fiduRequested",
-          "type": "uint256"
-        }
-      ],
-      "name": "WithdrawalAddedTo",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "epochId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "operator",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "kycAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fiduCanceled",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "reserveFidu",
-          "type": "uint256"
-        }
-      ],
-      "name": "WithdrawalCanceled",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
           "internalType": "address",
           "name": "capitalProvider",
           "type": "address"
@@ -498,37 +258,6 @@
         }
       ],
       "name": "WithdrawalMade",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "epochId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "operator",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "kycAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fiduRequested",
-          "type": "uint256"
-        }
-      ],
-      "name": "WithdrawalRequested",
       "type": "event"
     },
     {
@@ -604,24 +333,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "fiduAmount",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "addToWithdrawalRequest",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "assets",
       "outputs": [
@@ -654,14 +365,8 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "cancelWithdrawalRequest",
+      "inputs": [],
+      "name": "compoundBalance",
       "outputs": [
         {
           "internalType": "uint256",
@@ -669,26 +374,7 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimWithdrawalRequest",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -699,41 +385,6 @@
           "internalType": "contract GoldfinchConfig",
           "name": "",
           "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "currentEpoch",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "endsAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fiduRequested",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fiduLiquidated",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "usdcAllocated",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct ISeniorPoolEpochWithdrawals.Epoch",
-          "name": "",
-          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -798,19 +449,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "epochDuration",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "contract ITranchedPool",
@@ -833,7 +471,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "usdcAmount",
+          "name": "amount",
           "type": "uint256"
         }
       ],
@@ -953,6 +591,13 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "initZapperRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -971,13 +616,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "initializeEpochs",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "contract ITranchedPool",
@@ -986,19 +624,26 @@
         }
       ],
       "name": "invest",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [],
       "name": "isAdmin",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isZapper",
       "outputs": [
         {
           "internalType": "bool",
@@ -1063,25 +708,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "fiduAmount",
-          "type": "uint256"
-        }
-      ],
-      "name": "requestWithdrawal",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "bytes32",
           "name": "role",
           "type": "bytes32"
@@ -1093,19 +719,6 @@
         }
       ],
       "name": "revokeRole",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "newEpochDuration",
-          "type": "uint256"
-        }
-      ],
-      "name": "setEpochDuration",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1125,15 +738,16 @@
     },
     {
       "inputs": [],
-      "name": "sharesOutstanding",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "sweepFromCompound",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "sweepToCompound",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -1167,19 +781,6 @@
       "name": "unpause",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "usdcAvailable",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -1228,45 +829,28 @@
           "type": "uint256"
         }
       ],
-      "name": "withdrawalRequest",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "epochCursor",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "usdcWithdrawable",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fiduRequested",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct ISeniorPoolEpochWithdrawals.WithdrawalRequest",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "writedown",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
         {
+          "internalType": "contract ITranchedPool",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "writedowns",
+      "outputs": [
+        {
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "",
           "type": "uint256"
         }
       ],
-      "name": "writedown",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -1308,6 +892,128 @@
       ],
       "stateMutability": "payable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousImplementation",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "ProxyImplementationUpdated",
+      "type": "event"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "id",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeTo",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
     }
   ],
   "transactionHash": "0x5a2ad13fdde8afb2616116d5266a75369efe240ab11fee27ca4c3aa5a7589b63",

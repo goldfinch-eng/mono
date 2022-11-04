@@ -838,12 +838,6 @@ event DepositedToCurve(address user, uint256 fiduAmount, uint256 usdcAmount, uin
 event DepositedToCurveAndStaked(address user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokenId, uint256 amount)
 ```
 
-### AddToStake
-
-```solidity
-event AddToStake(address user, uint256 tokenId, uint256 amount, enum StakingRewards.StakedPositionType positionType)
-```
-
 ### Unstaked
 
 ```solidity

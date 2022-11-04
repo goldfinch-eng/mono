@@ -39,33 +39,28 @@ gql`
         id
       }
       timestamp
+      amount
+      amountToken
       category
-      sentAmount
-      sentToken
-      receivedAmount
-      receivedToken
       tranchedPool {
         id
         name @client
-        borrowerName @client
-        borrowerLogo @client
+        icon @client
+        borrower @client {
+          name
+          logo
+        }
       }
     }
   }
 `;
 
-const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
+const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolWithdrawal,
   TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
-]);
-
-const sentTokenCategories = new Set<TransactionCategory>([
-  TransactionCategory.SeniorPoolStake,
-  TransactionCategory.SeniorPoolDepositAndStake,
-  TransactionCategory.TranchedPoolRepayment,
-]);
+];
 
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
@@ -79,28 +74,17 @@ export function TransactionTable() {
 
   const transactions = filteredTxs.map((transaction) => {
     const date = new Date(transaction.timestamp * 1000);
-
-    let tokenToDisplay = transaction.receivedToken;
-    let amountToDisplay = transaction.receivedAmount;
-
-    if (sentTokenCategories.has(transaction.category)) {
-      tokenToDisplay = transaction.sentToken;
-      amountToDisplay = transaction.sentAmount;
-    }
-
     const transactionAmount =
-      tokenToDisplay && amountToDisplay
-        ? (subtractiveIconTransactionCategories.has(transaction.category)
-            ? "-"
-            : "+") +
-          formatCrypto(
-            {
-              token: tokenToDisplay,
-              amount: amountToDisplay,
-            },
-            { includeToken: true }
-          )
-        : null;
+      (subtractiveIconTransactionCategories.includes(transaction.category)
+        ? "-"
+        : "+") +
+      formatCrypto(
+        {
+          token: transaction.amountToken,
+          amount: transaction.amount,
+        },
+        { includeToken: true }
+      );
 
     return [
       <div key={`${transaction.id}-user`} className="flex items-center gap-2">
@@ -108,13 +92,13 @@ export function TransactionTable() {
         transaction.category === TransactionCategory.TranchedPoolRepayment ? (
           <>
             <Image
-              src={transaction.tranchedPool?.borrowerLogo as string}
+              src={transaction.tranchedPool?.icon as string}
               width={24}
               height={24}
               className="shrink-0 overflow-hidden rounded-full"
               alt=""
             />
-            <div>{transaction.tranchedPool?.borrowerName}</div>
+            <div>{transaction.tranchedPool?.borrower.name}</div>
           </>
         ) : (
           <Address address={transaction.user.id} />

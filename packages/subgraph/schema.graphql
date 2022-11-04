@@ -34,6 +34,7 @@ type SeniorPoolStatus @entity {
   """
   id: ID!
   rawBalance: BigInt!
+  compoundBalance: BigInt!
   balance: BigInt!
   """
   The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
@@ -224,7 +225,6 @@ enum TransactionCategory {
   SENIOR_POOL_STAKE
   SENIOR_POOL_WITHDRAWAL
   SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
-  SENIOR_POOL_WITHDRAWAL_REQUEST
   # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction
   # category, because UnstakedAndWithdrew and UnstakedAndWithdrewMultiple events are emitted by
   # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we
@@ -248,8 +248,6 @@ enum TransactionCategory {
   TRANCHED_POOL_REPAYMENT
   TRANCHED_POOL_DRAWDOWN
   UID_MINTED
-  CURVE_FIDU_BUY
-  CURVE_FIDU_SELL
 }
 
 enum SupportedCrypto {
@@ -257,12 +255,6 @@ enum SupportedCrypto {
   GFI
   FIDU
   CURVE_LP
-}
-
-enum SupportedNft {
-  STAKING_TOKEN
-  POOL_TOKEN
-  UID
 }
 
 type Transaction @entity(immutable: true) {
@@ -275,20 +267,9 @@ type Transaction @entity(immutable: true) {
   user: User!
   timestamp: Int!
   blockNumber: Int!
-
-  sentAmount: BigInt
-  sentToken: SupportedCrypto
-  sentNftId: String
-  sentNftType: SupportedNft
-
-  receivedAmount: BigInt
-  receivedToken: SupportedCrypto
-  receivedNftId: String
-  receivedNftType: SupportedNft
-
+  amount: BigInt!
+  amountToken: SupportedCrypto!
   tranchedPool: TranchedPool
-
-  fiduPrice: BigInt
 }
 
 type Zap @entity {
@@ -322,11 +303,4 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
-}
-
-type WithdrawalRequest @entity {
-  id: ID!
-  epochId: BigInt!
-  user: User!
-  amount: BigInt!
 }
