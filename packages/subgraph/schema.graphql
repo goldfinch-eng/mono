@@ -343,3 +343,11 @@ enum WithdrawalTransactionCategory {
   ADD_TO_WITHDRAWAL_REQUEST
   CANCEL_WITHDRAWAL_REQUEST
 }
+
+type Epoch @entity {
+  id: ID!
+  endsAt: Int!
+  fiduRequested: BigInt!
+  usdcAllocated: BigInt!
+  fiduLiquidated: BigInt!
+}

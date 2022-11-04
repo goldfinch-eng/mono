@@ -105,8 +105,14 @@ type Viewer {
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
   curveLpBalance: CryptoAmount
-  withdrawalToken: BigInt
   gfiGrants: [GfiGrant!]!
+  withdrawalStatus: WithdrawalStatus
+}
+
+type WithdrawalStatus {
+  usdcWithdrawable: CryptoAmount
+  fiduRequested: CryptoAmount
+  withdrawalToken: BigInt
 }
 
 type EpochInfo {

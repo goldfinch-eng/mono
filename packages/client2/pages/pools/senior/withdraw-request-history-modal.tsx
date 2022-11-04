@@ -1,43 +1,39 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { format } from "date-fns";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Modal, ShimmerLines } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
-  useWithdrawRequestTransactionsQuery,
-  TransactionCategory,
+  useWithdrawalHistoryQuery,
   SupportedCrypto,
   EpochInfo,
+  WithdrawalTransactionCategory,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 gql`
-  query WithdrawRequestTransactions($account: String!) {
-    transactions(
+  query WithdrawalHistory($account: String!) {
+    withdrawalTransactions(
+      where: { user: $account, category_not: CANCEL_WITHDRAWAL_REQUEST }
       orderBy: timestamp
-      orderDirection: desc
-      where: {
-        user: $account
-        category_in: [
-          SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST
-          SENIOR_POOL_WITHDRAWAL_REQUEST
-        ]
-      }
+      orderDirection: asc
     ) {
       id
-      transactionHash
+      epochId
+      amount
       category
-      sentAmount
-      sentToken
-      sentNftId
-      sentNftType
-      receivedAmount
-      receivedToken
-      receivedNftId
-      receivedNftType
-      fiduPrice
       timestamp
+      blockNumber
+      category
+    }
+    epoches {
+      id
+      fiduRequested
+      fiduLiquidated
+      usdcAllocated
+      endsAt
     }
   }
 `;
@@ -53,43 +49,99 @@ export default function WithdrawHistoryModal({
   onClose,
   currentEpoch,
 }: WithdrawHistoryModalProps) {
+  const decimals = BigNumber.from("1000000000000000000"); // 1e18
+
   const { account } = useWallet();
 
-  const { data, error, loading } = useWithdrawRequestTransactionsQuery({
+  const { data, error, loading } = useWithdrawalHistoryQuery({
     variables: {
       account: account?.toLowerCase() ?? "",
     },
   });
 
+  // Create rows
   const rows: string[][] = [];
 
-  data?.transactions.forEach((transaction) => {
-    const label =
-      transaction.category === TransactionCategory.SeniorPoolWithdrawalRequest
+  // Setup temp data
+  let tempEpochId: string;
+  let tempUserTotal: FixedNumber = FixedNumber.from("0");
+  let distributionCount = 0;
+
+  // Loop all transactions and calculate distributions for each new epoch encountered
+  data?.withdrawalTransactions.forEach((transaction) => {
+    // If encoutering new epoch ID, calculate distribution for previous
+    if (tempEpochId !== transaction.epochId.toString()) {
+      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+
+      if (epochData) {
+        // Get liquidation percentage
+        const liquidatedPercentage = FixedNumber.from(
+          epochData.fiduLiquidated
+        ).divUnsafe(FixedNumber.from(epochData.fiduRequested));
+
+        // Calculate user's take
+        const amountDistributed = tempUserTotal.mulUnsafe(liquidatedPercentage);
+
+        // Get new total
+        tempUserTotal = tempUserTotal.subUnsafe(amountDistributed);
+
+        // Push distrubution row to array
+        rows.push([
+          `Distribution ${distributionCount}`,
+          format(new Date(epochData.endsAt * 1000), "MMM d, y"),
+          `-${formatCrypto({
+            amount: BigNumber.from(amountDistributed).div(decimals),
+            token: SupportedCrypto.Fidu,
+          })}`,
+          formatCrypto({
+            amount: BigNumber.from(tempUserTotal).div(decimals),
+            token: SupportedCrypto.Fidu,
+          }),
+        ]);
+      }
+
+      // Increment distribution count
+      distributionCount++;
+
+      // Set new epoch ID
+      tempEpochId = transaction.epochId.toString();
+    }
+
+    // Add to users total
+    tempUserTotal = tempUserTotal.addUnsafe(
+      FixedNumber.from(transaction.amount) ?? FixedNumber.from("0")
+    );
+
+    // Push request row to array
+    rows.push([
+      transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
         ? "Initial request"
         : transaction.category ===
-          TransactionCategory.SeniorPoolAddToWithdrawalRequest
+          WithdrawalTransactionCategory.AddToWithdrawalRequest
         ? "Increase request"
-        : "";
-
-    const date = new Date(transaction.timestamp * 1000);
-
-    const change = transaction.sentAmount
-      ? `+${formatCrypto({
-          amount: transaction.sentAmount,
-          token: SupportedCrypto.Fidu,
-        })}`
-      : "";
-
-    rows.push([label, format(date, "MMM d, y"), change, ""]);
+        : "",
+      format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+      transaction.amount
+        ? `+${formatCrypto({
+            amount: transaction.amount,
+            token: SupportedCrypto.Fidu,
+          })}`
+        : "",
+      formatCrypto({
+        amount: BigNumber.from(tempUserTotal).div(decimals),
+        token: SupportedCrypto.Fidu,
+      }),
+    ]);
   });
 
-  rows.push([
-    "Next Distribution",
-    format(currentEpoch.endTime.mul(1000).toNumber(), "MMM d, y"),
-    "TBD",
-    "TBD",
-  ]);
+  if (currentEpoch) {
+    rows.push([
+      "Next Distribution",
+      format(currentEpoch.endTime.mul(1000).toNumber(), "MMM d, y"),
+      "TBD",
+      "TBD",
+    ]);
+  }
 
   return (
     <Modal
@@ -142,19 +194,23 @@ function RequestTable({ rows }: { rows: string[][] }) {
       </thead>
       <tbody className="border border-sand-200 ">
         {rows.map((r, idx) => (
-          <RequestTableRow items={r} key={`request-history-row-${idx}`} />
+          <RequestTableRow
+            items={r}
+            row={idx}
+            key={`request-history-row-${idx}`}
+          />
         ))}
       </tbody>
     </table>
   );
 }
 
-function RequestTableRow({ items }: { items: string[] }) {
+function RequestTableRow({ items, row }: { items: string[]; row: number }) {
   return (
     <tr className="border-b border-b-sand-200">
       {items.map((item, idx) => (
         <td
-          key={`request-history-item-${item}`}
+          key={`request-history-item-${row}-${idx}-${item}`}
           className={clsx(
             "px-3 py-2",
             idx === 0

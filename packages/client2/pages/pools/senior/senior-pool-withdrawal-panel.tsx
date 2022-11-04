@@ -1,7 +1,7 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { format } from "date-fns";
 import { BigNumber } from "ethers";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
@@ -11,6 +11,7 @@ import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
   EpochInfo,
+  WithdrawalStatus,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
@@ -27,22 +28,20 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
 `;
 
 interface SeniorPoolWithdrawalPanelProps {
-  withdrawalToken?: BigNumber | null;
+  withdrawalStatus?: WithdrawalStatus | null;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
   currentEpoch?: EpochInfo | null;
-  currentRequest?: BigNumber | null;
 }
 
 export function SeniorPoolWithDrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
-  withdrawalToken,
+  withdrawalStatus,
   currentEpoch,
-  currentRequest,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
   const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
@@ -55,37 +54,15 @@ export function SeniorPoolWithDrawalPanel({
     totalUserFidu,
     seniorPoolSharePrice
   ).amount;
-  const [withdrawableAmount, setWithdrawableAmount] = useState<BigNumber>(
-    BigNumber.from("0")
-  );
   const currentRequestUsdc = sharesToUsdc(
-    currentRequest ?? BigNumber.from("0"),
+    withdrawalStatus?.fiduRequested?.amount ?? BigNumber.from("0"),
     seniorPoolSharePrice
   ).amount;
 
   const apolloClient = useApolloClient();
 
-  useEffect(() => {
-    const getWithdrawPreview = async () => {
-      if (provider && withdrawalToken) {
-        const seniorPoolContract = await getContract({
-          name: "SeniorPool",
-          provider,
-        });
-
-        const preview = await seniorPoolContract.withdrawalRequest(
-          withdrawalToken
-        );
-
-        setWithdrawableAmount(preview.usdcWithdrawable);
-      }
-    };
-
-    getWithdrawPreview();
-  }, [provider, withdrawalToken]);
-
   const withdrawWithToken = async () => {
-    if (withdrawalToken && provider) {
+    if (withdrawalStatus?.withdrawalToken && provider) {
       setIsWithdrawing(true);
 
       const seniorPoolContract = await getContract({
@@ -94,7 +71,9 @@ export function SeniorPoolWithDrawalPanel({
       });
 
       try {
-        await seniorPoolContract.claimWithdrawalRequest(withdrawalToken);
+        await seniorPoolContract.claimWithdrawalRequest(
+          withdrawalStatus?.withdrawalToken
+        );
         await apolloClient.refetchQueries({ include: "active" });
 
         setIsWithdrawing(false);
@@ -110,7 +89,7 @@ export function SeniorPoolWithDrawalPanel({
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between gap-1 text-sm">
             <div>Your current position value</div>
-            <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
+            <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
           </div>
           <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
             {formatCrypto({
@@ -131,14 +110,13 @@ export function SeniorPoolWithDrawalPanel({
         <div className="mb-5">
           <div className="mb-2 flex items-center justify-between gap-2 text-sm">
             <div>Available to withdraw</div>
-            <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
+            <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">
-              {formatCrypto({
-                token: SupportedCrypto.Usdc,
-                amount: withdrawableAmount,
-              })}
+              {withdrawalStatus?.usdcWithdrawable
+                ? formatCrypto(withdrawalStatus?.usdcWithdrawable)
+                : null}
             </div>
             <Icon name="Usdc" size="sm" />
           </div>
@@ -151,13 +129,15 @@ export function SeniorPoolWithDrawalPanel({
           onClick={withdrawWithToken}
           isLoading={isWithdrawing}
           disabled={
-            withdrawableAmount.lte(BigNumber.from("0")) || isWithdrawing
+            withdrawalStatus?.usdcWithdrawable?.amount.lte(
+              BigNumber.from("0")
+            ) || isWithdrawing
           }
         >
           Withdraw USDC
         </Button>
 
-        {withdrawalToken ? (
+        {withdrawalStatus?.withdrawalToken ? (
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Withdrawal request</div>
@@ -165,13 +145,11 @@ export function SeniorPoolWithDrawalPanel({
             </div>
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
-                {formatCrypto(
-                  {
-                    token: SupportedCrypto.Fidu,
-                    amount: currentRequest ?? BigNumber.from("0"),
-                  },
-                  { includeToken: true }
-                )}
+                {withdrawalStatus?.fiduRequested
+                  ? formatCrypto(withdrawalStatus?.fiduRequested, {
+                      includeToken: true,
+                    })
+                  : null}
               </div>
               <div className="text-sm">
                 {formatCrypto(
@@ -259,8 +237,8 @@ export function SeniorPoolWithDrawalPanel({
       />
 
       <WithdrawCancelRequestModal
-        withdrawalToken={withdrawalToken}
-        currentRequest={currentRequest}
+        withdrawalToken={withdrawalStatus?.withdrawalToken}
+        currentRequest={withdrawalStatus?.fiduRequested?.amount}
         isOpen={cancelModalOpen}
         onClose={() => {
           setCancelModalOpen(false);
@@ -273,10 +251,10 @@ export function SeniorPoolWithDrawalPanel({
       />
 
       <WithdrawRequestModal
-        currentRequest={currentRequest}
+        currentRequest={withdrawalStatus?.fiduRequested?.amount}
         currentEpoch={currentEpoch}
         sharePrice={seniorPoolSharePrice}
-        withdrawalToken={withdrawalToken}
+        withdrawalToken={withdrawalStatus?.withdrawalToken}
         balanceWallet={fiduBalance}
         balanceStaked={{
           amount: totalUserStakedFidu,
@@ -292,19 +270,6 @@ export function SeniorPoolWithDrawalPanel({
         }}
         onComplete={async () => {
           setWithrawModalOpen(false);
-
-          if (provider && withdrawalToken) {
-            const seniorPoolContract = await getContract({
-              name: "SeniorPool",
-              provider,
-            });
-
-            const preview = await seniorPoolContract.withdrawalRequest(
-              withdrawalToken
-            );
-
-            setWithdrawableAmount(preview.usdcWithdrawable);
-          }
 
           await apolloClient.refetchQueries({ include: "active" });
         }}

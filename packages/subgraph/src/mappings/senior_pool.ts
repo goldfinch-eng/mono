@@ -1,4 +1,4 @@
-import {Address, store} from "@graphprotocol/graph-ts"
+import {Address, BigInt, store} from "@graphprotocol/graph-ts"
 import {
   SeniorPool,
   DepositMade,
@@ -12,8 +12,10 @@ import {
   WithdrawalRequested,
   WithdrawalAddedTo,
   WithdrawalCanceled,
+  EpochEnded,
 } from "../../generated/SeniorPool/SeniorPool"
-import {WithdrawalRequest} from "../../generated/schema"
+import {WithdrawalTransaction, Epoch} from "../../generated/schema"
+
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
@@ -167,4 +169,17 @@ export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void
   withdrawalTransaction.timestamp = event.block.timestamp.toI32()
   withdrawalTransaction.blockNumber = event.block.number.toI32()
   withdrawalTransaction.save()
+}
+
+export function handleEpochEnded(event: EpochEnded): void {
+  updatePoolStatus(event.address)
+
+  const epoch = new Epoch(event.params.epochId.toString())
+
+  epoch.endsAt = event.params.endTime.toI32()
+  epoch.fiduRequested = event.params.fiduRequested
+  epoch.usdcAllocated = event.params.usdcAllocated
+  epoch.fiduLiquidated = event.params.fiduLiquidated
+
+  epoch.save()
 }

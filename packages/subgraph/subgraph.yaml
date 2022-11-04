@@ -24,6 +24,7 @@ dataSources:
         - CapitalProviderStatus
         - Transaction
         - WithdrawalRequest
+        - EpochInfo
       abis:
         - name: SeniorPool
           file: ./abis/SeniorPool.json
@@ -56,6 +57,8 @@ dataSources:
           handler: handleAddToWithdrawalRequest
         - event: "WithdrawalCanceled(indexed uint256,indexed address,address,uint256,uint256)"
           handler: handleWithdrawalRequestCanceled
+        - event: "EpochEnded(indexed uint256,uint256,uint256,uint256,uint256)"
+          handler: handleEpochEnded
   - kind: ethereum/contract
     name: GoldfinchFactory
     network: mainnet
