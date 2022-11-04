@@ -157,11 +157,20 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     uint256 shares = sp.deposit(amount);
     sp.requestWithdrawal(shares);
+    ISeniorPoolEpochWithdrawals.Epoch memory epoch = sp.epochAt(1);
 
-    vm.warp(block.timestamp + sp.epochDuration() * epochsElapsed);
+    vm.warp(epoch.endsAt + sp.epochDuration() * epochsElapsed);
 
     // This deposit should trigger an allocation of (amount - 1) USDC.
     fundAddress(user, usdcVal(1));
+    vm.expectEmit(true, false, false, true);
+    emit EpochEnded({
+      epochId: 1,
+      endTime: epoch.endsAt + sp.epochDuration() * epochsElapsed,
+      fiduRequested: epoch.fiduRequested,
+      usdcAllocated: amount,
+      fiduLiquidated: shares
+    });
     sp.deposit(usdcVal(1));
     assertEq(sp.usdcAvailable(), usdcVal(1));
 
@@ -2772,4 +2781,12 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     assertApproxEqAbs(sp.calculateWritedown(poolToken), expectedWritedown, thresholdUsdc());
   }
+
+  event EpochEnded(
+    uint256 indexed epochId,
+    uint256 endTime,
+    uint256 fiduRequested,
+    uint256 usdcAllocated,
+    uint256 fiduLiquidated
+  );
 }

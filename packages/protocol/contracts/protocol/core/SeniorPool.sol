@@ -440,10 +440,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     epoch.endsAt = checkpointedEpoch.endsAt;
 
     _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
+    uint256 endingEpochId = _checkpointedEpochId;
     Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
-    emit EpochEnded(_checkpointedEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
+    emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
     return newEpoch;
   }
 
