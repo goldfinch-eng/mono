@@ -105,9 +105,10 @@ gql`
 
 export default function MembershipPage() {
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
   const { data, loading, error } = useMembershipPageQuery({
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
+    skip: !account,
   });
 
   const vaultableCapitalAssets: Asset[] = [];
@@ -170,11 +171,11 @@ export default function MembershipPage() {
         onClose={() => setIsExplainerOpen(false)}
       />
 
-      {!account && !loading ? (
-        <div>You must connect your wallet to view your membership vault</div>
-      ) : error ? (
+      {error ? (
         <div className="text-clay-500">Error: {error.message}</div>
-      ) : !data || loading ? (
+      ) : !account && !isActivating ? (
+        <div>You must connect your wallet to view your membership vault</div>
+      ) : !data || loading || isActivating ? (
         <div>Loading...</div>
       ) : (
         <>

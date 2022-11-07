@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
 import {
@@ -31,31 +31,28 @@ import { UnstakeForm, UNSTAKE_FORM_POSITION_FIELDS } from "./unstake-form";
 gql`
   ${UNSTAKE_FORM_POSITION_FIELDS}
   ${MIGRATE_FORM_POSITION_FIELDS}
-  query StakePage($userId: ID!) {
-    user(id: $userId) {
+  query StakePage($userId: String!) {
+    stakedFiduPositions: seniorPoolStakedPositions(
+      where: { user: $userId, positionType: Fidu, amount_gt: 0 }
+    ) {
       id
-      stakedFiduPositions: seniorPoolStakedPositions(
-        where: { positionType: Fidu, amount_not: "0" }
-      ) {
+      amount
+      ...UnstakeFormPositionFields
+      ...MigrateFormPositionFields
+    }
+    stakedCurvePositions: seniorPoolStakedPositions(
+      where: { user: $userId, positionType: CurveLP, amount_gt: 0 }
+    ) {
+      id
+      amount
+      ...UnstakeFormPositionFields
+      ...MigrateFormPositionFields
+    }
+    vaultedStakedPositions(where: { user: $userId }) {
+      id
+      seniorPoolStakedPosition {
         id
         amount
-        ...UnstakeFormPositionFields
-        ...MigrateFormPositionFields
-      }
-      stakedCurvePositions: seniorPoolStakedPositions(
-        where: { positionType: CurveLP, amount_not: "0" }
-      ) {
-        id
-        amount
-        ...UnstakeFormPositionFields
-        ...MigrateFormPositionFields
-      }
-      vaultedStakedPositions {
-        id
-        seniorPoolStakedPosition {
-          id
-          amount
-        }
       }
     }
     seniorPools(first: 1) {
@@ -97,15 +94,23 @@ gql`
 export default function StakePage() {
   const { account } = useWallet();
 
-  const { data, error, loading, refetch } = useStakePageQuery({
+  const { data, error, loading } = useStakePageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
-  const fiduPositions = data?.user?.stakedFiduPositions ?? [];
-  const curvePositions = data?.user?.stakedCurvePositions ?? [];
+  const apolloClient = useApolloClient();
+  const refetch = async () => {
+    apolloClient.refetchQueries({
+      updateCache(cache) {
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
+  };
+
+  const fiduPositions = data?.stakedFiduPositions ?? [];
+  const curvePositions = data?.stakedCurvePositions ?? [];
   const vaultedFiduPositions =
-    data?.user?.vaultedStakedPositions.map((v) => v.seniorPoolStakedPosition) ??
-    [];
+    data?.vaultedStakedPositions.map((v) => v.seniorPoolStakedPosition) ?? [];
   const fiduStaked = {
     amount: sum("amount", fiduPositions).add(
       sum("amount", vaultedFiduPositions)
@@ -113,7 +118,7 @@ export default function StakePage() {
     token: SupportedCrypto.Fidu,
   };
   const curveStaked = {
-    amount: sum("amount", data?.user?.stakedCurvePositions),
+    amount: sum("amount", curvePositions),
     token: SupportedCrypto.CurveLp,
   };
   const fiduBalance = data?.viewer.fiduBalance ?? {
