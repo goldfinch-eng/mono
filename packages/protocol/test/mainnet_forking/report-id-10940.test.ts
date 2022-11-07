@@ -62,7 +62,7 @@ const setupTest = hre.deployments.createFixture(async ({deployments}) => {
   }
 })
 
-describe("Report ID 10940", async function () {
+describe.skip("Report ID 10940", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let go: GoInstance,

@@ -334,7 +334,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
 
       const usdcBalance = await curvePool.balances(1)
       const userUsdcBalance = await usdc.balanceOf(goListedUser)
-      expect(usdcBalance).to.bignumber.closeTo(usdcBalanceBefore.sub(userUsdcBalance), new BN(2))
+      expect(usdcBalance).to.bignumber.closeTo(usdcBalanceBefore.sub(userUsdcBalance), new BN(3))
     })
 
     it("updates the total supply of Curve LP tokens correctly", async () => {
@@ -394,7 +394,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
       const {usdc} = resources
 
       const userUsdcBalance = await usdc.balanceOf(goListedUser)
-      expect(userUsdcBalance).to.bignumber.closeTo(new BN(0), new BN(2))
+      expect(userUsdcBalance).to.bignumber.closeTo(new BN(0), new BN(3))
     })
 
     it("updates the total balance of FIDU in the Curve pool correctly", async () => {
@@ -585,10 +585,7 @@ async function setupResources({deployments}: {deployments: DeploymentsExtension}
   assertNonNullable(owner)
   assertNonNullable(bwr)
 
-  // Ensure the multisig has funds for various transactions
-  const ownerAccount = await getSignerForAddress(owner)
-  assertNonNullable(ownerAccount)
-  await ownerAccount.sendTransaction({to: MAINNET_GOVERNANCE_MULTISIG, value: ethers.utils.parseEther("10.0")})
+  await fundWithWhales(["ETH"], [owner, MAINNET_GOVERNANCE_MULTISIG])
 
   // Impersonate multisig
   await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)

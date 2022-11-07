@@ -85,15 +85,21 @@ describe("StakingRewards", () => {
 
   describe("curve lp", () => {
     describe("account with pre-migration position", () => {
-      // Randomly selected curve lp account & position found on etherscan
-      // endTime is in May 2023 so position is still vesting
-      const account = "0xbe578990c8084e118a259f133df2b5708c56d170"
-      const tokenId = new BN(1380)
-      const amount = new BN("51260962339595996369787")
+      let account
+      const tokenId = new BN(1438)
+      let amount
 
-      beforeEach(async () => {
+      const setup = deployments.createFixture(async () => {
+        const position = await stakingRewards.getPosition(tokenId)
+        expect(position.amount).to.bignumber.gt(new BN(0))
+        amount = position.amount
+        account = await stakingRewards.ownerOf(tokenId)
         await impersonateAccount(hre, account)
         await fundWithWhales(["ETH", "USDC"], [account])
+      })
+
+      beforeEach(async () => {
+        await setup()
       })
 
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {
@@ -156,15 +162,21 @@ describe("StakingRewards", () => {
 
   describe("fidu", () => {
     describe("account with pre-migration position", () => {
-      // Randomly selected fidu account & position found on etherscan
-      // endTime is in January 2023 so position is still vesting
-      const account = "0xa3D055b47d79499bc5936C90AB84E8cc5a382C4e"
+      let account
       const tokenId = new BN(200)
-      const amount = new BN("486868468507584778502")
+      let amount
 
-      beforeEach(async () => {
+      const setup = deployments.createFixture(async () => {
+        const position = await stakingRewards.getPosition(tokenId)
+        expect(position.amount).to.bignumber.gt(new BN(0))
+        amount = position.amount
+        account = await stakingRewards.ownerOf(tokenId)
         await impersonateAccount(hre, account)
         await fundWithWhales(["ETH", "USDC"], [account])
+      })
+
+      beforeEach(async () => {
+        await setup()
       })
 
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {

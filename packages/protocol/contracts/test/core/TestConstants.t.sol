@@ -3,5 +3,10 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 library TestConstants {
+  bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+  bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+  bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
   uint256 public constant USDC_DECIMALS = 6;
+  uint256 public constant FIDU_DECIMALS = 18;
 }

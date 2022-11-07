@@ -259,24 +259,8 @@ contract Zapper is BaseUpgradeablePausable {
     uint256 shares = seniorPool.getNumShares(usdcAmount);
     stakingRewards.unstake(tokenId, shares);
 
-    uint256 fiduBalanceBeforeWithdraw = config.getFidu().balanceOf(address(this));
     uint256 withdrawnAmount = seniorPool.withdraw(usdcAmount);
     require(withdrawnAmount == usdcAmount, "Withdrawn amount != requested amount");
-
-    // If funds are swept from compound in `seniorPool.withdraw(usdcAmount)` then, due to an
-    // increase in the share price, less Fidu is burned than the amount transferred to Zapper
-    // from `stakingRewards.unstake(tokenId, shares)`. The difference is added back to the
-    // user's staking position.
-    uint256 fiduBurned = fiduBalanceBeforeWithdraw.sub(config.getFidu().balanceOf(address(this)));
-    if (fiduBurned < shares) {
-      uint256 shareRefund = shares.sub(fiduBurned);
-      SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), shareRefund);
-      stakingRewards.addToStake(tokenId, shareRefund);
-      require(
-        config.getFidu().allowance(address(this), address(stakingRewards)) == 0,
-        "Entire allowance of FIDU has not been used."
-      );
-    }
 
     SafeERC20.safeApprove(config.getUSDC(), address(tranchedPool), usdcAmount);
     poolTokenId = tranchedPool.deposit(tranche, usdcAmount);

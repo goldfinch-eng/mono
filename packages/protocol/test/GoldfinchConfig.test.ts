@@ -56,6 +56,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)).to.bignumber.equal(new BN(8))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays)).to.bignumber.equal(new BN(9))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LeverageRatio)).to.bignumber.equal(new BN(10))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeBps)).to.bignumber.equal(
+        new BN(11)
+      )
 
       // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")
@@ -82,6 +85,9 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementationRepository)).to.equal(
         "0x0000000000000000000000000000000000000009"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.WithdrawalRequestToken)).to.equal(
+        "0x000000000000000000000000000000000000000A"
       )
     })
   })

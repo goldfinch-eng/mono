@@ -1,6 +1,8 @@
+import {SECONDS_PER_DAY, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {SeniorPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
-import {CONFIG_KEYS} from "../configKeys"
+import {BN} from "bn.js"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../configKeys"
 import {MINTER_ROLE, ContractDeployer, isTestEnv, getProtocolOwner, updateConfig} from "../deployHelpers"
 import {DeployOpts} from "../types"
 
@@ -30,6 +32,10 @@ export async function deploySeniorPool(deployer: ContractDeployer, {config, fidu
     libraries: {["Accountant"]: accountant.address},
   })
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, seniorPool.address, {logger})
+
+  await config.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
+  await seniorPool.initializeEpochs()
+
   await (await config.addToGoList(seniorPool.address)).wait()
   if (fidu) {
     logger(`Granting minter role to ${contractName}`)
