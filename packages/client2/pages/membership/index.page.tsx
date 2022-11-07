@@ -46,7 +46,7 @@ gql`
         sharePrice
       }
     }
-    viewer @client {
+    viewer @client(always: true) {
       gfiBalance {
         token
         amount

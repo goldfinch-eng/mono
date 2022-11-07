@@ -33,6 +33,12 @@ gql`
       gfiGrants {
         ...GrantCardGrantFields
       }
+
+      # even if this isn't directly used on the UI on this page, it is helpful to have this refetched and recached along with the rest of the data on this page when apolloClient.refetch({include: "active"}) is run
+      gfiBalance {
+        token
+        amount
+      }
     }
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
@@ -55,13 +61,14 @@ gql`
 `;
 
 export default function GfiPage() {
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
   const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
     skip: !account,
   });
+  const showLoadingState = isActivating || loading;
 
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
@@ -92,17 +99,17 @@ export default function GfiPage() {
       <Heading level={1} className="mb-12 text-7xl">
         GFI
       </Heading>
-      {!account ? (
-        <div>You must connect your wallet to view GFI rewards</div>
-      ) : error ? (
+      {error ? (
         <div className="text-clay-500">{error.message}</div>
+      ) : !account && !isActivating ? (
+        <div>You must connect your wallet to view GFI rewards</div>
       ) : (
         <div>
           <StatGrid className="mb-15">
             <Stat
               label="Total GFI (Claimable + Locked)"
               value={
-                loading ? (
+                showLoadingState ? (
                   <Shimmer />
                 ) : (
                   formatCrypto(
@@ -118,7 +125,7 @@ export default function GfiPage() {
             <Stat
               label="Claimable GFI"
               value={
-                loading ? (
+                showLoadingState ? (
                   <Shimmer />
                 ) : (
                   formatCrypto(
@@ -131,7 +138,7 @@ export default function GfiPage() {
             <Stat
               label="Locked GFI"
               value={
-                loading ? (
+                showLoadingState ? (
                   <Shimmer />
                 ) : (
                   formatCrypto(
@@ -142,7 +149,7 @@ export default function GfiPage() {
               }
             />
           </StatGrid>
-          {loading ? (
+          {showLoadingState ? (
             <div className="space-y-3">
               {[0, 1, 2, 3].map((nonce) => (
                 <Shimmer key={nonce} className="h-20" />
