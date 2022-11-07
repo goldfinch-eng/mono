@@ -103,7 +103,11 @@ export function AssetBox({
   );
 }
 
-export function AssetBoxPlaceholder({ asset }: { asset: Partial<Asset> }) {
+export function AssetBoxPlaceholder({
+  asset = {},
+}: {
+  asset?: Partial<Asset>;
+}) {
   const { name, description, usdcAmount, nativeAmount } = asset;
   return (
     <div className="w-full rounded border border-white bg-white px-5 py-6">

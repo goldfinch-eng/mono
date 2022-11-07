@@ -19,7 +19,7 @@ import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import { AssetBox, Asset } from "./asset-box";
+import { AssetBox, Asset, AssetBoxPlaceholder } from "./asset-box";
 import {
   AssetGroup,
   AssetGroupSubheading,
@@ -110,6 +110,7 @@ export default function MembershipPage() {
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
     skip: !account,
   });
+  const showLoadingState = isActivating || loading || !data;
 
   const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
@@ -143,7 +144,6 @@ export default function MembershipPage() {
 
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
-  //TODO real data lol
   const vaultedGfi = {
     token: SupportedCrypto.Gfi,
     amount: sum("amount", data?.vaultedGfis),
@@ -175,53 +175,59 @@ export default function MembershipPage() {
         <div className="text-clay-500">Error: {error.message}</div>
       ) : !account && !isActivating ? (
         <div>You must connect your wallet to view your membership vault</div>
-      ) : !data || loading || isActivating ? (
-        <div>Loading...</div>
       ) : (
         <>
           <RewardClaimer sharePrice={sharePrice} className="mb-4" />
-          <div
-            className="mb-16 rounded-lg border border-sand-200 p-8"
-            style={{ aspectRatio: "2272 / 752" }}
-          >
-            <h2 className="mb-10 text-2xl">
-              How it works: Goldfinch Membership Vaults
-            </h2>
-            <video autoPlay muted loop>
-              <source src="/membership/intro-animation.mp4" type="video/mp4" />
-            </video>
-            <div className="flex flex-col justify-evenly gap-5 text-center lg:flex-row">
-              <div className="lg:w-1/4">
-                <div className="mb-3 text-lg font-medium">
-                  Deposit GFI and Capital
+          {data?.vaultedGfis.length === 0 &&
+          data?.vaultedStakedPositions.length === 0 &&
+          data?.vaultedPoolTokens.length === 0 ? (
+            <div
+              className="mb-16 rounded-lg border border-sand-200 p-8"
+              style={{ aspectRatio: "2272 / 752" }}
+            >
+              <h2 className="mb-10 text-2xl">
+                How it works: Goldfinch Membership Vaults
+              </h2>
+              <video autoPlay muted loop>
+                <source
+                  src="/membership/intro-animation.mp4"
+                  type="video/mp4"
+                />
+              </video>
+              <div className="flex flex-col justify-evenly gap-5 text-center lg:flex-row">
+                <div className="lg:w-1/4">
+                  <div className="mb-3 text-lg font-medium">
+                    Deposit GFI and Capital
+                  </div>
+                  <div>
+                    Put both GFI and Capital (FIDU, Backer NFT) in the Vault to
+                    become a Member. You can withdraw from the Vault at any
+                    time.
+                  </div>
                 </div>
-                <div>
-                  Put both GFI and Capital (FIDU, Backer NFT) in the Vault to
-                  become a Member. You can withdraw from the Vault at any time.
+                <div className="lg:w-1/4">
+                  <div className="mb-3 text-lg font-medium">
+                    Receive Boosted Yields
+                  </div>
+                  <div>
+                    Enhance your yields with Member Rewards, a percentage of the
+                    Goldfinch Treasury distributed pro-rata based on your Member
+                    Vault position.
+                  </div>
                 </div>
-              </div>
-              <div className="lg:w-1/4">
-                <div className="mb-3 text-lg font-medium">
-                  Receive Boosted Yields
-                </div>
-                <div>
-                  Enhance your yields with Member Rewards, a percentage of the
-                  Goldfinch Treasury distributed pro-rata based on your Member
-                  Vault position.
-                </div>
-              </div>
-              <div className="lg:w-1/4">
-                <div className="mb-3 text-lg font-medium">
-                  Claim Rewards Weekly
-                </div>
-                <div>
-                  Member Rewards are distributed weekly in FIDU, increasing your
-                  exposure to the Senior Pool. Withdrawing during a weekly cycle
-                  will forfeit rewards for that cycle.
+                <div className="lg:w-1/4">
+                  <div className="mb-3 text-lg font-medium">
+                    Claim Rewards Weekly
+                  </div>
+                  <div>
+                    Member Rewards are distributed weekly in FIDU, increasing
+                    your exposure to the Senior Pool. Withdrawing during a
+                    weekly cycle will forfeit rewards for that cycle.
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : null}
           <div className="mb-16">Chart goes here</div>
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
@@ -238,8 +244,12 @@ export default function MembershipPage() {
                   </div>
                 </div>
                 <AssetGroup headingLeft="Available assets">
-                  {data.viewer.gfiBalance?.amount.isZero() &&
-                  vaultableCapitalAssets.length === 0 ? (
+                  {showLoadingState ? (
+                    [0, 1, 2].map((nonce) => (
+                      <AssetBoxPlaceholder key={nonce} />
+                    ))
+                  ) : data.viewer.gfiBalance?.amount.isZero() &&
+                    vaultableCapitalAssets.length === 0 ? (
                     <div>
                       <div className="mb-6">
                         <div className="mb-1 text-lg font-medium">
@@ -319,7 +329,7 @@ export default function MembershipPage() {
                     </div>
                   )}
                 </AssetGroup>
-                {data.viewer.fiduBalance &&
+                {data?.viewer.fiduBalance &&
                 !data.viewer.fiduBalance.amount.isZero() ? (
                   <AssetGroup
                     headingLeft="Unavailable assets"
@@ -371,40 +381,58 @@ export default function MembershipPage() {
                       amount: vaultedGfi.amount,
                     })}
                   />
-                  <AssetBox
-                    faded={vaultedGfi.amount.isZero()}
-                    nativeAmountIsPrimary
-                    asset={{
-                      name: "GFI",
-                      description: "Governance Token",
-                      icon: "Gfi",
-                      nativeAmount: {
-                        token: SupportedCrypto.Gfi,
-                        amount: vaultedGfi.amount,
-                      },
-                      usdcAmount: gfiToUsdc(
-                        {
+                  {showLoadingState ? (
+                    <AssetBoxPlaceholder
+                      asset={{
+                        name: "GFI",
+                        description: "Governance Token",
+                        icon: "Gfi",
+                      }}
+                    />
+                  ) : (
+                    <AssetBox
+                      faded={vaultedGfi.amount.isZero()}
+                      nativeAmountIsPrimary
+                      asset={{
+                        name: "GFI",
+                        description: "Governance Token",
+                        icon: "Gfi",
+                        nativeAmount: {
                           token: SupportedCrypto.Gfi,
                           amount: vaultedGfi.amount,
                         },
-                        data.gfiPrice.price.amount
-                      ),
-                    }}
-                  />
+                        usdcAmount: gfiToUsdc(
+                          {
+                            token: SupportedCrypto.Gfi,
+                            amount: vaultedGfi.amount,
+                          },
+                          data.gfiPrice.price.amount
+                        ),
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="mb-6">
                   <AssetGroupSubheading
                     left="Capital"
-                    right={formatCrypto({
-                      token: SupportedCrypto.Usdc,
-                      amount: sum("usdcEquivalent", [
-                        ...data.vaultedStakedPositions,
-                        ...data.vaultedPoolTokens,
-                      ]),
-                    })}
+                    right={
+                      data
+                        ? formatCrypto({
+                            token: SupportedCrypto.Usdc,
+                            amount: sum("usdcEquivalent", [
+                              ...data.vaultedStakedPositions,
+                              ...data.vaultedPoolTokens,
+                            ]),
+                          })
+                        : undefined
+                    }
                   />
-                  {data.vaultedStakedPositions.length > 0 ||
-                  data.vaultedPoolTokens.length > 0 ? (
+                  {showLoadingState ? (
+                    [0, 1, 2].map((nonce) => (
+                      <AssetBoxPlaceholder key={nonce} />
+                    ))
+                  ) : data.vaultedStakedPositions.length > 0 ||
+                    data.vaultedPoolTokens.length > 0 ? (
                     <div className="space-y-2">
                       {data.vaultedStakedPositions.map((vsp) => (
                         <AssetBox
@@ -455,45 +483,50 @@ export default function MembershipPage() {
                   colorScheme="mustard"
                   onClick={() => setIsRemoveFromVaultOpen(true)}
                   disabled={
-                    vaultedGfi.amount.isZero() &&
-                    data.vaultedStakedPositions.length === 0 &&
-                    data.vaultedPoolTokens.length === 0
+                    showLoadingState ||
+                    (vaultedGfi.amount.isZero() &&
+                      data.vaultedStakedPositions.length === 0 &&
+                      data.vaultedPoolTokens.length === 0)
                   }
                 >
                   Select assets to remove
                 </AssetGroupButton>
               </AssetGroup>
             </div>
-            <AddToVault
-              isOpen={isAddToVaultOpen}
-              onClose={() => setIsAddToVaultOpen(false)}
-              maxVaultableGfi={
-                data.viewer.gfiBalance ?? {
-                  token: SupportedCrypto.Gfi,
-                  amount: BigNumber.from(0),
-                }
-              }
-              fiatPerGfi={data.gfiPrice.price.amount}
-              vaultablePoolTokens={data.tranchedPoolTokens}
-              vaultableStakedPositions={data.seniorPoolStakedPositions}
-              sharePrice={sharePrice}
-              unstakedFidu={
-                data.viewer.fiduBalance ?? {
-                  token: SupportedCrypto.Fidu,
-                  amount: BigNumber.from(0),
-                }
-              }
-              currentBlockTimestampMs={data.currentBlock.timestamp * 1000}
-            />
-            <RemoveFromVault
-              isOpen={isRemoveFromVaultOpen}
-              onClose={() => setIsRemoveFromVaultOpen(false)}
-              vaultedGfi={data.vaultedGfis}
-              fiatPerGfi={data.gfiPrice.price.amount}
-              vaultedStakedPositions={data.vaultedStakedPositions}
-              sharePrice={sharePrice}
-              vaultedPoolTokens={data.vaultedPoolTokens}
-            />
+            {data ? (
+              <>
+                <AddToVault
+                  isOpen={isAddToVaultOpen}
+                  onClose={() => setIsAddToVaultOpen(false)}
+                  maxVaultableGfi={
+                    data.viewer.gfiBalance ?? {
+                      token: SupportedCrypto.Gfi,
+                      amount: BigNumber.from(0),
+                    }
+                  }
+                  fiatPerGfi={data.gfiPrice.price.amount}
+                  vaultablePoolTokens={data.tranchedPoolTokens}
+                  vaultableStakedPositions={data.seniorPoolStakedPositions}
+                  sharePrice={sharePrice}
+                  unstakedFidu={
+                    data.viewer.fiduBalance ?? {
+                      token: SupportedCrypto.Fidu,
+                      amount: BigNumber.from(0),
+                    }
+                  }
+                  currentBlockTimestampMs={data.currentBlock.timestamp * 1000}
+                />
+                <RemoveFromVault
+                  isOpen={isRemoveFromVaultOpen}
+                  onClose={() => setIsRemoveFromVaultOpen(false)}
+                  vaultedGfi={data.vaultedGfis}
+                  fiatPerGfi={data.gfiPrice.price.amount}
+                  vaultedStakedPositions={data.vaultedStakedPositions}
+                  sharePrice={sharePrice}
+                  vaultedPoolTokens={data.vaultedPoolTokens}
+                />
+              </>
+            ) : null}
           </div>
         </>
       )}

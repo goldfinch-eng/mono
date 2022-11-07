@@ -68,7 +68,7 @@ export default function GfiPage() {
     },
     skip: !account,
   });
-  const showLoadingState = isActivating || loading;
+  const showLoadingState = isActivating || loading || !data;
 
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
