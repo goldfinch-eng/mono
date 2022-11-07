@@ -1,7 +1,7 @@
 import {log, store} from "@graphprotocol/graph-ts"
 
 import {CapitalERC721Deposit, CapitalWithdrawal} from "../../../generated/CapitalLedger/CapitalLedger"
-import {VaultedStakedPosition, VaultedPoolToken} from "../../../generated/schema"
+import {VaultedStakedPosition, VaultedPoolToken, TranchedPoolToken} from "../../../generated/schema"
 
 import {STAKING_REWARDS_ADDRESS, POOL_TOKENS_ADDRESS} from "../../address-manifest"
 
@@ -20,6 +20,8 @@ export function handleCapitalErc721Deposit(event: CapitalERC721Deposit): void {
     vaultedPoolToken.usdcEquivalent = event.params.usdcEquivalent
     vaultedPoolToken.vaultedAt = event.block.timestamp.toI32()
     vaultedPoolToken.poolToken = event.params.assetId.toString()
+    const poolToken = assert(TranchedPoolToken.load(event.params.assetId.toString()))
+    vaultedPoolToken.tranchedPool = poolToken.tranchedPool
     vaultedPoolToken.save()
   }
 }

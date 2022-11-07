@@ -225,7 +225,14 @@ export function AddToVault({
       pendingPrompt: "Depositing your assets into the vault",
       successPrompt: "Successfully deposited your assets into the vault",
     });
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "user" });
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
     onClose();
     setTimeout(() => {
       setStep("select");

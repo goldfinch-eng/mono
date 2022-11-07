@@ -10,6 +10,7 @@ import {
   Select,
   InfoIconTooltip,
   Form,
+  Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
@@ -49,6 +50,7 @@ export const WITHDRAWAL_PANEL_ZAP_FIELDS = gql`
 interface WithdrawalPanelProps {
   tranchedPoolAddress: string;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
+  vaultedPoolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
   zaps: WithdrawalPanelZapFieldsFragment[];
   isPoolLocked: boolean;
 }
@@ -61,6 +63,7 @@ interface FormFields {
 export function WithdrawalPanel({
   tranchedPoolAddress,
   poolTokens,
+  vaultedPoolTokens,
   zaps,
   isPoolLocked,
 }: WithdrawalPanelProps) {
@@ -168,7 +171,13 @@ export function WithdrawalPanel({
         });
       }
     }
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "zaps" });
+      },
+    });
   };
 
   const validateWithdrawalAmount = (value: string) => {
@@ -262,6 +271,21 @@ export function WithdrawalPanel({
               content="While this Pool is still open for Backer investments, you can instantly withdraw any amount of the funds you have already invested. Once the Pool is has reached its Pool limit for funding and is closed for further investment, you will only be able to withdraw your share of the Pool's interest and principal repayments."
             />
             You can withdraw capital until the pool is closed.
+          </div>
+        ) : null}
+        {vaultedPoolTokens.length > 0 ? (
+          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
+            <div className="text-mustard-900">
+              You cannot withdraw capital from your positions while they are in
+              the Vault
+            </div>
+            <Link
+              href="/membership"
+              iconRight="ArrowSmRight"
+              className="whitespace-nowrap font-medium text-mustard-700"
+            >
+              Go to Vault
+            </Link>
           </div>
         ) : null}
       </Form>

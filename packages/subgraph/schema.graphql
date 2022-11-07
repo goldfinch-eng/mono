@@ -355,4 +355,23 @@ type VaultedPoolToken @entity {
   usdcEquivalent: BigInt!
   vaultedAt: Int!
   poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
+}
+
+type Member @entity {
+  id: ID!
+  eligibleScore: BigInt!
+  totalScore: BigInt!
+}
+
+type MembershipVaultData @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  members: [Member!]!
+  totalMembershipScore: BigInt!
+}
+
+type MemberRewardDisbursement @entity(immutable: true) {
+  id: ID!
+  allocatedAt: Int!
+  rewards: BigInt!
 }

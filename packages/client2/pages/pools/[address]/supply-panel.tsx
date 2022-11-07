@@ -225,7 +225,13 @@ export default function SupplyPanel({
         pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
       });
     }
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "zaps" });
+      },
+    });
   };
 
   const supplyValue = watch("supply");

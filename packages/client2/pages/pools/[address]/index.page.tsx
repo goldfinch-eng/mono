@@ -139,7 +139,14 @@ gql`
       zaps(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelZapFields
       }
+      vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+        id
+        poolToken {
+          ...WithdrawalPanelPoolTokenFields
+        }
+      }
     }
+
     currentBlock @client {
       timestamp
     }
@@ -411,10 +418,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
               {data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0) ? (
+                data?.user.zaps.length > 0 ||
+                data?.user.vaultedPoolTokens.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
+                    (v) => v.poolToken
+                  )}
                   zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&

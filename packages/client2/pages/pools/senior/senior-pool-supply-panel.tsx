@@ -180,7 +180,12 @@ export function SeniorPoolSupplyPanel({
       }
     }
 
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
   };
 
   const isUserVerified =

@@ -37,8 +37,14 @@ gql`
     user(id: $userId) {
       id
       ...SeniorPoolSupplyPanelUserFields
-      seniorPoolStakedPositions(where: { positionType: Fidu }) {
+      seniorPoolStakedPositions(where: { positionType: Fidu, amount_gt: 0 }) {
         ...SeniorPoolWithdrawalPanelPositionFields
+      }
+      vaultedStakedPositions {
+        id
+        seniorPoolStakedPosition {
+          ...SeniorPoolWithdrawalPanelPositionFields
+        }
       }
     }
     seniorPools(first: 1) {
@@ -80,8 +86,8 @@ export default function SeniorPoolPage() {
     seniorPool?.latestPoolStatus.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       (user &&
-        user.seniorPoolStakedPositions.length > 0 &&
-        user.seniorPoolStakedPositions.some((s) => s.amount.gt(0))));
+        (user.seniorPoolStakedPositions.length > 0 ||
+          user.vaultedStakedPositions.length > 0)));
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -166,6 +172,9 @@ export default function SeniorPoolPage() {
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={user?.seniorPoolStakedPositions}
+                vaultedStakedPositions={user?.vaultedStakedPositions.map(
+                  (s) => s.seniorPoolStakedPosition
+                )}
                 seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
               />
             )}

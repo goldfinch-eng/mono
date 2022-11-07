@@ -196,7 +196,14 @@ export function RemoveFromVault({
       successPrompt: "Successfully withdrew your assets from the vault.",
       errorPrompt: "Failed to withdraw your assets from the vault.",
     });
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "user" });
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
     onClose();
     setTimeout(() => {
       setStep("select");
