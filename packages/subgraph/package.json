@@ -3,6 +3,7 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph codegen && graph build",
+    "prebuild": "ts-node ./scripts/update-address-manifest.ts",
     "test": "graph test",
     "deploy-prod": "graph codegen && graph deploy --product hosted-service goldfinch-eng/goldfinch-v2",
     "predeploy-prod": "ts-node ./scripts/update-address-manifest.ts",
