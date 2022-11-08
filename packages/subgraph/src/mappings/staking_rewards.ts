@@ -187,4 +187,9 @@ export function handleRewardPaid(event: RewardPaid): void {
   const position = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
   position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
   position.save()
+
+  const transaction = createTransactionFromEvent(event, "STAKING_REWARDS_CLAIMED", event.params.user)
+  transaction.receivedAmount = event.params.reward
+  transaction.receivedToken = "GFI"
+  transaction.save()
 }
