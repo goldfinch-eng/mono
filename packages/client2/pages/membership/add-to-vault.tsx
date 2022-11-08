@@ -216,7 +216,7 @@ export function AddToVault({
           id: p.id,
         }))
       );
-    const transaction = membershipContract.depositMultiple({
+    const transaction = membershipContract.deposit({
       gfi: gfiToVault.amount,
       capitalDeposits,
     });

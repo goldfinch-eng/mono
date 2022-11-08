@@ -271,6 +271,8 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
   [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards Claimed",
+  [TransactionCategory.MembershipGfiDeposit]: "Added GFI to Vault",
+  [TransactionCategory.MembershipGfiWithdrawal]: "Removed GFI from Vault",
 };
 
 export function getTransactionLabel(transaction: {
@@ -295,6 +297,8 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
   [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards",
+  [TransactionCategory.MembershipGfiDeposit]: "Vaulted GFI",
+  [TransactionCategory.MembershipGfiWithdrawal]: "Unvaulted GFI",
 };
 
 /**
@@ -324,6 +328,8 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.CurveFiduBuy]: "ArrowUp",
   [TransactionCategory.CurveFiduSell]: "ArrowDown",
   [TransactionCategory.MembershipRewardsClaimed]: "ArrowUp",
+  [TransactionCategory.MembershipGfiDeposit]: "ArrowUp",
+  [TransactionCategory.MembershipGfiWithdrawal]: "ArrowDown",
 };
 
 /**

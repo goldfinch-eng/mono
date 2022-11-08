@@ -124,6 +124,16 @@
       "type": "receive"
     },
     {
+      "inputs": [],
+      "name": "IndexGreaterThanTokenSupply",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidOwnerIndex",
+      "type": "error"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -151,7 +161,7 @@
         {
           "indexed": true,
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "positionId",
           "type": "uint256"
         },
         {
@@ -182,7 +192,7 @@
         {
           "indexed": true,
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "positionId",
           "type": "uint256"
         },
         {
@@ -243,7 +253,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "positionId",
           "type": "uint256"
         }
       ],
@@ -254,7 +264,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "id",
+          "name": "positionId",
           "type": "uint256"
         }
       ],
@@ -328,6 +338,49 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "tokenByIndex",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "tokenOfOwnerByIndex",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "totalSupply",
       "outputs": [
@@ -368,7 +421,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "positionId",
           "type": "uint256"
         }
       ],
@@ -387,7 +440,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "id",
+          "name": "positionId",
           "type": "uint256"
         },
         {
@@ -429,7 +482,7 @@
       "type": "constructor"
     }
   ],
-  "transactionHash": "0x3d383519e46ca28fd85fd9985f5d5bd4942a3547357e93bd9a4f6bc125ae96b6",
+  "transactionHash": "0xf81953ef7c004e8f48d15b6f2d638f2e49e39d1179092cfa7835642d51134ed8",
   "receipt": {
     "to": null,
     "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
@@ -437,13 +490,13 @@
     "transactionIndex": 0,
     "gasUsed": "613532",
     "logsBloom": "0x00000000000000000000000000000000000000000000000001800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000001001000000000000000000000000000000000000020000000000000100000800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280080000000000000000000000000000000000000000000000200000000000000000000000002000000000000000000020000000000000020000000400000000000000000000000800000000000000000000",
-    "blockHash": "0x487b539b777ad2637bdf59e2af92aee09ac4a58fce229e5beeed23264f34d0ad",
-    "transactionHash": "0x3d383519e46ca28fd85fd9985f5d5bd4942a3547357e93bd9a4f6bc125ae96b6",
+    "blockHash": "0xc05808da8e816f479b8babdfd0511c56b34d9c73b30a016f630557f7928b34eb",
+    "transactionHash": "0xf81953ef7c004e8f48d15b6f2d638f2e49e39d1179092cfa7835642d51134ed8",
     "logs": [
       {
         "transactionIndex": 0,
         "blockNumber": 96,
-        "transactionHash": "0x3d383519e46ca28fd85fd9985f5d5bd4942a3547357e93bd9a4f6bc125ae96b6",
+        "transactionHash": "0xf81953ef7c004e8f48d15b6f2d638f2e49e39d1179092cfa7835642d51134ed8",
         "address": "0x1D99a347B5EcdbAa3C5365470d461Cf66B77ECd2",
         "topics": [
           "0x5570d70a002632a7b0b3c9304cc89efb62d8da9eca0dbd7752c83b7379068296",
@@ -452,12 +505,12 @@
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0x487b539b777ad2637bdf59e2af92aee09ac4a58fce229e5beeed23264f34d0ad"
+        "blockHash": "0xc05808da8e816f479b8babdfd0511c56b34d9c73b30a016f630557f7928b34eb"
       },
       {
         "transactionIndex": 0,
         "blockNumber": 96,
-        "transactionHash": "0x3d383519e46ca28fd85fd9985f5d5bd4942a3547357e93bd9a4f6bc125ae96b6",
+        "transactionHash": "0xf81953ef7c004e8f48d15b6f2d638f2e49e39d1179092cfa7835642d51134ed8",
         "address": "0x1D99a347B5EcdbAa3C5365470d461Cf66B77ECd2",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
@@ -466,7 +519,7 @@
         ],
         "data": "0x",
         "logIndex": 1,
-        "blockHash": "0x487b539b777ad2637bdf59e2af92aee09ac4a58fce229e5beeed23264f34d0ad"
+        "blockHash": "0xc05808da8e816f479b8babdfd0511c56b34d9c73b30a016f630557f7928b34eb"
       }
     ],
     "blockNumber": 96,

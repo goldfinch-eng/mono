@@ -198,7 +198,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "score",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -246,49 +246,6 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "assetAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
-      "name": "depositCapitalERC721",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "depositGFI",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "components": [
             {
               "internalType": "uint256",
@@ -313,17 +270,60 @@
               "type": "tuple[]"
             }
           ],
-          "internalType": "struct MultiDeposit",
-          "name": "multiDeposit",
+          "internalType": "struct Deposit",
+          "name": "depositData",
           "type": "tuple"
         }
       ],
-      "name": "depositMultiple",
+      "name": "deposit",
       "outputs": [
         {
           "internalType": "uint256[]",
-          "name": "ids",
+          "name": "positionIds",
           "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "assetAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositCapitalERC721",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "positionId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositGFI",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "positionId",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
@@ -543,6 +543,43 @@
     {
       "inputs": [
         {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ERC20Withdrawal[]",
+              "name": "gfiPositions",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "capitalPositions",
+              "type": "uint256[]"
+            }
+          ],
+          "internalType": "struct Withdrawal",
+          "name": "withdrawal",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "addr",
           "type": "address"
@@ -588,31 +625,6 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "uint256[]",
-              "name": "gfiPositions",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "capitalPositions",
-              "type": "uint256[]"
-            }
-          ],
-          "internalType": "struct MultiWithdraw",
-          "name": "multiWithdraw",
-          "type": "tuple"
-        }
-      ],
-      "name": "withdrawMultiple",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "implementationAddress",
           "type": "address"
@@ -640,7 +652,7 @@
     "transactionIndex": 0,
     "gasUsed": "662314",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000400000000000400000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000002000000020000000000000100000800000000000000000000000000000000400000000000000002000000000000000000000000000000000000000000000000000000004000000000000000000200000000000800000000000000000000000000000000000000200000000000000000000000002000000000000000000020000000000000000000000400000000000000000002000000000000000000000000",
-    "blockHash": "0x1b6baea27ca22e8e56b0f748104062a53a3a6acec4e4cee60219ba411f4c27f0",
+    "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1",
     "transactionHash": "0x8fb4a9a963a701b5f3c0fe8976c9e2e1c82373d30bf34abe0ffcffd9f7e44c38",
     "logs": [
       {
@@ -655,7 +667,7 @@
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0x1b6baea27ca22e8e56b0f748104062a53a3a6acec4e4cee60219ba411f4c27f0"
+        "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1"
       },
       {
         "transactionIndex": 0,
@@ -669,7 +681,7 @@
         ],
         "data": "0x",
         "logIndex": 1,
-        "blockHash": "0x1b6baea27ca22e8e56b0f748104062a53a3a6acec4e4cee60219ba411f4c27f0"
+        "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1"
       }
     ],
     "blockNumber": 89,

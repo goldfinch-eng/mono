@@ -186,7 +186,7 @@ export function RemoveFromVault({
     const capitalPositions = stakedPositionsToUnvault
       .map((s) => s.id)
       .concat(poolTokensToUnvault.map((p) => p.id));
-    const transaction = membershipContract.withdrawMultiple({
+    const transaction = membershipContract.withdraw({
       gfiPositions: [], // TODO fill this out. GFI needs to change checkboxes
       capitalPositions,
     });
