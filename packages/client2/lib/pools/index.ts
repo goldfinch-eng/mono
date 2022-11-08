@@ -276,6 +276,9 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards Claimed",
   [TransactionCategory.MembershipGfiDeposit]: "Added GFI to Vault",
   [TransactionCategory.MembershipGfiWithdrawal]: "Removed GFI from Vault",
+  [TransactionCategory.MembershipCapitalDeposit]: "Added Capital to Vault",
+  [TransactionCategory.MembershipCapitalWithdrawal]:
+    "Removed Capital from Vault",
 };
 
 export function getTransactionLabel(transaction: {
@@ -305,6 +308,8 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards",
   [TransactionCategory.MembershipGfiDeposit]: "Vaulted GFI",
   [TransactionCategory.MembershipGfiWithdrawal]: "Unvaulted GFI",
+  [TransactionCategory.MembershipCapitalDeposit]: "Vaulted Capital",
+  [TransactionCategory.MembershipCapitalWithdrawal]: "Unvaulted Capital",
 };
 
 /**
@@ -339,6 +344,8 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.MembershipRewardsClaimed]: "ArrowUp",
   [TransactionCategory.MembershipGfiDeposit]: "ArrowUp",
   [TransactionCategory.MembershipGfiWithdrawal]: "ArrowDown",
+  [TransactionCategory.MembershipCapitalDeposit]: "ArrowUp",
+  [TransactionCategory.MembershipCapitalWithdrawal]: "ArrowDown",
 };
 
 /**
