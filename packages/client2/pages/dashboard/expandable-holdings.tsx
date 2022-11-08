@@ -7,12 +7,13 @@ import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
-interface Holding {
+export interface Holding {
   name: string;
   percentage: number;
   quantity: BigNumber;
   usdcValue: CryptoAmount;
   url?: string;
+  vaulted?: boolean;
 }
 
 interface ExpandableHoldingsProps {
@@ -26,7 +27,7 @@ interface ExpandableHoldingsProps {
 }
 
 const gridClasses =
-  "grid grid-cols-1 xs:grid-cols-3 gap-3 md:grid-cols-5 justify-items-end";
+  "grid grid-cols-1 xs:grid-cols-3 gap-3 md:grid-cols-5 justify-items-end items-center";
 const gridHeadingClasses = "justify-self-start xs:col-span-3 md:col-span-2";
 
 export function ExpandableHoldings({
@@ -103,6 +104,7 @@ export function ExpandableHoldings({
               quantityFormatter={quantityFormatter}
               usdcValue={holding.usdcValue}
               url={holding.url}
+              vaulted={holding.vaulted}
             />
           ))}
         </div>
@@ -122,13 +124,15 @@ function IndividualHolding({
   quantityFormatter,
   usdcValue,
   url,
+  vaulted,
 }: IndividualHoldingProps) {
   return (
     <div
       className={clsx(
         gridClasses,
         "group bg-sand-50 p-5",
-        url ? "relative hover:bg-sand-100" : null
+        url ? "relative hover:bg-sand-100" : null,
+        vaulted ? "!bg-clay-600" : null
       )}
     >
       <div className={gridHeadingClasses}>
