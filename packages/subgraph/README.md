@@ -48,7 +48,6 @@ If you have the ABIs on the contracts defined on `subgraph.yaml` you can call pu
 ```js
 let contract = SeniorPoolContract.bind(seniorPoolAddress)
 let sharePrice = contract.sharePrice()
-let compoundBalance = contract.compoundBalance()
 let totalLoansOutstanding = contract.totalLoansOutstanding()
 let totalSupply = fidu_contract.totalSupply()
 let totalPoolAssets = totalSupply.times(sharePrice)
