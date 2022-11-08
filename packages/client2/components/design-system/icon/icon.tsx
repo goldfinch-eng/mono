@@ -22,6 +22,7 @@ import InfoCircle from "./svg/info-circle-solid.svg";
 import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
 import LinkedIn from "./svg/linkedin.svg";
+import LockClosed from "./svg/lock-closed.svg";
 import Menu from "./svg/menu.svg";
 import Twitter from "./svg/twitter.svg";
 import Usdc from "./svg/usdc.svg";
@@ -49,6 +50,7 @@ export const iconManifest = {
   LightningBolt,
   Link,
   LinkedIn,
+  LockClosed,
   Menu,
   Twitter,
   Usdc,

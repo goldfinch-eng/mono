@@ -1,9 +1,15 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
-import Link from "next/link";
+import NextLink from "next/link";
 import { ReactNode } from "react";
 
-import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
+import {
+  Icon,
+  InfoIconTooltip,
+  Shimmer,
+  Tooltip,
+  Link,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
@@ -131,20 +137,36 @@ function IndividualHolding({
       className={clsx(
         gridClasses,
         "group bg-sand-50 p-5",
-        url ? "relative hover:bg-sand-100" : null,
-        vaulted ? "!bg-clay-600" : null
+        url ? "relative hover:bg-sand-100" : null
       )}
     >
-      <div className={gridHeadingClasses}>
+      <div className={clsx(gridHeadingClasses, "flex items-center gap-3")}>
         {url ? (
-          <Link href={url}>
+          <NextLink href={url}>
             <a className="before:absolute before:inset-0 group-hover:underline">
               {name}
             </a>
-          </Link>
+          </NextLink>
         ) : (
           name
         )}
+        {vaulted ? (
+          <Tooltip
+            useWrapper
+            content={
+              <div>
+                This asset is in the Membership Vault.
+                <div className="mt-2">
+                  <Link href="/membership" iconRight="ArrowSmRight">
+                    Go to Vault
+                  </Link>
+                </div>
+              </div>
+            }
+          >
+            <Icon name="LockClosed" className="z-10 h-6 w-6" />
+          </Tooltip>
+        ) : null}
       </div>
       <div>{formatPercent(percentage)}</div>
       <div>{quantityFormatter(quantity)}</div>
