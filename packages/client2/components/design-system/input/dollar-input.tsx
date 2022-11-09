@@ -1,4 +1,5 @@
 import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
@@ -9,7 +10,7 @@ import {
   GFI_DECIMALS,
   USDC_DECIMALS,
 } from "@/constants";
-import { formatCrypto, formatFiat } from "@/lib/format";
+import { formatFiat } from "@/lib/format";
 import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import { Input } from "./input";
@@ -101,15 +102,8 @@ export function DollarInput({
                 const formatted: string =
                   unit === SupportedFiat.Usd
                     ? formatFiat({ symbol: unit, amount: max.toNumber() })
-                    : formatCrypto(
-                        { token: unit, amount: max },
-                        {
-                          useMaximumPrecision: true,
-                          includeSymbol: false,
-                          includeToken: false,
-                        }
-                      );
-                onChange(formatted.replaceAll(",", ""));
+                    : formatUnits(max, unitProperties[unit].scale);
+                onChange(formatted);
                 onMaxClick?.(max);
               } else {
                 onMaxClick?.();
