@@ -8,6 +8,7 @@ import {
   Button,
   DollarInput,
   Link,
+  Alert,
 } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
@@ -114,8 +115,8 @@ export default function WithdrawRequestModal({
       size="sm"
       title={
         withdrawalToken
-          ? "New withdrawal request"
-          : "Increase withdrawal request"
+          ? "Increase withdrawal request"
+          : "New withdrawal request"
       }
       isOpen={isOpen}
       onClose={() => {
@@ -131,6 +132,10 @@ export default function WithdrawRequestModal({
             control={control}
             name="amount"
             label="In wallet FIDU"
+            maxValue={async () => {
+              reset();
+              return balanceWallet.amount;
+            }}
             unit={SupportedCrypto.Fidu}
             rules={{ required: "Required", validate: validateAmount }}
             textSize="xl"
@@ -153,6 +158,12 @@ export default function WithdrawRequestModal({
               : "$0.00"}{" "}
             current USD value *
           </div>
+
+          {balanceWallet.amount.lte(BigNumber.from("0")) ? (
+            <Alert className="mt-2" type="warning">
+              You don&apos;t have any In Wallet FIDU to request for withdrawal
+            </Alert>
+          ) : null}
         </div>
 
         <div className="mb-7">
@@ -298,9 +309,11 @@ export default function WithdrawRequestModal({
           type="submit"
           size="xl"
           className="w-full px-12 py-5"
-          disabled={!watchFields[0]}
+          disabled={
+            !watchFields[0] || balanceWallet.amount.lte(BigNumber.from("0"))
+          }
         >
-          {withdrawalToken ? "Increase Request" : "Submit Request"}
+          {withdrawalToken ? "Increase request" : "Submit request"}
         </Button>
       </Form>
     </Modal>
