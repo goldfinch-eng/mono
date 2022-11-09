@@ -52,6 +52,7 @@ type SeniorPoolStatus @entity {
   estimatedApyFromGfiRaw: BigDecimal!
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
+  cancellationFee: BigDecimal!
 }
 
 type User @entity {

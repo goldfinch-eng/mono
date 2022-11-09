@@ -1,9 +1,8 @@
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 
-import { Modal, Button } from "@/components/design-system";
-import { WITHDRAW_REQUEST_FEE } from "@/constants";
+import { Modal, Button, Link } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -14,6 +13,7 @@ interface WithdrawCancelRequestModalProps {
   onComplete: () => void;
   withdrawalToken?: BigNumber | null;
   currentRequest?: BigNumber | null;
+  cancellationFee: FixedNumber;
 }
 
 export default function WithdrawCancelRequestModal({
@@ -22,17 +22,16 @@ export default function WithdrawCancelRequestModal({
   withdrawalToken,
   currentRequest,
   onComplete,
+  cancellationFee,
 }: WithdrawCancelRequestModalProps) {
   const { provider } = useWallet();
-
-  const decimals = BigNumber.from("1000000000000000000"); // 1e18
 
   const fees =
     currentRequest && currentRequest.gt(BigNumber.from("0"))
       ? BigNumber.from(
           FixedNumber.from(currentRequest)
-            .mulUnsafe(FixedNumber.from(`${WITHDRAW_REQUEST_FEE}`))
-            .divUnsafe(FixedNumber.from(decimals))
+            .mulUnsafe(cancellationFee)
+            .divUnsafe(FixedNumber.from("1000000000000000000")) // 1e18
         )
       : BigNumber.from("0");
 
@@ -113,14 +112,17 @@ export default function WithdrawCancelRequestModal({
         </div>
 
         <p className="mb-1 text-xs">
-          By clicking &ldquo;“Cancel request&rdquo; below, I hereby agree to the
-          Senior Pool Agreement, which includes a 12.00% cancellation fee,
+          By clicking &ldquo;Cancel request&rdquo; below, I hereby agree to the{" "}
+          <Link href="/senior-pool-agreement-interstitial">
+            Senior Pool Agreement
+          </Link>
+          , which includes a {formatPercent(cancellationFee)} cancellation fee,
           deducted from your existing FIDU.
         </p>
       </div>
 
       <Button size="xl" className="w-full px-12 py-5" onClick={cancelRequest}>
-        Cancel Request
+        Cancel request
       </Button>
     </Modal>
   );

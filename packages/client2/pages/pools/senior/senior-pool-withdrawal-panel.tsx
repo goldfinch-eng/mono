@@ -1,6 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { format } from "date-fns";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
 
 import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
@@ -34,6 +34,7 @@ interface SeniorPoolWithdrawalPanelProps {
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
   currentEpoch?: EpochInfo | null;
+  cancellationFee?: FixedNumber | null;
 }
 
 export function SeniorPoolWithDrawalPanel({
@@ -42,6 +43,7 @@ export function SeniorPoolWithDrawalPanel({
   stakedPositions = [],
   withdrawalStatus,
   currentEpoch,
+  cancellationFee,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
   const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
@@ -85,7 +87,7 @@ export function SeniorPoolWithDrawalPanel({
 
   return (
     <>
-      <div className="bg-midnight-01 rounded-xl p-5 text-white">
+      <div className="rounded-xl bg-midnight-01 p-5 text-white">
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between gap-1 text-sm">
             <div>Your current position value</div>
@@ -242,6 +244,7 @@ export function SeniorPoolWithDrawalPanel({
       />
 
       <WithdrawCancelRequestModal
+        cancellationFee={cancellationFee ?? FixedNumber.from("0")}
         withdrawalToken={withdrawalStatus?.withdrawalToken}
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
         isOpen={cancelModalOpen}

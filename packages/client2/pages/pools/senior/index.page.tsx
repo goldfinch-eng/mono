@@ -47,6 +47,7 @@ gql`
         id
         sharePrice
         usdcBalance
+        cancellationFee
       }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -177,6 +178,7 @@ export default function SeniorPoolPage() {
 
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithDrawalPanel
+                cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
                 currentEpoch={data.currentEpoch}
                 withdrawalStatus={data.viewer.withdrawalStatus}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
