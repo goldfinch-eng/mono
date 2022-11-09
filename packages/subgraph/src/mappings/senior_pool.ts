@@ -174,6 +174,12 @@ export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void
 export function handleEpochEnded(event: EpochEnded): void {
   updatePoolStatus(event.address)
 
+  // Create transaction
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DISTRIBUTION", event.address)
+  transaction.sentAmount = event.params.fiduLiquidated
+  transaction.sentToken = "FIDU"
+  transaction.save()
+
   const epoch = new Epoch(event.params.epochId.toString())
 
   epoch.endsAt = event.params.endTime.toI32()

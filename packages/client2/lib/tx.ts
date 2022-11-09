@@ -70,6 +70,7 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
           case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
           case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
           case TransactionCategory.SeniorPoolWithdrawalRequest:
+          case TransactionCategory.SeniorPoolDistribution:
             break;
           default:
             assertUnreachable(curr.category);
@@ -103,6 +104,7 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
       case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
       case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
       case TransactionCategory.SeniorPoolWithdrawalRequest:
+      case TransactionCategory.SeniorPoolDistribution:
         return true;
       default:
         return assertUnreachable(tx.category);

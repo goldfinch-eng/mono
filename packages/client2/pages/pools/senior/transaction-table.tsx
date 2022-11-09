@@ -26,6 +26,7 @@ gql`
           SENIOR_POOL_WITHDRAWAL
           SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
           SENIOR_POOL_UNSTAKE
+          SENIOR_POOL_DISTRIBUTION
         ]
       }
       orderBy: timestamp
@@ -59,12 +60,14 @@ const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
   TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
+  TransactionCategory.SeniorPoolDistribution,
 ]);
 
 const sentTokenCategories = new Set<TransactionCategory>([
   TransactionCategory.SeniorPoolStake,
   TransactionCategory.SeniorPoolDepositAndStake,
   TransactionCategory.TranchedPoolRepayment,
+  TransactionCategory.SeniorPoolDistribution,
 ]);
 
 export function TransactionTable() {

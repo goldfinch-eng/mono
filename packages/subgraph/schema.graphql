@@ -247,6 +247,7 @@ enum TransactionCategory {
   # only a single `amount` value for the transaction, so it "wants" us to do such summing. But we
   # cannot.
   SENIOR_POOL_REDEMPTION
+  SENIOR_POOL_DISTRIBUTION
   TRANCHED_POOL_DEPOSIT
   TRANCHED_POOL_WITHDRAWAL
   TRANCHED_POOL_REPAYMENT
