@@ -98,6 +98,10 @@ gql`
         symbol
       }
     }
+    vaultedGfis(where: { user: $userId }) {
+      id
+      amount
+    }
     curvePool @client {
       usdcPerLpToken
     }
@@ -183,8 +187,15 @@ export default function DashboardPage() {
     return gfiTotalClaimable.add(gfiTotalLocked);
   }, [data]);
 
-  const { summaryHoldings, totalUsdc } = useMemo(() => {
+  const gfiVaultedTotal = useMemo(() => {
     if (!data) {
+      return BigNumber.from(0);
+    }
+    return sum("amount", data.vaultedGfis);
+  }, [data]);
+
+  const { summaryHoldings, totalUsdc } = useMemo(() => {
+    if (!data || !data.viewer.gfiBalance) {
       return {};
     }
     const borrowerPoolTotal = {
@@ -197,18 +208,15 @@ export default function DashboardPage() {
         ),
     };
 
-    const gfiTotal = data.viewer.gfiBalance
-      ? gfiToUsdc(
-          {
-            token: SupportedCrypto.Gfi,
-            amount: data.viewer.gfiBalance.amount.add(gfiRewardsTotal),
-          },
-          data.gfiPrice.price.amount
-        )
-      : {
-          token: SupportedCrypto.Usdc,
-          amount: gfiRewardsTotal,
-        };
+    const gfiTotal = gfiToUsdc(
+      {
+        token: SupportedCrypto.Gfi,
+        amount: data.viewer.gfiBalance.amount
+          .add(gfiRewardsTotal)
+          .add(gfiVaultedTotal),
+      },
+      data.gfiPrice.price.amount
+    );
 
     const seniorPoolTotal = sharesToUsdc(
       sum(
@@ -281,7 +289,7 @@ export default function DashboardPage() {
       totalUsdc,
       summaryHoldings,
     };
-  }, [data, gfiRewardsTotal]);
+  }, [data, gfiRewardsTotal, gfiVaultedTotal]);
 
   const [expanded, setExpanded] = useState({
     borrower: false,
@@ -412,7 +420,8 @@ export default function DashboardPage() {
                       ) : null}
                       {(data.viewer.gfiBalance &&
                         !data.viewer.gfiBalance.amount.isZero()) ||
-                      !gfiRewardsTotal.isZero() ? (
+                      !gfiRewardsTotal.isZero() ||
+                      !gfiVaultedTotal.isZero() ? (
                         <ExpandableHoldings
                           title="GFI"
                           tooltip="Your GFI token holdings, including your claimable GFI rewards, locked GFI rewards, and any GFI held in your linked wallet."
@@ -461,6 +470,33 @@ export default function DashboardPage() {
                                       data.gfiPrice.price.amount
                                     ),
                                     url: "/gfi",
+                                  },
+                                ]
+                              : []),
+                            ...(!gfiVaultedTotal.isZero()
+                              ? [
+                                  {
+                                    name: "Vaulted GFI",
+                                    percentage: computePercentage(
+                                      gfiToUsdc(
+                                        {
+                                          token: SupportedCrypto.Gfi,
+                                          amount: gfiVaultedTotal,
+                                        },
+                                        data.gfiPrice.price.amount
+                                      ).amount,
+                                      totalUsdc.amount
+                                    ),
+                                    quantity: gfiVaultedTotal,
+                                    usdcValue: gfiToUsdc(
+                                      {
+                                        token: SupportedCrypto.Gfi,
+                                        amount: gfiVaultedTotal,
+                                      },
+                                      data.gfiPrice.price.amount
+                                    ),
+                                    url: "/membership",
+                                    vaulted: true,
                                   },
                                 ]
                               : []),
