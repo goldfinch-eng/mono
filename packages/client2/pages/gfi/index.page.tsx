@@ -50,12 +50,24 @@ gql`
     ) {
       ...BackerCardTokenFields
     }
+    vaultedPoolTokens(where: { user: $userId }) {
+      id
+      poolToken {
+        ...BackerCardTokenFields
+      }
+    }
     seniorPoolStakedPositions(
       where: { user: $userId }
       orderBy: startTime
       orderDirection: asc
     ) {
       ...StakingCardPositionFields
+    }
+    vaultedStakedPositions(where: { user: $userId }) {
+      id
+      seniorPoolStakedPosition {
+        ...StakingCardPositionFields
+      }
     }
   }
 `;
@@ -163,11 +175,21 @@ export default function GfiPage() {
                 <div className="justify-self-end">Claimable GFI</div>
               </div>
               <div className="space-y-3">
-                {data?.seniorPoolStakedPositions.map((position) => (
+                {data.seniorPoolStakedPositions.map((position) => (
                   <StakingCard key={position.id} position={position} />
                 ))}
-                {data?.tranchedPoolTokens.map((token) => (
+                {data.vaultedStakedPositions.map((v) => (
+                  <StakingCard
+                    key={v.id}
+                    position={v.seniorPoolStakedPosition}
+                    vaulted
+                  />
+                ))}
+                {data.tranchedPoolTokens.map((token) => (
                   <BackerCard key={token.id} token={token} />
+                ))}
+                {data.vaultedPoolTokens.map((v) => (
+                  <BackerCard key={v.id} token={v.poolToken} vaulted />
                 ))}
                 {grantsWithTokens?.map(
                   ({ grant, token, claimable, locked }, index) => (
