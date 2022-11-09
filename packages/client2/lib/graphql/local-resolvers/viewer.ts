@@ -114,4 +114,25 @@ export const viewerResolvers: Resolvers[string] = {
 
     return gfiGrants;
   },
+  async claimableMembershipRewards(): Promise<CryptoAmount | null> {
+    try {
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
+
+      const membershipContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const availableRewards = await membershipContract.claimableRewards(
+        account
+      );
+      return {
+        __typename: "CryptoAmount",
+        token: SupportedCrypto.Fidu,
+        amount: availableRewards,
+      };
+    } catch (e) {
+      return null;
+    }
+  },
 };

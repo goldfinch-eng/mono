@@ -290,49 +290,6 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "assetAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
-      "name": "depositCapitalERC721",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "positionId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "depositGFI",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "positionId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
           "name": "memberAddress",
           "type": "address"
         },
@@ -593,38 +550,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "positionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "withdrawCapital",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "positionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "withdrawGFI",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "implementationAddress",
           "type": "address"
@@ -644,21 +569,21 @@
       "type": "constructor"
     }
   ],
-  "transactionHash": "0x8fb4a9a963a701b5f3c0fe8976c9e2e1c82373d30bf34abe0ffcffd9f7e44c38",
+  "transactionHash": "0x3163ebc8fe15e0ec1a58d30e25f32c0f75a27714dee00ce895071f8d1b94a6d2",
   "receipt": {
     "to": null,
     "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "contractAddress": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
     "transactionIndex": 0,
-    "gasUsed": "662314",
+    "gasUsed": "662203",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000400000000000400000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000002000000020000000000000100000800000000000000000000000000000000400000000000000002000000000000000000000000000000000000000000000000000000004000000000000000000200000000000800000000000000000000000000000000000000200000000000000000000000002000000000000000000020000000000000000000000400000000000000000002000000000000000000000000",
-    "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1",
-    "transactionHash": "0x8fb4a9a963a701b5f3c0fe8976c9e2e1c82373d30bf34abe0ffcffd9f7e44c38",
+    "blockHash": "0x86a596649a6204dbe7be98bcc5ead30c2113b0912682d390cecc5a14df7c497b",
+    "transactionHash": "0x3163ebc8fe15e0ec1a58d30e25f32c0f75a27714dee00ce895071f8d1b94a6d2",
     "logs": [
       {
         "transactionIndex": 0,
         "blockNumber": 89,
-        "transactionHash": "0x8fb4a9a963a701b5f3c0fe8976c9e2e1c82373d30bf34abe0ffcffd9f7e44c38",
+        "transactionHash": "0x3163ebc8fe15e0ec1a58d30e25f32c0f75a27714dee00ce895071f8d1b94a6d2",
         "address": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
         "topics": [
           "0x5570d70a002632a7b0b3c9304cc89efb62d8da9eca0dbd7752c83b7379068296",
@@ -667,12 +592,12 @@
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1"
+        "blockHash": "0x86a596649a6204dbe7be98bcc5ead30c2113b0912682d390cecc5a14df7c497b"
       },
       {
         "transactionIndex": 0,
         "blockNumber": 89,
-        "transactionHash": "0x8fb4a9a963a701b5f3c0fe8976c9e2e1c82373d30bf34abe0ffcffd9f7e44c38",
+        "transactionHash": "0x3163ebc8fe15e0ec1a58d30e25f32c0f75a27714dee00ce895071f8d1b94a6d2",
         "address": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
@@ -681,11 +606,11 @@
         ],
         "data": "0x",
         "logIndex": 1,
-        "blockHash": "0x0e70b81e2bf155e81670d67d3274ce12cecc0c38e41ce258666f2fcce10072b1"
+        "blockHash": "0x86a596649a6204dbe7be98bcc5ead30c2113b0912682d390cecc5a14df7c497b"
       }
     ],
     "blockNumber": 89,
-    "cumulativeGasUsed": "662314",
+    "cumulativeGasUsed": "662203",
     "status": 1,
     "byzantium": true
   },

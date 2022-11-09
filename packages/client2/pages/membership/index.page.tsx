@@ -55,6 +55,10 @@ gql`
         token
         amount
       }
+      claimableMembershipRewards {
+        token
+        amount
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -177,7 +181,14 @@ export default function MembershipPage() {
         <div>You must connect your wallet to view your membership vault</div>
       ) : (
         <>
-          <RewardClaimer sharePrice={sharePrice} className="mb-4" />
+          {data?.viewer.claimableMembershipRewards &&
+          !data.viewer.claimableMembershipRewards.amount.isZero() ? (
+            <RewardClaimer
+              sharePrice={sharePrice}
+              className="mb-4"
+              claimable={data.viewer.claimableMembershipRewards}
+            />
+          ) : null}
           {data?.vaultedGfis.length === 0 &&
           data?.vaultedStakedPositions.length === 0 &&
           data?.vaultedPoolTokens.length === 0 ? (
