@@ -1,3 +1,4 @@
+import { useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -11,6 +12,7 @@ import { useWallet } from "@/lib/wallet";
 export function MembershipRewardDistributionButton() {
   const rhfMethods = useForm();
   const { provider, account } = useWallet();
+  const apolloClient = useApolloClient();
   const onSubmit = async () => {
     if (!provider || !account) {
       throw new Error("Wallet not connected properly");
@@ -37,6 +39,7 @@ export function MembershipRewardDistributionButton() {
       transaction: erc20SplitterContract.distribute(),
       pendingPrompt: "Finalizing epoch",
     });
+    await apolloClient.refetchQueries({ include: "all" });
   };
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
