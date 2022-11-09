@@ -16,7 +16,7 @@ export function handleGfiDeposit(event: GFIDeposit): void {
   transaction.save()
 }
 
-export function handleGfiWithdraw(event: GFIWithdrawal): void {
+export function handleGfiWithdrawal(event: GFIWithdrawal): void {
   if (event.params.remainingAmount.isZero()) {
     store.remove("VaultedGfi", event.params.positionId.toString())
   } else {

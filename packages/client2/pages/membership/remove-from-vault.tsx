@@ -183,11 +183,27 @@ export function RemoveFromVault({
       provider,
     });
 
+    const gfiPositions: VaultedGfiFieldsFragment[] = [];
+    for (const vaulted of vaultedGfi) {
+      const remainingToWithdraw = gfiToUnvault.amount.sub(
+        sum("amount", gfiPositions)
+      );
+      if (remainingToWithdraw.isZero()) {
+        break;
+      }
+      const amountFromThisToken = vaulted.amount.gt(remainingToWithdraw)
+        ? remainingToWithdraw
+        : vaulted.amount;
+      gfiPositions.push({ id: vaulted.id, amount: amountFromThisToken });
+    }
+    if (sum("amount", gfiPositions).lt(gfiToUnvault.amount)) {
+      throw new Error("Insufficient balance to withdraw");
+    }
     const capitalPositions = stakedPositionsToUnvault
       .map((s) => s.id)
       .concat(poolTokensToUnvault.map((p) => p.id));
     const transaction = membershipContract.withdraw({
-      gfiPositions: [], // TODO fill this out. GFI needs to change checkboxes
+      gfiPositions,
       capitalPositions,
     });
     await toastTransaction({
