@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { format } from "date-fns";
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { useMemo } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 
@@ -12,6 +12,7 @@ import {
   CryptoAmount,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { epochFinalizedDate } from "@/lib/membership";
 import { sum } from "@/lib/pools";
 
 export const CHART_DISBURSEMENT_FIELDS = gql`
@@ -26,30 +27,62 @@ export const CHART_DISBURSEMENT_FIELDS = gql`
 interface YourRewardsProps {
   className?: string;
   disbursements: ChartDisbursementFieldsFragment[];
+  currentBlockTimestamp: number;
 }
 
 interface Payload {
   timestamp: number;
-  amount: number;
+  amount: number | null;
   cryptoAmount: CryptoAmount;
+  projectedAmount: number | null; // the use of `projectedAmount` is just a cheap trick to enable part of the chart to be a solid line while another part is a dashed line
+  isProjection?: boolean;
 }
 
-export function YourRewards({ className, disbursements }: YourRewardsProps) {
+export function YourRewards({
+  className,
+  disbursements,
+  currentBlockTimestamp,
+}: YourRewardsProps) {
   const data: Payload[] = useMemo(() => {
-    return disbursements.map((disbursement, index) => ({
+    const d: Payload[] = disbursements.map((disbursement, index) => ({
       timestamp: disbursement.allocatedAt * 1000,
-      amount: parseFloat(
-        utils.formatUnits(
-          sum("rewards", disbursements.slice(0, index + 1)),
-          FIDU_DECIMALS
-        )
+      amount: fiduBigNumberToFloat(
+        sum("rewards", disbursements.slice(0, index + 1))
       ),
       cryptoAmount: {
         token: SupportedCrypto.Fidu,
         amount: sum("rewards", disbursements.slice(0, index + 1)),
       },
+      projectedAmount: null,
     }));
-  }, [disbursements]);
+
+    const lastFinalizedData = d.slice(-1)[0];
+    const lastDisbursement = disbursements.slice(-1)[0];
+
+    d.push(
+      {
+        timestamp: lastFinalizedData.timestamp,
+        amount: null,
+        cryptoAmount: lastFinalizedData.cryptoAmount,
+        projectedAmount: lastFinalizedData.amount,
+      },
+      {
+        timestamp: epochFinalizedDate(currentBlockTimestamp * 1000).getTime(),
+        amount: null,
+        cryptoAmount: {
+          token: SupportedCrypto.Fidu,
+          amount: lastFinalizedData.cryptoAmount.amount.add(
+            lastDisbursement.rewards
+          ),
+        },
+        projectedAmount:
+          (lastFinalizedData.amount as number) +
+          fiduBigNumberToFloat(lastDisbursement.rewards),
+        isProjection: true,
+      }
+    );
+    return d;
+  }, [disbursements, currentBlockTimestamp]);
   return (
     <div className={clsx("rounded-lg border border-sand-200 p-8", className)}>
       <h2 className="mb-10 text-4xl">Your Member Rewards</h2>
@@ -65,6 +98,14 @@ export function YourRewards({ className, disbursements }: YourRewardsProps) {
             type="stepAfter"
             dataKey="amount"
             stroke="#84CFAC"
+            strokeWidth="4"
+            fill="url(#areaGradient)"
+          />
+          <Area
+            type="stepAfter"
+            dataKey="projectedAmount"
+            stroke="#84CFAC"
+            strokeDasharray={10}
             strokeWidth="4"
             fill="url(#areaGradient)"
           />
@@ -85,6 +126,10 @@ export function YourRewards({ className, disbursements }: YourRewardsProps) {
   );
 }
 
+function fiduBigNumberToFloat(fidu: BigNumber): number {
+  return parseFloat(utils.formatUnits(fidu, FIDU_DECIMALS));
+}
+
 function CustomTooltip({
   active,
   payload,
@@ -92,7 +137,12 @@ function CustomTooltip({
   active?: boolean;
   payload?: { payload: Payload }[];
 }) {
-  if (active && payload && payload.length > 0) {
+  if (
+    active &&
+    payload &&
+    payload.length > 0 &&
+    payload[0].payload.cryptoAmount !== null
+  ) {
     return (
       <div className="rounded border border-sand-200 bg-white p-3 text-sm">
         <div className="font-medium">
@@ -100,6 +150,7 @@ function CustomTooltip({
         </div>
         <div className="text-sand-500">
           {formatCrypto(payload[0].payload.cryptoAmount)}
+          {payload[0].payload.isProjection ? " (Projected)" : null}
         </div>
       </div>
     );

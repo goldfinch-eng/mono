@@ -204,6 +204,7 @@ export default function MembershipPage() {
             <YourRewards
               className="mb-16"
               disbursements={data.membershipRewardDisbursements}
+              currentBlockTimestamp={data.currentBlock.timestamp}
             />
           ) : null}
           {data?.vaultedGfis.length === 0 &&
