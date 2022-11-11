@@ -2,9 +2,10 @@ import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { format } from "date-fns";
 import { BigNumber, utils } from "ethers";
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 
+import { InfoIconTooltip } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -13,7 +14,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { epochFinalizedDate } from "@/lib/membership";
-import { sum } from "@/lib/pools";
+import { sharesToUsdc, sum } from "@/lib/pools";
 
 export const CHART_DISBURSEMENT_FIELDS = gql`
   fragment ChartDisbursementFields on MembershipRewardDisbursement {
@@ -28,6 +29,8 @@ interface YourRewardsProps {
   className?: string;
   disbursements: ChartDisbursementFieldsFragment[];
   currentBlockTimestamp: number;
+  sharePrice: BigNumber;
+  accruedThisEpoch: CryptoAmount;
 }
 
 interface Payload {
@@ -42,6 +45,8 @@ export function YourRewards({
   className,
   disbursements,
   currentBlockTimestamp,
+  sharePrice,
+  accruedThisEpoch,
 }: YourRewardsProps) {
   const data: Payload[] = useMemo(() => {
     const d: Payload[] = disbursements.map((disbursement, index) => ({
@@ -57,7 +62,6 @@ export function YourRewards({
     }));
 
     const lastFinalizedData = d.slice(-1)[0];
-    const lastDisbursement = disbursements.slice(-1)[0];
 
     d.push(
       {
@@ -72,56 +76,147 @@ export function YourRewards({
         cryptoAmount: {
           token: SupportedCrypto.Fidu,
           amount: lastFinalizedData.cryptoAmount.amount.add(
-            lastDisbursement.rewards
+            accruedThisEpoch.amount
           ),
         },
         projectedAmount:
           (lastFinalizedData.amount as number) +
-          fiduBigNumberToFloat(lastDisbursement.rewards),
+          fiduBigNumberToFloat(accruedThisEpoch.amount),
         isProjection: true,
       }
     );
     return d;
-  }, [disbursements, currentBlockTimestamp]);
+  }, [disbursements, currentBlockTimestamp, accruedThisEpoch]);
   return (
-    <div className={clsx("rounded-lg border border-sand-200 p-8", className)}>
+    <div className={className}>
       <h2 className="mb-10 text-4xl">Your Member Rewards</h2>
-      <ResponsiveContainer width="100%" aspect={2.5}>
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#84CFAC" stopOpacity={1} />
-              <stop offset="100%" stopColor="#84CFAC" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="stepAfter"
-            dataKey="amount"
-            stroke="#84CFAC"
-            strokeWidth="4"
-            fill="url(#areaGradient)"
+      <WrapperGrid>
+        {disbursements.length >= 2 ? (
+          <GridItem className="col-span-full">
+            <ResponsiveContainer width="100%" aspect={2.5}>
+              <AreaChart data={data}>
+                <defs>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#84CFAC" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#84CFAC" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="stepAfter"
+                  dataKey="amount"
+                  stroke="#84CFAC"
+                  strokeWidth="4"
+                  fill="url(#areaGradient)"
+                />
+                <Area
+                  type="stepAfter"
+                  dataKey="projectedAmount"
+                  stroke="#84CFAC"
+                  strokeLinecap="round"
+                  strokeDasharray={10}
+                  strokeWidth="4"
+                  fill="url(#areaGradient)"
+                />
+                <XAxis
+                  dataKey="timestamp"
+                  scale="time"
+                  type="number"
+                  domain={["dataMin", "dataMax"]}
+                  tickFormatter={(timestamp) => format(timestamp, "MM/yy")}
+                  tickMargin={8}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </GridItem>
+        ) : null}
+        <GridItem>
+          <Stat
+            heading="Total Member Rewards distributed to date"
+            icon={<div className="h-2 w-2 rounded-full bg-mint-450" />}
+            tooltip="The total value of Member Rewards distributed to your address since you became a Member."
+            left={formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: sharesToUsdc(sum("rewards", disbursements), sharePrice)
+                .amount,
+            })}
+            right={formatCrypto({
+              token: SupportedCrypto.Fidu,
+              amount: sum("rewards", disbursements),
+            })}
           />
-          <Area
-            type="stepAfter"
-            dataKey="projectedAmount"
-            stroke="#84CFAC"
-            strokeDasharray={10}
-            strokeWidth="4"
-            fill="url(#areaGradient)"
+        </GridItem>
+        <GridItem>
+          <Stat
+            heading="Member rewards accrued this week"
+            tooltip="The total value of Member Rewards distributed to your address since you became a Member."
+            left={formatCrypto(
+              sharesToUsdc(accruedThisEpoch.amount, sharePrice)
+            )}
+            right={formatCrypto(accruedThisEpoch)}
           />
-          <XAxis
-            dataKey="timestamp"
-            scale="time"
-            type="number"
-            domain={["dataMin", "dataMax"]}
-            tickFormatter={(timestamp) => format(timestamp, "MM/yy")}
-            tickMargin={8}
-            tickLine={false}
-            axisLine={false}
+        </GridItem>
+        <GridItem>
+          <Stat
+            heading="Next Member Reward distribution"
+            tooltip="The date of the next Member Reward distribution. Withdrawing your Capital from the Member Vault before this date will forfeit your rewards for this weekly cycle."
+            left={format(
+              epochFinalizedDate(currentBlockTimestamp * 1000),
+              "MMMM dd, yyyy"
+            )}
           />
-          <Tooltip content={<CustomTooltip />} />
-        </AreaChart>
-      </ResponsiveContainer>
+        </GridItem>
+      </WrapperGrid>
+    </div>
+  );
+}
+
+function WrapperGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-sand-200 bg-sand-200 md:grid-cols-3">
+      {children}
+    </div>
+  );
+}
+
+function GridItem({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={clsx("bg-white p-8", className)}>{children}</div>;
+}
+
+function Stat({
+  heading,
+  icon,
+  tooltip,
+  left,
+  right,
+}: {
+  heading: string;
+  icon?: ReactNode;
+  tooltip?: string;
+  left: string;
+  right?: string;
+}) {
+  return (
+    <div>
+      <div className="mb-3 flex items-center text-sm text-sand-600">
+        {icon ? <div className="mr-2.5">{icon}</div> : null}
+        {heading}
+        {tooltip ? (
+          <InfoIconTooltip className="ml-2.5" content={tooltip} />
+        ) : null}
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="text-lg font-medium">{left}</div>
+        {right ? <div className="text-sm text-sand-400">{right}</div> : null}
+      </div>
     </div>
   );
 }

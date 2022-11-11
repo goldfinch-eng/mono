@@ -61,6 +61,10 @@ gql`
         token
         amount
       }
+      accruedMembershipRewardsThisEpoch {
+        token
+        amount
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -200,11 +204,13 @@ export default function MembershipPage() {
               claimable={data.viewer.claimableMembershipRewards}
             />
           ) : null}
-          {data && data.membershipRewardDisbursements.length > 2 ? (
+          {data && data.viewer.accruedMembershipRewardsThisEpoch ? (
             <YourRewards
               className="mb-16"
               disbursements={data.membershipRewardDisbursements}
               currentBlockTimestamp={data.currentBlock.timestamp}
+              sharePrice={sharePrice}
+              accruedThisEpoch={data.viewer.accruedMembershipRewardsThisEpoch}
             />
           ) : null}
           {data?.vaultedGfis.length === 0 &&

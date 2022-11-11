@@ -107,6 +107,7 @@ type Viewer {
   curveLpBalance: CryptoAmount
   gfiGrants: [GfiGrant!]!
   claimableMembershipRewards: CryptoAmount
+  accruedMembershipRewardsThisEpoch: CryptoAmount
 }
 
 type BlockInfo {
