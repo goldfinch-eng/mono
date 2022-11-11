@@ -375,6 +375,9 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - MembershipEpoch
+        - Membership
+        - MembershipRoster
+        - MembershipRewardDisbursement
       abis:
         - name: MembershipCollector
           file: ./abis/MembershipCollector.json
@@ -449,6 +452,32 @@ dataSources:
         - event: RewardsClaimed(indexed address,uint256)
           handler: handleRewardsClaimed
       file: ./src/mappings/membership/membership_director.ts
+
+  - kind: ethereum/contract
+    name: MembershipVault
+    network: mainnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: MembershipVault
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Membership
+        - MembershipRoster
+      abis:
+        - name: MembershipVault
+          file: ./abis/MembershipVault.json
+      eventHandlers:
+        - event: IncreasedHoldings(indexed address,uint256)
+          handler: handleIncreasedHoldings
+        - event: DecreasedHoldings(indexed address,uint256,uint256)
+          handler: handleDecreasedHoldings
+        - event: VaultTotalUpdate(uint256,uint256)
+          handler: handleVaultTotalUpdate
+      file: ./src/mappings/membership/membership_vault.ts
 
 templates:
   - name: TranchedPool

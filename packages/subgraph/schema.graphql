@@ -365,20 +365,24 @@ type VaultedPoolToken @entity {
   tranchedPool: TranchedPool!
 }
 
-type Member @entity {
+type Membership @entity {
   id: ID!
+  user: User!
   eligibleScore: BigInt!
-  totalScore: BigInt!
+  nextEpochScore: BigInt!
 }
 
-type MembershipVaultData @entity {
+type MembershipRoster @entity {
   id: ID! # hard-coded to 1. This is a singleton.
-  members: [Member!]!
-  totalMembershipScore: BigInt!
+  members: [Membership!]!
+  eligibleScoreTotal: BigInt!
+  nextEpochScoreTotal: BigInt!
 }
 
-type MemberRewardDisbursement @entity(immutable: true) {
+type MembershipRewardDisbursement @entity(immutable: true) {
   id: ID!
+  user: User!
+  epoch: BigInt! # The epoch number
   allocatedAt: Int!
   rewards: BigInt!
 }
