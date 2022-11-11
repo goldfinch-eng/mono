@@ -33,11 +33,13 @@ import {
   VAULTED_POOL_TOKEN_FIELDS,
 } from "./remove-from-vault";
 import { RewardClaimer } from "./reward-claimer";
+import { CHART_DISBURSEMENT_FIELDS, YourRewards } from "./your-rewards";
 
 gql`
   ${VAULTED_GFI_FIELDS}
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
+  ${CHART_DISBURSEMENT_FIELDS}
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -103,6 +105,15 @@ gql`
     vaultedPoolTokens(where: { user: $userId }) {
       id
       ...VaultedPoolTokenFields
+    }
+
+    membershipRewardDisbursements(
+      where: { user: $userId }
+      orderBy: epoch
+      orderDirection: asc
+    ) {
+      id
+      ...ChartDisbursementFields
     }
   }
 `;
@@ -189,6 +200,12 @@ export default function MembershipPage() {
               claimable={data.viewer.claimableMembershipRewards}
             />
           ) : null}
+          {data && data.membershipRewardDisbursements.length > 2 ? (
+            <YourRewards
+              className="mb-16"
+              disbursements={data.membershipRewardDisbursements}
+            />
+          ) : null}
           {data?.vaultedGfis.length === 0 &&
           data?.vaultedStakedPositions.length === 0 &&
           data?.vaultedPoolTokens.length === 0 ? (
@@ -239,7 +256,6 @@ export default function MembershipPage() {
               </div>
             </div>
           ) : null}
-          <div className="mb-16">Chart goes here</div>
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
             <div className="flex flex-col items-stretch justify-between gap-10 lg:flex-row lg:items-start">
