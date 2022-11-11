@@ -192,6 +192,7 @@ const singleDealQuery = gql`
     Deal(id: $id) {
       id
       name
+      dealType
       category
       borrower {
         ...BorrowerProfileFields
@@ -367,6 +368,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           {poolStatus === PoolStatus.Open ||
           poolStatus === PoolStatus.Closed ? (
             <FundingBar
+              isMultitranche={dealDetails.dealType === "multitranche"}
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {

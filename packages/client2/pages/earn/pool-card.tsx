@@ -30,6 +30,7 @@ interface PoolCardProps {
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
+  dealType?: "unitranche" | "multitranche";
 }
 
 function getColorScheme(
@@ -51,7 +52,9 @@ function getColorScheme(
   }
 }
 
-function getChipContent(poolStatus?: PoolStatus): string | null {
+function getChipContent(
+  poolStatus?: PoolStatus | "unitranche" | "multitranche"
+): string | null {
   switch (poolStatus) {
     case PoolStatus.Full:
       return "FULL";
@@ -63,6 +66,10 @@ function getChipContent(poolStatus?: PoolStatus): string | null {
       return "COMING SOON";
     case PoolStatus.Repaid:
       return "REPAID";
+    case "unitranche":
+      return "Unitranche";
+    case "multitranche":
+      return "Multitranche";
     default:
       return null;
   }
@@ -76,6 +83,7 @@ export function PoolCard({
   icon,
   href,
   poolStatus,
+  dealType,
 }: PoolCardProps) {
   return (
     <PoolCardLayout
@@ -111,7 +119,8 @@ export function PoolCard({
           />
         </div>
       }
-      chipSlot={
+      chipSlot={<Chip colorScheme="white">{getChipContent(dealType)}</Chip>}
+      chipSlot2={
         <Chip colorScheme={getColorScheme(poolStatus)}>
           {getChipContent(poolStatus)}
         </Chip>
@@ -140,6 +149,7 @@ interface PoolCardLayoutProps {
   dataSlot1: ReactNode;
   dataSlot2: ReactNode;
   chipSlot: ReactNode;
+  chipSlot2?: ReactNode;
 }
 
 function PoolCardLayout({
@@ -149,6 +159,7 @@ function PoolCardLayout({
   dataSlot1,
   dataSlot2,
   chipSlot,
+  chipSlot2,
 }: PoolCardLayoutProps) {
   return (
     <div className="pool-card relative grid items-center gap-x-4 rounded bg-sand-100 p-5 hover:bg-sand-200">
@@ -172,6 +183,12 @@ function PoolCardLayout({
       >
         {chipSlot}
       </div>
+      <div
+        className="justify-self-start sm:justify-self-end"
+        style={{ gridArea: "chip" }}
+      >
+        {chipSlot2}
+      </div>
     </div>
   );
 }
@@ -194,6 +211,7 @@ export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
   fragment TranchedPoolCardDealFields on Deal {
     id
     name
+    dealType
     category
     borrower {
       id
@@ -277,6 +295,7 @@ export function TranchedPoolCard({
       }
       href={href}
       poolStatus={poolStatus}
+      dealType={details.dealType}
     />
   );
 }

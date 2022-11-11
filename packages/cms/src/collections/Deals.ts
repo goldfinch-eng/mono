@@ -46,6 +46,21 @@ const Deals: CollectionConfig = {
       required: true,
     },
     {
+      name: "dealType",
+      type: "select",
+      defaultValue: "multitranche",
+      options: [
+        {
+          label: "Multitranche",
+          value: "multitranche",
+        },
+        {
+          label: "Unitranche",
+          value: "unitranche",
+        },
+      ],
+    },
+    {
       name: "category",
       type: "text",
       required: true,
