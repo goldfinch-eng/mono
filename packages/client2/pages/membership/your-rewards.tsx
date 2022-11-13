@@ -5,7 +5,7 @@ import { BigNumber, utils } from "ethers";
 import { ReactNode, useMemo } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 
-import { InfoIconTooltip } from "@/components/design-system";
+import { InfoIconTooltip, Shimmer } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -62,29 +62,31 @@ export function YourRewards({
     }));
 
     const lastFinalizedData = d.slice(-1)[0];
-
-    d.push(
-      {
-        timestamp: lastFinalizedData.timestamp,
-        amount: null,
-        cryptoAmount: lastFinalizedData.cryptoAmount,
-        projectedAmount: lastFinalizedData.amount,
-      },
-      {
-        timestamp: epochFinalizedDate(currentBlockTimestamp * 1000).getTime(),
-        amount: null,
-        cryptoAmount: {
-          token: SupportedCrypto.Fidu,
-          amount: lastFinalizedData.cryptoAmount.amount.add(
-            accruedThisEpoch.amount
-          ),
+    if (lastFinalizedData) {
+      d.push(
+        {
+          timestamp: lastFinalizedData.timestamp,
+          amount: null,
+          cryptoAmount: lastFinalizedData.cryptoAmount,
+          projectedAmount: lastFinalizedData.amount,
         },
-        projectedAmount:
-          (lastFinalizedData.amount as number) +
-          fiduBigNumberToFloat(accruedThisEpoch.amount),
-        isProjection: true,
-      }
-    );
+        {
+          timestamp: epochFinalizedDate(currentBlockTimestamp * 1000).getTime(),
+          amount: null,
+          cryptoAmount: {
+            token: SupportedCrypto.Fidu,
+            amount: lastFinalizedData.cryptoAmount.amount.add(
+              accruedThisEpoch.amount
+            ),
+          },
+          projectedAmount:
+            (lastFinalizedData.amount as number) +
+            fiduBigNumberToFloat(accruedThisEpoch.amount),
+          isProjection: true,
+        }
+      );
+    }
+
     return d;
   }, [disbursements, currentBlockTimestamp, accruedThisEpoch]);
   return (
@@ -197,12 +199,14 @@ function Stat({
   tooltip,
   left,
   right,
+  isPlaceholder = false,
 }: {
   heading: string;
   icon?: ReactNode;
   tooltip?: string;
-  left: string;
+  left?: string;
   right?: string;
+  isPlaceholder?: boolean;
 }) {
   return (
     <div>
@@ -214,8 +218,16 @@ function Stat({
         ) : null}
       </div>
       <div className="flex items-center justify-between">
-        <div className="text-lg font-medium">{left}</div>
-        {right ? <div className="text-sm text-sand-400">{right}</div> : null}
+        {isPlaceholder ? (
+          <Shimmer style={{ width: "16ch" }} />
+        ) : (
+          <>
+            <div className="text-lg font-medium">{left}</div>
+            {right ? (
+              <div className="text-sm text-sand-400">{right}</div>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );
@@ -251,4 +263,39 @@ function CustomTooltip({
     );
   }
   return null;
+}
+
+export function YourRewardsPlaceholder({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <h2 className="mb-10 text-4xl">Your Member Rewards</h2>
+      <WrapperGrid>
+        <GridItem className="col-span-full">
+          <div style={{ width: "100%", aspectRatio: "2.5" }} />
+        </GridItem>
+        <GridItem>
+          <Stat
+            heading="Total Member Rewards distributed to date"
+            icon={<div className="h-2 w-2 rounded-full bg-mint-450" />}
+            tooltip="The total value of Member Rewards distributed to your address since you became a Member."
+            isPlaceholder
+          />
+        </GridItem>
+        <GridItem>
+          <Stat
+            heading="Member rewards accrued this week"
+            tooltip="The total value of Member Rewards distributed to your address since you became a Member."
+            isPlaceholder
+          />
+        </GridItem>
+        <GridItem>
+          <Stat
+            heading="Next Member Reward distribution"
+            tooltip="The date of the next Member Reward distribution. Withdrawing your Capital from the Member Vault before this date will forfeit your rewards for this weekly cycle."
+            isPlaceholder
+          />
+        </GridItem>
+      </WrapperGrid>
+    </div>
+  );
 }

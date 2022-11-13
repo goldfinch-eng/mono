@@ -33,7 +33,11 @@ import {
   VAULTED_POOL_TOKEN_FIELDS,
 } from "./remove-from-vault";
 import { RewardClaimer } from "./reward-claimer";
-import { CHART_DISBURSEMENT_FIELDS, YourRewards } from "./your-rewards";
+import {
+  CHART_DISBURSEMENT_FIELDS,
+  YourRewards,
+  YourRewardsPlaceholder,
+} from "./your-rewards";
 
 gql`
   ${VAULTED_GFI_FIELDS}
@@ -130,6 +134,11 @@ export default function MembershipPage() {
     skip: !account,
   });
   const showLoadingState = isActivating || loading || !data;
+  const userHasVaultPosition =
+    data &&
+    (data.vaultedGfis.length > 0 ||
+      data.vaultedPoolTokens.length > 0 ||
+      data.vaultedStakedPositions.length > 0);
 
   const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
@@ -204,7 +213,10 @@ export default function MembershipPage() {
               claimable={data.viewer.claimableMembershipRewards}
             />
           ) : null}
-          {data && data.viewer.accruedMembershipRewardsThisEpoch ? (
+          {showLoadingState ? (
+            <YourRewardsPlaceholder className="mb-16" />
+          ) : data.viewer.accruedMembershipRewardsThisEpoch &&
+            userHasVaultPosition ? (
             <YourRewards
               className="mb-16"
               disbursements={data.membershipRewardDisbursements}
@@ -213,9 +225,7 @@ export default function MembershipPage() {
               accruedThisEpoch={data.viewer.accruedMembershipRewardsThisEpoch}
             />
           ) : null}
-          {data?.vaultedGfis.length === 0 &&
-          data?.vaultedStakedPositions.length === 0 &&
-          data?.vaultedPoolTokens.length === 0 ? (
+          {!userHasVaultPosition ? (
             <div
               className="mb-16 rounded-lg border border-sand-200 p-8"
               style={{ aspectRatio: "2272 / 752" }}
