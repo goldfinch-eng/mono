@@ -279,7 +279,8 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "Increase Withdrawal",
   [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawal",
   [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]: "Withdrawal Distribution",
+  [TransactionCategory.SeniorPoolDistribution]:
+    "Withdrawal request distribution",
 };
 
 /**
