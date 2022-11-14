@@ -122,7 +122,7 @@ export function PoolCard({
       }
       chipSlot={
         !!dealType ? (
-          <Chip colorScheme="white">{getChipContent(dealType)}</Chip>
+          <Chip colorScheme="transparent">{getChipContent(dealType)}</Chip>
         ) : undefined
       }
       chipSlot2={
