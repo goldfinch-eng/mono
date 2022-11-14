@@ -100,7 +100,7 @@ export default function DevToolsButtons({
               }
             }}
           >
-            Setup Current User
+            Add FIDU & Golist
           </Button>
         </div>
 
