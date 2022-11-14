@@ -29,13 +29,17 @@ export function DevToolsPanel(): JSX.Element {
 
   return (
     <>
-      <div
-        className="fixed bottom-5 right-5"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        <Button size="lg">Dev Tools</Button>
+      <div className="fixed bottom-5 right-5 flex gap-5">
+        <Button size="lg" onClick={() => setOpen(true)}>
+          Dev Tools
+        </Button>
+        <Button
+          size="lg"
+          onClick={() => setIsMembershipPanelOpen(true)}
+          colorScheme="mustard"
+        >
+          Membership Dev Tools
+        </Button>
       </div>
 
       {open && (
