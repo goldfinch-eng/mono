@@ -130,7 +130,7 @@ export function TransactionTable() {
               className="shrink-0 overflow-hidden rounded-full"
               alt=""
             />
-            <div>Goldfinch Protocol</div>
+            <div>{BORROWER_METADATA.protocol.name}</div>
           </>
         ) : (
           <Address address={transaction.user.id} />
