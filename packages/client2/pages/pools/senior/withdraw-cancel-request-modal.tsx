@@ -1,4 +1,4 @@
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Modal, Button, Link } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
@@ -66,9 +66,9 @@ export default function WithdrawCancelRequestModal({
         <h5 className="mb-2 text-base font-medium">
           Confirm withdrawal request
         </h5>
-        <div className="mb-2 flex flex-wrap rounded border border-sand-200 bg-white">
-          <div className="w-1/2 border-r border-b border-sand-200 p-5">
-            <div className="mb-3 text-sm">Current request</div>
+        <div className="mb-2 rounded border border-sand-200 bg-white">
+          <div className="flex items-center justify-between border-b border-sand-200 p-3">
+            <div className="text-sm">Current request amount</div>
             <div className="text-lg">
               {formatCrypto(
                 {
@@ -79,8 +79,8 @@ export default function WithdrawCancelRequestModal({
               )}
             </div>
           </div>
-          <div className="w-1/2 border-b border-sand-200 p-5">
-            <div className="mb-3 text-sm">New request</div>
+          <div className="flex items-center justify-between border-b border-sand-200 p-3">
+            <div className="text-sm">New request total</div>
             <div className="text-lg">
               {formatCrypto(
                 {
@@ -91,8 +91,8 @@ export default function WithdrawCancelRequestModal({
               )}
             </div>
           </div>
-          <div className="w-1/2 border-r border-sand-200 p-5">
-            <div className="mb-3 text-sm">Cancellation fee</div>
+          <div className="flex items-center justify-between border-b border-sand-200 p-3">
+            <div className="text-sm">Cancellation fee</div>
             <div className="text-lg text-redclay-500">
               {currentRequest
                 ? formatCrypto(
@@ -105,8 +105,8 @@ export default function WithdrawCancelRequestModal({
                 : null}
             </div>
           </div>
-          <div className="w-1/2 p-5">
-            <div className="mb-3 text-sm">Change effective</div>
+          <div className="flex items-center justify-between p-3">
+            <div className="text-sm">Change effective</div>
             <div className="text-lg">Immediatedly</div>
           </div>
         </div>

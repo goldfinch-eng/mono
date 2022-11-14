@@ -210,12 +210,12 @@ export default function WithdrawRequestModal({
           <h5 className="mb-2 text-base font-medium">
             Confirm withdrawal request
           </h5>
-          <div className="mb-2 flex rounded border border-sand-200 bg-white">
+          <div className="mb-2 rounded border border-sand-200 bg-white">
             {withdrawalToken ? (
               <>
-                <div className="flex-1 border-r border-sand-200 p-5">
-                  <div className="mb-3 text-sm">Current request</div>
-                  <div className="text-xl">
+                <div className="flex items-center justify-between border-b border-sand-200 p-3">
+                  <div className="text-sm">Current request</div>
+                  <div className="text-lg">
                     {currentRequest
                       ? formatCrypto({
                           amount: currentRequest,
@@ -224,9 +224,9 @@ export default function WithdrawRequestModal({
                       : null}
                   </div>
                 </div>
-                <div className="flex-1 border-r border-sand-200 p-5">
-                  <div className="mb-3 text-sm">New request</div>
-                  <div className="text-xl">
+                <div className="flex items-center justify-between border-b border-sand-200 p-3">
+                  <div className="text-sm">New request</div>
+                  <div className="text-lg">
                     {watchFields[0] && currentRequest
                       ? formatCrypto({
                           amount: utils
@@ -243,9 +243,11 @@ export default function WithdrawRequestModal({
               </>
             ) : (
               <>
-                <div className="flex-1 border-r border-sand-200 p-5">
-                  <div className="mb-3 text-sm">Total FIDU requested</div>
-                  <div className="text-xl">
+                <div className="flex items-center justify-between border-b border-sand-200 p-3">
+                  <div className="text-sm">
+                    Total FIDU request for withdrawal
+                  </div>
+                  <div className="text-lg">
                     {formatCrypto(
                       {
                         amount: watchFields[0]
@@ -259,14 +261,14 @@ export default function WithdrawRequestModal({
                 </div>
               </>
             )}
-            <div className="flex-1 p-5">
-              <div className="mb-3 text-sm">
+            <div className="flex items-center justify-between p-3">
+              <div className="text-sm">
                 {withdrawalToken
                   ? "Next distribution"
                   : "First distribution date"}
               </div>
               {currentEpoch ? (
-                <div className="text-xl">
+                <div className="text-lg">
                   {format(
                     currentEpoch.endTime.mul(1000).toNumber(),
                     "MMM d, y"

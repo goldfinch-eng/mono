@@ -90,8 +90,8 @@ export function SeniorPoolWithDrawalPanel({
       <div className="rounded-xl bg-midnight-01 p-5 text-white">
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between gap-1 text-sm">
-            <div>Your current position value</div>
-            <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
+            <div>Your current position</div>
+            <InfoIconTooltip content="The USD value of your current position in the Senior Pool." />
           </div>
           <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
             {formatCrypto({
@@ -111,8 +111,8 @@ export function SeniorPoolWithDrawalPanel({
         </div>
         <div className="mb-5">
           <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-            <div>Available to withdraw</div>
-            <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
+            <div>Ready to withdraw</div>
+            <InfoIconTooltip content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet." />
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">

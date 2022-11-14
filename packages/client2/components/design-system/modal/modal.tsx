@@ -29,7 +29,7 @@ export interface ModalProps {
   /**
    * Size of heading above
    */
-  titleSize: "md" | "lg";
+  titleSize?: "md" | "lg";
   /**
   /**
    * Gives a screen-reader accessible description to this modal.
