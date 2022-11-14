@@ -236,6 +236,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await txn.wait()
     /*** UNITRANCHE CLOSED END ***/
 
+    /*** EMPTY POOL START ***/
     const empty = await createPoolForBorrower({
       getOrNull,
       underwriter,
@@ -245,6 +246,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
     })
     await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
+    /*** EMPTY POOL START ***/
 
     /*** COMMON POOL START ***/
     const commonPool = await createPoolForBorrower({
