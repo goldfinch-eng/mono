@@ -28,6 +28,7 @@ import {
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -245,7 +246,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-  const isMultitranche = dealDetails.dealType === "multitranche";
+  const isMultitranche = dealDetails.dealType === Deal_DealType.Multitranche;
 
   if (error) {
     return (
