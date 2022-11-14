@@ -403,7 +403,7 @@ dataSources:
         - name: GFILedger
           file: ./abis/GFILedger.json
       eventHandlers:
-        - event: GFIDeposit(indexed address,indexed uint256,uint256,uint256)
+        - event: GFIDeposit(indexed address,indexed uint256,uint256)
           handler: handleGfiDeposit
         - event: GFIWithdrawal(indexed address,indexed uint256,uint256,uint256,uint256)
           handler: handleGfiWithdrawal
@@ -426,7 +426,7 @@ dataSources:
         - name: CapitalLedger
           file: ./abis/CapitalLedger.json
       eventHandlers:
-        - event: CapitalERC721Deposit(indexed address,indexed address,uint256,uint256,uint256,uint256)
+        - event: CapitalERC721Deposit(indexed address,indexed address,uint256,uint256,uint256)
           handler: handleCapitalErc721Deposit
         - event: CapitalERC721Withdrawal(indexed address,uint256,address,uint256)
           handler: handleCapitalErc721Withdrawal
@@ -471,10 +471,8 @@ dataSources:
         - name: MembershipVault
           file: ./abis/MembershipVault.json
       eventHandlers:
-        - event: IncreasedHoldings(indexed address,uint256)
-          handler: handleIncreasedHoldings
-        - event: DecreasedHoldings(indexed address,uint256,uint256)
-          handler: handleDecreasedHoldings
+        - event: AdjustedHoldings(indexed address,uint256,uint256)
+          handler: handleAdjustedHoldings
         - event: VaultTotalUpdate(uint256,uint256)
           handler: handleVaultTotalUpdate
       file: ./src/mappings/membership/membership_vault.ts

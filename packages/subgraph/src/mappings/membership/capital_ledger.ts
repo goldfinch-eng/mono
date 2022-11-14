@@ -1,4 +1,4 @@
-import {log, store} from "@graphprotocol/graph-ts"
+import {store} from "@graphprotocol/graph-ts"
 
 import {CapitalERC721Deposit, CapitalERC721Withdrawal} from "../../../generated/CapitalLedger/CapitalLedger"
 import {VaultedStakedPosition, VaultedPoolToken, TranchedPoolToken} from "../../../generated/schema"

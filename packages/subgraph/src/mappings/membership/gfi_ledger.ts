@@ -7,7 +7,7 @@ export function handleGfiDeposit(event: GFIDeposit): void {
   const vaultedGfi = new VaultedGfi(event.params.positionId.toString())
   vaultedGfi.amount = event.params.amount
   vaultedGfi.user = event.params.owner.toHexString()
-  vaultedGfi.vaultedAt = event.params.depositTimestamp.toI32()
+  vaultedGfi.vaultedAt = event.block.timestamp.toI32()
   vaultedGfi.save()
 
   const transaction = createTransactionFromEvent(event, "MEMBERSHIP_GFI_DEPOSIT", event.params.owner)
