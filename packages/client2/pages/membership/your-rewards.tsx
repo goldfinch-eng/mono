@@ -158,6 +158,7 @@ export function YourRewards({
         <GridItem>
           <Stat
             heading="Member rewards accrued this week"
+            icon={<DoubleDotIcon />}
             tooltip="The total value of Member Rewards distributed to your address since you became a Member."
             left={formatCrypto(
               sharesToUsdc(accruedThisEpoch.amount, sharePrice)
@@ -193,7 +194,7 @@ export function YourRewards({
 
 function WrapperGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-sand-200 bg-sand-200 md:grid-cols-3">
+    <div className="grid grid-cols-1 items-stretch gap-px overflow-hidden rounded-lg border border-sand-200 bg-sand-200 md:grid-cols-3">
       {children}
     </div>
   );
@@ -225,7 +226,7 @@ function Stat({
   isPlaceholder?: boolean;
 }) {
   return (
-    <div>
+    <div className="flex h-full flex-col justify-between">
       <div className="mb-3 flex items-center text-sm text-sand-600">
         {icon ? <div className="mr-2.5">{icon}</div> : null}
         {heading}
@@ -300,6 +301,7 @@ export function YourRewardsPlaceholder({ className }: { className?: string }) {
         <GridItem>
           <Stat
             heading="Member rewards accrued this week"
+            icon={<DoubleDotIcon />}
             tooltip="The total value of Member Rewards distributed to your address since you became a Member."
             isPlaceholder
           />
@@ -312,6 +314,15 @@ export function YourRewardsPlaceholder({ className }: { className?: string }) {
           />
         </GridItem>
       </WrapperGrid>
+    </div>
+  );
+}
+
+function DoubleDotIcon() {
+  return (
+    <div className="relative">
+      <div className="absolute left-0 bottom-0 h-1 w-1 rounded-full bg-mint-450" />
+      <div className="absolute right-0 top-0 h-1 w-1 rounded-full bg-mint-450" />
     </div>
   );
 }
