@@ -251,7 +251,8 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.SeniorPoolCancelWithdrawalRequest]:
     "Cancel Withdrawal Request",
   [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]: "Distribution",
+  [TransactionCategory.SeniorPoolDistribution]:
+    "Withdrawal request distribution",
 };
 
 export function getTransactionLabel(transaction: {
@@ -278,7 +279,7 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "Increase Withdrawal",
   [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawal",
   [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]: "Distribution",
+  [TransactionCategory.SeniorPoolDistribution]: "Withdrawal Distribution",
 };
 
 /**
