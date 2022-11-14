@@ -5,6 +5,7 @@ import { useWallet } from "@/lib/wallet";
 
 import DevToolsButtons from "./dev-tools-buttons";
 import DevToolsKYC from "./dev-tools-kyc";
+import { MembershipDevToolDrawer } from "./membership-devtool-drawer";
 
 export function DevToolsPanel(): JSX.Element {
   const [open, setOpen] = useState<boolean>(false);
@@ -19,6 +20,8 @@ export function DevToolsPanel(): JSX.Element {
       setPanel("default");
     }
   }
+
+  const [isMembershipPanelOpen, setIsMembershipPanelOpen] = useState(false);
 
   if (!account) {
     return <></>;
@@ -56,6 +59,11 @@ export function DevToolsPanel(): JSX.Element {
           {panel === "kyc" && <DevToolsKYC />}
         </div>
       )}
+      <MembershipDevToolDrawer
+        size="sm"
+        isOpen={isMembershipPanelOpen}
+        onClose={() => setIsMembershipPanelOpen(false)}
+      />
     </>
   );
 }
