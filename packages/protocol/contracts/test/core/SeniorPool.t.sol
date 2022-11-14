@@ -2782,6 +2782,17 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertApproxEqAbs(sp.calculateWritedown(poolToken), expectedWritedown, thresholdUsdc());
   }
 
+  function testBugDiscoveredByFrontend() public {
+    depositToSpFrom(GF_OWNER, usdcVal(100));
+
+    vm.warp(block.timestamp + sp.epochDuration() * 20);
+
+    requestWithdrawalFrom(GF_OWNER, usdcVal(100));
+
+    // Should be on epoch 2 now
+    assertTrue(sp.epochAt(2).endsAt > 0);
+  }
+
   event EpochEnded(
     uint256 indexed epochId,
     uint256 endTime,
