@@ -73,6 +73,7 @@ export default function DealSummary({
           tranchedPool={poolChainData}
           poolStatus={poolStatus}
           defaultInterestRate={dealData.defaultInterestRate}
+          dealType={dealData.dealType}
         />
       </div>
 

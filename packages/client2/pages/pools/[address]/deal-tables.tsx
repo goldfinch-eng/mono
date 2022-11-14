@@ -17,6 +17,7 @@ import {
   BorrowerFinancialsTableFieldsFragment,
   SupportedFiat,
   BorrowerPerformanceTableFieldsFragment,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
 
@@ -79,13 +80,16 @@ interface DealTermsProps {
   tranchedPool?: DealTermsTableFieldsFragment | null;
   poolStatus: PoolStatus | null;
   defaultInterestRate?: number | null;
+  dealType?: Deal_DealType | null;
 }
 
 export function DealTermsTable({
   tranchedPool,
   poolStatus,
   defaultInterestRate,
+  dealType,
 }: DealTermsProps) {
+  const isMultitranche = dealType === "multitranche";
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -150,9 +154,14 @@ export function DealTermsTable({
               ),
             ],
             [
+              "Dealtype",
+              "TODO",
+              isMultitranche ? "Multitranche" : "Unitranche",
+            ],
+            [
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer investments. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
-              tranchedPool.estimatedLeverageRatio
+              tranchedPool.estimatedLeverageRatio && isMultitranche
                 ? tranchedPool.estimatedLeverageRatio.toString()
                 : "N/A",
             ],

@@ -34,6 +34,7 @@ export default function FundingBar({
 
   const backerWidth =
     goalFloat === 0 ? 0 : (backerSupplyFloat / goalFloat) * 100;
+
   if (isMultitranche) {
     seniorSupplyFloat = cryptoToFloat(seniorSupply);
     seniorWidth = goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;

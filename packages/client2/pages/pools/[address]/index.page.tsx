@@ -245,6 +245,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
+  const isMultitranche = dealDetails.dealType === "multitranche";
 
   if (error) {
     return (
@@ -262,7 +263,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       }
     : undefined;
   const seniorSupply =
-    backerSupply && tranchedPool?.estimatedLeverageRatio
+    backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
           amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
@@ -368,7 +369,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           {poolStatus === PoolStatus.Open ||
           poolStatus === PoolStatus.Closed ? (
             <FundingBar
-              isMultitranche={dealDetails.dealType === "multitranche"}
+              isMultitranche={isMultitranche}
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {

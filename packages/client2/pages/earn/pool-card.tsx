@@ -13,6 +13,7 @@ import { formatPercent } from "@/lib/format";
 import {
   TranchedPoolCardFieldsFragment,
   TranchedPoolCardDealFieldsFragment,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -30,7 +31,7 @@ interface PoolCardProps {
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
-  dealType?: "unitranche" | "multitranche";
+  dealType?: Deal_DealType | null;
 }
 
 function getColorScheme(
@@ -53,7 +54,7 @@ function getColorScheme(
 }
 
 function getChipContent(
-  poolStatus?: PoolStatus | "unitranche" | "multitranche"
+  poolStatus?: PoolStatus | Deal_DealType
 ): string | null {
   switch (poolStatus) {
     case PoolStatus.Full:
@@ -66,9 +67,9 @@ function getChipContent(
       return "COMING SOON";
     case PoolStatus.Repaid:
       return "REPAID";
-    case "unitranche":
+    case Deal_DealType.Unitranche:
       return "Unitranche";
-    case "multitranche":
+    case Deal_DealType.Multitranche:
       return "Multitranche";
     default:
       return null;
@@ -119,7 +120,11 @@ export function PoolCard({
           />
         </div>
       }
-      chipSlot={<Chip colorScheme="white">{getChipContent(dealType)}</Chip>}
+      chipSlot={
+        !!dealType ? (
+          <Chip colorScheme="white">{getChipContent(dealType)}</Chip>
+        ) : undefined
+      }
       chipSlot2={
         <Chip colorScheme={getColorScheme(poolStatus)}>
           {getChipContent(poolStatus)}
@@ -178,15 +183,10 @@ function PoolCardLayout({
         {dataSlot2}
       </div>
       <div
-        className="justify-self-start sm:justify-self-end"
+        className="flex gap-2 justify-self-start sm:justify-self-end"
         style={{ gridArea: "chip" }}
       >
         {chipSlot}
-      </div>
-      <div
-        className="justify-self-start sm:justify-self-end"
-        style={{ gridArea: "chip" }}
-      >
         {chipSlot2}
       </div>
     </div>
