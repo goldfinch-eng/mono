@@ -123,6 +123,12 @@ gql`
       id
       ...ChartDisbursementFields
     }
+
+    memberships(where: { user: $userId }) {
+      id
+      eligibleScore
+      nextEpochScore
+    }
   }
 `;
 
@@ -139,6 +145,9 @@ export default function MembershipPage() {
     (data.vaultedGfis.length > 0 ||
       data.vaultedPoolTokens.length > 0 ||
       data.vaultedStakedPositions.length > 0);
+  const userHasDepositedForNextEpoch =
+    data?.memberships?.[0] &&
+    data.memberships[0].nextEpochScore.gt(data.memberships[0].eligibleScore);
 
   const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
@@ -223,6 +232,7 @@ export default function MembershipPage() {
               currentBlockTimestamp={data.currentBlock.timestamp}
               sharePrice={sharePrice}
               accruedThisEpoch={data.viewer.accruedMembershipRewardsThisEpoch}
+              showNextEpochNotice={userHasDepositedForNextEpoch}
             />
           ) : null}
           {!userHasVaultPosition ? (

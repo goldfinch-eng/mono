@@ -1,11 +1,11 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
-import { format } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { BigNumber, utils } from "ethers";
 import { ReactNode, useMemo } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 
-import { InfoIconTooltip, Shimmer } from "@/components/design-system";
+import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -31,6 +31,7 @@ interface YourRewardsProps {
   currentBlockTimestamp: number;
   sharePrice: BigNumber;
   accruedThisEpoch: CryptoAmount;
+  showNextEpochNotice?: boolean;
 }
 
 interface Payload {
@@ -47,7 +48,11 @@ export function YourRewards({
   currentBlockTimestamp,
   sharePrice,
   accruedThisEpoch,
+  showNextEpochNotice = false,
 }: YourRewardsProps) {
+  const currentEpochFinalizedDate = epochFinalizedDate(
+    currentBlockTimestamp * 1000
+  );
   const data: Payload[] = useMemo(() => {
     const d: Payload[] = disbursements.map((disbursement, index) => ({
       timestamp: disbursement.allocatedAt * 1000,
@@ -71,7 +76,7 @@ export function YourRewards({
           projectedAmount: lastFinalizedData.amount,
         },
         {
-          timestamp: epochFinalizedDate(currentBlockTimestamp * 1000).getTime(),
+          timestamp: currentEpochFinalizedDate.getTime(),
           amount: null,
           cryptoAmount: {
             token: SupportedCrypto.Fidu,
@@ -88,7 +93,7 @@ export function YourRewards({
     }
 
     return d;
-  }, [disbursements, currentBlockTimestamp, accruedThisEpoch]);
+  }, [disbursements, currentEpochFinalizedDate, accruedThisEpoch]);
   return (
     <div className={className}>
       <h2 className="mb-10 text-4xl">Your Member Rewards</h2>
@@ -124,7 +129,7 @@ export function YourRewards({
                   scale="time"
                   type="number"
                   domain={["dataMin", "dataMax"]}
-                  tickFormatter={(timestamp) => format(timestamp, "MM/yy")}
+                  tickFormatter={(timestamp) => formatDate(timestamp, "MM/yy")}
                   tickMargin={8}
                   tickLine={false}
                   axisLine={false}
@@ -164,13 +169,24 @@ export function YourRewards({
           <Stat
             heading="Next Member Reward distribution"
             tooltip="The date of the next Member Reward distribution. Withdrawing your Capital from the Member Vault before this date will forfeit your rewards for this weekly cycle."
-            left={format(
-              epochFinalizedDate(currentBlockTimestamp * 1000),
-              "MMMM dd, yyyy"
-            )}
+            left={formatDate(currentEpochFinalizedDate, "MMMM dd, yyyy")}
           />
         </GridItem>
       </WrapperGrid>
+      {showNextEpochNotice ? (
+        <div className="mt-2 flex items-center rounded-lg border-2 border-mustard-100 bg-mustard-50 p-5">
+          <Icon
+            name="ExclamationCircleSolid"
+            className="mr-2 text-mustard-450"
+            size="sm"
+          />
+          <div className="text-sm">
+            The assets you added to the Vault will take effect during the Member
+            Rewards Cycle beginning on{" "}
+            {formatDate(currentEpochFinalizedDate, "MMMM dd, yyyy")}.
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -253,7 +269,7 @@ function CustomTooltip({
     return (
       <div className="rounded border border-sand-200 bg-white p-3 text-sm">
         <div className="font-medium">
-          {format(payload[0].payload.timestamp, "MMMM dd, yyyy")}
+          {formatDate(payload[0].payload.timestamp, "MMMM dd, yyyy")}
         </div>
         <div className="text-sand-500">
           {formatCrypto(payload[0].payload.cryptoAmount)}
