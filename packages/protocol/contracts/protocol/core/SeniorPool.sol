@@ -303,12 +303,19 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *                                  able to be checkpointed, otherwise the same epoch
    * @return wasCheckpointed true if the epoch was checkpointed, otherwise false
    */
-  function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, bool) {
-    if (block.timestamp < epoch.endsAt || _usdcAvailable == 0 || epoch.fiduRequested == 0) {
-      return (epoch, false);
+  function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, EpochCheckpointStatus) {
+    if (block.timestamp < epoch.endsAt) {
+      return (epoch, EpochCheckpointStatus.Unapplied);
     }
 
+    // After this point block.timestamp >= epoch.endsAt
+
+    // If there isn't any USDC available or
     epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
+    if (_usdcAvailable == 0 || epoch.fiduRequested == 0) {
+      epoch.endsAt = epoch.endsAt.add(_epochDuration);
+      return (epoch, EpochCheckpointStatus.Extended);
+    }
 
     // liquidate epoch
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
@@ -316,7 +323,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 fiduLiquidated = getNumShares(usdcAllocated);
     epoch.fiduLiquidated = fiduLiquidated;
     epoch.usdcAllocated = usdcAllocated;
-    return (epoch, true);
+    return (epoch, EpochCheckpointStatus.Finalized);
   }
 
   /// @notice Returns the most recent, uncheckpointed epoch
@@ -428,24 +435,27 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @return currentEpoch current epoch
    */
   function _applyEpochCheckpoint(Epoch storage epoch) internal returns (Epoch storage) {
-    (Epoch memory checkpointedEpoch, bool wasCheckpointed) = _previewEpochCheckpoint(epoch);
+    (Epoch memory checkpointedEpoch, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(epoch);
 
-    if (!wasCheckpointed) {
+    if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
+    } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
+      epoch.endsAt = checkpointedEpoch.endsAt;
+      return epoch;
+    } else {
+      // copy checkpointed data
+      epoch.fiduLiquidated = checkpointedEpoch.fiduLiquidated;
+      epoch.usdcAllocated = checkpointedEpoch.usdcAllocated;
+      epoch.endsAt = checkpointedEpoch.endsAt;
+
+      _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
+      uint256 endingEpochId = _checkpointedEpochId;
+      Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
+      config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
+
+      emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
+      return newEpoch;
     }
-
-    // copy checkpointed data
-    epoch.fiduLiquidated = checkpointedEpoch.fiduLiquidated;
-    epoch.usdcAllocated = checkpointedEpoch.usdcAllocated;
-    epoch.endsAt = checkpointedEpoch.endsAt;
-
-    _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
-    uint256 endingEpochId = _checkpointedEpochId;
-    Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
-    config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
-
-    emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
-    return newEpoch;
   }
 
   function _burnWithdrawRequest(uint256 tokenId) internal {
@@ -623,8 +633,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
   function currentEpoch() external view override returns (Epoch memory) {
-    (Epoch memory e, bool checkpointed) = _previewEpochCheckpoint(_headEpoch());
-    if (checkpointed) e = _initializeNextEpochFrom(e);
+    (Epoch memory e, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(_headEpoch());
+    if (checkpointStatus == EpochCheckpointStatus.Finalized) e = _initializeNextEpochFrom(e);
     return e;
   }
 
@@ -769,5 +779,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   modifier onlyZapper() {
     require(hasRole(ZAPPER_ROLE, msg.sender), "Not Zapper");
     _;
+  }
+
+  enum EpochCheckpointStatus {
+    Unapplied,
+    Extended,
+    Finalized
   }
 }
