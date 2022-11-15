@@ -4,7 +4,6 @@ pragma solidity 0.6.12;
 
 pragma experimental ABIEncoderV2;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
