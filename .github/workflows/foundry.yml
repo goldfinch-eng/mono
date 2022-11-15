@@ -35,7 +35,3 @@ jobs:
       - name: Run tests
         working-directory: packages/protocol/
         run: forge test -vvv --gas-report
-
-      - name: Run snapshot
-        working-directory: packages/protocol/
-        run: forge snapshot >> $GITHUB_STEP_SUMMARY
