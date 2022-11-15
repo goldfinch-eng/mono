@@ -8,6 +8,7 @@ import {
   Heading,
   Icon,
   IconNameType,
+  Link,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
@@ -372,6 +373,35 @@ export default function MembershipPage() {
                                 asset={asset}
                               />
                             ))}
+                            {data?.viewer.fiduBalance &&
+                            !data.viewer.fiduBalance.amount.isZero() ? (
+                              <AssetBox
+                                asset={{
+                                  name: "Unstaked FIDU",
+                                  description: "Goldfinch Senior Pool Position",
+                                  nativeAmount: data.viewer.fiduBalance,
+                                  usdcAmount: sharesToUsdc(
+                                    data.viewer.fiduBalance.amount,
+                                    sharePrice
+                                  ),
+                                }}
+                                notice={
+                                  <div className="flex items-center justify-between gap-2 text-left">
+                                    <div className="whitespace-nowrap">
+                                      FIDU must be staked before it can be added
+                                      to the Vault.
+                                    </div>
+                                    <Link
+                                      href="/stake"
+                                      iconRight="ArrowSmRight"
+                                      className="whitespace-nowrap text-mustard-900"
+                                    >
+                                      Stake FIDU
+                                    </Link>
+                                  </div>
+                                }
+                              />
+                            ) : null}
                           </div>
                         )}
                       </div>
@@ -383,43 +413,6 @@ export default function MembershipPage() {
                     </div>
                   )}
                 </AssetGroup>
-                {data?.viewer.fiduBalance &&
-                !data.viewer.fiduBalance.amount.isZero() ? (
-                  <AssetGroup
-                    headingLeft="Unavailable assets"
-                    headingRight={formatCrypto(
-                      sharesToUsdc(data.viewer.fiduBalance.amount, sharePrice)
-                    )}
-                  >
-                    <AssetGroupSubheading
-                      left="Capital"
-                      right={formatCrypto(
-                        sharesToUsdc(data.viewer.fiduBalance.amount, sharePrice)
-                      )}
-                    />
-                    <AssetBox
-                      asset={{
-                        name: "Unstaked FIDU",
-                        description: "Goldfinch Senior Pool Position",
-                        nativeAmount: data.viewer.fiduBalance,
-                        usdcAmount: sharesToUsdc(
-                          data.viewer.fiduBalance.amount,
-                          sharePrice
-                        ),
-                      }}
-                      notice="FIDU must be staked before it can be added to the Vault."
-                    />
-                    <AssetGroupButton
-                      colorScheme="tidepool"
-                      as="a"
-                      href="/stake"
-                      iconRight="ArrowSmRight"
-                      className="mt-4"
-                    >
-                      Stake FIDU
-                    </AssetGroupButton>
-                  </AssetGroup>
-                ) : null}
               </div>
 
               <AssetGroup
