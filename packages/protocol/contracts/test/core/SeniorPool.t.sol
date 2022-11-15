@@ -2782,15 +2782,28 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertApproxEqAbs(sp.calculateWritedown(poolToken), expectedWritedown, thresholdUsdc());
   }
 
-  function testBugDiscoveredByFrontend() public {
+  // after an epoch ends, users shouldn't immediately have funds withdrawable as soon as they request withdraw
+  function testWhenAnEpochCantBeFinalizedAndAMutativeFunctionIsCalledItsExtended() public {
+    // unapplied
     depositToSpFrom(GF_OWNER, usdcVal(100));
 
-    vm.warp(block.timestamp + sp.epochDuration() * 20);
+    uint256 endsAtBeforeWithdrawal = sp.currentEpoch().endsAt;
+    vm.warp(endsAtBeforeWithdrawal + 1);
 
-    requestWithdrawalFrom(GF_OWNER, usdcVal(100));
+    // extended
+    uint256 tokenId = requestWithdrawalFrom(GF_OWNER, fiduVal(100));
+    uint256 endsAtAfterWithdrawal = sp.currentEpoch().endsAt;
 
-    // Should be on epoch 2 now
-    assertTrue(sp.epochAt(2).endsAt > 0);
+    assertGt(endsAtAfterWithdrawal, endsAtBeforeWithdrawal);
+
+    ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
+
+    assertEq(wr.usdcWithdrawable, 0, "user should not have usdc withdrawable before the next epoch");
+
+    vm.warp(endsAtAfterWithdrawal + 100000);
+
+    wr = sp.withdrawalRequest(tokenId);
+    assertGt(wr.usdcWithdrawable, 0);
   }
 
   event EpochEnded(
