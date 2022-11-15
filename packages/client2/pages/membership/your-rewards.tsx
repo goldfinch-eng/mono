@@ -129,7 +129,9 @@ export function YourRewards({
                   scale="time"
                   type="number"
                   domain={["dataMin", "dataMax"]}
-                  tickFormatter={(timestamp) => formatDate(timestamp, "MM/yy")}
+                  tickFormatter={(timestamp) =>
+                    formatDate(timestamp, "MMM d, yyyy")
+                  }
                   tickMargin={8}
                   tickLine={false}
                   axisLine={false}
