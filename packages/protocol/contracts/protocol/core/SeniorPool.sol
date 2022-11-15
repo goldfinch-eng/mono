@@ -301,22 +301,37 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param epoch epoch to checkpoint
    * @return maybeCheckpointedEpoch the checkpointed epoch if the epoch was
    *                                  able to be checkpointed, otherwise the same epoch
-   * @return wasCheckpointed true if the epoch was checkpointed, otherwise false
+   * @return epochStatus If the epoch can't be finalized, returns `Unapplied`.
+   *                      If the Epoch is after the end time of the epoch the epoch will be extended.
+   *                      An extended epoch will have its endTime set to the next endtime but won't
+   *                      have any usdc allocated to it. If the epoch can be finalized and its after
+   *                      the end time, it will have usdc allocated to it.
    */
-  function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, bool) {
-    if (block.timestamp < epoch.endsAt || _usdcAvailable == 0 || epoch.fiduRequested == 0) {
-      return (epoch, false);
+  function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, EpochCheckpointStatus) {
+    if (block.timestamp < epoch.endsAt) {
+      return (epoch, EpochCheckpointStatus.Unapplied);
     }
 
-    epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
+    // After this point block.timestamp >= epoch.endsAt
 
-    // liquidate epoch
+    // If an epoch can't be finalized, meaning that there isn't BOTH USDC and
+    // FIDU available to liquidate then the epoch needs to be extended. This
+    // means that the endsAt time is updated to the _next_ epoch endTime.
+    epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
+    if (_usdcAvailable == 0 || epoch.fiduRequested == 0) {
+      // When we extend the epoch, we need to add an additional epoch to the end so that
+      // the next time a checkpoint happens it won't immediately finalize the epoch
+      epoch.endsAt = epoch.endsAt.add(_epochDuration);
+      return (epoch, EpochCheckpointStatus.Extended);
+    }
+
+    // finalize epoch
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
     uint256 usdcAllocated = _usdcAvailable.min(usdcNeededToFullyLiquidate);
     uint256 fiduLiquidated = getNumShares(usdcAllocated);
     epoch.fiduLiquidated = fiduLiquidated;
     epoch.usdcAllocated = usdcAllocated;
-    return (epoch, true);
+    return (epoch, EpochCheckpointStatus.Finalized);
   }
 
   /// @notice Returns the most recent, uncheckpointed epoch
@@ -428,24 +443,26 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @return currentEpoch current epoch
    */
   function _applyEpochCheckpoint(Epoch storage epoch) internal returns (Epoch storage) {
-    (Epoch memory checkpointedEpoch, bool wasCheckpointed) = _previewEpochCheckpoint(epoch);
-
-    if (!wasCheckpointed) {
+    (Epoch memory checkpointedEpoch, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(epoch);
+    if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
+    } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
+      epoch.endsAt = checkpointedEpoch.endsAt;
+      return epoch;
+    } else {
+      // copy checkpointed data
+      epoch.fiduLiquidated = checkpointedEpoch.fiduLiquidated;
+      epoch.usdcAllocated = checkpointedEpoch.usdcAllocated;
+      epoch.endsAt = checkpointedEpoch.endsAt;
+
+      _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
+      uint256 endingEpochId = _checkpointedEpochId;
+      Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
+      config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
+
+      emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
+      return newEpoch;
     }
-
-    // copy checkpointed data
-    epoch.fiduLiquidated = checkpointedEpoch.fiduLiquidated;
-    epoch.usdcAllocated = checkpointedEpoch.usdcAllocated;
-    epoch.endsAt = checkpointedEpoch.endsAt;
-
-    _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
-    uint256 endingEpochId = _checkpointedEpochId;
-    Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
-    config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
-
-    emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
-    return newEpoch;
   }
 
   function _burnWithdrawRequest(uint256 tokenId) internal {
@@ -623,8 +640,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
   function currentEpoch() external view override returns (Epoch memory) {
-    (Epoch memory e, bool checkpointed) = _previewEpochCheckpoint(_headEpoch());
-    if (checkpointed) e = _initializeNextEpochFrom(e);
+    (Epoch memory e, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(_headEpoch());
+    if (checkpointStatus == EpochCheckpointStatus.Finalized) e = _initializeNextEpochFrom(e);
     return e;
   }
 
@@ -769,5 +786,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   modifier onlyZapper() {
     require(hasRole(ZAPPER_ROLE, msg.sender), "Not Zapper");
     _;
+  }
+
+  enum EpochCheckpointStatus {
+    Unapplied,
+    Extended,
+    Finalized
   }
 }
