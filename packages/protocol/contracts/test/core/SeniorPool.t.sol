@@ -1964,9 +1964,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     claimWithdrawalRequestFrom(user, tokenId);
 
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
-    assertZero(sp.withdrawalRequest(1).usdcWithdrawable);
-    assertZero(sp.withdrawalRequest(1).epochCursor);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
     assertZero(requestTokens.balanceOf(user));
   }
 

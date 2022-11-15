@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 pragma experimental ABIEncoderV2;
 
+import {console2 as console} from "forge-std/console2.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
@@ -287,6 +288,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
   function withdrawalRequest(uint256 tokenId) external view override returns (WithdrawalRequest memory) {
+    // This call will revert if the tokenId does not exist
+    config.getWithdrawalRequestToken().ownerOf(tokenId);
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
     return _previewWithdrawRequestCheckpoint(wr);
   }
@@ -346,14 +349,15 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     returns (WithdrawalRequest memory)
   {
     Epoch memory epoch;
-    uint256 endEpoch = block.timestamp < _epochs[_checkpointedEpochId].endsAt
-      ? _checkpointedEpochId - 1
-      : _checkpointedEpochId;
-    for (uint256 i = wr.epochCursor; i <= endEpoch && wr.fiduRequested > 0; ++i) {
+    // Iterate through each epoch, calculating the amount of USDC that would be
+    // allocated to the withdraw request by using the proportion of FIDU the
+    // withdraw request had in that epoch and subtracting the allocation from
+    // the withdraw request.
+    for (uint256 i = wr.epochCursor; i <= _checkpointedEpochId && wr.fiduRequested > 0; ++i) {
       epoch = _epochs[i];
-      if (block.timestamp < epoch.endsAt) {
-        break;
-      }
+
+      // The withdraw request could have FIDU in the most recent, non-finalized-
+      // epoch, and so we need to apply the checkpoint to get an accurate count
       if (i == _checkpointedEpochId) {
         (epoch, ) = _previewEpochCheckpoint(epoch);
       }
@@ -361,8 +365,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
-      wr.epochCursor = i + 1;
     }
+    wr.epochCursor = _checkpointedEpochId;
+
     return wr;
   }
 
@@ -418,7 +423,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
-      wr.epochCursor = i + 1;
     }
 
     return wr;
