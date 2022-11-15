@@ -314,7 +314,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // After this point block.timestamp >= epoch.endsAt
 
-    // If there isn't any USDC available or
+    // If an epoch can't be finalized, meaning that there isn't BOTH USDC and
+    // FIDU available to liquidate then the epoch needs to be extended. This
+    // means that the endsAt time is updated to the _next_ epoch endTime.
     epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
     if (_usdcAvailable == 0 || epoch.fiduRequested == 0) {
       // When we extend the epoch, we need to add an additional epoch to the end so that
