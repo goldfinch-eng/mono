@@ -123,8 +123,8 @@ export default function SupplyPanel({
     if (valueAsUsdc.gt(remainingJuniorCapacity)) {
       return "Amount exceeds remaining junior capacity";
     }
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     if (
       valueAsUsdc.gt(availableBalance) &&

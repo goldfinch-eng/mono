@@ -214,8 +214,8 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
