@@ -2783,14 +2783,12 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   // after an epoch ends, users shouldn't immediately have funds withdrawable as soon as they request withdraw
-  function testBugDiscoveredByFrontend() public {
+  function testWhenAnEpochCantBeFinalizedAndAMutativeFunctionIsCalledItsExtended() public {
     // unapplied
     depositToSpFrom(GF_OWNER, usdcVal(100));
 
     uint256 endsAtBeforeWithdrawal = sp.currentEpoch().endsAt;
     vm.warp(endsAtBeforeWithdrawal + 1);
-
-    uint256 foo = sp.currentEpoch().endsAt;
 
     // extended
     uint256 tokenId = requestWithdrawalFrom(GF_OWNER, fiduVal(100));
