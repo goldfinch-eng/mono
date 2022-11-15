@@ -301,7 +301,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param epoch epoch to checkpoint
    * @return maybeCheckpointedEpoch the checkpointed epoch if the epoch was
    *                                  able to be checkpointed, otherwise the same epoch
-   * @return wasCheckpointed true if the epoch was checkpointed, otherwise false
+   * @return epochStatus If the epoch can't be finalized, returns `Unapplied`.
+   *                      If the Epoch is after the end time of the epoch the epoch will be extended.
+   *                      An extended epoch will have its endTime set to the next endtime but won't
+   *                      have any usdc allocated to it. If the epoch can be finalized and its after
+   *                      the end time, it will have usdc allocated to it.
    */
   function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, EpochCheckpointStatus) {
     if (block.timestamp < epoch.endsAt) {
@@ -313,11 +317,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // If there isn't any USDC available or
     epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
     if (_usdcAvailable == 0 || epoch.fiduRequested == 0) {
+      // When we extend the epoch, we need to add an additional epoch to the end so that
+      // the next time a checkpoint happens it won't immediately finalize the epoch
       epoch.endsAt = epoch.endsAt.add(_epochDuration);
       return (epoch, EpochCheckpointStatus.Extended);
     }
 
-    // liquidate epoch
+    // finalize epoch
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
     uint256 usdcAllocated = _usdcAvailable.min(usdcNeededToFullyLiquidate);
     uint256 fiduLiquidated = getNumShares(usdcAllocated);
@@ -436,7 +442,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    */
   function _applyEpochCheckpoint(Epoch storage epoch) internal returns (Epoch storage) {
     (Epoch memory checkpointedEpoch, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(epoch);
-
     if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
     } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
