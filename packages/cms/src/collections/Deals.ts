@@ -115,6 +115,44 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "creditMemos",
+      type: "array",
+      minRows: 0,
+      fields: [
+        {
+          name: "thumbnail",
+          type: "upload",
+          relationTo: "media",
+        },
+        {
+          name: "name",
+          type: "text",
+        },
+        {
+          name: "subtitle",
+          type: "text",
+        },
+        {
+          name: "content",
+          type: "textarea",
+        },
+        {
+          name: "date",
+          type: "date",
+          admin: {
+            date: {
+              pickerAppearance: "dayOnly",
+            },
+          },
+        },
+        {
+          name: "file",
+          type: "upload",
+          relationTo: "media",
+        },
+      ],
+    },
+    {
       name: "securitiesAndRecourse",
       label: "Securities and Recourse",
       type: "group",
