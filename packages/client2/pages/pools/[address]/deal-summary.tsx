@@ -6,6 +6,7 @@ import {
 } from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
 
+import { CreditMemos } from "./credit-memos";
 import { DealTermsTable, SecuritiesRecourseTable } from "./deal-tables";
 import { DocumentsList } from "./documents-list";
 import { FileItem } from "./subcomponents/file-item";
@@ -50,6 +51,12 @@ export default function DealSummary({
 
       {dealData.details ? (
         <RichText content={dealData.details} className="mb-20" />
+      ) : null}
+
+      {dealData.creditMemos ? (
+        <div className="mb-20">
+          <CreditMemos creditMemos={dealData.creditMemos} />
+        </div>
       ) : null}
 
       {dealData.transactionStructure ? (
