@@ -188,6 +188,14 @@ export default function MembershipPage() {
 
   const [isRemoveFromVaultOpen, setIsRemoveFromVaultOpen] = useState(false);
 
+  const additionDisabled =
+    (userHasVaultPosition &&
+      data.viewer.gfiBalance?.amount.isZero() &&
+      vaultableCapitalAssets.length === 0) ||
+    (!userHasVaultPosition &&
+      (data?.viewer.gfiBalance?.amount.isZero() ||
+        vaultableCapitalAssets.length === 0));
+
   return (
     <div>
       <SEO title="Membership" />
@@ -405,10 +413,17 @@ export default function MembershipPage() {
                         )}
                       </div>
                       <AssetGroupButton
+                        disabled={additionDisabled}
                         onClick={() => setIsAddToVaultOpen(true)}
                       >
                         Select assets to add
                       </AssetGroupButton>
+                      {!userHasVaultPosition && additionDisabled ? (
+                        <div className="mt-2 text-center text-sm leading-none text-sand-700">
+                          You must have both GFI and Capital to be eligible for
+                          Membership
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </AssetGroup>
