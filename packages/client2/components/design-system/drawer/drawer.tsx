@@ -49,10 +49,10 @@ export function Drawer({
       <Dialog onClose={onClose} className="fixed inset-0 z-10 h-full w-full">
         <Transition.Child
           as={Fragment}
-          enter="transition-opacity duration-150"
+          enter="transition-opacity duration-500"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="transition-opacity duration-150"
+          leave="transition-opacity duration-500"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
@@ -60,7 +60,7 @@ export function Drawer({
         </Transition.Child>
         <Transition.Child
           as={Fragment}
-          enter="transition-transform duration-150"
+          enter="transition-transform duration-500"
           enterFrom={
             from === "left"
               ? "-translate-x-full"
@@ -71,7 +71,7 @@ export function Drawer({
               : undefined
           }
           enterTo="transform-none"
-          leave="transition-transform duration-150"
+          leave="transition-transform duration-500"
           leaveFrom="transform-none"
           leaveTo={
             from === "left"

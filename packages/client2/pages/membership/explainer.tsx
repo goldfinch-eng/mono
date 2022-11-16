@@ -51,8 +51,8 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="mb- rounded-xl border border-sand-200 bg-sand-100 p-5 drop-shadow-lg">
-      <h3 className="mb-4 text-lg font-bold">{heading}</h3>
+    <div className="rounded-xl border border-sand-200 bg-sand-100 p-5">
+      <h3 className="mb-4 text-lg font-medium">{heading}</h3>
       <div>{children}</div>
     </div>
   );
