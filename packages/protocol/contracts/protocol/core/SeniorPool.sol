@@ -424,6 +424,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
     }
 
+    wr.epochCursor = _checkpointedEpochId;
     return wr;
   }
 

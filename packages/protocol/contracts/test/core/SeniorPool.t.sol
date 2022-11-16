@@ -1483,8 +1483,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     // Epoch 1's fiduRequested should no longer include user 1's fidu
     assertEq(sp.epochAt(1).fiduRequested, epoch.fiduRequested - (userFidu + reserveFidu));
     // Request info is empty
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
-    assertZero(sp.withdrawalRequest(1).epochCursor);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
 
     spFiduBefore = fidu.balanceOf(address(sp));
     userBalanceBefore = fidu.balanceOf(address(user2));
@@ -1502,8 +1502,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     // Epoch 1's fiduRequested should be 0
     assertZero(sp.epochAt(1).fiduRequested);
     // Request info is empty
-    assertZero(sp.withdrawalRequest(2).fiduRequested);
-    assertZero(sp.withdrawalRequest(2).epochCursor);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(2);
   }
 
   /*================================================================================
@@ -1604,7 +1604,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     vm.warp(block.timestamp + sp.epochDuration());
 
     claimWithdrawalRequestFrom(user, tokenId);
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
   }
 
   function testClaimWithdrawalEoaWorksWithValidUid(address user, uint256 uidType) public {
@@ -1623,7 +1624,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     vm.warp(block.timestamp + sp.epochDuration());
 
     claimWithdrawalRequestFrom(user, tokenId);
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
   }
 
   function testClaimWithdrawalRevertsForInvalidUid(address user, uint256 invalidUidType) public onlyAllowListed(user) {
@@ -1683,7 +1685,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     caller.claimWithdrawalRequest(tokenId);
     _stopImpersonation();
 
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
   }
 
   function testClaimWithdrawalFailsWhenCallerIsErc1155ApprovedForInvalidUid(uint256 invalidUid) public {
@@ -1934,12 +1937,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     claimWithdrawalRequestFrom(user1, 1);
     claimWithdrawalRequestFrom(user2, 2);
 
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
-    assertZero(sp.withdrawalRequest(1).usdcWithdrawable);
-    assertZero(sp.withdrawalRequest(1).epochCursor);
-    assertZero(sp.withdrawalRequest(2).fiduRequested);
-    assertZero(sp.withdrawalRequest(2).usdcWithdrawable);
-    assertZero(sp.withdrawalRequest(2).epochCursor);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(1);
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(2);
     assertZero(requestTokens.balanceOf(user1));
     assertZero(requestTokens.balanceOf(user2));
 
