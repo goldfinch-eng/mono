@@ -88,7 +88,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
     .plus(seniorPoolContract.totalWritedowns())
   let rawBalance = balance
   let cancellationFee = goldfinchConfigContract.getNumber(
-    BigInt.fromI32(CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeBps)
+    BigInt.fromI32(CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeInBps)
   )
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus

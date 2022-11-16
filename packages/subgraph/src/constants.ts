@@ -21,7 +21,7 @@ export enum CONFIG_KEYS_NUMBERS {
   DrawdownPeriodInSeconds = 7,
   TransferRestrictionPeriodInDays = 8,
   LeverageRatio = 9,
-  SeniorPoolWithdrawalCancelationFeeBps = 10,
+  SeniorPoolWithdrawalCancelationFeeInBps = 10,
 }
 export enum CONFIG_KEYS_ADDRESSES {
   Pool = 0,
