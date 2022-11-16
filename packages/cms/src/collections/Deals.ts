@@ -7,6 +7,7 @@ import {
   revalidateDeal,
 } from "../hooks/deals";
 
+import { isValidURL } from "../lib/validation";
 import Document from "../blocks/Document";
 import { generateBinarySelect } from "../lib/binary-select";
 
@@ -113,6 +114,55 @@ const Deals: CollectionConfig = {
         description:
           "This should be a URL linking to the dataroom for this deal.",
       },
+    },
+    {
+      name: "creditMemos",
+      type: "array",
+      minRows: 0,
+      fields: [
+        {
+          name: "thumbnail",
+          type: "upload",
+          relationTo: "media",
+        },
+        {
+          name: "name",
+          type: "text",
+        },
+        {
+          name: "subtitle",
+          type: "text",
+        },
+        {
+          name: "content",
+          type: "textarea",
+        },
+        {
+          name: "date",
+          type: "date",
+          admin: {
+            date: {
+              pickerAppearance: "dayOnly",
+            },
+          },
+        },
+        {
+          name: "fullMemoUrl",
+          label: "Full Memo URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
+        },
+        {
+          name: "executiveSummaryUrl",
+          label: "Executive Summary URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
+        },
+      ],
     },
     {
       name: "securitiesAndRecourse",

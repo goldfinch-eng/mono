@@ -44,6 +44,7 @@ import {
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import ComingSoonPanel from "./coming-soon-panel";
+import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import DealSummary from "./deal-summary";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
@@ -189,6 +190,7 @@ const singleDealQuery = gql`
   ${BORROWER_FINANCIALS_TABLE_FIELDS}
   ${BORROWER_PERFORMANCE_TABLE_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
+  ${CREDIT_MEMO_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -214,6 +216,9 @@ const singleDealQuery = gql`
       }
       documents {
         ...DocumentFields
+      }
+      creditMemos {
+        ...CreditMemoFields
       }
     }
   }
