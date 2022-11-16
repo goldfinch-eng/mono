@@ -611,12 +611,13 @@ function CallToAction({
     <div
       className={clsx(
         className,
-        "flex items-center justify-between rounded-lg border border-sand-200 bg-white p-4"
+        "flex items-center justify-between rounded-lg bg-white p-5"
       )}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
+        <Icon name="LightningBolt" className="mr-2 text-mustard-400" />
         <div className="text-lg">{mainText}</div>
-        {icon ? <Icon name={icon} size="md" /> : null}
+        {icon ? <Icon name={icon} size="md" className="ml-4" /> : null}
       </div>
       <Button
         colorScheme="mustard"
