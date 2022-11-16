@@ -1,4 +1,5 @@
 import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
@@ -9,7 +10,7 @@ import {
   GFI_DECIMALS,
   USDC_DECIMALS,
 } from "@/constants";
-import { formatCrypto, formatFiat } from "@/lib/format";
+import { formatFiat } from "@/lib/format";
 import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import { Input } from "./input";
@@ -21,7 +22,7 @@ const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
 
 type Unit = SupportedFiat | SupportedCrypto;
 
-type DollarInputProps = ComponentProps<typeof Input> &
+export type DollarInputProps = ComponentProps<typeof Input> &
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   UseControllerProps<any> & {
     unit?: Unit;
@@ -33,6 +34,7 @@ type DollarInputProps = ComponentProps<typeof Input> &
      * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
      */
     onMaxClick?: (n?: BigNumber) => void;
+    onChange?: (s: string) => void;
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
@@ -50,6 +52,7 @@ export function DollarInput({
   unit = SupportedCrypto.Usdc,
   maxValue,
   onMaxClick,
+  onChange: callbackOnChange,
   name,
   rules,
   control,
@@ -58,7 +61,7 @@ export function DollarInput({
   ...rest
 }: DollarInputProps) {
   const {
-    field: { onChange, ...controllerField },
+    field: { onChange: rhfOnChange, ...controllerField },
   } = useController({
     name,
     rules,
@@ -66,6 +69,11 @@ export function DollarInput({
     shouldUnregister,
     defaultValue,
   });
+
+  const onChange = (s: string) => {
+    rhfOnChange(s);
+    callbackOnChange?.(s);
+  };
 
   return (
     <MaskedInput
@@ -94,15 +102,8 @@ export function DollarInput({
                 const formatted: string =
                   unit === SupportedFiat.Usd
                     ? formatFiat({ symbol: unit, amount: max.toNumber() })
-                    : formatCrypto(
-                        { token: unit, amount: max },
-                        {
-                          useMaximumPrecision: true,
-                          includeSymbol: false,
-                          includeToken: false,
-                        }
-                      );
-                onChange(formatted.replaceAll(",", ""));
+                    : formatUnits(max, unitProperties[unit].scale);
+                onChange(formatted);
                 onMaxClick?.(max);
               } else {
                 onMaxClick?.();
