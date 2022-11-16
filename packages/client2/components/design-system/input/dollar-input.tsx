@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import { ComponentProps } from "react";
@@ -109,7 +110,12 @@ export function DollarInput({
                 onMaxClick?.();
               }
             }}
-            className="block rounded-md border border-sky-500 p-2 text-[10px] uppercase leading-none"
+            className={clsx(
+              "block rounded-md border p-2 text-[10px] font-semibold uppercase leading-none text-white",
+              rest.colorScheme === "dark"
+                ? "border-sky-500 bg-sky-900"
+                : "border-sand-700 bg-sand-700"
+            )}
           >
             Max
           </button>
