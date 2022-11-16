@@ -579,7 +579,7 @@ async function writePoolMetadata({
   logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
     name,
-    dealType: name.toLowerCase().indexOf("unitranche") ? "unitranche" : "multitranche",
+    dealType: name.toLowerCase().indexOf("unitranche") ? "Unitranche" : "Multitranche",
     category: _.sample(categories),
     icon: _.sample(icons),
     description,
