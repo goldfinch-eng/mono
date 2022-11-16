@@ -199,7 +199,6 @@ export default function MembershipPage() {
         <Button
           variant="rounded"
           colorScheme="secondary"
-          iconRight="ArrowTopRight"
           onClick={() => setIsExplainerOpen(true)}
         >
           How does it work?
