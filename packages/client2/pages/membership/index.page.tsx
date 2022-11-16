@@ -27,6 +27,7 @@ import {
 } from "./asset-group";
 import { BuyGfiCta, LpInSeniorPoolCta, BalancedIsBest } from "./ctas";
 import { Explainer } from "./explainer";
+import { IntroVideoSection } from "./intro-video-section";
 import {
   RemoveFromVault,
   VAULTED_GFI_FIELDS,
@@ -238,52 +239,7 @@ export default function MembershipPage() {
             />
           ) : null}
           {!userHasVaultPosition ? (
-            <div
-              className="mb-16 rounded-lg border border-sand-200 p-8"
-              style={{ aspectRatio: "2272 / 752" }}
-            >
-              <h2 className="mb-10 text-2xl">
-                How it works: Goldfinch Membership Vaults
-              </h2>
-              <video autoPlay muted loop>
-                <source
-                  src="/membership/intro-animation.mp4"
-                  type="video/mp4"
-                />
-              </video>
-              <div className="flex flex-col justify-evenly gap-5 text-center lg:flex-row">
-                <div className="lg:w-1/4">
-                  <div className="mb-3 text-lg font-medium">
-                    Deposit GFI and Capital
-                  </div>
-                  <div>
-                    Put both GFI and Capital (FIDU, Backer NFT) in the Vault to
-                    become a Member. You can withdraw from the Vault at any
-                    time.
-                  </div>
-                </div>
-                <div className="lg:w-1/4">
-                  <div className="mb-3 text-lg font-medium">
-                    Receive Boosted Yields
-                  </div>
-                  <div>
-                    Enhance your yields with Member Rewards, a percentage of the
-                    Goldfinch Treasury distributed pro-rata based on your Member
-                    Vault position.
-                  </div>
-                </div>
-                <div className="lg:w-1/4">
-                  <div className="mb-3 text-lg font-medium">
-                    Claim Rewards Weekly
-                  </div>
-                  <div>
-                    Member Rewards are distributed weekly in FIDU, increasing
-                    your exposure to the Senior Pool. Withdrawing during a
-                    weekly cycle will forfeit rewards for that cycle.
-                  </div>
-                </div>
-              </div>
-            </div>
+            <IntroVideoSection className="mb-16" />
           ) : null}
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
