@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { Modal, ShimmerLines } from "@/components/design-system";
+import { FIDU_DECIMALS_DIV } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   useWithdrawalHistoryQuery,
@@ -14,19 +15,22 @@ import {
 import { useWallet } from "@/lib/wallet";
 
 gql`
+  fragment WithdrawalTransactionHistoryFields on WithdrawalTransaction {
+    id
+    epochId
+    amount
+    category
+    timestamp
+    blockNumber
+    category
+  }
   query WithdrawalHistory($account: String!) {
     withdrawalTransactions(
-      where: { user: $account, category_not: CANCEL_WITHDRAWAL_REQUEST }
+      where: { user: $account }
       orderBy: timestamp
       orderDirection: asc
     ) {
-      id
-      epochId
-      amount
-      category
-      timestamp
-      blockNumber
-      category
+      ...WithdrawalTransactionHistoryFields
     }
     epoches {
       id
@@ -49,8 +53,6 @@ export default function WithdrawHistoryModal({
   onClose,
   currentEpoch,
 }: WithdrawHistoryModalProps) {
-  const decimals = BigNumber.from("1000000000000000000"); // 1e18
-
   const { account } = useWallet();
 
   const { data, error, loading } = useWithdrawalHistoryQuery({
@@ -68,7 +70,7 @@ export default function WithdrawHistoryModal({
   let distributionCount = 0;
 
   // Loop all transactions and calculate distributions for each new epoch encountered
-  data?.withdrawalTransactions.forEach((transaction) => {
+  data?.withdrawalTransactions.forEach((transaction, idx) => {
     // If encoutering new epoch ID, calculate distribution for previous
     if (tempEpochId !== transaction.epochId.toString()) {
       const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
@@ -86,18 +88,14 @@ export default function WithdrawHistoryModal({
         tempUserTotal = tempUserTotal.subUnsafe(amountDistributed);
 
         // Push distrubution row to array
-        rows.push([
-          `Distribution ${distributionCount}`,
-          format(new Date(epochData.endsAt * 1000), "MMM d, y"),
-          `-${formatCrypto({
-            amount: BigNumber.from(amountDistributed).div(decimals),
-            token: SupportedCrypto.Fidu,
-          })}`,
-          formatCrypto({
-            amount: BigNumber.from(tempUserTotal).div(decimals),
-            token: SupportedCrypto.Fidu,
-          }),
-        ]);
+        rows.push(
+          getDistributionRow(
+            distributionCount,
+            epochData.endsAt,
+            amountDistributed,
+            tempUserTotal
+          )
+        );
       }
 
       // Increment distribution count
@@ -107,31 +105,82 @@ export default function WithdrawHistoryModal({
       tempEpochId = transaction.epochId.toString();
     }
 
-    // Add to users total
-    tempUserTotal = tempUserTotal.addUnsafe(
-      FixedNumber.from(transaction.amount) ?? FixedNumber.from("0")
-    );
+    if (
+      transaction.category !==
+      WithdrawalTransactionCategory.CancelWithdrawalRequest
+    ) {
+      // Add to users total
+      tempUserTotal = tempUserTotal.addUnsafe(
+        FixedNumber.from(transaction.amount) ?? FixedNumber.from("0")
+      );
 
-    // Push request row to array
-    rows.push([
-      transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
-        ? "Initial request"
-        : transaction.category ===
-          WithdrawalTransactionCategory.AddToWithdrawalRequest
-        ? "Increase request"
-        : "",
-      format(new Date(transaction.timestamp * 1000), "MMM d, y"),
-      transaction.amount
-        ? `+${formatCrypto({
-            amount: transaction.amount,
-            token: SupportedCrypto.Fidu,
-          })}`
-        : "",
-      formatCrypto({
-        amount: BigNumber.from(tempUserTotal).div(decimals),
-        token: SupportedCrypto.Fidu,
-      }),
-    ]);
+      // Push request row to array
+      rows.push([
+        transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
+          ? "Initial request"
+          : transaction.category ===
+            WithdrawalTransactionCategory.AddToWithdrawalRequest
+          ? "Increase request"
+          : "",
+        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+        transaction.amount
+          ? `+${formatCrypto({
+              amount: transaction.amount,
+              token: SupportedCrypto.Fidu,
+            })}`
+          : "",
+        formatCrypto({
+          amount: BigNumber.from(tempUserTotal).div(FIDU_DECIMALS_DIV),
+          token: SupportedCrypto.Fidu,
+        }),
+      ]);
+    } else {
+      tempUserTotal = FixedNumber.from("0");
+
+      // Push cancel row to array
+      rows.push([
+        "Request Cancelled",
+        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+        "",
+        formatCrypto({
+          amount: BigNumber.from("0"),
+          token: SupportedCrypto.Fidu,
+        }),
+      ]);
+    }
+
+    // If last transaction, and not cancelled, check if that same epoch ended to calculate distribution
+    if (
+      idx === data?.withdrawalTransactions.length - 1 &&
+      tempEpochId === transaction.epochId.toString() &&
+      transaction.category !==
+        WithdrawalTransactionCategory.CancelWithdrawalRequest
+    ) {
+      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+
+      if (epochData) {
+        // Get liquidation percentage
+        const liquidatedPercentage = FixedNumber.from(
+          epochData.fiduLiquidated
+        ).divUnsafe(FixedNumber.from(epochData.fiduRequested));
+
+        // Calculate user's take
+        const amountDistributed = tempUserTotal.mulUnsafe(liquidatedPercentage);
+
+        // Get new total
+        tempUserTotal = tempUserTotal.subUnsafe(amountDistributed);
+
+        // Push distrubution row to array
+        rows.push(
+          getDistributionRow(
+            distributionCount,
+            epochData.endsAt,
+            amountDistributed,
+            tempUserTotal
+          )
+        );
+      }
+    }
   });
 
   if (currentEpoch) {
@@ -171,6 +220,26 @@ export default function WithdrawHistoryModal({
       )}
     </Modal>
   );
+}
+
+function getDistributionRow(
+  count: number,
+  endsAt: number,
+  distributed: FixedNumber,
+  total: FixedNumber
+) {
+  return [
+    `Distribution ${count}`,
+    format(new Date(endsAt * 1000), "MMM d, y"),
+    `-${formatCrypto({
+      amount: BigNumber.from(distributed).div(FIDU_DECIMALS_DIV),
+      token: SupportedCrypto.Fidu,
+    })}`,
+    formatCrypto({
+      amount: BigNumber.from(total).div(FIDU_DECIMALS_DIV),
+      token: SupportedCrypto.Fidu,
+    }),
+  ];
 }
 
 function RequestTable({ rows }: { rows: string[][] }) {

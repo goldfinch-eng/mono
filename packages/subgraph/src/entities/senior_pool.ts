@@ -100,7 +100,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.usdcBalance = usdc_contract.balanceOf(seniorPoolAddress)
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
-  poolStatus.cancellationFee = new BigDecimal(cancellationFee).div(BigDecimal.fromString("100"))
+  poolStatus.cancellationFee = new BigDecimal(cancellationFee).div(BigDecimal.fromString("10000"))
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
   updateEstimatedApyFromGfiRaw()

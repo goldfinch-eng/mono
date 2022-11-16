@@ -176,8 +176,8 @@ export function handleEpochEnded(event: EpochEnded): void {
 
   // Create transaction
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DISTRIBUTION", event.address)
-  transaction.sentAmount = event.params.fiduLiquidated
-  transaction.sentToken = "FIDU"
+  transaction.sentAmount = event.params.usdcAllocated
+  transaction.sentToken = "USDC"
   transaction.save()
 
   const epoch = new Epoch(event.params.epochId.toString())

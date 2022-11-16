@@ -14,6 +14,7 @@ import {
   WithdrawalStatus,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc } from "@/lib/pools";
+import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 import WithdrawCancelRequestModal from "./withdraw-cancel-request-modal";
@@ -73,9 +74,12 @@ export function SeniorPoolWithDrawalPanel({
       });
 
       try {
-        await seniorPoolContract.claimWithdrawalRequest(
+        const transaction = seniorPoolContract.claimWithdrawalRequest(
           withdrawalStatus?.withdrawalToken
         );
+
+        await toastTransaction({ transaction });
+
         await apolloClient.refetchQueries({ include: "active" });
 
         setIsWithdrawing(false);
@@ -272,6 +276,7 @@ export function SeniorPoolWithDrawalPanel({
           amount: BigNumber.from(0),
           token: SupportedCrypto.Fidu,
         }}
+        cancellationFee={cancellationFee}
         isOpen={withdrawModalOpen}
         onClose={() => {
           setWithrawModalOpen(false);

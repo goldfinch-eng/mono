@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { utils, BigNumber } from "ethers";
+import { utils, BigNumber, FixedNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   CryptoAmount,
@@ -33,6 +33,7 @@ interface WithdrawRequestModalProps {
   sharePrice?: BigNumber | null;
   currentEpoch?: EpochInfo | null;
   currentRequest?: BigNumber | null;
+  cancellationFee?: FixedNumber | null;
 }
 
 interface FormFields {
@@ -50,6 +51,7 @@ export default function WithdrawRequestModal({
   currentRequest,
   currentEpoch,
   onComplete,
+  cancellationFee,
 }: WithdrawRequestModalProps) {
   const { account, provider } = useWallet();
   const rhfMethods = useForm<FormFields>();
@@ -300,10 +302,12 @@ export default function WithdrawRequestModal({
               periods, and it will remain active until it is completely
               fulfilled or I cancel
             </li>
-            <li>
-              If I cancel a request before it is fulfilled, I will be charged a
-              fee of 12.00% of the total request
-            </li>
+            {cancellationFee ? (
+              <li>
+                If I cancel a request before it is fulfilled, I will be charged
+                a fee of {formatPercent(cancellationFee)} of the total request
+              </li>
+            ) : null}
           </ul>
         </div>
 
