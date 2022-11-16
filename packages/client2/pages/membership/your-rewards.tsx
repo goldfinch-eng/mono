@@ -159,7 +159,7 @@ export function YourRewards({
         </GridItem>
         <GridItem>
           <Stat
-            heading="Member rewards accrued this week"
+            heading="Member rewards accrued this epoch"
             icon={<DoubleDotIcon />}
             tooltip="The total value of Member Rewards distributed to your address since you became a Member."
             left={formatCrypto(
