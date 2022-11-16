@@ -7,6 +7,7 @@ import {
   revalidateDeal,
 } from "../hooks/deals";
 
+import { isValidURL } from "../lib/validation";
 import Document from "../blocks/Document";
 import { generateBinarySelect } from "../lib/binary-select";
 
@@ -146,9 +147,20 @@ const Deals: CollectionConfig = {
           },
         },
         {
-          name: "file",
-          type: "upload",
-          relationTo: "media",
+          name: "fullMemoUrl",
+          label: "Full Memo URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
+        },
+        {
+          name: "executiveSummaryUrl",
+          label: "Executive Summary URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
         },
       ],
     },

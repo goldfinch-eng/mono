@@ -21,9 +21,8 @@ export const CREDIT_MEMO_FIELDS = gql`
     subtitle
     content
     date
-    file {
-      url
-    }
+    fullMemoUrl
+    executiveSummaryUrl
   }
 `;
 
@@ -66,23 +65,43 @@ export function CreditMemos({ creditMemos }: CreditMemoProps) {
                     <h4 className="mb-1 font-medium">{memo.name}</h4>
                     <h5 className="text-sm text-sand-500">{memo.subtitle}</h5>
                   </div>
-                  {memo.file?.url ? (
-                    <div>
-                      <Button
-                        variant="rounded"
-                        colorScheme="secondary"
-                        as="a"
-                        href={memo.file?.url}
-                        iconRight="ArrowTopRight"
-                        target="_blank"
-                        rel="noreferrer noopener"
-                      >
-                        View full memo
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex gap-2">
+                    {memo.executiveSummaryUrl ? (
+                      <div>
+                        <Button
+                          variant="rounded"
+                          colorScheme="secondary"
+                          as="a"
+                          href={memo.executiveSummaryUrl}
+                          iconRight="ArrowTopRight"
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
+                          Executive summary
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {memo.fullMemoUrl ? (
+                      <div>
+                        <Button
+                          variant="rounded"
+                          colorScheme="secondary"
+                          as="a"
+                          href={memo.fullMemoUrl}
+                          iconRight="ArrowTopRight"
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
+                          Full memo
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <p className="mb-3">{memo.content}</p>
+                {memo.content ? (
+                  <p className="mb-3 whitespace-pre-line">{memo.content}</p>
+                ) : null}
                 {memo.date ? (
                   <div className="text-sm text-sand-500">
                     {format(new Date(memo.date), "MMM d, y")}
