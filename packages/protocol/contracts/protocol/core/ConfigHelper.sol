@@ -199,7 +199,7 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio));
   }
 
-  function getSeniorPoolWithdrawalCancelationFeeBps(GoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeBps));
+  function getSeniorPoolWithdrawalCancelationFeeInBps(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps));
   }
 }

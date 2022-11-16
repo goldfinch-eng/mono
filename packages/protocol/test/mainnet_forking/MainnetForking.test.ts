@@ -499,6 +499,28 @@ describe("mainnet forking tests", async function () {
         ])
       }
     })
+
+    it("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
+      const fiduHolder = {
+        address: "0x3ccf9578728cf103a4435ec83c716090d5752043",
+        // ~42K FIDU
+        stakingRewardsTokenId: 2108,
+      }
+      await impersonateAccount(hre, fiduHolder.address)
+      await stakingRewards.unstake(fiduHolder.stakingRewardsTokenId, fiduVal(30_000), {from: fiduHolder.address})
+      await fidu.approve(seniorPool.address, fiduVal(30_000), {from: fiduHolder.address})
+      await seniorPool.requestWithdrawal(fiduVal(30_000), {from: fiduHolder.address})
+
+      const cancelationFeeInBps = await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeInBps)
+      const expectedCancelationFee = fiduVal(30_000).mul(cancelationFeeInBps).div(new BN(10_000))
+      const expectedFiduReturnedToUser = fiduVal(30_000).sub(expectedCancelationFee)
+
+      await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: fiduHolder.address})).toChange([
+        [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
+        [() => fidu.balanceOf(reserveAddress), {by: expectedCancelationFee}],
+        [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(30_000).neg()}],
+      ])
+    })
   })
 
   // Regression test for senior pool writedown bug fix

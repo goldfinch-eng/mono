@@ -234,7 +234,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
 
-    uint256 reserveBps = config.getSeniorPoolWithdrawalCancelationFeeBps();
+    uint256 reserveBps = config.getSeniorPoolWithdrawalCancelationFeeInBps();
     uint256 reserveFidu = request.fiduRequested.mul(reserveBps).div(10_000);
     uint256 userFidu = request.fiduRequested.sub(reserveFidu);
 

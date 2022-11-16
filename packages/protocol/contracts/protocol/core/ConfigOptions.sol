@@ -27,7 +27,7 @@ library ConfigOptions {
     LeverageRatio,
     /// A number in the range [0, 10000] representing basis points of FIDU taken as a fee
     /// when a withdrawal request is canceled.
-    SeniorPoolWithdrawalCancelationFeeBps
+    SeniorPoolWithdrawalCancelationFeeInBps
   }
   /// @dev TrustedForwarder is deprecated because we no longer use GSN. CreditDesk
   ///   and Pool are deprecated because they are no longer used in the protocol.

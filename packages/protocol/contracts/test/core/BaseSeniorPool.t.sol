@@ -108,7 +108,7 @@ contract SeniorPoolBaseTest is BaseTest {
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), LEVERAGE_RATIO);
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds), TP_DRAWDOWN_PERIOD);
-    gfConfig.setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeBps), 10);
+    gfConfig.setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps), 10);
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator), 200);
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10);
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays), 30);
@@ -146,7 +146,7 @@ contract SeniorPoolBaseTest is BaseTest {
   }
 
   function cancelationFee(uint256 fiduAmount) internal view returns (uint256) {
-    return (fiduAmount * gfConfig.getSeniorPoolWithdrawalCancelationFeeBps()) / 10_000;
+    return (fiduAmount * gfConfig.getSeniorPoolWithdrawalCancelationFeeInBps()) / 10_000;
   }
 
   function defaultTp() internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {

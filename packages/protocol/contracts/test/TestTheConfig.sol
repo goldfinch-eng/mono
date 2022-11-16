@@ -30,7 +30,10 @@ contract TestTheConfig {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds), 8);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays), 9);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), 10);
-    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeBps), 11);
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps),
+      11
+    );
 
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Fidu), fiduAddress);
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Pool), poolAddress);
