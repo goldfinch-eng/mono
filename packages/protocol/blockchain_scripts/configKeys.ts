@@ -10,7 +10,7 @@ const CONFIG_KEYS_BY_TYPE = {
     DrawdownPeriodInSeconds: 7,
     TransferPeriodRestrictionInDays: 8,
     LeverageRatio: 9,
-    SeniorPoolWithdrawalCancelationFeeBps: 10,
+    SeniorPoolWithdrawalCancelationFeeInBps: 10,
   },
   addresses: {
     Pool: 0,

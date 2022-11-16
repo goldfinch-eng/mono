@@ -56,7 +56,7 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)).to.bignumber.equal(new BN(8))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays)).to.bignumber.equal(new BN(9))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LeverageRatio)).to.bignumber.equal(new BN(10))
-      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeBps)).to.bignumber.equal(
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeInBps)).to.bignumber.equal(
         new BN(11)
       )
 

@@ -1973,6 +1973,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   function testClaimWithdrawalUsesTheSharePriceFromEachEpochToDetermineFiduLiquidated(address user1, address user2)
     public
   {
+    (TestTranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -1988,7 +1989,6 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     uint256 poolToken = sp.invest(tp);
@@ -2200,9 +2200,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     sp.invest(tp);
   }
 
-  function testInvestCallableByAnyone(uint256 juniorAmount, address user) public onlyAllowListed(user) {
-    juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
+  function testInvestCallableByAnyone(uint256 juniorAmount, address user) public {
     (TestTranchedPool tp, ) = defaultTp();
+    vm.assume(fuzzHelper.isAllowed(user));
+    juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
 
@@ -2295,13 +2296,13 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
   function testInvestLiquidatesEpochIfOneOrMoreEpochsHaveEnded(address user, uint256 epochsElapsed)
     public
-    onlyAllowListed(user)
     goListed(user)
     tokenApproved(user)
   {
+    (TestTranchedPool tp, ) = defaultTp();
+    vm.assume(fuzzHelper.isAllowed(user));
     epochsElapsed = bound(epochsElapsed, 1, 10);
     uint256 juniorAmount = usdcVal(100);
-    (TestTranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -2527,13 +2528,9 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   Writedown
   ================================================================================*/
 
-  function testWritedownCallableByNonGovernance(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-  {
+  function testWritedownCallableByNonGovernance(address user) public goListed(user) impersonating(user) {
     (TestTranchedPool tp, ) = defaultTp();
+    vm.assume(fuzzHelper.isAllowed(user));
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
