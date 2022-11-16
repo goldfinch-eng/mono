@@ -78,6 +78,12 @@ gql`
           isAccepted
         }
       }
+      withdrawalStatus {
+        fiduRequested {
+          token
+          amount
+        }
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -504,6 +510,33 @@ export default function DashboardPage() {
                                     quantity: data.viewer.fiduBalance.amount,
                                     usdcValue: sharesToUsdc(
                                       data.viewer.fiduBalance.amount,
+                                      data.seniorPools[0].latestPoolStatus
+                                        .sharePrice
+                                    ),
+                                    url: "/pools/senior",
+                                  },
+                                ]
+                              : []),
+                            ...(data.viewer.withdrawalStatus?.fiduRequested &&
+                            !data.viewer.withdrawalStatus?.fiduRequested.amount.isZero()
+                              ? [
+                                  {
+                                    name: "Requested for withdrawal",
+                                    percentage: computePercentage(
+                                      sharesToUsdc(
+                                        data.viewer.withdrawalStatus
+                                          .fiduRequested.amount,
+                                        data.seniorPools[0].latestPoolStatus
+                                          .sharePrice
+                                      ).amount,
+                                      totalUsdc.amount
+                                    ),
+                                    quantity:
+                                      data.viewer.withdrawalStatus.fiduRequested
+                                        .amount,
+                                    usdcValue: sharesToUsdc(
+                                      data.viewer.withdrawalStatus.fiduRequested
+                                        .amount,
                                       data.seniorPools[0].latestPoolStatus
                                         .sharePrice
                                     ),
