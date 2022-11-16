@@ -255,6 +255,7 @@ export function WithdrawalPanel({
           labelClassName="!mb-3 text-sm"
           className="mb-3"
           disabled={selectedDestination !== "wallet"}
+          maxValue={totalWithdrawable}
         />
         <Button
           type="submit"
