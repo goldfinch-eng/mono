@@ -12,6 +12,9 @@ import { generateBinarySelect } from "../lib/binary-select";
 
 const Deals: CollectionConfig = {
   slug: "deals",
+  versions: {
+    drafts: true,
+  },
   labels: {
     singular: "Deal",
     plural: "Deals",
