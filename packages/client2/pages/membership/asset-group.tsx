@@ -35,7 +35,7 @@ export function AssetGroup({
       <hr
         className={clsx(
           "border-t",
-          colorScheme === "sand" ? "border-sand-300" : "border-mustard-300"
+          colorScheme === "sand" ? "border-sand-200" : "border-mustard-300"
         )}
       />
       <div className="p-5">{children}</div>
