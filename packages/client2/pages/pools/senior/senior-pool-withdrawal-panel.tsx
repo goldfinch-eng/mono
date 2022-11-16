@@ -152,7 +152,7 @@ export function SeniorPoolWithDrawalPanel({
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Withdrawal request</div>
-              <InfoIconTooltip content="" />
+              <InfoIconTooltip content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request." />
             </div>
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
@@ -175,7 +175,7 @@ export function SeniorPoolWithDrawalPanel({
 
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Next distribution</div>
-              <InfoIconTooltip content="" />
+              <InfoIconTooltip content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled." />
             </div>
             <div className="mb-5 flex items-end justify-between gap-1">
               <div className="text-2xl">

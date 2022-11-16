@@ -1,6 +1,11 @@
 import { BigNumber, FixedNumber } from "ethers";
 
-import { Modal, Button, Link } from "@/components/design-system";
+import {
+  Modal,
+  Button,
+  Link,
+  InfoIconTooltip,
+} from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
@@ -63,12 +68,18 @@ export default function WithdrawCancelRequestModal({
       titleSize="lg"
     >
       <div className="mb-7">
-        <h5 className="mb-2 text-base font-medium">
-          Confirm withdrawal request
-        </h5>
+        <h5 className="mb-2 text-base font-medium">Confirm changes</h5>
         <div className="mb-2 rounded border border-sand-200 bg-white">
           <div className="flex items-center justify-between border-b border-sand-200 p-3">
-            <div className="text-sm">Current request amount</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-sand-600">
+                Current request amount
+              </div>
+              <InfoIconTooltip
+                size="sm"
+                content="FIDU you previously submitted a withdrawal request for."
+              />
+            </div>
             <div className="text-lg">
               {formatCrypto(
                 {
@@ -80,7 +91,13 @@ export default function WithdrawCancelRequestModal({
             </div>
           </div>
           <div className="flex items-center justify-between border-b border-sand-200 p-3">
-            <div className="text-sm">New request total</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-sand-600">New request total</div>
+              <InfoIconTooltip
+                size="sm"
+                content="Your total FIDU withdrawal request outstanding, with the cancellation decrease reflected."
+              />
+            </div>
             <div className="text-lg">
               {formatCrypto(
                 {
@@ -92,7 +109,16 @@ export default function WithdrawCancelRequestModal({
             </div>
           </div>
           <div className="flex items-center justify-between border-b border-sand-200 p-3">
-            <div className="text-sm">Cancellation fee</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-sand-600">Cancellation fee</div>
+              <InfoIconTooltip
+                size="sm"
+                content={`Cancelling a request before it is fulfilled incurs a fee of ${formatPercent(
+                  cancellationFee
+                )} of the total request.`}
+              />
+            </div>
+
             <div className="text-lg text-redclay-500">
               {currentRequest
                 ? formatCrypto(
@@ -106,7 +132,13 @@ export default function WithdrawCancelRequestModal({
             </div>
           </div>
           <div className="flex items-center justify-between p-3">
-            <div className="text-sm">Change effective</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-sand-600">Change effective</div>
+              <InfoIconTooltip
+                size="sm"
+                content="When your new request total will go into effect."
+              />
+            </div>
             <div className="text-lg">Immediatedly</div>
           </div>
         </div>

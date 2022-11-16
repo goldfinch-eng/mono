@@ -187,8 +187,8 @@ export default function WithdrawHistoryModal({
     rows.push([
       "Next Distribution",
       format(currentEpoch.endTime.mul(1000).toNumber(), "MMM d, y"),
-      "TBD",
-      "TBD",
+      "Pending",
+      "Pending",
     ]);
   }
 
