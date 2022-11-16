@@ -1,15 +1,8 @@
 import { gql } from "@apollo/client";
-import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import {
-  Button,
-  Heading,
-  Icon,
-  IconNameType,
-  Link,
-} from "@/components/design-system";
+import { Button, Heading, Link } from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -32,6 +25,7 @@ import {
   AssetGroupSubheading,
   AssetGroupButton,
 } from "./asset-group";
+import { BuyGfiCta, LpInSeniorPoolCta, BalancedIsBest } from "./ctas";
 import { Explainer } from "./explainer";
 import {
   RemoveFromVault,
@@ -295,40 +289,27 @@ export default function MembershipPage() {
             <h2 className="mb-10 text-4xl">Vault</h2>
             <div className="flex flex-col items-stretch justify-between gap-10 lg:flex-row lg:items-start">
               <div className="space-y-4 lg:w-1/2">
-                <div className="rounded-xl border border-sand-200 bg-sand-100 p-5">
-                  <div className="mb-3 flex items-center gap-2 text-lg font-medium">
-                    <Icon name="LightningBolt" className="text-mustard-400" />
-                    Balanced is best
-                  </div>
-                  <div>
-                    To optimize Member rewards, aim to have balanced amounts of
-                    capital and GFI in your vault at all times.
-                  </div>
-                </div>
+                <BalancedIsBest />
                 <AssetGroup headingLeft="Available assets">
                   {showLoadingState ? (
                     [0, 1, 2].map((nonce) => (
                       <AssetBoxPlaceholder key={nonce} />
                     ))
-                  ) : data.viewer.gfiBalance?.amount.isZero() &&
-                    vaultableCapitalAssets.length === 0 ? (
-                    <div>
-                      <div className="mb-6">
-                        <div className="mb-1 text-lg font-medium">
-                          You don&apos;t have any available assets to be added
-                        </div>
-                        <div className="text-sm">
-                          To optimize Member rewards, aim to have balanced
-                          amounts of GFI and Capital in your Vault at all times.
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <BuyGfiCta />
-                        <LpInSeniorPoolCta />
-                      </div>
-                    </div>
                   ) : (
                     <div>
+                      {data.viewer.gfiBalance?.amount.isZero() &&
+                      vaultableCapitalAssets.length === 0 ? (
+                        <div className="mb-6">
+                          <div className="mb-1 text-lg font-medium">
+                            You don&apos;t have any available assets to be added
+                          </div>
+                          <div className="text-sm">
+                            To optimize Member rewards, aim to have balanced
+                            amounts of GFI and Capital in your Vault at all
+                            times.
+                          </div>
+                        </div>
+                      ) : null}
                       <div className="mb-4">
                         <AssetGroupSubheading
                           left="GFI"
@@ -370,47 +351,47 @@ export default function MembershipPage() {
                             ),
                           })}
                         />
-                        {vaultableCapitalAssets.length === 0 ? (
-                          <LpInSeniorPoolCta />
-                        ) : (
-                          <div className="space-y-2">
-                            {vaultableCapitalAssets.map((asset, index) => (
+                        <div className="space-y-2">
+                          {vaultableCapitalAssets.length === 0 ? (
+                            <LpInSeniorPoolCta />
+                          ) : (
+                            vaultableCapitalAssets.map((asset, index) => (
                               <AssetBox
                                 key={`capital-${index}`}
                                 asset={asset}
                               />
-                            ))}
-                            {data?.viewer.fiduBalance &&
-                            !data.viewer.fiduBalance.amount.isZero() ? (
-                              <AssetBox
-                                asset={{
-                                  name: "Unstaked FIDU",
-                                  description: "Goldfinch Senior Pool Position",
-                                  nativeAmount: data.viewer.fiduBalance,
-                                  usdcAmount: sharesToUsdc(
-                                    data.viewer.fiduBalance.amount,
-                                    sharePrice
-                                  ),
-                                }}
-                                notice={
-                                  <div className="flex items-center justify-between gap-2 text-left">
-                                    <div className="whitespace-nowrap">
-                                      FIDU must be staked before it can be added
-                                      to the Vault.
-                                    </div>
-                                    <Link
-                                      href="/stake"
-                                      iconRight="ArrowSmRight"
-                                      className="whitespace-nowrap text-mustard-900"
-                                    >
-                                      Stake FIDU
-                                    </Link>
+                            ))
+                          )}
+                          {data?.viewer.fiduBalance &&
+                          !data.viewer.fiduBalance.amount.isZero() ? (
+                            <AssetBox
+                              asset={{
+                                name: "Unstaked FIDU",
+                                description: "Goldfinch Senior Pool Position",
+                                nativeAmount: data.viewer.fiduBalance,
+                                usdcAmount: sharesToUsdc(
+                                  data.viewer.fiduBalance.amount,
+                                  sharePrice
+                                ),
+                              }}
+                              notice={
+                                <div className="flex items-center justify-between gap-2 text-left">
+                                  <div className="whitespace-nowrap">
+                                    FIDU must be staked before it can be added
+                                    to the Vault.
                                   </div>
-                                }
-                              />
-                            ) : null}
-                          </div>
-                        )}
+                                  <Link
+                                    href="/stake"
+                                    iconRight="ArrowSmRight"
+                                    className="whitespace-nowrap text-mustard-900"
+                                  >
+                                    Stake FIDU
+                                  </Link>
+                                </div>
+                              }
+                            />
+                          ) : null}
+                        </div>
                       </div>
                       <AssetGroupButton
                         disabled={additionDisabled}
@@ -590,68 +571,5 @@ export default function MembershipPage() {
         </>
       )}
     </div>
-  );
-}
-
-function CallToAction({
-  className,
-  mainText,
-  icon,
-  buttonText,
-  href,
-}: {
-  className?: string;
-  mainText: string;
-  icon?: IconNameType;
-  buttonText: string;
-  href: string;
-}) {
-  const isExternal = href.startsWith("http");
-  return (
-    <div
-      className={clsx(
-        className,
-        "flex items-center justify-between rounded-lg bg-white p-5"
-      )}
-    >
-      <div className="flex items-center">
-        <Icon name="LightningBolt" className="mr-2 text-mustard-400" />
-        <div className="text-lg">{mainText}</div>
-        {icon ? <Icon name={icon} size="md" className="ml-4" /> : null}
-      </div>
-      <Button
-        colorScheme="mustard"
-        variant="rounded"
-        size="lg"
-        as="a"
-        href={href}
-        rel={isExternal ? "noopener noreferrer" : undefined}
-        target={isExternal ? "_blank" : undefined}
-        iconRight={isExternal ? "ArrowTopRight" : "ArrowSmRight"}
-      >
-        {buttonText}
-      </Button>
-    </div>
-  );
-}
-
-function BuyGfiCta() {
-  return (
-    <CallToAction
-      mainText="Buy GFI"
-      icon="Gfi"
-      buttonText="Buy now"
-      href="https://coinmarketcap.com/currencies/goldfinch-protocol/markets/"
-    />
-  );
-}
-
-function LpInSeniorPoolCta() {
-  return (
-    <CallToAction
-      mainText="LP in the Senior Pool for FIDU"
-      buttonText="Invest"
-      href="/pools/senior"
-    />
   );
 }

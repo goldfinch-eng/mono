@@ -40,6 +40,7 @@ import {
   AssetBoxPlaceholder,
   convertPoolTokenToAsset,
 } from "./asset-box";
+import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
@@ -78,7 +79,7 @@ export function AddToVault({
   unstakedFidu,
   currentBlockTimestampMs,
 }: AddToVaultProps) {
-  const capitalTotal = {
+  const availableCapitalTotal = {
     token: SupportedCrypto.Usdc,
     amount: sharesToUsdc(
       sum("amount", vaultableStakedPositions),
@@ -301,69 +302,79 @@ export function AddToVault({
     >
       <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
         <div className={step === "select" ? undefined : "hidden"}>
+          <BalancedIsBest colorScheme="tidepool" className="mb-8" />
           <div className="mb-8">
             <SectionHeading
               leftText="Step 1: Choose an amount of GFI"
               rightText={`${formatCrypto(maxVaultableGfi)} available`}
             />
-            <GfiBox
-              maxGfi={maxVaultableGfi}
-              fiatPerGfi={fiatPerGfi}
-              name="gfiToVault"
-              control={control}
-            />
+            {maxVaultableGfi.amount.isZero() ? (
+              <BuyGfiCta />
+            ) : (
+              <GfiBox
+                maxGfi={maxVaultableGfi}
+                fiatPerGfi={fiatPerGfi}
+                name="gfiToVault"
+                control={control}
+              />
+            )}
           </div>
           <div className="mb-8">
             <SectionHeading
               leftText="Step 2: Choose an amount of Capital"
-              rightText={`${formatCrypto(capitalTotal)} available`}
+              rightText={`${formatCrypto(availableCapitalTotal)} available`}
             />
-            <div className="space-y-2">
-              <AssetPicker
-                name="stakedPositionsToVault"
-                control={control}
-                options={vaultableStakedPositions.map((vsp) => ({
-                  id: vsp.id,
-                  asset: {
-                    name: "Staked FIDU",
-                    description: "Goldfinch Senior Pool Position",
-                    usdcAmount: sharesToUsdc(vsp.amount, sharePrice),
-                    nativeAmount: {
-                      token: SupportedCrypto.Fidu,
-                      amount: vsp.amount,
+            {availableCapitalTotal.amount.isZero() ? (
+              <LpInSeniorPoolCta />
+            ) : (
+              <div className="space-y-2">
+                <AssetPicker
+                  name="stakedPositionsToVault"
+                  control={control}
+                  options={vaultableStakedPositions.map((vsp) => ({
+                    id: vsp.id,
+                    asset: {
+                      name: "Staked FIDU",
+                      description: "Goldfinch Senior Pool Position",
+                      usdcAmount: sharesToUsdc(vsp.amount, sharePrice),
+                      nativeAmount: {
+                        token: SupportedCrypto.Fidu,
+                        amount: vsp.amount,
+                      },
                     },
-                  },
-                }))}
-              />
-              <AssetPicker
-                name="poolTokensToVault"
-                control={control}
-                options={vaultablePoolTokens.map((vpt) => ({
-                  id: vpt.id,
-                  asset: convertPoolTokenToAsset(vpt),
-                }))}
-              />
-              {!unstakedFidu.amount.isZero() ? (
-                <AssetBox
-                  asset={{
-                    name: "Unstaked FIDU",
-                    description: "Goldfinch Senior Pool Position",
-                    nativeAmount: unstakedFidu,
-                    usdcAmount: sharesToUsdc(unstakedFidu.amount, sharePrice),
-                  }}
-                  notice={
-                    <div className="flex items-center justify-between">
-                      <div>
-                        FIDU must be staked before it can be added to the Vault.
-                      </div>
-                      <Link href="/stake" iconRight="ArrowTopRight">
-                        Stake FIDU
-                      </Link>
-                    </div>
-                  }
+                  }))}
                 />
-              ) : null}
-            </div>
+                <AssetPicker
+                  name="poolTokensToVault"
+                  control={control}
+                  options={vaultablePoolTokens.map((vpt) => ({
+                    id: vpt.id,
+                    asset: convertPoolTokenToAsset(vpt),
+                  }))}
+                />
+                {!unstakedFidu.amount.isZero() ? (
+                  <AssetBox
+                    asset={{
+                      name: "Unstaked FIDU",
+                      description: "Goldfinch Senior Pool Position",
+                      nativeAmount: unstakedFidu,
+                      usdcAmount: sharesToUsdc(unstakedFidu.amount, sharePrice),
+                    }}
+                    notice={
+                      <div className="flex items-center justify-between">
+                        <div>
+                          FIDU must be staked before it can be added to the
+                          Vault.
+                        </div>
+                        <Link href="/stake" iconRight="ArrowTopRight">
+                          Stake FIDU
+                        </Link>
+                      </div>
+                    }
+                  />
+                ) : null}
+              </div>
+            )}
           </div>
           <div>
             <SectionHeading leftText="Projected Member Rewards" />
