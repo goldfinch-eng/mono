@@ -1,3 +1,4 @@
+import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
@@ -15,8 +16,24 @@ import {
 } from "@/components/design-system";
 import { GFI_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
+import {
+  CryptoAmount,
+  PoolTokenFieldsForAssetsFragment,
+  SupportedCrypto,
+} from "@/lib/graphql/generated";
 import { gfiToUsdc } from "@/lib/pools";
+
+export const POOL_TOKEN_FIELDS_FOR_ASSETS = gql`
+  fragment PoolTokenFieldsForAssets on TranchedPoolToken {
+    id
+    principalAmount
+    principalRedeemed
+    tranchedPool {
+      id
+      name @client
+    }
+  }
+`;
 
 export interface Asset {
   name: ReactNode;
@@ -295,4 +312,17 @@ export function AssetPicker({
       })}
     </div>
   );
+}
+
+export function convertPoolTokenToAsset(
+  poolToken: PoolTokenFieldsForAssetsFragment
+): Asset {
+  return {
+    name: `Borrower Pool Position (Token #${poolToken.id})`,
+    description: poolToken.tranchedPool.name,
+    usdcAmount: {
+      token: SupportedCrypto.Usdc,
+      amount: poolToken.principalAmount.sub(poolToken.principalRedeemed),
+    },
+  };
 }

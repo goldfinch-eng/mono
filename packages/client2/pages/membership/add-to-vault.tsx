@@ -38,6 +38,7 @@ import {
   GfiBox,
   AssetPicker,
   AssetBoxPlaceholder,
+  convertPoolTokenToAsset,
 } from "./asset-box";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
@@ -339,14 +340,7 @@ export function AddToVault({
                 control={control}
                 options={vaultablePoolTokens.map((vpt) => ({
                   id: vpt.id,
-                  asset: {
-                    name: "Borrower Pool Position",
-                    description: vpt.tranchedPool.name,
-                    usdcAmount: {
-                      amount: vpt.principalAmount,
-                      token: SupportedCrypto.Usdc,
-                    },
-                  },
+                  asset: convertPoolTokenToAsset(vpt),
                 }))}
               />
               {!unstakedFidu.amount.isZero() ? (
@@ -436,14 +430,7 @@ export function AddToVault({
               {poolTokensToVault.map((p) => (
                 <AssetBox
                   key={`pool-token-${p.id}`}
-                  asset={{
-                    name: "Borrower Pool Position",
-                    description: p.tranchedPool.name,
-                    usdcAmount: {
-                      token: SupportedCrypto.Usdc,
-                      amount: p.principalAmount,
-                    },
-                  }}
+                  asset={convertPoolTokenToAsset(p)}
                 />
               ))}
             </div>

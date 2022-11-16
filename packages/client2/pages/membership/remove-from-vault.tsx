@@ -31,6 +31,7 @@ import {
   AssetBox,
   AssetBoxPlaceholder,
   AssetPicker,
+  convertPoolTokenToAsset,
   GfiBox,
 } from "./asset-box";
 
@@ -57,11 +58,7 @@ export const VAULTED_POOL_TOKEN_FIELDS = gql`
     id
     usdcEquivalent
     poolToken {
-      id
-      tranchedPool {
-        id
-        name @client
-      }
+      ...PoolTokenFieldsForAssets
     }
   }
 `;
@@ -336,14 +333,7 @@ export function RemoveFromVault({
               <AssetPicker
                 options={vaultedPoolTokens.map((vpt) => ({
                   id: vpt.id,
-                  asset: {
-                    name: "Borrower Pool Position",
-                    description: vpt.poolToken.tranchedPool.name,
-                    usdcAmount: {
-                      token: SupportedCrypto.Usdc,
-                      amount: vpt.usdcEquivalent,
-                    },
-                  },
+                  asset: convertPoolTokenToAsset(vpt.poolToken),
                 }))}
                 control={control}
                 name="poolTokensToUnvault"
@@ -417,14 +407,7 @@ export function RemoveFromVault({
               {poolTokensToUnvault.map((vpt) => (
                 <AssetBox
                   key={vpt.id}
-                  asset={{
-                    name: "Borrower Pool Position",
-                    description: vpt.poolToken.tranchedPool.name,
-                    usdcAmount: {
-                      token: SupportedCrypto.Usdc,
-                      amount: vpt.usdcEquivalent,
-                    },
-                  }}
+                  asset={convertPoolTokenToAsset(vpt.poolToken)}
                 />
               ))}
             </div>

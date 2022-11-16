@@ -20,7 +20,13 @@ import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import { AssetBox, Asset, AssetBoxPlaceholder } from "./asset-box";
+import {
+  AssetBox,
+  Asset,
+  AssetBoxPlaceholder,
+  POOL_TOKEN_FIELDS_FOR_ASSETS,
+  convertPoolTokenToAsset,
+} from "./asset-box";
 import {
   AssetGroup,
   AssetGroupSubheading,
@@ -45,6 +51,7 @@ gql`
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
   ${CHART_DISBURSEMENT_FIELDS}
+  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -90,12 +97,7 @@ gql`
       orderBy: mintedAt
       orderDirection: desc
     ) {
-      id
-      principalAmount
-      tranchedPool {
-        id
-        name @client
-      }
+      ...PoolTokenFieldsForAssets
     }
 
     currentBlock @client {
@@ -169,14 +171,11 @@ export default function MembershipPage() {
 
   if (data && data.tranchedPoolTokens.length > 0) {
     data.tranchedPoolTokens.forEach((poolToken) => {
-      vaultableCapitalAssets.push({
-        name: "Borrower Pool Position",
-        description: poolToken.tranchedPool.name,
-        usdcAmount: {
-          token: SupportedCrypto.Usdc,
-          amount: poolToken.principalAmount,
-        },
-      });
+      if (
+        !poolToken.principalAmount.sub(poolToken.principalRedeemed).isZero()
+      ) {
+        vaultableCapitalAssets.push(convertPoolTokenToAsset(poolToken));
+      }
     });
   }
 
@@ -501,14 +500,7 @@ export default function MembershipPage() {
                       {data.vaultedPoolTokens.map((vpt) => (
                         <AssetBox
                           key={vpt.id}
-                          asset={{
-                            name: "Borrower Pool Position",
-                            description: vpt.poolToken.tranchedPool.name,
-                            usdcAmount: {
-                              token: SupportedCrypto.Usdc,
-                              amount: vpt.usdcEquivalent,
-                            },
-                          }}
+                          asset={convertPoolTokenToAsset(vpt.poolToken)}
                         />
                       ))}
                     </div>
@@ -552,7 +544,12 @@ export default function MembershipPage() {
                     }
                   }
                   fiatPerGfi={data.gfiPrice.price.amount}
-                  vaultablePoolTokens={data.tranchedPoolTokens}
+                  vaultablePoolTokens={data.tranchedPoolTokens.filter(
+                    (poolToken) =>
+                      !poolToken.principalAmount
+                        .sub(poolToken.principalRedeemed)
+                        .isZero()
+                  )}
                   vaultableStakedPositions={data.seniorPoolStakedPositions}
                   sharePrice={sharePrice}
                   unstakedFidu={
