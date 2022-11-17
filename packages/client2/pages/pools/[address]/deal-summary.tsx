@@ -48,17 +48,15 @@ export default function DealSummary({
           </Button>
         ) : null}
       </div>
-
       {dealData.details ? (
         <RichText content={dealData.details} className="mb-20" />
       ) : null}
 
-      {dealData.creditMemos ? (
+      {dealData.creditMemos && dealData.creditMemos.length > 0 ? (
         <div className="mb-20">
           <CreditMemos creditMemos={dealData.creditMemos} />
         </div>
       ) : null}
-
       {dealData.transactionStructure ? (
         <div className="mb-20">
           <h3 className="mb-8 text-lg font-semibold">Transaction Structure</h3>
@@ -70,11 +68,9 @@ export default function DealSummary({
           />
         </div>
       ) : null}
-
       <div className="mb-20">
         <SecuritiesRecourseTable details={dealData.securitiesAndRecourse} />
       </div>
-
       <div className="mb-20">
         <DealTermsTable
           tranchedPool={poolChainData}
@@ -83,11 +79,9 @@ export default function DealSummary({
           dealType={dealData.dealType}
         />
       </div>
-
       {dealData.documents && dealData.documents.length > 0 ? (
         <DocumentsList documents={dealData.documents} />
       ) : null}
-
       <div className="mb-20">
         <h2 className="mb-8 text-lg font-semibold">Recent Activity</h2>
 
