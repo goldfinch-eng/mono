@@ -53,7 +53,7 @@ gql`
 const earnCmsQuery = gql`
   ${TRANCHED_POOL_CARD_DEAL_FIELDS}
   query EarnPageCMS @api(name: cms) {
-    Deals(limit: 100) {
+    Deals(limit: 100, where: { hidden: false }) {
       docs {
         ...TranchedPoolCardDealFields
       }
@@ -213,7 +213,7 @@ export const getStaticProps: GetStaticProps = async () => {
     >
   > = {};
   deals.forEach((d) => {
-    if (d) {
+    if (d && d.id) {
       dealMetadata[d.id] = d;
     }
   });

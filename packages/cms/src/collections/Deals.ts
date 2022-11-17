@@ -13,9 +13,6 @@ import { generateBinarySelect } from "../lib/binary-select";
 
 const Deals: CollectionConfig = {
   slug: "deals",
-  versions: {
-    drafts: true,
-  },
   labels: {
     singular: "Deal",
     plural: "Deals",
@@ -33,6 +30,11 @@ const Deals: CollectionConfig = {
     afterDelete: [afterDealDelete],
   },
   fields: [
+    {
+      name: "hidden",
+      type: "checkbox",
+      defaultValue: false,
+    },
     {
       name: "id",
       label: "Contract Address",
