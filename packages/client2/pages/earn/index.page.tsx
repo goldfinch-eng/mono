@@ -53,7 +53,7 @@ gql`
 const earnCmsQuery = gql`
   ${TRANCHED_POOL_CARD_DEAL_FIELDS}
   query EarnPageCMS @api(name: cms) {
-    Deals(limit: 100, where: { hidden: false }) {
+    Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
         ...TranchedPoolCardDealFields
       }
