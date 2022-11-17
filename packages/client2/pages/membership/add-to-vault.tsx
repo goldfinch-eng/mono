@@ -2,7 +2,14 @@ import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { format } from "date-fns";
 import { BigNumber } from "ethers";
-import { Children, ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  Children,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -41,6 +48,7 @@ import {
   convertPoolTokenToAsset,
 } from "./asset-box";
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
+import { LegalAgreement } from "./legal-agreement";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
@@ -253,6 +261,9 @@ export function AddToVault({
     }
   }, [isOpen, reset]);
 
+  const [isAgreementRead, setIsAgreementRead] = useState(false);
+  const markAgreementRead = useCallback(() => setIsAgreementRead(true), []);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -281,7 +292,8 @@ export function AddToVault({
                 Object.keys(errors).length > 0 ||
                 (gfiToVault.amount.isZero() &&
                   stakedPositionsToVault.length === 0 &&
-                  poolTokensToVault.length === 0)
+                  poolTokensToVault.length === 0) ||
+                (step === "review" && !isAgreementRead)
               }
               onClick={
                 step === "select"
@@ -496,13 +508,8 @@ export function AddToVault({
                 </div>
               </div>
             </Summary>
-            <div className="mt-2 text-xs">
-              By clicking continue below, I agree to lorem ipsum dolor sit amet,
-              consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-              labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-              nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-              consequat. Duis aute irure dolor in reprehenderit in voluptate
-              velit esse cillum dolore eu fugiat nulla pariatur.
+            <div className="mt-6 text-sand-400">
+              <LegalAgreement onRead={markAgreementRead} />
             </div>
           </div>
         </div>

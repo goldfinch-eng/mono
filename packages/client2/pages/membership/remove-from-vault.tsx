@@ -1,6 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -34,6 +34,7 @@ import {
   convertPoolTokenToAsset,
   GfiBox,
 } from "./asset-box";
+import { LegalAgreement } from "./legal-agreement";
 
 export const VAULTED_GFI_FIELDS = gql`
   fragment VaultedGfiFields on VaultedGfi {
@@ -233,6 +234,9 @@ export function RemoveFromVault({
     }
   }, [isOpen, reset]);
 
+  const [isAgreementRead, setIsAgreementRead] = useState(false);
+  const markAgreementRead = useCallback(() => setIsAgreementRead(true), []);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -260,7 +264,8 @@ export function RemoveFromVault({
                 Object.keys(errors).length > 0 ||
                 (gfiToUnvault.amount.isZero() &&
                   stakedPositionsToUnvault.length === 0 &&
-                  poolTokensToUnvault.length === 0)
+                  poolTokensToUnvault.length === 0) ||
+                (step === "review" && !isAgreementRead)
               }
               onClick={
                 step === "select"
@@ -454,14 +459,8 @@ export function RemoveFromVault({
                 <div className="text-lg font-medium">Immediately</div>
               </div>
             </Summary>
-            <div className="mt-2 text-xs">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-              reprehenderit in voluptate velit esse cillum dolore eu fugiat
-              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-              sunt in culpa qui officia deserunt mollit anim id est laborum.
+            <div className="mt-6 text-sand-500">
+              <LegalAgreement onRead={markAgreementRead} />
             </div>
           </div>
         </div>
