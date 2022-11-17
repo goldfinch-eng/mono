@@ -182,7 +182,11 @@ const Deals: CollectionConfig = {
         },
         {
           name: "description",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
           label: "Security description",
         },
         {
@@ -193,12 +197,20 @@ const Deals: CollectionConfig = {
         generateBinarySelect("recourse", "Recourse to borrower"),
         {
           name: "recourseDescription",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
           label: "Recourse description",
         },
         {
           name: "covenants",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
         },
       ],
     },

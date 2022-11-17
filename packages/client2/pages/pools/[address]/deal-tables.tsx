@@ -8,6 +8,7 @@ import {
   ShimmerLines,
   Link,
 } from "@/components/design-system";
+import { RichText } from "@/components/rich-text";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -220,7 +221,11 @@ export function SecuritiesRecourseTable({
     rows.push(["Type of security", null, details.type]);
   }
   if (details?.description) {
-    rows.push(["Security description", null, details.description]);
+    rows.push([
+      "Security description",
+      null,
+      <RichText key="securityDescription" content={details.description} />,
+    ]);
   }
   if (details?.value) {
     rows.push(["Security value", null, details.value.toString()]);
@@ -232,11 +237,23 @@ export function SecuritiesRecourseTable({
       details.recourse === "yes" ? "Yes" : "No",
     ]);
   }
+
   if (details?.recourseDescription) {
-    rows.push(["Recourse description", null, details.recourseDescription]);
+    rows.push([
+      "Recourse description",
+      null,
+      <RichText
+        key="recourseDescription"
+        content={details.recourseDescription}
+      />,
+    ]);
   }
   if (details?.covenants) {
-    rows.push(["Covenants", null, details.covenants]);
+    rows.push([
+      "Covenants",
+      null,
+      <RichText key="covenants" content={details.covenants} />,
+    ]);
   }
   if (rows.length === 0) {
     return null;
@@ -382,7 +399,10 @@ export function UnderwritingPerformanceTable({
     rows.push([
       "Underwriting description",
       null,
-      details.underwritingDescription,
+      <RichText
+        key="underwritingDescription"
+        content={details.underwritingDescription}
+      />,
     ]);
   }
   if (rows.length === 0) {
