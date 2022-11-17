@@ -13,6 +13,7 @@ import { formatPercent } from "@/lib/format";
 import {
   TranchedPoolCardFieldsFragment,
   TranchedPoolCardDealFieldsFragment,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -30,6 +31,7 @@ interface PoolCardProps {
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
+  dealType?: Deal_DealType | null;
 }
 
 function getColorScheme(
@@ -51,7 +53,9 @@ function getColorScheme(
   }
 }
 
-function getChipContent(poolStatus?: PoolStatus): string | null {
+function getChipContent(
+  poolStatus?: PoolStatus | Deal_DealType
+): string | null {
   switch (poolStatus) {
     case PoolStatus.Full:
       return "FULL";
@@ -63,6 +67,10 @@ function getChipContent(poolStatus?: PoolStatus): string | null {
       return "COMING SOON";
     case PoolStatus.Repaid:
       return "REPAID";
+    case Deal_DealType.Unitranche:
+      return "Unitranche";
+    case Deal_DealType.Multitranche:
+      return "Multitranche";
     default:
       return null;
   }
@@ -76,6 +84,7 @@ export function PoolCard({
   icon,
   href,
   poolStatus,
+  dealType,
 }: PoolCardProps) {
   return (
     <PoolCardLayout
@@ -112,6 +121,11 @@ export function PoolCard({
         </div>
       }
       chipSlot={
+        !!dealType ? (
+          <Chip colorScheme="transparent">{getChipContent(dealType)}</Chip>
+        ) : undefined
+      }
+      chipSlot2={
         <Chip colorScheme={getColorScheme(poolStatus)}>
           {getChipContent(poolStatus)}
         </Chip>
@@ -140,6 +154,7 @@ interface PoolCardLayoutProps {
   dataSlot1: ReactNode;
   dataSlot2: ReactNode;
   chipSlot: ReactNode;
+  chipSlot2?: ReactNode;
 }
 
 function PoolCardLayout({
@@ -149,6 +164,7 @@ function PoolCardLayout({
   dataSlot1,
   dataSlot2,
   chipSlot,
+  chipSlot2,
 }: PoolCardLayoutProps) {
   return (
     <div className="pool-card relative grid items-center gap-x-4 rounded bg-sand-100 p-5 hover:bg-sand-200">
@@ -167,10 +183,11 @@ function PoolCardLayout({
         {dataSlot2}
       </div>
       <div
-        className="justify-self-start sm:justify-self-end"
+        className="flex gap-2 justify-self-start sm:justify-self-end"
         style={{ gridArea: "chip" }}
       >
         {chipSlot}
+        {chipSlot2}
       </div>
     </div>
   );
@@ -194,6 +211,7 @@ export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
   fragment TranchedPoolCardDealFields on Deal {
     id
     name
+    dealType
     category
     borrower {
       id
@@ -277,6 +295,7 @@ export function TranchedPoolCard({
       }
       href={href}
       poolStatus={poolStatus}
+      dealType={details.dealType}
     />
   );
 }

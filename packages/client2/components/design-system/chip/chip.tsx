@@ -4,7 +4,14 @@ import type { ReactNode } from "react";
 interface ChipProps {
   children: ReactNode;
   className?: string;
-  colorScheme?: "white" | "blue" | "purple" | "yellow" | "green" | "sand";
+  colorScheme?:
+    | "white"
+    | "blue"
+    | "purple"
+    | "yellow"
+    | "green"
+    | "sand"
+    | "transparent";
 }
 
 export function Chip({
@@ -28,6 +35,8 @@ export function Chip({
           ? "bg-gradient-to-t from-grass-500 to-grass-600 text-white"
           : colorScheme === "sand"
           ? "border-0 bg-sand-100 text-sand-700"
+          : colorScheme === "transparent"
+          ? "border-eggplant-100 bg-transparent text-sand-700"
           : null,
         className
       )}
