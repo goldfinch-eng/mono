@@ -35,7 +35,7 @@ export function RewardClaimer({
       name: "MembershipOrchestrator",
       provider,
     });
-    const transaction = membershipContract.collectRewards(account);
+    const transaction = membershipContract.collectRewards();
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });
   };

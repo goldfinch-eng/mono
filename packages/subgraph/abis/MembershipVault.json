@@ -1,5 +1,5 @@
 {
-  "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
+  "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
   "abi": [
     {
       "anonymous": false,
@@ -155,6 +155,17 @@
       "type": "error"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "NonexistantToken",
+      "type": "error"
+    },
+    {
       "inputs": [],
       "name": "OneTokenPerAddress",
       "type": "error"
@@ -162,6 +173,27 @@
     {
       "inputs": [],
       "name": "ReadOnly",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "resource",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "accessor",
+          "type": "address"
+        }
+      ],
+      "name": "RequiresOperator",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAddress",
       "type": "error"
     },
     {
@@ -368,6 +400,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "baseURI",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -376,30 +421,7 @@
         }
       ],
       "name": "checkpoint",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "eligibleAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "nextAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "checkpointEpoch",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct PreviousCheckpoint",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -480,6 +502,19 @@
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "stateMutability": "pure",
@@ -622,6 +657,32 @@
     {
       "inputs": [
         {
+          "internalType": "string",
+          "name": "uri",
+          "type": "string"
+        }
+      ],
+      "name": "setBaseURI",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint256",
           "name": "index",
           "type": "uint256"
@@ -657,6 +718,25 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "tokenURI",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
@@ -739,36 +819,36 @@
       "type": "constructor"
     }
   ],
-  "transactionHash": "0xb55b626ed298375bd77226f7df421c4645c778b1ad5b07e0b435785183c7f6fd",
+  "transactionHash": "0x7d8ccc4801a111445e47cd31b19a093f9dbd37ee61aab656a0908c68a1109567",
   "receipt": {
     "to": null,
     "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    "contractAddress": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
+    "contractAddress": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
     "transactionIndex": 0,
-    "gasUsed": "662061",
-    "logsBloom": "0x00000000100000000000000200000000000000000000000000800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000020000000000000100000800000000000002000000000010000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000400000000200000040000000000000000002000000000000000000020000000000000000000000400000000000000000000000000000000000000000000",
-    "blockHash": "0x63bc79179da0eb5afb9ddd214b566ad6a13f540d2a196c2a448fb63b46fc8bd3",
-    "transactionHash": "0xb55b626ed298375bd77226f7df421c4645c778b1ad5b07e0b435785183c7f6fd",
+    "gasUsed": "662083",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000100000000000000400000000000000000000000204000000000000000000000000000000000000000000000000000001000000000000000000000000000000002000020000000000000100000800000000000000000000000000000000400000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000200000000000000000000000020000000000000000000000000200000000000000000000000002000000000000000000020000000000000000000000400000000000000000000000000000000000000000000",
+    "blockHash": "0x76331778fac4f936be7186cfcc58b9badb66ffe3b015324d5df149be8e119985",
+    "transactionHash": "0x7d8ccc4801a111445e47cd31b19a093f9dbd37ee61aab656a0908c68a1109567",
     "logs": [
       {
         "transactionIndex": 0,
-        "blockNumber": 92,
-        "transactionHash": "0xb55b626ed298375bd77226f7df421c4645c778b1ad5b07e0b435785183c7f6fd",
-        "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
+        "blockNumber": 94,
+        "transactionHash": "0x7d8ccc4801a111445e47cd31b19a093f9dbd37ee61aab656a0908c68a1109567",
+        "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
         "topics": [
           "0x5570d70a002632a7b0b3c9304cc89efb62d8da9eca0dbd7752c83b7379068296",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x000000000000000000000000d499f5f7d3c918d0e553ba03954c4e02af16b6e4"
+          "0x000000000000000000000000dadd1125b8df98a66abd5eb302c0d9ca5a061dc2"
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0x63bc79179da0eb5afb9ddd214b566ad6a13f540d2a196c2a448fb63b46fc8bd3"
+        "blockHash": "0x76331778fac4f936be7186cfcc58b9badb66ffe3b015324d5df149be8e119985"
       },
       {
         "transactionIndex": 0,
-        "blockNumber": 92,
-        "transactionHash": "0xb55b626ed298375bd77226f7df421c4645c778b1ad5b07e0b435785183c7f6fd",
-        "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
+        "blockNumber": 94,
+        "transactionHash": "0x7d8ccc4801a111445e47cd31b19a093f9dbd37ee61aab656a0908c68a1109567",
+        "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -776,16 +856,16 @@
         ],
         "data": "0x",
         "logIndex": 1,
-        "blockHash": "0x63bc79179da0eb5afb9ddd214b566ad6a13f540d2a196c2a448fb63b46fc8bd3"
+        "blockHash": "0x76331778fac4f936be7186cfcc58b9badb66ffe3b015324d5df149be8e119985"
       }
     ],
-    "blockNumber": 92,
-    "cumulativeGasUsed": "662061",
+    "blockNumber": 94,
+    "cumulativeGasUsed": "662083",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "0xD499f5F7d3C918D0e553BA03954c4E02af16B6e4",
+    "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
     "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "0x8129fc1c"
   ],
@@ -797,7 +877,7 @@
     "methodName": "initialize",
     "args": []
   },
-  "implementation": "0xD499f5F7d3C918D0e553BA03954c4E02af16B6e4",
+  "implementation": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
   "devdoc": {
     "kind": "dev",
     "methods": {},
