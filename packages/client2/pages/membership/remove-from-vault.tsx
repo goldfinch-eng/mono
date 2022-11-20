@@ -1,13 +1,13 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
-  Button,
-  Form,
+  FormStep,
   InfoIconTooltip,
-  Modal,
+  ModalStepper,
+  useStepperContext,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
@@ -34,7 +34,7 @@ import {
   convertPoolTokenToAsset,
   GfiBox,
 } from "./asset-box";
-import { LegalAgreement } from "./legal-agreement";
+import { Legalese } from "./legal-agreement";
 
 export const VAULTED_GFI_FIELDS = gql`
   fragment VaultedGfiFields on VaultedGfi {
@@ -63,15 +63,11 @@ export const VAULTED_POOL_TOKEN_FIELDS = gql`
     }
   }
 `;
-interface RemoveFromVaultProps {
+type RemoveFromVaultProps = {
   isOpen: boolean;
   onClose: () => void;
-  vaultedGfi: VaultedGfiFieldsFragment[];
-  fiatPerGfi: number;
-  vaultedStakedPositions: VaultedStakedPositionFieldsFragment[];
-  sharePrice: BigNumber;
-  vaultedPoolTokens: VaultedPoolTokenFieldsFragment[];
-}
+} & SelectionStepProps &
+  ReviewStepProps;
 
 export function RemoveFromVault({
   isOpen,
@@ -82,24 +78,64 @@ export function RemoveFromVault({
   sharePrice,
   vaultedPoolTokens,
 }: RemoveFromVaultProps) {
-  const [step, setStep] = useState<"select" | "review">("select");
+  return (
+    <ModalStepper
+      isOpen={isOpen}
+      onClose={onClose}
+      className="bg-mustard-300"
+      title="Select assets to remove"
+      divider={false}
+    >
+      <SelectionStep
+        vaultedGfi={vaultedGfi}
+        fiatPerGfi={fiatPerGfi}
+        vaultedStakedPositions={vaultedStakedPositions}
+        sharePrice={sharePrice}
+        vaultedPoolTokens={vaultedPoolTokens}
+      />
+      <ReviewStep
+        vaultedGfi={vaultedGfi}
+        fiatPerGfi={fiatPerGfi}
+        sharePrice={sharePrice}
+      />
+    </ModalStepper>
+  );
+}
 
+interface StepperDataType {
+  gfiToUnvault: CryptoAmount;
+  stakedPositionsToUnvault: VaultedStakedPositionFieldsFragment[];
+  poolTokensToUnvault: VaultedPoolTokenFieldsFragment[];
+  forfeited: CryptoAmount;
+  rewardProjection: {
+    newMonthlyReward: CryptoAmount;
+    diff: CryptoAmount;
+  };
+}
+
+interface SelectionStepProps {
+  vaultedGfi: VaultedGfiFieldsFragment[];
+  fiatPerGfi: number;
+  vaultedStakedPositions: VaultedStakedPositionFieldsFragment[];
+  sharePrice: BigNumber;
+  vaultedPoolTokens: VaultedPoolTokenFieldsFragment[];
+}
+
+function SelectionStep({
+  vaultedGfi,
+  fiatPerGfi,
+  vaultedStakedPositions,
+  sharePrice,
+  vaultedPoolTokens,
+}: SelectionStepProps) {
   const rhfMethods = useForm<{
     stakedPositionsToUnvault: string[];
     poolTokensToUnvault: string[];
     gfiToUnvault: string;
   }>({
-    mode: "onChange",
     defaultValues: { stakedPositionsToUnvault: [], poolTokensToUnvault: [] },
   });
-  const {
-    control,
-    reset,
-    watch,
-    handleSubmit,
-    trigger,
-    formState: { errors, isSubmitting },
-  } = rhfMethods;
+  const { control, watch } = rhfMethods;
   const gfiToUnvault = stringToCryptoAmount(
     watch("gfiToUnvault"),
     SupportedCrypto.Gfi
@@ -118,7 +154,6 @@ export function RemoveFromVault({
   };
 
   const { account, provider } = useWallet();
-  const apolloClient = useApolloClient();
 
   const [rewardProjection, setRewardProjection] = useState<{
     newMonthlyReward: CryptoAmount;
@@ -172,6 +207,149 @@ export function RemoveFromVault({
     ]
   );
 
+  const { setData } = useStepperContext();
+  const onSubmit = async () => {
+    if (gfiToUnvault.amount.isZero() && capitalToBeRemoved.amount.isZero()) {
+      throw new Error("Must remove at least one of GFI or Capital");
+    }
+    if (!account || !provider) {
+      throw new Error("Wallet connection is broken");
+    }
+    const f =
+      forfeited ??
+      (await estimateForfeiture(
+        account,
+        provider,
+        gfiToUnvault.amount.mul("-1"),
+        capitalToBeRemoved.amount.mul("-1")
+      ));
+    const rp =
+      rewardProjection ??
+      (await calculateNewMonthlyMembershipReward(
+        account,
+        provider,
+        gfiToUnvault.amount.mul("-1"),
+        capitalToBeRemoved.amount.mul("-1")
+      ));
+    setData({
+      gfiToUnvault,
+      stakedPositionsToUnvault,
+      poolTokensToUnvault,
+      forfeited: f,
+      rewardProjection: rp,
+    } as StepperDataType);
+  };
+
+  return (
+    <FormStep
+      rhfMethods={rhfMethods}
+      onSubmit={onSubmit}
+      submitButtonLabel="Review"
+    >
+      <div className="mb-8">
+        <SectionHeading
+          leftText="Step 1: Choose an amount of GFI"
+          rightText={formatCrypto({
+            token: SupportedCrypto.Gfi,
+            amount: sum("amount", vaultedGfi),
+          })}
+        />
+        <GfiBox
+          control={control}
+          name="gfiToUnvault"
+          maxGfi={{
+            token: SupportedCrypto.Gfi,
+            amount: sum("amount", vaultedGfi),
+          }}
+          fiatPerGfi={fiatPerGfi}
+        />
+      </div>
+      <div className="mb-8">
+        <SectionHeading leftText="Step 2: Choose an amount of capital" />
+        <div className="space-y-2">
+          <AssetPicker
+            options={vaultedStakedPositions.map((vsp) => ({
+              id: vsp.id,
+              asset: {
+                name: "Staked FIDU",
+                description: "Goldfinch Senior Pool Position",
+                nativeAmount: {
+                  token: SupportedCrypto.Fidu,
+                  amount: vsp.seniorPoolStakedPosition.amount,
+                },
+                usdcAmount: {
+                  token: SupportedCrypto.Usdc,
+                  amount: vsp.usdcEquivalent,
+                },
+              },
+            }))}
+            control={control}
+            name="stakedPositionsToUnvault"
+          />
+          <AssetPicker
+            options={vaultedPoolTokens.map((vpt) => ({
+              id: vpt.id,
+              asset: convertPoolTokenToAsset(vpt.poolToken),
+            }))}
+            control={control}
+            name="poolTokensToUnvault"
+          />
+        </div>
+      </div>
+      <div className="mb-8">
+        <SectionHeading leftText="Projected Member Rewards" />
+        {rewardProjection ? (
+          <AssetBox
+            asset={{
+              name: "Estimated Member Rewards",
+              description: "(Monthly Average)",
+              usdcAmount: sharesToUsdc(
+                rewardProjection.newMonthlyReward.amount,
+                sharePrice
+              ),
+              nativeAmount: rewardProjection.newMonthlyReward,
+            }}
+            changeAmount={rewardProjection.diff}
+          />
+        ) : (
+          <AssetBoxPlaceholder
+            asset={{
+              name: "Estimated Member Rewards",
+              description: "(Monthly Average)",
+            }}
+          />
+        )}
+      </div>
+    </FormStep>
+  );
+}
+
+interface ReviewStepProps {
+  vaultedGfi: VaultedGfiFieldsFragment[];
+  fiatPerGfi: number;
+  sharePrice: BigNumber;
+}
+
+function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
+  const rhfMethods = useForm();
+  const { data } = useStepperContext();
+  const {
+    gfiToUnvault,
+    stakedPositionsToUnvault,
+    poolTokensToUnvault,
+    forfeited,
+    rewardProjection,
+  } = data as StepperDataType;
+  const capitalToBeRemoved = {
+    token: SupportedCrypto.Usdc,
+    amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
+      sum("usdcEquivalent", poolTokensToUnvault)
+    ),
+  };
+
+  const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
+
   const onSubmit = async () => {
     if (!account || !provider) {
       throw new Error("Wallet not connected properly");
@@ -218,253 +396,104 @@ export function RemoveFromVault({
         cache.evict({ fieldName: "seniorPoolStakedPositions" });
       },
     });
-    onClose();
-    setTimeout(() => {
-      setStep("select");
-      reset();
-    }, 250);
   };
-
-  useEffect(() => {
-    if (!isOpen) {
-      setTimeout(() => {
-        setStep("select");
-        reset();
-      }, 250);
-    }
-  }, [isOpen, reset]);
-
-  const [isAgreementRead, setIsAgreementRead] = useState(false);
-  const markAgreementRead = useCallback(() => setIsAgreementRead(true), []);
-
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="bg-mustard-300"
-      title="Select assets to remove"
-      divider={false}
-      footer={
-        <div className="flex items-center justify-between">
-          <div className="w-28">
-            <Button
-              colorScheme="secondary"
-              onClick={step === "select" ? onClose : () => setStep("select")}
-            >
-              {step === "select" ? "Cancel" : "Back"}
-            </Button>
-          </div>
-          <div className="text-xs">{step === "select" ? 1 : 2} of 2</div>
-          <div className="w-28 text-right">
-            <Button
-              isLoading={isSubmitting}
-              colorScheme="primary"
-              disabled={
-                isSubmitting ||
-                Object.keys(errors).length > 0 ||
-                (gfiToUnvault.amount.isZero() &&
-                  stakedPositionsToUnvault.length === 0 &&
-                  poolTokensToUnvault.length === 0) ||
-                (step === "review" && !isAgreementRead)
-              }
-              onClick={
-                step === "select"
-                  ? async () => {
-                      const isValid = await trigger();
-                      if (isValid) {
-                        setStep("review");
-                      }
-                    }
-                  : handleSubmit(onSubmit)
-              }
-            >
-              {step === "select" ? "Next" : "Submit"}
-            </Button>
-          </div>
-        </div>
-      }
+    <FormStep
+      rhfMethods={rhfMethods}
+      onSubmit={onSubmit}
+      submitButtonLabel="Submit"
+      requireScrolled
     >
-      <Form
-        rhfMethods={rhfMethods}
-        onSubmit={onSubmit}
-        onKeyDown={(e) => {
-          // Must prevent Enter from submitting or else the review step would get skipped
-          if (e.key === "Enter") {
-            e.preventDefault();
-          }
-        }}
-      >
-        <div className={step === "select" ? undefined : "hidden"}>
-          <div className="mb-8">
-            <SectionHeading
-              leftText="Step 1: Choose an amount of GFI"
-              rightText={formatCrypto({
-                token: SupportedCrypto.Gfi,
-                amount: sum("amount", vaultedGfi),
-              })}
-            />
-            <GfiBox
-              control={control}
-              name="gfiToUnvault"
-              maxGfi={{
-                token: SupportedCrypto.Gfi,
-                amount: sum("amount", vaultedGfi),
-              }}
-              fiatPerGfi={fiatPerGfi}
-            />
-          </div>
-          <div className="mb-8">
-            <SectionHeading leftText="Step 2: Choose an amount of capital" />
-            <div className="space-y-2">
-              <AssetPicker
-                options={vaultedStakedPositions.map((vsp) => ({
-                  id: vsp.id,
-                  asset: {
-                    name: "Staked FIDU",
-                    description: "Goldfinch Senior Pool Position",
-                    nativeAmount: {
-                      token: SupportedCrypto.Fidu,
-                      amount: vsp.seniorPoolStakedPosition.amount,
-                    },
-                    usdcAmount: {
-                      token: SupportedCrypto.Usdc,
-                      amount: vsp.usdcEquivalent,
-                    },
-                  },
-                }))}
-                control={control}
-                name="stakedPositionsToUnvault"
-              />
-              <AssetPicker
-                options={vaultedPoolTokens.map((vpt) => ({
-                  id: vpt.id,
-                  asset: convertPoolTokenToAsset(vpt.poolToken),
-                }))}
-                control={control}
-                name="poolTokensToUnvault"
-              />
-            </div>
-          </div>
-          <div className="mb-8">
-            <SectionHeading leftText="Projected Member Rewards" />
-            {rewardProjection ? (
-              <AssetBox
-                asset={{
-                  name: "Estimated Member Rewards",
-                  description: "(Monthly Average)",
-                  usdcAmount: sharesToUsdc(
-                    rewardProjection.newMonthlyReward.amount,
-                    sharePrice
-                  ),
-                  nativeAmount: rewardProjection.newMonthlyReward,
-                }}
-                changeAmount={rewardProjection.diff}
-              />
-            ) : (
-              <AssetBoxPlaceholder
-                asset={{
-                  name: "Estimated Member Rewards",
-                  description: "(Monthly Average)",
-                }}
-              />
-            )}
-          </div>
-        </div>
-        <div className={step === "select" ? "hidden" : undefined}>
-          <div className="mb-8">
-            <SectionHeading
-              leftText="GFI to be removed"
-              rightText={formatCrypto(gfiToUsdc(gfiToUnvault, fiatPerGfi))}
-            />
+      <div className="mb-8">
+        <SectionHeading
+          leftText="GFI to be removed"
+          rightText={formatCrypto(gfiToUsdc(gfiToUnvault, fiatPerGfi))}
+        />
+        <AssetBox
+          asset={{
+            name: "GFI",
+            description: "Governance Token",
+            nativeAmount: gfiToUnvault,
+            usdcAmount: gfiToUsdc(gfiToUnvault, fiatPerGfi),
+          }}
+          nativeAmountIsPrimary
+        />
+      </div>
+      <div className="mb-8">
+        <SectionHeading
+          leftText="Capital to be removed"
+          rightText={formatCrypto(capitalToBeRemoved)}
+        />
+        <div className="space-y-2">
+          {stakedPositionsToUnvault.map((vsp) => (
             <AssetBox
+              key={vsp.id}
               asset={{
-                name: "GFI",
-                description: "Governance Token",
-                nativeAmount: gfiToUnvault,
-                usdcAmount: gfiToUsdc(gfiToUnvault, fiatPerGfi),
+                name: "Staked FIDU",
+                description: "Goldfinch Senior Pool Position",
+                nativeAmount: {
+                  token: SupportedCrypto.Fidu,
+                  amount: vsp.seniorPoolStakedPosition.amount,
+                },
+                usdcAmount: {
+                  token: SupportedCrypto.Usdc,
+                  amount: vsp.usdcEquivalent,
+                },
               }}
-              nativeAmountIsPrimary
             />
-          </div>
-          <div className="mb-8">
-            <SectionHeading
-              leftText="Capital to be removed"
-              rightText={formatCrypto(capitalToBeRemoved)}
+          ))}
+          {poolTokensToUnvault.map((vpt) => (
+            <AssetBox
+              key={vpt.id}
+              asset={convertPoolTokenToAsset(vpt.poolToken)}
             />
-            <div className="space-y-2">
-              {stakedPositionsToUnvault.map((vsp) => (
-                <AssetBox
-                  key={vsp.id}
-                  asset={{
-                    name: "Staked FIDU",
-                    description: "Goldfinch Senior Pool Position",
-                    nativeAmount: {
-                      token: SupportedCrypto.Fidu,
-                      amount: vsp.seniorPoolStakedPosition.amount,
-                    },
-                    usdcAmount: {
-                      token: SupportedCrypto.Usdc,
-                      amount: vsp.usdcEquivalent,
-                    },
-                  }}
-                />
-              ))}
-              {poolTokensToUnvault.map((vpt) => (
-                <AssetBox
-                  key={vpt.id}
-                  asset={convertPoolTokenToAsset(vpt.poolToken)}
-                />
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeading leftText="Projected Member Rewards" />
-            <Summary>
-              {rewardProjection ? (
-                <AssetBox
-                  omitWrapperStyle
-                  asset={{
-                    name: "Estimated Member Rewards",
-                    description: "(Monthly Average)",
-                    usdcAmount: sharesToUsdc(
-                      rewardProjection.newMonthlyReward.amount,
-                      sharePrice
-                    ),
-                    nativeAmount: rewardProjection.newMonthlyReward,
-                  }}
-                  changeAmount={rewardProjection.diff}
-                />
-              ) : (
-                <AssetBoxPlaceholder
-                  asset={{
-                    name: "Estimated Member Rewards",
-                    description: "(Monthly Average)",
-                  }}
-                />
-              )}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  Rewards forfeited
-                  <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />
-                </div>
-                <div className="text-lg font-medium text-clay-500">
-                  {formatCrypto(sharesToUsdc(forfeited.amount, sharePrice))}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  Changes go into effect
-                  <InfoIconTooltip content="Date that your capital will no longer be actively earning Member Rewards in the vault." />
-                </div>
-                <div className="text-lg font-medium">Immediately</div>
-              </div>
-            </Summary>
-            <div className="mt-6 text-sand-500">
-              <LegalAgreement onRead={markAgreementRead} />
-            </div>
-          </div>
+          ))}
         </div>
-      </Form>
-    </Modal>
+      </div>
+      <div>
+        <SectionHeading leftText="Projected Member Rewards" />
+        <Summary>
+          {rewardProjection ? (
+            <AssetBox
+              omitWrapperStyle
+              asset={{
+                name: "Estimated Member Rewards",
+                description: "(Monthly Average)",
+                usdcAmount: sharesToUsdc(
+                  rewardProjection.newMonthlyReward.amount,
+                  sharePrice
+                ),
+                nativeAmount: rewardProjection.newMonthlyReward,
+              }}
+              changeAmount={rewardProjection.diff}
+            />
+          ) : (
+            <AssetBoxPlaceholder
+              asset={{
+                name: "Estimated Member Rewards",
+                description: "(Monthly Average)",
+              }}
+            />
+          )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              Rewards forfeited
+              <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />
+            </div>
+            <div className="text-lg font-medium text-clay-500">
+              {formatCrypto(sharesToUsdc(forfeited.amount, sharePrice))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              Changes go into effect
+              <InfoIconTooltip content="Date that your capital will no longer be actively earning Member Rewards in the vault." />
+            </div>
+            <div className="text-lg font-medium">Immediately</div>
+          </div>
+        </Summary>
+        <Legalese className="mt-6 text-sand-500" />
+      </div>
+    </FormStep>
   );
 }

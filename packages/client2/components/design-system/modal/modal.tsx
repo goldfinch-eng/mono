@@ -38,6 +38,10 @@ export interface ModalProps {
    * Contents that are pinned to the bottom of the modal
    */
   footer?: ReactNode;
+  /**
+   * Controls the body layout of the modal. Classic includes a fixed-height scrolling container and supports the footer
+   */
+  layout?: "classic" | "custom";
 }
 
 export function Modal({
@@ -50,6 +54,7 @@ export function Modal({
   description,
   divider = true,
   footer,
+  layout = "classic",
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -110,15 +115,24 @@ export function Modal({
                 <Icon name="X" size="md" />
               </button>
             </div>
-            <div className="max-h-[75vh] overflow-auto">
-              <div className="px-6 pt-4 pb-1">{children}</div>
-            </div>
-            {footer ? (
+
+            {layout === "classic" ? (
               <>
-                {divider ? <hr className="border-t border-sand-200" /> : null}
-                <div className="px-6 pt-4">{footer}</div>
+                <div className="max-h-[75vh] overflow-auto">
+                  <div className="px-6 pt-4 pb-1">{children}</div>
+                </div>
+                {footer ? (
+                  <>
+                    {divider ? (
+                      <hr className="border-t border-sand-200" />
+                    ) : null}
+                    <div className="px-6 pt-4">{footer}</div>
+                  </>
+                ) : null}
               </>
-            ) : null}
+            ) : (
+              children
+            )}
           </div>
         </Transition.Child>
       </Dialog>

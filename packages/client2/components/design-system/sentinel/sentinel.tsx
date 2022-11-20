@@ -1,17 +1,19 @@
 import { useEffect, useRef } from "react";
 
 interface SentinelProps {
-  onVisible: () => void;
+  onVisibilityChange: (b: boolean) => void;
 }
 
-export function Sentinel({ onVisible }: SentinelProps) {
+export function Sentinel({ onVisibilityChange }: SentinelProps) {
   const divRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (divRef.current) {
       const observer = new IntersectionObserver(
         ([target]) => {
           if (target.isIntersecting) {
-            onVisible();
+            onVisibilityChange(true);
+          } else {
+            onVisibilityChange(false);
           }
         },
         { root: null, rootMargin: "20px", threshold: 0 }
@@ -19,6 +21,6 @@ export function Sentinel({ onVisible }: SentinelProps) {
       observer.observe(divRef.current);
       return () => observer.disconnect();
     }
-  }, [onVisible]);
+  }, [onVisibilityChange]);
   return <div className="h-px" ref={divRef} />;
 }
