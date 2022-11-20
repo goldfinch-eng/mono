@@ -15,7 +15,6 @@ import {dataSource} from "@graphprotocol/graph-ts"
 
 export const STAKING_REWARDS_ADDRESS = dataSource.network() == "mainnet" ? "${mainnetContracts.StakingRewards.address.toLowerCase()}" : "${localhostContracts.StakingRewards.address.toLowerCase()}";
 export const POOL_TOKENS_ADDRESS = dataSource.network() == "mainnet" ? "${mainnetContracts.PoolTokens.address.toLowerCase()}" : "${localhostContracts.PoolTokens.address.toLowerCase()}";
-export const MEMBERSHIP_ORCHESTRATOR_ADDRESS = dataSource.network() == "mainnet" ? "0x0000000000000000000000000000000000000000" : "${localhostContracts.MembershipOrchestrator.address.toLowerCase()}";
 `
 fs.writeFileSync(path.resolve(__dirname, "../src/address-manifest.ts"), code)
 

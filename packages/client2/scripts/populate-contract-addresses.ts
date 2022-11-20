@@ -74,11 +74,11 @@ const addresses = {
   MembershipOrchestrator:
     networkName === "localhost"
       ? contracts.MembershipOrchestrator.address
-      : "0x0000000000000000000000000000000000000000", // TODO membership not deployed on mainnet yet
+      : "0x4E5d9B093986D864331d88e0a13a616e1D508838", // TODO all.json isn't updated with Membership contracts yet
   ERC20Splitter:
     networkName === "localhost"
       ? contracts.ERC20Splitter.address
-      : "0x0000000000000000000000000000000000000000", // TODO membership not deployed on mainnet yet (not that this one really matters, it's used in a devtool)
+      : "0xE2da0Cf4DCEe902F74D4949145Ea2eC24F0718a4", // TODO all.json isn't updated with Membership contracts yet (not that this one really matters, it's used in a devtool)
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

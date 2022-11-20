@@ -366,9 +366,9 @@ dataSources:
     name: MembershipCollector
     network: mainnet
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x5ccFa5fec4Db2543D3995DC5419a13b6e99eA7A1"
       abi: MembershipCollector
-      startBlock: 1
+      startBlock: 15992880
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -390,9 +390,9 @@ dataSources:
     name: GFILedger
     network: mainnet
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0xbc1081885da00404bd0108B70EC5aC0dbe98A077"
       abi: GFILedger
-      startBlock: 1
+      startBlock: 15992884
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -413,9 +413,9 @@ dataSources:
     name: CapitalLedger
     network: mainnet
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x94e0bC3aedA93434B848C49752cfC58B1e7c5029"
       abi: CapitalLedger
-      startBlock: 1
+      startBlock: 15992882
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -436,9 +436,9 @@ dataSources:
     name: MembershipDirector
     network: mainnet
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x7E9140557F988d43c76caDab2fD392f9172ced21"
       abi: MembershipDirector
-      startBlock: 1
+      startBlock: 15992878
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -457,9 +457,9 @@ dataSources:
     name: MembershipVault
     network: mainnet
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x375B906B25E00bdD43017400CD4cefb36FBF9c18"
       abi: MembershipVault
-      startBlock: 1
+      startBlock: 15992880
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
