@@ -8,6 +8,7 @@ import {
   ShimmerLines,
   Link,
 } from "@/components/design-system";
+import { RichText } from "@/components/rich-text";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -17,6 +18,7 @@ import {
   BorrowerFinancialsTableFieldsFragment,
   SupportedFiat,
   BorrowerPerformanceTableFieldsFragment,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
 
@@ -79,13 +81,16 @@ interface DealTermsProps {
   tranchedPool?: DealTermsTableFieldsFragment | null;
   poolStatus: PoolStatus | null;
   defaultInterestRate?: number | null;
+  dealType?: Deal_DealType | null;
 }
 
 export function DealTermsTable({
   tranchedPool,
   poolStatus,
   defaultInterestRate,
+  dealType,
 }: DealTermsProps) {
+  const isMultitranche = dealType === "multitranche";
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -150,9 +155,29 @@ export function DealTermsTable({
               ),
             ],
             [
+              "Dealtype",
+              <div key="dealtype" className="max-w-sm">
+                <p>
+                  <b>Unitranche</b> - Pool is funded by a single class of
+                  capital provider—either the Senior pool, or by Backers—to make
+                  up a single tranche of financing. First loss capital doesn’t
+                  exist for Unitranche Pools as all investors sit in the same
+                  class.
+                </p>
+                <br />
+                <p>
+                  <b>Multitranche</b> - Pool is funded by two classes of capital
+                  providers—both the Senior Pool and Backers—to make up two
+                  tranches of financing. Backers act as the junior tranche of
+                  investors, providing the Pool’s first-loss capital.
+                </p>
+              </div>,
+              isMultitranche ? "Multitranche" : "Unitranche",
+            ],
+            [
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer investments. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
-              tranchedPool.estimatedLeverageRatio
+              isMultitranche && tranchedPool.estimatedLeverageRatio
                 ? tranchedPool.estimatedLeverageRatio.toString()
                 : "N/A",
             ],
@@ -196,7 +221,11 @@ export function SecuritiesRecourseTable({
     rows.push(["Type of security", null, details.type]);
   }
   if (details?.description) {
-    rows.push(["Security description", null, details.description]);
+    rows.push([
+      "Security description",
+      null,
+      <RichText key="securityDescription" content={details.description} />,
+    ]);
   }
   if (details?.value) {
     rows.push(["Security value", null, details.value.toString()]);
@@ -208,11 +237,23 @@ export function SecuritiesRecourseTable({
       details.recourse === "yes" ? "Yes" : "No",
     ]);
   }
+
   if (details?.recourseDescription) {
-    rows.push(["Recourse description", null, details.recourseDescription]);
+    rows.push([
+      "Recourse description",
+      null,
+      <RichText
+        key="recourseDescription"
+        content={details.recourseDescription}
+      />,
+    ]);
   }
   if (details?.covenants) {
-    rows.push(["Covenants", null, details.covenants]);
+    rows.push([
+      "Covenants",
+      null,
+      <RichText key="covenants" content={details.covenants} />,
+    ]);
   }
   if (rows.length === 0) {
     return null;
@@ -358,7 +399,10 @@ export function UnderwritingPerformanceTable({
     rows.push([
       "Underwriting description",
       null,
-      details.underwritingDescription,
+      <RichText
+        key="underwritingDescription"
+        content={details.underwritingDescription}
+      />,
     ]);
   }
   if (rows.length === 0) {
@@ -374,7 +418,7 @@ export function UnderwritingPerformanceTable({
   );
 }
 
-type TableRow = [string, string | null, ReactNode];
+type TableRow = [string, string | ReactNode | null, ReactNode];
 
 function Table({ rows }: { rows: TableRow[] }) {
   return (

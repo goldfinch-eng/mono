@@ -7,6 +7,7 @@ import {
   revalidateDeal,
 } from "../hooks/deals";
 
+import { isValidURL } from "../lib/validation";
 import Document from "../blocks/Document";
 import { generateBinarySelect } from "../lib/binary-select";
 
@@ -30,6 +31,11 @@ const Deals: CollectionConfig = {
   },
   fields: [
     {
+      name: "hidden",
+      type: "checkbox",
+      defaultValue: false,
+    },
+    {
       name: "id",
       label: "Contract Address",
       type: "text",
@@ -44,6 +50,21 @@ const Deals: CollectionConfig = {
       name: "name",
       type: "text",
       required: true,
+    },
+    {
+      name: "dealType",
+      type: "select",
+      defaultValue: "multitranche",
+      options: [
+        {
+          label: "Multitranche",
+          value: "multitranche",
+        },
+        {
+          label: "Unitranche",
+          value: "unitranche",
+        },
+      ],
     },
     {
       name: "category",
@@ -100,6 +121,55 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "creditMemos",
+      type: "array",
+      minRows: 0,
+      fields: [
+        {
+          name: "thumbnail",
+          type: "upload",
+          relationTo: "media",
+        },
+        {
+          name: "name",
+          type: "text",
+        },
+        {
+          name: "subtitle",
+          type: "text",
+        },
+        {
+          name: "content",
+          type: "textarea",
+        },
+        {
+          name: "date",
+          type: "date",
+          admin: {
+            date: {
+              pickerAppearance: "dayOnly",
+            },
+          },
+        },
+        {
+          name: "fullMemoUrl",
+          label: "Full Memo URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
+        },
+        {
+          name: "executiveSummaryUrl",
+          label: "Executive Summary URL",
+          type: "text",
+          validate: (val) => {
+            return isValidURL(val, false);
+          },
+        },
+      ],
+    },
+    {
       name: "securitiesAndRecourse",
       label: "Securities and Recourse",
       type: "group",
@@ -112,7 +182,11 @@ const Deals: CollectionConfig = {
         },
         {
           name: "description",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
           label: "Security description",
         },
         {
@@ -123,12 +197,20 @@ const Deals: CollectionConfig = {
         generateBinarySelect("recourse", "Recourse to borrower"),
         {
           name: "recourseDescription",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
           label: "Recourse description",
         },
         {
           name: "covenants",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
         },
       ],
     },

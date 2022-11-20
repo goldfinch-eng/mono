@@ -9,7 +9,7 @@
     "modifiers/ensure-modifiers": ["error", {
       "ignoreContractKind": ["interface"],
       "required": {
-        "./contracts/*": ["onlyAdmin"]
+        "**/contracts/**": ["onlyAdmin"]
       },
       "override": {
         "**/PoolTokens.sol:PoolTokens": {
