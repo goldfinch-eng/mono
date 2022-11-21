@@ -106,8 +106,8 @@ interface StepperDataType {
   gfiToUnvault: CryptoAmount;
   stakedPositionsToUnvault: VaultedStakedPositionFieldsFragment[];
   poolTokensToUnvault: VaultedPoolTokenFieldsFragment[];
-  forfeited: CryptoAmount;
-  rewardProjection: {
+  forfeited?: CryptoAmount;
+  rewardProjection?: {
     newMonthlyReward: CryptoAmount;
     diff: CryptoAmount;
   };
@@ -208,22 +208,32 @@ function SelectionStep({
     if (!account || !provider) {
       throw new Error("Wallet connection is broken");
     }
-    const f =
-      forfeited ??
-      (await estimateForfeiture(
-        account,
-        provider,
-        gfiToUnvault.amount.mul("-1"),
-        capitalToBeRemoved.amount.mul("-1")
-      ));
-    const rp =
-      rewardProjection ??
-      (await calculateNewMonthlyMembershipReward(
-        account,
-        provider,
-        gfiToUnvault.amount.mul("-1"),
-        capitalToBeRemoved.amount.mul("-1")
-      ));
+    let f = undefined;
+    try {
+      f =
+        forfeited ??
+        (await estimateForfeiture(
+          account,
+          provider,
+          gfiToUnvault.amount.mul("-1"),
+          capitalToBeRemoved.amount.mul("-1")
+        ));
+    } catch (e) {
+      // do nothing
+    }
+    let rp = undefined;
+    try {
+      rp =
+        rewardProjection ??
+        (await calculateNewMonthlyMembershipReward(
+          account,
+          provider,
+          gfiToUnvault.amount.mul("-1"),
+          capitalToBeRemoved.amount.mul("-1")
+        ));
+    } catch (e) {
+      // do nothing
+    }
     setData({
       gfiToUnvault,
       stakedPositionsToUnvault,
@@ -474,7 +484,9 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
               <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />
             </div>
             <div className="text-lg font-medium text-clay-500">
-              {formatCrypto(sharesToUsdc(forfeited.amount, sharePrice))}
+              {forfeited
+                ? formatCrypto(sharesToUsdc(forfeited.amount, sharePrice))
+                : "Unable to calculate"}
             </div>
           </div>
           <div className="flex items-center justify-between">

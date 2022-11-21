@@ -103,7 +103,7 @@ interface StepperDataType {
   gfiToVault: CryptoAmount;
   stakedPositionsToVault: StakedPosition[];
   poolTokensToVault: PoolToken[];
-  rewardProjection: {
+  rewardProjection?: {
     newMonthlyReward: CryptoAmount;
     diff: CryptoAmount;
   };
@@ -197,14 +197,20 @@ function SelectionStep({
     if (!account || !provider) {
       throw new Error("Wallet connection is broken");
     }
-    const rp =
-      rewardProjection ??
-      (await calculateNewMonthlyMembershipReward(
-        account,
-        provider,
-        gfiToVault.amount,
-        selectedCapitalTotal.amount
-      ));
+    let rp = undefined;
+    try {
+      rp =
+        rewardProjection ??
+        (await calculateNewMonthlyMembershipReward(
+          account,
+          provider,
+          gfiToVault.amount,
+          selectedCapitalTotal.amount
+        ));
+    } catch (e) {
+      // do nothing
+    }
+
     setData({
       gfiToVault,
       stakedPositionsToVault,
@@ -481,19 +487,28 @@ function ReviewStep({
       <div className="mb-8">
         <SectionHeading leftText="Projected Member Rewards" />
         <Summary>
-          <AssetBox
-            omitWrapperStyle
-            asset={{
-              name: "Estimated Member Rewards",
-              description: "(Monthly Average)",
-              usdcAmount: sharesToUsdc(
-                rewardProjection.newMonthlyReward.amount,
-                sharePrice
-              ),
-              nativeAmount: rewardProjection.newMonthlyReward,
-            }}
-            changeAmount={rewardProjection.diff}
-          />
+          {rewardProjection ? (
+            <AssetBox
+              omitWrapperStyle
+              asset={{
+                name: "Estimated Member Rewards",
+                description: "(Monthly Average)",
+                usdcAmount: sharesToUsdc(
+                  rewardProjection.newMonthlyReward.amount,
+                  sharePrice
+                ),
+                nativeAmount: rewardProjection.newMonthlyReward,
+              }}
+              changeAmount={rewardProjection.diff}
+            />
+          ) : (
+            <AssetBoxPlaceholder
+              asset={{
+                name: "Estimated Member Rewards",
+                description: "(Monthly Average)",
+              }}
+            />
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               Your next Member Rewards cycle begins
