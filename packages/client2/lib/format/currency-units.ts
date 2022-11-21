@@ -67,8 +67,8 @@ export function formatCrypto(
   options?: FormatCryptoOptions
 ): string {
   const defaultOptions: FormatCryptoOptions = {
-    includeSymbol: cryptoAmount.token === SupportedCrypto.Usdc ? true : false,
-    includeToken: cryptoAmount.token === SupportedCrypto.Usdc ? false : true,
+    includeSymbol: cryptoAmount.token === SupportedCrypto.Usdc,
+    includeToken: cryptoAmount.token !== SupportedCrypto.Usdc,
     useMaximumPrecision: false,
   };
   const { includeSymbol, includeToken, useMaximumPrecision } = {
