@@ -21,6 +21,10 @@ export type FormProps<FormFields extends FieldValues> = Omit<
    * Sets a classname for the generic error message. Helps styling in a pinch.
    */
   genericErrorClassName?: string;
+  /**
+   * By default, inputs inside the <Form> will be reset after a successful submit. Setting this prop prevents this behaviour.
+   */
+  persistAfterSubmit?: boolean;
 };
 
 const reservedErrorField = "fallback";
@@ -32,6 +36,7 @@ export function Form<FormFields extends FieldValues>({
   className,
   onChange,
   genericErrorClassName,
+  persistAfterSubmit = false,
   ...rest
 }: FormProps<FormFields>) {
   const {
@@ -61,10 +66,10 @@ export function Form<FormFields extends FieldValues>({
   });
 
   useEffect(() => {
-    if (isSubmitSuccessful) {
+    if (isSubmitSuccessful && !persistAfterSubmit) {
       reset();
     }
-  }, [isSubmitSuccessful, reset]);
+  }, [isSubmitSuccessful, persistAfterSubmit, reset]);
 
   return (
     <FormProvider {...rhfMethods}>

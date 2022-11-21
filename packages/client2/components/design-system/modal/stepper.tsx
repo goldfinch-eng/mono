@@ -286,6 +286,7 @@ export function FormStep<T extends FieldValues>({
         }
       }}
       genericErrorClassName="ml-6"
+      persistAfterSubmit
     >
       <Step
         nextButton={
