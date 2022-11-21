@@ -225,7 +225,7 @@ export async function approveErc20IfRequired({
       transaction: erc20Contract.approve(spender, amount),
       pendingPrompt: "Awaiting approval to spend tokens.",
       successPrompt: "Successfully approved spending.",
-      errorPrompt: "Failed to approved spending",
+      errorPrompt: "Failed to approved spending.",
     });
   }
 }
@@ -246,9 +246,9 @@ export async function approveErc721IfRequired({
   if (isApprovalRequired) {
     await toastTransaction({
       transaction: erc721Contract.approve(to, tokenId),
-      pendingPrompt: `Awaiting approval to transfer token ${tokenId}`,
-      successPrompt: `Approved transfer of token ${tokenId}`,
-      errorPrompt: `Failed to approve transfer of token ${tokenId}`,
+      pendingPrompt: `Awaiting approval to transfer token ${tokenId}.`,
+      successPrompt: `Approved transfer of token ${tokenId}.`,
+      errorPrompt: `Failed to approve transfer of token ${tokenId}.`,
     });
   }
 }
