@@ -10,7 +10,7 @@ import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { getFreshProvider, useWallet } from "@/lib/wallet";
 
 export function MembershipDevToolDrawer(
   props: Omit<DrawerProps, "children" | "title" | "from">
@@ -19,12 +19,12 @@ export function MembershipDevToolDrawer(
   const apolloClient = useApolloClient();
   const [onChainTimestamp, setOnChainTimestamp] = useState<number>();
   const refreshTimestamp = useCallback(async () => {
-    if (!provider) {
-      return;
-    }
-    const latestBlock = await provider.getBlock("latest");
+    // have to get a new provider every time this is called because otherwise the result for latestBlock is cached
+    const uncachedProvider = getFreshProvider();
+    setOnChainTimestamp(undefined);
+    const latestBlock = await uncachedProvider.getBlock("latest");
     setOnChainTimestamp(latestBlock.timestamp);
-  }, [provider]);
+  }, []);
   useEffect(() => {
     refreshTimestamp();
   }, [refreshTimestamp, props.isOpen]);
@@ -38,7 +38,7 @@ export function MembershipDevToolDrawer(
         <div className="font-bold">
           Current on-chain time:{" "}
           {onChainTimestamp
-            ? format(onChainTimestamp * 1000, "MMMM dd, yyyy")
+            ? format(onChainTimestamp * 1000, "HH:mm:ss MMMM dd, yyyy")
             : null}
         </div>
       </div>
