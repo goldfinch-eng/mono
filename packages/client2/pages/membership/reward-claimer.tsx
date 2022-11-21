@@ -29,7 +29,7 @@ export function RewardClaimer({
 
   const onSubmit = async () => {
     if (!provider || !account) {
-      throw new Error("Wallet not connect properly");
+      throw new Error("Wallet not connected properly");
     }
     const membershipContract = await getContract({
       name: "MembershipOrchestrator",
