@@ -15,7 +15,7 @@ function CallToAction({
   buttonText: string;
   href: string;
 }) {
-  const isExternal = href.startsWith("http");
+  const isExternal = href.startsWith("https://") || href.startsWith("http://");
   return (
     <div
       className={clsx(
