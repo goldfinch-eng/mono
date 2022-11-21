@@ -4,19 +4,12 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import {TestERC20} from "../../test/TestERC20.sol";
-import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
-import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
-import {Fidu} from "../../protocol/core/Fidu.sol";
-import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
-import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
 import {TestConstants} from "./TestConstants.t.sol";
 import {FuzzingHelper} from "../helpers/FuzzingHelper.t.sol";
 
-abstract contract BaseTest is Test {
-  using Strings for uint256;
+import {IProtocolHelper} from "./IProtocolHelper.sol";
 
+abstract contract BaseTest is Test {
   address internal constant GF_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2; // random address
 
   address internal constant TREASURY = 0xE57D6a0996813AA066ab8F1328DaCaff761db5D7; // random address
@@ -28,50 +21,28 @@ abstract contract BaseTest is Test {
   // stack of active pranks
   Impersonation[] private _pranks;
 
-  GoldfinchConfig internal gfConfig;
-
-  GoldfinchFactory internal gfFactory;
-
-  TestERC20 internal usdc;
-
-  Fidu internal fidu;
+  IProtocolHelper internal protocol;
 
   FuzzingHelper internal fuzzHelper = new FuzzingHelper();
 
   function setUp() public virtual {
-    _startImpersonation(GF_OWNER);
-
-    usdc = new TestERC20(type(uint256).max, uint8(TestConstants.USDC_DECIMALS));
-
-    gfConfig = new GoldfinchConfig();
-    gfConfig.initialize(GF_OWNER);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.USDC), address(usdc));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.ProtocolAdmin), GF_OWNER);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.TreasuryReserve), TREASURY);
-
-    // Deploy factory
-    gfFactory = new GoldfinchFactory();
-    gfFactory.initialize(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory), address(gfFactory));
-
-    fidu = new Fidu();
-    fidu.__initialize__(GF_OWNER, "Fidu", "FIDU", gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), address(fidu));
+    // We use deployCode and cast to an interface so that BaseTest can be used by both 0.6.x and 0.8.x test files.
+    protocol = IProtocolHelper(
+      deployCode("./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json", abi.encode(vm, GF_OWNER, TREASURY))
+    );
 
     excludeAddresses();
-
-    _stopImpersonation();
   }
 
   function excludeAddresses() private {
     fuzzHelper.exclude(address(fuzzHelper));
     fuzzHelper.exclude(address(0));
-    fuzzHelper.exclude(address(usdc));
+    fuzzHelper.exclude(address(protocol.usdc()));
     fuzzHelper.exclude(GF_OWNER);
     fuzzHelper.exclude(TREASURY);
-    fuzzHelper.exclude(address(gfFactory));
-    fuzzHelper.exclude(address(fidu));
-    fuzzHelper.exclude(address(gfConfig));
+    fuzzHelper.exclude(address(protocol.gfFactory()));
+    fuzzHelper.exclude(address(protocol.fidu()));
+    fuzzHelper.exclude(address(protocol.gfConfig()));
     // Forge VM
     fuzzHelper.exclude(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // Forge Create2Deployer

@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
-import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
@@ -12,10 +12,13 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
+  CryptoAmount,
 } from "@/lib/graphql/generated";
-import type { Erc20 } from "@/types/ethers-contracts";
+import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
+
+const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
 
 /**
  * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
@@ -35,6 +38,7 @@ export const TRANCHED_POOL_STATUS_FIELDS = gql`
 `;
 
 export enum PoolStatus {
+  Closed,
   Paused,
   Repaid,
   Full,
@@ -47,8 +51,12 @@ export enum PoolStatus {
  * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
  * @returns the status of the pool
  */
-export function getTranchedPoolStatus(pool: TranchedPoolStatusFieldsFragment) {
-  if (pool.isPaused) {
+export function getTranchedPoolStatus(
+  pool: TranchedPoolStatusFieldsFragment
+): PoolStatus {
+  if (pool.id === CAURIS_POOL_ID) {
+    return PoolStatus.Closed;
+  } else if (pool.isPaused) {
     return PoolStatus.Paused;
   } else if (
     pool.creditLine.balance.isZero() &&
@@ -217,7 +225,30 @@ export async function approveErc20IfRequired({
       transaction: erc20Contract.approve(spender, amount),
       pendingPrompt: "Awaiting approval to spend tokens.",
       successPrompt: "Successfully approved spending.",
-      errorPrompt: "Failed to approved spending",
+      errorPrompt: "Failed to approved spending.",
+    });
+  }
+}
+
+/**
+ * utility function that will perform an ERC721 approval if it's necessary, and will toast messages for the approval too. Very similar to approveErc20IfRequired
+ */
+export async function approveErc721IfRequired({
+  to,
+  tokenId,
+  erc721Contract,
+}: {
+  to: string;
+  tokenId: string;
+  erc721Contract: Pick<Erc721, "getApproved" | "approve">;
+}) {
+  const isApprovalRequired = (await erc721Contract.getApproved(tokenId)) !== to;
+  if (isApprovalRequired) {
+    await toastTransaction({
+      transaction: erc721Contract.approve(to, tokenId),
+      pendingPrompt: `Awaiting approval to transfer token ${tokenId}.`,
+      successPrompt: `Approved transfer of token ${tokenId}.`,
+      errorPrompt: `Failed to approve transfer of token ${tokenId}.`,
     });
   }
 }
@@ -237,6 +268,17 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.TranchedPoolRepayment]: "Repayment",
   [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
   [TransactionCategory.UidMinted]: "Mint UID",
+  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
+  [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.StakingRewardsClaimed]: "Staking Rewards Claimed",
+  [TransactionCategory.BackerRewardsClaimed]: "Backer Rewards Claimed",
+  [TransactionCategory.CommunityRewardsClaimed]: "GFI Grant Claimed",
+  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards Claimed",
+  [TransactionCategory.MembershipGfiDeposit]: "Added GFI to Vault",
+  [TransactionCategory.MembershipGfiWithdrawal]: "Removed GFI from Vault",
+  [TransactionCategory.MembershipCapitalDeposit]: "Added Capital to Vault",
+  [TransactionCategory.MembershipCapitalWithdrawal]:
+    "Removed Capital from Vault",
 };
 
 export function getTransactionLabel(transaction: {
@@ -258,6 +300,16 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.TranchedPoolRepayment]: "Repayment",
   [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
   [TransactionCategory.UidMinted]: "Mint UID",
+  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
+  [TransactionCategory.CurveFiduSell]: "Curve Swap",
+  [TransactionCategory.StakingRewardsClaimed]: "Rewards Claimed",
+  [TransactionCategory.BackerRewardsClaimed]: "Rewards Claimed",
+  [TransactionCategory.CommunityRewardsClaimed]: "Grant Claimed",
+  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards",
+  [TransactionCategory.MembershipGfiDeposit]: "Vaulted GFI",
+  [TransactionCategory.MembershipGfiWithdrawal]: "Unvaulted GFI",
+  [TransactionCategory.MembershipCapitalDeposit]: "Vaulted Capital",
+  [TransactionCategory.MembershipCapitalWithdrawal]: "Unvaulted Capital",
 };
 
 /**
@@ -284,6 +336,16 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.TranchedPoolRepayment]: "ArrowUp",
   [TransactionCategory.TranchedPoolDrawdown]: "ArrowDown",
   [TransactionCategory.UidMinted]: "Checkmark",
+  [TransactionCategory.CurveFiduBuy]: "ArrowUp",
+  [TransactionCategory.CurveFiduSell]: "ArrowDown",
+  [TransactionCategory.StakingRewardsClaimed]: "ArrowUp",
+  [TransactionCategory.BackerRewardsClaimed]: "ArrowUp",
+  [TransactionCategory.CommunityRewardsClaimed]: "ArrowUp",
+  [TransactionCategory.MembershipRewardsClaimed]: "ArrowUp",
+  [TransactionCategory.MembershipGfiDeposit]: "ArrowUp",
+  [TransactionCategory.MembershipGfiWithdrawal]: "ArrowDown",
+  [TransactionCategory.MembershipCapitalDeposit]: "ArrowUp",
+  [TransactionCategory.MembershipCapitalWithdrawal]: "ArrowDown",
 };
 
 /**
@@ -360,4 +422,22 @@ export function sum<T extends string, U extends Record<T, BigNumber>>(
     (prev, current) => prev.add(current[field]),
     BigNumber.from(0)
   );
+}
+
+/**
+ *
+ * @param gfi CryptoAmount measured in GFI
+ * @param fiatPerGfi The number of USD per GFI
+ * @returns A CryptoAmount in USDC
+ */
+export function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
+  const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
+  const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
+    FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
+  );
+  const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
+  return {
+    token: SupportedCrypto.Usdc,
+    amount: BigNumber.from(amount.toString().split(".")[0]),
+  };
 }

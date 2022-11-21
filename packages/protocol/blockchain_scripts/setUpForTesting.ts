@@ -14,7 +14,6 @@ import _ from "lodash"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {
   assertIsChainId,
-  ContractDeployer,
   FIDU_DECIMALS,
   getEthersContract,
   getProtocolOwner,
@@ -194,6 +193,62 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const protocolBorrowerCon = lastEventArgs[0]
     logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
+    /*** UNITRANCHE OPEN START ***/
+    const unitranche = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: unitranche, borrower: "UNITRANCHE OPEN"})
+    await impersonateAccount(hre, borrower)
+    let signer = ethers.provider.getSigner(borrower)
+    let depositAmount = new BN(5000).mul(USDCDecimals)
+    let txn = await erc20.connect(signer).approve(unitranche.address, String(depositAmount))
+    await txn.wait()
+    txn = await unitranche.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
+    await txn.wait()
+    /*** UNITRANCHE END ***/
+
+    /*** UNITRANCHE CLOSED START ***/
+    const unitrancheClosed = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: unitrancheClosed, borrower: "UNITRANCHE CLOSED"})
+    await impersonateAccount(hre, borrower)
+    signer = ethers.provider.getSigner(borrower)
+    depositAmount = new BN(10000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(unitrancheClosed.address, String(depositAmount))
+    await txn.wait()
+    txn = await unitrancheClosed.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
+    await txn.wait()
+
+    txn = await unitrancheClosed.lockJuniorCapital()
+    await txn.wait()
+    await unitrancheClosed.lockPool()
+    await txn.wait()
+    /*** UNITRANCHE CLOSED END ***/
+
+    /*** EMPTY POOL START ***/
+    const empty = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
+    /*** EMPTY POOL START ***/
+
+    /*** COMMON POOL START ***/
     const commonPool = await createPoolForBorrower({
       getOrNull,
       underwriter,
@@ -204,21 +259,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     })
     await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
 
-    const empty = await createPoolForBorrower({
-      getOrNull,
-      underwriter,
-      goldfinchFactory,
-      borrower: protocolBorrowerCon,
-      erc20,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
-    })
-    await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
-
     await fundAddressAndDepositToCommonPool({erc20, depositorAddress: borrower, commonPool, seniorPool})
 
-    // Have the senior fund invest
+    // Senior fund invest to the "NON-US Pool GFI", lock, drawdown
     seniorPool = seniorPool.connect(protocolOwnerSigner)
-    const txn = await commonPool.lockJuniorCapital()
+    txn = await commonPool.lockJuniorCapital()
     await txn.wait()
     await seniorPool.invest(commonPool.address)
     const filter = commonPool.filters.DepositMade(seniorPool.address)
@@ -236,7 +281,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     await advanceTime({days: 32})
 
-    // Have the borrower repay a portion of their loan
+    // Borrower repay a portion of their loan
     await impersonateAccount(hre, protocol_owner)
     const borrowerSigner = ethers.provider.getSigner(protocol_owner)
     assertNonNullable(borrowerSigner)
@@ -248,6 +293,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await advanceTime({days: 32})
 
     await bwrCon.pay(commonPool.address, payAmount.toString())
+    /*** COMMON POOL END ***/
 
     await seniorPool.redeem(tokenId)
   }
@@ -508,20 +554,24 @@ async function writePoolMetadata({
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero."
   const detailsUrl = "https://example.com"
   const NDAUrl = "https://example.com"
-  const status = [false, true, undefined]
 
   const metadataPath = "../../packages/pools/metadata/localhost.json"
   const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"
+  const metadataPathForCmsSeeding = "../../packages/cms/src/scripts/localhost-deals.json"
   let metadata: any
   let metadata2: any
+  let metadataCmsSeeding: any
   try {
     const data = await fs.promises.readFile(metadataPath)
     metadata = JSON.parse(data.toString())
     const data2 = await fs.promises.readFile(metadataPathForClient2)
     metadata2 = JSON.parse(data2.toString())
+    const dataCms = await fs.promises.readFile(metadataPathForCmsSeeding)
+    metadataCmsSeeding = JSON.parse(dataCms.toString())
   } catch (error) {
     metadata = {}
     metadata2 = {}
+    metadataCmsSeeding = {}
   }
   const name = `${borrower}: ${_.sample(names)}`
   const launchTime = await getCurrentTimestamp()
@@ -529,6 +579,7 @@ async function writePoolMetadata({
   logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
     name,
+    dealType: name.toLowerCase().indexOf("unitranche") ? "Unitranche" : "Multitranche",
     category: _.sample(categories),
     icon: _.sample(icons),
     description,
@@ -540,16 +591,18 @@ async function writePoolMetadata({
   }
   metadata2[pool.address.toLowerCase()] = {
     name,
+    borrower: "goldfinchTestBorrower",
+  }
+  metadataCmsSeeding[pool.address.toLowerCase()] = {
+    name,
     category: _.sample(categories),
-    icon: _.sample(icons),
     description,
-    dataroom: "/fake-dataroom",
-    agreement: "/fake-agreement",
     borrower: "goldfinchTestBorrower",
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
   await fs.promises.writeFile(metadataPathForClient2, JSON.stringify(metadata2, null, 2))
+  await fs.promises.writeFile(metadataPathForCmsSeeding, JSON.stringify(metadataCmsSeeding, null, 2))
 }
 
 function getLastEventArgs(result: ContractReceipt): Result {

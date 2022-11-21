@@ -1,3 +1,6 @@
+import clsx from "clsx";
+import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
@@ -8,6 +11,7 @@ import {
   GFI_DECIMALS,
   USDC_DECIMALS,
 } from "@/constants";
+import { formatFiat } from "@/lib/format";
 import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import { Input } from "./input";
@@ -19,14 +23,19 @@ const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
 
 type Unit = SupportedFiat | SupportedCrypto;
 
-type DollarInputProps = ComponentProps<typeof Input> &
+export type DollarInputProps = ComponentProps<typeof Input> &
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   UseControllerProps<any> & {
     unit?: Unit;
     /**
-     * If this prop is included, a "MAX" button will be included on the input. When that button is clicked, this callback will be invoked.
+     * A BigNumber (or a promise that resolves to a BigNumber) that serves as the value used when the max button is clicked. Note that this is subject to the `unit` prop, and more importantly, this doesn't provide validation. Form validation is still handled through typical React Hook Form functions.
      */
-    onMaxClick?: () => void;
+    maxValue?: BigNumber | (() => Promise<BigNumber>);
+    /**
+     * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
+     */
+    onMaxClick?: (n?: BigNumber) => void;
+    onChange?: (s: string) => void;
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
@@ -42,7 +51,9 @@ const unitProperties: Record<Unit, { mask: string; scale: number }> = {
 
 export function DollarInput({
   unit = SupportedCrypto.Usdc,
+  maxValue,
   onMaxClick,
+  onChange: callbackOnChange,
   name,
   rules,
   control,
@@ -51,7 +62,7 @@ export function DollarInput({
   ...rest
 }: DollarInputProps) {
   const {
-    field: { onChange, ...controllerField },
+    field: { onChange: rhfOnChange, ...controllerField },
   } = useController({
     name,
     rules,
@@ -59,6 +70,11 @@ export function DollarInput({
     shouldUnregister,
     defaultValue,
   });
+
+  const onChange = (s: string) => {
+    rhfOnChange(s);
+    callbackOnChange?.(s);
+  };
 
   return (
     <MaskedInput
@@ -77,11 +93,29 @@ export function DollarInput({
       onAccept={onChange}
       lazy={false}
       decoration={
-        onMaxClick ? (
+        maxValue || onMaxClick ? (
           <button
             type="button"
-            onClick={onMaxClick}
-            className="block rounded-md border border-sky-500 p-2 text-[10px] uppercase leading-none"
+            onClick={async () => {
+              if (maxValue) {
+                const max =
+                  typeof maxValue === "function" ? await maxValue() : maxValue;
+                const formatted: string =
+                  unit === SupportedFiat.Usd
+                    ? formatFiat({ symbol: unit, amount: max.toNumber() })
+                    : formatUnits(max, unitProperties[unit].scale);
+                onChange(formatted);
+                onMaxClick?.(max);
+              } else {
+                onMaxClick?.();
+              }
+            }}
+            className={clsx(
+              "block rounded-md border p-2 text-[10px] font-semibold uppercase leading-none text-white",
+              rest.colorScheme === "dark"
+                ? "border-sky-500 bg-sky-900"
+                : "border-sand-700 bg-sand-700"
+            )}
           >
             Max
           </button>

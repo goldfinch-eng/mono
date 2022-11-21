@@ -1,6 +1,8 @@
+import { ParsedUrlQuery } from "querystring";
+
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useRouter } from "next/router";
+import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
   Breadcrumb,
@@ -18,10 +20,15 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
+import { apolloClient } from "@/lib/graphql/apollo";
 import {
   SupportedCrypto,
   UidType,
   useSingleTranchedPoolDataQuery,
+  SingleDealQuery,
+  AllDealsQuery,
+  SingleDealQueryVariables,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -30,12 +37,23 @@ import {
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
-import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
+import {
+  BorrowerProfile,
+  BORROWER_PROFILE_FIELDS,
+  BORROWER_OTHER_POOL_FIELDS,
+} from "./borrower-profile";
+import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import ComingSoonPanel from "./coming-soon-panel";
-import DealTermsTable from "./deal-terms-table";
+import { CREDIT_MEMO_FIELDS } from "./credit-memos";
+import DealSummary from "./deal-summary";
+import {
+  SECURITIES_RECOURSE_TABLE_FIELDS,
+  BORROWER_FINANCIALS_TABLE_FIELDS,
+  BORROWER_PERFORMANCE_TABLE_FIELDS,
+} from "./deal-tables";
+import { DOCUMENT_FIELDS } from "./documents-list";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
-import SecondaryMarketPanel from "./secondary-market-panel";
 import {
   StatusSection,
   TRANCHED_POOL_STAT_GRID_FIELDS,
@@ -44,7 +62,6 @@ import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
 } from "./supply-panel";
-import { TransactionTable } from "./transaction-table";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -58,21 +75,15 @@ gql`
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${WITHDRAWAL_PANEL_ZAP_FIELDS}
-  ${BORROWER_PROFILE_FIELDS}
+  ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
+    $borrowerOtherPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
       id
-      name @client
-      category @client
-      icon @client
-      description @client
-      highlights @client
-      agreement @client
-      dataroom @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
       estimatedLeverageRatio
@@ -101,7 +112,11 @@ gql`
       interestAmountRepaid
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
-      ...BorrowerProfileFields
+    }
+    borrowerOtherPools: tranchedPools(
+      where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
+    ) {
+      ...BorrowerOtherPoolFields
     }
     seniorPools(first: 1) {
       id
@@ -126,33 +141,124 @@ gql`
       zaps(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelZapFields
       }
+      vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+        id
+        poolToken {
+          ...WithdrawalPanelPoolTokenFields
+        }
+      }
     }
+
     currentBlock @client {
       timestamp
     }
   }
 `;
 
-export default function PoolPage() {
-  const {
-    query: { address },
-  } = useRouter();
+const getMarqueeColor = (
+  poolStatus: PoolStatus
+): "yellow" | "purple" | "blue" | "green" | undefined => {
+  switch (poolStatus) {
+    case PoolStatus.Closed:
+    case PoolStatus.Full:
+      return "yellow";
+    case PoolStatus.Open:
+      return "purple";
+    case PoolStatus.ComingSoon:
+      return "blue";
+    case PoolStatus.Repaid:
+      return "green";
+    default:
+      return undefined;
+  }
+};
+
+const getMarqueeText = (poolStatus: PoolStatus, numBackers?: number) => {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+      return ["Filled", `${numBackers} Backers`];
+    case PoolStatus.Open:
+      return ["Open", `${numBackers} Backers`];
+    case PoolStatus.ComingSoon:
+      return "Coming Soon";
+    case PoolStatus.Closed:
+      return "Closed";
+    case PoolStatus.Repaid:
+      return "Repaid";
+    default:
+      return "Paused";
+  }
+};
+
+const singleDealQuery = gql`
+  ${DOCUMENT_FIELDS}
+  ${CMS_TEAM_MEMBER_FIELDS}
+  ${SECURITIES_RECOURSE_TABLE_FIELDS}
+  ${BORROWER_FINANCIALS_TABLE_FIELDS}
+  ${BORROWER_PERFORMANCE_TABLE_FIELDS}
+  ${BORROWER_PROFILE_FIELDS}
+  ${CREDIT_MEMO_FIELDS}
+  query SingleDeal($id: String!) @api(name: cms) {
+    Deal(id: $id) {
+      id
+      name
+      dealType
+      category
+      borrower {
+        ...BorrowerProfileFields
+      }
+      overview
+      details
+      agreement
+      dataroom
+      securitiesAndRecourse {
+        ...SecuritiesRecourseTableFields
+      }
+      defaultInterestRate
+      transactionStructure {
+        filename
+        alt
+        url
+        mimeType
+      }
+      documents {
+        ...DocumentFields
+      }
+      creditMemos {
+        ...CreditMemoFields
+      }
+    }
+  }
+`;
+
+interface PoolPageProps {
+  dealDetails: NonNullable<SingleDealQuery["Deal"]>;
+}
+
+export default function PoolPage({ dealDetails }: PoolPageProps) {
   const { account } = useWallet();
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const borrower = dealDetails.borrower!;
+  const otherPoolsFromThisBorrower = (borrower.deals || []).map(
+    (deal) => deal.id
+  );
+
   const { data, error } = useSingleTranchedPoolDataQuery({
-    skip: !address,
     variables: {
-      tranchedPoolId: address as string,
-      tranchedPoolAddress: address as string,
+      tranchedPoolId: dealDetails?.id as string,
+      tranchedPoolAddress: dealDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
+      borrowerOtherPools: otherPoolsFromThisBorrower,
     },
-    returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
+    returnPartialData: true,
   });
 
   const tranchedPool = data?.tranchedPool;
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
+  const isMultitranche = dealDetails.dealType === Deal_DealType.Multitranche;
 
   if (error) {
     return (
@@ -170,7 +276,7 @@ export default function PoolPage() {
       }
     : undefined;
   const seniorSupply =
-    backerSupply && tranchedPool?.estimatedLeverageRatio
+    backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
           amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
@@ -216,14 +322,9 @@ export default function PoolPage() {
       "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
   }
 
-  const hasBacked = !!(
-    data?.user &&
-    (data.user.tranchedPoolTokens?.length > 0 || data?.user.zaps?.length > 0)
-  );
-
   return (
     <>
-      <SEO title={tranchedPool?.name} />
+      <SEO title={dealDetails.name} />
 
       {initialBannerContent && expandedBannerContent ? (
         <BannerPortal>
@@ -234,30 +335,10 @@ export default function PoolPage() {
         </BannerPortal>
       ) : null}
 
-      {poolStatus && (
+      {poolStatus !== null && poolStatus !== undefined && (
         <SubnavPortal>
-          <Marquee
-            colorScheme={
-              poolStatus === PoolStatus.Full
-                ? "yellow"
-                : poolStatus === PoolStatus.Open
-                ? "purple"
-                : poolStatus === PoolStatus.ComingSoon
-                ? "blue"
-                : poolStatus === PoolStatus.Repaid
-                ? "green"
-                : "yellow"
-            }
-          >
-            {poolStatus === PoolStatus.Full
-              ? ["Filled", `${tranchedPool?.numBackers} Backers`]
-              : poolStatus === PoolStatus.Open
-              ? ["Open", `${tranchedPool?.numBackers} Backers`]
-              : poolStatus === PoolStatus.ComingSoon
-              ? "Coming Soon"
-              : poolStatus === PoolStatus.Repaid
-              ? "Repaid"
-              : "Paused"}
+          <Marquee colorScheme={getMarqueeColor(poolStatus)}>
+            {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
           </Marquee>
           {/* gives the illusion of rounded corners on the top of the page */}
           <div className="-mt-3 h-3 rounded-t-xl bg-white" />
@@ -268,10 +349,7 @@ export default function PoolPage() {
         <div style={{ gridArea: "heading" }}>
           <div className="mb-8 flex flex-wrap justify-between gap-2">
             <div>
-              <Breadcrumb
-                label={tranchedPool?.name}
-                image={tranchedPool?.icon}
-              />
+              <Breadcrumb label={dealDetails.name} image={borrower.logo?.url} />
             </div>
             {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
               <Button
@@ -291,11 +369,7 @@ export default function PoolPage() {
             level={1}
             className="mb-12 text-center text-sand-800 md:text-left"
           >
-            {tranchedPool ? (
-              tranchedPool.name
-            ) : (
-              <ShimmerLines truncateFirstLine={false} lines={2} />
-            )}
+            {dealDetails.name}
           </Heading>
 
           {error ? (
@@ -305,8 +379,10 @@ export default function PoolPage() {
             </HelperText>
           ) : null}
 
-          {poolStatus === PoolStatus.Open ? (
+          {poolStatus === PoolStatus.Open ||
+          poolStatus === PoolStatus.Closed ? (
             <FundingBar
+              isMultitranche={isMultitranche}
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {
@@ -336,7 +412,7 @@ export default function PoolPage() {
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open && (
+              {poolStatus === PoolStatus.Open ? (
                 <SupplyPanel
                   tranchedPool={tranchedPool}
                   user={user}
@@ -345,13 +421,20 @@ export default function PoolPage() {
                     seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
                   }
                   seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  agreement={dealDetails.agreement}
                 />
-              )}
+              ) : null}
 
-              {data.user && hasBacked ? (
+              {data?.user &&
+              (data?.user.tranchedPoolTokens.length > 0 ||
+                data?.user.zaps.length > 0 ||
+                data?.user.vaultedPoolTokens.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
+                    (v) => v.poolToken
+                  )}
                   zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
@@ -372,17 +455,9 @@ export default function PoolPage() {
                 />
               ) : null}
 
-              {poolStatus === PoolStatus.ComingSoon && (
+              {poolStatus === PoolStatus.ComingSoon ? (
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              )}
-
-              {tranchedPool && poolStatus && (
-                <SecondaryMarketPanel
-                  hasBacked={hasBacked}
-                  poolStatus={poolStatus}
-                  poolAddress={tranchedPool.id}
-                />
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -395,59 +470,22 @@ export default function PoolPage() {
             </TabList>
             <TabPanels>
               <TabContent>
-                <div className="mb-20">
-                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
-                  {tranchedPool ? (
-                    <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
-                      {tranchedPool.description}
-                    </p>
-                  ) : (
-                    <ShimmerLines lines={3} />
-                  )}
-                  {tranchedPool?.dataroom ? (
-                    <Button
-                      as="a"
-                      variant="rounded"
-                      iconRight="ArrowTopRight"
-                      href={tranchedPool.dataroom}
-                      target="_blank"
-                      rel="noreferrer"
-                      size="lg"
-                      className="block"
-                    >
-                      Dataroom
-                    </Button>
-                  ) : null}
-                </div>
-
-                <div className="mb-20">
-                  <h2 className="mb-8 text-lg font-semibold">
-                    Recent Activity
-                  </h2>
-                  {tranchedPool ? (
-                    <TransactionTable tranchedPoolId={tranchedPool.id} />
-                  ) : null}
-                </div>
-
-                {tranchedPool?.highlights ? (
-                  <div className="mb-20">
-                    <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-                    <ul className="list-outside list-disc space-y-5 pl-5">
-                      {tranchedPool?.highlights?.map((item, idx) => (
-                        <li key={`pool-highlight-${address}-${idx}`}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <DealTermsTable
-                  tranchedPool={tranchedPool}
-                  poolStatus={poolStatus}
-                />
+                {tranchedPool && poolStatus !== null ? (
+                  <DealSummary
+                    dealData={dealDetails}
+                    poolChainData={tranchedPool}
+                    poolStatus={poolStatus}
+                  />
+                ) : (
+                  <ShimmerLines lines={10} />
+                )}
               </TabContent>
               <TabContent>
-                {tranchedPool ? (
-                  <BorrowerProfile tranchedPool={tranchedPool} />
+                {data && data.borrowerOtherPools ? (
+                  <BorrowerProfile
+                    borrower={borrower}
+                    borrowerPools={data.borrowerOtherPools}
+                  />
                 ) : null}
               </TabContent>
             </TabPanels>
@@ -457,3 +495,66 @@ export default function PoolPage() {
     </>
   );
 }
+
+interface StaticParams extends ParsedUrlQuery {
+  address: string;
+}
+
+const allDealsQuery = gql`
+  query AllDeals @api(name: cms) {
+    Deals(limit: 100) {
+      docs {
+        id
+      }
+    }
+  }
+`;
+
+export const getStaticPaths: GetStaticPaths<StaticParams> = async () => {
+  const res = await apolloClient.query<AllDealsQuery>({
+    query: allDealsQuery,
+  });
+
+  const paths =
+    res.data.Deals?.docs?.map((pool) => ({
+      params: {
+        address: pool?.id || "",
+      },
+    })) || [];
+
+  return {
+    paths,
+    fallback: "blocking",
+  };
+};
+
+export const getStaticProps: GetStaticProps<
+  PoolPageProps,
+  StaticParams
+> = async (context) => {
+  const address = context.params?.address;
+  if (!address) {
+    throw new Error("No address param in getStaticProps");
+  }
+  const res = await apolloClient.query<
+    SingleDealQuery,
+    SingleDealQueryVariables
+  >({
+    query: singleDealQuery,
+    variables: {
+      id: address,
+    },
+    fetchPolicy: "network-only",
+  });
+
+  const poolDetails = res.data.Deal;
+  if (!poolDetails) {
+    return { notFound: true };
+  }
+
+  return {
+    props: {
+      dealDetails: poolDetails,
+    },
+  };
+};

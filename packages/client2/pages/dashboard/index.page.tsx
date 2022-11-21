@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,25 +12,26 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
-import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
 import {
-  CryptoAmount,
   SupportedCrypto,
   useDashboardPageQuery,
-  DashboardPageQuery,
+  DashboardPoolTokenFieldsFragment,
+  CryptoAmount,
+  DashboardStakedPositionFieldsFragment,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, sum } from "@/lib/pools";
+import { sharesToUsdc, sum, gfiToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 import {
   ExpandableHoldings,
   ExpandableHoldingsPlaceholder,
+  Holding,
 } from "./expandable-holdings";
 import { FormatWithIcon } from "./format-with-icon";
 import {
@@ -40,9 +41,21 @@ import {
 import { TransactionTable } from "./transaction-table";
 
 gql`
-  fragment StakedPositionFields on SeniorPoolStakedPosition {
+  fragment DashboardStakedPositionFields on SeniorPoolStakedPosition {
     id
     amount
+  }
+  fragment DashboardPoolTokenFields on TranchedPoolToken {
+    id
+    principalAmount
+    principalRedeemed
+    interestRedeemable
+    rewardsClaimable
+    stakingRewardsClaimable
+    tranchedPool {
+      id
+      name @client
+    }
   }
   query DashboardPage($userId: String!) {
     seniorPools {
@@ -78,12 +91,20 @@ gql`
           isAccepted
         }
       }
+      claimableMembershipRewards {
+        token
+        amount
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
         amount
         symbol
       }
+    }
+    vaultedGfis(where: { user: $userId }) {
+      id
+      amount
     }
     curvePool @client {
       usdcPerLpToken
@@ -93,15 +114,12 @@ gql`
       orderBy: mintedAt
       orderDirection: desc
     ) {
+      ...DashboardPoolTokenFields
+    }
+    vaultedPoolTokens(where: { user: $userId }) {
       id
-      principalAmount
-      principalRedeemed
-      interestRedeemable
-      rewardsClaimable
-      stakingRewardsClaimable
-      tranchedPool {
-        id
-        name @client
+      poolToken {
+        ...DashboardPoolTokenFields
       }
     }
     stakedFiduPositions: seniorPoolStakedPositions(
@@ -109,14 +127,20 @@ gql`
       orderBy: startTime
       orderDirection: desc
     ) {
-      ...StakedPositionFields
+      ...DashboardStakedPositionFields
+    }
+    vaultedStakedPositions(where: { user: $userId }) {
+      id
+      seniorPoolStakedPosition {
+        ...DashboardStakedPositionFields
+      }
     }
     stakedCurveLpPositions: seniorPoolStakedPositions(
       where: { user: $userId, amount_gt: 0, positionType: CurveLP }
       orderBy: startTime
       orderDirection: desc
     ) {
-      ...StakedPositionFields
+      ...DashboardStakedPositionFields
     }
     # Need to include old staked positions that have been unstaked, because they can still have some GFI vesting
     pastAndCurrentSeniorPoolPositions: seniorPoolStakedPositions(
@@ -147,6 +171,8 @@ export default function DashboardPage() {
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
+  const sharePrice = data?.seniorPools[0].latestPoolStatus.sharePrice;
+
   const gfiRewardsTotal = useMemo(() => {
     if (!data) {
       return BigNumber.from(0);
@@ -167,36 +193,49 @@ export default function DashboardPage() {
     return gfiTotalClaimable.add(gfiTotalLocked);
   }, [data]);
 
-  const { summaryHoldings, totalUsdc } = useMemo(() => {
+  const gfiVaultedTotal = useMemo(() => {
     if (!data) {
+      return BigNumber.from(0);
+    }
+    return sum("amount", data.vaultedGfis);
+  }, [data]);
+
+  const { summaryHoldings, totalUsdc } = useMemo(() => {
+    if (!data || !sharePrice || !data.viewer.gfiBalance) {
       return {};
     }
     const borrowerPoolTotal = {
       token: SupportedCrypto.Usdc,
-      amount: data.tranchedPoolTokens.reduce(
-        (prev, current) => prev.add(valueOfPoolToken(current)),
-        BigNumber.from(0)
-      ),
+      amount: data.tranchedPoolTokens
+        .concat(data.vaultedPoolTokens.map((v) => v.poolToken))
+        .reduce(
+          (prev, current) => prev.add(valueOfPoolToken(current)),
+          BigNumber.from(0)
+        ),
     };
 
-    const gfiTotal = data.viewer.gfiBalance
-      ? gfiToUsdc(
-          {
-            token: SupportedCrypto.Gfi,
-            amount: data.viewer.gfiBalance.amount.add(gfiRewardsTotal),
-          },
-          data.gfiPrice.price.amount
-        )
-      : {
-          token: SupportedCrypto.Usdc,
-          amount: gfiRewardsTotal,
-        };
+    const gfiTotal = gfiToUsdc(
+      {
+        token: SupportedCrypto.Gfi,
+        amount: data.viewer.gfiBalance.amount
+          .add(gfiRewardsTotal)
+          .add(gfiVaultedTotal),
+      },
+      data.gfiPrice.price.amount
+    );
 
     const seniorPoolTotal = sharesToUsdc(
-      sum("amount", data.stakedFiduPositions).add(
-        data.viewer.fiduBalance?.amount ?? BigNumber.from(0)
-      ),
-      data.seniorPools[0].latestPoolStatus.sharePrice
+      sum(
+        "amount",
+        data.stakedFiduPositions.concat(
+          data.vaultedStakedPositions.map((v) => v.seniorPoolStakedPosition)
+        )
+      )
+        .add(data.viewer.fiduBalance?.amount ?? BigNumber.from(0))
+        .add(
+          data.viewer.claimableMembershipRewards?.amount ?? BigNumber.from(0)
+        ),
+      sharePrice
     );
 
     const curveLpTotal = curveLpTokensToUsdc(
@@ -260,7 +299,7 @@ export default function DashboardPage() {
       totalUsdc,
       summaryHoldings,
     };
-  }, [data, gfiRewardsTotal]);
+  }, [data, sharePrice, gfiRewardsTotal, gfiVaultedTotal]);
 
   const [expanded, setExpanded] = useState({
     borrower: false,
@@ -315,7 +354,11 @@ export default function DashboardPage() {
             </TabList>
             <TabPanels>
               <TabContent>
-                {!data || !totalUsdc || !summaryHoldings || loading ? (
+                {!data ||
+                !totalUsdc ||
+                !sharePrice ||
+                !summaryHoldings ||
+                loading ? (
                   <>
                     <PortfolioSummaryPlaceholder className="mb-15" />
                     <Heading level={3} className="mb-6 !font-sans !text-xl">
@@ -356,24 +399,25 @@ export default function DashboardPage() {
                           You have no holdings in Goldfinch yet
                         </div>
                       ) : null}
-                      {data.tranchedPoolTokens.length > 0 ? (
+                      {data.tranchedPoolTokens.length > 0 ||
+                      data.vaultedPoolTokens.length > 0 ? (
                         <ExpandableHoldings
                           title="Backer Positions"
                           tooltip="Your active investment in Goldfinch Borrower Pools. Each investment position, including its claimable interest, is represented by a unique Backer PoolToken NFT held in your linked wallet."
                           colorClass={borrowerPoolColorClass}
-                          holdings={data.tranchedPoolTokens.map((token) => ({
-                            name: token.tranchedPool.name,
-                            percentage: computePercentage(
-                              valueOfPoolToken(token),
-                              totalUsdc.amount
-                            ),
-                            quantity: BigNumber.from(1),
-                            usdcValue: {
-                              token: SupportedCrypto.Usdc,
-                              amount: valueOfPoolToken(token),
-                            },
-                            url: `/pools/${token.tranchedPool.id}`,
-                          }))}
+                          holdings={data.tranchedPoolTokens
+                            .map((poolToken) =>
+                              transformPoolTokenToHolding(poolToken, totalUsdc)
+                            )
+                            .concat(
+                              data.vaultedPoolTokens.map((v) =>
+                                transformPoolTokenToHolding(
+                                  v.poolToken,
+                                  totalUsdc,
+                                  true
+                                )
+                              )
+                            )}
                           quantityFormatter={(n: BigNumber) =>
                             `${n.toString()} NFT${
                               n.gt(BigNumber.from(1)) ? "s" : ""
@@ -390,7 +434,8 @@ export default function DashboardPage() {
                       ) : null}
                       {(data.viewer.gfiBalance &&
                         !data.viewer.gfiBalance.amount.isZero()) ||
-                      !gfiRewardsTotal.isZero() ? (
+                      !gfiRewardsTotal.isZero() ||
+                      !gfiVaultedTotal.isZero() ? (
                         <ExpandableHoldings
                           title="GFI"
                           tooltip="Your GFI token holdings, including your claimable GFI rewards, locked GFI rewards, and any GFI held in your linked wallet."
@@ -399,47 +444,41 @@ export default function DashboardPage() {
                             ...(data.viewer.gfiBalance &&
                             !data.viewer.gfiBalance.amount.isZero()
                               ? [
-                                  {
+                                  transformGfiToHolding({
                                     name: "Wallet Holdings",
-                                    percentage: computePercentage(
-                                      gfiToUsdc(
-                                        data.viewer.gfiBalance,
-                                        data.gfiPrice.price.amount
-                                      ).amount,
-                                      totalUsdc.amount
-                                    ),
-                                    quantity: data.viewer.gfiBalance.amount,
-                                    usdcValue: gfiToUsdc(
-                                      data.viewer.gfiBalance,
-                                      data.gfiPrice.price.amount
-                                    ),
-                                  },
+                                    gfi: data.viewer.gfiBalance,
+                                    fiatPerGfi: data.gfiPrice.price.amount,
+                                    totalUsdc,
+                                  }),
                                 ]
                               : []),
                             ...(!gfiRewardsTotal.isZero()
                               ? [
-                                  {
+                                  transformGfiToHolding({
                                     name: "GFI Rewards",
-                                    percentage: computePercentage(
-                                      gfiToUsdc(
-                                        {
-                                          token: SupportedCrypto.Gfi,
-                                          amount: gfiRewardsTotal,
-                                        },
-                                        data.gfiPrice.price.amount
-                                      ).amount,
-                                      totalUsdc.amount
-                                    ),
-                                    quantity: gfiRewardsTotal,
-                                    usdcValue: gfiToUsdc(
-                                      {
-                                        token: SupportedCrypto.Gfi,
-                                        amount: gfiRewardsTotal,
-                                      },
-                                      data.gfiPrice.price.amount
-                                    ),
+                                    gfi: {
+                                      token: SupportedCrypto.Gfi,
+                                      amount: gfiRewardsTotal,
+                                    },
+                                    fiatPerGfi: data.gfiPrice.price.amount,
+                                    totalUsdc,
                                     url: "/gfi",
-                                  },
+                                  }),
+                                ]
+                              : []),
+                            ...(!gfiVaultedTotal.isZero()
+                              ? [
+                                  transformGfiToHolding({
+                                    name: "Vaulted GFI",
+                                    url: "/membership",
+                                    vaulted: true,
+                                    gfi: {
+                                      token: SupportedCrypto.Gfi,
+                                      amount: gfiVaultedTotal,
+                                    },
+                                    fiatPerGfi: data.gfiPrice.price.amount,
+                                    totalUsdc,
+                                  }),
                                 ]
                               : []),
                           ]}
@@ -462,53 +501,51 @@ export default function DashboardPage() {
                       ) : null}
                       {(data.viewer.fiduBalance &&
                         !data.viewer.fiduBalance.amount.isZero()) ||
-                      data.stakedFiduPositions.length > 0 ? (
+                      data.stakedFiduPositions.length > 0 ||
+                      data.vaultedStakedPositions.length > 0 ? (
                         <ExpandableHoldings
                           title="Senior Pool Position"
                           tooltip="Your active investment in the Goldfinch Senior Pool, represented by the value of your FIDU token holdings. This includes FIDU held in your linked wallet and any FIDU you are staking."
                           colorClass={seniorPoolColorClass}
                           holdings={[
-                            ...data.stakedFiduPositions.map(
-                              (stakedPosition) => ({
-                                name: "Staked Senior Pool Position",
-                                percentage: computePercentage(
-                                  sharesToUsdc(
-                                    stakedPosition.amount,
-                                    data.seniorPools[0].latestPoolStatus
-                                      .sharePrice
-                                  ).amount,
-                                  totalUsdc.amount
-                                ),
-                                quantity: stakedPosition.amount,
-                                usdcValue: sharesToUsdc(
-                                  stakedPosition.amount,
-                                  data.seniorPools[0].latestPoolStatus
-                                    .sharePrice
-                                ),
-                                url: "/pools/senior",
-                              })
+                            ...data.stakedFiduPositions.map((stakedPosition) =>
+                              transformStakedPositionToHolding(
+                                stakedPosition,
+                                totalUsdc,
+                                sharePrice
+                              )
+                            ),
+                            ...data.vaultedStakedPositions.map((v) =>
+                              transformStakedPositionToHolding(
+                                v.seniorPoolStakedPosition,
+                                totalUsdc,
+                                sharePrice,
+                                true
+                              )
                             ),
                             ...(data.viewer.fiduBalance &&
                             !data.viewer.fiduBalance.amount.isZero()
                               ? [
-                                  {
+                                  transformFiduToHolding({
                                     name: "Unstaked Senior Pool Position",
-                                    percentage: computePercentage(
-                                      sharesToUsdc(
-                                        data.viewer.fiduBalance.amount,
-                                        data.seniorPools[0].latestPoolStatus
-                                          .sharePrice
-                                      ).amount,
-                                      totalUsdc.amount
-                                    ),
-                                    quantity: data.viewer.fiduBalance.amount,
-                                    usdcValue: sharesToUsdc(
-                                      data.viewer.fiduBalance.amount,
-                                      data.seniorPools[0].latestPoolStatus
-                                        .sharePrice
-                                    ),
                                     url: "/pools/senior",
-                                  },
+                                    fidu: data.viewer.fiduBalance,
+                                    totalUsdc,
+                                    sharePrice,
+                                  }),
+                                ]
+                              : []),
+                            ...(data.viewer.claimableMembershipRewards &&
+                            !data.viewer.claimableMembershipRewards.amount.isZero()
+                              ? [
+                                  transformFiduToHolding({
+                                    name: "Claimable Member Earnings",
+                                    url: "/membership",
+                                    fidu: data.viewer
+                                      .claimableMembershipRewards,
+                                    sharePrice,
+                                    totalUsdc,
+                                  }),
                                 ]
                               : []),
                           ]}
@@ -633,18 +670,6 @@ export default function DashboardPage() {
   );
 }
 
-function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
-  const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
-  const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
-    FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
-  );
-  const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
-  return {
-    token: SupportedCrypto.Usdc,
-    amount: BigNumber.from(amount.toString().split(".")[0]),
-  };
-}
-
 function curveLpTokensToUsdc(
   lpTokens: BigNumber,
   usdPerCurveLpToken: FixedNumber
@@ -679,9 +704,96 @@ function setAll<S extends string, T>(
 }
 
 function valueOfPoolToken(
-  tranchedPoolToken: DashboardPageQuery["tranchedPoolTokens"][number]
+  tranchedPoolToken: DashboardPoolTokenFieldsFragment
 ): BigNumber {
   return tranchedPoolToken.principalAmount
     .sub(tranchedPoolToken.principalRedeemed)
     .add(tranchedPoolToken.interestRedeemable);
+}
+
+function transformPoolTokenToHolding(
+  poolToken: DashboardPoolTokenFieldsFragment,
+  totalUsdc: CryptoAmount,
+  vaulted = false
+): Holding {
+  return {
+    name: poolToken.tranchedPool.name,
+    percentage: computePercentage(
+      valueOfPoolToken(poolToken),
+      totalUsdc.amount
+    ),
+    quantity: BigNumber.from(1),
+    usdcValue: {
+      token: SupportedCrypto.Usdc,
+      amount: valueOfPoolToken(poolToken),
+    },
+    url: `/pools/${poolToken.tranchedPool.id}`,
+    vaulted,
+  };
+}
+
+function transformStakedPositionToHolding(
+  stakedPosition: DashboardStakedPositionFieldsFragment,
+  totalUsdc: CryptoAmount,
+  sharePrice: BigNumber,
+  vaulted = false
+): Holding {
+  const usdcValue = sharesToUsdc(stakedPosition.amount, sharePrice);
+  return {
+    name: "Staked Senior Pool Position",
+    percentage: computePercentage(usdcValue.amount, totalUsdc.amount),
+    quantity: stakedPosition.amount,
+    usdcValue: usdcValue,
+    url: "/pools/senior",
+    vaulted,
+  };
+}
+
+function transformFiduToHolding({
+  name,
+  url,
+  fidu,
+  sharePrice,
+  totalUsdc,
+}: {
+  name: string;
+  url: string;
+  fidu: CryptoAmount;
+  sharePrice: BigNumber;
+  totalUsdc: CryptoAmount;
+}): Holding {
+  const usdcValue = sharesToUsdc(fidu.amount, sharePrice);
+  return {
+    name,
+    percentage: computePercentage(usdcValue.amount, totalUsdc.amount),
+    quantity: fidu.amount,
+    usdcValue,
+    url,
+  };
+}
+
+function transformGfiToHolding({
+  name,
+  url,
+  gfi,
+  fiatPerGfi,
+  totalUsdc,
+  vaulted,
+}: {
+  name: string;
+  url?: string;
+  gfi: CryptoAmount;
+  fiatPerGfi: number;
+  totalUsdc: CryptoAmount;
+  vaulted?: boolean;
+}): Holding {
+  const usdcValue = gfiToUsdc(gfi, fiatPerGfi);
+  return {
+    name,
+    url,
+    vaulted,
+    percentage: computePercentage(usdcValue.amount, totalUsdc.amount),
+    quantity: gfi.amount,
+    usdcValue,
+  };
 }

@@ -37,8 +37,10 @@ export function handleDepositMade(event: DepositMade): void {
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.amount
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.amount
+  transaction.sentToken = "USDC"
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "POOL_TOKEN"
   transaction.save()
 
   createZapMaybe(event)
@@ -66,8 +68,10 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   )
   transaction.transactionHash = event.transaction.hash
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
-  transaction.amountToken = "USDC"
+  transaction.sentNftId = event.params.tokenId.toString()
+  transaction.sentNftType = "POOL_TOKEN"
+  transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
+  transaction.receivedToken = "USDC"
   transaction.save()
 
   deleteZapAfterUnzapMaybe(event)
@@ -103,8 +107,8 @@ export function handleDrawdownMade(event: DrawdownMade): void {
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.amount
-  transaction.amountToken = "USDC"
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = "USDC"
   transaction.save()
 }
 
@@ -123,7 +127,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.principalAmount.plus(event.params.interestAmount)
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.sentToken = "USDC"
   transaction.save()
 }

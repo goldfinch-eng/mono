@@ -44,3 +44,7 @@ fs_permissions = [{ access = "read", path = "./artifacts/" }]
 chains = 'all'
 endpoints = 'all'
 
+[profile.mainnet-forking]
+match_path = "./test/forge/mainnet/*.t.sol"
+block_number = 15626901
+fork_block_number = 15626901

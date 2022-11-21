@@ -53,8 +53,6 @@ gql`
         timestamp
         transactionHash
         category
-        amount
-        amountToken
       }
     }
   }
@@ -224,15 +222,6 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                 {filteredTxs.map((transaction) => (
                   <tr key={transaction.id}>
                     <td className="text-left">
-                      {transaction.amount && !transaction.amount.isZero()
-                        ? `${formatCrypto(
-                            {
-                              token: transaction.amountToken,
-                              amount: transaction.amount,
-                            },
-                            { includeToken: true }
-                          )} `
-                        : null}
                       {getTransactionLabel(transaction)}
                     </td>
                     <td className="text-right">

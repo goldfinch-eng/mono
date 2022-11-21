@@ -1,18 +1,25 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
-import Link from "next/link";
+import NextLink from "next/link";
 import { ReactNode } from "react";
 
-import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
+import {
+  Icon,
+  InfoIconTooltip,
+  Shimmer,
+  Tooltip,
+  Link,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
-interface Holding {
+export interface Holding {
   name: string;
   percentage: number;
   quantity: BigNumber;
   usdcValue: CryptoAmount;
   url?: string;
+  vaulted?: boolean;
 }
 
 interface ExpandableHoldingsProps {
@@ -26,7 +33,7 @@ interface ExpandableHoldingsProps {
 }
 
 const gridClasses =
-  "grid grid-cols-1 xs:grid-cols-3 gap-3 md:grid-cols-5 justify-items-end";
+  "grid grid-cols-1 xs:grid-cols-3 gap-3 md:grid-cols-5 justify-items-end items-center";
 const gridHeadingClasses = "justify-self-start xs:col-span-3 md:col-span-2";
 
 export function ExpandableHoldings({
@@ -103,6 +110,7 @@ export function ExpandableHoldings({
               quantityFormatter={quantityFormatter}
               usdcValue={holding.usdcValue}
               url={holding.url}
+              vaulted={holding.vaulted}
             />
           ))}
         </div>
@@ -122,6 +130,7 @@ function IndividualHolding({
   quantityFormatter,
   usdcValue,
   url,
+  vaulted,
 }: IndividualHoldingProps) {
   return (
     <div
@@ -131,16 +140,33 @@ function IndividualHolding({
         url ? "relative hover:bg-sand-100" : null
       )}
     >
-      <div className={gridHeadingClasses}>
+      <div className={clsx(gridHeadingClasses, "flex items-center gap-3")}>
         {url ? (
-          <Link href={url}>
+          <NextLink href={url}>
             <a className="before:absolute before:inset-0 group-hover:underline">
               {name}
             </a>
-          </Link>
+          </NextLink>
         ) : (
           name
         )}
+        {vaulted ? (
+          <Tooltip
+            useWrapper
+            content={
+              <div>
+                This asset is in the Membership Vault.
+                <div className="mt-2">
+                  <Link href="/membership" iconRight="ArrowSmRight">
+                    Go to Vault
+                  </Link>
+                </div>
+              </div>
+            }
+          >
+            <Icon name="LockClosed" className="z-10 h-6 w-6" />
+          </Tooltip>
+        ) : null}
       </div>
       <div>{formatPercent(percentage)}</div>
       <div>{quantityFormatter(quantity)}</div>
