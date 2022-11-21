@@ -18,9 +18,12 @@ export function Explainer({ isOpen, onClose }: ExplainerProps) {
           <div className="space-y-4">
             <p>
               Goldfinch Membership is the first phase of a broader tokenomics
-              redesign (Tokenomics v2), which was approved by the
-              protocol&apos;s community in 2022 and focuses on enhancing the
-              utility of GFI. Membership is designed to empower Goldfinch
+              redesign (Tokenomics v2), which was{" "}
+              <Link href="https://gov.goldfinch.finance/t/gip-27-proposed-changes-to-membership-vaults-for-initial-release/1231">
+                approved
+              </Link>{" "}
+              by the protocol&apos;s community in 2022 and focuses on enhancing
+              the utility of GFI. Membership is designed to empower Goldfinch
               Investors to support the protocol&apos;s security and expansion
               while increasing their participation.
             </p>
