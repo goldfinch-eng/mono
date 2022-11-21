@@ -49,10 +49,10 @@ export function Drawer({
       <Dialog onClose={onClose} className="fixed inset-0 z-10 h-full w-full">
         <Transition.Child
           as={Fragment}
-          enter="transition-opacity duration-150"
+          enter="transition-opacity duration-500"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="transition-opacity duration-150"
+          leave="transition-opacity duration-500"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
@@ -60,7 +60,7 @@ export function Drawer({
         </Transition.Child>
         <Transition.Child
           as={Fragment}
-          enter="transition-transform duration-150"
+          enter="transition-transform duration-500"
           enterFrom={
             from === "left"
               ? "-translate-x-full"
@@ -71,7 +71,7 @@ export function Drawer({
               : undefined
           }
           enterTo="transform-none"
-          leave="transition-transform duration-150"
+          leave="transition-transform duration-500"
           leaveFrom="transform-none"
           leaveTo={
             from === "left"
@@ -85,7 +85,7 @@ export function Drawer({
         >
           <div
             className={clsx(
-              "fixed bg-white p-6 shadow-lg md:p-12",
+              "fixed overflow-auto bg-white p-6 shadow-lg md:p-12",
               from === "left" && "top-0 left-0 h-full",
               from === "right" && "top-0 right-0 h-full",
               from === "bottom" && "bottom-0 right-0 w-full",
@@ -99,9 +99,9 @@ export function Drawer({
                 : null
             )}
           >
-            <div className="mb-6">
+            <div className="mb-10">
               {title && (
-                <Dialog.Title className="text-lg font-semibold">
+                <Dialog.Title className="font-serif text-3xl font-semibold">
                   {title}
                 </Dialog.Title>
               )}

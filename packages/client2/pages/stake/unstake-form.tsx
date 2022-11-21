@@ -2,16 +2,15 @@ import { gql } from "@apollo/client";
 import { utils, BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
-import { Form, DollarInput, Button } from "@/components/design-system";
+import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import {
-  CryptoAmount,
   StakedPositionType,
   SupportedCrypto,
   UnstakeFormPositionFieldsFragment,
 } from "@/lib/graphql/generated";
-import { getOptimalPositionsToUnstake } from "@/lib/pools";
+import { getOptimalPositionsToUnstake, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
@@ -26,10 +25,10 @@ export const UNSTAKE_FORM_POSITION_FIELDS = gql`
 `;
 
 interface UnstakeForm {
-  max: CryptoAmount;
   positionType: StakedPositionType;
   positions: UnstakeFormPositionFieldsFragment[];
   onComplete: () => Promise<unknown>;
+  showVaultWarning?: boolean;
 }
 
 interface UnstakeFormFields {
@@ -37,11 +36,18 @@ interface UnstakeFormFields {
 }
 
 export function UnstakeForm({
-  max,
   positionType,
   positions,
   onComplete,
+  showVaultWarning = false,
 }: UnstakeForm) {
+  const max = {
+    token:
+      positionType === StakedPositionType.CurveLp
+        ? SupportedCrypto.CurveLp
+        : SupportedCrypto.Fidu,
+    amount: sum("amount", positions),
+  };
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<UnstakeFormFields>();
@@ -117,6 +123,14 @@ export function UnstakeForm({
             textSize="xl"
             maxValue={max.amount}
           />
+          {showVaultWarning ? (
+            <div className="mt-2 flex items-center justify-between rounded bg-mustard-200 py-2 px-3 text-xs">
+              <div>You cannot unstake FIDU while it is in the vault</div>
+              <Link href="/membership" iconRight="ArrowSmRight">
+                Go to Vault
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         <Button type="submit" size="xl" className="px-12 py-5">

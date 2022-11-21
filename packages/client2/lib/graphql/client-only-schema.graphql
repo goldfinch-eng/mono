@@ -106,6 +106,8 @@ type Viewer {
   fiduBalance: CryptoAmount
   curveLpBalance: CryptoAmount
   gfiGrants: [GfiGrant!]!
+  claimableMembershipRewards: CryptoAmount
+  accruedMembershipRewardsThisEpoch: CryptoAmount
 }
 
 type BlockInfo {
@@ -123,6 +125,6 @@ extend type Query {
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo!
   curvePool: CurvePool!
 }

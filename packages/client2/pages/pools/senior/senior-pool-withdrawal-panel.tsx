@@ -9,6 +9,7 @@ import {
   Form,
   Icon,
   InfoIconTooltip,
+  Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
@@ -18,7 +19,12 @@ import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
+import {
+  sharesToUsdc,
+  sum,
+  usdcToShares,
+  usdcWithinEpsilon,
+} from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -32,6 +38,7 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
 interface SeniorPoolWithdrawalPanelProps {
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
+  vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
 }
@@ -44,6 +51,7 @@ export function SeniorPoolWithDrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
+  vaultedStakedPositions = [],
   seniorPoolLiquidity,
 }: SeniorPoolWithdrawalPanelProps) {
   const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
@@ -200,10 +208,14 @@ export function SeniorPoolWithDrawalPanel({
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xl">
-            {formatCrypto({
-              token: SupportedCrypto.Usdc,
-              amount: totalSharesUsdc,
-            })}
+            {formatCrypto(
+              sharesToUsdc(
+                fiduBalance.amount.add(
+                  sum("amount", stakedPositions.concat(vaultedStakedPositions))
+                ),
+                seniorPoolSharePrice
+              )
+            )}
           </div>
           <Icon name="Usdc" size="sm" />
         </div>
@@ -232,6 +244,21 @@ export function SeniorPoolWithDrawalPanel({
         >
           Withdraw
         </Button>
+        {vaultedStakedPositions.length > 0 ? (
+          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
+            <div className="text-mustard-900">
+              You cannot withdraw capital from your positions while they are in
+              the Vault
+            </div>
+            <Link
+              href="/membership"
+              iconRight="ArrowSmRight"
+              className="whitespace-nowrap font-medium text-mustard-700"
+            >
+              Go to Vault
+            </Link>
+          </div>
+        ) : null}
       </Form>
     </div>
   );

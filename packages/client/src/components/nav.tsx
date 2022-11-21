@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   {label: "Borrow", href: "/borrow"},
   {label: "GFI", href: "https://app.goldfinch.finance/gfi"},
   {label: "Stake", href: "https://app.goldfinch.finance/stake"},
+  {label: "Membership", href: "https://app.goldfinch.finance/membership"},
 ]
 
 export default function Nav({children}: {children: ReactNode}) {

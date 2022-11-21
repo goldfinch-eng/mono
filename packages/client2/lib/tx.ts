@@ -67,6 +67,14 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
           case TransactionCategory.UidMinted:
           case TransactionCategory.CurveFiduBuy:
           case TransactionCategory.CurveFiduSell:
+          case TransactionCategory.StakingRewardsClaimed:
+          case TransactionCategory.BackerRewardsClaimed:
+          case TransactionCategory.CommunityRewardsClaimed:
+          case TransactionCategory.MembershipRewardsClaimed:
+          case TransactionCategory.MembershipGfiDeposit:
+          case TransactionCategory.MembershipGfiWithdrawal:
+          case TransactionCategory.MembershipCapitalDeposit:
+          case TransactionCategory.MembershipCapitalWithdrawal:
             break;
           default:
             assertUnreachable(curr.category);
@@ -97,6 +105,14 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
       case TransactionCategory.UidMinted:
       case TransactionCategory.CurveFiduBuy:
       case TransactionCategory.CurveFiduSell:
+      case TransactionCategory.StakingRewardsClaimed:
+      case TransactionCategory.BackerRewardsClaimed:
+      case TransactionCategory.CommunityRewardsClaimed:
+      case TransactionCategory.MembershipRewardsClaimed:
+      case TransactionCategory.MembershipGfiDeposit:
+      case TransactionCategory.MembershipGfiWithdrawal:
+      case TransactionCategory.MembershipCapitalDeposit:
+      case TransactionCategory.MembershipCapitalWithdrawal:
         return true;
       default:
         return assertUnreachable(tx.category);

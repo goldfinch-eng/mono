@@ -177,7 +177,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               : _errorSeverity === "warn"
               ? "text-mustard-500"
               : colorScheme === "light"
-              ? "text-sand-500"
+              ? "text-sand-400"
               : colorScheme === "dark"
               ? "text-sand-300"
               : null,

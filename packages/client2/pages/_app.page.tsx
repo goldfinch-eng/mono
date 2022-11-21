@@ -8,6 +8,7 @@ import { ToastContainer } from "react-toastify";
 
 import { DevToolsPanel } from "@/components/dev-tools";
 import { Layout } from "@/components/layout";
+import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
 import { WalletProvider } from "@/lib/wallet";
@@ -53,6 +54,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (
             <DevToolsPanel />
           ) : null}
+          <AllNuxes />
           <AppLevelSideEffects />
         </ApolloProvider>
       </WalletProvider>

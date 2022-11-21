@@ -58,8 +58,10 @@ type SeniorPoolStatus @entity {
 type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
+  vaultedStakedPositions: [VaultedStakedPosition!]! @derivedFrom(field: "user")
 
   tranchedPoolTokens: [TranchedPoolToken!]!
+  vaultedPoolTokens: [VaultedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
@@ -250,6 +252,14 @@ enum TransactionCategory {
   UID_MINTED
   CURVE_FIDU_BUY
   CURVE_FIDU_SELL
+  STAKING_REWARDS_CLAIMED
+  BACKER_REWARDS_CLAIMED
+  COMMUNITY_REWARDS_CLAIMED
+  MEMBERSHIP_REWARDS_CLAIMED
+  MEMBERSHIP_GFI_DEPOSIT
+  MEMBERSHIP_GFI_WITHDRAWAL
+  MEMBERSHIP_CAPITAL_DEPOSIT
+  MEMBERSHIP_CAPITAL_WITHDRAWAL
 }
 
 enum SupportedCrypto {
@@ -322,4 +332,57 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
+}
+
+type MembershipEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # The epoch number
+  totalRewards: BigInt! # Measured in FIDU
+  finalizedAt: Int!
+}
+
+type VaultedGfi @entity {
+  id: ID!
+  user: User!
+  amount: BigInt!
+  vaultedAt: Int!
+}
+
+type VaultedStakedPosition @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+}
+
+type VaultedPoolToken @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
+}
+
+type Membership @entity {
+  id: ID!
+  user: User!
+  eligibleScore: BigInt!
+  nextEpochScore: BigInt!
+}
+
+type MembershipRoster @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  members: [Membership!]!
+  eligibleScoreTotal: BigInt!
+  nextEpochScoreTotal: BigInt!
+}
+
+type MembershipRewardDisbursement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  epoch: BigInt! # The epoch number
+  allocatedAt: Int!
+  rewards: BigInt!
 }
