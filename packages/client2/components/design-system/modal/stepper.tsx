@@ -192,7 +192,7 @@ export function Step({
   children: ReactNode;
   nextButton?: ReactNode;
 }) {
-  const { setDidScrollBottom, step } = useStepperContext();
+  const { setDidScrollBottom } = useStepperContext();
 
   const [isBottomVisible, setIsBottomVisible] = useState(false);
   useEffect(() => {
@@ -203,7 +203,7 @@ export function Step({
 
   useEffect(() => {
     setDidScrollBottom(false);
-  }, [step, setDidScrollBottom]);
+  }, [setDidScrollBottom]);
 
   return (
     <div>
