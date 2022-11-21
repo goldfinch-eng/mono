@@ -99,7 +99,11 @@ gql`
       timestamp
     }
 
-    vaultedGfis(where: { user: $userId, amount_gt: 0 }) {
+    vaultedGfis(
+      where: { user: $userId, amount_gt: 0 }
+      orderBy: vaultedAt
+      orderDirection: desc # It's important that these come in descending order by timestamp. When vaulted GFI is unvaulted, it should be done with the most recent ones first, to minimize removal penalty. (https://github.com/warbler-labs/mono/pull/1015#discussion_r1027590062)
+    ) {
       id
       amount
       ...VaultedGfiFields
