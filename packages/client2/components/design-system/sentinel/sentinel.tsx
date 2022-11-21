@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 interface SentinelProps {
   onVisibilityChange: (b: boolean) => void;
@@ -6,21 +6,18 @@ interface SentinelProps {
 
 export function Sentinel({ onVisibilityChange }: SentinelProps) {
   const divRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (divRef.current) {
-      const observer = new IntersectionObserver(
-        ([target]) => {
-          if (target.isIntersecting) {
-            onVisibilityChange(true);
-          } else {
-            onVisibilityChange(false);
-          }
-        },
-        { root: null, rootMargin: "20px", threshold: 0 }
-      );
-      observer.observe(divRef.current);
-      return () => observer.disconnect();
+  useLayoutEffect(() => {
+    if (!divRef.current) {
+      return;
     }
+    const observer = new IntersectionObserver(
+      ([target]) => {
+        onVisibilityChange(target.isIntersecting);
+      },
+      { root: null, threshold: 1.0 }
+    );
+    observer.observe(divRef.current);
+    return () => observer.disconnect();
   }, [onVisibilityChange]);
   return <div className="h-px" ref={divRef} />;
 }
