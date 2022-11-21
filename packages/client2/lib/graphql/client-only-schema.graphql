@@ -106,6 +106,8 @@ type Viewer {
   fiduBalance: CryptoAmount
   curveLpBalance: CryptoAmount
   gfiGrants: [GfiGrant!]!
+  claimableMembershipRewards: CryptoAmount
+  accruedMembershipRewardsThisEpoch: CryptoAmount
   withdrawalStatus: WithdrawalStatus
 }
 
@@ -134,7 +136,7 @@ extend type Query {
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo!
   curvePool: CurvePool!
   currentEpoch: EpochInfo
 }

@@ -72,6 +72,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
       first: isPreview ? 5 : 20,
       skip: 0,
     },
+    fetchPolicy: "network-only",
   });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(

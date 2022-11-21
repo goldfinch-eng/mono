@@ -12,6 +12,7 @@ import {
 import diagonals from "./diagonals.png";
 
 interface FundingBarProps {
+  isMultitranche?: boolean;
   goal?: CryptoAmount;
   backerSupply?: CryptoAmount;
   seniorSupply?: CryptoAmount;
@@ -20,18 +21,24 @@ interface FundingBarProps {
 const zeroUsdc = { token: SupportedCrypto.Usdc, amount: BigNumber.from(0) };
 
 export default function FundingBar({
+  isMultitranche = true,
   goal = zeroUsdc,
   backerSupply = zeroUsdc,
   seniorSupply = zeroUsdc,
 }: FundingBarProps) {
   const goalFloat = cryptoToFloat(goal);
   const backerSupplyFloat = cryptoToFloat(backerSupply);
-  const seniorSupplyFloat = cryptoToFloat(seniorSupply);
+
+  let seniorSupplyFloat = 0;
+  let seniorWidth = 0;
 
   const backerWidth =
     goalFloat === 0 ? 0 : (backerSupplyFloat / goalFloat) * 100;
-  const seniorWidth =
-    goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;
+
+  if (isMultitranche) {
+    seniorSupplyFloat = cryptoToFloat(seniorSupply);
+    seniorWidth = goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;
+  }
 
   return (
     <div>

@@ -35,10 +35,6 @@ export type DollarInputProps = ComponentProps<typeof Input> &
      * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
      */
     onMaxClick?: (n?: BigNumber) => void;
-    /**
-     * Extra styles to be applied to max button
-     */
-    maxButtonStyle?: "outline" | "filled";
     onChange?: (s: string) => void;
   };
 
@@ -57,7 +53,6 @@ export function DollarInput({
   unit = SupportedCrypto.Usdc,
   maxValue,
   onMaxClick,
-  maxButtonStyle = "outline",
   onChange: callbackOnChange,
   name,
   rules,
@@ -116,12 +111,10 @@ export function DollarInput({
               }
             }}
             className={clsx(
-              "block rounded-md p-2 text-[10px] uppercase leading-none",
-              maxButtonStyle === "outline"
-                ? "border border-sky-500 "
-                : maxButtonStyle === "filled"
-                ? "bg-sand-700 text-white"
-                : null
+              "block rounded-md border p-2 text-[10px] font-semibold uppercase leading-none text-white",
+              rest.colorScheme === "dark"
+                ? "border-sky-500 bg-sky-900"
+                : "border-sand-700 bg-sand-700"
             )}
           >
             Max

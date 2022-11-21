@@ -148,7 +148,6 @@ export default function WithdrawRequestModal({
               reset();
               return balanceWallet.amount;
             }}
-            maxButtonStyle="filled"
             unit={SupportedCrypto.Fidu}
             rules={{ required: "Required", validate: validateAmount }}
             textSize="xl"

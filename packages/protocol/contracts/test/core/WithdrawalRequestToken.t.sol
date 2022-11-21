@@ -7,13 +7,23 @@ import {BaseTest} from "./BaseTest.t.sol";
 import {WithdrawalRequestToken} from "../../protocol/core/WithdrawalRequestToken.sol";
 import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
+import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
+import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 
 contract WithdrawalRequestTokenTest is BaseTest {
   WithdrawalRequestToken private token;
   SeniorPool private seniorPool;
+  GoldfinchConfig internal gfConfig;
+  GoldfinchFactory internal gfFactory;
 
   function setUp() public override {
     super.setUp();
+
+    // GoldfinchConfig setup
+    gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
+
+    // GoldfinchFactory setup
+    gfFactory = GoldfinchFactory(address(protocol.gfFactory()));
 
     // TODO - we should deploy this behind a proxy because that's what we do for mainnet
     token = new WithdrawalRequestToken();

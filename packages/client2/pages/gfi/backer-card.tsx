@@ -38,9 +38,10 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
 
 interface BackerCardProps {
   token: BackerCardTokenFieldsFragment;
+  vaulted?: boolean;
 }
 
-export function BackerCard({ token }: BackerCardProps) {
+export function BackerCard({ token, vaulted = false }: BackerCardProps) {
   const { provider } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
@@ -54,7 +55,8 @@ export function BackerCard({ token }: BackerCardProps) {
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
     !token.tranchedPool.creditLine.isLate &&
-    !token.tranchedPool.isPaused;
+    !token.tranchedPool.isPaused &&
+    !vaulted;
 
   const handleClaim = async () => {
     if (!provider) {
@@ -135,6 +137,7 @@ export function BackerCard({ token }: BackerCardProps) {
           ? "Claiming is disabled because this pool is paused"
           : undefined
       }
+      includeVaultNotice={vaulted}
     />
   );
 }

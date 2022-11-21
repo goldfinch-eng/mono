@@ -3,7 +3,12 @@ import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
 
-import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
+import {
+  Button,
+  Icon,
+  InfoIconTooltip,
+  Link,
+} from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -32,6 +37,7 @@ interface SeniorPoolWithdrawalPanelProps {
   withdrawalStatus?: WithdrawalStatus | null;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
+  vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
   currentEpoch?: EpochInfo | null;
@@ -45,6 +51,7 @@ export function SeniorPoolWithDrawalPanel({
   withdrawalStatus,
   currentEpoch,
   cancellationFee,
+  vaultedStakedPositions = [],
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
   const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
@@ -57,7 +64,7 @@ export function SeniorPoolWithDrawalPanel({
       amount: BigNumber.from("0"),
       token: SupportedCrypto.Fidu,
     },
-    stakedPositions
+    stakedPositions.concat(vaultedStakedPositions)
   );
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
   const totalSharesUsdc = sharesToUsdc(
@@ -168,6 +175,22 @@ export function SeniorPoolWithDrawalPanel({
             Request withdrawal
           </Button>
         )}
+
+        {vaultedStakedPositions.length > 0 ? (
+          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
+            <div className="text-mustard-900">
+              You cannot withdraw capital from your positions while they are in
+              the Vault
+            </div>
+            <Link
+              href="/membership"
+              iconRight="ArrowSmRight"
+              className="whitespace-nowrap font-medium text-mustard-700"
+            >
+              Go to Vault
+            </Link>
+          </div>
+        ) : null}
 
         {withdrawalStatus?.withdrawalToken ? (
           <div className="mt-4">
