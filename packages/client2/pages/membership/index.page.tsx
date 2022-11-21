@@ -131,6 +131,11 @@ gql`
       eligibleScore
       nextEpochScore
     }
+
+    membershipEpoches(orderBy: epoch, orderDirection: desc, first: 2) {
+      epoch
+      totalRewards
+    }
   }
 `;
 
@@ -150,6 +155,8 @@ export default function MembershipPage() {
   const userHasDepositedForNextEpoch =
     data?.memberships?.[0] &&
     data.memberships[0].nextEpochScore.gt(data.memberships[0].eligibleScore);
+  // Using index 1 instead of 0 here because the first epoch in existence is a 0 reward one (instantiated this way)
+  const previousEpochRewardTotal = data?.membershipEpoches[1]?.totalRewards;
 
   const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
@@ -514,6 +521,7 @@ export default function MembershipPage() {
                     }
                   }
                   currentBlockTimestampMs={data.currentBlock.timestamp * 1000}
+                  previousEpochRewardTotal={previousEpochRewardTotal}
                 />
                 <RemoveFromVault
                   isOpen={isRemoveFromVaultOpen}
@@ -523,6 +531,7 @@ export default function MembershipPage() {
                   vaultedStakedPositions={data.vaultedStakedPositions}
                   sharePrice={sharePrice}
                   vaultedPoolTokens={data.vaultedPoolTokens}
+                  previousEpochRewardTotal={previousEpochRewardTotal}
                 />
               </>
             ) : null}

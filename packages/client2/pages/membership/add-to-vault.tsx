@@ -73,6 +73,7 @@ export function AddToVault({
   vaultablePoolTokens,
   unstakedFidu,
   currentBlockTimestampMs,
+  previousEpochRewardTotal,
 }: AddToVaultProps) {
   return (
     <ModalStepper
@@ -89,6 +90,7 @@ export function AddToVault({
         sharePrice={sharePrice}
         vaultablePoolTokens={vaultablePoolTokens}
         unstakedFidu={unstakedFidu}
+        previousEpochRewardTotal={previousEpochRewardTotal}
       />
       <ReviewStep
         fiatPerGfi={fiatPerGfi}
@@ -116,6 +118,7 @@ interface SelectionStepProps {
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
   unstakedFidu: CryptoAmount;
+  previousEpochRewardTotal?: BigNumber;
 }
 
 function SelectionStep({
@@ -125,6 +128,7 @@ function SelectionStep({
   sharePrice,
   vaultablePoolTokens,
   unstakedFidu,
+  previousEpochRewardTotal,
 }: SelectionStepProps) {
   const availableCapitalTotal = {
     token: SupportedCrypto.Usdc,
@@ -179,7 +183,8 @@ function SelectionStep({
         account,
         provider,
         gfiToVaultAmount,
-        selectedCapitalTotalAmount
+        selectedCapitalTotalAmount,
+        previousEpochRewardTotal
       );
 
       // Minimum wait time to smooth out the animation
@@ -188,7 +193,13 @@ function SelectionStep({
       setRewardProjection(projection);
     };
     asyncEffect();
-  }, [account, provider, gfiToVaultAmount, selectedCapitalTotalAmount]);
+  }, [
+    account,
+    provider,
+    gfiToVaultAmount,
+    selectedCapitalTotalAmount,
+    previousEpochRewardTotal,
+  ]);
   const { setData } = useStepperContext();
   const onSubmit = async () => {
     if (gfiToVault.amount.isZero() && selectedCapitalTotal.amount.isZero()) {

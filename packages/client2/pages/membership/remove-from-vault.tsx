@@ -77,6 +77,7 @@ export function RemoveFromVault({
   vaultedStakedPositions,
   sharePrice,
   vaultedPoolTokens,
+  previousEpochRewardTotal,
 }: RemoveFromVaultProps) {
   return (
     <ModalStepper
@@ -92,6 +93,7 @@ export function RemoveFromVault({
         vaultedStakedPositions={vaultedStakedPositions}
         sharePrice={sharePrice}
         vaultedPoolTokens={vaultedPoolTokens}
+        previousEpochRewardTotal={previousEpochRewardTotal}
       />
       <ReviewStep
         vaultedGfi={vaultedGfi}
@@ -119,6 +121,7 @@ interface SelectionStepProps {
   vaultedStakedPositions: VaultedStakedPositionFieldsFragment[];
   sharePrice: BigNumber;
   vaultedPoolTokens: VaultedPoolTokenFieldsFragment[];
+  previousEpochRewardTotal?: BigNumber;
 }
 
 function SelectionStep({
@@ -127,6 +130,7 @@ function SelectionStep({
   vaultedStakedPositions,
   sharePrice,
   vaultedPoolTokens,
+  previousEpochRewardTotal,
 }: SelectionStepProps) {
   const rhfMethods = useForm<{
     stakedPositionsToUnvault: string[];
@@ -189,7 +193,8 @@ function SelectionStep({
         account,
         provider,
         gfiToUnvaultAmount,
-        capitalToBeRemovedAmount
+        capitalToBeRemovedAmount,
+        previousEpochRewardTotal
       );
 
       // Minimum wait time to smooth out the animation
@@ -198,7 +203,13 @@ function SelectionStep({
       setRewardProjection(projection);
     };
     asyncEffect();
-  }, [account, provider, gfiToUnvaultAmount, capitalToBeRemovedAmount]);
+  }, [
+    account,
+    provider,
+    gfiToUnvaultAmount,
+    capitalToBeRemovedAmount,
+    previousEpochRewardTotal,
+  ]);
 
   const { setData } = useStepperContext();
   const onSubmit = async () => {
