@@ -23,7 +23,7 @@ import { sharesToUsdc, approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-interface WithdrawRequestModalProps {
+interface WithdrawalRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
@@ -41,7 +41,7 @@ interface FormFields {
   amount: string;
 }
 
-export default function WithdrawRequestModal({
+export default function WithdrawalRequestModal({
   isOpen,
   onClose,
   sharePrice,
@@ -53,7 +53,7 @@ export default function WithdrawRequestModal({
   currentEpoch,
   onComplete,
   cancellationFee,
-}: WithdrawRequestModalProps) {
+}: WithdrawalRequestModalProps) {
   const { account, provider } = useWallet();
   const rhfMethods = useForm<FormFields>();
   const { control, watch, reset } = rhfMethods;

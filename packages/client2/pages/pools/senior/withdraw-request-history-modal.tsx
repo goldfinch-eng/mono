@@ -42,17 +42,17 @@ gql`
   }
 `;
 
-interface WithdrawHistoryModalProps {
+interface WithdrawalHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentEpoch?: EpochInfo | null;
 }
 
-export default function WithdrawHistoryModal({
+export default function WithdrawalHistoryModal({
   isOpen,
   onClose,
   currentEpoch,
-}: WithdrawHistoryModalProps) {
+}: WithdrawalHistoryModalProps) {
   const { account } = useWallet();
 
   const { data, error, loading } = useWithdrawalHistoryQuery({

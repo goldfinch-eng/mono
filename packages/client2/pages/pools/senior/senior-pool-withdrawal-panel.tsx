@@ -17,9 +17,9 @@ import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import WithdrawCancelRequestModal from "./withdraw-cancel-request-modal";
-import WithdrawRequestHistoryModal from "./withdraw-request-history-modal";
-import WithdrawRequestModal from "./withdraw-request-modal";
+import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
+import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
+import WithdrawalRequestModal from "./withdraw-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -38,7 +38,7 @@ interface SeniorPoolWithdrawalPanelProps {
   cancellationFee?: FixedNumber | null;
 }
 
-export function SeniorPoolWithDrawalPanel({
+export function SeniorPoolWithdrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
@@ -249,7 +249,7 @@ export function SeniorPoolWithDrawalPanel({
         ) : null}
       </div>
 
-      <WithdrawRequestHistoryModal
+      <WithdrawalRequestHistoryModal
         currentEpoch={currentEpoch}
         isOpen={historyModalOpen}
         onClose={() => {
@@ -257,7 +257,7 @@ export function SeniorPoolWithDrawalPanel({
         }}
       />
 
-      <WithdrawCancelRequestModal
+      <WithdrawalCancelRequestModal
         cancellationFee={cancellationFee ?? FixedNumber.from("0")}
         withdrawalToken={withdrawalStatus?.withdrawalToken}
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
@@ -272,7 +272,7 @@ export function SeniorPoolWithDrawalPanel({
         }}
       />
 
-      <WithdrawRequestModal
+      <WithdrawalRequestModal
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
         currentEpoch={currentEpoch}
         sharePrice={seniorPoolSharePrice}

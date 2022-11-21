@@ -12,7 +12,7 @@ import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-interface WithdrawCancelRequestModalProps {
+interface WithdrawalCancelRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
@@ -21,14 +21,14 @@ interface WithdrawCancelRequestModalProps {
   cancellationFee: FixedNumber;
 }
 
-export default function WithdrawCancelRequestModal({
+export default function WithdrawalCancelRequestModal({
   isOpen,
   onClose,
   withdrawalToken,
   currentRequest,
   onComplete,
   cancellationFee,
-}: WithdrawCancelRequestModalProps) {
+}: WithdrawalCancelRequestModalProps) {
   const { provider } = useWallet();
 
   const fees =

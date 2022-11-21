@@ -21,7 +21,7 @@ import {
   SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
 } from "./senior-pool-supply-panel";
 import {
-  SeniorPoolWithDrawalPanel,
+  SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
@@ -180,7 +180,7 @@ export default function SeniorPoolPage() {
             ) : null}
 
             {seniorPool && shouldShowWithdrawal && (
-              <SeniorPoolWithDrawalPanel
+              <SeniorPoolWithdrawalPanel
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
                 currentEpoch={data.currentEpoch}
                 withdrawalStatus={data.viewer.withdrawalStatus}
