@@ -10,8 +10,9 @@
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
     "deploy-local": "graph codegen && graph deploy --node http://localhost:8020 --ipfs http://localhost:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
-    "deploy-local2": "graph codegen && graph deploy --node http://localhost:8020 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
     "predeploy-local": "ts-node ./scripts/setup-subgraph-manifest-local.ts && NETWORK_NAME=localhost ts-node ./scripts/update-address-manifest.ts",
+    "deploy-local-nonlocal-ipfs": "graph codegen && graph deploy --node http://localhost:8020 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
+    "predeploy-local-nonlocal-ipfs": "npm run predeploy-local",
     "start-local": "docker compose --env-file .env.local-subgraph up -d",
     "stop-local": "docker compose --env-file .env.local-subgraph down -v && rm -rf data"
   },
