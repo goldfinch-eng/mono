@@ -215,14 +215,13 @@ export function Step({
       </div>
       <StepperFooter
         right={nextButton}
-        style={
-          !isBottomVisible
-            ? {
-                boxShadow: "0px -10px 20px 0px rgba(0,0,0,0.25)",
-                clipPath: "inset(-30px 0px 0px 0px)",
-              }
-            : undefined
-        }
+        style={{
+          boxShadow: isBottomVisible
+            ? "none"
+            : "0px -10px 20px 0px rgba(0,0,0,0.15)",
+          clipPath: "inset(-30px 0px 0px 0px)",
+        }}
+        className="transition-shadow"
       />
     </div>
   );

@@ -151,14 +151,16 @@ function StepTwo() {
   const rhfMethods = useForm<{ dogBreed: string }>();
   const { register } = rhfMethods;
   return (
-    <FormStep rhfMethods={rhfMethods}>
+    <FormStep rhfMethods={rhfMethods} requireScrolled>
       <div>Step Two</div>
+      <div>You must scroll to the bottom of this step to proceed</div>
       <Input
         label="Dog Breed"
         {...register("dogBreed", {
           required: "Must provide a breed for your dog",
         })}
       />
+      <div style={{ height: "1000px" }} />
     </FormStep>
   );
 }
