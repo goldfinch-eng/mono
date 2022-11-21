@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import { ComponentProps } from "react";
@@ -34,6 +35,10 @@ export type DollarInputProps = ComponentProps<typeof Input> &
      * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
      */
     onMaxClick?: (n?: BigNumber) => void;
+    /**
+     * Extra styles to be applied to max button
+     */
+    maxButtonStyle?: "outline" | "filled";
     onChange?: (s: string) => void;
   };
 
@@ -52,6 +57,7 @@ export function DollarInput({
   unit = SupportedCrypto.Usdc,
   maxValue,
   onMaxClick,
+  maxButtonStyle = "outline",
   onChange: callbackOnChange,
   name,
   rules,
@@ -109,7 +115,14 @@ export function DollarInput({
                 onMaxClick?.();
               }
             }}
-            className="block rounded-md border border-sky-500 p-2 text-[10px] uppercase leading-none"
+            className={clsx(
+              "block rounded-md p-2 text-[10px] uppercase leading-none",
+              maxButtonStyle === "outline"
+                ? "border border-sky-500 "
+                : maxButtonStyle === "filled"
+                ? "bg-sand-700 text-white"
+                : null
+            )}
           >
             Max
           </button>

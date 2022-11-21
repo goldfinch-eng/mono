@@ -51,7 +51,14 @@ export function SeniorPoolWithDrawalPanel({
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
+  const totalUserFidu = sumTotalShares(
+    fiduBalance,
+    withdrawalStatus?.fiduRequested ?? {
+      amount: BigNumber.from("0"),
+      token: SupportedCrypto.Fidu,
+    },
+    stakedPositions
+  );
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
@@ -130,23 +137,37 @@ export function SeniorPoolWithDrawalPanel({
             <Icon name="Usdc" size="sm" />
           </div>
         </div>
-        <Button
-          colorScheme="secondary"
-          size="xl"
-          className="mb-2 block w-full"
-          type="submit"
-          onClick={withdrawWithToken}
-          isLoading={isWithdrawing}
-          disabled={
-            !withdrawalStatus ||
-            withdrawalStatus?.usdcWithdrawable?.amount.lte(
-              BigNumber.from("0")
-            ) ||
-            isWithdrawing
-          }
-        >
-          Withdraw USDC
-        </Button>
+
+        {withdrawalStatus?.withdrawalToken ? (
+          <Button
+            colorScheme="secondary"
+            size="xl"
+            className="mb-2 block w-full"
+            type="submit"
+            onClick={withdrawWithToken}
+            isLoading={isWithdrawing}
+            disabled={
+              !withdrawalStatus ||
+              withdrawalStatus?.usdcWithdrawable?.amount.lte(
+                BigNumber.from("0")
+              ) ||
+              isWithdrawing
+            }
+          >
+            Withdraw USDC
+          </Button>
+        ) : (
+          <Button
+            colorScheme="secondary"
+            size="xl"
+            onClick={() => {
+              setWithrawModalOpen(true);
+            }}
+            className="mb-2 block w-full"
+          >
+            Request withdrawal
+          </Button>
+        )}
 
         {withdrawalStatus?.withdrawalToken ? (
           <div className="mt-4">
@@ -225,18 +246,7 @@ export function SeniorPoolWithDrawalPanel({
               </div>
             </div>
           </div>
-        ) : (
-          <div className="flex justify-center">
-            <Button
-              onClick={() => {
-                setWithrawModalOpen(true);
-              }}
-              className="mx-auto !bg-transparent pb-1 underline hover:!bg-transparent"
-            >
-              Request withdrawal
-            </Button>
-          </div>
-        )}
+        ) : null}
       </div>
 
       <WithdrawRequestHistoryModal
@@ -304,6 +314,7 @@ function sumStakedShares(
 
 function sumTotalShares(
   unstaked: CryptoAmount,
+  requested: CryptoAmount,
   staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
 ): BigNumber {
   if (unstaked.token !== SupportedCrypto.Fidu) {
@@ -313,5 +324,5 @@ function sumTotalShares(
     (previous, current) => previous.add(current.amount),
     BigNumber.from(0)
   );
-  return unstaked.amount.add(totalStaked);
+  return unstaked.amount.add(totalStaked).add(requested.amount);
 }

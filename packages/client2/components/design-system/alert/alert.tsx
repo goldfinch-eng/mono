@@ -7,23 +7,41 @@ interface AlertProps {
   children: ReactNode;
   className?: string;
   type: "success" | "info" | "warning" | "danger";
+  hasIcon?: boolean;
 }
 
-export function Alert({ children, className, type }: AlertProps) {
+export function Alert({
+  children,
+  className,
+  type,
+  hasIcon = true,
+}: AlertProps) {
   return (
     <div
       className={clsx(
-        "flex items-center gap-2 rounded-lg border-2 p-2 text-xs",
-        type === "warning"
+        "flex items-center gap-2 rounded-lg border-2 p-3 text-xs",
+        type === "info"
+          ? "border-tidepool-200 bg-tidepool-100 text-tidepool-800"
+          : type === "warning"
           ? "border-mustard-100 bg-mustard-50 text-mustard-700"
           : null,
         className
       )}
     >
-      {type === "warning" ? (
-        <Icon size="md" name="InfoCircle" className="text-mustard-450" />
+      {hasIcon ? (
+        <Icon
+          size="md"
+          name="InfoCircle"
+          className={
+            type === "info"
+              ? "text-tidepool-600"
+              : type === "warning"
+              ? "text-mustard-450"
+              : ""
+          }
+        />
       ) : null}
-      {children}
+      <div>{children}</div>
     </div>
   );
 }

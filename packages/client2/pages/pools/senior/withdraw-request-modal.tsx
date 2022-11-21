@@ -130,6 +130,15 @@ export default function WithdrawRequestModal({
       titleSize="lg"
     >
       <Form rhfMethods={rhfMethods} onSubmit={handleSubmit}>
+        {!withdrawalToken && (
+          <Alert className="mb-7" type="info" hasIcon={false}>
+            Withdrawal requests are processed every two weeks, and it may take
+            multiple distribution periods to fulfill the request.{" "}
+            <Link href={``} className="text-tidepool-600 underline">
+              Read more
+            </Link>
+          </Alert>
+        )}
         <div className="mb-7">
           <DollarInput
             control={control}
@@ -139,6 +148,7 @@ export default function WithdrawRequestModal({
               reset();
               return balanceWallet.amount;
             }}
+            maxButtonStyle="filled"
             unit={SupportedCrypto.Fidu}
             rules={{ required: "Required", validate: validateAmount }}
             textSize="xl"
@@ -250,10 +260,13 @@ export default function WithdrawRequestModal({
                   </div>
                   <div className="text-lg text-sand-400">
                     {currentRequest
-                      ? formatCrypto({
-                          amount: currentRequest,
-                          token: SupportedCrypto.Fidu,
-                        })
+                      ? formatCrypto(
+                          {
+                            amount: currentRequest,
+                            token: SupportedCrypto.Fidu,
+                          },
+                          { includeToken: true }
+                        )
                       : null}
                   </div>
                 </div>
@@ -267,12 +280,15 @@ export default function WithdrawRequestModal({
                   </div>
                   <div className="text-lg">
                     {watchFields[0] && currentRequest
-                      ? formatCrypto({
-                          amount: utils
-                            .parseUnits(watchFields[0], FIDU_DECIMALS)
-                            .add(currentRequest),
-                          token: SupportedCrypto.Fidu,
-                        })
+                      ? formatCrypto(
+                          {
+                            amount: utils
+                              .parseUnits(watchFields[0], FIDU_DECIMALS)
+                              .add(currentRequest),
+                            token: SupportedCrypto.Fidu,
+                          },
+                          { includeToken: true }
+                        )
                       : "---"}
                   </div>
                 </div>

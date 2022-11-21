@@ -32,7 +32,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
       | "sky"
       | "mustard"
       | "mint"
-      | "twilight";
+      | "twilight"
+      | "eggplant";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -113,6 +114,8 @@ export const Button = forwardRef<
           ? "bg-mint-500 text-white hover:bg-mint-600 active:bg-mint-700"
           : colorScheme === "twilight"
           ? "bg-twilight-600 text-white hover:bg-twilight-700 active:bg-twilight-800"
+          : colorScheme === "eggplant"
+          ? "bg-eggplant-700 text-white hover:bg-eggplant-800 active:bg-eggplant-900"
           : null,
         className
       )}

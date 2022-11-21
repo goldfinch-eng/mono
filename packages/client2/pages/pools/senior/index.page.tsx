@@ -98,7 +98,8 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       (user &&
         user.seniorPoolStakedPositions.length > 0 &&
-        user.seniorPoolStakedPositions.some((s) => s.amount.gt(0))));
+        user.seniorPoolStakedPositions.some((s) => s.amount.gt(0))) ||
+      data?.viewer.withdrawalStatus);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -169,7 +170,7 @@ export default function SeniorPoolPage() {
           </Heading>
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
-          <div className="flex flex-col items-stretch gap-8">
+          <div className="flex flex-col items-stretch gap-3">
             {seniorPool && fiatPerGfi && data?.viewer ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
