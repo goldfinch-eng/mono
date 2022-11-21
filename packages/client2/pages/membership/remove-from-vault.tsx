@@ -163,49 +163,42 @@ function SelectionStep({
     token: SupportedCrypto.Fidu,
     amount: BigNumber.from(0),
   });
-  useEffect(
-    () => {
-      const asyncEffect = async () => {
-        if (!account || !provider) {
-          return;
-        }
+  const gfiToUnvaultAmount = gfiToUnvault.amount.mul("-1").toString();
+  const capitalToBeRemovedAmount = capitalToBeRemoved.amount
+    .mul("-1")
+    .toString();
+  useEffect(() => {
+    const asyncEffect = async () => {
+      if (!account || !provider) {
+        return;
+      }
 
-        const estimatedForfeiture = await estimateForfeiture(
-          account,
-          provider,
-          gfiToUnvault.amount.mul("-1"),
-          capitalToBeRemoved.amount.mul("-1")
-        );
-        setForfeited({
-          token: SupportedCrypto.Fidu,
-          amount: estimatedForfeiture,
-        });
+      const estimatedForfeiture = await estimateForfeiture(
+        account,
+        provider,
+        gfiToUnvaultAmount,
+        capitalToBeRemovedAmount
+      );
+      setForfeited({
+        token: SupportedCrypto.Fidu,
+        amount: estimatedForfeiture,
+      });
 
-        setRewardProjection(undefined);
-        const projection = await calculateNewMonthlyMembershipReward(
-          account,
-          provider,
-          gfiToUnvault.amount.mul("-1"),
-          capitalToBeRemoved.amount.mul("-1")
-        );
+      setRewardProjection(undefined);
+      const projection = await calculateNewMonthlyMembershipReward(
+        account,
+        provider,
+        gfiToUnvaultAmount,
+        capitalToBeRemovedAmount
+      );
 
-        // Minimum wait time to smooth out the animation
-        await new Promise((resolve) => setTimeout(resolve, 250));
+      // Minimum wait time to smooth out the animation
+      await new Promise((resolve) => setTimeout(resolve, 250));
 
-        setRewardProjection(projection);
-      };
-      asyncEffect();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      account,
-      provider,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      gfiToUnvault.amount.toString(),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      capitalToBeRemoved.amount.toString(),
-    ]
-  );
+      setRewardProjection(projection);
+    };
+    asyncEffect();
+  }, [account, provider, gfiToUnvaultAmount, capitalToBeRemovedAmount]);
 
   const { setData } = useStepperContext();
   const onSubmit = async () => {

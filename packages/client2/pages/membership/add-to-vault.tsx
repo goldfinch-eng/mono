@@ -167,37 +167,28 @@ function SelectionStep({
     newMonthlyReward: CryptoAmount;
     diff: CryptoAmount;
   }>();
-  useEffect(
-    () => {
-      const asyncEffect = async () => {
-        if (!account || !provider) {
-          return;
-        }
-        setRewardProjection(undefined);
-        const projection = await calculateNewMonthlyMembershipReward(
-          account,
-          provider,
-          gfiToVault.amount,
-          selectedCapitalTotal.amount
-        );
+  const gfiToVaultAmount = gfiToVault.amount.toString();
+  const selectedCapitalTotalAmount = selectedCapitalTotal.amount.toString();
+  useEffect(() => {
+    const asyncEffect = async () => {
+      if (!account || !provider) {
+        return;
+      }
+      setRewardProjection(undefined);
+      const projection = await calculateNewMonthlyMembershipReward(
+        account,
+        provider,
+        gfiToVaultAmount,
+        selectedCapitalTotalAmount
+      );
 
-        // Minimum wait time to smooth out the animation
-        await new Promise((resolve) => setTimeout(resolve, 250));
+      // Minimum wait time to smooth out the animation
+      await new Promise((resolve) => setTimeout(resolve, 250));
 
-        setRewardProjection(projection);
-      };
-      asyncEffect();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      account,
-      provider,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      gfiToVault.amount.toString(),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      selectedCapitalTotal.amount.toString(),
-    ]
-  );
+      setRewardProjection(projection);
+    };
+    asyncEffect();
+  }, [account, provider, gfiToVaultAmount, selectedCapitalTotalAmount]);
   const { setData } = useStepperContext();
   const onSubmit = async () => {
     if (gfiToVault.amount.isZero() && selectedCapitalTotal.amount.isZero()) {

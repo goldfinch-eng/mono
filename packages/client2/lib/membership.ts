@@ -1,5 +1,5 @@
 import type { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
 
 import { getContract } from "./contracts";
 import { CryptoAmount, SupportedCrypto } from "./graphql/generated";
@@ -25,8 +25,8 @@ export function epochFinalizedDate(
 export async function calculateNewMonthlyMembershipReward(
   account: string,
   provider: JsonRpcProvider,
-  newGfi: BigNumber,
-  newCapital: BigNumber,
+  newGfi: BigNumberish,
+  newCapital: BigNumberish,
   previousEpochRewardTotal = BigNumber.from("12500000000000000000000")
 ): Promise<{ newMonthlyReward: CryptoAmount; diff: CryptoAmount }> {
   const membershipOrchestratorContract = await getContract({
@@ -72,8 +72,8 @@ export async function calculateNewMonthlyMembershipReward(
 export async function estimateForfeiture(
   account: string,
   provider: JsonRpcProvider,
-  newGfi: BigNumber,
-  newCapital: BigNumber
+  newGfi: BigNumberish,
+  newCapital: BigNumberish
 ) {
   const membershipOrchestratorContract = await getContract({
     name: "MembershipOrchestrator",
