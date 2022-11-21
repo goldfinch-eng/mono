@@ -37,30 +37,26 @@ import {ContractUpgrader} from "./contractUpgrader"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
 const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
 const LOCAL = "localhost"
-const ROPSTEN = "ropsten"
 const MAINNET = "mainnet"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof MAINNET
+export type ChainName = typeof LOCAL | typeof MAINNET
 
-const MAX_UINT = new BN("1157920892373161954235709850086879078i3269984665640564039457584007913129639935")
+const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
 const LOCAL_CHAIN_ID = "31337"
 type LocalChainId = typeof LOCAL_CHAIN_ID
-const ROPSTEN_CHAIN_ID = "3"
-type RopstenChainId = typeof ROPSTEN_CHAIN_ID
 const MAINNET_CHAIN_ID = "1"
 type MainnetChainId = typeof MAINNET_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId
+export type ChainId = LocalChainId | MainnetChainId
 
-const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID)
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, MAINNET_CHAIN_ID)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
     throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
@@ -69,7 +65,6 @@ export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: u
 
 const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [LOCAL_CHAIN_ID]: LOCAL,
-  [ROPSTEN_CHAIN_ID]: ROPSTEN,
   [MAINNET_CHAIN_ID]: MAINNET,
 }
 
@@ -89,8 +84,7 @@ function assertIsTicker(val: string): asserts val is Ticker {
   }
 }
 
-const USDC_ADDRESSES: Record<typeof ROPSTEN | typeof MAINNET, AddressString> = {
-  [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
+const USDC_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
 const USDT_ADDRESSES: Record<typeof MAINNET, AddressString> = {
@@ -400,7 +394,6 @@ function fixProvider(providerGiven: any): any {
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
-  ROPSTEN_USDC_ADDRESS,
   MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS,
   MAINNET_COMP_ADDRESS,

@@ -93,7 +93,7 @@ export type PoolBackersWeb3Data = {
 }
 
 export function usePoolBackersWeb3(skip = false): PoolBackersWeb3Data {
-  const {user, goldfinchProtocol, currentBlock, network} = useContext(AppContext)
+  const {user, goldfinchProtocol, currentBlock} = useContext(AppContext)
   let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,

@@ -205,7 +205,7 @@ Contracts are already deployed to mainnet. We write custom scripts to do upgrade
 Front-end blockchain development is still early, and has rough edges. Here are some issues you might run into. If you see others, please add them here!
 
 - `Authorization required` Make sure you have your Alchemy API key set in `.env.local`
-- `Cannot set headers of undefined`. If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Ropsten and then back to Localhost)
+- `Cannot set headers of undefined`. If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Mainnet and then back to Localhost)
 - `Error: [ethjs-rpc] rpc error with payload`. This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account, and switch away and back to the local network (eg. local -> mainnet -> local).
   To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
 - If Metamask is unable to / times-out while trying to connect to Localhost 8545: `rm deployments/localhost`, and then re-running `npm run start:local`, was observed to fix this problem and enable Metamask to connect.
