@@ -22,7 +22,6 @@ const config = {
       // Work around hardhat-deploy not handling mainnet-forking for extra deployments
       // This should be fine since we'll never run the dev-server in production.
       mainnet: ["../protocol/deployments/localhost"],
-      rinkeby: ["../protocol/deployments/rinkeby"],
     },
   },
 }

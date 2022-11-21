@@ -34,7 +34,6 @@ const MAX_UINT = new BN("1157920892373161954235709850086879078532699846656405640
 const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
-export const RINKEBY = "rinkeby"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
@@ -65,19 +64,16 @@ const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
   private: "localhost",
-  rinkeby: RINKEBY,
 }
 
 const chainIdToNetworkID = {
   1: MAINNET,
-  4: RINKEBY,
   31337: "localhost",
 }
 
 const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
-  [RINKEBY]: true,
 }
 
 enum SupportedChainId {

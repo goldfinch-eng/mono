@@ -20,7 +20,6 @@ const config = {
     deployments: {
       localhost: ["../protocol/deployments/localhost"],
       mainnet: ["../protocol/deployments/mainnet"],
-      rinkeby: ["../protocol/deployments/rinkeby"],
     },
   },
 }

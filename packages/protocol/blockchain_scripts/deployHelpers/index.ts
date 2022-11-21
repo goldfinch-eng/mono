@@ -45,12 +45,11 @@ const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
 const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
 const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
-const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET
+export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof MAINNET
 
-const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+const MAX_UINT = new BN("1157920892373161954235709850086879078i3269984665640564039457584007913129639935")
 
 const LOCAL_CHAIN_ID = "31337"
 type LocalChainId = typeof LOCAL_CHAIN_ID
@@ -58,12 +57,10 @@ const ROPSTEN_CHAIN_ID = "3"
 type RopstenChainId = typeof ROPSTEN_CHAIN_ID
 const MAINNET_CHAIN_ID = "1"
 type MainnetChainId = typeof MAINNET_CHAIN_ID
-const RINKEBY_CHAIN_ID = "4"
-type RinkebyChainId = typeof RINKEBY_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId
+export type ChainId = LocalChainId | RopstenChainId | MainnetChainId
 
-const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
     throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
@@ -74,7 +71,6 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [LOCAL_CHAIN_ID]: LOCAL,
   [ROPSTEN_CHAIN_ID]: ROPSTEN,
   [MAINNET_CHAIN_ID]: MAINNET,
-  [RINKEBY_CHAIN_ID]: RINKEBY,
 }
 
 export type AddressString = string
@@ -109,8 +105,8 @@ const ERC20_ADDRESSES = {
   [BUSD]: BUSD_ADDRESSES,
 }
 
-type SafeConfigChainId = MainnetChainId | RinkebyChainId
-const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+type SafeConfigChainId = MainnetChainId
+const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID)
 export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
   (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
 
@@ -118,10 +114,6 @@ const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; execut
   [MAINNET_CHAIN_ID]: {
     safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f",
     executor: "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5",
-  },
-  [RINKEBY_CHAIN_ID]: {
-    safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976",
-    executor: "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9",
   },
 }
 
@@ -431,7 +423,6 @@ export {
   updateConfig,
   getSignerForAddress,
   MAINNET_CHAIN_ID,
-  RINKEBY_CHAIN_ID,
   LOCAL_CHAIN_ID,
   SAFE_CONFIG,
   isTestEnv,

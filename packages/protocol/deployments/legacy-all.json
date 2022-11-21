@@ -7002,13 +7002,6 @@
       "contracts": {}
     }
   },
-  "4": {
-    "rinkeby": {
-      "name": "rinkeby",
-      "chainId": "4",
-      "contracts": {}
-    }
-  },
   "31337": {
     "hardhat": {
       "name": "hardhat",
