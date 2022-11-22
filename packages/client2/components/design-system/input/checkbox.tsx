@@ -5,9 +5,10 @@ interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   labelDecoration?: ReactNode;
   labelClassName?: string;
+  hideLabel?: boolean;
   id?: string;
   colorScheme?: "light" | "dark";
-  inputSize?: "sm" | "lg";
+  inputSize?: "sm" | "md" | "lg";
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
       label,
       labelDecoration,
       labelClassName,
+      hideLabel = false,
       id,
       name,
       colorScheme = "light",
@@ -53,7 +55,11 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                 : colorScheme === "dark"
                 ? "border border-transparent bg-sky-900 text-white hover:bg-sky-800"
                 : null,
-              inputSize === "lg" ? "h-8 w-8" : "h-4 w-4"
+              inputSize === "lg"
+                ? "h-8 w-8"
+                : inputSize === "md"
+                ? "h-6 w-6"
+                : "h-4 w-4"
             )}
           />
           <svg
@@ -68,7 +74,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             />
           </svg>
         </div>
-        <div className="flex w-full items-center justify-between gap-1">
+        <div
+          className={clsx(
+            "flex w-full items-center justify-between gap-1",
+            hideLabel && "sr-only"
+          )}
+        >
           <label htmlFor={_id} className={clsx("ml-3", labelClassName)}>
             {label}
           </label>

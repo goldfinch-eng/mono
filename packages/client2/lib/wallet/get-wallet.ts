@@ -28,6 +28,10 @@ export async function getProvider() {
       }
     }
   }
+  return getFreshProvider();
+}
+
+export function getFreshProvider() {
   return new ethers.providers.JsonRpcProvider(
     RPC_URLS[DESIRED_CHAIN_ID],
     DESIRED_CHAIN_ID

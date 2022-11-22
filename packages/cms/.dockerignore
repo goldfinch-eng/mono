@@ -1,0 +1,9 @@
+node_modules
+google-cloud-storage
+media
+dist
+.env
+.env.example
+.gcloudignore
+.gitignore
+README.md

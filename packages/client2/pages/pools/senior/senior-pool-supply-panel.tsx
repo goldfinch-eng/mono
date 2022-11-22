@@ -78,7 +78,7 @@ export function SeniorPoolSupplyPanel({
   const rhfMethods = useForm<FormFields>({
     defaultValues: { isStaking: true },
   });
-  const { control, register, watch, setValue } = rhfMethods;
+  const { control, register, watch } = rhfMethods;
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
@@ -180,7 +180,12 @@ export function SeniorPoolSupplyPanel({
       }
     }
 
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
   };
 
   const isUserVerified =
@@ -202,15 +207,6 @@ export function SeniorPoolSupplyPanel({
         user
       );
 
-  const handleMax = async () => {
-    if (!account || !provider) {
-      return;
-    }
-    const usdcContract = await getContract({ name: "USDC", provider });
-    const userUsdcBalance = await usdcContract.balanceOf(account);
-    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
-  };
-
   const validateMaximumAmount = async (value: string) => {
     if (!account || !provider) {
       return;
@@ -218,8 +214,8 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
@@ -360,7 +356,19 @@ export function SeniorPoolSupplyPanel({
                 <span className="text-xs">Balance: {availableBalance}</span>
               }
               className="mb-4"
-              onMaxClick={handleMax}
+              maxValue={async () => {
+                if (!account || !provider) {
+                  throw new Error(
+                    "Wallet not connected when trying to compute max"
+                  );
+                }
+                const usdcContract = await getContract({
+                  name: "USDC",
+                  provider,
+                });
+                const userUsdcBalance = await usdcContract.balanceOf(account);
+                return userUsdcBalance;
+              }}
               rules={{ required: "Required", validate: validateMaximumAmount }}
             />
             <Checkbox

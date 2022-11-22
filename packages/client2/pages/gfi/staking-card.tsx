@@ -41,9 +41,10 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
 
 interface StakingCardProps {
   position: StakingCardPositionFieldsFragment;
+  vaulted?: boolean;
 }
 
-export function StakingCard({ position }: StakingCardProps) {
+export function StakingCard({ position, vaulted = false }: StakingCardProps) {
   const stakedToken =
     position.positionType === StakedPositionType.Fidu
       ? SupportedCrypto.Fidu
@@ -94,7 +95,7 @@ export function StakingCard({ position }: StakingCardProps) {
           <Button
             size="lg"
             type="submit"
-            disabled={position.claimable.isZero()}
+            disabled={position.claimable.isZero() || vaulted}
           >
             {!position.claimable.isZero() ? "Claim GFI" : "Still Locked"}
           </Button>
@@ -140,6 +141,7 @@ export function StakingCard({ position }: StakingCardProps) {
           />
         </>
       }
+      includeVaultNotice={vaulted}
     />
   );
 }

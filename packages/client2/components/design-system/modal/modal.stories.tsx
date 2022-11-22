@@ -1,10 +1,17 @@
 import { Meta, Story } from "@storybook/react";
 import React, { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { Button } from "@/components/design-system";
+import { Button, Input } from "@/components/design-system";
 
 import { confirmDialog } from "./confirm-dialog";
-import { Modal, ModalProps } from "./index";
+import {
+  Modal,
+  ModalProps,
+  ModalStepper,
+  FormStep,
+  useStepperContext,
+} from "./index";
 
 export default {
   component: Modal,
@@ -101,3 +108,76 @@ export const ConfirmDialogStory = () => {
     </div>
   );
 };
+
+export const ModalStepperStory = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div>
+      <Button onClick={() => setIsOpen(true)}>Open stepper</Button>
+      <ModalStepper
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Register your dog"
+      >
+        <StepOne />
+        <StepTwo />
+        <StepThree />
+      </ModalStepper>
+    </div>
+  );
+};
+
+function StepOne() {
+  const rhfMethods = useForm<{ dogName: string }>();
+  const { register } = rhfMethods;
+  const onSubmit = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  };
+  return (
+    <FormStep rhfMethods={rhfMethods} onSubmit={onSubmit}>
+      <div>Step One</div>
+      <Input
+        label="Dog Name"
+        {...register("dogName", {
+          required: "You must provide a name for your dog",
+        })}
+      />
+    </FormStep>
+  );
+}
+
+function StepTwo() {
+  const rhfMethods = useForm<{ dogBreed: string }>();
+  const { register } = rhfMethods;
+  return (
+    <FormStep rhfMethods={rhfMethods} requireScrolled>
+      <div>Step Two</div>
+      <div>You must scroll to the bottom of this step to proceed</div>
+      <Input
+        label="Dog Breed"
+        {...register("dogBreed", {
+          required: "Must provide a breed for your dog",
+        })}
+      />
+      <div style={{ height: "1000px" }} />
+    </FormStep>
+  );
+}
+
+function StepThree() {
+  const rhfMethods = useForm();
+  const { data } = useStepperContext();
+  return (
+    <FormStep
+      rhfMethods={rhfMethods}
+      onSubmit={async () =>
+        alert(`Stitched data from each step: ${JSON.stringify(data)}`)
+      }
+    >
+      <div>Review</div>
+      <div>Name: {data.dogName}</div>
+      <div>Breed: {data.dogBreed}</div>
+    </FormStep>
+  );
+}
