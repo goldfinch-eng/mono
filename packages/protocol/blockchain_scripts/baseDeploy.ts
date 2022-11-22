@@ -25,6 +25,7 @@ import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
+import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
 
 const logger: Logger = console.log
 
