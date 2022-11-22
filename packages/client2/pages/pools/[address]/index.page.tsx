@@ -408,7 +408,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {true ? (
+              {poolStatus === PoolStatus.Open ? (
                 <SupplyPanel
                   tranchedPool={tranchedPool}
                   user={user}
