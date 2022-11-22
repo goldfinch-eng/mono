@@ -67,8 +67,8 @@ export function formatCrypto(
   options?: FormatCryptoOptions
 ): string {
   const defaultOptions: FormatCryptoOptions = {
-    includeSymbol: true,
-    includeToken: false,
+    includeSymbol: cryptoAmount.token === SupportedCrypto.Usdc,
+    includeToken: cryptoAmount.token !== SupportedCrypto.Usdc,
     useMaximumPrecision: false,
   };
   const { includeSymbol, includeToken, useMaximumPrecision } = {
@@ -95,3 +95,14 @@ const tokenMap: Record<SupportedCrypto, string> = {
   [SupportedCrypto.Fidu]: "FIDU",
   [SupportedCrypto.CurveLp]: "FIDU-USDC-F",
 };
+
+export function stringToCryptoAmount(
+  s: string | null | undefined,
+  token: SupportedCrypto
+): CryptoAmount {
+  const amount = utils.parseUnits(
+    !s ? "0" : s === "" ? "0" : s,
+    cryptoPrecision[token]
+  );
+  return { token, amount };
+}

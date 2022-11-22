@@ -6,6 +6,7 @@ import {
   GrantRevoked,
 } from "../../generated/CommunityRewards/CommunityRewards"
 import {BigInt} from "@graphprotocol/graph-ts"
+import {createTransactionFromEvent} from "../entities/helpers"
 
 // Seems redundant, but this handler gets used to add the startTime/endTime info on tokens
 // Remember that this actually runs _before_ GrantAccepted. We can let GrantAccepted fill out the other details.
@@ -33,6 +34,11 @@ export function handleRewardPaid(event: RewardPaid): void {
   const communityRewardsToken = assert(CommunityRewardsToken.load(event.params.tokenId.toString()))
   communityRewardsToken.totalClaimed = communityRewardsToken.totalClaimed.plus(event.params.reward)
   communityRewardsToken.save()
+
+  const transaction = createTransactionFromEvent(event, "COMMUNITY_REWARDS_CLAIMED", event.params.user)
+  transaction.receivedAmount = event.params.reward
+  transaction.receivedToken = "GFI"
+  transaction.save()
 }
 
 export function handleGrantRevoked(event: GrantRevoked): void {

@@ -16,6 +16,7 @@ import {
 
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
+import {getOrInitUser} from "../entities/user"
 
 function mapStakedPositionTypeToAmountToken(stakedPositionType: i32): string {
   // NOTE: The return type of this function should be a SupportedCrypto enum value.
@@ -39,7 +40,7 @@ export function handleStaked(event: Staked): void {
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
   stakedPosition.initialAmount = event.params.amount
-  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.user = getOrInitUser(event.params.user).id
   stakedPosition.startTime = event.block.timestamp
   stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
   stakedPosition.totalRewardsClaimed = BigInt.zero()
@@ -60,7 +61,7 @@ export function handleStaked1(event: Staked1): void {
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
   stakedPosition.initialAmount = event.params.amount
-  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.user = getOrInitUser(event.params.user).id
   stakedPosition.startTime = event.block.timestamp
   if (event.params.positionType == 0) {
     stakedPosition.positionType = "Fidu"
@@ -120,7 +121,7 @@ export function handleUnstaked1(event: Unstaked1): void {
 export function handleTransfer(event: Transfer): void {
   if (event.params.from.notEqual(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
     const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
-    stakedPosition.user = event.params.to.toHexString()
+    stakedPosition.user = getOrInitUser(event.params.to).id
     stakedPosition.save()
   }
 }
@@ -186,4 +187,9 @@ export function handleRewardPaid(event: RewardPaid): void {
   const position = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
   position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
   position.save()
+
+  const transaction = createTransactionFromEvent(event, "STAKING_REWARDS_CLAIMED", event.params.user)
+  transaction.receivedAmount = event.params.reward
+  transaction.receivedToken = "GFI"
+  transaction.save()
 }

@@ -16,12 +16,12 @@ import "./ConfigHelper.sol";
 
 contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-  uint256 public constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
-  uint256 internal constant USDC_MANTISSA = 1e6;
-  uint256 internal constant FIDU_MANTISSA = 1e18;
   // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+  uint256 public constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
+
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   /*
     We are using our own initializer function so we can set the owner by passing it in.
@@ -64,7 +64,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
    * - the caller must have the `MINTER_ROLE`.
    */
   function mintTo(address to, uint256 amount) public {
-    require(_canMint(amount), "Cannot mint: it would create an asset/liability mismatch");
+    require(canMint(amount), "Cannot mint: it would create an asset/liability mismatch");
     // This super call restricts to only the minter in its implementation, so we don't need to do it here.
     super.mint(to, amount);
   }
@@ -81,39 +81,47 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
    */
   function burnFrom(address from, uint256 amount) public override {
     require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to burn");
-    require(_canBurn(amount), "Cannot burn: it would create an asset/liability mismatch");
+    require(canBurn(amount), "Cannot burn: it would create an asset/liability mismatch");
     _burn(from, amount);
   }
 
-  function _canMint(uint256 newAmount) internal view returns (bool) {
+  // Internal functions
+
+  // canMint assumes that the USDC that backs the new shares has already been sent to the Pool
+  function canMint(uint256 newAmount) internal view returns (bool) {
     ISeniorPool seniorPool = config.getSeniorPool();
-    uint256 newSharesOutstanding = seniorPool.sharesOutstanding().add(newAmount).mul(seniorPool.sharePrice()).div(
-      FIDU_MANTISSA
-    );
-    uint256 newSharesOutstandingInUsdc = _fiduToUsdc(newSharesOutstanding);
+    uint256 liabilities = totalSupply().add(newAmount).mul(seniorPool.sharePrice()).div(fiduMantissa());
+    uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = seniorPool.assets();
-    return
-      _assets >= newSharesOutstandingInUsdc ||
-      newSharesOutstandingInUsdc.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+    if (_assets >= liabilitiesInDollars) {
+      return true;
+    } else {
+      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+    }
   }
 
-  function _canBurn(uint256 amountToBurn) internal view returns (bool) {
+  // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
+  function canBurn(uint256 amountToBurn) internal view returns (bool) {
     ISeniorPool seniorPool = config.getSeniorPool();
-    uint256 newSharesOutstanding = seniorPool.sharesOutstanding().sub(amountToBurn).mul(seniorPool.sharePrice()).div(
-      FIDU_MANTISSA
-    );
-    uint256 newSharesOutstandingInUsdc = _fiduToUsdc(newSharesOutstanding);
+    uint256 liabilities = totalSupply().sub(amountToBurn).mul(seniorPool.sharePrice()).div(fiduMantissa());
+    uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = seniorPool.assets();
-    return
-      _assets >= newSharesOutstandingInUsdc ||
-      newSharesOutstandingInUsdc.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+    if (_assets >= liabilitiesInDollars) {
+      return true;
+    } else {
+      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+    }
   }
 
-  function _fiduToUsdc(uint256 amount) internal pure returns (uint256) {
-    return amount.div(FIDU_MANTISSA.div(USDC_MANTISSA));
+  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
+    return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
-  function _usdcToFidu(uint256 amount) internal pure returns (uint256) {
-    return amount.mul(FIDU_MANTISSA).div(USDC_MANTISSA);
+  function fiduMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(18);
+  }
+
+  function usdcMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(6);
   }
 }

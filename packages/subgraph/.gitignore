@@ -1,2 +1,5 @@
 # This is just a subgraph manifest for local The Graph instances
 subgraph-local.yaml
+
+# auto-generated file containing hard-coded addresses
+src/address-manifest.ts

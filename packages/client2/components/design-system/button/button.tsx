@@ -9,7 +9,7 @@ import { useFormContext } from "react-hook-form";
 
 import { Icon, IconProps, Spinner } from "@/components/design-system";
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   AnchorHTMLAttributes<HTMLAnchorElement> & {
     /**
      * Content within the button
@@ -33,7 +33,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
       | "mustard"
       | "mint"
       | "twilight"
-      | "eggplant";
+      | "eggplant"
+      | "tidepool";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -116,6 +117,8 @@ export const Button = forwardRef<
           ? "bg-twilight-600 text-white hover:bg-twilight-700 active:bg-twilight-800"
           : colorScheme === "eggplant"
           ? "bg-eggplant-700 text-white hover:bg-eggplant-800 active:bg-eggplant-900"
+          : colorScheme === "tidepool"
+          ? "bg-tidepool-500 text-white hover:bg-tidepool-600 active:bg-tidepool-700"
           : null,
         className
       )}

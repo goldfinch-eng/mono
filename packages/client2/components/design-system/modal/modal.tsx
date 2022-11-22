@@ -39,6 +39,14 @@ export interface ModalProps {
    * Adds a divider between the modal's title and content
    */
   divider?: boolean;
+  /**
+   * Contents that are pinned to the bottom of the modal
+   */
+  footer?: ReactNode;
+  /**
+   * Controls the body layout of the modal. Classic includes a fixed-height scrolling container and supports the footer
+   */
+  layout?: "classic" | "custom";
 }
 
 export function Modal({
@@ -50,7 +58,8 @@ export function Modal({
   title,
   description,
   divider = true,
-  titleSize = "md",
+  footer,
+  layout = "classic",
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -96,16 +105,11 @@ export function Modal({
             <div
               className={clsx(
                 "flex items-center justify-between gap-12 px-6 pb-4",
-                divider ? "border-b border-b-sand-100" : null
+                divider ? "border-b border-b-sand-200" : null
               )}
             >
               <div>
-                <Dialog.Title
-                  className={clsx(
-                    "font-semibold",
-                    titleSize === "lg" ? "text-3xl font-normal" : "text-lg"
-                  )}
-                >
+                <Dialog.Title className="text-lg font-semibold">
                   {title}
                 </Dialog.Title>
                 {description && (
@@ -116,9 +120,24 @@ export function Modal({
                 <Icon name="X" size="md" />
               </button>
             </div>
-            <div className="max-h-[75vh] overflow-auto">
-              <div className="px-6 pt-4 pb-1">{children}</div>
-            </div>
+
+            {layout === "classic" ? (
+              <>
+                <div className="max-h-[75vh] overflow-auto">
+                  <div className="px-6 pt-4 pb-1">{children}</div>
+                </div>
+                {footer ? (
+                  <>
+                    {divider ? (
+                      <hr className="border-t border-sand-200" />
+                    ) : null}
+                    <div className="px-6 pt-4">{footer}</div>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              children
+            )}
           </div>
         </Transition.Child>
       </Dialog>
