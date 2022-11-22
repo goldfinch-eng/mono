@@ -10,7 +10,7 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {IWithdrawalRequestToken} from "../../interfaces/IWithdrawalRequestToken.sol";
 import {HasAdmin} from "./HasAdmin.sol";
-import {IERC721} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+import {IERC721} from "../../interfaces/openzeppelin/IERC721.sol";
 
 // TODO - supportsInterface and setBaseURI functions
 contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin {
