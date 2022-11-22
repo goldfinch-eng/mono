@@ -47,15 +47,9 @@ interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
     uint256 indexed tokenId,
     uint256 amount
   );
+  event AddToStake(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event UnstakedMultiple(address indexed user, uint256[] tokenIds, uint256[] amounts);
-  event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
-  event UnstakedAndWithdrewMultiple(
-    address indexed user,
-    uint256 usdcReceivedAmount,
-    uint256[] tokenIds,
-    uint256[] amounts
-  );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
   event RewardsParametersUpdated(
     address indexed who,
