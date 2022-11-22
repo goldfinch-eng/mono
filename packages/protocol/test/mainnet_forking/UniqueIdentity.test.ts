@@ -8,7 +8,7 @@ import {Signer} from "ethers"
 import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
-import * as migrate280 from "../../blockchain_scripts/migrations/v2.8.0/migrate"
+import * as migrate280 from "../../blockchain_scripts/migrations/v2.10.0/migrate"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 
 // Ideally, we reference this this directly with @goldfinch-eng/autotasks, but that currently

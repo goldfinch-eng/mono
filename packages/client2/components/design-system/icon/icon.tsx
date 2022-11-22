@@ -1,6 +1,8 @@
 import clsx from "clsx";
+import Image from "next/future/image";
 import { forwardRef } from "react";
 
+import Curve from "./raster/curve.png";
 import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
@@ -10,14 +12,18 @@ import ArrowUp from "./svg/arrow-up.svg";
 import CheckmarkCircle from "./svg/checkmark-circle-solid.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
+import Clock from "./svg/clock.svg";
 import Copy from "./svg/copy.svg";
 import Discord from "./svg/discord.svg";
 import DotsHorizontal from "./svg/dots-horizontal.svg";
+import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
+import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
 import LinkedIn from "./svg/linkedin.svg";
+import LockClosed from "./svg/lock-closed.svg";
 import Menu from "./svg/menu.svg";
 import Twitter from "./svg/twitter.svg";
 import Usdc from "./svg/usdc.svg";
@@ -34,14 +40,19 @@ export const iconManifest = {
   Checkmark,
   CheckmarkCircle,
   ChevronDown,
+  Clock,
   Copy,
+  Curve,
   Discord,
   DotsHorizontal,
   Exclamation,
+  ExclamationCircleSolid,
   Gfi,
   InfoCircle,
+  LightningBolt,
   Link,
   LinkedIn,
+  LockClosed,
   Menu,
   Twitter,
   Usdc,
@@ -77,6 +88,29 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
   ref
 ) {
   const IconComponent = iconManifest[name];
+  if (typeof IconComponent === "string" || IconComponent.width) {
+    return (
+      <Image
+        src={IconComponent}
+        className={clsx(
+          sizeToClassName(size),
+          "inline shrink-0 object-contain p-0.5"
+        )}
+        sizes={
+          size === "xs"
+            ? "16px"
+            : size === "sm"
+            ? "20px"
+            : size === "md"
+            ? "24px"
+            : "32px"
+        }
+        alt=""
+        aria-hidden="true"
+        quality={100}
+      />
+    );
+  }
   return (
     <IconComponent
       aria-hidden="true"

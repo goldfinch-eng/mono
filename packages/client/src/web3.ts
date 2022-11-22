@@ -39,7 +39,6 @@ function cleanSessionAndReload() {
 
 const networkNameByChainId: {[chainId: string]: string} = {
   "0x1": MAINNET,
-  "0x4": "rinkeby",
 }
 
 const websocketOptions: WebsocketProviderOptions = {

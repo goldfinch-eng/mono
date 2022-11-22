@@ -9,7 +9,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { GFI_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
   SupportedFiat,
@@ -53,8 +53,6 @@ gql`
         timestamp
         transactionHash
         category
-        amount
-        amountToken
       }
     }
   }
@@ -65,8 +63,7 @@ interface WalletInfoProps {
 }
 
 export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
-  const { connector } = useWallet();
-  const gfiContract = useContract("GFI");
+  const { connector, provider } = useWallet();
   const { data, loading, error } = useCurrentUserWalletInfoQuery({
     variables: { userAccount: "" }, // leaving this blank because we're using @export in the query to fill in this variable
     fetchPolicy: "network-only", // Always fresh results when this panel is opened
@@ -214,7 +211,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       <div className="py-4">
         <div className="mb-4 flex items-start justify-between">
           <div className="text-lg font-semibold">Recent Transactions</div>
-          <Link className="text-sm" href="/transactions">
+          <Link className="text-sm" href="/dashboard#activity">
             View all
           </Link>
         </div>
@@ -225,15 +222,6 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                 {filteredTxs.map((transaction) => (
                   <tr key={transaction.id}>
                     <td className="text-left">
-                      {transaction.amount && !transaction.amount.isZero()
-                        ? `${formatCrypto(
-                            {
-                              token: transaction.amountToken,
-                              amount: transaction.amount,
-                            },
-                            { includeToken: true }
-                          )} `
-                        : null}
                       {getTransactionLabel(transaction)}
                     </td>
                     <td className="text-right">
@@ -270,9 +258,10 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         <Button
           size="sm"
           colorScheme="secondary"
-          disabled={!connector.watchAsset || !gfiContract}
-          onClick={() => {
-            if (gfiContract) {
+          disabled={!connector.watchAsset}
+          onClick={async () => {
+            if (provider) {
+              const gfiContract = await getContract({ name: "GFI", provider });
               connector.watchAsset?.({
                 address: gfiContract.address,
                 symbol: "GFI",

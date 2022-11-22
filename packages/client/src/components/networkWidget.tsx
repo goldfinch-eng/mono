@@ -371,7 +371,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       <div className="network-widget-section">
         <div className="network-widget-header">
           Recent Transactions
-          <a href="https://beta.app.goldfinch.finance/transactions">view all</a>
+          <a href="https://app.goldfinch.finance/transactions">view all</a>
         </div>
         {allTxs.map(transactionItem)}
       </div>

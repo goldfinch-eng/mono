@@ -1,4 +1,5 @@
 import { ComponentMeta, ComponentStory } from "@storybook/react";
+import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Input, DollarInput } from ".";
@@ -22,7 +23,11 @@ InputStory.args = {
 };
 
 export const DollarInputStory: ComponentStory<typeof DollarInput> = (args) => {
-  const { control, setValue, handleSubmit } = useForm<{ amount: string }>();
+  const {
+    control,
+    // setValue,
+    handleSubmit,
+  } = useForm<{ amount: string }>();
   return (
     <form onSubmit={handleSubmit((data) => alert(`Amount: ${data.amount}`))}>
       <div className="mb-4">
@@ -33,7 +38,8 @@ export const DollarInputStory: ComponentStory<typeof DollarInput> = (args) => {
       </div>
       <DollarInput
         control={control}
-        onMaxClick={() => setValue("amount", "1000000")}
+        maxValue={BigNumber.from("1000000")} // This will be interpreted as 1,000,000 USDC (which is $10)
+        // onMaxClick={() => setValue("amount", "1000000")} // This will be directly written to the field as 1,000,000
         {...args}
       />
       <button type="submit">Submit</button>

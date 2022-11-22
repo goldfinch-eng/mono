@@ -157,11 +157,11 @@ class MainnetForkingMultisendEffects extends MultisendEffects {
   }
 }
 
-const MAINNET_AND_RINKEBY_MULTISEND_ADDRESS = "0x8d29be29923b68abfdd21e541b9374737b49cdad"
+const MAINNET_MULTISEND_ADDRESS = "0x8d29be29923b68abfdd21e541b9374737b49cdad"
 const MULTISEND_ABI =
   '[{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"constant":false,"inputs":[{"internalType":"bytes","name":"transactions","type":"bytes"}],"name":"multiSend","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]'
 const MULTISEND = {
-  address: MAINNET_AND_RINKEBY_MULTISEND_ADDRESS,
+  address: MAINNET_MULTISEND_ADDRESS,
   abi: JSON.parse(MULTISEND_ABI),
 }
 

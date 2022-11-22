@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { InfoIconTooltip, Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
@@ -14,11 +14,13 @@ import { PoolStatus } from "@/lib/pools";
 
 export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
   fragment RepaymentProgressPanelTranchedPoolFields on TranchedPool {
+    estimatedJuniorApy
     initialInterestOwed
     principalAmountRepaid
     interestAmountRepaid
     creditLine {
       limit
+      termInDays
       termEndTime
     }
   }
@@ -53,15 +55,28 @@ export default function RepaymentProgressPanel({
   const principalOutstanding = tranchedPool.creditLine.limit.sub(
     tranchedPool.principalAmountRepaid
   );
+
+  const numYears = FixedNumber.from(
+    tranchedPool.creditLine.termInDays.div("365")
+  );
+  const oneYearBackerInterest = FixedNumber.from(
+    tranchedPool.creditLine.limit
+  ).mulUnsafe(tranchedPool.estimatedJuniorApy);
+  const initialBackerInterestOwed = BigNumber.from(
+    parseInt(oneYearBackerInterest.mulUnsafe(numYears).round().toString())
+  );
+  const backerInterestOutstanding = initialBackerInterestOwed.sub(
+    tranchedPool.interestAmountRepaid
+  );
+
   const interestOutstanding = tranchedPool.initialInterestOwed.sub(
     tranchedPool.interestAmountRepaid
   );
+
   const remainingInterestTime = formatDistanceToNowStrict(
     tranchedPool.creditLine.termEndTime.toNumber() * 1000,
     { unit: "month" }
   );
-
-  const totalOutstanding = principalOutstanding.add(interestOutstanding);
 
   return (
     <div className="rounded-xl border border-sand-200 p-5">
@@ -72,7 +87,10 @@ export default function RepaymentProgressPanel({
             tooltip="The total value of your investment that remains for the Borrower to repay to you over the course of the Pool's payment term, including interest and principal repayments."
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: multiplyByFraction(totalOutstanding, userPositionRatio),
+              amount: multiplyByFraction(
+                principalOutstanding.add(backerInterestOutstanding),
+                userPositionRatio
+              ),
             })}
           />
           <MiniTable
@@ -92,7 +110,7 @@ export default function RepaymentProgressPanel({
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
                   amount: multiplyByFraction(
-                    interestOutstanding,
+                    backerInterestOutstanding,
                     userPositionRatio
                   ),
                 }),
@@ -102,7 +120,7 @@ export default function RepaymentProgressPanel({
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
                   amount: multiplyByFraction(
-                    totalOutstanding,
+                    principalOutstanding.add(backerInterestOutstanding),
                     userPositionRatio
                   ),
                 }),
@@ -117,7 +135,7 @@ export default function RepaymentProgressPanel({
             tooltip="The total amount of USDC remaining for the Borrower to repay to this Pool over its payment term, including interest and principal repayments."
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: totalOutstanding,
+              amount: principalOutstanding.add(interestOutstanding),
             })}
           />
           <MiniTable
@@ -140,7 +158,7 @@ export default function RepaymentProgressPanel({
                 "Total",
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
-                  amount: totalOutstanding,
+                  amount: principalOutstanding.add(interestOutstanding),
                 }),
               ],
             ]}

@@ -1,4 +1,4 @@
-import {Bytes, log} from "@graphprotocol/graph-ts"
+import {BigInt, Bytes, log} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
@@ -14,8 +14,9 @@ import {
   RewardPaid,
 } from "../../generated/StakingRewards/StakingRewards"
 
-import {createTransactionFromEvent} from "../entities/helpers"
+import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
+import {getOrInitUser} from "../entities/user"
 
 function mapStakedPositionTypeToAmountToken(stakedPositionType: i32): string {
   // NOTE: The return type of this function should be a SupportedCrypto enum value.
@@ -39,11 +40,19 @@ export function handleStaked(event: Staked): void {
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
   stakedPosition.initialAmount = event.params.amount
-  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.user = getOrInitUser(event.params.user).id
   stakedPosition.startTime = event.block.timestamp
   stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
+  stakedPosition.totalRewardsClaimed = BigInt.zero()
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE", event.params.user)
+  transaction.sentAmount = event.params.amount
+  transaction.sentToken = "FIDU"
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "STAKING_TOKEN"
+  transaction.save()
 }
 
 export function handleStaked1(event: Staked1): void {
@@ -52,7 +61,7 @@ export function handleStaked1(event: Staked1): void {
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
   stakedPosition.initialAmount = event.params.amount
-  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.user = getOrInitUser(event.params.user).id
   stakedPosition.startTime = event.block.timestamp
   if (event.params.positionType == 0) {
     stakedPosition.positionType = "Fidu"
@@ -61,12 +70,15 @@ export function handleStaked1(event: Staked1): void {
   } else {
     log.critical("Encountered unrecognized positionType in a Staked event: {}", [event.params.positionType.toString()])
   }
+  stakedPosition.totalRewardsClaimed = BigInt.zero()
 
   stakedPosition.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE", event.params.user)
-  transaction.amount = event.params.amount
-  transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.sentAmount = event.params.amount
+  transaction.sentToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "STAKING_TOKEN"
   transaction.save()
 }
 
@@ -80,8 +92,10 @@ export function handleUnstaked(event: Unstaked): void {
   stakedPosition.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
-  transaction.amount = event.params.amount
-  transaction.amountToken = mapStakedPositionTypeToAmountToken(
+  transaction.sentNftId = event.params.tokenId.toString()
+  transaction.sentNftType = "STAKING_TOKEN"
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = mapStakedPositionTypeToAmountToken(
     // The historical/legacy Unstaked events that didn't have a `positionType` param were all of FIDU type.
     0
   )
@@ -97,44 +111,75 @@ export function handleUnstaked1(event: Unstaked1): void {
   stakedPosition.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
-  transaction.amount = event.params.amount
-  transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.sentNftId = event.params.tokenId.toString()
+  transaction.sentNftType = "STAKING_TOKEN"
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
   transaction.save()
 }
 
 export function handleTransfer(event: Transfer): void {
   if (event.params.from.notEqual(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
     const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
-    stakedPosition.user = event.params.to.toHexString()
+    stakedPosition.user = getOrInitUser(event.params.to).id
     stakedPosition.save()
   }
 }
 
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
-  transaction.amount = event.params.depositedAmount
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.depositedAmount
+  transaction.sentToken = "USDC"
+
+  // Technically depositAndStake doesn't result in the depositer actually gaining FIDU (they gain the NFT), but for the sake of the frontend this helps
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = "FIDU"
+
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "STAKING_TOKEN"
+  // usdc / fidu
+  transaction.fiduPrice = usdcWithFiduPrecision(event.params.depositedAmount).div(event.params.amount)
   transaction.save()
 }
 
 export function handleDepositedAndStaked1(event: DepositedAndStaked1): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
-  transaction.amount = event.params.depositedAmount
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.depositedAmount
+  transaction.sentToken = "USDC"
+
+  // Technically depositAndStake doesn't result in the depositer actually gaining FIDU (they gain the NFT), but for the sake of the frontend this helps
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = "FIDU"
+
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "STAKING_TOKEN"
+
+  // usdc / fidu
+  transaction.fiduPrice = usdcWithFiduPrecision(event.params.depositedAmount).div(event.params.amount)
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
-  transaction.amount = event.params.usdcReceivedAmount
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.amount
+  transaction.sentToken = "FIDU"
+  transaction.sentNftId = event.params.tokenId.toString()
+  transaction.sentNftType = "STAKING_TOKEN"
+  transaction.receivedAmount = event.params.usdcReceivedAmount
+  transaction.receivedToken = "USDC"
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMultiple): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
-  transaction.amount = event.params.usdcReceivedAmount
-  transaction.amountToken = "USDC"
+
+  transaction.sentAmount = event.params.amounts.reduce(
+    (prevValue: BigInt, currValue: BigInt) => prevValue.plus(currValue),
+    BigInt.zero()
+  )
+  transaction.sentToken = "FIDU"
+  transaction.receivedAmount = event.params.usdcReceivedAmount
+  transaction.receivedToken = "USDC"
   transaction.save()
 }
 
@@ -142,4 +187,9 @@ export function handleRewardPaid(event: RewardPaid): void {
   const position = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
   position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
   position.save()
+
+  const transaction = createTransactionFromEvent(event, "STAKING_REWARDS_CLAIMED", event.params.user)
+  transaction.receivedAmount = event.params.reward
+  transaction.receivedToken = "GFI"
+  transaction.save()
 }

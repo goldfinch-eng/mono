@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 
 import { Link } from "@/components/design-system";
 
@@ -8,7 +8,7 @@ interface BreadcrumbProps {
   /**
    * Optional image to show beside the breadcrumb: URL, PNG string, or Static import
    */
-  image?: string;
+  image?: string | null;
 
   /**
    * The title of the breadcrumb
@@ -24,18 +24,20 @@ interface BreadcrumbProps {
 export function Breadcrumb({ image, label, link }: BreadcrumbProps) {
   return (
     <div className="flex w-max flex-row items-center text-sm font-medium">
-      <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
-        {image && (
-          <Image
-            src={image}
-            alt={label || ""}
-            className="mr-3 block h-full w-full object-contain object-center"
-            layout="fill"
-            sizes="32px"
-            objectFit="cover"
-          />
-        )}
-      </div>
+      {image ? (
+        <Image
+          src={image}
+          alt={label || ""}
+          className="mr-3 h-8 w-8 overflow-hidden rounded-full object-contain"
+          width={32}
+          height={32}
+        />
+      ) : (
+        <div
+          className="mr-3 rounded-full border border-sand-200 bg-sand-200"
+          style={{ height: "32px", width: "32px" }}
+        />
+      )}
       {link && label ? (
         <Link href={link} className="!no-underline">
           {label}

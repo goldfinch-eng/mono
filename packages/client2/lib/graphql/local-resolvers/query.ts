@@ -4,10 +4,18 @@ import { getProvider } from "@/lib/wallet";
 
 import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
 
+async function fetchWithTimeout(url: string, timeout = 3000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const fetchResponse = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  return fetchResponse;
+}
+
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toLowerCase();
   const coingeckoResponse = await (
-    await fetch(
+    await fetchWithTimeout(
       `https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=${key}`
     )
   ).json();
@@ -28,7 +36,7 @@ async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
 async function fetchCoinbasePrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toUpperCase();
   const coinbaseResponse = await (
-    await fetch(`https://api.coinbase.com/v2/prices/GFI-${key}/spot`)
+    await fetchWithTimeout(`https://api.coinbase.com/v2/prices/GFI-${key}/spot`)
   ).json();
 
   if (
@@ -63,29 +71,31 @@ export const rootQueryResolvers: Resolvers[string] = {
   },
   async viewer(): Promise<Partial<Viewer>> {
     const provider = await getProvider();
-    if (!provider) {
+    try {
+      const account = await provider.getSigner().getAddress();
+      return {
+        __typename: "Viewer",
+        account,
+      };
+    } catch (e) {
       return {
         __typename: "Viewer",
         account: null,
       };
     }
-
-    const account = await provider.getSigner().getAddress();
-    return {
-      __typename: "Viewer",
-      account,
-    };
   },
   async currentBlock(): Promise<BlockInfo | null> {
     const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
     const currentBlock = await provider.getBlock("latest");
     return {
       __typename: "BlockInfo",
       number: currentBlock.number,
       timestamp: currentBlock.timestamp,
+    };
+  },
+  async curvePool() {
+    return {
+      __typename: "CurvePool",
     };
   },
 };

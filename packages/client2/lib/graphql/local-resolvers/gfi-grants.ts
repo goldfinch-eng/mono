@@ -14,15 +14,8 @@ import {
 export const indirectGfiGrantResolvers: Resolvers[string] = {
   async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
     const provider = await getProvider();
-    if (!provider) {
-      throw new Error(
-        "No connected provider when calculating vested amount for a GfiGrant"
-      );
-    }
-    const chainId = await provider.getSigner().getChainId();
-    const communityRewardsContract = getContract({
+    const communityRewardsContract = await getContract({
       name: "CommunityRewards",
-      chainId,
       provider,
     });
     const vested = await communityRewardsContract.totalVestedAt(
@@ -30,7 +23,9 @@ export const indirectGfiGrantResolvers: Resolvers[string] = {
       indirectGfiGrant.end,
       indirectGfiGrant.amount,
       indirectGfiGrant.cliffLength,
-      indirectGfiGrant.vestingInterval,
+      indirectGfiGrant.vestingInterval.isZero() // This seems unintuitive, but check the code for CommunityRewards.grant(). When a grant with vestingInterval of 0 is claimed, vestingLength is used as the interval instead. If we don't do this there's a divide-by-zero error for some grants
+        ? indirectGfiGrant.vestingLength
+        : indirectGfiGrant.vestingInterval,
       BigNumber.from(0),
       (
         await provider.getBlock("latest")
@@ -44,26 +39,18 @@ export const indirectGfiGrantResolvers: Resolvers[string] = {
 export const directGfiGrantResolvers: Resolvers[string] = {
   async isAccepted(gfiDirectGrant: DirectGfiGrant): Promise<boolean> {
     const provider = await getProvider();
-    if (!provider) {
-      throw new Error(
-        "No connected provider when checking `isAccepted` on GfiDirectGrant"
-      );
-    }
-    const chainId = await provider.getSigner().getChainId();
     switch (gfiDirectGrant.directSource) {
       case DirectGrantSource.MerkleDirectDistributor:
-        const merkleDirectDistributorContract = getContract({
+        const merkleDirectDistributorContract = await getContract({
           name: "MerkleDirectDistributor",
-          chainId,
           provider,
         });
         return await merkleDirectDistributorContract.isGrantAccepted(
           gfiDirectGrant.index
         );
       case DirectGrantSource.BackerMerkleDirectDistributor:
-        const backerMerkleDirectDistributorContract = getContract({
+        const backerMerkleDirectDistributorContract = await getContract({
           name: "BackerMerkleDirectDistributor",
-          chainId,
           provider,
         });
         return backerMerkleDirectDistributorContract.isGrantAccepted(

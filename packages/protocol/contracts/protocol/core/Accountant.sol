@@ -123,11 +123,11 @@ library Accountant {
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory interestOwed) {
+  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
-    return interestOwed;
+    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
+    return interestOwedForOneDay.add(cl.principalOwed());
   }
 
   function calculateInterestAccrued(

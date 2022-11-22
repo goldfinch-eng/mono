@@ -15,10 +15,7 @@ import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForki
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate271 from "../../blockchain_scripts/migrations/v2.7.1/migrate"
-import * as migrate272 from "../../blockchain_scripts/migrations/v2.7.2/migrate"
-import * as migrate273 from "../../blockchain_scripts/migrations/v2.7.3/migrate"
-import * as migrate280 from "../../blockchain_scripts/migrations/v2.8.0/migrate"
+import * as migrate290 from "../../blockchain_scripts/migrations/v2.9.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -47,9 +44,6 @@ import {
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
-  usdcToFidu,
-  fiduToUSDC,
-  FIDU_DECIMALS,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -100,6 +94,7 @@ import {
   StakingRewards,
   TranchedPool,
   UniqueIdentity,
+  Borrower as EthersBorrower,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
@@ -191,10 +186,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate271.main()
-  await migrate272.main()
-  await migrate273.main()
-  await migrate280.main()
+  await migrate290.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -327,6 +319,47 @@ describe("mainnet forking tests", async function () {
       await expect(
         go.initialize(Wallet.createRandom().address, goldfinchConfig.address, uniqueIdentity.address)
       ).to.be.rejectedWith(/Contract instance has already been initialized/)
+    })
+  })
+
+  // Regression test for senior pool writedown bug fix
+  // https://bugs.immunefi.com/dashboard/submission/10342
+  describe("writedowns", () => {
+    it("don't tank the share price when a loan reaches maturity", async () => {
+      const stratosEoa = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D"
+      // Get stratos borrower contract
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [stratosEoa],
+      })
+      await fundWithWhales(["USDC"], [stratosEoa], 10_000_000)
+      const stratosSigner = await ethers.getSigner(stratosEoa)
+      const stratosBrwContract = await (
+        await getEthersContract<EthersBorrower>("Borrower", {at: "0xf8C4A0fEDf9b249253D89203034374E5A57b617C"})
+      ).connect(stratosSigner)
+      await erc20Approve(usdc, stratosBrwContract.address, usdcVal(10_000_000), [stratosEoa])
+      const stratosPool = await getEthersContract<TranchedPool>("TranchedPool", {
+        at: "0x00c27FC71b159a346e179b4A1608a0865e8A7470",
+      })
+      const stratosCl = await getEthersContract<CreditLine>("CreditLine", {at: await stratosPool.creditLine()})
+
+      while (!(await stratosCl.nextDueTime()).eq(await stratosCl.termEndTime())) {
+        const nextDueTime = await stratosCl.nextDueTime()
+        await advanceTime({toSecond: nextDueTime.toString()})
+        await stratosPool.assess()
+        const interestOwed = await stratosCl.interestOwed()
+        await stratosBrwContract.pay(stratosPool.address, interestOwed)
+      }
+
+      const sharePriceBefore = await seniorPool.sharePrice()
+      await advanceTime({toSecond: (await stratosCl.termEndTime()).toString()})
+      await stratosPool.assess()
+      await seniorPool.writedown(613)
+      const sharePriceAfter = await seniorPool.sharePrice()
+
+      // The bug caused the share price to tank when calling writedown after termEndTime
+      // The expectation is that share price is unchanged.
+      expect(sharePriceBefore).to.bignumber.eq(sharePriceAfter)
     })
   })
 

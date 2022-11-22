@@ -53,8 +53,7 @@ contract TestImplementationRepository is Test {
     new UcuProxy(_repo, proxyOwner);
   }
 
-  function testProxyConstructorRevertsIfOwnerIsNull(address _owner) public {
-    vm.assume(address(_owner) == address(0));
+  function testProxyConstructorRevertsIfOwnerIsNull() public {
     vm.expectRevert(bytes("bad owner"));
     new UcuProxy(repo, address(0));
   }
@@ -227,6 +226,7 @@ contract TestImplementationRepository is Test {
   }
 
   function testTransferOwnershipFailsWhenNotOwner(address caller, address newOwner) public impersonating(caller) {
+    vm.assume(caller != proxy.owner());
     vm.expectRevert(bytes("NA"));
     proxy.transferOwnership(newOwner);
   }

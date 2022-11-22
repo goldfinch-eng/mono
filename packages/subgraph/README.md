@@ -249,7 +249,7 @@ npx graph build
 npx graph deploy --product hosted-service goldfinch-eng/goldfinch
 ```
 
-### Beta subgraph used by https://beta.app.goldfinch.finance
+### Beta subgraph used by https://app.goldfinch.finance
 
 See `beta-subgraph/README.md`.
 

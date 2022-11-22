@@ -49,7 +49,6 @@ export const originAllowed = (allowedOrigins: string[], origin: string): boolean
 const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
   "http://localhost:3000": "http://localhost:8545",
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
-  "https://beta.app.goldfinch.finance": 1,
   "https://app.goldfinch.finance": 1,
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {
@@ -61,7 +60,7 @@ const overrideBlockchainIdentifier = (): string | number | undefined => {
 /**
  * Provides the blockchain we want to use in servicing a request. In descending priority, this is:
  * the chain specified by the CHAIN_IDENTIFIER env variable (this supports e.g. a client running on
- * localhost using mainnet, rinkeby, etc.); the chain we consider the default appropriate one given the
+ * localhost using mainnet, etc.); the chain we consider the default appropriate one given the
  * request origin; mainnet, if the chain was not otherwise identified.
  * @param {string} origin The request origin.
  * @return {BaseProvider} The blockchain provider.

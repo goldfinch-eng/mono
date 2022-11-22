@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import Image from "next/image";
+import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
@@ -37,15 +37,15 @@ gql`
         id
       }
       category
-      amount
-      amountToken
+      sentAmount
+      sentToken
+      receivedAmount
+      receivedToken
       timestamp
       tranchedPool {
         id
-        borrower @client {
-          name
-          logo
-        }
+        borrowerName @client
+        borrowerLogo @client
       }
     }
   }
@@ -61,6 +61,8 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolRedemption,
 ];
 
+const sentTokenCategories = [TransactionCategory.TranchedPoolDeposit];
+
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
     useTranchedPoolTransactionTableQuery({
@@ -73,22 +75,20 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
 
   const rows = filteredTxs.map((transaction) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const borrower = transaction.tranchedPool!.borrower;
+    const tranchedPool = transaction.tranchedPool!;
 
     const user =
       transaction.category === TransactionCategory.TranchedPoolDrawdown ||
       transaction.category === TransactionCategory.TranchedPoolRepayment ? (
         <div className="flex items-center gap-2">
-          <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
-            <Image
-              src={borrower.logo}
-              alt=""
-              layout="fill"
-              objectFit="cover"
-              sizes="24px"
-            />
-          </div>
-          <span>{borrower.name}</span>
+          <Image
+            src={tranchedPool.borrowerLogo}
+            alt=""
+            width={24}
+            height={24}
+            className="shrink-0 overflow-hidden rounded-full"
+          />
+          <span>{tranchedPool.borrowerName}</span>
         </div>
       ) : transaction.category === TransactionCategory.SeniorPoolRedemption ? (
         <div className="flex items-center gap-2">
@@ -99,17 +99,27 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         <Address address={transaction.user.id} />
       );
 
+    let tokenToDisplay = transaction.receivedToken;
+    let amountToDisplay = transaction.receivedAmount;
+
+    if (sentTokenCategories.includes(transaction.category)) {
+      tokenToDisplay = transaction.sentToken;
+      amountToDisplay = transaction.sentAmount;
+    }
+
     const amount =
-      (subtractiveIconTransactionCategories.includes(transaction.category)
-        ? "-"
-        : "+") +
-      formatCrypto(
-        {
-          token: transaction.amountToken,
-          amount: transaction.amount,
-        },
-        { includeToken: true }
-      );
+      tokenToDisplay && amountToDisplay
+        ? (subtractiveIconTransactionCategories.includes(transaction.category)
+            ? "-"
+            : "+") +
+          formatCrypto(
+            {
+              token: tokenToDisplay,
+              amount: amountToDisplay,
+            },
+            { includeToken: true }
+          )
+        : null;
 
     const date = new Date(transaction.timestamp * 1000);
 

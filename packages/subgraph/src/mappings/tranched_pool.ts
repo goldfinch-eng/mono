@@ -1,6 +1,7 @@
-import {Address} from "@graphprotocol/graph-ts"
-import {TranchedPool, User} from "../../generated/schema"
+import {TranchedPool} from "../../generated/schema"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
+  TranchedPool as TranchedPoolContract,
   CreditLineMigrated,
   DepositMade,
   DrawdownsPaused,
@@ -12,17 +13,19 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {SENIOR_POOL_ADDRESS} from "../constants"
+import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
-  updateTranchedPoolLeverageRatio,
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
+  getLeverageRatioFromConfig,
 } from "../entities/tranched_pool"
+import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
+import {getAddressFromConfig} from "../utils"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -34,8 +37,10 @@ export function handleDepositMade(event: DepositMade): void {
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.amount
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.amount
+  transaction.sentToken = "USDC"
+  transaction.receivedNftId = event.params.tokenId.toString()
+  transaction.receivedNftType = "POOL_TOKEN"
   transaction.save()
 
   createZapMaybe(event)
@@ -53,17 +58,20 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 
+  const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+
   const transaction = createTransactionFromEvent(
     event,
-    event.params.owner.equals(Address.fromString(SENIOR_POOL_ADDRESS))
-      ? "SENIOR_POOL_REDEMPTION"
-      : "TRANCHED_POOL_WITHDRAWAL",
+    event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
     event.params.owner
   )
   transaction.transactionHash = event.transaction.hash
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
-  transaction.amountToken = "USDC"
+  transaction.sentNftId = event.params.tokenId.toString()
+  transaction.sentNftType = "POOL_TOKEN"
+  transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
+  transaction.receivedToken = "USDC"
   transaction.save()
 
   deleteZapAfterUnzapMaybe(event)
@@ -71,8 +79,13 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
 export function handleTrancheLocked(event: TrancheLocked): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
-  updateTranchedPoolLeverageRatio(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+
+  const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
+  const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
+  tranchedPool.estimatedLeverageRatio = getLeverageRatioFromConfig(goldfinchConfigContract)
+  tranchedPool.save()
 }
 
 export function handleSliceCreated(event: SliceCreated): void {
@@ -87,24 +100,20 @@ export function handleEmergencyShutdown(event: EmergencyShutdown): void {
 
 export function handleDrawdownMade(event: DrawdownMade): void {
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
-  // ensures that a wallet making a drawdown is correctly considered a user
-  const user = new User(event.params.borrower.toHexString())
-  user.save()
+  getOrInitUser(event.params.borrower) // ensures that a wallet making a drawdown is correctly considered a user
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updatePoolTokensRedeemable(tranchedPool)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.amount
-  transaction.amountToken = "USDC"
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = "USDC"
   transaction.save()
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
-  // ensures that a wallet making a payment is correctly considered a user
-  const user = new User(event.params.payer.toHexString())
-  user.save()
+  getOrInitUser(event.params.payer) // ensures that a wallet making a payment is correctly considered a user
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 
@@ -114,11 +123,11 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)
-  updatePoolRewardsClaimable(tranchedPool, event.block.timestamp)
+  updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.principalAmount.plus(event.params.interestAmount)
-  transaction.amountToken = "USDC"
+  transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.sentToken = "USDC"
   transaction.save()
 }

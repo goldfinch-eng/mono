@@ -1,27 +1,25 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
 import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
-import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/GoldfinchConfig/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
-import {
-  CONFIG_KEYS_NUMBERS,
-  GOLDFINCH_CONFIG_ADDRESS,
-  GOLDFINCH_LEGACY_CONFIG_ADDRESS,
-  SENIOR_POOL_ADDRESS,
-  OLD_FIXED_LEVERAGE_RATIO_ADDRESS,
-} from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
 import {getOrInitUser} from "./user"
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
+const USDC_DECIMAL_PLACES = 6
+const USDC_DECIMALS = BigInt.fromI32(10).pow(USDC_DECIMAL_PLACES as u8)
 const ONE = BigInt.fromString("1")
 const ZERO = BigInt.fromString("0")
 const ONE_HUNDRED = BigDecimal.fromString("100")
 
 export function fiduFromAtomic(amount: BigInt): BigInt {
   return amount.div(FIDU_DECIMALS)
+}
+
+export function usdcWithFiduPrecision(amount: BigInt): BigInt {
+  return amount.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS)
 }
 
 export function getTotalDeposited(
@@ -53,52 +51,20 @@ export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt 
   return juniorDeposited
 }
 
-export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, tranchedPoolVersion: string): BigInt {
+const fixedLeverageRatioAddress = Address.fromString("0x9b2ACD3fd9aa6c60B26CF748bfFF682f27893320") // This is hardcoded from mainnet. When running off the local chain, this shouldn't be needed.
+
+export function getEstimatedSeniorPoolInvestment(
+  tranchedPoolAddress: Address,
+  tranchedPoolVersion: string,
+  seniorPoolAddress: Address
+): BigInt {
   if (tranchedPoolVersion == VERSION_BEFORE_V2_2) {
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment
-    const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(
-      Address.fromString(OLD_FIXED_LEVERAGE_RATIO_ADDRESS)
-    )
-    return fixedLeverageRatioStrategyContract.estimateInvestment(
-      Address.fromString(SENIOR_POOL_ADDRESS),
-      tranchedPoolAddress
-    )
+    const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(fixedLeverageRatioAddress)
+    return fixedLeverageRatioStrategyContract.estimateInvestment(seniorPoolAddress, tranchedPoolAddress)
   }
-  const seniorPoolContract = SeniorPoolContract.bind(Address.fromString(SENIOR_POOL_ADDRESS))
+  const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   return seniorPoolContract.estimateInvestment(tranchedPoolAddress)
-}
-
-export function getEstimatedTotalAssets(
-  address: Address,
-  juniorTranches: JuniorTrancheInfo[],
-  seniorTranches: SeniorTrancheInfo[],
-  version: string
-): BigInt {
-  let totalAssets = new BigInt(0)
-  totalAssets = getTotalDeposited(address, juniorTranches, seniorTranches)
-
-  let estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
-  totalAssets = totalAssets.plus(estimatedSeniorPoolContribution)
-  return totalAssets
-}
-
-export function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
-  const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
-    ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
-    : GOLDFINCH_CONFIG_ADDRESS
-  return GoldfinchConfigContract.bind(Address.fromString(configAddress))
-}
-
-export function getLeverageRatio(timestamp: BigInt): BigInt {
-  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
-  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
-}
-
-export function getReserveFeePercent(timestamp: BigInt): BigInt {
-  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
-  return BigInt.fromI32(100).div(
-    goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
-  )
 }
 
 /**

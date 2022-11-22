@@ -1,7 +1,7 @@
 import { Web3Provider } from "@ethersproject/providers";
 import { BigNumber, utils } from "ethers";
 
-import { Erc20 } from "@/types/ethers-contracts";
+import type { Erc20 } from "@/types/ethers-contracts";
 
 interface Args {
   /**

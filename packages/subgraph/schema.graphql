@@ -58,8 +58,10 @@ type SeniorPoolStatus @entity {
 type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
+  vaultedStakedPositions: [VaultedStakedPosition!]! @derivedFrom(field: "user")
 
-  tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+  tranchedPoolTokens: [TranchedPoolToken!]!
+  vaultedPoolTokens: [VaultedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
@@ -97,14 +99,11 @@ type JuniorTrancheInfo @entity {
 type CreditLine @entity {
   id: ID!
   borrower: Bytes!
-  tranchedPool: TranchedPool!
+  tranchedPool: TranchedPool! @derivedFrom(field: "creditLine")
   limit: BigInt!
   maxLimit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
-  remainingPeriodDueAmount: BigInt!
-  remainingTotalDueAmount: BigInt!
-  availableCredit: BigInt!
   interestAccruedAsOf: BigInt!
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
@@ -115,16 +114,8 @@ type CreditLine @entity {
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
   lateFeeApr: BigDecimal!
-  # These fields are marked as nullable as they
-  # either require information not yet available on the subgraph,
-  # or are not used on the pages we are integrating.
-  periodDueAmount: BigInt
   interestAprDecimal: BigDecimal!
-  collectedPaymentBalance: BigInt
-  totalDueAmount: BigInt
-  dueDate: String
   isEligibleForRewards: Boolean!
-  name: String
 }
 
 enum TranchedPoolCreditLineVersion {
@@ -259,6 +250,16 @@ enum TransactionCategory {
   TRANCHED_POOL_REPAYMENT
   TRANCHED_POOL_DRAWDOWN
   UID_MINTED
+  CURVE_FIDU_BUY
+  CURVE_FIDU_SELL
+  STAKING_REWARDS_CLAIMED
+  BACKER_REWARDS_CLAIMED
+  COMMUNITY_REWARDS_CLAIMED
+  MEMBERSHIP_REWARDS_CLAIMED
+  MEMBERSHIP_GFI_DEPOSIT
+  MEMBERSHIP_GFI_WITHDRAWAL
+  MEMBERSHIP_CAPITAL_DEPOSIT
+  MEMBERSHIP_CAPITAL_WITHDRAWAL
 }
 
 enum SupportedCrypto {
@@ -266,6 +267,12 @@ enum SupportedCrypto {
   GFI
   FIDU
   CURVE_LP
+}
+
+enum SupportedNft {
+  STAKING_TOKEN
+  POOL_TOKEN
+  UID
 }
 
 type Transaction @entity(immutable: true) {
@@ -278,9 +285,20 @@ type Transaction @entity(immutable: true) {
   user: User!
   timestamp: Int!
   blockNumber: Int!
-  amount: BigInt!
-  amountToken: SupportedCrypto!
+
+  sentAmount: BigInt
+  sentToken: SupportedCrypto
+  sentNftId: String
+  sentNftType: SupportedNft
+
+  receivedAmount: BigInt
+  receivedToken: SupportedCrypto
+  receivedNftId: String
+  receivedNftType: SupportedNft
+
   tranchedPool: TranchedPool
+
+  fiduPrice: BigInt
 }
 
 type Zap @entity {
@@ -314,4 +332,57 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
+}
+
+type MembershipEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # The epoch number
+  totalRewards: BigInt! # Measured in FIDU
+  finalizedAt: Int!
+}
+
+type VaultedGfi @entity {
+  id: ID!
+  user: User!
+  amount: BigInt!
+  vaultedAt: Int!
+}
+
+type VaultedStakedPosition @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+}
+
+type VaultedPoolToken @entity {
+  id: ID!
+  user: User!
+  usdcEquivalent: BigInt!
+  vaultedAt: Int!
+  poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
+}
+
+type Membership @entity {
+  id: ID!
+  user: User!
+  eligibleScore: BigInt!
+  nextEpochScore: BigInt!
+}
+
+type MembershipRoster @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  members: [Membership!]!
+  eligibleScoreTotal: BigInt!
+  nextEpochScoreTotal: BigInt!
+}
+
+type MembershipRewardDisbursement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  epoch: BigInt! # The epoch number
+  allocatedAt: Int!
+  rewards: BigInt!
 }

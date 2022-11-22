@@ -13,7 +13,7 @@ record.
 
 ## Running in production
 
-The script relies on these environment variables in your .env.local file
+The script relies on these environment variables
 
 - `NETWORK` is network name to execute the burn on. Use "mainnet" for production and "localhost" for testing.
 - `BURN_ACCOUNT` is the wallet address whose UID we want to burn
@@ -24,13 +24,22 @@ The script relies on these environment variables in your .env.local file
 - `PREPARE_REMINT_ACCOUNT` is an optional new address for the user to remint at. If this variable is blank then the user will be able to remint using the same wallet address (`BURN_ACCOUNT`)
 - `BURNER_PRIVATE_KEY` private key of a wallet funded with ETH that will be used to execute the burn
 
-The script can be invoked like
+If you are running the script locally then set them in your .env.local file. If you are running the script in a codespace
+then set them as encrypted environment variables. More info on that [here](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces#using-secrets).
 
 ```
 npx hardhat run --network mainnet burnUID.ts | tee burn-UID-output.txt
 ```
 
 This will write all script output to file `burn-UID-output.txt`
+
+### Setting up Codespace secrets
+This [GitHub page](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces#using-secrets) is a step-by-step guide for how to
+configure the secrets for the script.
+
+Make sure you give the `warbler-labs/mono` repo access to each secret ([screenshot](https://drive.google.com/file/d/1h9-I7_JlOPwuypvNwONVvYTORLXX3VGI/view?usp=sharing))
+
+Your secrets page should look like [this](https://drive.google.com/file/d/1z-nNOM8gyMv9uVvOGavUGHgAiopUbQY4/view?usp=sharing) after configuring the secrets
 
 ## Additional Documentation
 
@@ -54,3 +63,59 @@ After running the script, the user whose UID was burned will (after they've gone
 If we set the user's Persona account's reference id to `null`, then the next time they start the embedded kyc flow a NEW Persona account will be created.
 When they submit documents for the NEW Persona account, duplicate id verification checks will fail because they already used these documents on their OLD
 Persona (which we haven't deleted).
+
+
+#### How to merge Persona IDs
+If the user's inquiries are being declined because they have successful inquiries from a different persona account, we have to merge the old account into their new one.
+
+1) Update "old/expired" account reference id to null
+https://docs.withpersona.com/reference/update-an-account
+```
+curl --request PATCH \
+     --url https://withpersona.com/api/v1/accounts/<PERSONA_ACCOUNT_KEY> \
+     --header 'Authorization: Bearer <PERSONA_API_KEY>' \
+     --header 'Persona-Version: 2021-07-05' \
+     --header 'accept: application/json' \
+     --header 'content-type: application/json' \
+     --data '
+{
+     "data": {
+          "attributes": {
+               "reference-id": null
+          }
+     }
+}
+'
+```
+
+2 optional) Burn "old" UID
+
+3) Merge old/expired account into "new" account
+https://docs.withpersona.com/reference/consolidate-into-an-account
+
+```
+curl --request POST \
+     --url https://withpersona.com/api/v1/accounts/<NEW_PERSONA_ACCOUNT_KEY>/consolidate \
+     --header 'Authorization: Bearer <PERSONA_API_KEY>' \
+     --header 'Persona-Version: 2021-07-05' \
+     --header 'accept: application/json' \
+     --header 'content-type: application/json' \
+     --data '
+{
+     "meta": {
+          "source-account-ids": [
+               "<OLD_PERSONA_ACCOUNT_KEY>"
+          ]
+     }
+}
+'
+```
+
+### Potential issue after merging UID's
+Summary of the problem: The user's country code was null in our database, causing UID verification to fail
+Explanation:
+The country code is pulled from the persona ID verification ("Verifications" tab in the web app). The verification must have a "passed" status. In this case, the verification for the new inequity never passed due to the duplicate inquiry at the time when the user was attempting verification.
+Manually approving the inquiry does not change the verification status, so that's why it didn't solve the issue
+Solution:
+I manually unapproved + reapproved the old inquiry to re-trigger webhook with a "passed" verification. This correctly set country code for the user.
+I intend to redact the new inquiry since it is invalid and the user already has a valid inquiry.

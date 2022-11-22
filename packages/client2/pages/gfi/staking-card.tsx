@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   StakedPositionType,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet";
 
 import {
   displayClaimedStatus,
@@ -40,9 +41,10 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
 
 interface StakingCardProps {
   position: StakingCardPositionFieldsFragment;
+  vaulted?: boolean;
 }
 
-export function StakingCard({ position }: StakingCardProps) {
+export function StakingCard({ position, vaulted = false }: StakingCardProps) {
   const stakedToken =
     position.positionType === StakedPositionType.Fidu
       ? SupportedCrypto.Fidu
@@ -56,14 +58,18 @@ export function StakingCard({ position }: StakingCardProps) {
     "MMM d, y"
   );
 
-  const stakingRewardsContract = useContract("StakingRewards");
+  const { provider } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
   const handleClaim = async () => {
-    if (!stakingRewardsContract) {
+    if (!provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
     const transaction = stakingRewardsContract.getReward(position.id);
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });
@@ -89,7 +95,7 @@ export function StakingCard({ position }: StakingCardProps) {
           <Button
             size="lg"
             type="submit"
-            disabled={position.claimable.isZero()}
+            disabled={position.claimable.isZero() || vaulted}
           >
             {!position.claimable.isZero() ? "Claim GFI" : "Still Locked"}
           </Button>
@@ -135,6 +141,7 @@ export function StakingCard({ position }: StakingCardProps) {
           />
         </>
       }
+      includeVaultNotice={vaulted}
     />
   );
 }

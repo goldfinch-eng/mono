@@ -5,17 +5,22 @@ pragma experimental ABIEncoderV2;
 
 // solhint-disable-next-line max-line-length
 import {ImplementationRepository} from "../../../protocol/core/proxy/ImplementationRepository.sol";
-import {Test} from "forge-std/Test.sol";
+import {BaseTest} from "../BaseTest.t.sol";
 
-contract ImplementationRepositoryTest is Test {
+contract ImplementationRepositoryTest is BaseTest {
   address internal constant owner = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
 
   ImplementationRepository internal repo;
   address internal initialImpl = address(new Dummy());
 
-  function setUp() public {
+  function setUp() public override {
+    super.setUp();
     repo = new ImplementationRepository();
     vm.label(owner, "owner");
+
+    fuzzHelper.exclude(owner);
+    fuzzHelper.exclude(address(repo));
+    fuzzHelper.exclude(initialImpl);
   }
 
   function testCannotCallInitializeTwiceAsAnyone(
@@ -75,7 +80,7 @@ contract ImplementationRepositoryTest is Test {
     external
     impersonating(caller)
     withFakeContract(impl)
-    assume(caller != owner)
+    filterAddress(caller)
   {
     vm.expectRevert(bytes("Must have admin role to perform this action"));
     repo.createLineage(impl);
@@ -95,7 +100,9 @@ contract ImplementationRepositoryTest is Test {
     // none of these should be equal eachother
     assume(a != b && b != c && c != a)
     // none of them should be the initial impl
-    assume(a != initialImpl && b != initialImpl && c != initialImpl)
+    filterAddress(a)
+    filterAddress(b)
+    filterAddress(c)
   {
     vm.label(a, "a");
     vm.label(b, "b");
@@ -239,10 +246,8 @@ contract ImplementationRepositoryTest is Test {
     withFakeContract(b)
     // none of these should be equal eachother
     assume(a != b)
-    // none of them should be the initial impl
-    assume(a != initialImpl && b != initialImpl)
-    // none of them should be the repo
-    assume(a != address(repo) && b != address(repo))
+    filterAddress(a)
+    filterAddress(b)
   {
     vm.label(a, "a");
     vm.label(b, "b");
@@ -358,11 +363,6 @@ contract ImplementationRepositoryTest is Test {
     _;
   }
 
-  modifier impersonating(address who) {
-    vm.startPrank(who);
-    _;
-  }
-
   modifier afterInitializingRepository() {
     repo.initialize(owner, initialImpl);
     _;
@@ -370,11 +370,6 @@ contract ImplementationRepositoryTest is Test {
 
   modifier notNull(address x) {
     vm.assume(x != address(0));
-    _;
-  }
-
-  modifier assume(bool stmt) {
-    vm.assume(stmt);
     _;
   }
 

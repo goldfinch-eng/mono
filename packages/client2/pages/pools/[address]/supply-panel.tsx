@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
   SupportedFiat,
@@ -40,7 +40,6 @@ export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    agreement @client
     remainingJuniorCapacity
     estimatedLeverageRatio
     allowedUidTypes
@@ -73,6 +72,7 @@ interface SupplyPanelProps {
    * This is necessary for zapping functionality. Senior pool staked position amounts are measured in FIDU, but we need to show the amounts to users in USDC.
    */
   seniorPoolSharePrice: BigNumber;
+  agreement?: string | null;
 }
 
 interface SupplyForm {
@@ -86,7 +86,6 @@ export default function SupplyPanel({
     id: tranchedPoolAddress,
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
-    agreement,
     remainingJuniorCapacity,
     allowedUidTypes,
   },
@@ -94,13 +93,10 @@ export default function SupplyPanel({
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
   seniorPoolSharePrice,
+  agreement,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
-  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
-  const usdcContract = useContract("USDC");
-  const zapperContract = useContract("Zapper");
-  const stakingRewardsContract = useContract("StakingRewards");
 
   const isUserVerified =
     user?.isGoListed ||
@@ -117,35 +113,18 @@ export default function SupplyPanel({
   const rhfMethods = useForm<SupplyForm>({
     defaultValues: { source: "wallet" },
   });
-  const { control, watch, register, setValue } = rhfMethods;
-
-  const handleMax = async () => {
-    if (!account || !usdcContract) {
-      return;
-    }
-    const userUsdcBalance = availableBalance;
-    const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
-      ? userUsdcBalance
-      : remainingJuniorCapacity;
-    setValue(
-      "supply",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxAvailable },
-        { includeSymbol: false }
-      )
-    );
-  };
+  const { control, watch, register } = rhfMethods;
 
   const validateMaximumAmount = async (value: string) => {
-    if (!account || !usdcContract) {
+    if (!account) {
       return;
     }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.gt(remainingJuniorCapacity)) {
       return "Amount exceeds remaining junior capacity";
     }
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     if (
       valueAsUsdc.gt(availableBalance) &&
@@ -156,7 +135,7 @@ export default function SupplyPanel({
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (!usdcContract || !provider || !account) {
+    if (!provider || !account) {
       throw new Error("Wallet not connected properly");
     }
 
@@ -169,6 +148,12 @@ export default function SupplyPanel({
     }
 
     if (data.source === "wallet") {
+      const usdcContract = await getContract({ name: "USDC", provider });
+      const tranchedPoolContract = await getContract({
+        name: "TranchedPool",
+        provider,
+        address: tranchedPoolAddress,
+      });
       if (!tranchedPoolContract) {
         throw new Error("Wallet not connected properly");
       }
@@ -209,9 +194,11 @@ export default function SupplyPanel({
         });
       }
     } else {
-      if (!zapperContract || !stakingRewardsContract) {
-        throw new Error("Wallet not connected properly");
-      }
+      const zapperContract = await getContract({ name: "Zapper", provider });
+      const stakingRewardsContract = await getContract({
+        name: "StakingRewards",
+        provider,
+      });
 
       const stakedPositionId = BigNumber.from(data.source.split("-")[1]);
       const tranche = BigNumber.from(2); // TODO this is really lazy. With multi-sliced pools this needs to be dynamic
@@ -238,19 +225,25 @@ export default function SupplyPanel({
         pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
       });
     }
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "zaps" });
+      },
+    });
   };
 
   const supplyValue = watch("supply");
   const selectedSource = watch("source");
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
-    if (!usdcContract || !account) {
+    if (!account || !provider) {
       return;
     }
     if (selectedSource === "wallet") {
-      usdcContract
-        .balanceOf(account)
+      getContract({ name: "USDC", provider })
+        .then((usdcContract) => usdcContract.balanceOf(account))
         .then((balance) => setAvailableBalance(balance));
     } else if (selectedSource.startsWith("seniorPool")) {
       const id = selectedSource.split("-")[1];
@@ -264,7 +257,7 @@ export default function SupplyPanel({
         sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice).amount
       );
     }
-  }, [selectedSource, usdcContract, account, user, seniorPoolSharePrice]);
+  }, [selectedSource, account, provider, user, seniorPoolSharePrice]);
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
@@ -438,7 +431,11 @@ export default function SupplyPanel({
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"
             textSize="xl"
-            onMaxClick={handleMax}
+            maxValue={
+              availableBalance.lt(remainingJuniorCapacity)
+                ? availableBalance
+                : remainingJuniorCapacity
+            }
             className="mb-4"
             labelClassName="!text-sm !mb-3"
           />
@@ -463,7 +460,9 @@ export default function SupplyPanel({
             acknowledge that (i) I am electronically signing and becoming a
             party to the{" "}
             {agreement ? (
-              <Link href={agreement}>Loan Agreement</Link>
+              <Link href={agreement} target="_blank" rel="noreferrer">
+                Loan Agreement
+              </Link>
             ) : (
               "Loan Agreement"
             )}{" "}

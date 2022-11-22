@@ -17,7 +17,6 @@ import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task
 
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
-const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
 
 // *** Uncomment when you actually want to run on mainnet or testnet ****
 // const TEST_PROTOCOL_OWNER_KEY = process.env.TESTNET_PROTOCOL_OWNER_KEY
@@ -59,10 +58,6 @@ export default {
             blockNumber: 15348753, // Aug-15-2022 10:56:56 PM +UTC
           }
         : undefined,
-    },
-    rinkeby: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_RINKEBY_API_KEY}`,
-      // accounts: [`${TEST_PROTOCOL_OWNER_KEY}`, `${TEST_GF_DEPLOYER_KEY}`],
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,

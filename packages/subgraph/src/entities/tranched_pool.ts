@@ -1,23 +1,36 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
-import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
+import {
+  SECONDS_PER_DAY,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+  SECONDS_PER_YEAR,
+  CONFIG_KEYS_ADDRESSES,
+  CONFIG_KEYS_NUMBERS,
+  FIDU_DECIMALS,
+} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
-  getLeverageRatio,
   getTotalDeposited,
-  getEstimatedTotalAssets,
   isV1StyleDeal,
   estimateJuniorAPY,
-  getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
-  getGoldfinchConfig,
 } from "./helpers"
-import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {
+  bigDecimalToBigInt,
+  bigIntMin,
+  ceil,
+  getAddressFromConfig,
+  isAfterV2_2,
+  VERSION_BEFORE_V2_2,
+  VERSION_V2_2,
+} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 
@@ -80,6 +93,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   const poolContract = TranchedPoolContract.bind(address)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(poolContract.config())
+  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
 
   let version: string = VERSION_BEFORE_V2_2
   let numSlices = BigInt.fromI32(1)
@@ -153,10 +168,12 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
-  tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
-  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
-  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
+  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
+    goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
+  )
+  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version, seniorPoolAddress)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
+  tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
   tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
@@ -178,8 +195,16 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     tranchedPool.backers = []
     tranchedPool.tokens = []
+    tranchedPool.numBackers = 0
+    tranchedPool.estimatedJuniorApyFromGfiRaw = BigDecimal.zero()
+    tranchedPool.principalAmountRepaid = BigInt.zero()
+    tranchedPool.interestAmountRepaid = BigInt.zero()
     // V1 style deals do not have a leverage ratio because all capital came from the senior pool
-    tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
+    if (tranchedPool.isV1StyleDeal) {
+      tranchedPool.estimatedLeverageRatio = null
+    } else {
+      tranchedPool.estimatedLeverageRatio = getLeverageRatioFromConfig(goldfinchConfigContract)
+    }
   }
 
   tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio
@@ -229,6 +254,11 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   calculateApyFromGfiForAllPools(timestamp)
 
   return tranchedPool
+}
+
+// TODO leverage ratio should really be expressed as a BigDecimal https://linear.app/goldfinch/issue/GFI-951/leverage-ratio-should-be-expressed-as-bigdecimal-in-subgraph
+export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigInt {
+  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
 }
 
 class Repayment {
@@ -416,15 +446,6 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
   return rewardsPerPrincipalDollar
 }
 
-export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, timestamp: BigInt): void {
-  const tranchedPool = TranchedPool.load(tranchedPoolAddress.toHexString())
-  if (!tranchedPool) {
-    return
-  }
-  tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
-  tranchedPool.save()
-}
-
 // Performs a simple (not compound) interest calculation on the creditLine, using the limit as the principal amount
 function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
   const principal = creditLine.limit.toBigDecimal()
@@ -435,9 +456,11 @@ function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
 }
 
 // Goes through all of the tokens for this pool and updates their rewards claimable
-export function updatePoolRewardsClaimable(tranchedPool: TranchedPool, blockTimestamp: BigInt): void {
-  const goldfinchConfig = getGoldfinchConfig(blockTimestamp)
-  const backerRewardsContractAddress = goldfinchConfig.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
+export function updatePoolRewardsClaimable(
+  tranchedPool: TranchedPool,
+  tranchedPoolContract: TranchedPoolContract
+): void {
+  const backerRewardsContractAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.BackerRewards)
   if (backerRewardsContractAddress.equals(Address.zero())) {
     return
   }

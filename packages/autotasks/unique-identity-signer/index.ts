@@ -89,7 +89,7 @@ const linkUserToUidStatus = async ({
   } catch (error) {
     console.error(error)
     const errorResponse = (error as any)?.response
-    console.error(
+    throw new Error(
       "Error in request to /linkUserToUid.\n" +
         `status: ${JSON.stringify(errorResponse?.status)}\n` +
         `data: ${JSON.stringify(errorResponse?.data)}`

@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
+import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
@@ -16,29 +17,31 @@ import {
 } from "../generated";
 
 async function erc20Balance(
-  token: Exclude<SupportedCrypto, SupportedCrypto.CurveLp> // curve lp token could be added later
+  token: SupportedCrypto
 ): Promise<CryptoAmount | null> {
-  const provider = await getProvider();
-  if (!provider) {
+  try {
+    const provider = await getProvider();
+    const account = await provider.getSigner().getAddress();
+
+    const contract = await getContract({
+      name:
+        token === SupportedCrypto.Gfi
+          ? "GFI"
+          : token === SupportedCrypto.Usdc
+          ? "USDC"
+          : token === SupportedCrypto.Fidu
+          ? "Fidu"
+          : token === SupportedCrypto.CurveLp
+          ? "CurveLP"
+          : assertUnreachable(token),
+      provider,
+    });
+    const balance = await contract.balanceOf(account);
+    return { __typename: "CryptoAmount", token, amount: balance };
+  } catch (e) {
+    // This will execute if getAddress() above throws (which happens when a user wallet isn't connected)
     return null;
   }
-  const account = await provider.getSigner().getAddress();
-  const chainId = await provider.getSigner().getChainId();
-
-  const contract = getContract({
-    name:
-      token === SupportedCrypto.Gfi
-        ? "GFI"
-        : token === SupportedCrypto.Usdc
-        ? "USDC"
-        : token === SupportedCrypto.Fidu
-        ? "Fidu"
-        : assertUnreachable(token),
-    chainId,
-    provider,
-  });
-  const balance = await contract.balanceOf(account);
-  return { __typename: "CryptoAmount", token, amount: balance };
 }
 
 export const viewerResolvers: Resolvers[string] = {
@@ -60,6 +63,9 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async fiduBalance(): Promise<CryptoAmount | null> {
     return erc20Balance(SupportedCrypto.Fidu);
+  },
+  async curveLpBalance(): Promise<CryptoAmount | null> {
+    return erc20Balance(SupportedCrypto.CurveLp);
   },
   async gfiGrants(viewer: Viewer) {
     if (!viewer || !viewer.account) {
@@ -108,5 +114,50 @@ export const viewerResolvers: Resolvers[string] = {
     gfiGrants.sort(grantComparator);
 
     return gfiGrants;
+  },
+  async claimableMembershipRewards(): Promise<CryptoAmount | null> {
+    try {
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
+
+      const membershipContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const availableRewards = await membershipContract.claimableRewards(
+        account
+      );
+      return {
+        __typename: "CryptoAmount",
+        token: SupportedCrypto.Fidu,
+        amount: availableRewards,
+      };
+    } catch (e) {
+      return null;
+    }
+  },
+  async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
+    try {
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
+
+      const membershipContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const currentBlock = await provider.getBlock("latest");
+      const epoch = getEpochNumber(currentBlock.timestamp * 1000);
+      const totalRewardsThisEpoch = await membershipContract.estimateRewardsFor(
+        epoch
+      );
+      const { eligibleScore } = await membershipContract.memberScoreOf(account);
+      const { eligibleTotal } = await membershipContract.totalMemberScores();
+      const accrued = eligibleTotal.isZero()
+        ? BigNumber.from(0)
+        : totalRewardsThisEpoch.mul(eligibleScore).div(eligibleTotal);
+      return { token: SupportedCrypto.Fidu, amount: accrued };
+    } catch (e) {
+      return null;
+    }
   },
 };

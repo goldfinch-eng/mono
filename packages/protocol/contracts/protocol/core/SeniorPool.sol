@@ -26,7 +26,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
   uint256 public compoundBalance;
+
+  /// @dev DEPRECATED, DO NOT USE.
   mapping(ITranchedPool => uint256) public writedowns;
+
+  /// @dev Writedowns by PoolToken id. This is used to ensure writedowns are incremental.
+  ///   Example: At t1, a pool is late and should be written down by 10%. At t2, the pool
+  ///   is even later, and should be written down by 25%. This variable helps ensure that
+  ///   if writedowns occur at both t1 and t2, t2's writedown is only by the delta of 15%,
+  ///   rather than double-counting the writedown percent from t1.
+  mapping(uint256 => uint256) public writedownsByPoolToken;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
@@ -224,18 +233,21 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
     require(_isValidPool(pool), "Pool must be valid");
 
+    // Assess the pool first in case it has unapplied USDC in its credit line
+    pool.assess();
+
     uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
 
     (uint256 writedownPercent, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
 
-    uint256 prevWritedownAmount = writedowns[pool];
+    uint256 prevWritedownAmount = writedownsByPoolToken[tokenId];
 
     if (writedownPercent == 0 && prevWritedownAmount == 0) {
       return;
     }
 
     int256 writedownDelta = int256(prevWritedownAmount) - int256(writedownAmount);
-    writedowns[pool] = writedownAmount;
+    writedownsByPoolToken[tokenId] = writedownAmount;
     _distributeLosses(writedownDelta);
     if (writedownDelta > 0) {
       // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
