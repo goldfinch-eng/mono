@@ -58,10 +58,7 @@ import {
   StatusSection,
   TRANCHED_POOL_STAT_GRID_FIELDS,
 } from "./status-section";
-import SupplyPanel, {
-  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
-  SUPPLY_PANEL_USER_FIELDS,
-} from "./supply-panel";
+import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -71,7 +68,6 @@ import {
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
-  ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${WITHDRAWAL_PANEL_ZAP_FIELDS}
@@ -84,6 +80,7 @@ gql`
   ) {
     tranchedPool(id: $tranchedPoolId) {
       id
+      allowedUidTypes
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
       estimatedLeverageRatio
@@ -111,7 +108,6 @@ gql`
       principalAmountRepaid
       interestAmountRepaid
       ...TranchedPoolStatusFields
-      ...SupplyPanelTranchedPoolFields
     }
     borrowerOtherPools: tranchedPools(
       where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
@@ -412,7 +408,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open ? (
+              {true ? (
                 <SupplyPanel
                   tranchedPool={tranchedPool}
                   user={user}
@@ -422,6 +418,9 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   }
                   seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                   agreement={dealDetails.agreement}
+                  isUnitrancheDeal={
+                    dealDetails.dealType === Deal_DealType.Unitranche
+                  }
                 />
               ) : null}
 
