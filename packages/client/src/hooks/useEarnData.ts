@@ -1,5 +1,4 @@
 import {ApolloError} from "@apollo/client"
-import _ from "lodash"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SeniorPoolStatus} from "../components/Earn/types"
