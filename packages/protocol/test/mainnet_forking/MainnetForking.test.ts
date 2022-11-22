@@ -259,7 +259,6 @@ describe("mainnet forking tests", async function () {
     poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
-    await seniorPool.initializeEpochs({from: MAINNET_GOVERNANCE_MULTISIG})
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])

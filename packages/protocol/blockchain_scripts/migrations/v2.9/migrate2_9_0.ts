@@ -1,4 +1,4 @@
-import {GoldfinchConfig, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig, SeniorPool, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import hre from "hardhat"
 import {deployWithdrawalRequestToken} from "../../baseDeploy/deployWithdrawalRequestToken"
 import {CONFIG_KEYS} from "../../configKeys"
@@ -20,9 +20,12 @@ export async function main() {
   })
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
+  const seniorPool = await getEthersContract<SeniorPool>("SeniorPool")
+
   const gfConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
   await deployEffects.add({
     deferred: [
+      await seniorPool.populateTransaction.initializeEpochs(),
       await gfConfig.populateTransaction.setNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeInBps, "100"),
       await stakingRewards.populateTransaction.setBaseURI(
         "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net/stakingRewardsTokenMetadata/"
