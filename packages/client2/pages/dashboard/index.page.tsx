@@ -96,6 +96,7 @@ gql`
           token
           amount
         }
+      }
       claimableMembershipRewards {
         token
         amount
