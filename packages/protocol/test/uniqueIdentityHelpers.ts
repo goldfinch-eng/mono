@@ -2,7 +2,7 @@ import _ from "lodash"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {TestUniqueIdentityInstance} from "../typechain/truffle"
+import {UniqueIdentityInstance} from "../typechain/truffle"
 import {TransferSingle} from "../typechain/truffle/TestUniqueIdentity"
 import {BN, decodeLogs, getOnlyLog} from "./testHelpers"
 import {BigNumber, constants as ethersConstants} from "ethers"
@@ -56,7 +56,7 @@ export type MintParams = [BN, BN]
 
 export async function mint(
   hre: HardhatRuntimeEnvironment,
-  uniqueIdentity: TestUniqueIdentityInstance,
+  uniqueIdentity: UniqueIdentityInstance,
   tokenId: BN,
   expiresAt: BN,
   nonce: BN,
@@ -113,7 +113,7 @@ export type BurnParams = [string, BN, BN]
 
 export async function burn(
   hre: HardhatRuntimeEnvironment,
-  uniqueIdentity: TestUniqueIdentityInstance,
+  uniqueIdentity: UniqueIdentityInstance,
   recipient: string,
   tokenId: BN,
   expiresAt: BN,

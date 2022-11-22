@@ -36,7 +36,7 @@ import {
 } from "@goldfinch-eng/protocol/test/testHelpers"
 
 const setupTest = deployments.createFixture(async () => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const go = await getTruffleContract<GoInstance>("Go")
   const gfi = await getTruffleContract<GFIInstance>("GFI")

@@ -23,7 +23,7 @@ const {deployments, web3} = hre
 const TEST_TIMEOUT = 180000 // 3 mins
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const [owner, bwr, person3] = await web3.eth.getAccounts()
   assertNonNullable(owner)

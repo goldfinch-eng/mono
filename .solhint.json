@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12 || ^0.8.4"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.4 || >=0.6.0"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
@@ -201,6 +201,13 @@
           "withdraw": ["nonReentrant"],
           "withdrawMultiple": []
         },
+        "**/MembershipOrchestrator.sol:MembershipOrchestrator": {
+          "harvest": ["whenNotPaused", "nonReentrant"],
+          "collectRewards": ["whenNotPaused", "nonReentrant"],
+          "deposit": ["whenNotPaused", "nonReentrant"],
+          "withdraw": ["whenNotPaused", "nonReentrant"],
+          "finalizeEpochs": ["whenNotPaused", "nonReentrant"]
+        },
         "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
           "_setGrantAccepted": [],
           "acceptGrant": []
@@ -241,6 +248,56 @@
           "claimTranchedPoolZap":  ["whenNotPaused", "nonReentrant"],
           "unzapToStakingRewards":  ["whenNotPaused", "nonReentrant"],
           "zapStakeToCurve": ["whenNotPaused", "nonReentrant"]
+        },
+        "**/contracts/cake/Context.sol:*": {
+          "setUp":  [],
+          "tearDown": [],
+          "tx": []
+        },
+        "**/contracts/cake/AccessControl.sol:*": {
+          "addOperator":  [],
+          "removeOperator": [],
+          "setAdmin": []
+        },
+        "**/contracts/cake/Router.sol:*": {
+          "setContract":  []
+        },
+        "**/MembershipVault.sol:*": {
+          "checkpoint":  ["onlyOperator"],
+          "adjustHoldings":  ["onlyOperator"],
+          "_checkpoint": [],
+          "_fetchOrCreatePosition": []
+        },
+        "**/CapitalLedger.sol:*": {
+          "depositERC20":  ["onlyOperator"],
+          "depositERC721":  ["onlyOperator"],
+          "withdraw":  ["onlyOperator"],
+          "withdrawERC20":  ["onlyOperator"],
+          "harvest": ["onlyOperator"],
+          "_mintPosition": []
+        },
+        "**/GFILedger.sol:*": {
+          "deposit":  ["onlyOperator"],
+          "withdraw":  ["onlyOperator"],
+          "_mintPosition": [],
+          "_withdraw": []
+        },
+        "**/contracts/protocol/core/membership/ERC20Splitter.sol:*": {
+          "distribute":  []
+        },
+        "**/MembershipDirector.sol:*": {
+          "consumeHoldingsAdjustment":  ["onlyOperator"],
+          "collectRewards":  ["onlyOperator"],
+          "finalizeEpochs":  ["onlyOperator"]
+        },
+        "**/MembershipCollector.sol:*": {
+          "onReceive":  [],
+          "distributeFiduTo":  ["onlyOperator"],
+          "finalizeEpochs":  ["onlyOperator"]
+        },
+        "**/MembershipLedger.sol:*": {
+          "resetRewards":  ["onlyOperator"],
+          "allocateRewardsTo":  ["onlyOperator"]
         },
         "**/contracts/test/**": {
           "*.*": []

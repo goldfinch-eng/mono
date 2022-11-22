@@ -24,7 +24,7 @@ import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
-import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
+import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
 
 const logger: Logger = console.log
 
@@ -97,6 +97,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
   await go.contract.initZapperRole({from: trustedSigner})
   await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
+  console.log("Setting legacy go list")
+  await go.contract.setLegacyGoList(config.address)
+  await migrate280.main()
+
+  console.log("Set legacy go list")
 
   await deployEffects.executeDeferred()
 }

@@ -1,0 +1,243 @@
+{
+  "address": "0x8783E23b3B04A26283C82c86cac85098Dbc70657",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "resource",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "accessor",
+          "type": "address"
+        }
+      ],
+      "name": "RequiresAdmin",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAddress",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "resource",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "AdminSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "admins",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "resource",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "accessor",
+          "type": "address"
+        }
+      ],
+      "name": "requireAdmin",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "accessor",
+          "type": "address"
+        }
+      ],
+      "name": "requireSuperAdmin",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "resource",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "setAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x27d8b1741090d8557e51c435c3bc7141761711bd0eada13cdfe627d9a3b4d3fa",
+  "receipt": {
+    "to": null,
+    "from": "0x2Fbf774ec12Bd86a60E563F0653AEee4DEbA0DB8",
+    "contractAddress": "0x8783E23b3B04A26283C82c86cac85098Dbc70657",
+    "transactionIndex": 44,
+    "gasUsed": "249518",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x2c877d9ec37c640937567e3a147eaeb426423972bc0d86e67e4a4bb58ffcdb60",
+    "transactionHash": "0x27d8b1741090d8557e51c435c3bc7141761711bd0eada13cdfe627d9a3b4d3fa",
+    "logs": [],
+    "blockNumber": 15992861,
+    "cumulativeGasUsed": "5793979",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "eac65dc40e06b4b044f441f03029567a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"resource\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"accessor\",\"type\":\"address\"}],\"name\":\"RequiresAdmin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"resource\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"}],\"name\":\"AdminSet\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"admins\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"resource\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"accessor\",\"type\":\"address\"}],\"name\":\"requireAdmin\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"accessor\",\"type\":\"address\"}],\"name\":\"requireSuperAdmin\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"resource\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"}],\"name\":\"setAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"landakram\",\"kind\":\"dev\",\"methods\":{\"requireAdmin(address,address)\":{\"details\":\"This method reverts when `accessor` is not a valid admin\",\"params\":{\"accessor\":\"An address on which to assert access control checks\",\"resource\":\"An address that `accessor` is attempting to access\"}},\"requireSuperAdmin(address)\":{\"details\":\"This method reverts when `accessor` is not a valid super-admin\",\"params\":{\"accessor\":\"An address on which to assert access control checks\"}},\"setAdmin(address,address)\":{\"details\":\"This method is only callable by the super-admin (the admin of this AccessControl   contract)\",\"params\":{\"admin\":\"An address which should be allowed to administer `resource`\",\"resource\":\"An address which with `admin` should be allowed to administer\"}}},\"stateVariables\":{\"admins\":{\"details\":\"Mapping from contract address to contract admin;\"}},\"title\":\"Cake access control\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"requireAdmin(address,address)\":{\"notice\":\"Require a valid admin for a given resource\"},\"requireSuperAdmin(address)\":{\"notice\":\"Require a super-admin. A super-admin is an admin of this AccessControl contract.\"},\"setAdmin(address,address)\":{\"notice\":\"Set an admin for a given resource\"}},\"notice\":\"This contact centralizes contract-to-contract access control using a simple access-control list. There are two types of actors: operators and admins. Operators are callers involved in a regular end-user tx. This would likely be another Goldfinch contract for which the current contract is a dependency. Admins are callers allowed for specific admin actions (like changing parameters, topping up funds, etc.).\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/cake/AccessControl.sol\":\"AccessControl\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":100},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed\\n * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an\\n * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer\\n * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.\\n *\\n * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as\\n * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.\\n *\\n * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure\\n * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.\\n */\\nabstract contract Initializable {\\n    /**\\n     * @dev Indicates that the contract has been initialized.\\n     */\\n    bool private _initialized;\\n\\n    /**\\n     * @dev Indicates that the contract is in the process of being initialized.\\n     */\\n    bool private _initializing;\\n\\n    /**\\n     * @dev Modifier to protect an initializer function from being invoked twice.\\n     */\\n    modifier initializer() {\\n        require(_initializing || !_initialized, \\\"Initializable: contract is already initialized\\\");\\n\\n        bool isTopLevelCall = !_initializing;\\n        if (isTopLevelCall) {\\n            _initializing = true;\\n            _initialized = true;\\n        }\\n\\n        _;\\n\\n        if (isTopLevelCall) {\\n            _initializing = false;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x8b2abd85d0ece7e866e100e9d47ca9cbec93c87cf71a8d267b2b93eb81f7d5e9\",\"license\":\"MIT\"},\"contracts/cake/AccessControl.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.16;\\n\\nimport \\\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\\\";\\nimport \\\"../interfaces/IAccessControl.sol\\\";\\n\\n/// @title Cake access control\\n/// @author landakram\\n/// @notice This contact centralizes contract-to-contract access control using a simple\\n/// access-control list. There are two types of actors: operators and admins. Operators\\n/// are callers involved in a regular end-user tx. This would likely be another Goldfinch\\n/// contract for which the current contract is a dependency. Admins are callers allowed\\n/// for specific admin actions (like changing parameters, topping up funds, etc.).\\ncontract AccessControl is Initializable, IAccessControl {\\n  /// @dev Mapping from contract address to contract admin;\\n  mapping(address => address) public admins;\\n\\n  function initialize(address admin) public initializer {\\n    admins[address(this)] = admin;\\n    emit AdminSet(address(this), admin);\\n  }\\n\\n  /// @inheritdoc IAccessControl\\n  function setAdmin(address resource, address admin) external {\\n    requireSuperAdmin(msg.sender);\\n    admins[resource] = admin;\\n    emit AdminSet(resource, admin);\\n  }\\n\\n  /// @inheritdoc IAccessControl\\n  function requireAdmin(address resource, address accessor) public view {\\n    if (accessor == address(0)) revert ZeroAddress();\\n    bool isAdmin = admins[resource] == accessor;\\n    if (!isAdmin) revert RequiresAdmin(resource, accessor);\\n  }\\n\\n  /// @inheritdoc IAccessControl\\n  function requireSuperAdmin(address accessor) public view {\\n    // The super admin is the admin of this AccessControl contract\\n    requireAdmin({resource: address(this), accessor: accessor});\\n  }\\n}\\n\",\"keccak256\":\"0x1b70acad9e92a3b0898a989d413bb16b5c5707faf84f2eb31354b453385a7b54\",\"license\":\"MIT\"},\"contracts/interfaces/IAccessControl.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.16;\\n\\n/// @title Cake access control\\n/// @author landakram\\n/// @notice This contact centralizes contract-to-contract access control using a simple\\n/// access-control list. There are two types of actors: operators and admins. Operators\\n/// are callers involved in a regular end-user tx. This would likely be another Goldfinch\\n/// contract for which the current contract is a dependency. Admins are callers allowed\\n/// for specific admin actions (like changing parameters, topping up funds, etc.).\\ninterface IAccessControl {\\n  error RequiresAdmin(address resource, address accessor);\\n  error ZeroAddress();\\n\\n  event AdminSet(address indexed resource, address indexed admin);\\n\\n  /// @notice Set an admin for a given resource\\n  /// @param resource An address which with `admin` should be allowed to administer\\n  /// @param admin An address which should be allowed to administer `resource`\\n  /// @dev This method is only callable by the super-admin (the admin of this AccessControl\\n  ///   contract)\\n  function setAdmin(address resource, address admin) external;\\n\\n  /// @notice Require a valid admin for a given resource\\n  /// @param resource An address that `accessor` is attempting to access\\n  /// @param accessor An address on which to assert access control checks\\n  /// @dev This method reverts when `accessor` is not a valid admin\\n  function requireAdmin(address resource, address accessor) external view;\\n\\n  /// @notice Require a super-admin. A super-admin is an admin of this AccessControl contract.\\n  /// @param accessor An address on which to assert access control checks\\n  /// @dev This method reverts when `accessor` is not a valid super-admin\\n  function requireSuperAdmin(address accessor) external view;\\n}\\n\",\"keccak256\":\"0xa77d24e074f86c95657ada01678e9c7136b8769856182428f0f2cb6d191b341f\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5061038d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c8063429b62e51461005c57806354dc2716146100a15780636d1d2032146100b6578063c4d66de8146100c9578063c55b6bb7146100dc575b600080fd5b61008561006a366004610302565b6001602052600090815260409020546001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6100b46100af366004610324565b6100ef565b005b6100b46100c4366004610302565b610171565b6100b46100d7366004610302565b61017e565b6100b46100ea366004610324565b610286565b6001600160a01b0381166101165760405163d92e233d60e01b815260040160405180910390fd5b6001600160a01b038281166000908152600160205260409020548116908216148061016c57604051637ccf1e3560e11b81526001600160a01b038085166004830152831660248201526044015b60405180910390fd5b505050565b61017b30826100ef565b50565b600054610100900460ff1680610197575060005460ff16155b6101fa5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b6064820152608401610163565b600054610100900460ff1615801561021c576000805461ffff19166101011790555b3060008181526001602052604080822080546001600160a01b0319166001600160a01b03871690811790915590519092917fbf265e8326285a2747e33e54d5945f7111f2b5edb826eb8c08d4677779b3ff9791a38015610282576000805461ff00191690555b5050565b61028f33610171565b6001600160a01b0382811660008181526001602052604080822080546001600160a01b0319169486169485179055517fbf265e8326285a2747e33e54d5945f7111f2b5edb826eb8c08d4677779b3ff979190a35050565b80356001600160a01b03811681146102fd57600080fd5b919050565b60006020828403121561031457600080fd5b61031d826102e6565b9392505050565b6000806040838503121561033757600080fd5b610340836102e6565b915061034e602084016102e6565b9050925092905056fea2646970667358221220301864e972f9eda220cd932417f369e0531ec30a4223112404a6ec5b568b8faa64736f6c63430008100033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100575760003560e01c8063429b62e51461005c57806354dc2716146100a15780636d1d2032146100b6578063c4d66de8146100c9578063c55b6bb7146100dc575b600080fd5b61008561006a366004610302565b6001602052600090815260409020546001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6100b46100af366004610324565b6100ef565b005b6100b46100c4366004610302565b610171565b6100b46100d7366004610302565b61017e565b6100b46100ea366004610324565b610286565b6001600160a01b0381166101165760405163d92e233d60e01b815260040160405180910390fd5b6001600160a01b038281166000908152600160205260409020548116908216148061016c57604051637ccf1e3560e11b81526001600160a01b038085166004830152831660248201526044015b60405180910390fd5b505050565b61017b30826100ef565b50565b600054610100900460ff1680610197575060005460ff16155b6101fa5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b6064820152608401610163565b600054610100900460ff1615801561021c576000805461ffff19166101011790555b3060008181526001602052604080822080546001600160a01b0319166001600160a01b03871690811790915590519092917fbf265e8326285a2747e33e54d5945f7111f2b5edb826eb8c08d4677779b3ff9791a38015610282576000805461ff00191690555b5050565b61028f33610171565b6001600160a01b0382811660008181526001602052604080822080546001600160a01b0319169486169485179055517fbf265e8326285a2747e33e54d5945f7111f2b5edb826eb8c08d4677779b3ff979190a35050565b80356001600160a01b03811681146102fd57600080fd5b919050565b60006020828403121561031457600080fd5b61031d826102e6565b9392505050565b6000806040838503121561033757600080fd5b610340836102e6565b915061034e602084016102e6565b9050925092905056fea2646970667358221220301864e972f9eda220cd932417f369e0531ec30a4223112404a6ec5b568b8faa64736f6c63430008100033",
+  "devdoc": {
+    "author": "landakram",
+    "kind": "dev",
+    "methods": {
+      "requireAdmin(address,address)": {
+        "details": "This method reverts when `accessor` is not a valid admin",
+        "params": {
+          "accessor": "An address on which to assert access control checks",
+          "resource": "An address that `accessor` is attempting to access"
+        }
+      },
+      "requireSuperAdmin(address)": {
+        "details": "This method reverts when `accessor` is not a valid super-admin",
+        "params": {
+          "accessor": "An address on which to assert access control checks"
+        }
+      },
+      "setAdmin(address,address)": {
+        "details": "This method is only callable by the super-admin (the admin of this AccessControl   contract)",
+        "params": {
+          "admin": "An address which should be allowed to administer `resource`",
+          "resource": "An address which with `admin` should be allowed to administer"
+        }
+      }
+    },
+    "stateVariables": {
+      "admins": {
+        "details": "Mapping from contract address to contract admin;"
+      }
+    },
+    "title": "Cake access control",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "requireAdmin(address,address)": {
+        "notice": "Require a valid admin for a given resource"
+      },
+      "requireSuperAdmin(address)": {
+        "notice": "Require a super-admin. A super-admin is an admin of this AccessControl contract."
+      },
+      "setAdmin(address,address)": {
+        "notice": "Set an admin for a given resource"
+      }
+    },
+    "notice": "This contact centralizes contract-to-contract access control using a simple access-control list. There are two types of actors: operators and admins. Operators are callers involved in a regular end-user tx. This would likely be another Goldfinch contract for which the current contract is a dependency. Admins are callers allowed for specific admin actions (like changing parameters, topping up funds, etc.).",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 663,
+        "contract": "contracts/cake/AccessControl.sol:AccessControl",
+        "label": "_initialized",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 666,
+        "contract": "contracts/cake/AccessControl.sol:AccessControl",
+        "label": "_initializing",
+        "offset": 1,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 4859,
+        "contract": "contracts/cake/AccessControl.sol:AccessControl",
+        "label": "admins",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_address,t_address)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_address)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      }
+    }
+  }
+}
