@@ -41,7 +41,7 @@ const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
 const setupTest = deployments.createFixture(async () => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const gfi = await getTruffleContract<GFIInstance>("GFI")
   const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")

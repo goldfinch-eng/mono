@@ -3,3 +3,4 @@
 @ensdomains/=node_modules/@ensdomains/
 @uniswap/=node_modules/@uniswap/
 @openzeppelin/=node_modules/@openzeppelin/
+openzeppelin-contracts-0-8-x/=node_modules/openzeppelin-contracts-0-8-x/

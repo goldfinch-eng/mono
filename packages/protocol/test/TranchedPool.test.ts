@@ -18,6 +18,7 @@ import {
   getCurrentTimestamp,
   mineBlock,
   bigVal,
+  HALF_CENT,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -51,7 +52,6 @@ const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const ASSESS_EVENT = "TranchedPoolAssessed"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
-const HALF_CENT = usdcVal(1).div(new BN(200))
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,

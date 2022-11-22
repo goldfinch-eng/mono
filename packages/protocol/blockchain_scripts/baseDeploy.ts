@@ -1,14 +1,6 @@
-import {
-  OWNER_ROLE,
-  MINTER_ROLE,
-  isMainnetForking,
-  assertIsChainId,
-  ContractDeployer,
-  ZAPPER_ROLE,
-} from "./deployHelpers"
+import {isMainnetForking, assertIsChainId, ContractDeployer, ZAPPER_ROLE} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
-import {Fidu} from "../typechain/ethers"
 import {Logger} from "./types"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {getDeployEffects} from "./migrations/deployEffects"
@@ -32,6 +24,7 @@ import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
+import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
 
 const logger: Logger = console.log
 
@@ -103,6 +96,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
   await go.contract.initZapperRole({from: trustedSigner})
   await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
+  console.log("Setting legacy go list")
+  await go.contract.setLegacyGoList(config.address)
+  await migrate280.main()
+
+  console.log("Set legacy go list")
 
   await deployEffects.executeDeferred()
 }

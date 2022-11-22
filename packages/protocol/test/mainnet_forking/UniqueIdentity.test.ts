@@ -8,7 +8,10 @@ import {Signer} from "ethers"
 import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
-import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {
+  MAINNET_GOVERNANCE_MULTISIG,
+  MAINNET_WARBLER_LABS_MULTISIG,
+} from "../../blockchain_scripts/mainnetForkingHelpers"
 
 // Ideally, we reference this this directly with @goldfinch-eng/autotasks, but that currently
 // creates a circular dependency. Task to fix this:
@@ -20,7 +23,7 @@ const {deployments, web3} = hre
 const TEST_TIMEOUT = 180000 // 3 mins
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const [owner, bwr, person3] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -80,8 +83,11 @@ describe("UID", () => {
     await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, person3])
 
-    await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
-    await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
+    await fundWithWhales(["ETH"], [MAINNET_WARBLER_LABS_MULTISIG])
+
+    await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+    await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: MAINNET_WARBLER_LABS_MULTISIG})
+    await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: MAINNET_WARBLER_LABS_MULTISIG})
   })
 
   describe("KYC is eligible", () => {
