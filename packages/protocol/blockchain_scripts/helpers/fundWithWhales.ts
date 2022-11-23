@@ -15,10 +15,11 @@ export async function fundWithWhales(
   logger("💰🐋 Begin fundWithWhales")
 
   const whales: Record<Ticker, AddressString> = {
-    USDC: "0x72a53cdbbcc1b9efa39c834a540550e23463aacb",
+    USDC: "0xda9ce944a37d218c3302f6b82a094844c6eceb17",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
     BUSD: "0x28c6c06298d514db089934071355e5743bf21d60",
     ETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    GFI: "0xbeb28978b2c755155f20fd3d09cb37e300a6981f",
   }
   const chainId = await currentChainId()
   assertIsChainId(chainId)
@@ -71,6 +72,8 @@ async function fundWithWhale({
   logger(`💰🐋 recipient:${recipient}`)
   logger(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)
+  // give the whale a ton of eth in case they dont have enough
+  await ethers.provider.send("hardhat_setBalance", [whale, ethers.utils.parseEther("10.0").toHexString()])
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 

@@ -80,7 +80,7 @@ contract ImplementationRepositoryTest is BaseTest {
     external
     impersonating(caller)
     withFakeContract(impl)
-    filterAddress(caller)
+    onlyAllowListed(caller)
   {
     vm.expectRevert(bytes("Must have admin role to perform this action"));
     repo.createLineage(impl);
@@ -100,9 +100,9 @@ contract ImplementationRepositoryTest is BaseTest {
     // none of these should be equal eachother
     assume(a != b && b != c && c != a)
     // none of them should be the initial impl
-    filterAddress(a)
-    filterAddress(b)
-    filterAddress(c)
+    onlyAllowListed(a)
+    onlyAllowListed(b)
+    onlyAllowListed(c)
   {
     vm.label(a, "a");
     vm.label(b, "b");
@@ -246,8 +246,8 @@ contract ImplementationRepositoryTest is BaseTest {
     withFakeContract(b)
     // none of these should be equal eachother
     assume(a != b)
-    filterAddress(a)
-    filterAddress(b)
+    onlyAllowListed(a)
+    onlyAllowListed(b)
   {
     vm.label(a, "a");
     vm.label(b, "b");

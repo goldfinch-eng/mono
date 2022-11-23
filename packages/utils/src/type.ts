@@ -10,7 +10,7 @@ import {every, isPlainObject as _isPlainObject} from "lodash"
 function getTypeof(obj: unknown) {
   return typeof obj
 }
-type TypeofReturnType = ReturnType<typeof getTypeof>
+export type TypeofReturnType = ReturnType<typeof getTypeof>
 
 export class TypeofAssertionError extends Error {
   constructor(obj: unknown, expectedType: TypeofReturnType) {

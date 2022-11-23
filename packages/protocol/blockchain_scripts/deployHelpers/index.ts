@@ -17,7 +17,7 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import BN from "bn.js"
-import {BaseContract, Contract, Signer} from "ethers"
+import {BaseContract, Contract, PopulatedTransaction, Signer} from "ethers"
 import hre, {artifacts, ethers, getChainId, getNamedAccounts, web3} from "hardhat"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {GoldfinchConfig} from "../../typechain/ethers"
@@ -47,7 +47,10 @@ const MAINNET = "mainnet"
 
 export type ChainName = typeof LOCAL | typeof MAINNET
 
-const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+export const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+export const GFI_MANTISSA = 1e18
+export const USDC_MANTISSA = 1e6
+export const USDC_TO_GFI_MANTISSA = GFI_MANTISSA / USDC_MANTISSA
 
 const LOCAL_CHAIN_ID = "31337"
 type LocalChainId = typeof LOCAL_CHAIN_ID
@@ -78,6 +81,9 @@ const BUSD = "BUSD"
 type BUSDTicker = typeof BUSD
 const ETH = "ETH"
 type ETHTicker = typeof ETH
+const GFI = "GFI"
+type GFITicker = typeof GFI
+
 function assertIsTicker(val: string): asserts val is Ticker {
   if (!TICKERS.includes(val)) {
     throw new AssertionError(`${val} is not in the allowed Ticker list: ${TICKERS}`)
@@ -93,10 +99,15 @@ const USDT_ADDRESSES: Record<typeof MAINNET, AddressString> = {
 const BUSD_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
+
+const GFI_ADDRESSES: Record<typeof MAINNET, AddressString> = {
+  [MAINNET]: "0xdab396ccf3d84cf2d07c4454e10c8a6f5b008d2b",
+}
 const ERC20_ADDRESSES = {
   [USDC]: USDC_ADDRESSES,
   [USDT]: USDT_ADDRESSES,
   [BUSD]: BUSD_ADDRESSES,
+  [GFI]: GFI_ADDRESSES,
 }
 
 type SafeConfigChainId = MainnetChainId
@@ -110,6 +121,8 @@ const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; execut
     executor: "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5",
   },
 }
+
+const MAINNET_PAUSER_ADDRESS = "0x061e0b0087a01127554ffef8f9c4c6e9447ad9dd"
 
 export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
@@ -153,8 +166,8 @@ function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
-export type Ticker = USDCTicker | USDTTicker | BUSDTicker | ETHTicker
-const TICKERS = [USDC, USDT, BUSD, ETH]
+export type Ticker = USDCTicker | USDTTicker | BUSDTicker | ETHTicker | GFITicker
+const TICKERS = [USDC, USDT, BUSD, ETH, GFI]
 function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
@@ -317,7 +330,9 @@ export async function getTruffleContract<T extends Truffle.ContractInstance = Tr
   opts: GetContractOptions = {}
 ): Promise<T> {
   if (!opts.at) {
-    opts.at = await getExistingAddress(contractName)
+    const unqualifiedContractName = contractName.split(":").pop()
+    assert(unqualifiedContractName)
+    opts.at = await getExistingAddress(unqualifiedContractName)
   }
   const at = opts.at
   const from = opts.from || (await getProtocolOwner())
@@ -364,6 +379,21 @@ async function getProtocolOwner(): Promise<string> {
   }
 }
 
+export async function getPauserAdmin(): Promise<string> {
+  const chainId = await getChainId()
+  if (isMainnetForking()) {
+    return MAINNET_PAUSER_ADDRESS
+  } else if (chainId === LOCAL_CHAIN_ID) {
+    const {protocol_owner} = await getNamedAccounts()
+    assertIsString(protocol_owner)
+    return protocol_owner
+  } else if (await isMainnet()) {
+    return MAINNET_PAUSER_ADDRESS
+  } else {
+    throw new Error(`Unknown pauser admin for chain id ${chainId}`)
+  }
+}
+
 async function currentChainId(): Promise<ChainId> {
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
@@ -391,6 +421,13 @@ function fixProvider(providerGiven: any): any {
   return providerGiven
 }
 
+const populateTxAndLog = (tx: Promise<PopulatedTransaction>, log: string): Promise<PopulatedTransaction> => {
+  return tx.then((tx) => {
+    console.log(log)
+    return tx
+  })
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -401,7 +438,6 @@ export {
   LOCAL,
   MAINNET,
   USDCDecimals,
-  MAX_UINT,
   ETHDecimals,
   LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
@@ -432,4 +468,5 @@ export {
   ContractDeployer,
   ContractUpgrader,
   fixProvider,
+  populateTxAndLog,
 }

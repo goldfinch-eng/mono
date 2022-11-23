@@ -5,7 +5,7 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "packages/protocol/block
 import {assertIsString} from "packages/utils/src/type"
 
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-import * as migrate280 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.8.0/migrate"
+import * as migrate310 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v3.1.0/migrate"
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
 import {TransferSingle} from "packages/protocol/typechain/truffle/TestUniqueIdentity"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
@@ -43,7 +43,7 @@ const setupTest = deployments.createFixture(async () => {
   )
   await impersonateAccount(hre, protocolOwner)
 
-  await migrate280.main()
+  await migrate310.main()
   await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
 
   const uniqueIdentityDeploy = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")

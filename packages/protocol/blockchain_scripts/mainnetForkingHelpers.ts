@@ -1,11 +1,12 @@
 import hre from "hardhat"
 import {assertIsChainId, getERC20Address} from "../blockchain_scripts/deployHelpers"
 const {ethers} = hre
-const MAINNET_GOVERNANCE_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
-const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
-const MAINNET_WARBLER_LABS_MULTISIG = "0x229Db88850B319BD4cA751490F3176F511823372"
-const MAINNET_GF_DEPLOYER = "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f"
-const MAINNET_CREDIT_DESK = "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+export const MAINNET_GOVERNANCE_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
+export const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
+export const MAINNET_WARBLER_LABS_MULTISIG = "0x229Db88850B319BD4cA751490F3176F511823372"
+export const MAINNET_GF_DEPLOYER = "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f"
+export const MAINNET_CREDIT_DESK = "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+export const MAINNET_TRUSTED_SIGNER_ADDRESS = "0x125cde169191c6c6c5e71c4a814bb7f7b8ee2e3f"
 
 /**
  * Override the USDC DOMAIN_SEPARATOR to use the local chain ID of 31337. This makes permit work when
@@ -39,12 +40,4 @@ export async function overrideUsdcDomainSeparator() {
   ethers.utils.solidityKeccak256([], [])
   await ethers.provider.send("hardhat_setStorageAt", [usdcAddress, DOMAIN_SEPARATOR_STORAGE_SLOT_INDEX, value])
   await ethers.provider.send("evm_mine", [])
-}
-
-export {
-  MAINNET_GOVERNANCE_MULTISIG,
-  MAINNET_UNDERWRITER,
-  MAINNET_WARBLER_LABS_MULTISIG,
-  MAINNET_GF_DEPLOYER,
-  MAINNET_CREDIT_DESK,
 }

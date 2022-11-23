@@ -79,7 +79,11 @@ abstract contract BaseTest is Test {
     protocol.usdc().transfer(addressToFund, amount);
   }
 
-  modifier filterAddress(address _address) {
+  function assertZero(uint256 x) internal {
+    assertEq(x, 0);
+  }
+
+  modifier onlyAllowListed(address _address) {
     vm.assume(fuzzHelper.isAllowed(_address));
     _;
   }

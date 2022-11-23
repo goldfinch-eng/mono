@@ -1,21 +1,24 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
   getSignerForAddress,
-  interestAprAsBN,
   MAINNET_CUSDC_ADDRESS,
   TRANCHES,
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
+  interestAprAsBN,
 } from "../../blockchain_scripts/deployHelpers"
-import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {
+  MAINNET_GOVERNANCE_MULTISIG,
+  MAINNET_TRUSTED_SIGNER_ADDRESS,
+} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate290 from "../../blockchain_scripts/migrations/v2.9.0/migrate"
+import * as migrate310 from "../../blockchain_scripts/migrations/v3.1.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -104,11 +107,11 @@ const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  // Note: base_deploy always returns when mainnet forking, however
+  // Note: baseDeploy always returns when mainnet forking, however
   // we need it here, because the "fixture" part is what let's hardhat
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -186,7 +189,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate290.main()
+  await migrate310.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -273,6 +276,8 @@ describe("mainnet forking tests", async function () {
     await pool.revokeRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
   }
 
+  const stratosEoa = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D"
+
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
@@ -309,6 +314,8 @@ describe("mainnet forking tests", async function () {
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
     curvePool = await artifacts.require("ICurveLP").at(curveAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
+    const {gf_deployer} = await getNamedAccounts()
+    fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS, stratosEoa])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
@@ -325,8 +332,7 @@ describe("mainnet forking tests", async function () {
   // Regression test for senior pool writedown bug fix
   // https://bugs.immunefi.com/dashboard/submission/10342
   describe("writedowns", () => {
-    it("don't tank the share price when a loan reaches maturity", async () => {
-      const stratosEoa = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D"
+    it("doesn't tank the share price when a loan reaches maturity", async () => {
       // Get stratos borrower contract
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
