@@ -142,9 +142,11 @@ export function handleAddToWithdrawalRequest(event: WithdrawalAddedTo): void {
 }
 
 export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void {
-  const withdrawalRequest = assert(SeniorPoolWithdrawalRequest.load(event.params.operator.toHexString()))
-  withdrawalRequest.fiduRequested = BigInt.zero()
-  withdrawalRequest.save()
+  const withdrawalRequest = SeniorPoolWithdrawalRequest.load(event.params.operator.toHexString())
+  if (withdrawalRequest) {
+    withdrawalRequest.fiduRequested = BigInt.zero()
+    withdrawalRequest.save()
+  }
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST", event.params.operator)
   transaction.receivedAmount = event.params.fiduCanceled

@@ -14,7 +14,7 @@ export function handleTransfer(event: Transfer): void {
   }
   // handles burning of withdrawal tokens, which can occur during the lifecycle of withdrawal requests and epochs
   if (event.params.to.equals(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
-    store.remove("SeniorPoolWithdrawalRequestToken", withdrawalRequest.id)
+    store.remove("SeniorPoolWithdrawalRequest", withdrawalRequest.id)
     const roster = getOrInitSeniorPoolWithdrawalRoster()
     roster.requests = removeFromList(roster.requests, withdrawalRequest.id)
     roster.save()
