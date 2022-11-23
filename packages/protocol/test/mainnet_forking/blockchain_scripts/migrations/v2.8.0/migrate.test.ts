@@ -128,7 +128,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe("v2.8.0", async function () {
+describe.skip("v2.8.0", async function () {
   let accessControl: AccessControlInstance
 
   let gfi: GFIInstance
