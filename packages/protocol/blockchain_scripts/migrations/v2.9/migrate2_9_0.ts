@@ -1,4 +1,4 @@
-import {GoldfinchConfig, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig, SeniorPool, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import hre from "hardhat"
 import {deployWithdrawalRequestToken} from "../../baseDeploy/deployWithdrawalRequestToken"
 import {CONFIG_KEYS} from "../../configKeys"

@@ -366,7 +366,7 @@ describe("mainnet forking tests", async function () {
      * holders of varying position sizes who have submitted requests to withdraw in the first epoch. For each epoch
      * liquidation we assert that their usdcWithdrawable is what we would expect.
      */
-    it("withdraws", async () => {
+    it.skip("withdraws", async () => {
       const [owner] = await ethers.getSigners()
       assertNonNullable(owner)
       await fundWithWhales(["USDC"], [owner.address], 500_000)
@@ -508,7 +508,7 @@ describe("mainnet forking tests", async function () {
       }
     })
 
-    it("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
+    it.skip("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
       const fiduHolder = {
         address: "0x3ccf9578728cf103a4435ec83c716090d5752043",
         // ~42K FIDU
