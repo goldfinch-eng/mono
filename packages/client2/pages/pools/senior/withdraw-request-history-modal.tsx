@@ -10,6 +10,7 @@ import {
   SupportedCrypto,
   WithdrawalEpochInfo,
   WithdrawalTransactionCategory,
+  WithdrawalTransactionHistoryFieldsFragment,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -119,38 +120,12 @@ export default function WithdrawalHistoryModal({
       );
 
       // Push request row to array
-      rows.push([
-        transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
-          ? "Initial request"
-          : transaction.category ===
-            WithdrawalTransactionCategory.AddToWithdrawalRequest
-          ? "Increase request"
-          : "",
-        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
-        transaction.amount
-          ? `+${formatCrypto({
-              amount: transaction.amount,
-              token: SupportedCrypto.Fidu,
-            })}`
-          : "",
-        formatCrypto({
-          amount: BigNumber.from(tempUserTotal).div(FIDU_DECIMALS_DIV),
-          token: SupportedCrypto.Fidu,
-        }),
-      ]);
+      rows.push(getRequestRow(transaction, tempUserTotal));
     } else {
       tempUserTotal = FixedNumber.from("0");
 
       // Push cancel row to array
-      rows.push([
-        "Request Cancelled",
-        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
-        "",
-        formatCrypto({
-          amount: BigNumber.from("0"),
-          token: SupportedCrypto.Fidu,
-        }),
-      ]);
+      rows.push(getCancelRow(transaction));
     }
 
     // If last transaction, and not cancelled, check if that same epoch ended to calculate distribution
@@ -225,6 +200,45 @@ export default function WithdrawalHistoryModal({
       )}
     </Modal>
   );
+}
+
+function getRequestRow(
+  transaction: WithdrawalTransactionHistoryFieldsFragment,
+  total: FixedNumber
+): [string, string, string, string] {
+  return [
+    transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
+      ? "Initial request"
+      : transaction.category ===
+        WithdrawalTransactionCategory.AddToWithdrawalRequest
+      ? "Increase request"
+      : "",
+    format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+    transaction.amount
+      ? `+${formatCrypto({
+          amount: transaction.amount,
+          token: SupportedCrypto.Fidu,
+        })}`
+      : "",
+    formatCrypto({
+      amount: BigNumber.from(total).div(FIDU_DECIMALS_DIV),
+      token: SupportedCrypto.Fidu,
+    }),
+  ];
+}
+
+function getCancelRow(
+  transaction: WithdrawalTransactionHistoryFieldsFragment
+): [string, string, string, string] {
+  return [
+    "Request Cancelled",
+    format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+    "",
+    formatCrypto({
+      amount: BigNumber.from("0"),
+      token: SupportedCrypto.Fidu,
+    }),
+  ];
 }
 
 function getDistributionRow(

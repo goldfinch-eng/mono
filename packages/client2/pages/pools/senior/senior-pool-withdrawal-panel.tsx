@@ -261,7 +261,7 @@ export function SeniorPoolWithdrawalPanel({
       />
 
       <WithdrawalCancelRequestModal
-        cancellationFee={cancellationFee ?? FixedNumber.from("0")}
+        cancellationFee={cancellationFee ?? FixedNumber.from("0.1")}
         withdrawalToken={withdrawalStatus?.withdrawalToken}
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
         isOpen={cancelModalOpen}
