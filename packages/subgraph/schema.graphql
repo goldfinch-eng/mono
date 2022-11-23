@@ -412,8 +412,8 @@ type MembershipRewardDisbursement @entity(immutable: true) {
   rewards: BigInt!
 }
 
-type SeniorPoolWithdrawalRequestToken @entity {
-  id: ID!
+type SeniorPoolWithdrawalRequest @entity {
+  id: ID! # corresponds to the user address, since each user can only have one withdrawal request active at a time
   user: User!
   usdcWithdrawable: BigInt!
   fiduRequested: BigInt!
@@ -431,7 +431,7 @@ type SeniorPoolWithdrawalEpoch @entity(immutable: true) {
 # Singleton that keeps track of all outstanding withdrawal requests
 type SeniorPoolWithdrawalRequestRoster @entity {
   id: ID! # hard-coded to 1. This is a singleton.
-  requests: [SeniorPoolWithdrawalRequestToken!]!
+  requests: [SeniorPoolWithdrawalRequest!]!
 }
 
 type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
