@@ -107,11 +107,11 @@ const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  // Note: baseDeploy always returns when mainnet forking, however
-  // we need it here, because the "fixture" part is what let's hardhat
+  // Note: Even if we do not have any pending mainnet migrations,
+  // the "fixture" part is what lets hardhat
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
-  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
+  await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -189,7 +189,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate310.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 

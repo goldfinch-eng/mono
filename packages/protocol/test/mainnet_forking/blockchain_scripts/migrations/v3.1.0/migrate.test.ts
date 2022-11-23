@@ -6,6 +6,7 @@ import {assertIsString} from "packages/utils/src/type"
 
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import * as migrate310 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v3.1.0/migrate"
+
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
 import {TransferSingle} from "packages/protocol/typechain/truffle/TestUniqueIdentity"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
@@ -15,7 +16,10 @@ import {
   getDeployedAsTruffleContract,
   SECONDS_PER_DAY,
 } from "@goldfinch-eng/protocol/test/testHelpers"
-import {MAINNET_GOVERNANCE_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {
+  MAINNET_GOVERNANCE_MULTISIG,
+  MAINNET_WARBLER_LABS_MULTISIG,
+} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
   presignedMintMessage,
   presignedMintToMessage,
@@ -41,15 +45,14 @@ const setupTest = deployments.createFixture(async () => {
     ["USDC", "BUSD", "USDT", "ETH"],
     [protocolOwner, gf_deployer, owner, signerAddress, anotherUser, anotherUser2, anotherUser3]
   )
-  await impersonateAccount(hre, protocolOwner)
+  await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
 
   await migrate310.main()
-  await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
 
   const uniqueIdentityDeploy = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")
   const uniqueIdentity = await ethers.getContractAt(uniqueIdentityDeploy.abi, uniqueIdentityDeploy.address)
 
-  const protocolOwnerSigner = await hre.ethers.getSigner(protocolOwner)
+  const protocolOwnerSigner = await hre.ethers.getSigner(MAINNET_WARBLER_LABS_MULTISIG)
   await uniqueIdentity.connect(protocolOwnerSigner).grantRole(OWNER_ROLE, owner)
   await uniqueIdentity.connect(protocolOwnerSigner).grantRole(SIGNER_ROLE, signerAddress)
   return {
@@ -62,7 +65,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe("v2.8.0", async function () {
+describe("v3.1.0", async function () {
   let signerAddress: string,
     signer: any,
     tokenId: number,
