@@ -61,11 +61,8 @@ export default function WithdrawalCancelRequestModal({
       size="sm"
       title="Cancel withdrawal request"
       isOpen={isOpen}
-      onClose={() => {
-        onClose();
-      }}
+      onClose={onClose}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       <div className="mb-7">
         <h5 className="mb-2 text-base font-medium">Confirm changes</h5>

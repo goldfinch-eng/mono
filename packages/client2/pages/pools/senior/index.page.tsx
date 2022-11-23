@@ -9,7 +9,6 @@ import {
   Button,
   goldfinchLogoWhiteBgPngUrl,
   Link,
-  InfoIconTooltip,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -77,7 +76,7 @@ gql`
         withdrawalToken
       }
     }
-    currentEpoch @client {
+    currentWithdrawalEpoch @client {
       endTime
     }
   }
@@ -182,7 +181,7 @@ export default function SeniorPoolPage() {
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithdrawalPanel
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
-                currentEpoch={data.currentEpoch}
+                currentEpoch={data.currentWithdrawalEpoch}
                 withdrawalStatus={data.viewer.withdrawalStatus}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
@@ -254,11 +253,8 @@ export default function SeniorPoolPage() {
           </div>
 
           <div className="mb-20">
-            <div className="mb-8 flex items-center gap-2">
+            <div className="mb-8">
               <h2 className="text-lg font-semibold">Liquidity options</h2>
-              <div className="flex text-sand-400">
-                <InfoIconTooltip size="sm" content="" />
-              </div>
             </div>
             <table className="w-full border-collapse border border-sand-200 text-sand-600">
               <tbody>
@@ -277,9 +273,11 @@ export default function SeniorPoolPage() {
                       requested amount.
                     </div>
                     <Link
-                      href={``}
+                      href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
                       iconRight="ArrowTopRight"
                       className="text-sand-400 underline"
+                      target="_blank"
+                      rel="noreferrer"
                     >
                       Read more
                     </Link>

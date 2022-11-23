@@ -8,7 +8,7 @@ import {
   GfiPrice,
   SupportedFiat,
   Viewer,
-  EpochInfo,
+  WithdrawalEpochInfo,
 } from "../generated";
 
 async function fetchWithTimeout(url: string, timeout = 3000) {
@@ -91,7 +91,7 @@ export const rootQueryResolvers: Resolvers[string] = {
       };
     }
   },
-  async currentEpoch(): Promise<EpochInfo | null> {
+  async currentWithdrawalEpoch(): Promise<WithdrawalEpochInfo | null> {
     const provider = await getProvider();
 
     try {
@@ -103,7 +103,7 @@ export const rootQueryResolvers: Resolvers[string] = {
       const currentEpoch = await seniorPool.currentEpoch();
 
       return {
-        __typename: "EpochInfo",
+        __typename: "WithdrawalEpochInfo",
         endTime: currentEpoch.endsAt,
       };
     } catch (e) {

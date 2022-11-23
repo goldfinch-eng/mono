@@ -115,7 +115,7 @@ type WithdrawalStatus {
   withdrawalToken: BigInt
 }
 
-type EpochInfo {
+type WithdrawalEpochInfo {
   endTime: BigInt!
 }
 
@@ -136,5 +136,5 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo
   curvePool: CurvePool!
-  currentEpoch: EpochInfo
+  currentWithdrawalEpoch: WithdrawalEpochInfo
 }

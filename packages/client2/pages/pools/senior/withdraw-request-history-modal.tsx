@@ -4,12 +4,11 @@ import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { Modal, ShimmerLines } from "@/components/design-system";
-import { FIDU_DECIMALS_DIV } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   useWithdrawalHistoryQuery,
   SupportedCrypto,
-  EpochInfo,
+  WithdrawalEpochInfo,
   WithdrawalTransactionCategory,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
@@ -32,7 +31,7 @@ gql`
     ) {
       ...WithdrawalTransactionHistoryFields
     }
-    epoches {
+    withdrawalEpoches {
       id
       fiduRequested
       fiduLiquidated
@@ -45,8 +44,10 @@ gql`
 interface WithdrawalHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
 }
+
+const FIDU_DECIMALS_DIV = BigNumber.from("1000000000000000000"); // 1e18
 
 export default function WithdrawalHistoryModal({
   isOpen,
@@ -61,8 +62,9 @@ export default function WithdrawalHistoryModal({
     },
   });
 
-  // Create rows
-  const rows: string[][] = [];
+  // Create rows:
+  // A row consists of ["Request Type", "Date", "Request Amount", "Total Amount"]
+  const rows: [string, string, string, string][] = [];
 
   // Setup temp data
   let tempEpochId: string;
@@ -73,7 +75,9 @@ export default function WithdrawalHistoryModal({
   data?.withdrawalTransactions.forEach((transaction, idx) => {
     // If encoutering new epoch ID, calculate distribution for previous
     if (tempEpochId !== transaction.epochId.toString()) {
-      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+      const epochData = data?.withdrawalEpoches.find(
+        (epoch) => epoch.id === tempEpochId
+      );
 
       if (epochData) {
         // Get liquidation percentage
@@ -156,7 +160,9 @@ export default function WithdrawalHistoryModal({
       transaction.category !==
         WithdrawalTransactionCategory.CancelWithdrawalRequest
     ) {
-      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+      const epochData = data?.withdrawalEpoches.find(
+        (epoch) => epoch.id === tempEpochId
+      );
 
       if (epochData) {
         // Get liquidation percentage
@@ -201,7 +207,6 @@ export default function WithdrawalHistoryModal({
         onClose();
       }}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       {loading ? (
         <ShimmerLines lines={4} truncateFirstLine={false} />

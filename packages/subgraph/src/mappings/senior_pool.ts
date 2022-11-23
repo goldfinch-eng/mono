@@ -14,7 +14,7 @@ import {
   WithdrawalCanceled,
   EpochEnded,
 } from "../../generated/SeniorPool/SeniorPool"
-import {WithdrawalTransaction, Epoch} from "../../generated/schema"
+import {WithdrawalTransaction, WithdrawalEpoch} from "../../generated/schema"
 
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
@@ -180,7 +180,7 @@ export function handleEpochEnded(event: EpochEnded): void {
   transaction.sentToken = "USDC"
   transaction.save()
 
-  const epoch = new Epoch(event.params.epochId.toString())
+  const epoch = new WithdrawalEpoch(event.params.epochId.toString())
 
   epoch.endsAt = event.params.endTime.toI32()
   epoch.fiduRequested = event.params.fiduRequested

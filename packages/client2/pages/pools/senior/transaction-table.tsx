@@ -4,8 +4,7 @@ import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
-import { Link, Table } from "@/components/design-system";
-import { BORROWER_METADATA } from "@/constants/metadata/borrowers";
+import { Link, Table, goldfinchLogoPngUrl } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   TransactionCategory,
@@ -124,13 +123,13 @@ export function TransactionTable() {
           TransactionCategory.SeniorPoolDistribution ? (
           <>
             <Image
-              src={BORROWER_METADATA.protocol.logo as string}
+              src={goldfinchLogoPngUrl}
               width={24}
               height={24}
               className="shrink-0 overflow-hidden rounded-full"
               alt=""
             />
-            <div>{BORROWER_METADATA.protocol.name}</div>
+            <div>Goldfinch Protocol</div>
           </>
         ) : (
           <Address address={transaction.user.id} />

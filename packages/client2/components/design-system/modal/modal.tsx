@@ -27,11 +27,6 @@ export interface ModalProps {
    */
   title: ReactNode;
   /**
-   * Size of heading above
-   */
-  titleSize?: "md" | "lg";
-  /**
-  /**
    * Gives a screen-reader accessible description to this modal.
    */
   description?: string;
@@ -50,7 +45,6 @@ export function Modal({
   title,
   description,
   divider = true,
-  titleSize = "md",
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -100,12 +94,7 @@ export function Modal({
               )}
             >
               <div>
-                <Dialog.Title
-                  className={clsx(
-                    "font-semibold",
-                    titleSize === "lg" ? "text-3xl font-normal" : "text-lg"
-                  )}
-                >
+                <Dialog.Title className="text-lg font-semibold">
                   {title}
                 </Dialog.Title>
                 {description && (

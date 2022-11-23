@@ -10,7 +10,7 @@ import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
-  EpochInfo,
+  WithdrawalEpochInfo,
   WithdrawalStatus,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc } from "@/lib/pools";
@@ -34,7 +34,7 @@ interface SeniorPoolWithdrawalPanelProps {
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
   cancellationFee?: FixedNumber | null;
 }
 
@@ -47,7 +47,7 @@ export function SeniorPoolWithdrawalPanel({
   cancellationFee,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
-  const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
+  const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -72,27 +72,27 @@ export function SeniorPoolWithdrawalPanel({
   const apolloClient = useApolloClient();
 
   const withdrawWithToken = async () => {
-    if (withdrawalStatus?.withdrawalToken && provider) {
-      setIsWithdrawing(true);
+    if (!withdrawalStatus?.withdrawalToken || !provider) return;
 
-      const seniorPoolContract = await getContract({
-        name: "SeniorPool",
-        provider,
-      });
+    setIsWithdrawing(true);
 
-      try {
-        const transaction = seniorPoolContract.claimWithdrawalRequest(
-          withdrawalStatus?.withdrawalToken
-        );
+    const seniorPoolContract = await getContract({
+      name: "SeniorPool",
+      provider,
+    });
 
-        await toastTransaction({ transaction });
+    try {
+      const transaction = seniorPoolContract.claimWithdrawalRequest(
+        withdrawalStatus?.withdrawalToken
+      );
 
-        await apolloClient.refetchQueries({ include: "active" });
+      await toastTransaction({ transaction });
 
-        setIsWithdrawing(false);
-      } catch (e) {
-        setIsWithdrawing(false);
-      }
+      await apolloClient.refetchQueries({ include: "active" });
+
+      setIsWithdrawing(false);
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
@@ -161,7 +161,7 @@ export function SeniorPoolWithdrawalPanel({
             colorScheme="secondary"
             size="xl"
             onClick={() => {
-              setWithrawModalOpen(true);
+              setWithrawalModalOpen(true);
             }}
             className="mb-2 block w-full"
           >
@@ -226,7 +226,7 @@ export function SeniorPoolWithdrawalPanel({
                   size="xl"
                   className="block w-full"
                   onClick={() => {
-                    setWithrawModalOpen(true);
+                    setWithrawalModalOpen(true);
                   }}
                 >
                   Increase
@@ -287,12 +287,12 @@ export function SeniorPoolWithdrawalPanel({
           token: SupportedCrypto.Fidu,
         }}
         cancellationFee={cancellationFee}
-        isOpen={withdrawModalOpen}
+        isOpen={withdrawalModalOpen}
         onClose={() => {
-          setWithrawModalOpen(false);
+          setWithrawalModalOpen(false);
         }}
         onComplete={async () => {
-          setWithrawModalOpen(false);
+          setWithrawalModalOpen(false);
 
           await apolloClient.refetchQueries({ include: "active" });
         }}
@@ -320,9 +320,7 @@ function sumTotalShares(
   if (unstaked.token !== SupportedCrypto.Fidu) {
     throw new Error("Unstaked is not a CryptoAmount in FIDU");
   }
-  const totalStaked = staked.reduce(
-    (previous, current) => previous.add(current.amount),
-    BigNumber.from(0)
-  );
+  const totalStaked = sumStakedShares(staked);
+
   return unstaked.amount.add(totalStaked).add(requested.amount);
 }

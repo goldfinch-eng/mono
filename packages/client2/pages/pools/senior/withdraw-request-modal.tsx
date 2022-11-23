@@ -17,7 +17,7 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   CryptoAmount,
-  EpochInfo,
+  WithdrawalEpochInfo,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -32,7 +32,7 @@ interface WithdrawalRequestModalProps {
   balanceStaked: CryptoAmount;
   balanceVaulted: CryptoAmount;
   sharePrice?: BigNumber | null;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
   currentRequest?: BigNumber | null;
   cancellationFee?: FixedNumber | null;
 }
@@ -127,14 +127,18 @@ export default function WithdrawalRequestModal({
         onClose();
       }}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       <Form rhfMethods={rhfMethods} onSubmit={handleSubmit}>
         {!withdrawalToken && (
           <Alert className="mb-7" type="info" hasIcon={false}>
             Withdrawal requests are processed every two weeks, and it may take
             multiple distribution periods to fulfill the request.{" "}
-            <Link href={``} className="text-tidepool-600 underline">
+            <Link
+              className="text-tidepool-600 underline"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
+              target="_blank"
+              rel="noreferrer"
+            >
               Read more
             </Link>
           </Alert>

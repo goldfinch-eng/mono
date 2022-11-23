@@ -345,7 +345,7 @@ enum WithdrawalTransactionCategory {
   CANCEL_WITHDRAWAL_REQUEST
 }
 
-type Epoch @entity {
+type WithdrawalEpoch @entity {
   id: ID!
   endsAt: Int!
   fiduRequested: BigInt!
