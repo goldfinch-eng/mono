@@ -1,4 +1,4 @@
-import {Address, BigInt, store} from "@graphprotocol/graph-ts"
+import {Address, BigInt} from "@graphprotocol/graph-ts"
 import {
   SeniorPool,
   DepositMade,
@@ -14,12 +14,7 @@ import {
   WithdrawalCanceled,
   EpochEnded,
 } from "../../generated/SeniorPool/SeniorPool"
-import {
-  WithdrawalTransaction,
-  Epoch,
-  SeniorPoolWithdrawalEpoch,
-  SeniorPoolWithdrawalDisbursement,
-} from "../../generated/schema"
+import {SeniorPoolWithdrawalEpoch, SeniorPoolWithdrawalDisbursement} from "../../generated/schema"
 
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
@@ -165,6 +160,11 @@ export function handleEpochEnded(event: EpochEnded): void {
   epoch.fiduLiquidated = event.params.fiduLiquidated
   epoch.usdcAllocated = event.params.usdcAllocated
   epoch.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DISTRIBUTION", event.address)
+  transaction.sentAmount = epoch.usdcAllocated
+  transaction.sentToken = "USDC"
+  transaction.save()
 
   const roster = getOrInitSeniorPoolWithdrawalRoster()
   for (let i = 0; i < roster.requests.length; i++) {

@@ -72,7 +72,6 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
-  withdrawalTransactions: [WithdrawalTransaction!]! @derivedFrom(field: "user")
 
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
@@ -333,30 +332,6 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
-}
-
-type WithdrawalTransaction @entity {
-  id: Bytes!
-  epochId: BigInt!
-  user: User!
-  amount: BigInt
-  category: WithdrawalTransactionCategory!
-  timestamp: Int!
-  blockNumber: Int!
-}
-
-enum WithdrawalTransactionCategory {
-  WITHDRAWAL_REQUEST
-  ADD_TO_WITHDRAWAL_REQUEST
-  CANCEL_WITHDRAWAL_REQUEST
-}
-
-type WithdrawalEpoch @entity {
-  id: ID!
-  endsAt: Int!
-  fiduRequested: BigInt!
-  usdcAllocated: BigInt!
-  fiduLiquidated: BigInt!
 }
 
 type MembershipEpoch @entity(immutable: true) {
