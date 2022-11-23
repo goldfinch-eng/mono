@@ -411,3 +411,33 @@ type MembershipRewardDisbursement @entity(immutable: true) {
   allocatedAt: Int!
   rewards: BigInt!
 }
+
+type SeniorPoolWithdrawalRequestToken @entity {
+  id: ID!
+  user: User!
+  usdcWithdrawable: BigInt!
+  fiduRequested: BigInt!
+}
+
+type SeniorPoolWithdrawalEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # the epoch number
+  endsAt: Int!
+  fiduRequested: BigInt!
+  fiduLiquidated: BigInt!
+  usdcAllocated: BigInt!
+}
+
+# Singleton that keeps track of all outstanding withdrawal requests
+type SeniorPoolWithdrawalRequestRoster @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  requests: [SeniorPoolWithdrawalRequestToken!]!
+}
+
+type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  epoch: BigInt! # The epoch number. Not a reference.
+  allocatedAt: Int!
+  usdcAllocated: BigInt!
+}

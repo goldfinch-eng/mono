@@ -14,13 +14,22 @@ import {
   WithdrawalCanceled,
   EpochEnded,
 } from "../../generated/SeniorPool/SeniorPool"
-import {WithdrawalTransaction, WithdrawalEpoch} from "../../generated/schema"
+import {
+  WithdrawalTransaction,
+  Epoch,
+  SeniorPoolWithdrawalEpoch,
+  SeniorPoolWithdrawalDisbursement,
+} from "../../generated/schema"
 
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit, getOrInitUser} from "../entities/user"
 import {getAddressFromConfig} from "../utils"
+
+// TODO move this up when i finalize it
+import {SeniorPoolWithdrawalRequestToken, SeniorPoolWithdrawalRequestRoster} from "../../generated/schema"
+import {getOrInitSeniorPoolWithdrawalRoster} from "../entities/withdrawal_roster"
 
 // Helper function to extract the StakingRewards address from the config on Senior Pool
 function getStakingRewardsAddressFromSeniorPoolAddress(seniorPoolAddress: Address): Address {
@@ -188,4 +197,73 @@ export function handleEpochEnded(event: EpochEnded): void {
   epoch.fiduLiquidated = event.params.fiduLiquidated
 
   epoch.save()
+}
+
+export function handleWithdrawalRequest2(event: WithdrawalRequested): void {
+  const withdrawalToken = new SeniorPoolWithdrawalRequestToken(event.params.tokenId.toString())
+  withdrawalToken.user = getOrInitUser(event.params.operator).id
+  withdrawalToken.fiduRequested = event.params.fiduRequested
+  withdrawalToken.usdcWithdrawable = BigInt.zero()
+  withdrawalToken.save()
+
+  const roster = getOrInitSeniorPoolWithdrawalRoster()
+  roster.requests = roster.requests.concat([withdrawalToken.id])
+  roster.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL_REQUEST", event.params.operator)
+  transaction.sentAmount = event.params.fiduRequested
+  transaction.sentToken = "FIDU"
+  transaction.save()
+}
+
+export function handleAddToWithdrawalRequest2(event: WithdrawalAddedTo): void {
+  const withdrawalToken = assert(SeniorPoolWithdrawalRequestToken.load(event.params.tokenId.toString()))
+  withdrawalToken.fiduRequested = withdrawalToken.fiduRequested.plus(event.params.fiduRequested)
+  withdrawalToken.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST", event.params.operator)
+  transaction.sentAmount = event.params.fiduRequested
+  transaction.sentToken = "FIDU"
+  transaction.save()
+}
+
+export function handleWithdrawalRequestCanceled2(event: WithdrawalCanceled): void {
+  const withdrawalToken = assert(SeniorPoolWithdrawalRequestToken.load(event.params.tokenId.toString()))
+  withdrawalToken.fiduRequested = BigInt.zero()
+  withdrawalToken.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST", event.params.operator)
+  transaction.receivedAmount = event.params.fiduCanceled
+  transaction.receivedToken = "FIDU"
+  transaction.save()
+}
+
+export function handleEpochEnded2(event: EpochEnded): void {
+  const epoch = new SeniorPoolWithdrawalEpoch(event.params.epochId.toString())
+  epoch.epoch = event.params.epochId
+  epoch.endsAt = event.params.endTime.toI32()
+  epoch.fiduRequested = event.params.fiduRequested
+  epoch.fiduLiquidated = event.params.fiduLiquidated
+  epoch.usdcAllocated = event.params.usdcAllocated
+  epoch.save()
+
+  const roster = getOrInitSeniorPoolWithdrawalRoster()
+  for (let i = 0; i < roster.requests.length; i++) {
+    const token = SeniorPoolWithdrawalRequestToken.load(roster.requests[i])
+    if (!token) {
+      continue
+    }
+
+    const proRataUsdc = epoch.usdcAllocated.times(token.fiduRequested).div(epoch.fiduRequested)
+    const fiduLiquidated = epoch.fiduLiquidated.times(token.fiduRequested).div(epoch.fiduRequested)
+    token.usdcWithdrawable = token.usdcWithdrawable.plus(proRataUsdc)
+    token.fiduRequested = token.fiduRequested.minus(fiduLiquidated)
+    token.save()
+
+    const disbursement = new SeniorPoolWithdrawalDisbursement(`${epoch.id}-${token.id}`)
+    disbursement.epoch = event.params.epochId
+    disbursement.allocatedAt = epoch.endsAt
+    disbursement.usdcAllocated = proRataUsdc
+    disbursement.save()
+  }
 }

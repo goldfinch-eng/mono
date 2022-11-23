@@ -59,6 +59,28 @@ dataSources:
           handler: handleWithdrawalRequestCanceled
         - event: "EpochEnded(indexed uint256,uint256,uint256,uint256,uint256)"
           handler: handleEpochEnded
+
+  - kind: ethereum/contract
+    name: WithdrawalRequestToken
+    network: mainnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: WithdrawalRequestToken
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/senior_pool_withdrawal_tokens.ts
+      entities:
+        - SeniorPoolWithdrawalRequestToken
+      abis:
+        - name: WithdrawalRequestToken
+          file: ./abis/WithdrawalRequestToken.json
+      eventHandlers:
+        - event: "Transfer(indexed address,indexed address,indexed uint256)"
+          handler: handleTransfer
+
   - kind: ethereum/contract
     name: GoldfinchFactory
     network: mainnet
