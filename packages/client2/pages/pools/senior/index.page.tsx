@@ -8,6 +8,8 @@ import {
   HelperText,
   Button,
   goldfinchLogoWhiteBgPngUrl,
+  Link,
+  InfoIconTooltip,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -53,6 +55,7 @@ gql`
         id
         sharePrice
         usdcBalance
+        cancellationFee
       }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -68,6 +71,20 @@ gql`
         token
         amount
       }
+      withdrawalStatus {
+        usdcWithdrawable {
+          token
+          amount
+        }
+        fiduRequested {
+          token
+          amount
+        }
+        withdrawalToken
+      }
+    }
+    currentEpoch @client {
+      endTime
     }
   }
 `;
@@ -87,7 +104,8 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       (user &&
         (user.seniorPoolStakedPositions.length > 0 ||
-          user.vaultedStakedPositions.length > 0)));
+          user.vaultedStakedPositions.length > 0 ||
+          data?.viewer.withdrawalStatus)));
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -158,7 +176,7 @@ export default function SeniorPoolPage() {
           </Heading>
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
-          <div className="flex flex-col items-stretch gap-8">
+          <div className="flex flex-col items-stretch gap-3">
             {seniorPool && fiatPerGfi && data?.viewer ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
@@ -167,8 +185,11 @@ export default function SeniorPoolPage() {
               />
             ) : null}
 
-            {data && shouldShowWithdrawal && (
+            {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithDrawalPanel
+                cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
+                currentEpoch={data.currentEpoch}
+                withdrawalStatus={data.viewer.withdrawalStatus}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={user?.seniorPoolStakedPositions}
@@ -222,7 +243,63 @@ export default function SeniorPoolPage() {
             </Button>
           </div>
 
+          <div className="mb-20">
+            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+            <ul className="list-outside list-disc space-y-5 pl-5">
+              <li>
+                Earn passive yield. Capital is automatically deployed across a
+                diverse portfolio of Borrowers that are vetted by Backers.
+              </li>
+              <li>
+                Lower risk. Losses are protected by the first-loss capital
+                supplied by Backers.
+              </li>
+              <li>
+                Stable returns. Receive USDC APY from the underlying interest,
+                driven by real-world activity that is uncorrelated with crypto,
+                plus GFI from liquidity mining distributions.
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-20">
+            <div className="mb-8 flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Liquidity options</h2>
+              <div className="flex text-sand-400">
+                <InfoIconTooltip size="sm" content="" />
+              </div>
+            </div>
+            <table className="w-full border-collapse border border-sand-200 text-sand-600">
+              <tbody>
+                <tr className="border border-sand-200">
+                  <th
+                    scope="row"
+                    className="bg-sand-50 p-5 text-left align-top font-medium sm:min-w-[260px]"
+                  >
+                    Withdrawal Request
+                  </th>
+                  <td className="p-5 align-top">
+                    <div className="mb-2">
+                      To withdraw capital from the Senior Pool, an LP must
+                      submit a Withdrawal Request. Capital is distributed for
+                      withdrawal every two weeks, based on availability and
+                      requested amount.
+                    </div>
+                    <Link
+                      href={``}
+                      iconRight="ArrowTopRight"
+                      className="text-sand-400 underline"
+                    >
+                      Read more
+                    </Link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <TransactionTable />
+
           <div className="flex gap-2">
             <Button
               as="a"
@@ -242,25 +319,6 @@ export default function SeniorPoolPage() {
             >
               Pool
             </Button>
-          </div>
-
-          <div className="mt-20">
-            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-            <ul className="list-outside list-disc space-y-5 pl-5">
-              <li>
-                Earn passive yield. Capital is automatically deployed across a
-                diverse portfolio of Borrowers that are vetted by Backers.
-              </li>
-              <li>
-                Lower risk. Losses are protected by the first-loss capital
-                supplied by Backers.
-              </li>
-              <li>
-                Stable returns. Receive USDC APY from the underlying interest,
-                driven by real-world activity that is uncorrelated with crypto,
-                plus GFI from liquidity mining distributions.
-              </li>
-            </ul>
           </div>
         </div>
       </div>

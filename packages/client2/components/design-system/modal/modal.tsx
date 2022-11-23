@@ -27,6 +27,11 @@ export interface ModalProps {
    */
   title: ReactNode;
   /**
+   * Size of heading above
+   */
+  titleSize?: "md" | "lg";
+  /**
+  /**
    * Gives a screen-reader accessible description to this modal.
    */
   description?: string;

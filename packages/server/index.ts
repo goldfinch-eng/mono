@@ -22,6 +22,8 @@ import {
   setUpForTesting,
   fundFromLocalWhale,
   getERC20s,
+  addUserToGoList,
+  fundUser,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
@@ -144,6 +146,15 @@ app.post("/advanceTimeThirtyDays", async (req, res) => {
     console.error("advanceTimeThirtyDays error", e)
     return res.status(500).send({message: "advanceTimeThirtyDays error"})
   }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/setupCurrentUser", async (req, res) => {
+  const {address} = req.body
+
+  await addUserToGoList(address)
+  await fundUser(address)
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })

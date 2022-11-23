@@ -91,6 +91,12 @@ gql`
           isAccepted
         }
       }
+      withdrawalStatus {
+        fiduRequested {
+          token
+          amount
+        }
+      }
       claimableMembershipRewards {
         token
         amount
@@ -546,6 +552,33 @@ export default function DashboardPage() {
                                     sharePrice,
                                     totalUsdc,
                                   }),
+                                ]
+                              : []),
+                            ...(data.viewer.withdrawalStatus?.fiduRequested &&
+                            !data.viewer.withdrawalStatus?.fiduRequested.amount.isZero()
+                              ? [
+                                  {
+                                    name: "Requested for withdrawal",
+                                    percentage: computePercentage(
+                                      sharesToUsdc(
+                                        data.viewer.withdrawalStatus
+                                          .fiduRequested.amount,
+                                        data.seniorPools[0].latestPoolStatus
+                                          .sharePrice
+                                      ).amount,
+                                      totalUsdc.amount
+                                    ),
+                                    quantity:
+                                      data.viewer.withdrawalStatus.fiduRequested
+                                        .amount,
+                                    usdcValue: sharesToUsdc(
+                                      data.viewer.withdrawalStatus.fiduRequested
+                                        .amount,
+                                      data.seniorPools[0].latestPoolStatus
+                                        .sharePrice
+                                    ),
+                                    url: "/pools/senior",
+                                  },
                                 ]
                               : []),
                           ]}
