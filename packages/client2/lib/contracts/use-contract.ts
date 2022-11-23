@@ -71,10 +71,6 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
-  WithdrawalRequestToken: () =>
-    import(
-      "@/types/ethers-contracts/factories/WithdrawalRequestToken__factory"
-    ).then((module) => module.WithdrawalRequestToken__factory.connect),
   PoolTokens: () =>
     import("@/types/ethers-contracts/factories/PoolTokens__factory").then(
       (module) => module.PoolTokens__factory.connect

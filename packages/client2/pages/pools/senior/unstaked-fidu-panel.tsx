@@ -24,7 +24,7 @@ export function UnstakedFiduBanner({
     fiatPerGfi
   );
   return (
-    <div className="rounded-xl bg-mustard-50 p-6">
+    <div className="rounded-xl p-6">
       <div className="mb-2 text-lg font-medium">
         Stake your FIDU to earn additional GFI
       </div>
@@ -36,11 +36,10 @@ export function UnstakedFiduBanner({
       <Button
         as="a"
         className="block w-full"
-        size="lg"
+        size="xl"
         variant="rounded"
         iconRight="ArrowSmRight"
         href="/stake"
-        colorScheme="eggplant"
       >
         Stake all FIDU
       </Button>

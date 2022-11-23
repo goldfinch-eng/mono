@@ -67,10 +67,6 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
           case TransactionCategory.UidMinted:
           case TransactionCategory.CurveFiduBuy:
           case TransactionCategory.CurveFiduSell:
-          case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
-          case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
-          case TransactionCategory.SeniorPoolWithdrawalRequest:
-          case TransactionCategory.SeniorPoolDistribution:
           case TransactionCategory.StakingRewardsClaimed:
           case TransactionCategory.BackerRewardsClaimed:
           case TransactionCategory.CommunityRewardsClaimed:
@@ -109,10 +105,6 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
       case TransactionCategory.UidMinted:
       case TransactionCategory.CurveFiduBuy:
       case TransactionCategory.CurveFiduSell:
-      case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
-      case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
-      case TransactionCategory.SeniorPoolWithdrawalRequest:
-      case TransactionCategory.SeniorPoolDistribution:
       case TransactionCategory.StakingRewardsClaimed:
       case TransactionCategory.BackerRewardsClaimed:
       case TransactionCategory.CommunityRewardsClaimed:

@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 export * from "./contract-addresses";
 export * from "./metadata/borrowers";
 
@@ -15,9 +14,6 @@ export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
-
-export const FIDU_DECIMALS_DIV = BigNumber.from("1000000000000000000"); // 1e18
-export const USDC_DECIMALS_DIV = BigNumber.from("1000000"); // 1e6
 
 export const TRANCHES = {
   Senior: 1,

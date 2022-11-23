@@ -14,7 +14,6 @@ import {
   CryptoAmount,
   IndirectGfiGrant,
   DirectGfiGrant,
-  WithdrawalStatus,
 } from "../generated";
 
 async function erc20Balance(
@@ -55,49 +54,6 @@ export const viewerResolvers: Resolvers[string] = {
       return viewer.account.toLowerCase();
     }
     return viewer.account;
-  },
-  async withdrawalStatus(): Promise<WithdrawalStatus | null> {
-    const provider = await getProvider();
-    const account = await provider.getSigner().getAddress();
-
-    const withdrawalTokenContract = await getContract({
-      name: "WithdrawalRequestToken",
-      provider,
-    });
-
-    const seniorPoolContract = await getContract({
-      name: "SeniorPool",
-      provider,
-    });
-
-    const balance = await withdrawalTokenContract.balanceOf(account);
-
-    if (balance.gt(BigNumber.from("0"))) {
-      // Get first token Id of user
-      const tokenId = await withdrawalTokenContract.tokenOfOwnerByIndex(
-        account,
-        0
-      );
-
-      const preview = await seniorPoolContract.withdrawalRequest(tokenId);
-
-      return {
-        __typename: "WithdrawalStatus",
-        withdrawalToken: tokenId,
-        usdcWithdrawable: {
-          __typename: "CryptoAmount",
-          token: SupportedCrypto.Usdc,
-          amount: preview.usdcWithdrawable,
-        },
-        fiduRequested: {
-          __typename: "CryptoAmount",
-          token: SupportedCrypto.Fidu,
-          amount: preview.fiduRequested,
-        },
-      };
-    }
-
-    return null;
   },
   async gfiBalance(): Promise<CryptoAmount | null> {
     return erc20Balance(SupportedCrypto.Gfi);

@@ -1,5 +1,4 @@
 // Try to keep these alphabetized, it just helps keep organized
-export * from "./alert";
 export * from "./banner";
 export * from "./breadcrumb";
 export * from "./button";

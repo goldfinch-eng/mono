@@ -270,13 +270,6 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]:
-    "Withdrawal Request Increased",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]:
-    "Cancel Withdrawal Request",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal request distribution",
   [TransactionCategory.StakingRewardsClaimed]: "Staking Rewards Claimed",
   [TransactionCategory.BackerRewardsClaimed]: "Backer Rewards Claimed",
   [TransactionCategory.CommunityRewardsClaimed]: "GFI Grant Claimed",
@@ -309,11 +302,6 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.UidMinted]: "Mint UID",
   [TransactionCategory.CurveFiduBuy]: "Curve Swap",
   [TransactionCategory.CurveFiduSell]: "Curve Swap",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "Increase Withdrawal",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawal",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal request distribution",
   [TransactionCategory.StakingRewardsClaimed]: "Rewards Claimed",
   [TransactionCategory.BackerRewardsClaimed]: "Rewards Claimed",
   [TransactionCategory.CommunityRewardsClaimed]: "Grant Claimed",
@@ -350,10 +338,6 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.UidMinted]: "Checkmark",
   [TransactionCategory.CurveFiduBuy]: "ArrowUp",
   [TransactionCategory.CurveFiduSell]: "ArrowDown",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "ArrowDown",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "X",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "ArrowDown",
-  [TransactionCategory.SeniorPoolDistribution]: "ArrowDown",
   [TransactionCategory.StakingRewardsClaimed]: "ArrowUp",
   [TransactionCategory.BackerRewardsClaimed]: "ArrowUp",
   [TransactionCategory.CommunityRewardsClaimed]: "ArrowUp",

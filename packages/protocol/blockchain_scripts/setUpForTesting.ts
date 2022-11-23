@@ -639,56 +639,6 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
   }
 }
 
-export async function addUserToGoList(address: string) {
-  const {
-    deployments: {getOrNull, log},
-  } = hre
-
-  logger = log
-
-  const protocol_owner = await getProtocolOwner()
-
-  const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
-
-  let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
-  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
-  if (!isMainnetForking()) {
-    go = go.connect(protocolOwnerSigner)
-    await go.setLegacyGoList(goldfinchConfig.address)
-  }
-  const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-    at: await go.legacyGoList(),
-  })
-
-  return await addUsersToGoList(legacyGoldfinchConfig, [address])
-}
-
-export async function fundUser(address: string) {
-  const {
-    deployments: {log},
-  } = hre
-
-  logger = log
-
-  const chainId = await hre.getChainId()
-
-  const {erc20s} = await getERC20s({hre, chainId})
-
-  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-    await fundFromLocalWhale(address, erc20s, {logger})
-  }
-
-  if (isMainnetForking()) {
-    const protocolOwner = await getProtocolOwner()
-    await impersonateAccount(hre, protocolOwner)
-    await fundWithWhales(["ETH"], [protocolOwner])
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], 75000)
-
-    // Patch USDC DOMAIN_SEPARATOR to make permit work locally
-    await overrideUsdcDomainSeparator()
-  }
-}
-
 // Ideally the type would be T extends BaseContract, but there appears to be some issue
 // in the generated types that prevents that. See https://github.com/ethers-io/ethers.js/issues/1384 for relevant info
 async function getDeployedAsEthersContractOrNull<T>(
