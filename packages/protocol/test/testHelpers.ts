@@ -704,11 +704,6 @@ export const stakedFiduHolders = [
     address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
     stakingRewardsTokenId: 2118,
   },
-  // ~600K FIDU
-  {
-    address: "0xcFD727653C3d5a1B943f675781d3245B884f1d34",
-    stakingRewardsTokenId: 2116,
-  },
   // ~19k FIDU
   {
     address: "0x7AdC457434e8C57737AD2aCE768a863865f2AaBc",
