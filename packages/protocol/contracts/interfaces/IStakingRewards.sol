@@ -3,9 +3,9 @@ pragma solidity >=0.6.12;
 
 pragma experimental ABIEncoderV2;
 
-import {IERC721} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
-import {IERC721Metadata} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Metadata.sol";
-import {IERC721Enumerable} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Enumerable.sol";
+import {IERC721} from "./openzeppelin/IERC721.sol";
+import {IERC721Metadata} from "./openzeppelin/IERC721Metadata.sol";
+import {IERC721Enumerable} from "./openzeppelin/IERC721Enumerable.sol";
 
 interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
   function getPosition(uint256 tokenId) external view returns (StakedPosition memory position);

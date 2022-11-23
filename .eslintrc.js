@@ -15,7 +15,7 @@ module.exports = {
   globals: {
     process: "readonly",
   },
-  ignorePatterns: ["cache", "artifacts", "typechain", "dist"],
+  ignorePatterns: ["cache", "artifacts", "typechain", "dist", "lib/openzeppelin-contracts"],
   overrides: [
     {
       files: ["**/*.ts", "**/*.tsx"],

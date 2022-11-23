@@ -33,12 +33,9 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY * DAYS_PER_YEAR
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
-const ROPSTEN = "ropsten"
-export const RINKEBY = "rinkeby"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
-  [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
   [MAINNET]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
 }
 
@@ -63,26 +60,21 @@ const ONE_INCH_ADDRESSES = {
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
-  ropsten: ROPSTEN,
   private: "localhost",
-  rinkeby: RINKEBY,
 }
 
 const chainIdToNetworkID = {
   1: MAINNET,
-  4: RINKEBY,
   31337: "localhost",
 }
 
 const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
-  [RINKEBY]: true,
 }
 
 enum SupportedChainId {
   MAINNET = 1,
-  ROPSTEN = 3,
   LOCAL = 31337,
   MURMURATION = 31337,
 }

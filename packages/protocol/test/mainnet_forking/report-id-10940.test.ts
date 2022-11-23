@@ -29,7 +29,7 @@ import {TEST_TIMEOUT} from "./MainnetForking.test"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 
 const setupTest = hre.deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   let upgradedContracts: UpgradedContracts
   {

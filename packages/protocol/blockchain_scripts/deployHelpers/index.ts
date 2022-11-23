@@ -37,33 +37,29 @@ import {ContractUpgrader} from "./contractUpgrader"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
 const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
 const LOCAL = "localhost"
-const ROPSTEN = "ropsten"
-const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET
+export type ChainName = typeof LOCAL | typeof MAINNET
 
-const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+export const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+export const GFI_MANTISSA = 1e18
+export const USDC_MANTISSA = 1e6
+export const USDC_TO_GFI_MANTISSA = GFI_MANTISSA / USDC_MANTISSA
 
 const LOCAL_CHAIN_ID = "31337"
 type LocalChainId = typeof LOCAL_CHAIN_ID
-const ROPSTEN_CHAIN_ID = "3"
-type RopstenChainId = typeof ROPSTEN_CHAIN_ID
 const MAINNET_CHAIN_ID = "1"
 type MainnetChainId = typeof MAINNET_CHAIN_ID
-const RINKEBY_CHAIN_ID = "4"
-type RinkebyChainId = typeof RINKEBY_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId
+export type ChainId = LocalChainId | MainnetChainId
 
-const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, MAINNET_CHAIN_ID)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
     throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
@@ -72,9 +68,7 @@ export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: u
 
 const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [LOCAL_CHAIN_ID]: LOCAL,
-  [ROPSTEN_CHAIN_ID]: ROPSTEN,
   [MAINNET_CHAIN_ID]: MAINNET,
-  [RINKEBY_CHAIN_ID]: RINKEBY,
 }
 
 export type AddressString = string
@@ -87,14 +81,16 @@ const BUSD = "BUSD"
 type BUSDTicker = typeof BUSD
 const ETH = "ETH"
 type ETHTicker = typeof ETH
+const GFI = "GFI"
+type GFITicker = typeof GFI
+
 function assertIsTicker(val: string): asserts val is Ticker {
   if (!TICKERS.includes(val)) {
     throw new AssertionError(`${val} is not in the allowed Ticker list: ${TICKERS}`)
   }
 }
 
-const USDC_ADDRESSES: Record<typeof ROPSTEN | typeof MAINNET, AddressString> = {
-  [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
+const USDC_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
 const USDT_ADDRESSES: Record<typeof MAINNET, AddressString> = {
@@ -103,14 +99,19 @@ const USDT_ADDRESSES: Record<typeof MAINNET, AddressString> = {
 const BUSD_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
+
+const GFI_ADDRESSES: Record<typeof MAINNET, AddressString> = {
+  [MAINNET]: "0xdab396ccf3d84cf2d07c4454e10c8a6f5b008d2b",
+}
 const ERC20_ADDRESSES = {
   [USDC]: USDC_ADDRESSES,
   [USDT]: USDT_ADDRESSES,
   [BUSD]: BUSD_ADDRESSES,
+  [GFI]: GFI_ADDRESSES,
 }
 
-type SafeConfigChainId = MainnetChainId | RinkebyChainId
-const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+type SafeConfigChainId = MainnetChainId
+const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID)
 export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
   (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
 
@@ -119,11 +120,9 @@ const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; execut
     safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f",
     executor: "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5",
   },
-  [RINKEBY_CHAIN_ID]: {
-    safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976",
-    executor: "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9",
-  },
 }
+
+const MAINNET_PAUSER_ADDRESS = "0x061e0b0087a01127554ffef8f9c4c6e9447ad9dd"
 
 export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
@@ -167,8 +166,8 @@ function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
-export type Ticker = USDCTicker | USDTTicker | BUSDTicker | ETHTicker
-const TICKERS = [USDC, USDT, BUSD, ETH]
+export type Ticker = USDCTicker | USDTTicker | BUSDTicker | ETHTicker | GFITicker
+const TICKERS = [USDC, USDT, BUSD, ETH, GFI]
 function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
@@ -331,7 +330,9 @@ export async function getTruffleContract<T extends Truffle.ContractInstance = Tr
   opts: GetContractOptions = {}
 ): Promise<T> {
   if (!opts.at) {
-    opts.at = await getExistingAddress(contractName)
+    const unqualifiedContractName = contractName.split(":").pop()
+    assert(unqualifiedContractName)
+    opts.at = await getExistingAddress(unqualifiedContractName)
   }
   const at = opts.at
   const from = opts.from || (await getProtocolOwner())
@@ -378,6 +379,21 @@ async function getProtocolOwner(): Promise<string> {
   }
 }
 
+export async function getPauserAdmin(): Promise<string> {
+  const chainId = await getChainId()
+  if (isMainnetForking()) {
+    return MAINNET_PAUSER_ADDRESS
+  } else if (chainId === LOCAL_CHAIN_ID) {
+    const {protocol_owner} = await getNamedAccounts()
+    assertIsString(protocol_owner)
+    return protocol_owner
+  } else if (await isMainnet()) {
+    return MAINNET_PAUSER_ADDRESS
+  } else {
+    throw new Error(`Unknown pauser admin for chain id ${chainId}`)
+  }
+}
+
 async function currentChainId(): Promise<ChainId> {
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
@@ -408,7 +424,6 @@ function fixProvider(providerGiven: any): any {
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
-  ROPSTEN_USDC_ADDRESS,
   MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS,
   MAINNET_COMP_ADDRESS,
@@ -416,7 +431,6 @@ export {
   LOCAL,
   MAINNET,
   USDCDecimals,
-  MAX_UINT,
   ETHDecimals,
   LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
@@ -431,7 +445,6 @@ export {
   updateConfig,
   getSignerForAddress,
   MAINNET_CHAIN_ID,
-  RINKEBY_CHAIN_ID,
   LOCAL_CHAIN_ID,
   SAFE_CONFIG,
   isTestEnv,

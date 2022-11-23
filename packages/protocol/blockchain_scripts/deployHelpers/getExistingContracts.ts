@@ -17,8 +17,9 @@ export async function getExistingContracts(
   const contracts: ExistingContracts = {}
   const onChainConfig = getCurrentlyDeployedContracts(chainId)
   for (const contractName of contractNames) {
-    const contractConfig = onChainConfig[contractName] as any
-    const proxyConfig = onChainConfig[`${contractName}_Proxy`] as any
+    const unqualifiedContractName = contractName.split(":")[1] || contractName
+    const contractConfig = onChainConfig[unqualifiedContractName] as any
+    const proxyConfig = onChainConfig[`${unqualifiedContractName}_Proxy`] as any
 
     const ethersSigner = await getSignerForAddress(signer)
     const contractProxy =

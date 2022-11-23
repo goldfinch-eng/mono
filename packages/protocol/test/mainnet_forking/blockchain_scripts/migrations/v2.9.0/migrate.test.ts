@@ -40,7 +40,7 @@ describe("v2.9.0", async function () {
       stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
     })
 
-    describe("StakingRewards", async () => {
+    describe.skip("StakingRewards", async () => {
       it("uses GCP baseURI for tokenURI(tokenId) calls", async () => {
         expect(await stakingRewards.tokenURI(550)).to.eq(
           "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net/stakingRewardsTokenMetadata/550"

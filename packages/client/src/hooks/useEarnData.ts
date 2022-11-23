@@ -1,5 +1,4 @@
 import {ApolloError} from "@apollo/client"
-import _ from "lodash"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SeniorPoolStatus} from "../components/Earn/types"
@@ -8,7 +7,6 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CapitalProvider} from "../ethereum/pool"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "../ethereum/tranchedPool"
 import {UserLoaded} from "../ethereum/user"
-import {RINKEBY} from "../ethereum/utils"
 import {parseBackers} from "../graphql/parsers"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
 import {getTranchedPoolsData, getTranchedPoolsData_tranchedPools} from "../graphql/types"
@@ -94,7 +92,7 @@ export type PoolBackersWeb3Data = {
 }
 
 export function usePoolBackersWeb3(skip = false): PoolBackersWeb3Data {
-  const {user, goldfinchProtocol, currentBlock, network} = useContext(AppContext)
+  const {user, goldfinchProtocol, currentBlock} = useContext(AppContext)
   let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
@@ -117,11 +115,6 @@ export function usePoolBackersWeb3(skip = false): PoolBackersWeb3Data {
         currentBlock.number
       )
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
-
-      // Remove invalid pool on rinkeby that returns wrong number of values for getTranche
-      if (network?.name === RINKEBY) {
-        poolAddresses = _.remove(poolAddresses, "0x3622Bf116643c5f2f1764924Ce6ce8814302BA76")
-      }
 
       setPoolsAddresses({
         loaded: true,

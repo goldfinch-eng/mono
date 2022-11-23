@@ -132,12 +132,33 @@ gql`
       nextEpochScore
     }
 
-    membershipEpoches(orderBy: epoch, orderDirection: desc, first: 2) {
+    membershipEpoches(orderBy: epoch, orderDirection: desc, first: 8) {
       epoch
       totalRewards
     }
   }
 `;
+
+const assumedRewards = BigNumber.from("12500000000000000000000");
+const sampleSize = 8; // This should match the number of epochs being fetched in the graphQL query
+function averagePriorRewards(priorRewards?: BigNumber[]) {
+  if (!priorRewards) {
+    return assumedRewards;
+  }
+  // If there's not enough to form a full sample, fill the sample with the assumed reward amount (12.5k FIDU)
+  const backfilledRewards =
+    priorRewards.length >= sampleSize
+      ? priorRewards
+      : [
+          ...priorRewards,
+          ...new Array<BigNumber>(sampleSize - priorRewards.length).fill(
+            assumedRewards
+          ),
+        ];
+  return backfilledRewards
+    .reduce((prev, current) => prev.add(current), BigNumber.from(0))
+    .div(backfilledRewards.length);
+}
 
 export default function MembershipPage() {
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
@@ -155,8 +176,9 @@ export default function MembershipPage() {
   const userHasDepositedForNextEpoch =
     data?.memberships?.[0] &&
     data.memberships[0].nextEpochScore.gt(data.memberships[0].eligibleScore);
-  // Using index 1 instead of 0 here because the first epoch in existence is a 0 reward one (instantiated this way)
-  const previousEpochRewardTotal = data?.membershipEpoches[1]?.totalRewards;
+  const previousEpochRewardTotal = averagePriorRewards(
+    data?.membershipEpoches?.map((e) => e.totalRewards)
+  );
 
   const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
