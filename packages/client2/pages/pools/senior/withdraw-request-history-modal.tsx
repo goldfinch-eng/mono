@@ -232,7 +232,7 @@ function getDistributionRow(
   endsAt: number,
   distributed: FixedNumber,
   total: FixedNumber
-) {
+): [string, string, string, string] {
   return [
     `Distribution ${count}`,
     format(new Date(endsAt * 1000), "MMM d, y"),
