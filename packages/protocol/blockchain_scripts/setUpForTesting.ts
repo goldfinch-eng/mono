@@ -483,15 +483,9 @@ export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment
   const borrower = protocol_owner
   const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
 
-  console.log("received usdcAmount")
-  console.log(usdcAmount)
   const seniorAmount = new BN(usdcAmount).mul(USDC_DECIMALS)
-  console.log("senior amount is")
-  console.log(seniorAmount)
   // Senior pool invests 4x the junio investment
   const juniorAmount = seniorAmount.div(new BN("4"))
-  console.log("junior amount is")
-  console.log(juniorAmount)
 
   const pool = await createPoolForBorrower({
     getOrNull,
@@ -507,8 +501,6 @@ export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment
   const ownerSigner = ethers.provider.getSigner(protocol_owner)
   const approveTxn = await erc20.connect(ownerSigner).approve(pool.address, juniorAmount.toNumber())
   await approveTxn.wait()
-  console.log(`junior amount is ${juniorAmount}`)
-  console.log(juniorAmount.toString())
   const juniorDepositTxn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, juniorAmount.toNumber())
   await juniorDepositTxn.wait()
   const juniorLockTx = await pool.connect(ownerSigner).lockJuniorCapital()
@@ -516,16 +508,8 @@ export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment
 
   // Invest in Senior Tranche
   const seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
-  const investmentEstimate = await seniorPool.estimateInvestment(pool.address)
-
-  console.log("estimated investment is")
-  console.log(investmentEstimate)
-
   const seniorDepositTxn = await seniorPool.invest(pool.address)
   await seniorDepositTxn.wait()
-
-  console.log("Senior pool assets are now")
-  console.log(await seniorPool.assets())
 
   return pool.address
 }

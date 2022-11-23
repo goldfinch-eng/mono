@@ -168,8 +168,6 @@ app.post("/drainSeniorPool", async (req, res) => {
   }
 
   const {usdcAmount} = req.body
-  console.log("server got usdc amount")
-  console.log(usdcAmount)
   const poolAddress = await createPoolAndFundWithSenior(hre, usdcAmount)
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true, pool: poolAddress})})
