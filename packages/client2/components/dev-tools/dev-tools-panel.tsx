@@ -4,6 +4,7 @@ import { Button, Icon } from "@/components/design-system";
 import { useWallet } from "@/lib/wallet";
 
 import DevToolsButtons from "./dev-tools-buttons";
+import DevToolsDrainSeniorPool from "./dev-tools-drain-senior-pool";
 import DevToolsKYC from "./dev-tools-kyc";
 import { MembershipDevToolDrawer } from "./membership-devtool-drawer";
 
@@ -61,6 +62,7 @@ export function DevToolsPanel(): JSX.Element {
             />
           )}
           {panel === "kyc" && <DevToolsKYC />}
+          {panel === "drain-senior-pool" && <DevToolsDrainSeniorPool />}
         </div>
       )}
       <MembershipDevToolDrawer
