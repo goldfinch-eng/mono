@@ -160,6 +160,19 @@ export default function DevToolsButtons({
             Advance - 30 Days
           </Button>
         </div>
+
+        <div className="px-2">
+          <Button
+            size="lg"
+            isLoading={loading === "drainSeniorPool"}
+            disabled={disabled}
+            onClick={async () => {
+              setPanel("drain-senior-pool");
+            }}
+          >
+            Drain Senior Pool
+          </Button>
+        </div>
       </div>
 
       <h5 className="mb-3 font-bold">Additional Tools</h5>
