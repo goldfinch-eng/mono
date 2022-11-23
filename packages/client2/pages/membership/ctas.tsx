@@ -87,8 +87,12 @@ export function BalancedIsBest({
         Balanced is best
       </div>
       <div className="text-sm">
-        To optimize Member rewards, aim to have balanced amounts of capital and
-        GFI in your vault at all times.
+        To optimize your Member Reward yields, aim to have balanced dollar
+        amounts of capital in GFI in your vault at all times.
+      </div>
+      <div className="mt-6 text-sm">
+        Ex: $100 of capital should be balanced with $100 of GFI for an optimal
+        reward rate.
       </div>
     </div>
   );
