@@ -18,10 +18,18 @@ import { GFI_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
+  StakedPositionFieldsForAssetsFragment,
   PoolTokenFieldsForAssetsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { gfiToUsdc } from "@/lib/pools";
+import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
+
+export const STAKED_POSITION_FIELDS_FOR_ASSETS = gql`
+  fragment StakedPositionFieldsForAssets on SeniorPoolStakedPosition {
+    id
+    amount
+  }
+`;
 
 export const POOL_TOKEN_FIELDS_FOR_ASSETS = gql`
   fragment PoolTokenFieldsForAssets on TranchedPoolToken {
@@ -324,5 +332,20 @@ export function convertPoolTokenToAsset(
       token: SupportedCrypto.Usdc,
       amount: poolToken.principalAmount.sub(poolToken.principalRedeemed),
     },
+  };
+}
+
+export function convertStakedPositionToAsset(
+  stakedPosition: StakedPositionFieldsForAssetsFragment,
+  sharePrice: BigNumber
+): Asset {
+  return {
+    name: `Staked Fidu (Token #${stakedPosition.id})`,
+    description: "Goldfinch Senior Pool Position",
+    nativeAmount: {
+      token: SupportedCrypto.Fidu,
+      amount: stakedPosition.amount,
+    },
+    usdcAmount: sharesToUsdc(stakedPosition.amount, sharePrice),
   };
 }

@@ -19,6 +19,8 @@ import {
   AssetBoxPlaceholder,
   POOL_TOKEN_FIELDS_FOR_ASSETS,
   convertPoolTokenToAsset,
+  STAKED_POSITION_FIELDS_FOR_ASSETS,
+  convertStakedPositionToAsset,
 } from "./asset-box";
 import {
   AssetGroup,
@@ -42,11 +44,12 @@ import {
 } from "./your-rewards";
 
 gql`
+  ${STAKED_POSITION_FIELDS_FOR_ASSETS}
+  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
   ${VAULTED_GFI_FIELDS}
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
   ${CHART_DISBURSEMENT_FIELDS}
-  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -84,8 +87,7 @@ gql`
       orderBy: startTime
       orderDirection: desc
     ) {
-      id
-      amount
+      ...StakedPositionFieldsForAssets
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -185,15 +187,9 @@ export default function MembershipPage() {
     data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      vaultableCapitalAssets.push({
-        name: "Staked FIDU",
-        description: "Goldfinch Senior Pool Position",
-        usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
-        nativeAmount: {
-          token: SupportedCrypto.Fidu,
-          amount: seniorPoolStakedPosition.amount,
-        },
-      });
+      vaultableCapitalAssets.push(
+        convertStakedPositionToAsset(seniorPoolStakedPosition, sharePrice)
+      );
     });
   }
 
@@ -467,18 +463,10 @@ export default function MembershipPage() {
                       {data.vaultedStakedPositions.map((vsp) => (
                         <AssetBox
                           key={vsp.id}
-                          asset={{
-                            name: "Staked FIDU",
-                            description: "Goldfinch Senior Pool Position",
-                            nativeAmount: {
-                              token: SupportedCrypto.Fidu,
-                              amount: vsp.seniorPoolStakedPosition.amount,
-                            },
-                            usdcAmount: {
-                              token: SupportedCrypto.Usdc,
-                              amount: vsp.usdcEquivalent,
-                            },
-                          }}
+                          asset={convertStakedPositionToAsset(
+                            vsp.seniorPoolStakedPosition,
+                            sharePrice
+                          )}
                         />
                       ))}
                       {data.vaultedPoolTokens.map((vpt) => (

@@ -39,6 +39,7 @@ import {
   AssetPicker,
   AssetBoxPlaceholder,
   convertPoolTokenToAsset,
+  convertStakedPositionToAsset,
 } from "./asset-box";
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
 import { Legalese } from "./legal-agreement";
@@ -266,15 +267,7 @@ function SelectionStep({
               control={control}
               options={vaultableStakedPositions.map((vsp) => ({
                 id: vsp.id,
-                asset: {
-                  name: "Staked FIDU",
-                  description: "Goldfinch Senior Pool Position",
-                  usdcAmount: sharesToUsdc(vsp.amount, sharePrice),
-                  nativeAmount: {
-                    token: SupportedCrypto.Fidu,
-                    amount: vsp.amount,
-                  },
-                },
+                asset: convertStakedPositionToAsset(vsp, sharePrice),
               }))}
             />
             <AssetPicker
@@ -476,15 +469,7 @@ function ReviewStep({
           {stakedPositionsToVault.map((s) => (
             <AssetBox
               key={`staked-fidu-${s.id}`}
-              asset={{
-                name: "Staked FIDU",
-                description: "Goldfinch Senior Pool Position",
-                usdcAmount: sharesToUsdc(s.amount, sharePrice),
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: s.amount,
-                },
-              }}
+              asset={convertStakedPositionToAsset(s, sharePrice)}
             />
           ))}
           {poolTokensToVault.map((p) => (
