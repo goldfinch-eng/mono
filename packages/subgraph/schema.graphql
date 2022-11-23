@@ -34,7 +34,6 @@ type SeniorPoolStatus @entity {
   """
   id: ID!
   rawBalance: BigInt!
-  compoundBalance: BigInt!
   balance: BigInt!
   """
   The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
@@ -53,6 +52,7 @@ type SeniorPoolStatus @entity {
   estimatedApyFromGfiRaw: BigDecimal!
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
+  cancellationFee: BigDecimal!
 }
 
 type User @entity {
@@ -72,6 +72,7 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
+  withdrawalTransactions: [WithdrawalTransaction!]! @derivedFrom(field: "user")
 
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
@@ -227,6 +228,9 @@ enum TransactionCategory {
   SENIOR_POOL_STAKE
   SENIOR_POOL_WITHDRAWAL
   SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
+  SENIOR_POOL_WITHDRAWAL_REQUEST
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST
   # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction
   # category, because UnstakedAndWithdrew and UnstakedAndWithdrewMultiple events are emitted by
   # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we
@@ -245,6 +249,7 @@ enum TransactionCategory {
   # only a single `amount` value for the transaction, so it "wants" us to do such summing. But we
   # cannot.
   SENIOR_POOL_REDEMPTION
+  SENIOR_POOL_DISTRIBUTION
   TRANCHED_POOL_DEPOSIT
   TRANCHED_POOL_WITHDRAWAL
   TRANCHED_POOL_REPAYMENT
@@ -332,6 +337,30 @@ type CommunityRewardsToken @entity {
   revokedAt: BigInt!
   startTime: BigInt!
   endTime: BigInt!
+}
+
+type WithdrawalTransaction @entity {
+  id: Bytes!
+  epochId: BigInt!
+  user: User!
+  amount: BigInt
+  category: WithdrawalTransactionCategory!
+  timestamp: Int!
+  blockNumber: Int!
+}
+
+enum WithdrawalTransactionCategory {
+  WITHDRAWAL_REQUEST
+  ADD_TO_WITHDRAWAL_REQUEST
+  CANCEL_WITHDRAWAL_REQUEST
+}
+
+type Epoch @entity {
+  id: ID!
+  endsAt: Int!
+  fiduRequested: BigInt!
+  usdcAllocated: BigInt!
+  fiduLiquidated: BigInt!
 }
 
 type MembershipEpoch @entity(immutable: true) {

@@ -108,6 +108,17 @@ type Viewer {
   gfiGrants: [GfiGrant!]!
   claimableMembershipRewards: CryptoAmount
   accruedMembershipRewardsThisEpoch: CryptoAmount
+  withdrawalStatus: WithdrawalStatus
+}
+
+type WithdrawalStatus {
+  usdcWithdrawable: CryptoAmount
+  fiduRequested: CryptoAmount
+  withdrawalToken: BigInt
+}
+
+type EpochInfo {
+  endTime: BigInt!
 }
 
 type BlockInfo {
@@ -127,4 +138,5 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo!
   curvePool: CurvePool!
+  currentEpoch: EpochInfo
 }

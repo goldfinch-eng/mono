@@ -32,6 +32,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
       | "sky"
       | "mustard"
       | "mint"
+      | "twilight"
+      | "eggplant"
       | "tidepool";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
@@ -111,6 +113,10 @@ export const Button = forwardRef<
           ? "bg-mustard-400 text-sand-700 hover:bg-mustard-500 hover:text-sand-900 active:bg-mustard-600 active:text-sand-900"
           : colorScheme === "mint"
           ? "bg-mint-500 text-white hover:bg-mint-600 active:bg-mint-700"
+          : colorScheme === "twilight"
+          ? "bg-twilight-600 text-white hover:bg-twilight-700 active:bg-twilight-800"
+          : colorScheme === "eggplant"
+          ? "bg-eggplant-700 text-white hover:bg-eggplant-800 active:bg-eggplant-900"
           : colorScheme === "tidepool"
           ? "bg-tidepool-500 text-white hover:bg-tidepool-600 active:bg-tidepool-700"
           : null,

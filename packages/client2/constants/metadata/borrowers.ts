@@ -16,6 +16,10 @@ interface Borrower {
 }
 
 export const BORROWER_METADATA: Record<string, Borrower> = {
+  protocol: {
+    name: "Goldfinch Protocol",
+    logo: goldfinchLogo.src,
+  },
   goldfinchTestBorrower: {
     name: "Goldfinch Test Borrower",
     logo: goldfinchLogo.src,
