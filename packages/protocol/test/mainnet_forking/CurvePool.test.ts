@@ -579,7 +579,7 @@ type AccountResources = {
 }
 
 async function setupResources({deployments}: {deployments: DeploymentsExtension}): Promise<TestResources> {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)

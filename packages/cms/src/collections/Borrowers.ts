@@ -136,7 +136,11 @@ const Borrowers: CollectionConfig = {
         {
           name: "underwritingDescription",
           label: "Underwriting description",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
         },
         {
           name: "defaultRate",

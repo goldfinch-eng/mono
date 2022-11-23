@@ -1,5 +1,9 @@
-// Import a nux and add it to the return below if you want to display it
+import { MembershipNux } from "./membership-nux";
 
 export function AllNuxes() {
-  return <></>;
+  return (
+    <>
+      <MembershipNux />
+    </>
+  );
 }

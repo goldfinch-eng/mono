@@ -1,4 +1,4 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   ERC20Instance,
   FiduInstance,
@@ -35,14 +35,17 @@ import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers
 import {time} from "@openzeppelin/test-helpers"
 import {Staked} from "../../typechain/truffle/StakingRewards"
 import {DepositMade} from "../../typechain/truffle/SeniorPool"
+import {MAINNET_TRUSTED_SIGNER_ADDRESS} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   let upgradedContracts: UpgradedContracts
   {
+    const {gf_deployer} = await getNamedAccounts()
+    fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS])
     const deployEffects = await getDeployEffects({
       title: "Test Update Staking Rewards",
     })

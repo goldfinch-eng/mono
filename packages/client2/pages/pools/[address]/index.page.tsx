@@ -28,6 +28,7 @@ import {
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
+  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -43,6 +44,7 @@ import {
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import ComingSoonPanel from "./coming-soon-panel";
+import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import DealSummary from "./deal-summary";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
@@ -139,7 +141,14 @@ gql`
       zaps(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelZapFields
       }
+      vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+        id
+        poolToken {
+          ...WithdrawalPanelPoolTokenFields
+        }
+      }
     }
+
     currentBlock @client {
       timestamp
     }
@@ -188,10 +197,12 @@ const singleDealQuery = gql`
   ${BORROWER_FINANCIALS_TABLE_FIELDS}
   ${BORROWER_PERFORMANCE_TABLE_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
+  ${CREDIT_MEMO_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
       name
+      dealType
       category
       borrower {
         ...BorrowerProfileFields
@@ -212,6 +223,9 @@ const singleDealQuery = gql`
       }
       documents {
         ...DocumentFields
+      }
+      creditMemos {
+        ...CreditMemoFields
       }
     }
   }
@@ -244,6 +258,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
+  const isMultitranche = dealDetails.dealType === Deal_DealType.Multitranche;
 
   if (error) {
     return (
@@ -261,7 +276,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       }
     : undefined;
   const seniorSupply =
-    backerSupply && tranchedPool?.estimatedLeverageRatio
+    backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
           amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
@@ -367,6 +382,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           {poolStatus === PoolStatus.Open ||
           poolStatus === PoolStatus.Closed ? (
             <FundingBar
+              isMultitranche={isMultitranche}
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {
@@ -411,10 +427,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
               {data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0) ? (
+                data?.user.zaps.length > 0 ||
+                data?.user.vaultedPoolTokens.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
+                    (v) => v.poolToken
+                  )}
                   zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&

@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 
-import { Form, DollarInput, Button } from "@/components/design-system";
+import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -14,6 +14,7 @@ import {
 import {
   approveErc20IfRequired,
   getOptimalPositionsToUnstake,
+  sum,
 } from "@/lib/pools";
 import { sharesToUsdc, usdcToShares } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -28,11 +29,11 @@ export const MIGRATE_FORM_POSITION_FIELDS = gql`
 `;
 
 interface StakeCardMigrateFormProps {
-  fiduStaked: CryptoAmount;
   usdcBalance: CryptoAmount;
   positions: MigrateFormPositionFieldsFragment[];
   sharePrice: BigNumber;
   onComplete: () => void;
+  showVaultWarning?: boolean;
 }
 
 interface StakeMigrateForm {
@@ -41,12 +42,16 @@ interface StakeMigrateForm {
 }
 
 export function MigrateForm({
-  fiduStaked,
   usdcBalance,
   positions,
   sharePrice,
   onComplete,
+  showVaultWarning = false,
 }: StakeCardMigrateFormProps) {
+  const maxFidu = {
+    token: SupportedCrypto.Fidu,
+    amount: sum("amount", positions),
+  };
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<StakeMigrateForm>();
@@ -106,14 +111,14 @@ export function MigrateForm({
   const handleMaxFidu = async () => {
     setValue(
       "fiduAmount",
-      formatCrypto(fiduStaked, {
+      formatCrypto(maxFidu, {
         includeSymbol: false,
         useMaximumPrecision: true,
       })
     );
     setValue(
       "usdcAmount",
-      formatCrypto(sharesToUsdc(fiduStaked.amount, sharePrice), {
+      formatCrypto(sharesToUsdc(maxFidu.amount, sharePrice), {
         includeSymbol: false,
         useMaximumPrecision: true,
       })
@@ -179,7 +184,7 @@ export function MigrateForm({
   const validateMaxFidu = async (value: string) => {
     const parsedValue = utils.parseUnits(value, FIDU_DECIMALS);
 
-    return validateMax(parsedValue, fiduStaked.amount);
+    return validateMax(parsedValue, maxFidu.amount);
   };
 
   const validateMaxUsdc = async (value: string) => {
@@ -190,21 +195,30 @@ export function MigrateForm({
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-      <div className="flex max-w-xl flex-col items-stretch">
-        <DollarInput
-          control={control}
-          name="fiduAmount"
-          label={`FIDU amount (max ${formatCrypto(fiduStaked, {
-            includeSymbol: false,
-            includeToken: false,
-          })})`}
-          unit={SupportedCrypto.Fidu}
-          rules={{ required: "Required", validate: validateMaxFidu }}
-          textSize="xl"
-          onMaxClick={handleMaxFidu}
-          onKeyUp={() => syncOtherAmount("FIDU")}
-          className="mb-8"
-        />
+      <div className="flex max-w-xl flex-col items-stretch gap-8">
+        <div>
+          <DollarInput
+            control={control}
+            name="fiduAmount"
+            label={`FIDU amount (max ${formatCrypto(maxFidu, {
+              includeSymbol: false,
+              includeToken: false,
+            })})`}
+            unit={SupportedCrypto.Fidu}
+            rules={{ required: "Required", validate: validateMaxFidu }}
+            textSize="xl"
+            onMaxClick={handleMaxFidu}
+            onKeyUp={() => syncOtherAmount("FIDU")}
+          />
+          {showVaultWarning ? (
+            <div className="mt-2 flex items-center justify-between rounded bg-mustard-200 py-2 px-3 text-xs">
+              <div>You cannot migrate FIDU while it is in the vault</div>
+              <Link href="/membership" iconRight="ArrowSmRight">
+                Go to Vault
+              </Link>
+            </div>
+          ) : null}
+        </div>
         <DollarInput
           control={control}
           name="usdcAmount"
@@ -217,7 +231,6 @@ export function MigrateForm({
           textSize="xl"
           onMaxClick={handleMaxUsdc}
           onKeyUp={() => syncOtherAmount("USDC")}
-          className="mb-8"
         />
         <Button type="submit" size="xl">
           Migrate

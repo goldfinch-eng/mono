@@ -152,7 +152,6 @@ export default function WithdrawalRequestModal({
               reset();
               return balanceWallet.amount;
             }}
-            maxButtonStyle="filled"
             unit={SupportedCrypto.Fidu}
             rules={{ required: "Required", validate: validateAmount }}
             textSize="xl"
@@ -192,60 +191,63 @@ export default function WithdrawalRequestModal({
           ) : null}
         </div>
 
-        <div className="mb-7">
-          <div className="mb-2 flex items-center gap-2">
-            <h5 className="text-base font-medium">Non-withdrawable FIDU</h5>
-            <div className="flex text-sand-400">
-              <InfoIconTooltip
-                size="sm"
-                content="Only Withdrawable FIDU can be requested for withdrawal. In order to withdraw FIDU that is currently Vaulted or Staked, you must first unstake the FIDU and/or withdraw it from the vault."
-              />
-            </div>
-          </div>
-          <div className="flex rounded border border-sand-200 bg-white">
-            <div className="flex-1 border-r border-sand-200 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="text-sm">Vaulted</div>
+        {balanceVaulted.amount.gt(BigNumber.from("0")) ||
+        balanceStaked.amount.gt(BigNumber.from("0")) ? (
+          <div className="mb-7">
+            <div className="mb-2 flex items-center gap-2">
+              <h5 className="text-base font-medium">Non-withdrawable FIDU</h5>
+              <div className="flex text-sand-400">
                 <InfoIconTooltip
                   size="sm"
-                  content="FIDU that is currently deposited in a Member Vault. In order to submit a withdrawal request for this FIDU, you must first go to the Vault page and remove the FIDU from the Member Vault."
+                  content="Only Withdrawable FIDU can be requested for withdrawal. In order to withdraw FIDU that is currently Vaulted or Staked, you must first unstake the FIDU and/or withdraw it from the vault."
                 />
               </div>
-              <div className="mb-3 text-xl">
-                {formatCrypto(balanceVaulted, { includeToken: true })}
-              </div>
-              <Button
-                as="a"
-                className="block w-full"
-                iconRight="ArrowSmRight"
-                href="/membership"
-              >
-                Go to Vault page
-              </Button>
             </div>
-            <div className="flex-1 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="text-sm">Staked</div>
-                <InfoIconTooltip
-                  size="sm"
-                  content="FIDU that is currently staked. In order to submit a withdrawal request for this FIDU, you must first go to the Stake page and unstake the FIDU."
-                />
+            <div className="flex rounded border border-sand-200 bg-white">
+              <div className="flex-1 border-r border-sand-200 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-sm">Vaulted</div>
+                  <InfoIconTooltip
+                    size="sm"
+                    content="FIDU that is currently deposited in a Member Vault. In order to submit a withdrawal request for this FIDU, you must first go to the Vault page and remove the FIDU from the Member Vault."
+                  />
+                </div>
+                <div className="mb-3 text-xl">
+                  {formatCrypto(balanceVaulted, { includeToken: true })}
+                </div>
+                <Button
+                  as="a"
+                  className="block w-full"
+                  iconRight="ArrowSmRight"
+                  href="/membership"
+                >
+                  Go to Vault page
+                </Button>
               </div>
+              <div className="flex-1 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-sm">Staked</div>
+                  <InfoIconTooltip
+                    size="sm"
+                    content="FIDU that is currently staked. In order to submit a withdrawal request for this FIDU, you must first go to the Stake page and unstake the FIDU."
+                  />
+                </div>
 
-              <div className="mb-3 text-xl">
-                {formatCrypto(balanceStaked, { includeToken: true })}
+                <div className="mb-3 text-xl">
+                  {formatCrypto(balanceStaked, { includeToken: true })}
+                </div>
+                <Button
+                  as="a"
+                  className="block w-full"
+                  iconRight="ArrowSmRight"
+                  href="/stake"
+                >
+                  Go to Stake page
+                </Button>
               </div>
-              <Button
-                as="a"
-                className="block w-full"
-                iconRight="ArrowSmRight"
-                href="/stake"
-              >
-                Go to Stake page
-              </Button>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="mb-7">
           <h5 className="mb-2 text-base font-medium">

@@ -5,7 +5,6 @@ import {Contract} from "@ethersproject/contracts"
 
 const CONFIG = {
   mainnet: "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822",
-  rinkeby: "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
 }
 
 // Entrypoint for the Autotask

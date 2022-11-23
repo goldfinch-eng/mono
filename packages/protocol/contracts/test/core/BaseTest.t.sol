@@ -37,6 +37,7 @@ abstract contract BaseTest is Test {
   function excludeAddresses() private {
     fuzzHelper.exclude(address(fuzzHelper));
     fuzzHelper.exclude(address(0));
+    fuzzHelper.exclude(address(protocol));
     fuzzHelper.exclude(address(protocol.usdc()));
     fuzzHelper.exclude(GF_OWNER);
     fuzzHelper.exclude(TREASURY);
@@ -108,7 +109,7 @@ abstract contract BaseTest is Test {
   }
 
   function fundAddress(address addressToFund, uint256 amount) internal impersonating(GF_OWNER) {
-    usdc.transfer(addressToFund, amount);
+    protocol.usdc().transfer(addressToFund, amount);
   }
 
   function assertZero(uint256 x) internal {

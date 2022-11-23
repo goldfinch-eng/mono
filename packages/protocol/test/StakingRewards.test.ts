@@ -5,7 +5,6 @@ import {
   FiduInstance,
   GFIInstance,
   GoldfinchConfigInstance,
-  SeniorPoolInstance,
   TestStakingRewardsInstance,
   TestFiduUSDCCurveLPInstance,
   TestSeniorPoolInstance,
@@ -18,8 +17,6 @@ import {
   RewardPaid,
   Staked,
   Unstaked,
-  UnstakedAndWithdrew,
-  UnstakedAndWithdrewMultiple,
 } from "../typechain/truffle/StakingRewards"
 import {
   usdcVal,

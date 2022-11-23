@@ -12,12 +12,6 @@ const CONFIG = {
     seniorPoolAddress: "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822",
     etherscanApi: "https://api.etherscan.io/api",
   },
-  rinkeby: {
-    factoryAddress: "0x2175755A2aB6BE1a1E8C8fdc0BbFce430242f296",
-    poolTokensAddress: "0x9aB3cfeA6f849a2106b2D3874D6d3Cb8b24cbcdC",
-    seniorPoolAddress: "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
-    etherscanApi: "https://api-rinkeby.etherscan.io/api",
-  },
 }
 
 // Entrypoint for the Autotask

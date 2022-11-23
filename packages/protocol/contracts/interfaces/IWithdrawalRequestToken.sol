@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {IERC721Enumerable} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Enumerable.sol";
+import {IERC721Enumerable} from "./openzeppelin/IERC721Enumerable.sol";
 
 // Use base non-transferrable ERC721 class?
 interface IWithdrawalRequestToken is IERC721Enumerable {

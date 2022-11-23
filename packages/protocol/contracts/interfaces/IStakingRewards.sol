@@ -3,9 +3,9 @@ pragma solidity >=0.6.12;
 
 pragma experimental ABIEncoderV2;
 
-import {IERC721} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
-import {IERC721Metadata} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Metadata.sol";
-import {IERC721Enumerable} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Enumerable.sol";
+import {IERC721} from "./openzeppelin/IERC721.sol";
+import {IERC721Metadata} from "./openzeppelin/IERC721Metadata.sol";
+import {IERC721Enumerable} from "./openzeppelin/IERC721Enumerable.sol";
 
 interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
   function getPosition(uint256 tokenId) external view returns (StakedPosition memory position);
@@ -47,15 +47,9 @@ interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
     uint256 indexed tokenId,
     uint256 amount
   );
+  event AddToStake(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event UnstakedMultiple(address indexed user, uint256[] tokenIds, uint256[] amounts);
-  event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
-  event UnstakedAndWithdrewMultiple(
-    address indexed user,
-    uint256 usdcReceivedAmount,
-    uint256[] tokenIds,
-    uint256[] amounts
-  );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
   event RewardsParametersUpdated(
     address indexed who,

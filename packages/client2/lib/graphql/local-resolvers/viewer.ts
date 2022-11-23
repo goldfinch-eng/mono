@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
+import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
@@ -157,5 +158,50 @@ export const viewerResolvers: Resolvers[string] = {
     gfiGrants.sort(grantComparator);
 
     return gfiGrants;
+  },
+  async claimableMembershipRewards(): Promise<CryptoAmount | null> {
+    try {
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
+
+      const membershipContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const availableRewards = await membershipContract.claimableRewards(
+        account
+      );
+      return {
+        __typename: "CryptoAmount",
+        token: SupportedCrypto.Fidu,
+        amount: availableRewards,
+      };
+    } catch (e) {
+      return null;
+    }
+  },
+  async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
+    try {
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
+
+      const membershipContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const currentBlock = await provider.getBlock("latest");
+      const epoch = getEpochNumber(currentBlock.timestamp * 1000);
+      const totalRewardsThisEpoch = await membershipContract.estimateRewardsFor(
+        epoch
+      );
+      const { eligibleScore } = await membershipContract.memberScoreOf(account);
+      const { eligibleTotal } = await membershipContract.totalMemberScores();
+      const accrued = eligibleTotal.isZero()
+        ? BigNumber.from(0)
+        : totalRewardsThisEpoch.mul(eligibleScore).div(eligibleTotal);
+      return { token: SupportedCrypto.Fidu, amount: accrued };
+    } catch (e) {
+      return null;
+    }
   },
 };

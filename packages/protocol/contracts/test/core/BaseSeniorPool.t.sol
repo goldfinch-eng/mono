@@ -26,6 +26,11 @@ import {TranchedPoolBuilder} from "../helpers/TranchedPoolBuilder.t.sol";
 import {PoolTokens} from "../../protocol/core/PoolTokens.sol";
 import {StakingRewards} from "../../rewards/StakingRewards.sol";
 import {BackerRewards} from "../../rewards/BackerRewards.sol";
+import {TestERC20} from "../../test/TestERC20.sol";
+import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
+import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
+import {Fidu} from "../../protocol/core/Fidu.sol";
+import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 
 contract SeniorPoolBaseTest is BaseTest {
   using ConfigHelper for GoldfinchConfig;
@@ -40,10 +45,26 @@ contract SeniorPoolBaseTest is BaseTest {
   WithdrawalRequestToken internal requestTokens;
   TranchedPoolBuilder internal tpBuilder;
   PoolTokens internal poolTokens;
+  Fidu internal fidu;
+  TestERC20 internal usdc;
+  GoldfinchConfig internal gfConfig;
+  GoldfinchFactory internal gfFactory;
 
   function setUp() public override {
     super.setUp();
     _startImpersonation(GF_OWNER);
+
+    // GoldfinchConfig setup
+    gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
+
+    // GoldfinchFactory setup
+    gfFactory = GoldfinchFactory(address(protocol.gfFactory()));
+
+    // USDC setup
+    usdc = TestERC20(address(protocol.usdc()));
+
+    // FIDU setup
+    fidu = Fidu(address(protocol.fidu()));
 
     // SeniorPool setup
     sp = new TestSeniorPool();

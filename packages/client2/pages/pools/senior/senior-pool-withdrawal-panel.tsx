@@ -32,6 +32,7 @@ interface SeniorPoolWithdrawalPanelProps {
   withdrawalStatus?: WithdrawalStatus | null;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
+  vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
   currentEpoch?: WithdrawalEpochInfo | null;
@@ -45,6 +46,7 @@ export function SeniorPoolWithdrawalPanel({
   withdrawalStatus,
   currentEpoch,
   cancellationFee,
+  vaultedStakedPositions = [],
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
   const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
@@ -57,9 +59,10 @@ export function SeniorPoolWithdrawalPanel({
       amount: BigNumber.from("0"),
       token: SupportedCrypto.Fidu,
     },
-    stakedPositions
+    stakedPositions.concat(vaultedStakedPositions)
   );
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
+  const totalUserVaultedFidu = sumStakedShares(vaultedStakedPositions);
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
     seniorPoolSharePrice
@@ -283,7 +286,7 @@ export function SeniorPoolWithdrawalPanel({
           token: SupportedCrypto.Fidu,
         }}
         balanceVaulted={{
-          amount: BigNumber.from(0),
+          amount: totalUserVaultedFidu,
           token: SupportedCrypto.Fidu,
         }}
         cancellationFee={cancellationFee}

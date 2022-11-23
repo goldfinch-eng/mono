@@ -7,7 +7,7 @@
 */
 pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/introspection/IERC165.sol";
+import "../interfaces/openzeppelin/IERC165.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 
 /**

@@ -178,7 +178,12 @@ export function SeniorPoolSupplyPanel({
       }
     }
 
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
   };
 
   const isUserVerified =
@@ -207,8 +212,8 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
@@ -249,18 +254,20 @@ export function SeniorPoolSupplyPanel({
         </div>
         <div className="w-full rounded border border-white/20">
           <table className="w-full text-xs">
-            <tr className="border-b border-white/20">
-              <td className="p-2">USDC</td>
-              <td className="p-2 text-right">
-                {formatPercent(seniorPoolApyUsdc)}
-              </td>
-            </tr>
-            <tr>
-              <td className="p-2">GFI</td>
-              <td className="p-2 text-right">
-                {formatPercent(seniorPoolApyFromGfiFiat)}
-              </td>
-            </tr>
+            <tbody>
+              <tr className="border-b border-white/20">
+                <td className="p-2">USDC</td>
+                <td className="p-2 text-right">
+                  {formatPercent(seniorPoolApyUsdc)}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-2">GFI</td>
+                <td className="p-2 text-right">
+                  {formatPercent(seniorPoolApyFromGfiFiat)}
+                </td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>

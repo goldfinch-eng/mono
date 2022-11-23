@@ -75,6 +75,18 @@ const supportedContracts = {
     import(
       "@/types/ethers-contracts/factories/WithdrawalRequestToken__factory"
     ).then((module) => module.WithdrawalRequestToken__factory.connect),
+  PoolTokens: () =>
+    import("@/types/ethers-contracts/factories/PoolTokens__factory").then(
+      (module) => module.PoolTokens__factory.connect
+    ),
+  MembershipOrchestrator: () =>
+    import(
+      "@/types/ethers-contracts/factories/MembershipOrchestrator__factory"
+    ).then((module) => module.MembershipOrchestrator__factory.connect),
+  ERC20Splitter: () =>
+    import("@/types/ethers-contracts/factories/Erc20Splitter__factory").then(
+      (module) => module.Erc20Splitter__factory.connect
+    ),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

@@ -7,8 +7,8 @@ async function main(hre) {
 }
 
 module.exports = main
-module.exports.dependencies = ["base_deploy"]
-module.exports.tags = ["setup_for_testing"]
+module.exports.dependencies = ["baseDeploy"]
+module.exports.tags = ["setupForTesting"]
 module.exports.skip = async ({getChainId}: HardhatRuntimeEnvironment) => {
   const chainId = await getChainId()
   return String(chainId) === MAINNET_CHAIN_ID

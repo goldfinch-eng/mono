@@ -17,7 +17,7 @@ import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 
-import "../library/StakingRewardsVesting.sol";
+import {StakingRewardsVesting, Rewards} from "../library/StakingRewardsVesting.sol";
 
 // solhint-disable-next-line max-states-count
 contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe, IStakingRewards {
@@ -320,6 +320,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /* ========== MUTATIVE FUNCTIONS ========== */
+
+  function setBaseURI(string calldata baseURI_) external onlyAdmin {
+    _setBaseURI(baseURI_);
+  }
 
   /// @notice Stake `stakingToken()` to earn rewards. When you call this function, you'll receive an
   ///   an NFT representing your staked position. You can present your NFT to `getReward` or `unstake`
@@ -743,6 +747,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     );
 
     stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
+    emit AddToStake(msg.sender, tokenId, amount, position.positionType);
   }
 
   /* ========== RESTRICTED FUNCTIONS ========== */
