@@ -24,6 +24,7 @@ import {
   getERC20s,
   addUserToGoList,
   fundUser,
+  createPoolAndFundWithSenior,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
@@ -160,6 +161,17 @@ app.post("/setupCurrentUser", async (req, res) => {
 })
 
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
+
+app.post("/drainSeniorPool", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "drainSeniorPool not available in production"})
+  }
+
+  const {usdcAmount} = req.body
+  const poolAddress = await createPoolAndFundWithSenior(hre, usdcAmount)
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true, pool: poolAddress})})
+})
 
 app.post("/kycStatus", async (req, res) => {
   if (process.env.NODE_ENV === "production") {

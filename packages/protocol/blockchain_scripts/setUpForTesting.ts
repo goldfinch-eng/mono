@@ -30,7 +30,7 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal, USDC_DECIMALS} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -470,6 +470,48 @@ async function createBorrowerContractAndPools({
   await createFullPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
 
   logger(`Pools ready for ${address}`)
+}
+
+export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment, usdcAmount: string) {
+  const {
+    deployments: {getOrNull},
+  } = hre
+  const chainId = await hre.getChainId()
+  const {erc20} = await getERC20s({hre, chainId})
+  const protocol_owner = await getProtocolOwner()
+  const underwriter = protocol_owner
+  const borrower = protocol_owner
+  const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
+
+  const seniorAmount = new BN(usdcAmount).mul(USDC_DECIMALS)
+  // Senior pool invests 4x the junio investment
+  const juniorAmount = seniorAmount.div(new BN("4"))
+
+  const pool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower,
+    erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
+    limitInDollars: 1_000_000_000, // set a very large limit
+  })
+
+  // Invest in Junior Tranche
+  const ownerSigner = ethers.provider.getSigner(protocol_owner)
+  const approveTxn = await erc20.connect(ownerSigner).approve(pool.address, juniorAmount.toNumber())
+  await approveTxn.wait()
+  const juniorDepositTxn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, juniorAmount.toNumber())
+  await juniorDepositTxn.wait()
+  const juniorLockTx = await pool.connect(ownerSigner).lockJuniorCapital()
+  await juniorLockTx.wait()
+
+  // Invest in Senior Tranche
+  const seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  const seniorDepositTxn = await seniorPool.invest(pool.address)
+  await seniorDepositTxn.wait()
+
+  return pool.address
 }
 
 async function createUnfilledPool(
