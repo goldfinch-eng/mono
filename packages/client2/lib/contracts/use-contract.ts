@@ -83,6 +83,10 @@ const supportedContracts = {
     import(
       "@/types/ethers-contracts/factories/MembershipOrchestrator__factory"
     ).then((module) => module.MembershipOrchestrator__factory.connect),
+  MembershipVault: () =>
+    import("@/types/ethers-contracts/factories/MembershipVault__factory").then(
+      (module) => module.MembershipVault__factory.connect
+    ),
   ERC20Splitter: () =>
     import("@/types/ethers-contracts/factories/Erc20Splitter__factory").then(
       (module) => module.Erc20Splitter__factory.connect
