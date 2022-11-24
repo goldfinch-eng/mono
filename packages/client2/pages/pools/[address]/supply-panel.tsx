@@ -40,9 +40,12 @@ export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    remainingJuniorCapacity
+    juniorDeposited
     estimatedLeverageRatio
     allowedUidTypes
+    creditLine {
+      maxLimit
+    }
   }
 `;
 
@@ -73,6 +76,7 @@ interface SupplyPanelProps {
    */
   seniorPoolSharePrice: BigNumber;
   agreement?: string | null;
+  isUnitrancheDeal?: boolean;
 }
 
 interface SupplyForm {
@@ -86,14 +90,17 @@ export default function SupplyPanel({
     id: tranchedPoolAddress,
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
-    remainingJuniorCapacity,
+    juniorDeposited,
+    estimatedLeverageRatio,
     allowedUidTypes,
+    creditLine: { maxLimit },
   },
   user,
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
   seniorPoolSharePrice,
   agreement,
+  isUnitrancheDeal = false,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
@@ -115,6 +122,12 @@ export default function SupplyPanel({
   });
   const { control, watch, register } = rhfMethods;
 
+  const remainingJuniorCapacity =
+    isUnitrancheDeal || !estimatedLeverageRatio
+      ? maxLimit.sub(juniorDeposited)
+      : maxLimit
+          .sub(juniorDeposited.mul(estimatedLeverageRatio.add(1)))
+          .div(estimatedLeverageRatio.add(1));
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
       return;
