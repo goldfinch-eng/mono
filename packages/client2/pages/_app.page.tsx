@@ -6,7 +6,7 @@ import Head from "next/head";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 
-import { DevToolsPanel } from "@/components/dev-tools";
+import { DevTools } from "@/components/dev-tools2";
 import { Layout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
@@ -52,7 +52,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
           {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
           process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (
-            <DevToolsPanel />
+            <DevTools />
           ) : null}
           <AllNuxes />
           <AppLevelSideEffects />
