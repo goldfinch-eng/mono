@@ -3,28 +3,23 @@ import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
 
-import {
-  Button,
-  Icon,
-  InfoIconTooltip,
-  Link,
-} from "@/components/design-system";
+import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
-  EpochInfo,
+  WithdrawalEpochInfo,
   WithdrawalStatus,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import WithdrawCancelRequestModal from "./withdraw-cancel-request-modal";
-import WithdrawRequestHistoryModal from "./withdraw-request-history-modal";
-import WithdrawRequestModal from "./withdraw-request-modal";
+import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
+import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
+import WithdrawalRequestModal from "./withdraw-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -40,11 +35,11 @@ interface SeniorPoolWithdrawalPanelProps {
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
   cancellationFee?: FixedNumber | null;
 }
 
-export function SeniorPoolWithDrawalPanel({
+export function SeniorPoolWithdrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
@@ -54,7 +49,7 @@ export function SeniorPoolWithDrawalPanel({
   vaultedStakedPositions = [],
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
-  const [withdrawModalOpen, setWithrawModalOpen] = useState(false);
+  const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -67,6 +62,7 @@ export function SeniorPoolWithDrawalPanel({
     stakedPositions.concat(vaultedStakedPositions)
   );
   const totalUserStakedFidu = sumStakedShares(stakedPositions);
+  const totalUserVaultedFidu = sumStakedShares(vaultedStakedPositions);
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
     seniorPoolSharePrice
@@ -79,27 +75,27 @@ export function SeniorPoolWithDrawalPanel({
   const apolloClient = useApolloClient();
 
   const withdrawWithToken = async () => {
-    if (withdrawalStatus?.withdrawalToken && provider) {
-      setIsWithdrawing(true);
+    if (!withdrawalStatus?.withdrawalToken || !provider) return;
 
-      const seniorPoolContract = await getContract({
-        name: "SeniorPool",
-        provider,
-      });
+    setIsWithdrawing(true);
 
-      try {
-        const transaction = seniorPoolContract.claimWithdrawalRequest(
-          withdrawalStatus?.withdrawalToken
-        );
+    const seniorPoolContract = await getContract({
+      name: "SeniorPool",
+      provider,
+    });
 
-        await toastTransaction({ transaction });
+    try {
+      const transaction = seniorPoolContract.claimWithdrawalRequest(
+        withdrawalStatus?.withdrawalToken
+      );
 
-        await apolloClient.refetchQueries({ include: "active" });
+      await toastTransaction({ transaction });
 
-        setIsWithdrawing(false);
-      } catch (e) {
-        setIsWithdrawing(false);
-      }
+      await apolloClient.refetchQueries({ include: "active" });
+
+      setIsWithdrawing(false);
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
@@ -168,29 +164,13 @@ export function SeniorPoolWithDrawalPanel({
             colorScheme="secondary"
             size="xl"
             onClick={() => {
-              setWithrawModalOpen(true);
+              setWithrawalModalOpen(true);
             }}
             className="mb-2 block w-full"
           >
             Request withdrawal
           </Button>
         )}
-
-        {vaultedStakedPositions.length > 0 ? (
-          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
-            <div className="text-mustard-900">
-              You cannot withdraw capital from your positions while they are in
-              the Vault
-            </div>
-            <Link
-              href="/membership"
-              iconRight="ArrowSmRight"
-              className="whitespace-nowrap font-medium text-mustard-700"
-            >
-              Go to Vault
-            </Link>
-          </div>
-        ) : null}
 
         {withdrawalStatus?.withdrawalToken ? (
           <div className="mt-4">
@@ -249,7 +229,7 @@ export function SeniorPoolWithDrawalPanel({
                   size="xl"
                   className="block w-full"
                   onClick={() => {
-                    setWithrawModalOpen(true);
+                    setWithrawalModalOpen(true);
                   }}
                 >
                   Increase
@@ -272,7 +252,7 @@ export function SeniorPoolWithDrawalPanel({
         ) : null}
       </div>
 
-      <WithdrawRequestHistoryModal
+      <WithdrawalRequestHistoryModal
         currentEpoch={currentEpoch}
         isOpen={historyModalOpen}
         onClose={() => {
@@ -280,8 +260,8 @@ export function SeniorPoolWithDrawalPanel({
         }}
       />
 
-      <WithdrawCancelRequestModal
-        cancellationFee={cancellationFee ?? FixedNumber.from("0")}
+      <WithdrawalCancelRequestModal
+        cancellationFee={cancellationFee ?? FixedNumber.from("0.1")}
         withdrawalToken={withdrawalStatus?.withdrawalToken}
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
         isOpen={cancelModalOpen}
@@ -295,7 +275,7 @@ export function SeniorPoolWithDrawalPanel({
         }}
       />
 
-      <WithdrawRequestModal
+      <WithdrawalRequestModal
         currentRequest={withdrawalStatus?.fiduRequested?.amount}
         currentEpoch={currentEpoch}
         sharePrice={seniorPoolSharePrice}
@@ -306,16 +286,16 @@ export function SeniorPoolWithDrawalPanel({
           token: SupportedCrypto.Fidu,
         }}
         balanceVaulted={{
-          amount: BigNumber.from(0),
+          amount: totalUserVaultedFidu,
           token: SupportedCrypto.Fidu,
         }}
         cancellationFee={cancellationFee}
-        isOpen={withdrawModalOpen}
+        isOpen={withdrawalModalOpen}
         onClose={() => {
-          setWithrawModalOpen(false);
+          setWithrawalModalOpen(false);
         }}
         onComplete={async () => {
-          setWithrawModalOpen(false);
+          setWithrawalModalOpen(false);
 
           await apolloClient.refetchQueries({ include: "active" });
         }}
@@ -343,9 +323,7 @@ function sumTotalShares(
   if (unstaked.token !== SupportedCrypto.Fidu) {
     throw new Error("Unstaked is not a CryptoAmount in FIDU");
   }
-  const totalStaked = staked.reduce(
-    (previous, current) => previous.add(current.amount),
-    BigNumber.from(0)
-  );
+  const totalStaked = sumStakedShares(staked);
+
   return unstaked.amount.add(totalStaked).add(requested.amount);
 }

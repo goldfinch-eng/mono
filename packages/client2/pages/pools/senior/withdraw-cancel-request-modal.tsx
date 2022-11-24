@@ -12,7 +12,7 @@ import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-interface WithdrawCancelRequestModalProps {
+interface WithdrawalCancelRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
@@ -21,14 +21,14 @@ interface WithdrawCancelRequestModalProps {
   cancellationFee: FixedNumber;
 }
 
-export default function WithdrawCancelRequestModal({
+export default function WithdrawalCancelRequestModal({
   isOpen,
   onClose,
   withdrawalToken,
   currentRequest,
   onComplete,
   cancellationFee,
-}: WithdrawCancelRequestModalProps) {
+}: WithdrawalCancelRequestModalProps) {
   const { provider } = useWallet();
 
   const fees =
@@ -61,11 +61,8 @@ export default function WithdrawCancelRequestModal({
       size="sm"
       title="Cancel withdrawal request"
       isOpen={isOpen}
-      onClose={() => {
-        onClose();
-      }}
+      onClose={onClose}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       <div className="mb-7">
         <h5 className="mb-2 text-base font-medium">Confirm changes</h5>

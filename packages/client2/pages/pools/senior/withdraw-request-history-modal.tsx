@@ -4,13 +4,13 @@ import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { Modal, ShimmerLines } from "@/components/design-system";
-import { FIDU_DECIMALS_DIV } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   useWithdrawalHistoryQuery,
   SupportedCrypto,
-  EpochInfo,
+  WithdrawalEpochInfo,
   WithdrawalTransactionCategory,
+  WithdrawalTransactionHistoryFieldsFragment,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -32,7 +32,7 @@ gql`
     ) {
       ...WithdrawalTransactionHistoryFields
     }
-    epoches {
+    withdrawalEpoches {
       id
       fiduRequested
       fiduLiquidated
@@ -42,17 +42,19 @@ gql`
   }
 `;
 
-interface WithdrawHistoryModalProps {
+interface WithdrawalHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
 }
 
-export default function WithdrawHistoryModal({
+const FIDU_DECIMALS_DIV = BigNumber.from("1000000000000000000"); // 1e18
+
+export default function WithdrawalHistoryModal({
   isOpen,
   onClose,
   currentEpoch,
-}: WithdrawHistoryModalProps) {
+}: WithdrawalHistoryModalProps) {
   const { account } = useWallet();
 
   const { data, error, loading } = useWithdrawalHistoryQuery({
@@ -61,8 +63,9 @@ export default function WithdrawHistoryModal({
     },
   });
 
-  // Create rows
-  const rows: string[][] = [];
+  // Create rows:
+  // A row consists of ["Request Type", "Date", "Request Amount", "Total Amount"]
+  const rows: [string, string, string, string][] = [];
 
   // Setup temp data
   let tempEpochId: string;
@@ -73,7 +76,9 @@ export default function WithdrawHistoryModal({
   data?.withdrawalTransactions.forEach((transaction, idx) => {
     // If encoutering new epoch ID, calculate distribution for previous
     if (tempEpochId !== transaction.epochId.toString()) {
-      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+      const epochData = data?.withdrawalEpoches.find(
+        (epoch) => epoch.id === tempEpochId
+      );
 
       if (epochData) {
         // Get liquidation percentage
@@ -115,38 +120,12 @@ export default function WithdrawHistoryModal({
       );
 
       // Push request row to array
-      rows.push([
-        transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
-          ? "Initial request"
-          : transaction.category ===
-            WithdrawalTransactionCategory.AddToWithdrawalRequest
-          ? "Increase request"
-          : "",
-        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
-        transaction.amount
-          ? `+${formatCrypto({
-              amount: transaction.amount,
-              token: SupportedCrypto.Fidu,
-            })}`
-          : "",
-        formatCrypto({
-          amount: BigNumber.from(tempUserTotal).div(FIDU_DECIMALS_DIV),
-          token: SupportedCrypto.Fidu,
-        }),
-      ]);
+      rows.push(getRequestRow(transaction, tempUserTotal));
     } else {
       tempUserTotal = FixedNumber.from("0");
 
       // Push cancel row to array
-      rows.push([
-        "Request Cancelled",
-        format(new Date(transaction.timestamp * 1000), "MMM d, y"),
-        "",
-        formatCrypto({
-          amount: BigNumber.from("0"),
-          token: SupportedCrypto.Fidu,
-        }),
-      ]);
+      rows.push(getCancelRow(transaction));
     }
 
     // If last transaction, and not cancelled, check if that same epoch ended to calculate distribution
@@ -156,7 +135,9 @@ export default function WithdrawHistoryModal({
       transaction.category !==
         WithdrawalTransactionCategory.CancelWithdrawalRequest
     ) {
-      const epochData = data?.epoches.find((epoch) => epoch.id === tempEpochId);
+      const epochData = data?.withdrawalEpoches.find(
+        (epoch) => epoch.id === tempEpochId
+      );
 
       if (epochData) {
         // Get liquidation percentage
@@ -201,7 +182,6 @@ export default function WithdrawHistoryModal({
         onClose();
       }}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       {loading ? (
         <ShimmerLines lines={4} truncateFirstLine={false} />
@@ -222,12 +202,51 @@ export default function WithdrawHistoryModal({
   );
 }
 
+function getRequestRow(
+  transaction: WithdrawalTransactionHistoryFieldsFragment,
+  total: FixedNumber
+): [string, string, string, string] {
+  return [
+    transaction.category === WithdrawalTransactionCategory.WithdrawalRequest
+      ? "Initial request"
+      : transaction.category ===
+        WithdrawalTransactionCategory.AddToWithdrawalRequest
+      ? "Increase request"
+      : "",
+    format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+    transaction.amount
+      ? `+${formatCrypto({
+          amount: transaction.amount,
+          token: SupportedCrypto.Fidu,
+        })}`
+      : "",
+    formatCrypto({
+      amount: BigNumber.from(total).div(FIDU_DECIMALS_DIV),
+      token: SupportedCrypto.Fidu,
+    }),
+  ];
+}
+
+function getCancelRow(
+  transaction: WithdrawalTransactionHistoryFieldsFragment
+): [string, string, string, string] {
+  return [
+    "Request Cancelled",
+    format(new Date(transaction.timestamp * 1000), "MMM d, y"),
+    "",
+    formatCrypto({
+      amount: BigNumber.from("0"),
+      token: SupportedCrypto.Fidu,
+    }),
+  ];
+}
+
 function getDistributionRow(
   count: number,
   endsAt: number,
   distributed: FixedNumber,
   total: FixedNumber
-) {
+): [string, string, string, string] {
   return [
     `Distribution ${count}`,
     format(new Date(endsAt * 1000), "MMM d, y"),

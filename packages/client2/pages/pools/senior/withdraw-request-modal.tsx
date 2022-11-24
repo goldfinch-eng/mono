@@ -17,13 +17,13 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   CryptoAmount,
-  EpochInfo,
+  WithdrawalEpochInfo,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-interface WithdrawRequestModalProps {
+interface WithdrawalRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
@@ -32,7 +32,7 @@ interface WithdrawRequestModalProps {
   balanceStaked: CryptoAmount;
   balanceVaulted: CryptoAmount;
   sharePrice?: BigNumber | null;
-  currentEpoch?: EpochInfo | null;
+  currentEpoch?: WithdrawalEpochInfo | null;
   currentRequest?: BigNumber | null;
   cancellationFee?: FixedNumber | null;
 }
@@ -41,7 +41,7 @@ interface FormFields {
   amount: string;
 }
 
-export default function WithdrawRequestModal({
+export default function WithdrawalRequestModal({
   isOpen,
   onClose,
   sharePrice,
@@ -53,7 +53,7 @@ export default function WithdrawRequestModal({
   currentEpoch,
   onComplete,
   cancellationFee,
-}: WithdrawRequestModalProps) {
+}: WithdrawalRequestModalProps) {
   const { account, provider } = useWallet();
   const rhfMethods = useForm<FormFields>();
   const { control, watch, reset } = rhfMethods;
@@ -127,14 +127,18 @@ export default function WithdrawRequestModal({
         onClose();
       }}
       className=" !bg-sand-100"
-      titleSize="lg"
     >
       <Form rhfMethods={rhfMethods} onSubmit={handleSubmit}>
         {!withdrawalToken && (
           <Alert className="mb-7" type="info" hasIcon={false}>
             Withdrawal requests are processed every two weeks, and it may take
             multiple distribution periods to fulfill the request.{" "}
-            <Link href={``} className="text-tidepool-600 underline">
+            <Link
+              className="text-tidepool-600 underline"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
+              target="_blank"
+              rel="noreferrer"
+            >
               Read more
             </Link>
           </Alert>
@@ -187,60 +191,63 @@ export default function WithdrawRequestModal({
           ) : null}
         </div>
 
-        <div className="mb-7">
-          <div className="mb-2 flex items-center gap-2">
-            <h5 className="text-base font-medium">Non-withdrawable FIDU</h5>
-            <div className="flex text-sand-400">
-              <InfoIconTooltip
-                size="sm"
-                content="Only Withdrawable FIDU can be requested for withdrawal. In order to withdraw FIDU that is currently Vaulted or Staked, you must first unstake the FIDU and/or withdraw it from the vault."
-              />
-            </div>
-          </div>
-          <div className="flex rounded border border-sand-200 bg-white">
-            <div className="flex-1 border-r border-sand-200 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="text-sm">Vaulted</div>
+        {balanceVaulted.amount.gt(BigNumber.from("0")) ||
+        balanceStaked.amount.gt(BigNumber.from("0")) ? (
+          <div className="mb-7">
+            <div className="mb-2 flex items-center gap-2">
+              <h5 className="text-base font-medium">Non-withdrawable FIDU</h5>
+              <div className="flex text-sand-400">
                 <InfoIconTooltip
                   size="sm"
-                  content="FIDU that is currently deposited in a Member Vault. In order to submit a withdrawal request for this FIDU, you must first go to the Vault page and remove the FIDU from the Member Vault."
+                  content="Only Withdrawable FIDU can be requested for withdrawal. In order to withdraw FIDU that is currently Vaulted or Staked, you must first unstake the FIDU and/or withdraw it from the vault."
                 />
               </div>
-              <div className="mb-3 text-xl">
-                {formatCrypto(balanceVaulted, { includeToken: true })}
-              </div>
-              <Button
-                as="a"
-                className="block w-full"
-                iconRight="ArrowSmRight"
-                href="/membership"
-              >
-                Go to Vault page
-              </Button>
             </div>
-            <div className="flex-1 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="text-sm">Staked</div>
-                <InfoIconTooltip
-                  size="sm"
-                  content="FIDU that is currently staked. In order to submit a withdrawal request for this FIDU, you must first go to the Stake page and unstake the FIDU."
-                />
+            <div className="flex rounded border border-sand-200 bg-white">
+              <div className="flex-1 border-r border-sand-200 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-sm">Vaulted</div>
+                  <InfoIconTooltip
+                    size="sm"
+                    content="FIDU that is currently deposited in a Member Vault. In order to submit a withdrawal request for this FIDU, you must first go to the Vault page and remove the FIDU from the Member Vault."
+                  />
+                </div>
+                <div className="mb-3 text-xl">
+                  {formatCrypto(balanceVaulted, { includeToken: true })}
+                </div>
+                <Button
+                  as="a"
+                  className="block w-full"
+                  iconRight="ArrowSmRight"
+                  href="/membership"
+                >
+                  Go to Vault page
+                </Button>
               </div>
+              <div className="flex-1 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-sm">Staked</div>
+                  <InfoIconTooltip
+                    size="sm"
+                    content="FIDU that is currently staked. In order to submit a withdrawal request for this FIDU, you must first go to the Stake page and unstake the FIDU."
+                  />
+                </div>
 
-              <div className="mb-3 text-xl">
-                {formatCrypto(balanceStaked, { includeToken: true })}
+                <div className="mb-3 text-xl">
+                  {formatCrypto(balanceStaked, { includeToken: true })}
+                </div>
+                <Button
+                  as="a"
+                  className="block w-full"
+                  iconRight="ArrowSmRight"
+                  href="/stake"
+                >
+                  Go to Stake page
+                </Button>
               </div>
-              <Button
-                as="a"
-                className="block w-full"
-                iconRight="ArrowSmRight"
-                href="/stake"
-              >
-                Go to Stake page
-              </Button>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="mb-7">
           <h5 className="mb-2 text-base font-medium">

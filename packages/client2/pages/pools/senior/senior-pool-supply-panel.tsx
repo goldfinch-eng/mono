@@ -254,18 +254,20 @@ export function SeniorPoolSupplyPanel({
         </div>
         <div className="w-full rounded border border-white/20">
           <table className="w-full text-xs">
-            <tr className="border-b border-white/20">
-              <td className="p-2">USDC</td>
-              <td className="p-2 text-right">
-                {formatPercent(seniorPoolApyUsdc)}
-              </td>
-            </tr>
-            <tr>
-              <td className="p-2">GFI</td>
-              <td className="p-2 text-right">
-                {formatPercent(seniorPoolApyFromGfiFiat)}
-              </td>
-            </tr>
+            <tbody>
+              <tr className="border-b border-white/20">
+                <td className="p-2">USDC</td>
+                <td className="p-2 text-right">
+                  {formatPercent(seniorPoolApyUsdc)}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-2">GFI</td>
+                <td className="p-2 text-right">
+                  {formatPercent(seniorPoolApyFromGfiFiat)}
+                </td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>

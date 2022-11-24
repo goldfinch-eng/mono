@@ -6,7 +6,7 @@ import { Icon } from "@/components/design-system";
 interface AlertProps {
   children: ReactNode;
   className?: string;
-  type: "success" | "info" | "warning" | "danger";
+  type: "info" | "warning";
   hasIcon?: boolean;
 }
 

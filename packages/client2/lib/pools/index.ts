@@ -276,7 +276,7 @@ const transactionLabels: Record<TransactionCategory, string> = {
     "Cancel Withdrawal Request",
   [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
   [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal request distribution",
+    "Withdrawal Request Distribution",
   [TransactionCategory.StakingRewardsClaimed]: "Staking Rewards Claimed",
   [TransactionCategory.BackerRewardsClaimed]: "Backer Rewards Claimed",
   [TransactionCategory.CommunityRewardsClaimed]: "GFI Grant Claimed",
@@ -313,7 +313,7 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawal",
   [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
   [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal request distribution",
+    "Withdrawal Request Distribution",
   [TransactionCategory.StakingRewardsClaimed]: "Rewards Claimed",
   [TransactionCategory.BackerRewardsClaimed]: "Rewards Claimed",
   [TransactionCategory.CommunityRewardsClaimed]: "Grant Claimed",
