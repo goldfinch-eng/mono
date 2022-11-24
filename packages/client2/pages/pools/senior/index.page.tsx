@@ -33,18 +33,21 @@ gql`
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
-  query SeniorPoolPage($userId: ID!) {
+  # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
+  query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
       id
       ...SeniorPoolSupplyPanelUserFields
-      seniorPoolStakedPositions(where: { positionType: Fidu, amount_gt: 0 }) {
+    }
+    seniorPoolStakedPositions(
+      where: { user: $user, positionType: Fidu, amount_gt: 0 }
+    ) {
+      ...SeniorPoolWithdrawalPanelPositionFields
+    }
+    vaultedStakedPositions(where: { user: $user }) {
+      id
+      seniorPoolStakedPosition {
         ...SeniorPoolWithdrawalPanelPositionFields
-      }
-      vaultedStakedPositions {
-        id
-        seniorPoolStakedPosition {
-          ...SeniorPoolWithdrawalPanelPositionFields
-        }
       }
     }
     seniorPools(first: 1) {
@@ -75,7 +78,10 @@ gql`
 export default function SeniorPoolPage() {
   const { account } = useWallet();
   const { data, error } = useSeniorPoolPageQuery({
-    variables: { userId: account?.toLowerCase() ?? "" },
+    variables: {
+      userId: account?.toLowerCase() ?? "",
+      user: account?.toLowerCase() ?? "",
+    },
   });
 
   const seniorPool = data?.seniorPools[0];
@@ -85,9 +91,8 @@ export default function SeniorPoolPage() {
     account &&
     seniorPool?.latestPoolStatus.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
-      (user &&
-        (user.seniorPoolStakedPositions.length > 0 ||
-          user.vaultedStakedPositions.length > 0)));
+      data?.seniorPoolStakedPositions.length !== 0 ||
+      data?.vaultedStakedPositions.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -171,8 +176,8 @@ export default function SeniorPoolPage() {
               <SeniorPoolWithDrawalPanel
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
-                stakedPositions={user?.seniorPoolStakedPositions}
-                vaultedStakedPositions={user?.vaultedStakedPositions.map(
+                stakedPositions={data.seniorPoolStakedPositions}
+                vaultedStakedPositions={data.vaultedStakedPositions.map(
                   (s) => s.seniorPoolStakedPosition
                 )}
                 seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
