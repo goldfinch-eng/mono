@@ -33,7 +33,7 @@ gql`
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
-  # It's really dumb that you have to provide an ID type arg and String
+  # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
       id
