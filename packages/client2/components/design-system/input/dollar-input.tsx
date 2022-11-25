@@ -111,10 +111,10 @@ export function DollarInput({
               }
             }}
             className={clsx(
-              "block rounded-md border p-2 text-[10px] font-semibold uppercase leading-none text-white",
+              "block rounded border p-2 text-[10px] font-semibold uppercase leading-none text-white transition-colors",
               rest.colorScheme === "dark"
-                ? "border-sky-500 bg-sky-900"
-                : "border-sand-700 bg-sand-700"
+                ? "border-twilight-500 bg-twilight-700 hover:bg-twilight-800 active:bg-twilight-900"
+                : "border-transparent bg-sand-700 hover:bg-sand-800 active:bg-sand-900"
             )}
           >
             Max
