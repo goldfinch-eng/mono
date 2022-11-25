@@ -105,7 +105,10 @@ export function SeniorPoolWithdrawalPanel({
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between gap-1 text-sm">
             <div>Your current position</div>
-            <InfoIconTooltip content="The USD value of your current position in the Senior Pool." />
+            <InfoIconTooltip
+              className="!text-white/60"
+              content="The USD value of your current position in the Senior Pool."
+            />
           </div>
           <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
             {formatCrypto({
@@ -126,13 +129,16 @@ export function SeniorPoolWithdrawalPanel({
         <div className="mb-5">
           <div className="mb-2 flex items-center justify-between gap-2 text-sm">
             <div>Ready to withdraw</div>
-            <InfoIconTooltip content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet." />
+            <InfoIconTooltip
+              className="!text-white/60"
+              content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet."
+            />
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">
               {formatCrypto(
-                withdrawalStatus?.usdcWithdrawable || {
-                  amount: BigNumber.from("0"),
+                withdrawalStatus?.usdcWithdrawable ?? {
+                  amount: BigNumber.from(0),
                   token: SupportedCrypto.Usdc,
                 }
               )}
@@ -176,7 +182,10 @@ export function SeniorPoolWithdrawalPanel({
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Withdrawal request</div>
-              <InfoIconTooltip content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request." />
+              <InfoIconTooltip
+                className="!text-white/60"
+                content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request."
+              />
             </div>
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
@@ -199,7 +208,10 @@ export function SeniorPoolWithdrawalPanel({
 
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Next distribution</div>
-              <InfoIconTooltip content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled." />
+              <InfoIconTooltip
+                className="!text-white/60"
+                content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled."
+              />
             </div>
             <div className="mb-5 flex items-end justify-between gap-1">
               <div className="text-2xl">
