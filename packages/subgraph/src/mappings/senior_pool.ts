@@ -14,16 +14,17 @@ import {
   WithdrawalCanceled,
   EpochEnded,
 } from "../../generated/SeniorPool/SeniorPool"
-import {SeniorPoolWithdrawalEpoch, SeniorPoolWithdrawalDisbursement} from "../../generated/schema"
+import {
+  SeniorPoolWithdrawalEpoch,
+  SeniorPoolWithdrawalDisbursement,
+  SeniorPoolWithdrawalRequest,
+} from "../../generated/schema"
 
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit, getOrInitUser} from "../entities/user"
 import {getAddressFromConfig} from "../utils"
-
-// TODO move this up when i finalize it
-import {SeniorPoolWithdrawalRequest} from "../../generated/schema"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../entities/withdrawal_roster"
 
 // Helper function to extract the StakingRewards address from the config on Senior Pool
