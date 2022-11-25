@@ -116,7 +116,7 @@ export default function WithdrawalCancelRequestModal({
               />
             </div>
 
-            <div className="text-lg text-redclay-500">
+            <div className="text-lg text-clay-500">
               {currentRequest
                 ? formatCrypto(
                     {
