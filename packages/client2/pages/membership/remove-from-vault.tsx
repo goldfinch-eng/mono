@@ -32,6 +32,7 @@ import {
   AssetBoxPlaceholder,
   AssetPicker,
   convertPoolTokenToAsset,
+  convertStakedPositionToAsset,
   GfiBox,
 } from "./asset-box";
 import { Legalese } from "./legal-agreement";
@@ -48,8 +49,7 @@ export const VAULTED_STAKED_POSITION_FIELDS = gql`
     id
     usdcEquivalent
     seniorPoolStakedPosition {
-      id
-      amount
+      ...StakedPositionFieldsForAssets
     }
   }
 `;
@@ -284,18 +284,10 @@ function SelectionStep({
           <AssetPicker
             options={vaultedStakedPositions.map((vsp) => ({
               id: vsp.id,
-              asset: {
-                name: "Staked FIDU",
-                description: "Goldfinch Senior Pool Position",
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: vsp.seniorPoolStakedPosition.amount,
-                },
-                usdcAmount: {
-                  token: SupportedCrypto.Usdc,
-                  amount: vsp.usdcEquivalent,
-                },
-              },
+              asset: convertStakedPositionToAsset(
+                vsp.seniorPoolStakedPosition,
+                sharePrice
+              ),
             }))}
             control={control}
             name="stakedPositionsToUnvault"
@@ -442,18 +434,10 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
           {stakedPositionsToUnvault.map((vsp) => (
             <AssetBox
               key={vsp.id}
-              asset={{
-                name: "Staked FIDU",
-                description: "Goldfinch Senior Pool Position",
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: vsp.seniorPoolStakedPosition.amount,
-                },
-                usdcAmount: {
-                  token: SupportedCrypto.Usdc,
-                  amount: vsp.usdcEquivalent,
-                },
-              }}
+              asset={convertStakedPositionToAsset(
+                vsp.seniorPoolStakedPosition,
+                sharePrice
+              )}
             />
           ))}
           {poolTokensToUnvault.map((vpt) => (
