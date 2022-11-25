@@ -9,6 +9,7 @@ import {
   Button,
   goldfinchLogoWhiteBgPngUrl,
   Link,
+  HeavyTable,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -270,16 +271,12 @@ export default function SeniorPoolPage() {
             <div className="mb-8">
               <h2 className="text-lg font-semibold">Liquidity options</h2>
             </div>
-            <table className="w-full border-collapse border border-sand-200 text-sand-600">
-              <tbody>
-                <tr className="border border-sand-200">
-                  <th
-                    scope="row"
-                    className="bg-sand-50 p-5 text-left align-top font-medium sm:min-w-[260px]"
-                  >
-                    Withdrawal Request
-                  </th>
-                  <td className="p-5 align-top">
+            <HeavyTable
+              rows={[
+                [
+                  "Withdrawal Request",
+                  null,
+                  <div key="withdrawal-request">
                     <div className="mb-2">
                       To withdraw capital from the Senior Pool, an LP must
                       submit a Withdrawal Request. Capital is distributed for
@@ -289,16 +286,15 @@ export default function SeniorPoolPage() {
                     <Link
                       href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
                       iconRight="ArrowTopRight"
-                      className="text-sand-400 underline"
-                      target="_blank"
-                      rel="noreferrer"
+                      className="text-sand-500"
+                      openInNewTab
                     >
                       Read more
                     </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>,
+                ],
+              ]}
+            />
           </div>
 
           <TransactionTable />
