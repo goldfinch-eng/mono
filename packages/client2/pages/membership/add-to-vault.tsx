@@ -11,6 +11,10 @@ import {
   Link,
   ModalStepper,
   useStepperContext,
+  AssetPicker,
+  AssetBox,
+  AssetBoxPlaceholder,
+  AssetInputBox,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
@@ -33,15 +37,11 @@ import {
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import {
-  AssetBox,
-  GfiBox,
-  AssetPicker,
-  AssetBoxPlaceholder,
-  convertPoolTokenToAsset,
-  convertStakedPositionToAsset,
-} from "./asset-box";
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
+import {
+  convertStakedPositionToAsset,
+  convertPoolTokenToAsset,
+} from "./helpers";
 import { Legalese } from "./legal-agreement";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
@@ -245,11 +245,17 @@ function SelectionStep({
         {maxVaultableGfi.amount.isZero() ? (
           <BuyGfiCta />
         ) : (
-          <GfiBox
-            maxGfi={maxVaultableGfi}
+          <AssetInputBox
+            asset={{
+              name: "GFI",
+              description: "Goldfinch Token",
+              nativeAmount: maxVaultableGfi,
+              usdcAmount: gfiToUsdc(maxVaultableGfi, fiatPerGfi),
+            }}
             fiatPerGfi={fiatPerGfi}
-            name="gfiToVault"
             control={control}
+            name="gfiToVault"
+            label="GFI to Vault"
           />
         )}
       </div>

@@ -2,7 +2,14 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import { Button, Heading, Link } from "@/components/design-system";
+import {
+  Button,
+  Heading,
+  Link,
+  AssetBox,
+  Asset,
+  AssetBoxPlaceholder,
+} from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -14,21 +21,16 @@ import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
 import {
-  AssetBox,
-  Asset,
-  AssetBoxPlaceholder,
-  POOL_TOKEN_FIELDS_FOR_ASSETS,
-  convertPoolTokenToAsset,
-  STAKED_POSITION_FIELDS_FOR_ASSETS,
-  convertStakedPositionToAsset,
-} from "./asset-box";
-import {
   AssetGroup,
   AssetGroupSubheading,
   AssetGroupButton,
 } from "./asset-group";
 import { BuyGfiCta, LpInSeniorPoolCta, BalancedIsBest } from "./ctas";
 import { Explainer } from "./explainer";
+import {
+  convertPoolTokenToAsset,
+  convertStakedPositionToAsset,
+} from "./helpers";
 import { IntroVideoSection } from "./intro-video-section";
 import {
   RemoveFromVault,
@@ -44,12 +46,23 @@ import {
 } from "./your-rewards";
 
 gql`
-  ${STAKED_POSITION_FIELDS_FOR_ASSETS}
-  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
   ${VAULTED_GFI_FIELDS}
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
   ${CHART_DISBURSEMENT_FIELDS}
+  fragment StakedPositionFieldsForAssets on SeniorPoolStakedPosition {
+    id
+    amount
+  }
+  fragment PoolTokenFieldsForAssets on TranchedPoolToken {
+    id
+    principalAmount
+    principalRedeemed
+    tranchedPool {
+      id
+      name @client
+    }
+  }
   query MembershipPage($userId: String!) {
     seniorPools {
       id

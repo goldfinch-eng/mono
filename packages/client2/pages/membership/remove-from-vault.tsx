@@ -8,6 +8,10 @@ import {
   InfoIconTooltip,
   ModalStepper,
   useStepperContext,
+  AssetBox,
+  AssetBoxPlaceholder,
+  AssetPicker,
+  AssetInputBox,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
@@ -28,13 +32,9 @@ import { useWallet } from "@/lib/wallet";
 
 import { SectionHeading, Summary } from "./add-to-vault";
 import {
-  AssetBox,
-  AssetBoxPlaceholder,
-  AssetPicker,
   convertPoolTokenToAsset,
   convertStakedPositionToAsset,
-  GfiBox,
-} from "./asset-box";
+} from "./helpers";
 import { Legalese } from "./legal-agreement";
 
 export const VAULTED_GFI_FIELDS = gql`
@@ -268,14 +268,26 @@ function SelectionStep({
             amount: sum("amount", vaultedGfi),
           })}
         />
-        <GfiBox
-          control={control}
-          name="gfiToUnvault"
-          maxGfi={{
-            token: SupportedCrypto.Gfi,
-            amount: sum("amount", vaultedGfi),
+        <AssetInputBox
+          asset={{
+            name: "GFI",
+            description: "Goldfinch Token",
+            nativeAmount: {
+              token: SupportedCrypto.Gfi,
+              amount: sum("amount", vaultedGfi),
+            },
+            usdcAmount: gfiToUsdc(
+              {
+                token: SupportedCrypto.Gfi,
+                amount: sum("amount", vaultedGfi),
+              },
+              fiatPerGfi
+            ),
           }}
           fiatPerGfi={fiatPerGfi}
+          control={control}
+          name="gfiToUnvault"
+          label="GFI to Unvault"
         />
       </div>
       <div className="mb-8">
