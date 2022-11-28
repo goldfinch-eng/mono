@@ -27,6 +27,7 @@ import {
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
+import { WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS } from "./withdrawal-cancel-modal2";
 import { WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS } from "./withdrawal-request-modal2";
 
 gql`
@@ -38,6 +39,7 @@ gql`
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
 
   ${WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS}
+  ${WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -95,6 +97,7 @@ gql`
     }
     seniorPoolWithdrawalRequests(where: { user: $user }) {
       ...WithdrawalRequestModalWithdrawalFields
+      ...WithdrawalCancelModalWithdrawalFields
     }
   }
 `;

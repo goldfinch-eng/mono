@@ -21,6 +21,7 @@ import { useWallet } from "@/lib/wallet";
 import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
 import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
 import WithdrawalRequestModal from "./withdraw-request-modal";
+import { WithdrawalCancelModal as WithdrawalCancelModal2 } from "./withdrawal-cancel-modal2";
 import { WithdrawalRequestModal as WithdrawalRequestModal2 } from "./withdrawal-request-modal2";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
@@ -53,8 +54,11 @@ export function SeniorPoolWithdrawalPanel({
   existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
-  const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
+
   const [isWithdrawalModal2Open, setIsWithdrawalModal2Open] = useState(false);
+  const [isCancelModal2Open, setIsCancelModal2Open] = useState(false);
+
+  const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -250,9 +254,7 @@ export function SeniorPoolWithdrawalPanel({
               </div>
               <div className="flex-1">
                 <Button
-                  onClick={() => {
-                    setCancelModalOpen(true);
-                  }}
+                  onClick={() => setIsCancelModal2Open(true)}
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
@@ -313,6 +315,7 @@ export function SeniorPoolWithdrawalPanel({
           await apolloClient.refetchQueries({ include: "active" });
         }}
       />
+
       <WithdrawalRequestModal2
         isOpen={isWithdrawalModal2Open}
         onClose={() => setIsWithdrawalModal2Open(false)}
@@ -330,6 +333,14 @@ export function SeniorPoolWithdrawalPanel({
         cancellationFee={cancellationFee}
         nextDistributionTimestamp={currentEpoch.endTime.toNumber()}
       />
+      {existingWithdrawalRequest ? (
+        <WithdrawalCancelModal2
+          isOpen={isCancelModal2Open}
+          onClose={() => setIsCancelModal2Open(false)}
+          cancellationFee={cancellationFee}
+          existingWithdrawalRequest={existingWithdrawalRequest}
+        />
+      ) : null}
     </>
   );
 }
