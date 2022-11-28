@@ -11,15 +11,17 @@ import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
   WithdrawalEpochInfo,
+  WithdrawalRequestModalWithdrawalFieldsFragment,
   WithdrawalStatus,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc } from "@/lib/pools";
+import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
 import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
 import WithdrawalRequestModal from "./withdraw-request-modal";
+import { WithdrawalRequestModal as WithdrawalRequestModal2 } from "./withdrawal-request-modal2";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -35,8 +37,9 @@ interface SeniorPoolWithdrawalPanelProps {
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
-  currentEpoch?: WithdrawalEpochInfo | null;
-  cancellationFee?: FixedNumber | null;
+  currentEpoch: WithdrawalEpochInfo;
+  cancellationFee: FixedNumber;
+  existingWithdrawalRequest?: WithdrawalRequestModalWithdrawalFieldsFragment;
 }
 
 export function SeniorPoolWithdrawalPanel({
@@ -47,9 +50,11 @@ export function SeniorPoolWithdrawalPanel({
   currentEpoch,
   cancellationFee,
   vaultedStakedPositions = [],
+  existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
   const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
+  const [isWithdrawalModal2Open, setIsWithdrawalModal2Open] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -169,9 +174,7 @@ export function SeniorPoolWithdrawalPanel({
           <Button
             colorScheme="secondary"
             size="xl"
-            onClick={() => {
-              setWithrawalModalOpen(true);
-            }}
+            onClick={() => setIsWithdrawalModal2Open(true)}
             className="mb-2 block w-full"
           >
             Request withdrawal
@@ -240,9 +243,7 @@ export function SeniorPoolWithdrawalPanel({
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
-                  onClick={() => {
-                    setWithrawalModalOpen(true);
-                  }}
+                  onClick={() => setIsWithdrawalModal2Open(true)}
                 >
                   Increase
                 </Button>
@@ -311,6 +312,23 @@ export function SeniorPoolWithdrawalPanel({
 
           await apolloClient.refetchQueries({ include: "active" });
         }}
+      />
+      <WithdrawalRequestModal2
+        isOpen={isWithdrawalModal2Open}
+        onClose={() => setIsWithdrawalModal2Open(false)}
+        sharePrice={seniorPoolSharePrice}
+        existingWithdrawalRequest={existingWithdrawalRequest}
+        walletFidu={fiduBalance}
+        stakedFidu={{
+          token: SupportedCrypto.Fidu,
+          amount: sum("amount", stakedPositions),
+        }}
+        vaultedFidu={{
+          token: SupportedCrypto.Fidu,
+          amount: sum("amount", vaultedStakedPositions),
+        }}
+        cancellationFee={cancellationFee}
+        nextDistributionTimestamp={currentEpoch.endTime.toNumber()}
       />
     </>
   );

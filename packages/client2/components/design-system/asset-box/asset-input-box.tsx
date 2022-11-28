@@ -9,10 +9,7 @@ import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 import { DollarInputProps, DollarInput } from "../input";
 import { AssetBox, Asset } from "./asset-box";
 
-type AssetInputBoxProps = Omit<
-  DollarInputProps,
-  "hideLabel" | "textSize" | "unit"
-> & {
+type AssetInputBoxProps = Omit<DollarInputProps, "hideLabel" | "unit"> & {
   asset: Asset;
   /**
    * Including this optional prop while the asset's nativeAmount is in GFI will cause the helperText to show how much has been entered as a USDC amount
@@ -76,7 +73,13 @@ export function AssetInputBox({
         maxValue={maxValue}
         helperText={helperText}
         {...rest}
-        rules={{ validate }}
+        rules={{
+          ...rest.rules,
+          validate: {
+            ASSET_INPUT_BOX_INTERNAL_VALIDATION: validate,
+            ...rest.rules?.validate,
+          },
+        }}
       />
     </div>
   );

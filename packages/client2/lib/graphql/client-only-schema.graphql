@@ -111,12 +111,14 @@ type Viewer {
   withdrawalStatus: WithdrawalStatus
 }
 
+# TODO remove this
 type WithdrawalStatus {
   usdcWithdrawable: CryptoAmount
   fiduRequested: CryptoAmount
   withdrawalToken: BigInt
 }
 
+# TODO remove this
 type WithdrawalEpochInfo {
   endTime: BigInt!
 }
@@ -138,5 +140,9 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo!
   curvePool: CurvePool!
-  currentWithdrawalEpoch: WithdrawalEpochInfo
+  currentWithdrawalEpoch: WithdrawalEpochInfo! # TODO remove this, it's probably possible to compute purely client-side
+}
+
+extend type SeniorPoolWithdrawalRequest {
+  tokenId: BigInt!
 }

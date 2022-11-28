@@ -119,6 +119,7 @@ export function handleWithdrawalRequest(event: WithdrawalRequested): void {
   withdrawalRequest.user = getOrInitUser(event.params.operator).id
   withdrawalRequest.fiduRequested = event.params.fiduRequested
   withdrawalRequest.usdcWithdrawable = BigInt.zero()
+  withdrawalRequest.requestedAt = event.block.timestamp.toI32()
   withdrawalRequest.save()
 
   const roster = getOrInitSeniorPoolWithdrawalRoster()
@@ -134,6 +135,7 @@ export function handleWithdrawalRequest(event: WithdrawalRequested): void {
 export function handleAddToWithdrawalRequest(event: WithdrawalAddedTo): void {
   const withdrawalRequest = assert(SeniorPoolWithdrawalRequest.load(event.params.operator.toHexString()))
   withdrawalRequest.fiduRequested = withdrawalRequest.fiduRequested.plus(event.params.fiduRequested)
+  withdrawalRequest.increasedAt = event.block.timestamp.toI32()
   withdrawalRequest.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST", event.params.operator)
@@ -146,6 +148,7 @@ export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void
   const withdrawalRequest = SeniorPoolWithdrawalRequest.load(event.params.operator.toHexString())
   if (withdrawalRequest) {
     withdrawalRequest.fiduRequested = BigInt.zero()
+    withdrawalRequest.canceledAt = event.block.timestamp.toI32()
     withdrawalRequest.save()
   }
 

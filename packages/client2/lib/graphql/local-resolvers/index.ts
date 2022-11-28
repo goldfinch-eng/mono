@@ -7,6 +7,7 @@ import {
   indirectGfiGrantResolvers,
 } from "./gfi-grants";
 import { rootQueryResolvers } from "./query";
+import { seniorPoolWithdrawalRequestResolvers } from "./senior-pool-withdrawal-request";
 import { stakedPositionResolvers } from "./staked-position";
 import { tranchedPoolResolvers } from "./tranched-pool";
 import { viewerResolvers } from "./viewer";
@@ -20,4 +21,5 @@ export const resolvers: Resolvers = {
   SeniorPoolStakedPosition: stakedPositionResolvers,
   CurvePool: curvePoolResolvers,
   TranchedPool: tranchedPoolResolvers,
+  SeniorPoolWithdrawalRequest: seniorPoolWithdrawalRequestResolvers,
 };
