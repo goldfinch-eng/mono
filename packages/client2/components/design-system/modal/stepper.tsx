@@ -194,7 +194,8 @@ export function Step({
 }) {
   const { setDidScrollBottom } = useStepperContext();
 
-  const [isBottomVisible, setIsBottomVisible] = useState(false);
+  // This is intentionally initialized to undefined. Let the <Sentinel> run for a frame to figure out if it really is not visible
+  const [isBottomVisible, setIsBottomVisible] = useState<boolean>();
   useEffect(() => {
     if (isBottomVisible) {
       setDidScrollBottom(true);
@@ -216,9 +217,10 @@ export function Step({
       <StepperFooter
         right={nextButton}
         style={{
-          boxShadow: isBottomVisible
-            ? "none"
-            : "0px -10px 20px 0px rgba(0,0,0,0.15)",
+          boxShadow:
+            isBottomVisible === false // Intentionally checking strict boolean equality. Want `undefined` to show no shadow, or else you get an ugly flicker when the Sentinel is already visible.
+              ? "0px -10px 20px 0px rgba(0,0,0,0.15)"
+              : "none",
           clipPath: "inset(-30px 0px 0px 0px)",
         }}
         className="transition-shadow"
