@@ -4,10 +4,14 @@ import { BigNumber } from "ethers";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
+import { SeniorPoolWithdrawalRequest } from "../generated";
+
 export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
-  async tokenId(): Promise<BigNumber> {
+  async tokenId(
+    withdrawalRequest: SeniorPoolWithdrawalRequest
+  ): Promise<BigNumber> {
     const provider = await getProvider();
-    const account = await provider.getSigner().getAddress();
+    const account = withdrawalRequest.id;
     const withdrawalTokenContract = await getContract({
       name: "WithdrawalRequestToken",
       provider,
