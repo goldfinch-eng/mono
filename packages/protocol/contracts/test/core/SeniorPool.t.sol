@@ -1630,6 +1630,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   function testClaimWithdrawalShouldClearMyPositionWhenClearingInThePast(address user1, address user2) public {
+    (TestTranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -1645,7 +1646,6 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
