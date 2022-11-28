@@ -17,6 +17,18 @@ const BASE_URLS = {
   local: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
 
+// these pool tokens are associated in invalid pools (see INVALID_POOLS for
+// complete list). Sometimes this endpoint is queried for these tokens. The
+// subgraph will fail on that query because of the invalid pool, so we fail
+// fast to avoid the error.
+const INVALID_POOL_TOKENS: Record<string, string> = {
+  "3": "0x95715d3dcbb412900deaf91210879219ea84b4f8",
+  "4": "0x0e2e11dc77bbe75b2b65b57328a8e4909f7da1eb",
+  "5": "0x7bdf2679a9f3495260e64c0b9e0dfeb859bad7e0",
+  "6": "0x4b2ae066681602076adbe051431da7a3200166fd",
+  "12": "0xfce88c5d0ec3f0cb37a044738606738493e9b450",
+}
+
 const percentageFormatter = new Intl.NumberFormat("en-US", {
   style: "percent",
   minimumFractionDigits: 2,
@@ -263,9 +275,17 @@ export const poolTokenMetadata = genRequestHandler({
   requireAuth: "none",
   cors: false,
   handler: async (req, res): Promise<Response> => {
-    const pathComponents = req.path.split("/")
-    const tokenIdString = pathComponents[pathComponents.length - 1]
-    assertNonNullable(tokenIdString, "Token ID not found")
+    const tokenIdString = req.path.split("/").pop()
+    if (!tokenIdString) {
+      return res.status(400).send({status: "error", message: "Missing token ID"})
+    }
+    if (isNaN(Number(tokenIdString))) {
+      return res.status(400).send({status: "error", message: "Token ID must be a number"})
+    }
+    if (INVALID_POOL_TOKENS[tokenIdString]) {
+      return res.status(404).send({status: "error", message: "Requesting token for invalid pool"})
+    }
+
     const tokenId = parseInt(tokenIdString)
 
     const image = imageUrl({tokenId})
