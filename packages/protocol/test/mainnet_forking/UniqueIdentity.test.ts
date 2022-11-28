@@ -88,8 +88,8 @@ describe("UID", () => {
     await fundWithWhales(["ETH"], [MAINNET_WARBLER_LABS_MULTISIG])
 
     await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
-    await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
-    await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
+    await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: MAINNET_WARBLER_LABS_MULTISIG})
+    await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: MAINNET_WARBLER_LABS_MULTISIG})
     await migrate310.main()
   })
 
