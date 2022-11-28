@@ -1793,11 +1793,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   /**
-   This function simulates a pessimistic scenario where a user doesn't claim their
-   usdc for three months. We see how much gas it would cost the user in such a
-   scenario.
+    This function simulates a user waiting many epochs before claiming their request. We want to make sure
+    that claiming is not prohibitively expensive, even if they wait a long time.
    */
-  function testClaimWithdrawalRequestGasTest(address user1, address user2) public {
+  function testClaimWithdrawalRequest_after_long_time_is_not_too_expensive(address user1, address user2) public {
     (TestTranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
