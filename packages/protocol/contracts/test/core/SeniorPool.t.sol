@@ -1859,7 +1859,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     * ETH is $1177.03
     * Cost is 13.38 gwei * 128442 = 0.002204 ETH = $2.59
     */
-    assertTrue(gasUsedApprox < 150_000);
+    assertTrue(gasUsedApprox < 130_000);
   }
 
   /*================================================================================
