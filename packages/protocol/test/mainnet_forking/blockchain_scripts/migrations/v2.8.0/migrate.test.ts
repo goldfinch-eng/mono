@@ -231,11 +231,6 @@ describe("v2.8.0", async function () {
       router,
     } = await setupTest())
 
-    // Block timestamp is based off of mainnet forking block.
-    const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp
-    const offset = Date.now() / 1000 - blockTimestamp
-    await advanceTime({seconds: offset})
-
     protocolOwner = await getProtocolOwner()
     mainUser = users[0]!
 
@@ -558,10 +553,11 @@ describe("v2.8.0", async function () {
       }
     })
 
-    it("has distributed funds on migration", async () => {
-      const EPOCH_SECONDS = 7 * 24 * 60 * 60
-      const firstRewardEpoch = Math.floor(Math.floor(Date.now() / 1000) / EPOCH_SECONDS) + 1
-      expect(await membershipCollector.lastFinalizedEpoch()).to.bignumber.equal(new BN(firstRewardEpoch - 1))
+    it("distributed funds during migration", async () => {
+      const firstRewardEpoch = 2760
+      const lastFinalizedEpoch = await membershipCollector.lastFinalizedEpoch()
+
+      expect(lastFinalizedEpoch.gte(new BN(firstRewardEpoch - 1))).to.be.true
     })
 
     it("properly accounts for inflows from TranchedPool#pay", async () => {
@@ -1937,16 +1933,29 @@ describe("v2.8.0", async function () {
       })
     })
 
-    context("with eligible scores", () => {
+    context("with users with eligible membership scores & available rewards", () => {
       let expectEligibleRewardsToNotBeReady, expectEligibleRewardsToBeReady, expectVotingPowerIsStatic
       let existingTotalScore
+      let expectedTotalFiduReward
 
       beforeEach(async () => {
+        // Finalize any elapsed epochs
+        await membershipOrchestrator.finalizeEpochs()
+
+        // Make distribution
+        const originalFiduAmount = await fidu.balanceOf(membershipCollector.address)
         existingTotalScore = await membershipOrchestrator.totalMemberScores()
 
         await setupGfiStakedFiduPairUser()
         await setupGfiPoolTokenPairUser()
         await setupManyPositionsUser()
+
+        // Distribute rewards to MembershipCollector
+        await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
+        await erc20Splitter.distribute()
+        const afterDistributionFiduAmount = await fidu.balanceOf(membershipCollector.address)
+        expectedTotalFiduReward = originalFiduAmount.add(getNumShares(usdcVal(50), await seniorPool.sharePrice()))
+        expect(expectedTotalFiduReward).to.bignumber.eq(afterDistributionFiduAmount)
 
         expectVotingPowerIsStatic = async () => {
           expect(await membershipOrchestrator.votingPower(gfiStakedFiduPairUser)).to.bignumber.eq(gfiVal(100))
@@ -1987,10 +1996,6 @@ describe("v2.8.0", async function () {
         await expectVotingPowerIsStatic()
         await expectEligibleRewardsToNotBeReady()
 
-        // Distribute would-be rewards
-        await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
-        await erc20Splitter.distribute()
-
         // Attempt to collect non-existent rewards
         for (const user of [gfiStakedFiduPairUser, gfiPoolTokenPairUser, manyPositionsUser]) {
           await membershipOrchestrator.collectRewards({from: user})
@@ -2000,25 +2005,18 @@ describe("v2.8.0", async function () {
         await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
         await erc20Splitter.distribute()
 
+        // Expect users with ineligible scores (0 gfi or 0 capital) to get no rewards
         await expectZeroScoreUsersAccounting()
         await expectVotingPowerIsStatic()
         await expectEligibleRewardsToNotBeReady()
       })
 
-      context("with eligible scores after an epoch passed since the first reward epoch", () => {
+      context("after an epoch has passed since an inflow of USDC", () => {
         beforeEach(async () => {
-          // // Block timestamp is based off of mainnet forking block.
-          // const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp
-
-          // const offset = Date.now() / 1000 - blockTimestamp
           await advanceTime({days: EPOCH_LENGTH_IN_DAYS})
-
-          // Distribute would-be rewards which zero-score users are ineligible for.
-          await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
-          await erc20Splitter.distribute()
         })
 
-        it("should correctly account users' positions, and not distribute any rewards to users (all ineligible)", async () => {
+        it("should correctly account users' positions, and not distribute any rewards to users since they are all ineligible", async () => {
           const eligiblePositionUsers = [gfiStakedFiduPairUser, gfiPoolTokenPairUser, manyPositionsUser]
           const originalFiduBalancesSF = await fidu.balanceOf(gfiStakedFiduPairUser)
           const originalFiduBalancesPT = await fidu.balanceOf(gfiPoolTokenPairUser)
@@ -2028,10 +2026,6 @@ describe("v2.8.0", async function () {
           await expectVotingPowerIsStatic()
           await expectEligibleRewardsToNotBeReady()
 
-          // Distribute would-be rewards which zero-score users are ineligible for.
-          await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
-          await erc20Splitter.distribute()
-
           for (const user of eligiblePositionUsers) {
             await membershipOrchestrator.collectRewards({from: user})
           }
@@ -2040,8 +2034,11 @@ describe("v2.8.0", async function () {
           await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
           await erc20Splitter.distribute()
 
+          // Expect users with ineligible scores (0 gfi or 0 capital) to get no rewards
           await expectZeroScoreUsersAccounting()
           await expectVotingPowerIsStatic()
+
+          // Expect latest rewards to be ready.
           await expectEligibleRewardsToBeReady()
 
           for (const user of eligiblePositionUsers) {
@@ -2054,20 +2051,13 @@ describe("v2.8.0", async function () {
         })
       })
 
-      context("with eligible scores after two epochs passed since first reward epoch", () => {
-        let expectedTotalFiduReward
+      context("after two epochs passed since an inflow of USDC", () => {
         beforeEach(async () => {
-          // Make distribution
-          const originalFiduAmount = await fidu.balanceOf(membershipCollector.address)
+          await advanceTime({days: EPOCH_LENGTH_IN_DAYS})
+          await membershipOrchestrator.finalizeEpochs()
 
-          // 50% should go to protocol owner, 50% should go to MembershipCollector
-          await usdc.transfer(erc20Splitter.address, usdcVal(100), {from: mainUser})
-          await erc20Splitter.distribute()
-          const afterDistributionFiduAmount = await fidu.balanceOf(membershipCollector.address)
-          expectedTotalFiduReward = originalFiduAmount.add(getNumShares(usdcVal(50), await seniorPool.sharePrice()))
-
-          expect(expectedTotalFiduReward).to.bignumber.eq(afterDistributionFiduAmount)
-          await advanceTime({days: EPOCH_LENGTH_IN_DAYS * 2})
+          await advanceTime({days: EPOCH_LENGTH_IN_DAYS})
+          await membershipOrchestrator.finalizeEpochs()
         })
 
         it("should properly distribute claimable rewards", async () => {
@@ -2076,17 +2066,8 @@ describe("v2.8.0", async function () {
           const originalFiduBalancesPT = await fidu.balanceOf(gfiPoolTokenPairUser)
           const originalFiduBalancesMP = await fidu.balanceOf(manyPositionsUser)
 
-          await expectEligibleRewardsToNotBeReady()
           await expectVotingPowerIsStatic()
           await expectZeroScoreUsersAccounting()
-
-          // Before epoch finalization - claimable rewards are not available.
-          for (const user of eligiblePositionUsers) {
-            expect(await membershipOrchestrator.claimableRewards(user)).to.bignumber.eq(new BN(0))
-          }
-
-          // Epoch finalization
-          await membershipOrchestrator.finalizeEpochs()
 
           const expectedTotalScore = existingTotalScore[1].add(pairScore).add(pairScore).add(largeScore)
           const totalMemberScores = await membershipOrchestrator.totalMemberScores()
@@ -2099,13 +2080,20 @@ describe("v2.8.0", async function () {
           expect(manyPositionsScores[1]).to.bignumber.closeTo(largeScore, new BN(MEMBERSHIP_SCORE_PRECISION_LOSS))
           expect(totalMemberScores[1]).to.bignumber.closeTo(expectedTotalScore, new BN(MEMBERSHIP_SCORE_PRECISION_LOSS))
 
-          const expectedRewardsSF = gfiStakedFiduPairScores[1].mul(expectedTotalFiduReward).div(totalMemberScores[1])
+          // Eligible scores have not been checkpointed for individual users yet.
+          expect(gfiStakedFiduPairScores[0]).to.bignumber.eq(new BN(0))
+          expect(gfiPoolTokenPairScores[0]).to.bignumber.eq(new BN(0))
+          expect(manyPositionsScores[0]).to.bignumber.eq(new BN(0))
 
+          // TOTAL eligible score has been checkpointed already
+          expect(totalMemberScores[0]).to.bignumber.eq(totalMemberScores[1])
+
+          const expectedRewardsSF = gfiStakedFiduPairScores[1].mul(expectedTotalFiduReward).div(totalMemberScores[1])
           const expectedRewardsPT = gfiPoolTokenPairScores[1].mul(expectedTotalFiduReward).div(totalMemberScores[1])
           const expectedRewardsMP = manyPositionsScores[1].mul(expectedTotalFiduReward).div(totalMemberScores[1])
 
           const totalRewardsForEpoch = await membershipOrchestrator.estimateRewardsFor(
-            await membershipCollector.firstRewardEpoch()
+            await membershipCollector.lastFinalizedEpoch()
           )
           expect(totalRewardsForEpoch).to.bignumber.eq(expectedTotalFiduReward)
           expect(await membershipOrchestrator.claimableRewards(gfiStakedFiduPairUser)).to.bignumber.eq(

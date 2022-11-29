@@ -75,6 +75,10 @@ const addresses = {
     networkName === "localhost"
       ? contracts.MembershipOrchestrator.address
       : "0x4E5d9B093986D864331d88e0a13a616e1D508838", // TODO all.json isn't updated with Membership contracts yet
+  MembershipVault:
+    networkName === "localhost"
+      ? contracts.MembershipVault.address
+      : "0x375B906B25E00bdD43017400CD4cefb36FBF9c18", // TODO all.json isn't updated with Membership contracts yet
   ERC20Splitter:
     networkName === "localhost"
       ? contracts.ERC20Splitter.address

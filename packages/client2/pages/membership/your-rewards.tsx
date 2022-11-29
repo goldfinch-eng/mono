@@ -159,9 +159,9 @@ export function YourRewards({
         </GridItem>
         <GridItem>
           <Stat
-            heading="Member rewards accrued this epoch"
+            heading="Member Rewards accrued this epoch"
             icon={<DoubleDotIcon />}
-            tooltip="The total value of Member Rewards distributed to your address since you became a Member."
+            tooltip="The total value of Member Rewards you have accrued this cycle."
             left={formatCrypto(
               sharesToUsdc(accruedThisEpoch.amount, sharePrice)
             )}

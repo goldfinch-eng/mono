@@ -8,8 +8,8 @@ import {Signer} from "ethers"
 import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
-
 import * as migrate310 from "../../blockchain_scripts/migrations/v3.1.0/migrate"
+
 import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_WARBLER_LABS_MULTISIG,
@@ -90,6 +90,7 @@ describe("UID", () => {
     await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: MAINNET_WARBLER_LABS_MULTISIG})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: MAINNET_WARBLER_LABS_MULTISIG})
+
     await migrate310.main()
   })
 

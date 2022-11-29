@@ -141,6 +141,7 @@ export const handler = baseHandler("unique-identity-signer", async (event: Handl
     UNIQUE_IDENTITY_ABI,
     signer
   ) as unknown as UniqueIdentity
+
   return await main({signer, auth, network, uniqueIdentity, mintToAddress})
 })
 

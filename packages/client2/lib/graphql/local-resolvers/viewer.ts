@@ -145,12 +145,19 @@ export const viewerResolvers: Resolvers[string] = {
         name: "MembershipOrchestrator",
         provider,
       });
+      const membershipVaultContract = await getContract({
+        name: "MembershipVault",
+        provider,
+      });
+
       const currentBlock = await provider.getBlock("latest");
       const epoch = getEpochNumber(currentBlock.timestamp * 1000);
       const totalRewardsThisEpoch = await membershipContract.estimateRewardsFor(
         epoch
       );
-      const { eligibleScore } = await membershipContract.memberScoreOf(account);
+      const eligibleScore = await membershipVaultContract.currentValueOwnedBy(
+        account
+      );
       const { eligibleTotal } = await membershipContract.totalMemberScores();
       const accrued = eligibleTotal.isZero()
         ? BigNumber.from(0)
