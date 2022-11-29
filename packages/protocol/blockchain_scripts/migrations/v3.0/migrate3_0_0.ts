@@ -11,7 +11,7 @@ export async function main() {
   const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
 
   const deployEffects = await getDeployEffects({
-    title: "v2.9 upgrade",
+    title: "v3.0 upgrade",
     description: "SeniorPool Epoch Withdrawals",
   })
 
