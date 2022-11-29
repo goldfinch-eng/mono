@@ -34,8 +34,10 @@ export function TabContent({ children }: TabProps) {
   );
 }
 
-export function TabGroup({ children }: TabProps) {
-  return <Tab.Group>{children}</Tab.Group>;
+export function TabGroup(
+  props: TabProps & { selectedIndex?: number; onChange?: (n: number) => void }
+) {
+  return <Tab.Group {...props} />;
 }
 
 export function TabList({ children }: TabProps) {

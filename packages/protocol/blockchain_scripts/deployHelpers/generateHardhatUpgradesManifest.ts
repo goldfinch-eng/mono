@@ -6,7 +6,6 @@ import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-valida
 
 const logger: Logger = console.log
 
-// note: to generate rinkeby scripts update the `--network` in the package.json
 async function main() {
   const hardhatUpgrades = new HardhatUpgradesManifest({hre, logger})
   const proxyContracts = Object.keys(await hre.deployments.all())

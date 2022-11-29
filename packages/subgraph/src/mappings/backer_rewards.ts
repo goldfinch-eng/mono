@@ -9,6 +9,7 @@ import {
 
 import {updateBackerRewardsData} from "../entities/backer_rewards"
 import {calculateApyFromGfiForAllPools} from "../entities/tranched_pool"
+import {createTransactionFromEvent} from "../entities/helpers"
 
 export function handleSetTotalRewards(event: BackerRewardsSetTotalRewards): void {
   updateBackerRewardsData(event.address)
@@ -27,6 +28,12 @@ export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
   poolToken.rewardsClaimed = event.params.amount
   poolToken.rewardsClaimable = BigInt.zero()
   poolToken.save()
+
+  const transaction = createTransactionFromEvent(event, "BACKER_REWARDS_CLAIMED", event.params.owner)
+  transaction.receivedAmount = event.params.amount
+  transaction.receivedToken = "GFI"
+  transaction.tranchedPool = poolToken.tranchedPool
+  transaction.save()
 }
 
 export function handleBackerRewardsClaimed1(event: BackerRewardsClaimed1): void {

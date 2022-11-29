@@ -1,10 +1,10 @@
 import { useApolloClient } from "@apollo/client";
-import Image from "next/image";
+import Image from "next/future/image";
 import { useCallback, useState } from "react";
 
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { usePoller } from "@/lib/utils";
 import {
@@ -23,7 +23,6 @@ import uidLogo2 from "./uid-logo2.png";
 export function MintStep() {
   const { signature } = useVerificationFlowContext();
   const { account, provider } = useWallet();
-  const uidContract = useContract("UniqueIdentity");
   const apolloClient = useApolloClient();
 
   // TODO there's probably a better way to express the local state here
@@ -67,10 +66,14 @@ export function MintStep() {
   });
 
   const handleMint = async () => {
-    if (!mintingParameters || !uidContract || !provider) {
+    if (!mintingParameters || !provider) {
       return;
     }
     try {
+      const uidContract = await getContract({
+        name: "UniqueIdentity",
+        provider,
+      });
       setIsMinting(true);
       const gasPrice = await provider.getGasPrice();
       const transaction = uidContract.mint(
@@ -146,14 +149,13 @@ export function MintStep() {
                   alt="UID"
                 />
                 {isMinted ? (
-                  <div className="absolute -top-2 -right-2">
-                    <Image
-                      src={greenCheckmark}
-                      width={40}
-                      height={40}
-                      alt="Minted"
-                    />
-                  </div>
+                  <Image
+                    src={greenCheckmark}
+                    width={40}
+                    height={40}
+                    alt="Minted"
+                    className="absolute -top-2 -right-2"
+                  />
                 ) : null}
               </div>
               <div>

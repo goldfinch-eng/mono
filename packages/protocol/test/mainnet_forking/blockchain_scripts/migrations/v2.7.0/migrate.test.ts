@@ -29,7 +29,7 @@ import BN from "bn.js"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 
 const setupTest = deployments.createFixture(async () => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)

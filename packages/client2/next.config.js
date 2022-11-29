@@ -1,12 +1,37 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+// Guidance for security headers: https://nextjs.org/docs/advanced-features/security-headers
+// Note: we attempted to have a very restrictive connect-src and image-src, but the various third-party modules we use have so many external dependencies that it was difficult to list them all out (and they're subject to change without warning)
+// ! script-src unsafe-inline is required for MetaMask to work. On FireFox the MetaMask extension is considered an inline script. Perplexingly, this is not the case on Chrome.
 const ContentSecurityPolicy = `
-  frame-ancestors 'self';
+  script-src 'self' 'unsafe-inline' https://www.googletagmanager.com ${
+    process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "" // Next.js devtools (like fast refresh) are eval'd scripts
+  };
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
+  font-src 'self' https://fonts.gstatic.com/;
+  frame-src 'self' https://withpersona.com/;
+  frame-ancestors 'self' https://magic.store/;
 `;
 const securityHeaders = [
   {
-    key: "X-Frame-Options",
-    value: "SAMEORIGIN",
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
+  },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  {
+    key: "X-XSS-Protection",
+    value: "1; mode=block",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "origin-when-cross-origin",
   },
   {
     key: "Content-Security-Policy",
@@ -49,6 +74,10 @@ const nextConfig = {
     "page.mdx",
     "page.md",
   ],
+  images: {
+    domains: ["localhost", "34.133.55.171"],
+    unoptimized: true,
+  },
   async redirects() {
     return [
       {

@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { FixedNumber } from "ethers";
-import Image from "next/image";
+import Image from "next/future/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
 
@@ -10,7 +10,11 @@ import {
   ShimmerLines,
 } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
-import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
+import {
+  TranchedPoolCardFieldsFragment,
+  TranchedPoolCardDealFieldsFragment,
+  Deal_DealType,
+} from "@/lib/graphql/generated";
 import {
   PoolStatus,
   getTranchedPoolStatus,
@@ -19,16 +23,58 @@ import {
 } from "@/lib/pools";
 
 interface PoolCardProps {
-  title?: string | null;
-  subtitle?: string | null;
+  title: string;
+  subtitle: string;
   apy: FixedNumber;
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
+  dealType?: Deal_DealType | null;
 }
 
+function getColorScheme(
+  poolStatus?: PoolStatus
+): "yellow" | "purple" | "blue" | "green" | "white" {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+    case PoolStatus.Closed:
+      return "yellow";
+    case PoolStatus.Open:
+      return "purple";
+    case PoolStatus.ComingSoon:
+      return "blue";
+    case PoolStatus.Repaid:
+      return "green";
+    case PoolStatus.Paused:
+    default:
+      return "white";
+  }
+}
+
+function getChipContent(
+  poolStatus?: PoolStatus | Deal_DealType
+): string | null {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+      return "FULL";
+    case PoolStatus.Closed:
+      return "CLOSED";
+    case PoolStatus.Open:
+      return "OPEN";
+    case PoolStatus.ComingSoon:
+      return "COMING SOON";
+    case PoolStatus.Repaid:
+      return "REPAID";
+    case Deal_DealType.Unitranche:
+      return "Unitranche";
+    case Deal_DealType.Multitranche:
+      return "Multitranche";
+    default:
+      return null;
+  }
+}
 export function PoolCard({
   title,
   subtitle,
@@ -38,6 +84,7 @@ export function PoolCard({
   icon,
   href,
   poolStatus,
+  dealType,
 }: PoolCardProps) {
   return (
     <PoolCardLayout
@@ -46,9 +93,9 @@ export function PoolCard({
           <Image
             src={icon}
             alt={`${title} icon`}
-            layout="fill"
+            fill
+            className="object-contain"
             sizes="48px"
-            objectFit="contain"
           />
         ) : null
       }
@@ -74,28 +121,13 @@ export function PoolCard({
         </div>
       }
       chipSlot={
-        <Chip
-          colorScheme={
-            poolStatus === PoolStatus.Full
-              ? "yellow"
-              : poolStatus === PoolStatus.Open
-              ? "purple"
-              : poolStatus === PoolStatus.ComingSoon
-              ? "blue"
-              : poolStatus === PoolStatus.Repaid
-              ? "green"
-              : "white"
-          }
-        >
-          {poolStatus === PoolStatus.Full
-            ? "FULL"
-            : poolStatus === PoolStatus.Open
-            ? "OPEN"
-            : poolStatus === PoolStatus.ComingSoon
-            ? "COMING SOON"
-            : poolStatus === PoolStatus.Repaid
-            ? "REPAID"
-            : null}
+        !!dealType ? (
+          <Chip colorScheme="transparent">{getChipContent(dealType)}</Chip>
+        ) : undefined
+      }
+      chipSlot2={
+        <Chip colorScheme={getColorScheme(poolStatus)}>
+          {getChipContent(poolStatus)}
         </Chip>
       }
     />
@@ -122,6 +154,7 @@ interface PoolCardLayoutProps {
   dataSlot1: ReactNode;
   dataSlot2: ReactNode;
   chipSlot: ReactNode;
+  chipSlot2?: ReactNode;
 }
 
 function PoolCardLayout({
@@ -131,6 +164,7 @@ function PoolCardLayout({
   dataSlot1,
   dataSlot2,
   chipSlot,
+  chipSlot2,
 }: PoolCardLayoutProps) {
   return (
     <div className="pool-card relative grid items-center gap-x-4 rounded bg-sand-100 p-5 hover:bg-sand-200">
@@ -149,10 +183,11 @@ function PoolCardLayout({
         {dataSlot2}
       </div>
       <div
-        className="justify-self-start sm:justify-self-end"
+        className="flex gap-2 justify-self-start sm:justify-self-end"
         style={{ gridArea: "chip" }}
       >
         {chipSlot}
+        {chipSlot2}
       </div>
     </div>
   );
@@ -162,9 +197,6 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   fragment TranchedPoolCardFields on TranchedPool {
     id
-    name @client
-    category @client
-    icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     creditLine {
@@ -175,7 +207,23 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   }
 `;
 
+export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
+  fragment TranchedPoolCardDealFields on Deal {
+    id
+    name
+    dealType
+    category
+    borrower {
+      id
+      logo {
+        url
+      }
+    }
+  }
+`;
+
 interface TranchedPoolCardProps {
+  details: TranchedPoolCardDealFieldsFragment;
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
   fiatPerGfi: number;
@@ -183,6 +231,7 @@ interface TranchedPoolCardProps {
 }
 
 export function TranchedPoolCard({
+  details,
   tranchedPool,
   href,
   fiatPerGfi,
@@ -206,9 +255,9 @@ export function TranchedPoolCard({
 
   return (
     <PoolCard
-      title={tranchedPool.name}
-      subtitle={tranchedPool.category}
-      icon={tranchedPool.icon}
+      title={details.name}
+      subtitle={details.category}
+      icon={details.borrower?.logo?.url}
       apy={tranchedPool.estimatedJuniorApy}
       apyWithGfi={totalApyWithGfi}
       apyTooltipContent={
@@ -246,6 +295,7 @@ export function TranchedPoolCard({
       }
       href={href}
       poolStatus={poolStatus}
+      dealType={details.dealType}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import Image from "next/image";
+import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
@@ -39,28 +39,33 @@ gql`
         id
       }
       timestamp
-      amount
-      amountToken
       category
+      sentAmount
+      sentToken
+      receivedAmount
+      receivedToken
       tranchedPool {
         id
         name @client
-        icon @client
-        borrower @client {
-          name
-          logo
-        }
+        borrowerName @client
+        borrowerLogo @client
       }
     }
   }
 `;
 
-const subtractiveIconTransactionCategories = [
+const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
   TransactionCategory.SeniorPoolWithdrawal,
   TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
-];
+]);
+
+const sentTokenCategories = new Set<TransactionCategory>([
+  TransactionCategory.SeniorPoolStake,
+  TransactionCategory.SeniorPoolDepositAndStake,
+  TransactionCategory.TranchedPoolRepayment,
+]);
 
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
@@ -74,32 +79,42 @@ export function TransactionTable() {
 
   const transactions = filteredTxs.map((transaction) => {
     const date = new Date(transaction.timestamp * 1000);
+
+    let tokenToDisplay = transaction.receivedToken;
+    let amountToDisplay = transaction.receivedAmount;
+
+    if (sentTokenCategories.has(transaction.category)) {
+      tokenToDisplay = transaction.sentToken;
+      amountToDisplay = transaction.sentAmount;
+    }
+
     const transactionAmount =
-      (subtractiveIconTransactionCategories.includes(transaction.category)
-        ? "-"
-        : "+") +
-      formatCrypto(
-        {
-          token: transaction.amountToken,
-          amount: transaction.amount,
-        },
-        { includeToken: true }
-      );
+      tokenToDisplay && amountToDisplay
+        ? (subtractiveIconTransactionCategories.has(transaction.category)
+            ? "-"
+            : "+") +
+          formatCrypto(
+            {
+              token: tokenToDisplay,
+              amount: amountToDisplay,
+            },
+            { includeToken: true }
+          )
+        : null;
 
     return [
       <div key={`${transaction.id}-user`} className="flex items-center gap-2">
         {transaction.category === TransactionCategory.TranchedPoolDrawdown ||
         transaction.category === TransactionCategory.TranchedPoolRepayment ? (
           <>
-            <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
-              <Image
-                src={transaction.tranchedPool?.icon as string}
-                layout="fill"
-                sizes="24px"
-                alt=""
-              />
-            </div>
-            <div>{transaction.tranchedPool?.borrower.name}</div>
+            <Image
+              src={transaction.tranchedPool?.borrowerLogo as string}
+              width={24}
+              height={24}
+              className="shrink-0 overflow-hidden rounded-full"
+              alt=""
+            />
+            <div>{transaction.tranchedPool?.borrowerName}</div>
           </>
         ) : (
           <Address address={transaction.user.id} />

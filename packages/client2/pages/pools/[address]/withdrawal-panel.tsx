@@ -10,9 +10,10 @@ import {
   Select,
   InfoIconTooltip,
   Form,
+  Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   WithdrawalPanelPoolTokenFieldsFragment,
@@ -20,6 +21,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalPanelPoolTokenFields on TranchedPoolToken {
@@ -48,6 +50,7 @@ export const WITHDRAWAL_PANEL_ZAP_FIELDS = gql`
 interface WithdrawalPanelProps {
   tranchedPoolAddress: string;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
+  vaultedPoolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
   zaps: WithdrawalPanelZapFieldsFragment[];
   isPoolLocked: boolean;
 }
@@ -60,6 +63,7 @@ interface FormFields {
 export function WithdrawalPanel({
   tranchedPoolAddress,
   poolTokens,
+  vaultedPoolTokens,
   zaps,
   isPoolLocked,
 }: WithdrawalPanelProps) {
@@ -82,20 +86,24 @@ export function WithdrawalPanel({
     .add(totalInterestRedeemable)
     .add(totalZapped);
 
-  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
-  const zapperContract = useContract("Zapper");
-
   const rhfMethods = useForm<FormFields>({
     defaultValues: { destination: "wallet" },
   });
   const { control, watch } = rhfMethods;
   const selectedDestination = watch("destination");
   const apolloClient = useApolloClient();
+  const { provider } = useWallet();
 
   const onSubmit = async (data: FormFields) => {
-    if (!tranchedPoolContract || !zapperContract) {
+    if (!provider) {
       throw new Error("Wallet not connected properly");
     }
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      address: tranchedPoolAddress,
+    });
+
     if (data.destination === "wallet") {
       const usdcToWithdraw = utils.parseUnits(data.amount, USDC_DECIMALS);
       let transaction;
@@ -139,6 +147,7 @@ export function WithdrawalPanel({
         successPrompt: `Withdrawal from pool ${tranchedPoolAddress} succeeded.`,
       });
     } else {
+      const zapperContract = await getContract({ name: "Zapper", provider });
       const poolTokenId = BigNumber.from(data.destination.split("-")[1]);
       if (isPoolLocked) {
         const transaction = zapperContract
@@ -162,7 +171,13 @@ export function WithdrawalPanel({
         });
       }
     }
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "zaps" });
+      },
+    });
   };
 
   const validateWithdrawalAmount = (value: string) => {
@@ -240,6 +255,7 @@ export function WithdrawalPanel({
           labelClassName="!mb-3 text-sm"
           className="mb-3"
           disabled={selectedDestination !== "wallet"}
+          maxValue={totalWithdrawable}
         />
         <Button
           type="submit"
@@ -256,6 +272,21 @@ export function WithdrawalPanel({
               content="While this Pool is still open for Backer investments, you can instantly withdraw any amount of the funds you have already invested. Once the Pool is has reached its Pool limit for funding and is closed for further investment, you will only be able to withdraw your share of the Pool's interest and principal repayments."
             />
             You can withdraw capital until the pool is closed.
+          </div>
+        ) : null}
+        {vaultedPoolTokens.length > 0 ? (
+          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
+            <div className="text-mustard-900">
+              You cannot withdraw capital from your positions while they are in
+              the Vault
+            </div>
+            <Link
+              href="/membership"
+              iconRight="ArrowSmRight"
+              className="whitespace-nowrap font-medium text-mustard-700"
+            >
+              Go to Vault
+            </Link>
           </div>
         ) : null}
       </Form>

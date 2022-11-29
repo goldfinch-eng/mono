@@ -1,21 +1,23 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
   getSignerForAddress,
-  interestAprAsBN,
   MAINNET_CUSDC_ADDRESS,
   TRANCHES,
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
+  interestAprAsBN,
 } from "../../blockchain_scripts/deployHelpers"
-import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {
+  MAINNET_GOVERNANCE_MULTISIG,
+  MAINNET_TRUSTED_SIGNER_ADDRESS,
+} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate273 from "../../blockchain_scripts/migrations/v2.7.3/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -44,9 +46,6 @@ import {
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
-  usdcToFidu,
-  fiduToUSDC,
-  FIDU_DECIMALS,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -97,6 +96,7 @@ import {
   StakingRewards,
   TranchedPool,
   UniqueIdentity,
+  Borrower as EthersBorrower,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
@@ -106,11 +106,11 @@ const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  // Note: base_deploy always returns when mainnet forking, however
+  // Note: baseDeploy always returns when mainnet forking, however
   // we need it here, because the "fixture" part is what let's hardhat
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -188,7 +188,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate273.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -275,6 +274,8 @@ describe("mainnet forking tests", async function () {
     await pool.revokeRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
   }
 
+  const stratosEoa = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D"
+
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
@@ -311,9 +312,51 @@ describe("mainnet forking tests", async function () {
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
     curvePool = await artifacts.require("ICurveLP").at(curveAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
+    const {gf_deployer} = await getNamedAccounts()
+    fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS, stratosEoa])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
+  })
+
+  // Regression test for senior pool writedown bug fix
+  // https://bugs.immunefi.com/dashboard/submission/10342
+  describe("writedowns", () => {
+    it("doesn't tank the share price when a loan reaches maturity", async () => {
+      // Get stratos borrower contract
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [stratosEoa],
+      })
+      await fundWithWhales(["USDC"], [stratosEoa], 10_000_000)
+      const stratosSigner = await ethers.getSigner(stratosEoa)
+      const stratosBrwContract = await (
+        await getEthersContract<EthersBorrower>("Borrower", {at: "0xf8C4A0fEDf9b249253D89203034374E5A57b617C"})
+      ).connect(stratosSigner)
+      await erc20Approve(usdc, stratosBrwContract.address, usdcVal(10_000_000), [stratosEoa])
+      const stratosPool = await getEthersContract<TranchedPool>("TranchedPool", {
+        at: "0x00c27FC71b159a346e179b4A1608a0865e8A7470",
+      })
+      const stratosCl = await getEthersContract<CreditLine>("CreditLine", {at: await stratosPool.creditLine()})
+
+      while (!(await stratosCl.nextDueTime()).eq(await stratosCl.termEndTime())) {
+        const nextDueTime = await stratosCl.nextDueTime()
+        await advanceTime({toSecond: nextDueTime.toString()})
+        await stratosPool.assess()
+        const interestOwed = await stratosCl.interestOwed()
+        await stratosBrwContract.pay(stratosPool.address, interestOwed)
+      }
+
+      const sharePriceBefore = await seniorPool.sharePrice()
+      await advanceTime({toSecond: (await stratosCl.termEndTime()).toString()})
+      await stratosPool.assess()
+      await seniorPool.writedown(613)
+      const sharePriceAfter = await seniorPool.sharePrice()
+
+      // The bug caused the share price to tank when calling writedown after termEndTime
+      // The expectation is that share price is unchanged.
+      expect(sharePriceBefore).to.bignumber.eq(sharePriceAfter)
+    })
   })
 
   describe("drawing down into another currency", async function () {

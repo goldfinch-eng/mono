@@ -89,7 +89,7 @@ const linkUserToUidStatus = async ({
   } catch (error) {
     console.error(error)
     const errorResponse = (error as any)?.response
-    console.error(
+    throw new Error(
       "Error in request to /linkUserToUid.\n" +
         `status: ${JSON.stringify(errorResponse?.status)}\n` +
         `data: ${JSON.stringify(errorResponse?.data)}`
@@ -140,7 +140,7 @@ export const handler = baseHandler("unique-identity-signer", async (event: Handl
     UNIQUE_IDENTITY_MAINNET_ADDRESS,
     UNIQUE_IDENTITY_ABI,
     signer
-  ) as UniqueIdentity
+  ) as unknown as UniqueIdentity
 
   return await main({signer, auth, network, uniqueIdentity, mintToAddress})
 })

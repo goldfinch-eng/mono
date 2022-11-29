@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 abstract contract IGo {
@@ -23,5 +23,10 @@ abstract contract IGo {
 
   function goOnlyIdTypes(address account, uint256[] calldata onlyIdTypes) public view virtual returns (bool);
 
+  /**
+   * @notice Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.
+   * @param account The account whose go status to obtain
+   * @return true if `account` is go listed
+   */
   function goSeniorPool(address account) public view virtual returns (bool);
 }

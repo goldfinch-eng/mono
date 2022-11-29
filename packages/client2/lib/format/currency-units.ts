@@ -12,7 +12,6 @@ import {
   FiatAmount,
   SupportedCrypto,
 } from "../graphql/generated";
-import { assertUnreachable } from "../utils";
 
 export function formatFiat(
   fiatAmount: FiatAmount,
@@ -35,31 +34,17 @@ const decimalFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+const cryptoPrecision: Record<SupportedCrypto, number> = {
+  [SupportedCrypto.Usdc]: USDC_DECIMALS,
+  [SupportedCrypto.Gfi]: GFI_DECIMALS,
+  [SupportedCrypto.Fidu]: FIDU_DECIMALS,
+  [SupportedCrypto.CurveLp]: CURVE_LP_DECIMALS,
+};
+
 export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
-  switch (cryptoAmount.token) {
-    case SupportedCrypto.Usdc:
-      const usdcAsFloat = parseFloat(
-        utils.formatUnits(cryptoAmount.amount, USDC_DECIMALS)
-      );
-      return usdcAsFloat;
-    case SupportedCrypto.Gfi:
-      const gfiAsFloat = parseFloat(
-        utils.formatUnits(cryptoAmount.amount, GFI_DECIMALS)
-      );
-      return gfiAsFloat;
-    case SupportedCrypto.Fidu:
-      const fiduAsFloat = parseFloat(
-        utils.formatUnits(cryptoAmount.amount, FIDU_DECIMALS)
-      );
-      return fiduAsFloat;
-    case SupportedCrypto.CurveLp:
-      const curveLpAsFloat = parseFloat(
-        utils.formatUnits(cryptoAmount.amount, CURVE_LP_DECIMALS)
-      );
-      return curveLpAsFloat;
-    default:
-      assertUnreachable(cryptoAmount.token);
-  }
+  return parseFloat(
+    utils.formatUnits(cryptoAmount.amount, cryptoPrecision[cryptoAmount.token])
+  );
 }
 
 interface FormatCryptoOptions {
@@ -71,6 +56,10 @@ interface FormatCryptoOptions {
    * Whether or not to include the token ticker beside the number
    */
   includeToken?: boolean;
+  /**
+   * Whether or not to use the maximum precision for this crypto unit. When false, will use precision of 2 decimals places (like a dollar amount).
+   */
+  useMaximumPrecision?: boolean;
 }
 
 export function formatCrypto(
@@ -78,13 +67,22 @@ export function formatCrypto(
   options?: FormatCryptoOptions
 ): string {
   const defaultOptions: FormatCryptoOptions = {
-    includeSymbol: true,
-    includeToken: false,
+    includeSymbol: cryptoAmount.token === SupportedCrypto.Usdc,
+    includeToken: cryptoAmount.token !== SupportedCrypto.Usdc,
+    useMaximumPrecision: false,
   };
-  const { includeSymbol, includeToken } = { ...defaultOptions, ...options };
+  const { includeSymbol, includeToken, useMaximumPrecision } = {
+    ...defaultOptions,
+    ...options,
+  };
   const float = cryptoToFloat(cryptoAmount);
-  const amount =
-    float > 0 && float < 0.01 ? "<0.01" : decimalFormatter.format(float);
+  const formatter = useMaximumPrecision
+    ? new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: cryptoPrecision[cryptoAmount.token],
+      })
+    : decimalFormatter;
+  const amount = float > 0 && float < 0.01 ? "<0.01" : formatter.format(float);
   const prefix =
     cryptoAmount.token === SupportedCrypto.Usdc && includeSymbol ? "$" : "";
   const suffix = includeToken ? ` ${tokenMap[cryptoAmount.token]}` : "";
@@ -97,3 +95,14 @@ const tokenMap: Record<SupportedCrypto, string> = {
   [SupportedCrypto.Fidu]: "FIDU",
   [SupportedCrypto.CurveLp]: "FIDU-USDC-F",
 };
+
+export function stringToCryptoAmount(
+  s: string | null | undefined,
+  token: SupportedCrypto
+): CryptoAmount {
+  const amount = utils.parseUnits(
+    !s ? "0" : s === "" ? "0" : s,
+    cryptoPrecision[token]
+  );
+  return { token, amount };
+}

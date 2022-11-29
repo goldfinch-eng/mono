@@ -13,7 +13,6 @@ import {
   MINTER_ROLE,
   OWNER_ROLE,
   PAUSER_ROLE,
-  RINKEBY_CHAIN_ID,
 } from "../../deployHelpers"
 import hre, {deployments, getChainId} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
@@ -97,8 +96,6 @@ export async function getOldConfig() {
     return "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
   } else if (chainId === LOCAL_CHAIN_ID) {
     throw new Error("Not supported")
-  } else if (chainId === RINKEBY_CHAIN_ID) {
-    return "0x3d90Efea8C8F9E474C9A855B8Cbe647940201759"
   } else if (chainId === MAINNET_CHAIN_ID) {
     return "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
   } else {

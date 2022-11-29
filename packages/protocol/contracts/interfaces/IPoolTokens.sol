@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+import "./openzeppelin/IERC721.sol";
 
 interface IPoolTokens is IERC721 {
   event TokenMinted(

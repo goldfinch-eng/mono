@@ -14,6 +14,7 @@ import {
   DISTRIBUTOR_ROLE,
   OWNER_ROLE,
   getTruffleContract,
+  getProtocolOwner,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -38,6 +39,8 @@ import {
   TestStakingRewardsInstance,
   TestPoolTokensInstance,
   StakingRewardsInstance,
+  MembershipCollectorInstance,
+  ERC20SplitterInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -49,9 +52,12 @@ const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
+const HALF_CENT = usdcVal(1).div(new BN(200))
+const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
+import {ERC20Splitter} from "../typechain/ethers"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -67,8 +73,17 @@ function bigVal(number): BN {
   return new BN(number).mul(decimals)
 }
 
+// Helper functions. These should be pretty generic.
+function gfiVal(number): BN {
+  return new BN(number).mul(GFI_DECIMALS)
+}
+
 function usdcVal(number) {
   return new BN(number).mul(USDC_DECIMALS)
+}
+
+function fiduVal(number) {
+  return new BN(number).mul(FIDU_DECIMALS)
 }
 
 function usdcToFidu(number: BN | number) {
@@ -83,6 +98,10 @@ function fiduToUSDC(number: BN | number) {
     number = new BN(number)
   }
   return number.div(decimals.div(USDCDecimals))
+}
+
+function getNumShares(usdcAmount: BN, sharePrice: BN) {
+  return usdcToFidu(usdcAmount).mul(FIDU_DECIMALS).div(sharePrice)
 }
 
 const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
@@ -137,12 +156,12 @@ const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
 type Expectation<T> =
   | {by: Numberish}
-  | {byCloseTo: Numberish}
+  | {byCloseTo: Numberish; threshold?: Numberish}
+  | {toCloseTo: Numberish; threshold?: Numberish}
   | {fn: (originalValue: T, newValue: T) => any}
   | {increase: boolean}
   | {decrease: boolean}
   | {to: T; bignumber?: boolean}
-  | {toCloseTo: Numberish}
   | {unchanged: boolean}
   | {beDifferent: boolean}
 
@@ -166,41 +185,49 @@ function expectAction(action: () => any, debug?: boolean) {
         console.log("New:     ", String(newValues))
       }
       expectations.forEach((expectation, i) => {
-        try {
-          if ("by" in expectation) {
-            expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by)
-          } else if ("byCloseTo" in expectation) {
-            const onePercent = new BN(expectation.byCloseTo).div(new BN(100)).abs()
-            expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(new BN(expectation.byCloseTo), onePercent)
-          } else if ("fn" in expectation) {
-            expectation.fn(originalValues[i], newValues[i])
-          } else if ("increase" in expectation) {
-            expect(newValues[i]).to.bignumber.gt(originalValues[i])
-          } else if ("decrease" in expectation) {
-            expect(newValues[i]).to.bignumber.lt(originalValues[i])
-          } else if ("to" in expectation) {
-            if (expectation.bignumber === false) {
-              // It was not originally the number we expected, but then was changed to it
-              expect(originalValues[i]).to.not.eq(expectation.to)
-              expect(newValues[i]).to.eq(expectation.to)
-            } else {
-              // It was not originally the number we expected, but then was changed to it
-              expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
-              expect(newValues[i]).to.bignumber.eq(expectation.to)
-            }
-          } else if ("toCloseTo" in expectation) {
+        const errorMsg = `expectation ${i} failed`
+        if ("by" in expectation) {
+          expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by, errorMsg)
+        } else if ("byCloseTo" in expectation) {
+          const onePercent = new BN(expectation.byCloseTo).div(new BN(100)).abs()
+          const threshold = expectation.threshold ? new BN(expectation.threshold) : onePercent
+          expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(
+            new BN(expectation.byCloseTo),
+            threshold,
+            `${errorMsg} - '${newValues[i].sub(originalValues[i])}' not within '${threshold}' of '${new BN(
+              expectation.byCloseTo
+            )}'`
+          )
+        } else if ("fn" in expectation) {
+          expectation.fn(originalValues[i], newValues[i])
+        } else if ("increase" in expectation) {
+          expect(newValues[i]).to.bignumber.gt(originalValues[i], errorMsg)
+        } else if ("decrease" in expectation) {
+          expect(newValues[i]).to.bignumber.lt(originalValues[i], errorMsg)
+        } else if ("to" in expectation) {
+          if (expectation.bignumber === false) {
             // It was not originally the number we expected, but then was changed to it
-            const onePercent = new BN(expectation.toCloseTo).div(new BN(100)).abs()
-            expect(originalValues[i]).to.not.bignumber.eq(new BN(expectation.toCloseTo))
-            expect(newValues[i]).to.bignumber.closeTo(new BN(expectation.toCloseTo), onePercent)
-          } else if ("unchanged" in expectation) {
-            expect(newValues[i]).to.bignumber.eq(originalValues[i])
-          } else if ("beDifferent" in expectation) {
-            expect(String(originalValues[i])).to.not.eq(String(newValues[i]))
+            expect(originalValues[i]).to.not.eq(expectation.to, errorMsg)
+            expect(newValues[i]).to.eq(expectation.to, errorMsg)
+          } else {
+            // It was not originally the number we expected, but then was changed to it
+            expect(originalValues[i]).to.not.bignumber.eq(expectation.to, errorMsg)
+            expect(newValues[i]).to.bignumber.eq(expectation.to, errorMsg)
           }
-        } catch (error) {
-          console.log("Expectation", i, "failed")
-          throw error
+        } else if ("toCloseTo" in expectation) {
+          // It was not originally the number we expected, but then was changed to it
+          const onePercent = new BN(expectation.toCloseTo).div(new BN(100)).abs()
+          const threshold = expectation.threshold ? new BN(expectation.threshold) : onePercent
+          expect(originalValues[i]).to.not.bignumber.eq(new BN(expectation.toCloseTo), errorMsg)
+          expect(newValues[i]).to.bignumber.closeTo(
+            new BN(expectation.toCloseTo),
+            threshold,
+            `${errorMsg} - '${newValues[i]}' not within '${threshold}' of '${expectation.toCloseTo}'`
+          )
+        } else if ("unchanged" in expectation) {
+          expect(newValues[i]).to.bignumber.eq(originalValues[i], errorMsg)
+        } else if ("beDifferent" in expectation) {
+          expect(String(originalValues[i])).to.not.eq(String(newValues[i]), errorMsg)
         }
       })
     },
@@ -288,8 +315,11 @@ async function deployAllContracts(
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
   zapper: ZapperInstance
+  reserveSplitter: ERC20SplitterInstance
+  membershipCollector: MembershipCollectorInstance
 }> {
-  await deployments.fixture("base_deploy")
+  await deployments.fixture("baseDeploy")
+  await deployments.fixture("pendingMainnetMigrations")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
@@ -350,6 +380,9 @@ async function deployAllContracts(
 
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
+  const reserveSplitter = await getTruffleContract<ERC20SplitterInstance>("ERC20Splitter")
+  const membershipCollector = await getTruffleContract<MembershipCollectorInstance>("MembershipCollector")
+
   return {
     seniorPool,
     seniorPoolFixedStrategy,
@@ -370,6 +403,8 @@ async function deployAllContracts(
     go,
     backerRewards,
     zapper,
+    reserveSplitter,
+    membershipCollector,
   }
 }
 
@@ -418,6 +453,19 @@ async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds
 
 async function mineBlock(): Promise<void> {
   await ethers.provider.send("evm_mine", [])
+}
+
+async function advanceAndMineBlock({
+  days,
+  seconds,
+  toSecond,
+}: {
+  days?: Numberish
+  seconds?: Numberish
+  toSecond?: Numberish
+}): Promise<void> {
+  await advanceTime({days, seconds, toSecond})
+  await mineBlock()
 }
 
 async function getBalance(address, erc20) {
@@ -622,10 +670,64 @@ export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_0
   }
 }
 
+export function amountLessProtocolFee(usdcAmount: BN) {
+  return usdcAmount.mul(new BN(995)).div(new BN(1000))
+}
+
+export function protocolFee(usdcAmount: BN) {
+  return usdcAmount.mul(new BN(5)).div(new BN(1000))
+}
+
 export function dbg<T>(x: T): T {
   console.trace(x)
   return x
 }
+
+// Some staked fidu holders that can be used in mainnet forking tests
+export const stakedFiduHolders = [
+  // ~300K FIDU
+  {
+    address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
+    stakingRewardsTokenId: 2118,
+  },
+  // ~600K FIDU
+  {
+    address: "0xcFD727653C3d5a1B943f675781d3245B884f1d34",
+    stakingRewardsTokenId: 2116,
+  },
+  // ~19k FIDU
+  {
+    address: "0x7AdC457434e8C57737AD2aCE768a863865f2AaBc",
+    stakingRewardsTokenId: 2123,
+  },
+  // ~111 FIDU
+  {
+    address: "0x9Fdf83188afBCa0b4b41960337Fb83aA1F3eE28a",
+    stakingRewardsTokenId: 2102,
+  },
+]
+
+// Some active borrower/pool info that can be used in mainnet forking tests
+export const borrowers = [
+  {
+    // nextDueTime is Oct 19th
+    name: "Stratos",
+    poolAddress: "0x00c27FC71b159a346e179b4A1608a0865e8A7470",
+    poolToken: 613,
+  },
+  {
+    // nextDueTime is Oct 23rd
+    name: "Addem",
+    poolAddress: "0x89d7C618a4EeF3065DA8ad684859a547548E6169",
+    poolToken: 738,
+  },
+  {
+    // nextDueTime is Nov 6th
+    name: "Cauris",
+    poolAddress: "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae",
+    poolToken: 179,
+  },
+]
 
 export {
   hardhat,
@@ -645,15 +747,20 @@ export {
   EMPTY_DATA,
   BLOCKS_PER_DAY,
   UNIT_SHARE_PRICE,
+  HALF_CENT,
+  HALF_DOLLAR,
   ZERO,
   bigVal,
+  gfiVal,
   usdcVal,
+  fiduVal,
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,
   getTruffleContractAtAddress,
   fiduToUSDC,
   usdcToFidu,
+  getNumShares,
   expectAction,
   deployAllContracts,
   erc721Approve,
@@ -662,6 +769,7 @@ export {
   getCurrentTimestamp,
   advanceTime,
   mineBlock,
+  advanceAndMineBlock,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,

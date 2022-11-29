@@ -3,7 +3,7 @@ import hre from "hardhat"
 const {artifacts, web3, getChainId} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../mainnetForkingHelpers"
-import {MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, isMainnetForking} from "../../deployHelpers"
+import {MAINNET_CHAIN_ID, isMainnetForking} from "../../deployHelpers"
 import {asNonNullable, assertNonNullable, debug} from "@goldfinch-eng/utils"
 import {getTruffleContract} from "../../deployHelpers"
 
@@ -99,13 +99,6 @@ const borrowerCreditlines: {[chainId: string]: {[address: string]: BorrowerMetad
       addresses: ["0xbdfffb9be1f45213582718b878e02f5cf38924b8"],
       label: "Ian's Test Creditline",
       owner: "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769",
-    },
-  },
-  [RINKEBY_CHAIN_ID]: {
-    "0x29F6b77EDd9422A744dE1e97a5fd3b9896e3357B": {
-      addresses: ["0x29F6b77EDd9422A744dE1e97a5fd3b9896e3357B"],
-      label: "Blake's Test Creditline #1",
-      owner: "0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE",
     },
   },
 }

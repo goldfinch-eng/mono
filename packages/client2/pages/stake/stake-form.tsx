@@ -3,11 +3,15 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, StakedPositionType } from "@/lib/graphql/generated";
+import { getContract } from "@/lib/contracts";
+import {
+  CryptoAmount,
+  StakedPositionType,
+  SupportedCrypto,
+} from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface StakeCardFormProps {
@@ -26,23 +30,23 @@ export function StakeForm({
   onComplete,
 }: StakeCardFormProps) {
   const { account, provider } = useWallet();
-  const stakingRewardsContract = useContract("StakingRewards");
-  const fiduContract = useContract("Fidu");
-  const curveLpTokenContract = useContract("CurveLP");
 
   const rhfMethods = useForm<StakeFormFields>();
-  const { control, setValue } = rhfMethods;
+  const { control } = rhfMethods;
 
   const onSubmit = async (data: StakeFormFields) => {
-    if (
-      !account ||
-      !provider ||
-      !stakingRewardsContract ||
-      !fiduContract ||
-      !curveLpTokenContract
-    ) {
+    if (!account || !provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
+    const fiduContract = await getContract({ name: "Fidu", provider });
+    const curveLpTokenContract = await getContract({
+      name: "CurveLP",
+      provider,
+    });
 
     const value = utils.parseUnits(
       data.amount,
@@ -71,10 +75,6 @@ export function StakeForm({
     await onComplete();
   };
 
-  const handleMax = async () => {
-    setValue("amount", formatCrypto(max, { includeSymbol: false }));
-  };
-
   const validateMax = async (value: string) => {
     const parsedValue = utils.parseUnits(
       value,
@@ -100,12 +100,16 @@ export function StakeForm({
             name="amount"
             label="Stake amount"
             hideLabel
-            mask={`amount ${
-              positionType === StakedPositionType.Fidu ? "FIDU" : "FIDU-USDC-F"
-            }`}
+            unit={
+              positionType === StakedPositionType.Fidu
+                ? SupportedCrypto.Fidu
+                : positionType === StakedPositionType.CurveLp
+                ? SupportedCrypto.CurveLp
+                : assertUnreachable(positionType)
+            }
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            onMaxClick={handleMax}
+            maxValue={max.amount}
           />
         </div>
 

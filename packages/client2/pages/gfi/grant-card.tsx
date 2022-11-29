@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -135,6 +136,8 @@ const descriptionMapping: Record<GrantReason, string> = {
   [GrantReason.Backer]: "participating as a Backer",
   [GrantReason.LiquidityProvider]: "participating as a Liquidity Provider",
   [GrantReason.GoldfinchInvestment]: "participating as a Goldfinch investor",
+  [GrantReason.Contributor]: "participating as a Goldfinch contributor",
+  [GrantReason.Advisor]: "participating as a Goldfinch advisor",
 };
 
 function displayGrantDescription(
@@ -211,6 +214,7 @@ function GrantButton({
   claimable: BigNumber;
   locked: BigNumber;
 }) {
+  const { provider } = useWallet();
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 
@@ -224,28 +228,31 @@ function GrantButton({
       : "Claim GFI"
     : "Claim GFI";
 
-  const communityRewardsContract = useContract("CommunityRewards");
-  const merkleDistributorContract = useContract("MerkleDistributor");
-  const backerMerkleDistributorContract = useContract(
-    "BackerMerkleDistributor"
-  );
-  const merkleDirectDistributorContract = useContract(
-    "MerkleDirectDistributor"
-  );
-  const backerMerkleDirectDistributorContract = useContract(
-    "BackerMerkleDirectDistributor"
-  );
-
   const handleAction = async () => {
-    if (
-      !communityRewardsContract ||
-      !merkleDistributorContract ||
-      !backerMerkleDistributorContract ||
-      !merkleDirectDistributorContract ||
-      !backerMerkleDirectDistributorContract
-    ) {
+    if (!provider) {
       return;
     }
+
+    const communityRewardsContract = await getContract({
+      name: "CommunityRewards",
+      provider,
+    });
+    const merkleDistributorContract = await getContract({
+      name: "MerkleDistributor",
+      provider,
+    });
+    const backerMerkleDistributorContract = await getContract({
+      name: "BackerMerkleDistributor",
+      provider,
+    });
+    const merkleDirectDistributorContract = await getContract({
+      name: "MerkleDirectDistributor",
+      provider,
+    });
+    const backerMerkleDirectDistributorContract = await getContract({
+      name: "BackerMerkleDirectDistributor",
+      provider,
+    });
 
     if (grant.__typename === "IndirectGfiGrant") {
       switch (grant.indirectSource) {

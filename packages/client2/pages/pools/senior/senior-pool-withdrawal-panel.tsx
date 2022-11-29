@@ -9,17 +9,24 @@ import {
   Form,
   Icon,
   InfoIconTooltip,
+  Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
+import {
+  sharesToUsdc,
+  sum,
+  usdcToShares,
+  usdcWithinEpsilon,
+} from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -31,6 +38,7 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
 interface SeniorPoolWithdrawalPanelProps {
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
+  vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
 }
@@ -43,6 +51,7 @@ export function SeniorPoolWithDrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
+  vaultedStakedPositions = [],
   seniorPoolLiquidity,
 }: SeniorPoolWithdrawalPanelProps) {
   const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
@@ -54,17 +63,20 @@ export function SeniorPoolWithDrawalPanel({
     ? seniorPoolLiquidity
     : totalSharesUsdc;
 
-  const seniorPoolContract = useContract("SeniorPool");
-  const stakingRewardsContract = useContract("StakingRewards");
   const apolloClient = useApolloClient();
+  const { provider } = useWallet();
 
   const rhfMethods = useForm<FormFields>();
-  const { control, setValue } = rhfMethods;
+  const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
-    if (!seniorPoolContract || !stakingRewardsContract) {
+    if (!provider) {
       return;
     }
+    const seniorPoolContract = await getContract({
+      name: "SeniorPool",
+      provider,
+    });
     const sharePrice = await seniorPoolContract.sharePrice(); // ensures that share price is as up-to-date as possible by fetching it when withdrawal is performed.
     let withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
     if (usdcWithinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
@@ -88,6 +100,10 @@ export function SeniorPoolWithDrawalPanel({
       // they continue to earn vested (i.e. claimable) rewards. Also, note that among the (unstakeable) positions
       // whose rewards vesting schedule has completed, there is no reason to prefer exiting one position versus
       // another, as all such positions earn rewards at the same rate.
+      const stakingRewardsContract = await getContract({
+        name: "StakingRewards",
+        provider,
+      });
       const unstakedWithdrawalPortion = fiduBalance.amount;
       const details = await Promise.all(
         stakedPositions.map((position) =>
@@ -104,7 +120,6 @@ export function SeniorPoolWithDrawalPanel({
       let remainingWithdrawalAmount = withdrawAmountFidu.sub(
         unstakedWithdrawalPortion
       );
-      let forfeitedGfi = BigNumber.from(0);
       const tokenIds: string[] = [];
       const fiduAmounts: BigNumber[] = [];
       for (const position of detailedPositions) {
@@ -119,10 +134,6 @@ export function SeniorPoolWithDrawalPanel({
         )
           ? remainingWithdrawalAmount
           : position.details.amount;
-        const forfeitedGfiFromThisToken = position.details.rewards.totalUnvested
-          .mul(amountFromThisToken)
-          .div(position.details.amount);
-        forfeitedGfi = forfeitedGfi.add(forfeitedGfiFromThisToken);
         tokenIds.push(position.id);
         fiduAmounts.push(amountFromThisToken);
         remainingWithdrawalAmount =
@@ -131,16 +142,11 @@ export function SeniorPoolWithDrawalPanel({
       if (!remainingWithdrawalAmount.isZero()) {
         throw new Error("Insufficient balance to withdraw");
       }
-      if (!forfeitedGfi.isZero()) {
-        const confirmation = await confirmDialog(
-          `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position. As a result of withdrawing this amount, you will forfeit ${formatCrypto(
-            { token: SupportedCrypto.Gfi, amount: forfeitedGfi },
-            { includeToken: true }
-          )} of your FIDU staking rewards.`
-        );
-        if (!confirmation) {
-          throw new Error("User backed out");
-        }
+      const confirmation = await confirmDialog(
+        `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position.`
+      );
+      if (!confirmation) {
+        throw new Error("User backed out");
       }
       if (!unstakedWithdrawalPortion.isZero()) {
         const transaction1 = seniorPoolContract.withdrawInFidu(
@@ -165,16 +171,6 @@ export function SeniorPoolWithDrawalPanel({
       });
       await apolloClient.refetchQueries({ include: "active" });
     }
-  };
-
-  const handleMax = () => {
-    setValue(
-      "amount",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxWithdrawableUsdc },
-        { includeSymbol: false }
-      )
-    );
   };
 
   const validateAmount = async (value: string) => {
@@ -212,10 +208,14 @@ export function SeniorPoolWithDrawalPanel({
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xl">
-            {formatCrypto({
-              token: SupportedCrypto.Usdc,
-              amount: totalSharesUsdc,
-            })}
+            {formatCrypto(
+              sharesToUsdc(
+                fiduBalance.amount.add(
+                  sum("amount", stakedPositions.concat(vaultedStakedPositions))
+                ),
+                seniorPoolSharePrice
+              )
+            )}
           </div>
           <Icon name="Usdc" size="sm" />
         </div>
@@ -230,7 +230,7 @@ export function SeniorPoolWithDrawalPanel({
             colorScheme="dark"
             rules={{ required: "Required", validate: validateAmount }}
             labelClassName="!mb-3 text-sm"
-            onMaxClick={handleMax}
+            maxValue={maxWithdrawableUsdc}
           />
         </div>
         <div className="mb-3 text-sm">
@@ -244,6 +244,21 @@ export function SeniorPoolWithDrawalPanel({
         >
           Withdraw
         </Button>
+        {vaultedStakedPositions.length > 0 ? (
+          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
+            <div className="text-mustard-900">
+              You cannot withdraw capital from your positions while they are in
+              the Vault
+            </div>
+            <Link
+              href="/membership"
+              iconRight="ArrowSmRight"
+              className="whitespace-nowrap font-medium text-mustard-700"
+            >
+              Go to Vault
+            </Link>
+          </div>
+        ) : null}
       </Form>
     </div>
   );

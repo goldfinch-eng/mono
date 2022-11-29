@@ -16,7 +16,6 @@ import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task
 
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
-const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
 
 // *** Uncomment when you actually want to run on mainnet or testnet ****
 // const TEST_PROTOCOL_OWNER_KEY = process.env.TESTNET_PROTOCOL_OWNER_KEY
@@ -36,7 +35,7 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper
   // Specifically: foundry uses git submodules to pull in dependencies, but hardhat requires
   // any imported dependency to have a corresponding node module. We are explicitly making
   // hardhat not import any foundry file to avoid this issue.
-  return paths.filter((p: any) => !p.endsWith(".t.sol"))
+  return paths.filter((p: any) => !p.endsWith(".t.sol") && !p.includes("test/lib"))
 })
 
 export default {
@@ -55,13 +54,9 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 15348753, // Aug-15-2022 10:56:56 PM +UTC
+            blockNumber: 16020635, // Nov-21-2022 08:00:23 PM +UTC
           }
         : undefined,
-    },
-    rinkeby: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_RINKEBY_API_KEY}`,
-      // accounts: [`${TEST_PROTOCOL_OWNER_KEY}`, `${TEST_GF_DEPLOYER_KEY}`],
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
@@ -96,6 +91,15 @@ export default {
       },
       {
         version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+        },
+      },
+      {
+        version: "0.8.16",
         settings: {
           optimizer: {
             enabled: true,
@@ -161,4 +165,5 @@ export default {
     pages: "files",
     templates: "docs-templates",
   },
+  // Cf. https://book.getfoundry.sh/config/hardhat
 }

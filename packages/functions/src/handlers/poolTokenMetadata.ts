@@ -1,30 +1,32 @@
 import {ethers} from "ethers"
 import {assertNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {genRequestHandler, getBlockchain} from "../helpers"
+import {genRequestHandler} from "../helpers"
 import POOL_METADATA from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {GraphQLClient} from "graphql-request"
 import {getSdk, PoolTokenMetadataQuery} from "../graphql/generated/graphql"
 import {BigNumber} from "bignumber.js"
-import type {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers/GoldfinchConfig"
-import GOLDFINCH_CONFIG_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/GoldfinchConfig.json"
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import {createSVGWindow} from "svgdom"
 import {SVG, registerWindow, Container} from "@svgdotjs/svg.js"
 
-// Ideally we would import from CONFIG_KEYS in @goldfinch-eng/protocol
-// but importing a typescript file causes build to fail with this error:
-//
-//   "It appears your code is written in Typescript, which must be compiled before emulation."
-//
-// Hardcoding for now.
-const LATENESS_GRACE_PERIOD_CONFIG_KEY = 5
-
 const BASE_URLS = {
   prod: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   dev: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
   local: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
+}
+
+// these pool tokens are associated in invalid pools (see INVALID_POOLS for
+// complete list). Sometimes this endpoint is queried for these tokens. The
+// subgraph will fail on that query because of the invalid pool, so we fail
+// fast to avoid the error.
+const INVALID_POOL_TOKENS: Record<string, string> = {
+  "3": "0x95715d3dcbb412900deaf91210879219ea84b4f8",
+  "4": "0x0e2e11dc77bbe75b2b65b57328a8e4909f7da1eb",
+  "5": "0x7bdf2679a9f3495260e64c0b9e0dfeb859bad7e0",
+  "6": "0x4b2ae066681602076adbe051431da7a3200166fd",
+  "12": "0xfce88c5d0ec3f0cb37a044738606738493e9b450",
 }
 
 const percentageFormatter = new Intl.NumberFormat("en-US", {
@@ -80,9 +82,10 @@ type AttributeType =
   | "TERM_REMAINING"
   | "TOTAL_AMOUNT_REPAID"
   | "NEXT_REPAYMENT_DATE"
-  | "PAYMENT_STATUS"
   | "LAST_UPDATED_AT"
 type TokenAttribute = {type: AttributeType; value: string}
+
+const isTermStarted = (termEndTime: BigNumber) => termEndTime.toNumber() !== 0
 
 /**
  * Get attributes for a given PoolToken token ID. These attributes are used in
@@ -93,14 +96,6 @@ type TokenAttribute = {type: AttributeType; value: string}
 async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute>> {
   const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2")
   const sdk = getSdk(client)
-
-  const provider = getBlockchain("https://app.goldfinch.finance")
-  const goldfinchConfig = new ethers.Contract(
-    GOLDFINCH_CONFIG_DEPLOYMENT.address,
-    GOLDFINCH_CONFIG_DEPLOYMENT.abi,
-    provider,
-  ) as unknown as GoldfinchConfig
-  const latenessGracePeriodInDays = await goldfinchConfig.getNumber(LATENESS_GRACE_PERIOD_CONFIG_KEY)
 
   const graphQlResponse = await sdk.poolTokenMetadata({id: tokenId.toString()})
   const {tranchedPoolToken} = graphQlResponse
@@ -122,7 +117,10 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
 
   const totalLoanSize = new BigNumber(tranchedPool.creditLine.limit.toString()).dividedBy(1e6)
 
-  const nextRepaymentDate = new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
+  const nextRepaymentDate =
+    isTermStarted(termEndTime) && ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() !== 0
+      ? new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
+      : undefined
 
   const principalAmount = new BigNumber(tranchedPoolToken.principalAmount.toString())
   const nav = await calculateNAV(tranchedPoolToken)
@@ -131,11 +129,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const totalAmountRepaid = new BigNumber(tranchedPoolToken.tranchedPool.principalAmountRepaid.toString()).plus(
     new BigNumber(tranchedPoolToken.tranchedPool.interestAmountRepaid.toString()),
   )
-
-  const lastFullPaymentTimeInSeconds = new BigNumber(tranchedPool.creditLine.lastFullPaymentTime.toString()).toNumber()
-  const latenessGracePeriodInSeconds = new BigNumber(latenessGracePeriodInDays.toString()).toNumber() * secondsInDay
-  const isLate = nowSinceEpoch > lastFullPaymentTimeInSeconds + latenessGracePeriodInSeconds
-  const paymentStatus = isLate ? "Late" : "Current"
 
   return [
     {
@@ -180,7 +173,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "TERM_REMAINING",
-      value: termEndTime.toNumber() === 0 ? "Not started" : `${termRemainingInDays} days`,
+      value: isTermStarted(termEndTime) ? `${termRemainingInDays} days` : "Not started",
     },
     {
       type: "TOTAL_AMOUNT_REPAID",
@@ -188,11 +181,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "NEXT_REPAYMENT_DATE",
-      value: nextRepaymentDate.toISOString(),
-    },
-    {
-      type: "PAYMENT_STATUS",
-      value: paymentStatus,
+      value: nextRepaymentDate?.toISOString() || "N/A",
     },
     {
       type: "LAST_UPDATED_AT",
@@ -221,7 +210,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
     NEXT_REPAYMENT_DATE: "Next Repayment Date",
-    PAYMENT_STATUS: "Payment Status",
     LAST_UPDATED_AT: "Last Updated At",
   }
 
@@ -251,7 +239,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
     NEXT_REPAYMENT_DATE: "Next Repayment Date",
-    PAYMENT_STATUS: "Payment Status",
     LAST_UPDATED_AT: "Updated At",
   }
 
@@ -288,9 +275,17 @@ export const poolTokenMetadata = genRequestHandler({
   requireAuth: "none",
   cors: false,
   handler: async (req, res): Promise<Response> => {
-    const pathComponents = req.path.split("/")
-    const tokenIdString = pathComponents[pathComponents.length - 1]
-    assertNonNullable(tokenIdString, "Token ID not found")
+    const tokenIdString = req.path.split("/").pop()
+    if (!tokenIdString) {
+      return res.status(400).send({status: "error", message: "Missing token ID"})
+    }
+    if (isNaN(Number(tokenIdString))) {
+      return res.status(400).send({status: "error", message: "Token ID must be a number"})
+    }
+    if (INVALID_POOL_TOKENS[tokenIdString]) {
+      return res.status(404).send({status: "error", message: "Requesting token for invalid pool"})
+    }
+
     const tokenId = parseInt(tokenIdString)
 
     const image = imageUrl({tokenId})
@@ -343,7 +338,6 @@ export const poolTokenImage = genRequestHandler({
       "TERM_REMAINING",
       "TOTAL_LOAN_SIZE",
       "TOTAL_AMOUNT_REPAID",
-      "PAYMENT_STATUS",
       "LAST_UPDATED_AT",
     ]
     const attributeTypeToValue: {[traitType: string]: any} = {}

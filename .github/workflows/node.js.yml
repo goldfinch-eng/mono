@@ -18,7 +18,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        submodules: recursive
         fetch-depth: 2
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -69,6 +74,12 @@ jobs:
         node-version: [16.x]
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -93,6 +104,12 @@ jobs:
         node-version: [16.x]
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -141,11 +158,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          submodules: recursive
           fetch-depth: 2
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
           java-version: '11'
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:

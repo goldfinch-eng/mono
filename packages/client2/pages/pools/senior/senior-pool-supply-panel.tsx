@@ -13,7 +13,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto, formatFiat, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
@@ -78,29 +78,27 @@ export function SeniorPoolSupplyPanel({
   const rhfMethods = useForm<FormFields>({
     defaultValues: { isStaking: true },
   });
-  const { control, register, watch, setValue } = rhfMethods;
+  const { control, register, watch } = rhfMethods;
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
-  const seniorPoolContract = useContract("SeniorPool");
-  const stakingRewardsContract = useContract("StakingRewards");
-  const usdcContract = useContract("USDC");
   const apolloClient = useApolloClient();
 
   const onSubmit = async (data: FormFields) => {
-    if (
-      !account ||
-      !provider ||
-      !usdcContract ||
-      !stakingRewardsContract ||
-      !seniorPoolContract
-    ) {
+    if (!account || !provider) {
       return;
     }
+
+    const usdcContract = await getContract({ name: "USDC", provider });
+
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
     if (await isSmartContract(account, provider)) {
       if (data.isStaking) {
+        const stakingRewardsContract = await getContract({
+          name: "StakingRewards",
+          provider,
+        });
         await approveErc20IfRequired({
           account,
           spender: stakingRewardsContract.address,
@@ -112,6 +110,10 @@ export function SeniorPoolSupplyPanel({
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
       } else {
+        const seniorPoolContract = await getContract({
+          name: "SeniorPool",
+          provider,
+        });
         await approveErc20IfRequired({
           account,
           spender: seniorPoolContract.address,
@@ -128,6 +130,10 @@ export function SeniorPoolSupplyPanel({
       const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
 
       if (data.isStaking) {
+        const stakingRewardsContract = await getContract({
+          name: "StakingRewards",
+          provider,
+        });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
           provider,
@@ -148,6 +154,10 @@ export function SeniorPoolSupplyPanel({
           pendingPrompt: `Deposit and stake submitted for senior pool.`,
         });
       } else {
+        const seniorPoolContract = await getContract({
+          name: "SeniorPool",
+          provider,
+        });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
           provider,
@@ -170,7 +180,12 @@ export function SeniorPoolSupplyPanel({
       }
     }
 
-    await apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({
+      include: "active",
+      updateCache(cache) {
+        cache.evict({ fieldName: "seniorPoolStakedPositions" });
+      },
+    });
   };
 
   const isUserVerified =
@@ -192,22 +207,15 @@ export function SeniorPoolSupplyPanel({
         user
       );
 
-  const handleMax = async () => {
-    if (!account || !usdcContract) {
-      return;
-    }
-    const userUsdcBalance = await usdcContract.balanceOf(account);
-    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
-  };
-
   const validateMaximumAmount = async (value: string) => {
-    if (!account || !usdcContract) {
+    if (!account || !provider) {
       return;
     }
+    const usdcContract = await getContract({ name: "USDC", provider });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Must deposit more than 0";
+    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+      return "Must deposit more than $0.01";
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
@@ -217,11 +225,11 @@ export function SeniorPoolSupplyPanel({
 
   const [availableBalance, setAvailableBalance] = useState<string | null>(null);
   useEffect(() => {
-    if (!account || !usdcContract) {
+    if (!account || !provider) {
       return;
     }
-    usdcContract
-      .balanceOf(account)
+    getContract({ name: "USDC", provider })
+      .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) =>
         setAvailableBalance(
           formatCrypto(
@@ -230,7 +238,7 @@ export function SeniorPoolSupplyPanel({
           )
         )
       );
-  }, [account, usdcContract]);
+  }, [account, provider]);
 
   return (
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
@@ -348,7 +356,19 @@ export function SeniorPoolSupplyPanel({
                 <span className="text-xs">Balance: {availableBalance}</span>
               }
               className="mb-4"
-              onMaxClick={handleMax}
+              maxValue={async () => {
+                if (!account || !provider) {
+                  throw new Error(
+                    "Wallet not connected when trying to compute max"
+                  );
+                }
+                const usdcContract = await getContract({
+                  name: "USDC",
+                  provider,
+                });
+                const userUsdcBalance = await usdcContract.balanceOf(account);
+                return userUsdcBalance;
+              }}
               rules={{ required: "Required", validate: validateMaximumAmount }}
             />
             <Checkbox

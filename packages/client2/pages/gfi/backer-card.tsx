@@ -4,13 +4,14 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   BackerCardTokenFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -37,9 +38,11 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
 
 interface BackerCardProps {
   token: BackerCardTokenFieldsFragment;
+  vaulted?: boolean;
 }
 
-export function BackerCard({ token }: BackerCardProps) {
+export function BackerCard({ token, vaulted = false }: BackerCardProps) {
+  const { provider } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
@@ -49,17 +52,20 @@ export function BackerCard({ token }: BackerCardProps) {
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 
-  const backerRewardsContract = useContract("BackerRewards");
-
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
     !token.tranchedPool.creditLine.isLate &&
-    !token.tranchedPool.isPaused;
+    !token.tranchedPool.isPaused &&
+    !vaulted;
 
   const handleClaim = async () => {
-    if (!backerRewardsContract) {
+    if (!provider) {
       return;
     }
+    const backerRewardsContract = await getContract({
+      name: "BackerRewards",
+      provider,
+    });
     const transaction = backerRewardsContract.withdraw(token.id);
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });
@@ -131,6 +137,7 @@ export function BackerCard({ token }: BackerCardProps) {
           ? "Claiming is disabled because this pool is paused"
           : undefined
       }
+      includeVaultNotice={vaulted}
     />
   );
 }

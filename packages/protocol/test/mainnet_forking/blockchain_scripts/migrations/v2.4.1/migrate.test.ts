@@ -9,7 +9,7 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 
 const setupTest = deployments.createFixture(async () => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)

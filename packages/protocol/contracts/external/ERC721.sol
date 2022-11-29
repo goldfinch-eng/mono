@@ -9,10 +9,10 @@
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Metadata.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Enumerable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721Receiver.sol";
+import "../interfaces/openzeppelin/IERC721.sol";
+import "../interfaces/openzeppelin/IERC721Metadata.sol";
+import "../interfaces/openzeppelin/IERC721Enumerable.sol";
+import "../interfaces/openzeppelin/IERC721Receiver.sol";
 import "./ERC165.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
