@@ -933,6 +933,49 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.withdrawalRequest(tokenId).fiduRequested, fiduVal(203));
   }
 
+  function testFiduAmountsThatWillResultInZeroUsdcReceivedDuringClaimingAreTruncated(
+    address caller,
+    uint256 depositAmount,
+    uint256 dustAmount
+  ) public {
+    vm.assume(fuzzHelper.isAllowed(caller));
+    addToGoList(caller);
+    vm.assume(depositAmount <= 100_000_000_000e6);
+    vm.assume(depositAmount > 0);
+    uint256 withdrawAmountInUsdc = depositAmount - 1;
+    vm.assume(sp.getUSDCAmountFromShares(sp.getNumShares(withdrawAmountInUsdc)) > 0);
+    dustAmount = bound(dustAmount, 1, 1e12 - 1);
+
+    fundAddress(caller, depositAmount);
+    approveTokensMaxAmount(caller);
+    depositToSpFrom(caller, depositAmount);
+
+    // We want to withdraw an amount that will have an amount of fidu that can't
+    // be converted to a non-zero amount of USDC and so we add a "dust" amount
+    // of fidu [1,1e12)
+    uint256 amountToWithdraw = sp.usdcToFidu(withdrawAmountInUsdc) + dustAmount;
+    uint256 tokenId = requestWithdrawalFrom(caller, amountToWithdraw);
+
+    // go to the next epoch
+    uint256 epochEndsAt = sp.currentEpoch().endsAt;
+    vm.warp(epochEndsAt);
+
+    // previewed value
+    ISeniorPoolEpochWithdrawals.WithdrawalRequest memory beforeWr = sp.withdrawalRequest(tokenId);
+
+    // the request should be completely liquidated, so no fidu should be remaining
+    assertZero(beforeWr.fiduRequested);
+    assertEq(beforeWr.usdcWithdrawable, withdrawAmountInUsdc);
+
+    uint256 amountWithdrawn = claimWithdrawalRequestFrom(caller, tokenId);
+    assertEq(amountWithdrawn, withdrawalAmountLessFees(withdrawAmountInUsdc), "withdraw amount incorrect");
+
+    // After claiming when a request is fully liquidated, the token should be burned
+    assertZero(requestTokens.balanceOf(caller));
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(tokenId);
+  }
+
   function testAddToWithdrawalRequestLiquidatesIfOneOrMoreEpochsHaveEndedSinceLastCheckpoint(
     address user,
     uint256 epochsElapsed
