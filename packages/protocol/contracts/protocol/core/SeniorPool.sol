@@ -229,6 +229,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
 
     (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
+    require(request.fiduRequested != 0, "Cant cancel");
 
     uint256 reserveBps = config.getSeniorPoolWithdrawalCancelationFeeInBps();
     uint256 reserveFidu = request.fiduRequested.mul(reserveBps).div(10_000);
@@ -248,6 +249,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     emit ReserveSharesCollected(msg.sender, reserve, reserveFidu);
     emit WithdrawalCanceled(_checkpointedEpochId, msg.sender, userFidu, reserveFidu);
+
+    return userFidu;
   }
 
   /**
