@@ -365,7 +365,7 @@ async function getSafe(overrides?: {
     chainId = MAINNET_CHAIN_ID
   }
 
-  const safeConfig = overrides?.via === undefined ? SAFE_CONFIG[chainId] : overrides.safeConfig
+  const safeConfig = overrides?.safeConfig === undefined ? SAFE_CONFIG[chainId] : overrides.safeConfig
   assertNonNullable(safeConfig, `Unknown Gnosis Safe for chain id ${chainId}`)
   const {executor} = safeConfig
 
