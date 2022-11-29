@@ -22,6 +22,7 @@ import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
 import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
 import WithdrawalRequestModal from "./withdraw-request-modal";
 import { WithdrawalCancelModal as WithdrawalCancelModal2 } from "./withdrawal-cancel-modal2";
+import { WithdrawalHistoryModal as WithdrawalHistoryModal2 } from "./withdrawal-history-modal2";
 import { WithdrawalRequestModal as WithdrawalRequestModal2 } from "./withdrawal-request-modal2";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
@@ -57,6 +58,7 @@ export function SeniorPoolWithdrawalPanel({
 
   const [isWithdrawalModal2Open, setIsWithdrawalModal2Open] = useState(false);
   const [isCancelModal2Open, setIsCancelModal2Open] = useState(false);
+  const [isHistoryModal2Open, setIsHistoryModal2Open] = useState(false);
 
   const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -229,16 +231,12 @@ export function SeniorPoolWithdrawalPanel({
                     )
                   : null}
               </div>
-              <div className="text-sm">
-                <Button
-                  onClick={() => {
-                    setHistoryModalOpen(true);
-                  }}
-                  className="!bg-transparent !p-0 underline hover:!bg-transparent"
-                >
-                  View request history
-                </Button>
-              </div>
+              <button
+                onClick={() => setIsHistoryModal2Open(true)}
+                className="text-xs text-white underline"
+              >
+                View request history
+              </button>
             </div>
 
             <div className="flex gap-2">
@@ -341,6 +339,10 @@ export function SeniorPoolWithdrawalPanel({
           existingWithdrawalRequest={existingWithdrawalRequest}
         />
       ) : null}
+      <WithdrawalHistoryModal2
+        isOpen={isHistoryModal2Open}
+        onClose={() => setIsHistoryModal2Open(false)}
+      />
     </>
   );
 }

@@ -190,6 +190,7 @@ export function handleEpochEnded(event: EpochEnded): void {
     disbursement.epoch = event.params.epochId
     disbursement.allocatedAt = epoch.endsAt
     disbursement.usdcAllocated = proRataUsdc
+    disbursement.fiduLiquidated = fiduLiquidated
     disbursement.save()
   }
 }

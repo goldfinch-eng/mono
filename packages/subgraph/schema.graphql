@@ -392,6 +392,9 @@ type SeniorPoolWithdrawalRequest @entity {
   user: User!
   usdcWithdrawable: BigInt!
   fiduRequested: BigInt!
+  requestedAt: Int!
+  increasedAt: Int
+  canceledAt: Int
 }
 
 type SeniorPoolWithdrawalEpoch @entity(immutable: true) {
@@ -415,4 +418,5 @@ type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
   epoch: BigInt! # The epoch number. Not a reference.
   allocatedAt: Int!
   usdcAllocated: BigInt!
+  fiduLiquidated: BigInt!
 }
