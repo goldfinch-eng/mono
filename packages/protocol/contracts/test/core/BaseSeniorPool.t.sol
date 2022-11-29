@@ -343,16 +343,10 @@ contract SeniorPoolBaseTest is BaseTest {
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
-  event WithdrawalRequested(
-    uint256 indexed epochId,
-    address indexed operator,
-    address kycAddress,
-    uint256 fiduRequested
-  );
+  event WithdrawalRequested(uint256 indexed epochId, address indexed operator, uint256 fiduRequested);
   event WithdrawalCanceled(
     uint256 indexed epochId,
     address indexed operator,
-    address kycAddress,
     uint256 fiduCanceled,
     uint256 reserveFidu
   );
