@@ -2208,6 +2208,11 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     sp.setEpochDuration(epochDuration);
   }
 
+  function testSetEpochDurationRevertsForZeroDuration() public impersonating(GF_OWNER) {
+    vm.expectRevert("Zero duration");
+    sp.setEpochDuration(0);
+  }
+
   /*================================================================================
   Epoch duration
   ================================================================================*/
