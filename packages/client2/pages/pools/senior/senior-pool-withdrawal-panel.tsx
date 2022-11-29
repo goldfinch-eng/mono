@@ -18,9 +18,6 @@ import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import WithdrawalCancelRequestModal from "./withdraw-cancel-request-modal";
-import WithdrawalRequestHistoryModal from "./withdraw-request-history-modal";
-import WithdrawalRequestModal from "./withdraw-request-modal";
 import { WithdrawalCancelModal as WithdrawalCancelModal2 } from "./withdrawal-cancel-modal2";
 import { WithdrawalHistoryModal as WithdrawalHistoryModal2 } from "./withdrawal-history-modal2";
 import { WithdrawalRequestModal as WithdrawalRequestModal2 } from "./withdrawal-request-modal2";
@@ -60,9 +57,6 @@ export function SeniorPoolWithdrawalPanel({
   const [isCancelModal2Open, setIsCancelModal2Open] = useState(false);
   const [isHistoryModal2Open, setIsHistoryModal2Open] = useState(false);
 
-  const [withdrawalModalOpen, setWithrawalModalOpen] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const totalUserFidu = sumTotalShares(
     fiduBalance,
@@ -72,8 +66,6 @@ export function SeniorPoolWithdrawalPanel({
     },
     stakedPositions.concat(vaultedStakedPositions)
   );
-  const totalUserStakedFidu = sumStakedShares(stakedPositions);
-  const totalUserVaultedFidu = sumStakedShares(vaultedStakedPositions);
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
     seniorPoolSharePrice
@@ -264,55 +256,6 @@ export function SeniorPoolWithdrawalPanel({
           </div>
         ) : null}
       </div>
-
-      <WithdrawalRequestHistoryModal
-        currentEpoch={currentEpoch}
-        isOpen={historyModalOpen}
-        onClose={() => {
-          setHistoryModalOpen(false);
-        }}
-      />
-
-      <WithdrawalCancelRequestModal
-        cancellationFee={cancellationFee ?? FixedNumber.from("0.1")}
-        withdrawalToken={withdrawalStatus?.withdrawalToken}
-        currentRequest={withdrawalStatus?.fiduRequested?.amount}
-        isOpen={cancelModalOpen}
-        onClose={() => {
-          setCancelModalOpen(false);
-        }}
-        onComplete={async () => {
-          setCancelModalOpen(false);
-
-          await apolloClient.refetchQueries({ include: "active" });
-        }}
-      />
-
-      <WithdrawalRequestModal
-        currentRequest={withdrawalStatus?.fiduRequested?.amount}
-        currentEpoch={currentEpoch}
-        sharePrice={seniorPoolSharePrice}
-        withdrawalToken={withdrawalStatus?.withdrawalToken}
-        balanceWallet={fiduBalance}
-        balanceStaked={{
-          amount: totalUserStakedFidu,
-          token: SupportedCrypto.Fidu,
-        }}
-        balanceVaulted={{
-          amount: totalUserVaultedFidu,
-          token: SupportedCrypto.Fidu,
-        }}
-        cancellationFee={cancellationFee}
-        isOpen={withdrawalModalOpen}
-        onClose={() => {
-          setWithrawalModalOpen(false);
-        }}
-        onComplete={async () => {
-          setWithrawalModalOpen(false);
-
-          await apolloClient.refetchQueries({ include: "active" });
-        }}
-      />
 
       <WithdrawalRequestModal2
         isOpen={isWithdrawalModal2Open}
