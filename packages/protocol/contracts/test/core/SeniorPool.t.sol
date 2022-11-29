@@ -1896,13 +1896,13 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 gasUsedApprox = gasBeforeClaim - gasleft();
 
     /*
-    At current gas price (Nov 27 2022)
-    * Gas consumed is 128442
-    * Gas fee is 13.38 gwei
-    * ETH is $1177.03
-    * Cost is 13.38 gwei * 128442 = 0.002204 ETH = $2.59
+    At current gas price (Nov 29 2022)
+    * Gas consumed is 133354
+    * Gas fee is 17.83 gwei
+    * ETH is $1211.93
+    * Cost is 17.83 gwei * 133354 = 0.002958 ETH = $3.59
     */
-    assertTrue(gasUsedApprox < 130_000);
+    assertTrue(gasUsedApprox < 135_000, "Gas should be cheap");
   }
 
   /*================================================================================

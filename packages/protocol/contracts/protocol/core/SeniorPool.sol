@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/SafeCast.sol";
 import {SignedSafeMath} from "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
@@ -34,6 +35,8 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   using SignedSafeMath for int256;
   using Math for uint256;
+  using SafeCast for uint256;
+  using SafeCast for int256;
   using ConfigHelper for GoldfinchConfig;
   using SafeERC20 for IFidu;
   using SafeERC20 for IERC20withDec;
@@ -664,14 +667,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       return;
     }
 
-    int256 writedownDelta = int256(prevWritedownAmount).sub(int256(writedownAmount));
+    int256 writedownDelta = prevWritedownAmount.toInt256().sub(writedownAmount.toInt256());
     writedownsByPoolToken[tokenId] = writedownAmount;
     _distributeLosses(writedownDelta);
     if (writedownDelta > 0) {
       // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
-      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
+      totalWritedowns = totalWritedowns.sub(writedownDelta.toUint256());
     } else {
-      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
+      totalWritedowns = totalWritedowns.add((writedownDelta * -1).toUint256());
     }
     emit PrincipalWrittenDown(address(pool), writedownDelta);
   }
@@ -760,11 +763,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function _distributeLosses(int256 writedownDelta) internal {
     _applyEpochCheckpoints();
     if (writedownDelta > 0) {
-      uint256 delta = _usdcToSharePrice(uint256(writedownDelta));
+      uint256 delta = _usdcToSharePrice(writedownDelta.toUint256());
       sharePrice = sharePrice.add(delta);
     } else {
       // If delta is negative, convert to positive uint, and sub from sharePrice
-      uint256 delta = _usdcToSharePrice(uint256(writedownDelta * -1));
+      uint256 delta = _usdcToSharePrice((writedownDelta * -1).toUint256());
       sharePrice = sharePrice.sub(delta);
     }
   }
