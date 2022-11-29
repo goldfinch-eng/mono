@@ -133,5 +133,5 @@ interface ISeniorPoolEpochWithdrawals {
   /// @param epochId id of epoch that was extended
   /// @param newEndTime new epoch end time
   /// @param oldEndTime previous epoch end time
-  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndtime);
+  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
 }

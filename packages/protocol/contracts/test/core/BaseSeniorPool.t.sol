@@ -361,4 +361,5 @@ contract SeniorPoolBaseTest is BaseTest {
   event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
+  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
 }
