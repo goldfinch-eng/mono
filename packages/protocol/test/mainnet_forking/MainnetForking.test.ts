@@ -81,6 +81,7 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
+  WithdrawalRequestTokenInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
@@ -115,6 +116,7 @@ import {
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
 import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
+import {config} from "dotenv"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -204,11 +206,14 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
   await migrate290.main()
 
+  const requestTokens = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
+
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
   return {
     poolTokens,
     seniorPool,
+    requestTokens,
     seniorPoolStrategy,
     usdc,
     fidu,
@@ -248,6 +253,7 @@ describe("mainnet forking tests", async function () {
     seniorPool: SeniorPoolInstance,
     seniorPoolStrategy,
     go: GoInstance,
+    requestTokens: WithdrawalRequestTokenInstance,
     stakingRewards: StakingRewardsInstance,
     curvePool: ICurveLPInstance,
     backerRewards: BackerRewardsInstance,
@@ -317,6 +323,7 @@ describe("mainnet forking tests", async function () {
       network,
       ethersUniqueIdentity,
       poolTokens,
+      requestTokens,
     } = await setupTest())
     reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
@@ -494,8 +501,12 @@ describe("mainnet forking tests", async function () {
             () => usdc.balanceOf(seniorPool.address),
             {byCloseTo: userUsdc.add(reserveUsdc).neg(), threshold: HALF_CENT},
           ],
-          [async () => (await seniorPool.withdrawalRequest(requestId + 1)).usdcWithdrawable, {to: ZERO}],
         ])
+
+        expect(
+          (await requestTokens.balanceOf(stakedFiduHolders[requestId]!.address)).eq(new BN("0")) ||
+            (await seniorPool.withdrawalRequest(requestId)).usdcWithdrawable.eq(new BN("0"))
+        ).to.be.true
       }
     })
 
@@ -510,9 +521,11 @@ describe("mainnet forking tests", async function () {
       const expectedCancelationFee = fiduVal(10_000).mul(cancelationFeeInBps).div(new BN(10_000))
       const expectedFiduReturnedToUser = fiduVal(10_000).sub(expectedCancelationFee)
 
+      const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
+
       await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: fiduHolder.address})).toChange([
         [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
-        [() => fidu.balanceOf(reserveAddress), {by: expectedCancelationFee}],
+        [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
       ])
     })
