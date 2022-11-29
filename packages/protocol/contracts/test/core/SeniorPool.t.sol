@@ -1630,6 +1630,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   function testClaimWithdrawalShouldClearMyPositionWhenClearingInThePast(address user1, address user2) public {
+    (TestTranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -1645,7 +1646,6 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -1790,6 +1790,76 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(usdc.balanceOf(user2), withdrawalAmountLessFees(usdcWithdrawable));
     assertEq(sp.withdrawalRequest(2).fiduRequested, fiduVal(3000) - fiduLiquidated);
     assertZero(sp.withdrawalRequest(2).usdcWithdrawable);
+  }
+
+  /**
+    This function simulates a user waiting many epochs before claiming their request. We want to make sure
+    that claiming is not prohibitively expensive, even if they wait a long time.
+   */
+  function testClaimWithdrawalRequestAfterLongTimeIsNotTooExpensive(address user1, address user2) public {
+    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
+    addToGoList(user1);
+    addToGoList(user2);
+    approveTokensMaxAmount(user1);
+    approveTokensMaxAmount(user2);
+    fundAddress(user1, usdcVal(1000));
+    fundAddress(user2, usdcVal(3000));
+
+    depositToSpFrom(user1, usdcVal(1000));
+    depositToSpFrom(user2, usdcVal(3000));
+
+    uint256 token1 = requestWithdrawalFrom(user1, sp.getNumShares(usdcVal(1000)));
+    requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
+
+    depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
+    drawdownTp(usdcVal(5000), tp);
+
+    // EPOCH 1 - senior pool deposit
+    depositToSpFrom(GF_OWNER, usdcVal(1000));
+
+    // EPOCH 2 - senior pool deposit
+    vm.warp(block.timestamp + 14 days);
+    depositToSpFrom(GF_OWNER, usdcVal(1000));
+
+    // EPOCH 3 - tranched pool repayment
+    vm.warp(block.timestamp + 17 days);
+    tp.assess();
+    assertTrue(cl.interestOwed() > 0);
+    payTp(cl.interestOwed(), tp);
+    assertZero(cl.interestOwed());
+
+    // EPOCH 4 - senior pool deposit
+    vm.warp(block.timestamp + 14 days);
+    depositToSpFrom(GF_OWNER, usdcVal(500));
+
+    // EPOCH 5 - tranched pool repayment
+    vm.warp(block.timestamp + 17 days);
+    tp.assess();
+    assertTrue(cl.interestOwed() > 0, "Has interest owed");
+    payTp(cl.interestOwed(), tp);
+    assertZero(cl.interestOwed(), "No more interest owed");
+
+    // EPOCH 6 - claim withdrawal request
+    vm.warp(block.timestamp + 14 days);
+    // small deposit to trigger epoch checkpoint
+    depositToSpFrom(GF_OWNER, usdcVal(1));
+
+    uint256 gasBeforeClaim = gasleft();
+    claimWithdrawalRequestFrom(user1, token1);
+    uint256 gasUsedApprox = gasBeforeClaim - gasleft();
+
+    /*
+    At current gas price (Nov 27 2022)
+    * Gas consumed is 128442
+    * Gas fee is 13.38 gwei
+    * ETH is $1177.03
+    * Cost is 13.38 gwei * 128442 = 0.002204 ETH = $2.59
+    */
+    assertTrue(gasUsedApprox < 130_000);
   }
 
   /*================================================================================
