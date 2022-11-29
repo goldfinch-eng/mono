@@ -5,7 +5,6 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "packages/protocol/block
 import {assertIsString} from "packages/utils/src/type"
 
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-import * as migrate310 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v3.1.0/migrate"
 
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
 import {TransferSingle} from "packages/protocol/typechain/truffle/TestUniqueIdentity"
@@ -29,6 +28,8 @@ import {UniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import BigNumber from "bignumber.js"
 
 const setupTest = deployments.createFixture(async () => {
+  await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
+
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
 
@@ -46,8 +47,6 @@ const setupTest = deployments.createFixture(async () => {
     [protocolOwner, gf_deployer, owner, signerAddress, anotherUser, anotherUser2, anotherUser3]
   )
   await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
-
-  await migrate310.main()
 
   const uniqueIdentityDeploy = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")
   const uniqueIdentity = await ethers.getContractAt(uniqueIdentityDeploy.abi, uniqueIdentityDeploy.address)

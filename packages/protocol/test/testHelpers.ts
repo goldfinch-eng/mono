@@ -319,7 +319,6 @@ async function deployAllContracts(
   membershipCollector: MembershipCollectorInstance
 }> {
   await deployments.fixture("baseDeploy")
-  await deployments.fixture("pendingMainnetMigrations")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
