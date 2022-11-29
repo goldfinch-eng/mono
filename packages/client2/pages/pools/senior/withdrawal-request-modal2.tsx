@@ -353,10 +353,22 @@ function ConfirmStep({
           </div>
         </div>
       </div>
-      <div className="mb-8 border-tidepool-200 bg-tidepool-100 p-3 text-xs text-tidepool-600">
+      <div className="mb-8 border-tidepool-200 bg-tidepool-100 p-3 text-sm text-tidepool-600">
         <p className="mb-2">
           By clicking &rdquo;Submit&ldquo; below, I hereby acknowledge and agree
-          to the Senior Pool Agreement and Terms of Service, including:
+          to the{" "}
+          <Link
+            className="text-tidepool-800"
+            href="/senior-pool-agreement-interstitial"
+            openInNewTab
+          >
+            Senior Pool Agreement
+          </Link>{" "}
+          and{" "}
+          <Link className="text-tidepool-800" href="/terms" openInNewTab>
+            Terms of Service
+          </Link>
+          , including:
         </p>
         <ul className="list-disc space-y-2 pl-6">
           <li>
