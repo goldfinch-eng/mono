@@ -1188,8 +1188,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 canceledShares = sp.getNumShares(usdcVal(300));
     uint256 treasuryShares = cancelationFee(canceledShares);
 
-    vm.expectEmit(true, false, false, true);
-    emit ReserveSharesCollected(user, treasuryShares);
+    vm.expectEmit(true, true, false, true);
+    emit ReserveSharesCollected(user, gfConfig.protocolAdminAddress(), treasuryShares);
 
     cancelWithdrawalRequestFrom(user, tokenId);
   }
@@ -1251,7 +1251,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(100));
 
     uint256 userBalanceBefore = fidu.balanceOf(address(user));
-    uint256 treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    uint256 treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
 
     cancelWithdrawalRequestFrom(user, tokenId);
 
@@ -1259,7 +1259,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 userFidu = fiduVal(300) - reserveFidu;
     assertZero(fidu.balanceOf(address(sp)));
     assertEq(fidu.balanceOf(address(user)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(sp.withdrawalRequest(tokenId).fiduRequested);
     assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(100));
     assertEq(requestTokens.balanceOf(user), 1);
@@ -1289,7 +1289,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     uint256 spFiduBefore = fidu.balanceOf(address(sp));
     uint256 userBalanceBefore = fidu.balanceOf(address(user1));
-    uint256 treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    uint256 treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
     ISeniorPoolEpochWithdrawals.Epoch memory epoch = sp.epochAt(1);
 
     // First user cancels their request
@@ -1298,7 +1298,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 userFidu = sp.getNumShares(depositAmount1) - reserveFidu;
     assertEq(fidu.balanceOf(address(sp)), spFiduBefore - (userFidu + reserveFidu));
     assertEq(fidu.balanceOf(address(user1)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(requestTokens.balanceOf(user1));
     // Epoch 1's fiduRequested should no longer include user 1's fidu
     assertEq(sp.epochAt(1).fiduRequested, epoch.fiduRequested - (userFidu + reserveFidu));
@@ -1308,7 +1308,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     spFiduBefore = fidu.balanceOf(address(sp));
     userBalanceBefore = fidu.balanceOf(address(user2));
-    treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
     epoch = sp.epochAt(1);
 
     // Second user cancels their request
@@ -1317,7 +1317,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     userFidu = sp.getNumShares(depositAmount2) - reserveFidu;
     assertEq(fidu.balanceOf(address(sp)), spFiduBefore - (userFidu + reserveFidu));
     assertEq(fidu.balanceOf(address(user2)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(requestTokens.balanceOf(user2));
     // Epoch 1's fiduRequested should be 0
     assertZero(sp.epochAt(1).fiduRequested);

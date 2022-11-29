@@ -140,6 +140,7 @@ contract SeniorPoolBaseTest is BaseTest {
 
     // Exclude known addresses from fuzzed inputs. This prevents flakey errors like
     // "Error sent ERC1155 to non-receiver"
+    fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
@@ -355,7 +356,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 fiduCanceled,
     uint256 reserveFidu
   );
-  event ReserveSharesCollected(address indexed user, uint256 amount);
+  event ReserveSharesCollected(address indexed user, address indexed reserve, uint256 amount);
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
   event EpochDurationChanged(uint256 newDuration);
   event InterestCollected(address indexed payer, uint256 amount);

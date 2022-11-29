@@ -246,9 +246,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       _burnWithdrawRequest(tokenId);
     }
     config.getFidu().safeTransfer(msg.sender, userFidu);
-    config.getFidu().safeTransfer(config.reserveAddress(), reserveFidu);
 
-    emit ReserveSharesCollected(msg.sender, reserveFidu);
+    address reserve = config.protocolAdminAddress();
+    config.getFidu().safeTransfer(reserve, reserveFidu);
+
+    emit ReserveSharesCollected(msg.sender, reserve, reserveFidu);
     emit WithdrawalCanceled(_checkpointedEpochId, msg.sender, address(0), userFidu, reserveFidu);
   }
 
