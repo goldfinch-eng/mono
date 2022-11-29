@@ -104,7 +104,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // When we're updating the epoch duration we need to update the head epoch endsAt
     // time to be the new epoch duration
     if (headEpoch.endsAt > block.timestamp) {
-      headEpoch.endsAt = headEpoch.endsAt.sub(_epochDuration).add(newEpochDuration);
+      /*
+      This codepath happens when we successfully finalize the previous epoch. This results
+      in a timestamp in the future. In this case we need to account for no-op epochs that
+      would be created by setting the duration to a value less than the previous epoch.
+      */
+
+      uint256 previousEpochEndsAt = headEpoch.endsAt.sub(_epochDuration);
+      _epochDuration = newEpochDuration;
+      headEpoch.endsAt = _mostRecentEndsAtAfter(previousEpochEndsAt).add(newEpochDuration);
+      assert(headEpoch.endsAt > block.timestamp);
     } else {
       headEpoch.endsAt = _mostRecentEndsAtAfter(headEpoch.endsAt).add(newEpochDuration);
     }

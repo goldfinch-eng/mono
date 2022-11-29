@@ -2219,6 +2219,29 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.epochAt(1).endsAt, initialStartsAt + 9 weeks);
   }
 
+  function testSetEpochDurationCheckpointsCorrectlyWhenNewDurationLtOldDuration(
+    uint256 numberOfNoopEpochs,
+    uint256 newEpochDuration,
+    uint256 offset
+  ) public {
+    vm.assume(newEpochDuration > 0);
+    vm.assume(numberOfNoopEpochs < 100_000_000);
+    vm.assume(offset < sp.epochDuration());
+    vm.assume(newEpochDuration < sp.epochDuration());
+    uint256 initialEndsAt = sp.epochAt(1).endsAt;
+    uint256 endOfEpochsWithPreviousDuration = initialEndsAt + sp.epochDuration() * numberOfNoopEpochs;
+    vm.warp(endOfEpochsWithPreviousDuration + offset);
+
+    _startImpersonation(GF_OWNER);
+    sp.setEpochDuration(newEpochDuration);
+
+    uint256 nextEpochEndsAt = sp.currentEpoch().endsAt;
+
+    // The new epoch
+    assertGt(nextEpochEndsAt, block.timestamp);
+    assertZero((nextEpochEndsAt - endOfEpochsWithPreviousDuration) % newEpochDuration);
+  }
+
   function testSetEpochDurationCheckpointsElapsedEpochsCorrectly() public {
     // Like the previous test but now that there's a withdrawal request we
     // expect the epoch id to update as well.
