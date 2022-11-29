@@ -115,6 +115,7 @@ import {
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
 import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
+import {config} from "dotenv"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -510,9 +511,11 @@ describe("mainnet forking tests", async function () {
       const expectedCancelationFee = fiduVal(10_000).mul(cancelationFeeInBps).div(new BN(10_000))
       const expectedFiduReturnedToUser = fiduVal(10_000).sub(expectedCancelationFee)
 
+      const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
+
       await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: fiduHolder.address})).toChange([
         [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
-        [() => fidu.balanceOf(reserveAddress), {by: expectedCancelationFee}],
+        [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
       ])
     })
