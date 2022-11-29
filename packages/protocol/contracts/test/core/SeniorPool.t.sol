@@ -11,6 +11,7 @@ import {TestConstants} from "./TestConstants.t.sol";
 import {TestTranchedPool} from "../TestTranchedPool.sol";
 import {TestSeniorPoolCaller} from "../../test/TestSeniorPoolCaller.sol";
 import {SeniorPoolBaseTest} from "./BaseSeniorPool.t.sol";
+import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolTest is SeniorPoolBaseTest {
   /*================================================================================
@@ -1369,6 +1370,18 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     sp.withdrawalRequest(2);
   }
 
+  function testCancelWithdrawalRequestRevertsForInvalidBps(uint256 bps) public impersonating(GF_OWNER) {
+    vm.assume(bps > 10_000);
+
+    gfConfig.setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps), bps);
+
+    uint256 shares = sp.deposit(usdcVal(1));
+    uint256 requestId = sp.requestWithdrawal(shares);
+
+    vm.expectRevert("Invalid Bps");
+    sp.cancelWithdrawalRequest(requestId);
+  }
+
   /*================================================================================
   withdrawalRequest view tests
   ================================================================================*/
@@ -1895,14 +1908,9 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     claimWithdrawalRequestFrom(user1, token1);
     uint256 gasUsedApprox = gasBeforeClaim - gasleft();
 
-    /*
-    At current gas price (Nov 29 2022)
-    * Gas consumed is 133354
-    * Gas fee is 17.83 gwei
-    * ETH is $1211.93
-    * Cost is 17.83 gwei * 133354 = 0.002958 ETH = $3.59
-    */
-    assertTrue(gasUsedApprox < 135_000, "Gas should be cheap");
+    // Assert gasUsed is under the actual gas used plus a decent amount of wriggle room.
+    // Exceeding the limit indicates a siginifacnt gas addition
+    assertTrue(gasUsedApprox < 200_000);
   }
 
   /*================================================================================
