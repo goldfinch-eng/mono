@@ -42,19 +42,20 @@ All notable changes to this project will be documented in this file.
 
 - Need to request that OpenSea to reindex StakingRewards contract after successful deploy
 
-## Protocol v2.8.0 - 2022-10-??
+## Protocol v2.8.0 - 2022-11-21
 
-### Updated
+### New
 
-- TODO Membership Rewards
+- [GIP-27](https://gov.goldfinch.finance/t/gip-27-proposed-changes-to-membership-vaults-for-initial-release/1231)
+  Goldfinch Membership launch
 
 ### Fixed
 
-- TODO Membership Rewards
+- Depositing max amount into Staked Fidu position
 
 ### Notes
 
-- TODO Membership Rewards
+- Removed rinkeby
 
 ## Protocol v2.7.4 - 2022-09-28
 
