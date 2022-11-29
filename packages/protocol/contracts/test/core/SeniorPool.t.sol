@@ -625,8 +625,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     sp.deposit(depositAmount);
     uint256 shares = sp.getNumShares(requestAmount);
 
-    vm.expectEmit(true, true, false, true, address(sp));
-    emit WithdrawalRequested(1, user, shares);
+    vm.expectEmit(true, true, true, true, address(sp));
+    emit WithdrawalRequested(1, 1, user, shares);
     assertZero(requestTokens.balanceOf(user));
     uint256 spFiduBefore = fidu.balanceOf(address(sp));
     uint256 userFiduBefore = fidu.balanceOf(user);
@@ -1326,11 +1326,11 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     vm.warp(block.timestamp + sp.epochDuration());
 
-    vm.expectEmit(true, true, false, true, address(sp));
+    vm.expectEmit(true, true, true, true, address(sp));
     uint256 canceledShares = sp.getNumShares(usdcVal(300));
     uint256 treasuryShares = cancelationFee(canceledShares);
     uint256 userShares = canceledShares - treasuryShares;
-    emit WithdrawalCanceled(2, user, userShares, treasuryShares);
+    emit WithdrawalCanceled(2, tokenId, user, userShares, treasuryShares);
 
     cancelWithdrawalRequestFrom(user, tokenId);
   }
