@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Protocol v2.9.0 - 2022-11-30
+## Protocol v3.0.0 - 2022-11-30
 
 ### Updated
 

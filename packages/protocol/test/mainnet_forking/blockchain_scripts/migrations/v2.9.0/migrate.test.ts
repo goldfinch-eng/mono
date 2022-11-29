@@ -4,7 +4,7 @@ import {getEthersContract, getProtocolOwner} from "packages/protocol/blockchain_
 import {assertIsString} from "packages/utils/src/type"
 
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-import * as migrate290 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.9/migrate2_9_0"
+import * as migrate290 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v3.0/migrate3_0_0"
 import {StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 
@@ -20,7 +20,7 @@ const setupTest = deployments.createFixture(async () => {
   return {}
 })
 
-describe("v2.9.0", async function () {
+describe("v3.0.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   beforeEach(async () => {

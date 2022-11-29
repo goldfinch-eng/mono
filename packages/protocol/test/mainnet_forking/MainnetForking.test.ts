@@ -18,7 +18,7 @@ import {
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate290 from "../../blockchain_scripts/migrations/v2.9/migrate2_9_0"
+import * as migrate290 from "../../blockchain_scripts/migrations/v3.0/migrate3_0_0"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
