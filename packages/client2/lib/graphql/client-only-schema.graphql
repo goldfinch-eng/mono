@@ -118,11 +118,6 @@ type WithdrawalStatus {
   withdrawalToken: BigInt
 }
 
-# TODO remove this
-type WithdrawalEpochInfo {
-  endTime: BigInt!
-}
-
 type BlockInfo {
   number: Int!
   timestamp: Int!
@@ -140,9 +135,12 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo!
   curvePool: CurvePool!
-  currentWithdrawalEpoch: WithdrawalEpochInfo! # TODO remove this, it's probably possible to compute purely client-side
 }
 
 extend type SeniorPoolWithdrawalRequest {
   tokenId: BigInt!
+}
+
+extend type SeniorPoolStatus {
+  epochEndsAt: Int!
 }

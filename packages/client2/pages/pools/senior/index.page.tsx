@@ -65,6 +65,7 @@ gql`
         sharePrice
         usdcBalance
         cancellationFee
+        epochEndsAt @client
       }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -91,9 +92,6 @@ gql`
         }
         withdrawalToken
       }
-    }
-    currentWithdrawalEpoch @client {
-      endTime
     }
     seniorPoolWithdrawalRequests(where: { user: $user }) {
       ...WithdrawalRequestModalWithdrawalFields
@@ -203,7 +201,7 @@ export default function SeniorPoolPage() {
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithdrawalPanel
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
-                currentEpoch={data.currentWithdrawalEpoch}
+                epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
                 withdrawalStatus={data.viewer.withdrawalStatus}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}

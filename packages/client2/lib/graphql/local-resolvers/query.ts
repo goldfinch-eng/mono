@@ -1,15 +1,8 @@
 import { Resolvers } from "@apollo/client";
 
-import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
-import {
-  BlockInfo,
-  GfiPrice,
-  SupportedFiat,
-  Viewer,
-  WithdrawalEpochInfo,
-} from "../generated";
+import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
 
 async function fetchWithTimeout(url: string, timeout = 3000) {
   const controller = new AbortController();
@@ -89,25 +82,6 @@ export const rootQueryResolvers: Resolvers[string] = {
         __typename: "Viewer",
         account: null,
       };
-    }
-  },
-  async currentWithdrawalEpoch(): Promise<WithdrawalEpochInfo | null> {
-    const provider = await getProvider();
-
-    try {
-      const seniorPool = await getContract({
-        name: "SeniorPool",
-        provider,
-      });
-
-      const currentEpoch = await seniorPool.currentEpoch();
-
-      return {
-        __typename: "WithdrawalEpochInfo",
-        endTime: currentEpoch.endsAt,
-      };
-    } catch (e) {
-      return null;
     }
   },
   async currentBlock(): Promise<BlockInfo | null> {

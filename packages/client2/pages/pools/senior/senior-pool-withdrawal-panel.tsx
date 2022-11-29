@@ -10,7 +10,6 @@ import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
-  WithdrawalEpochInfo,
   WithdrawalRequestModalWithdrawalFieldsFragment,
   WithdrawalStatus,
 } from "@/lib/graphql/generated";
@@ -36,7 +35,7 @@ interface SeniorPoolWithdrawalPanelProps {
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
-  currentEpoch: WithdrawalEpochInfo;
+  epochEndsAt: number;
   cancellationFee: FixedNumber;
   existingWithdrawalRequest?: WithdrawalRequestModalWithdrawalFieldsFragment;
 }
@@ -46,7 +45,7 @@ export function SeniorPoolWithdrawalPanel({
   seniorPoolSharePrice,
   stakedPositions = [],
   withdrawalStatus,
-  currentEpoch,
+  epochEndsAt,
   cancellationFee,
   vaultedStakedPositions = [],
   existingWithdrawalRequest,
@@ -216,12 +215,7 @@ export function SeniorPoolWithdrawalPanel({
             </div>
             <div className="mb-5 flex items-end justify-between gap-1">
               <div className="text-2xl">
-                {currentEpoch
-                  ? format(
-                      currentEpoch.endTime.mul(1000).toNumber(),
-                      "MMM d, y"
-                    )
-                  : null}
+                {format(epochEndsAt * 1000, "MMM d, y")}
               </div>
               <button
                 onClick={() => setIsHistoryModal2Open(true)}
@@ -272,7 +266,7 @@ export function SeniorPoolWithdrawalPanel({
           amount: sum("amount", vaultedStakedPositions),
         }}
         cancellationFee={cancellationFee}
-        nextDistributionTimestamp={currentEpoch.endTime.toNumber()}
+        nextDistributionTimestamp={epochEndsAt}
       />
       {existingWithdrawalRequest ? (
         <WithdrawalCancelModal2
