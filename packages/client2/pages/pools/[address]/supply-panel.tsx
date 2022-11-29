@@ -122,12 +122,23 @@ export default function SupplyPanel({
   });
   const { control, watch, register } = rhfMethods;
 
+  // TODO: Zadra - estimatedLeverageRatio is now a FixedNumber, wat do?
   const remainingJuniorCapacity =
     isUnitrancheDeal || !estimatedLeverageRatio
       ? maxLimit.sub(juniorDeposited)
       : maxLimit
-          .sub(juniorDeposited.mul(estimatedLeverageRatio.add(1)))
-          .div(estimatedLeverageRatio.add(1));
+          .sub(
+            juniorDeposited.mul(
+              BigNumber.from(
+                estimatedLeverageRatio.toString().split(".")[0]
+              ).add(1)
+            )
+          )
+          .div(
+            BigNumber.from(estimatedLeverageRatio.toString().split(".")[0]).add(
+              1
+            )
+          );
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
       return;

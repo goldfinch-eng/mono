@@ -275,7 +275,12 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
     backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
-          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
+          // TODO: Zadra - estimatedLeverageRatio is now a FixedNumber, wat do?
+          amount: backerSupply.amount.mul(
+            BigNumber.from(
+              tranchedPool.estimatedLeverageRatio.toString().split(".")[0]
+            )
+          ),
         }
       : undefined;
 
