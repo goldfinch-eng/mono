@@ -11,6 +11,10 @@ contract TestSeniorPool is SeniorPool {
     return getNumShares(amount);
   }
 
+  function getUSDCAmountFromShares(uint256 fiduAmount) public view returns (uint256) {
+    return _getUSDCAmountFromShares(fiduAmount);
+  }
+
   function __getNumShares(uint256 usdcAmount, uint256 sharePrice) public pure returns (uint256) {
     return _getNumShares(usdcAmount, sharePrice);
   }

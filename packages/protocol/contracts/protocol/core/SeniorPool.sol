@@ -275,6 +275,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     config.getUSDC().safeTransfer(msg.sender, userAmount);
 
     emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
+
+    return userAmount;
   }
 
   // view functions
@@ -316,11 +318,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // After this point block.timestamp >= epoch.endsAt
 
+    uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
+    epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
+
     // If an epoch can't be finalized, meaning that there isn't BOTH USDC and
     // FIDU available to liquidate then the epoch needs to be extended. This
     // means that the endsAt time is updated to the _next_ epoch endTime.
-    epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
-    if (_usdcAvailable == 0 || epoch.fiduRequested == 0) {
+    // Additionally, an epoch cannot be finalized if the FIDU amount in the
+    // epoch would result in 0 USDC being allocated to it. There's no point in
+    // liquidating the epoch because of this.
+    if (_usdcAvailable == 0 || usdcNeededToFullyLiquidate == 0) {
       // When we extend the epoch, we need to add an additional epoch to the end so that
       // the next time a checkpoint happens it won't immediately finalize the epoch
       epoch.endsAt = epoch.endsAt.add(_epochDuration);
@@ -328,7 +335,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     }
 
     // finalize epoch
-    uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
     uint256 usdcAllocated = _usdcAvailable.min(usdcNeededToFullyLiquidate);
     uint256 fiduLiquidated = getNumShares(usdcAllocated);
     epoch.fiduLiquidated = fiduLiquidated;
@@ -364,6 +370,25 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
+
+      if (epoch.fiduLiquidated != 0) {
+        /*
+        If the user's outstanding fiduAmount, when claimed, would result in them
+        receiving no usdc amount because of loss of precision in conversion we
+        just zero out the request so when they claim they don't need to
+        unnecessarily iterate through many epochs where they receive nothing.
+
+        At the epoch level, the sum of the withdraw request that are "dust" (would
+        result in 0 usdc) may result in a non zero usdc allocation at the epoch
+        level. USDC will be allocated to these "dusty" requests, but the very
+        small amount of usdc will not be claimable by anyone.
+        */
+        uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(epoch.fiduLiquidated);
+        bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(wr.fiduRequested, epochSharePrice) == 0;
+        if (noUsdcValueRemainingInRequest) {
+          wr.fiduRequested = 0;
+        }
+      }
     }
     wr.epochCursor = _checkpointedEpochId;
 
@@ -416,12 +441,30 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function _applyWithdrawalRequestCheckpoint(uint256 tokenId) internal returns (WithdrawalRequest storage) {
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
     Epoch storage epoch;
+
     for (uint256 i = wr.epochCursor; i < _checkpointedEpochId && wr.fiduRequested > 0; i++) {
       epoch = _epochs[i];
       uint256 proRataUsdc = epoch.usdcAllocated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
+
+      /*
+      If the user's outstanding fiduAmount, when claimed, would result in them
+      receiving no usdc amount because of loss of precision in conversion we
+      just zero out the request so when they claim they don't need to
+      unnecessarily iterate through many epochs where they receive nothing.
+
+      At the epoch level, the sum of the withdraw request that are "dust" (would
+      result in 0 usdc) may result in a non zero usdc allocation at the epoch
+      level. USDC will be allocated to these "dusty" requests, but the very
+      small amount of usdc will not be claimable by anyone.
+      */
+      uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(epoch.fiduLiquidated);
+      bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(wr.fiduRequested, epochSharePrice) == 0;
+      if (noUsdcValueRemainingInRequest) {
+        wr.fiduRequested = 0;
+      }
     }
 
     wr.epochCursor = _checkpointedEpochId;
