@@ -625,7 +625,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 shares = sp.getNumShares(requestAmount);
 
     vm.expectEmit(true, true, false, true, address(sp));
-    emit WithdrawalRequested(1, user, address(0), shares);
+    emit WithdrawalRequested(1, user, shares);
     assertZero(requestTokens.balanceOf(user));
     uint256 spFiduBefore = fidu.balanceOf(address(sp));
     uint256 userFiduBefore = fidu.balanceOf(user);
@@ -933,6 +933,49 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.withdrawalRequest(tokenId).fiduRequested, fiduVal(203));
   }
 
+  function testFiduAmountsThatWillResultInZeroUsdcReceivedDuringClaimingAreTruncated(
+    address caller,
+    uint256 depositAmount,
+    uint256 dustAmount
+  ) public {
+    vm.assume(fuzzHelper.isAllowed(caller));
+    addToGoList(caller);
+    vm.assume(depositAmount <= 100_000_000_000e6);
+    vm.assume(depositAmount > 0);
+    uint256 withdrawAmountInUsdc = depositAmount - 1;
+    vm.assume(sp.getUSDCAmountFromShares(sp.getNumShares(withdrawAmountInUsdc)) > 0);
+    dustAmount = bound(dustAmount, 1, 1e12 - 1);
+
+    fundAddress(caller, depositAmount);
+    approveTokensMaxAmount(caller);
+    depositToSpFrom(caller, depositAmount);
+
+    // We want to withdraw an amount that will have an amount of fidu that can't
+    // be converted to a non-zero amount of USDC and so we add a "dust" amount
+    // of fidu [1,1e12)
+    uint256 amountToWithdraw = sp.usdcToFidu(withdrawAmountInUsdc) + dustAmount;
+    uint256 tokenId = requestWithdrawalFrom(caller, amountToWithdraw);
+
+    // go to the next epoch
+    uint256 epochEndsAt = sp.currentEpoch().endsAt;
+    vm.warp(epochEndsAt);
+
+    // previewed value
+    ISeniorPoolEpochWithdrawals.WithdrawalRequest memory beforeWr = sp.withdrawalRequest(tokenId);
+
+    // the request should be completely liquidated, so no fidu should be remaining
+    assertZero(beforeWr.fiduRequested);
+    assertEq(beforeWr.usdcWithdrawable, withdrawAmountInUsdc);
+
+    uint256 amountWithdrawn = claimWithdrawalRequestFrom(caller, tokenId);
+    assertEq(amountWithdrawn, withdrawalAmountLessFees(withdrawAmountInUsdc), "withdraw amount incorrect");
+
+    // After claiming when a request is fully liquidated, the token should be burned
+    assertZero(requestTokens.balanceOf(caller));
+    vm.expectRevert("ERC721: owner query for nonexistent token");
+    sp.withdrawalRequest(tokenId);
+  }
+
   function testAddToWithdrawalRequestLiquidatesIfOneOrMoreEpochsHaveEndedSinceLastCheckpoint(
     address user,
     uint256 epochsElapsed
@@ -1188,8 +1231,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 canceledShares = sp.getNumShares(usdcVal(300));
     uint256 treasuryShares = cancelationFee(canceledShares);
 
-    vm.expectEmit(true, false, false, true);
-    emit ReserveSharesCollected(user, treasuryShares);
+    vm.expectEmit(true, true, false, true);
+    emit ReserveSharesCollected(user, gfConfig.protocolAdminAddress(), treasuryShares);
 
     cancelWithdrawalRequestFrom(user, tokenId);
   }
@@ -1220,7 +1263,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 canceledShares = sp.getNumShares(usdcVal(300));
     uint256 treasuryShares = cancelationFee(canceledShares);
     uint256 userShares = canceledShares - treasuryShares;
-    emit WithdrawalCanceled(2, user, address(0), userShares, treasuryShares);
+    emit WithdrawalCanceled(2, user, userShares, treasuryShares);
 
     cancelWithdrawalRequestFrom(user, tokenId);
   }
@@ -1251,7 +1294,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(100));
 
     uint256 userBalanceBefore = fidu.balanceOf(address(user));
-    uint256 treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    uint256 treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
 
     cancelWithdrawalRequestFrom(user, tokenId);
 
@@ -1259,7 +1302,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 userFidu = fiduVal(300) - reserveFidu;
     assertZero(fidu.balanceOf(address(sp)));
     assertEq(fidu.balanceOf(address(user)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(sp.withdrawalRequest(tokenId).fiduRequested);
     assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(100));
     assertEq(requestTokens.balanceOf(user), 1);
@@ -1289,7 +1332,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     uint256 spFiduBefore = fidu.balanceOf(address(sp));
     uint256 userBalanceBefore = fidu.balanceOf(address(user1));
-    uint256 treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    uint256 treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
     ISeniorPoolEpochWithdrawals.Epoch memory epoch = sp.epochAt(1);
 
     // First user cancels their request
@@ -1298,7 +1341,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 userFidu = sp.getNumShares(depositAmount1) - reserveFidu;
     assertEq(fidu.balanceOf(address(sp)), spFiduBefore - (userFidu + reserveFidu));
     assertEq(fidu.balanceOf(address(user1)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(requestTokens.balanceOf(user1));
     // Epoch 1's fiduRequested should no longer include user 1's fidu
     assertEq(sp.epochAt(1).fiduRequested, epoch.fiduRequested - (userFidu + reserveFidu));
@@ -1308,7 +1351,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     spFiduBefore = fidu.balanceOf(address(sp));
     userBalanceBefore = fidu.balanceOf(address(user2));
-    treasuryBalanceBefore = fidu.balanceOf(address(TREASURY));
+    treasuryBalanceBefore = fidu.balanceOf(address(gfConfig.protocolAdminAddress()));
     epoch = sp.epochAt(1);
 
     // Second user cancels their request
@@ -1317,7 +1360,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     userFidu = sp.getNumShares(depositAmount2) - reserveFidu;
     assertEq(fidu.balanceOf(address(sp)), spFiduBefore - (userFidu + reserveFidu));
     assertEq(fidu.balanceOf(address(user2)), userBalanceBefore + userFidu);
-    assertEq(fidu.balanceOf(TREASURY), treasuryBalanceBefore + reserveFidu);
+    assertEq(fidu.balanceOf(gfConfig.protocolAdminAddress()), treasuryBalanceBefore + reserveFidu);
     assertZero(requestTokens.balanceOf(user2));
     // Epoch 1's fiduRequested should be 0
     assertZero(sp.epochAt(1).fiduRequested);
@@ -1630,6 +1673,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   }
 
   function testClaimWithdrawalShouldClearMyPositionWhenClearingInThePast(address user1, address user2) public {
+    (TestTranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -1645,7 +1689,6 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -1790,6 +1833,76 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertEq(usdc.balanceOf(user2), withdrawalAmountLessFees(usdcWithdrawable));
     assertEq(sp.withdrawalRequest(2).fiduRequested, fiduVal(3000) - fiduLiquidated);
     assertZero(sp.withdrawalRequest(2).usdcWithdrawable);
+  }
+
+  /**
+    This function simulates a user waiting many epochs before claiming their request. We want to make sure
+    that claiming is not prohibitively expensive, even if they wait a long time.
+   */
+  function testClaimWithdrawalRequestAfterLongTimeIsNotTooExpensive(address user1, address user2) public {
+    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
+    addToGoList(user1);
+    addToGoList(user2);
+    approveTokensMaxAmount(user1);
+    approveTokensMaxAmount(user2);
+    fundAddress(user1, usdcVal(1000));
+    fundAddress(user2, usdcVal(3000));
+
+    depositToSpFrom(user1, usdcVal(1000));
+    depositToSpFrom(user2, usdcVal(3000));
+
+    uint256 token1 = requestWithdrawalFrom(user1, sp.getNumShares(usdcVal(1000)));
+    requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
+
+    depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
+    drawdownTp(usdcVal(5000), tp);
+
+    // EPOCH 1 - senior pool deposit
+    depositToSpFrom(GF_OWNER, usdcVal(1000));
+
+    // EPOCH 2 - senior pool deposit
+    vm.warp(block.timestamp + 14 days);
+    depositToSpFrom(GF_OWNER, usdcVal(1000));
+
+    // EPOCH 3 - tranched pool repayment
+    vm.warp(block.timestamp + 17 days);
+    tp.assess();
+    assertTrue(cl.interestOwed() > 0);
+    payTp(cl.interestOwed(), tp);
+    assertZero(cl.interestOwed());
+
+    // EPOCH 4 - senior pool deposit
+    vm.warp(block.timestamp + 14 days);
+    depositToSpFrom(GF_OWNER, usdcVal(500));
+
+    // EPOCH 5 - tranched pool repayment
+    vm.warp(block.timestamp + 17 days);
+    tp.assess();
+    assertTrue(cl.interestOwed() > 0, "Has interest owed");
+    payTp(cl.interestOwed(), tp);
+    assertZero(cl.interestOwed(), "No more interest owed");
+
+    // EPOCH 6 - claim withdrawal request
+    vm.warp(block.timestamp + 14 days);
+    // small deposit to trigger epoch checkpoint
+    depositToSpFrom(GF_OWNER, usdcVal(1));
+
+    uint256 gasBeforeClaim = gasleft();
+    claimWithdrawalRequestFrom(user1, token1);
+    uint256 gasUsedApprox = gasBeforeClaim - gasleft();
+
+    /*
+    At current gas price (Nov 27 2022)
+    * Gas consumed is 128442
+    * Gas fee is 13.38 gwei
+    * ETH is $1177.03
+    * Cost is 13.38 gwei * 128442 = 0.002204 ETH = $2.59
+    */
+    assertTrue(gasUsedApprox < 130_000);
   }
 
   /*================================================================================
@@ -2136,6 +2249,11 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     vm.expectEmit(false, false, false, true);
     emit EpochDurationChanged(epochDuration);
     sp.setEpochDuration(epochDuration);
+  }
+
+  function testSetEpochDurationRevertsForZeroDuration() public impersonating(GF_OWNER) {
+    vm.expectRevert("Zero duration");
+    sp.setEpochDuration(0);
   }
 
   /*================================================================================
