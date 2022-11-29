@@ -1188,6 +1188,65 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertZero(requestTokens.balanceOf(user));
   }
 
+  function testCancelWithdrawalRequestRevertsOnAFullyLiquidatedRequest(address user, uint256 amount)
+    public
+    onlyAllowListed(user)
+    goListed(user)
+    tokenApproved(user)
+  {
+    amount = bound(amount, 1, 100_000_000_000e6);
+    fundAddress(user, amount);
+    uint256 receivedShares = depositToSpFrom(user, amount);
+    uint256 tokenId = requestWithdrawalFrom(user, receivedShares);
+
+    uint256 epochEndTime = sp.currentEpoch().endsAt;
+    vm.warp(epochEndTime);
+
+    ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
+
+    assertZero(wr.fiduRequested);
+    assertGt(wr.usdcWithdrawable, 0);
+
+    vm.expectRevert("Cant cancel");
+    cancelWithdrawalRequestFrom(user, tokenId);
+  }
+
+  function testCancelWithdrawalRequestCannotBeCalledMoreThanOnce(
+    address user,
+    uint256 amount,
+    uint256 investAmount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
+    amount = bound(amount, 1e6, 100_000_000e6);
+    fundAddress(user, amount);
+    uint256 receivedShares = depositToSpFrom(user, amount);
+    uint256 tokenId = requestWithdrawalFrom(user, receivedShares);
+
+    // Invest in a tranched pool to suck up liquidity
+    (TestTranchedPool tp, ) = defaultTp();
+    // this should invest half of the users investment
+    depositToTpFrom(GF_OWNER, (amount / 2) / 4, tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
+    uint256 epochEndTime = sp.currentEpoch().endsAt;
+    vm.warp(epochEndTime);
+
+    uint256 expectedRemainingShares = receivedShares / 2;
+    uint256 expectedCancellationFee = cancelationFee(expectedRemainingShares);
+    uint256 expectedReceivedShares = expectedRemainingShares - expectedCancellationFee;
+    uint256 sharesFromCancel = cancelWithdrawalRequestFrom(user, tokenId);
+
+    assertApproxEqAbs(sharesFromCancel, expectedReceivedShares, 1e18);
+
+    {
+      ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
+      assertZero(wr.fiduRequested);
+    }
+
+    vm.expectRevert("Cant cancel");
+    cancelWithdrawalRequestFrom(user, tokenId);
+  }
+
   function testCancelWithdrawalRequestDoesntBurnNftWhenUsdcWithdrawableGtZero(address user)
     public
     onlyAllowListed(user)
@@ -1200,11 +1259,18 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, sp.getNumShares(amount));
     assertEq(requestTokens.balanceOf(user), tokenId);
 
+    // Invest in a tranched pool to suck up liquidity so that there is
+    // _some_ fidu left in the withdraw request so it can be cancelled
+    (TestTranchedPool tp, ) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(1), tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
     vm.warp(block.timestamp + sp.epochDuration());
 
     cancelWithdrawalRequestFrom(user, tokenId);
     assertEq(requestTokens.balanceOf(user), 1);
-    assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(400));
+    assertGt(sp.withdrawalRequest(tokenId).usdcWithdrawable, 0);
   }
 
   function testCancelWithdrawalRequestEmitsReserveSharesCollected(address user)

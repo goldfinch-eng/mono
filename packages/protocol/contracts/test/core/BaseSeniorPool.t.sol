@@ -213,8 +213,8 @@ contract SeniorPoolBaseTest is BaseTest {
     return sp.requestWithdrawal(fiduAmount);
   }
 
-  function cancelWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) {
-    sp.cancelWithdrawalRequest(tokenId);
+  function cancelWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
+    return sp.cancelWithdrawalRequest(tokenId);
   }
 
   function claimWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
