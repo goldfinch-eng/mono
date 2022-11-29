@@ -2756,6 +2756,29 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertGt(wr.usdcWithdrawable, 0);
   }
 
+  function testSeniorPoolEmitsAnEpochExtendedEventAfterANopEpoch(
+    address user,
+    // number of epochs that have passed
+    uint256 nNoopEpochs,
+    // Add a random offset within the epoch
+    uint256 subEpochOffset
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
+    nNoopEpochs = bound(nNoopEpochs, 1, 100_000_000);
+    subEpochOffset = bound(subEpochOffset, 0, sp.epochDuration() - 1);
+    uint256 depositAmount = usdcVal(1);
+    fundAddress(user, depositAmount);
+
+    uint256 epochDuration = sp.epochDuration();
+    uint256 epochEndsAt = sp.currentEpoch().endsAt;
+    uint256 newEpochStart = epochEndsAt + nNoopEpochs * epochDuration;
+    uint256 expectedNewEndsAt = newEpochStart + epochDuration;
+    vm.warp(newEpochStart + subEpochOffset);
+
+    vm.expectEmit(true, false, false, true);
+    emit EpochExtended(1, expectedNewEndsAt, epochEndsAt);
+    depositToSpFrom(user, depositAmount);
+  }
+
   // TODO - Uncomment these tests when the Go changes are merged - https://github.com/warbler-labs/mono/pull/800
 
   // function testAddToWithdrawalRequestRevertsWhenOriginHasValidUidAndCallerHasNothing(

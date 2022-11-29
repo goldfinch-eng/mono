@@ -510,7 +510,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
     } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
+      uint256 oldEndsAt = epoch.endsAt;
       epoch.endsAt = checkpointedEpoch.endsAt;
+      emit EpochExtended(_checkpointedEpochId, epoch.endsAt, oldEndsAt);
       return epoch;
     } else {
       // copy checkpointed data

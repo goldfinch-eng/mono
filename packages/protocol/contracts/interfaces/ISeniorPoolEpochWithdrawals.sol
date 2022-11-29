@@ -123,4 +123,10 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 usdcAllocated,
     uint256 fiduLiquidated
   );
+
+  /// @notice Emitted when an epoch could not be finalized and is extended instead
+  /// @param epochId id of epoch that was extended
+  /// @param newEndTime new epoch end time
+  /// @param oldEndTime previous epoch end time
+  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
 }
