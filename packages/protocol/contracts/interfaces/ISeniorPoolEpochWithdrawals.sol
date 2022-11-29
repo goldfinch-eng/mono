@@ -82,26 +82,17 @@ interface ISeniorPoolEpochWithdrawals {
   event EpochDurationChanged(uint256 newDuration);
 
   /// @notice Emitted when a new withdraw request has been created
-  event WithdrawalRequested(
-    uint256 indexed epochId,
-    address indexed operator,
-    // TODO: we can remove this if we use epoch limit withdrawals
-    address kycAddress,
-    uint256 fiduRequested
-  );
+  event WithdrawalRequested(uint256 indexed epochId, address indexed operator, uint256 fiduRequested);
 
   /// @notice Emitted when a user adds to their existing withdraw request
   /// @param epochId epoch that the withdraw was added to
   /// @param tokenId id of token that represents the position being added to
   /// @param operator address that added to the request
-  /// @param kycAddress kyc-d address of operator
   /// @param fiduRequested amount of additional fidu added to request
   event WithdrawalAddedTo(
     uint256 indexed epochId,
     uint256 indexed tokenId,
     address indexed operator,
-    // TODO: we can remove this if we use epoch limit withdrawals
-    address kycAddress,
     uint256 fiduRequested
   );
 
@@ -109,8 +100,6 @@ interface ISeniorPoolEpochWithdrawals {
   event WithdrawalCanceled(
     uint256 indexed epochId,
     address indexed operator,
-    // TODO: we can remove this if we use epoch limit withdrawals
-    address kycAddress,
     uint256 fiduCanceled,
     uint256 reserveFidu
   );
