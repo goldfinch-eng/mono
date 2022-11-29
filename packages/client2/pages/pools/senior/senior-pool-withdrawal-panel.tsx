@@ -2,24 +2,35 @@ import { gql, useApolloClient } from "@apollo/client";
 import { format } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
+import {
+  Button,
+  Form,
+  Icon,
+  InfoIconTooltip,
+} from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
+  SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment,
   SupportedCrypto,
-  WithdrawalRequestModalWithdrawalFieldsFragment,
-  WithdrawalStatus,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import { WithdrawalCancelModal as WithdrawalCancelModal2 } from "./withdrawal-cancel-modal2";
+import {
+  WithdrawalCancelModal as WithdrawalCancelModal2,
+  WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS,
+} from "./withdrawal-cancel-modal2";
 import { WithdrawalHistoryModal as WithdrawalHistoryModal2 } from "./withdrawal-history-modal2";
-import { WithdrawalRequestModal as WithdrawalRequestModal2 } from "./withdrawal-request-modal2";
+import {
+  WithdrawalRequestModal as WithdrawalRequestModal2,
+  WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS,
+} from "./withdrawal-request-modal2";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -28,8 +39,18 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   }
 `;
 
+export const SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS = gql`
+  ${WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS}
+  ${WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS}
+  fragment SeniorPoolWithdrawalPanelWithdrawalRequestFields on SeniorPoolWithdrawalRequest {
+    id
+    usdcWithdrawable @client
+    ...WithdrawalCancelModalWithdrawalFields
+    ...WithdrawalRequestModalWithdrawalFields
+  }
+`;
+
 interface SeniorPoolWithdrawalPanelProps {
-  withdrawalStatus?: WithdrawalStatus | null;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
@@ -37,14 +58,13 @@ interface SeniorPoolWithdrawalPanelProps {
   seniorPoolLiquidity: BigNumber;
   epochEndsAt: number;
   cancellationFee: FixedNumber;
-  existingWithdrawalRequest?: WithdrawalRequestModalWithdrawalFieldsFragment;
+  existingWithdrawalRequest?: SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment;
 }
 
 export function SeniorPoolWithdrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
-  withdrawalStatus,
   epochEndsAt,
   cancellationFee,
   vaultedStakedPositions = [],
@@ -56,11 +76,11 @@ export function SeniorPoolWithdrawalPanel({
   const [isCancelModal2Open, setIsCancelModal2Open] = useState(false);
   const [isHistoryModal2Open, setIsHistoryModal2Open] = useState(false);
 
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const rhfMethodsForWithdrawingUsdc = useForm();
   const totalUserFidu = sumTotalShares(
     fiduBalance,
-    withdrawalStatus?.fiduRequested ?? {
-      amount: BigNumber.from("0"),
+    {
+      amount: existingWithdrawalRequest?.fiduRequested ?? BigNumber.from(0),
       token: SupportedCrypto.Fidu,
     },
     stakedPositions.concat(vaultedStakedPositions)
@@ -70,35 +90,28 @@ export function SeniorPoolWithdrawalPanel({
     seniorPoolSharePrice
   ).amount;
   const currentRequestUsdc = sharesToUsdc(
-    withdrawalStatus?.fiduRequested?.amount ?? BigNumber.from("0"),
+    existingWithdrawalRequest?.fiduRequested ?? BigNumber.from(0),
     seniorPoolSharePrice
   ).amount;
 
   const apolloClient = useApolloClient();
 
-  const withdrawWithToken = async () => {
-    if (!withdrawalStatus?.withdrawalToken || !provider) return;
-
-    setIsWithdrawing(true);
-
+  const withdrawUsdcWithToken = async () => {
+    if (!provider) {
+      throw new Error("Bad wallet connection");
+    } else if (!existingWithdrawalRequest) {
+      throw new Error("No withdrawal request");
+    }
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
       provider,
     });
-
-    try {
-      const transaction = seniorPoolContract.claimWithdrawalRequest(
-        withdrawalStatus?.withdrawalToken
-      );
-
-      await toastTransaction({ transaction });
-
-      await apolloClient.refetchQueries({ include: "active" });
-
-      setIsWithdrawing(false);
-    } finally {
-      setIsWithdrawing(false);
-    }
+    await toastTransaction({
+      transaction: seniorPoolContract.claimWithdrawalRequest(
+        existingWithdrawalRequest.tokenId
+      ),
+    });
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   return (
@@ -138,35 +151,32 @@ export function SeniorPoolWithdrawalPanel({
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">
-              {formatCrypto(
-                withdrawalStatus?.usdcWithdrawable ?? {
-                  amount: BigNumber.from(0),
-                  token: SupportedCrypto.Usdc,
-                }
-              )}
+              {formatCrypto({
+                amount:
+                  existingWithdrawalRequest?.usdcWithdrawable ??
+                  BigNumber.from(0),
+                token: SupportedCrypto.Usdc,
+              })}
             </div>
             <Icon name="Usdc" size="sm" />
           </div>
         </div>
 
-        {withdrawalStatus?.withdrawalToken ? (
-          <Button
-            colorScheme="secondary"
-            size="xl"
-            className="mb-2 block w-full"
-            type="submit"
-            onClick={withdrawWithToken}
-            isLoading={isWithdrawing}
-            disabled={
-              !withdrawalStatus ||
-              withdrawalStatus?.usdcWithdrawable?.amount.lte(
-                BigNumber.from("0")
-              ) ||
-              isWithdrawing
-            }
+        {existingWithdrawalRequest ? (
+          <Form
+            rhfMethods={rhfMethodsForWithdrawingUsdc}
+            onSubmit={withdrawUsdcWithToken}
           >
-            Withdraw USDC
-          </Button>
+            <Button
+              type="submit"
+              colorScheme="secondary"
+              size="xl"
+              disabled={existingWithdrawalRequest.usdcWithdrawable.isZero()}
+              className="mb-2 block w-full"
+            >
+              Withdraw USDC
+            </Button>
+          </Form>
         ) : (
           <Button
             colorScheme="secondary"
@@ -178,7 +188,7 @@ export function SeniorPoolWithdrawalPanel({
           </Button>
         )}
 
-        {withdrawalStatus?.withdrawalToken ? (
+        {existingWithdrawalRequest ? (
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Withdrawal request</div>
@@ -189,11 +199,10 @@ export function SeniorPoolWithdrawalPanel({
             </div>
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
-                {withdrawalStatus?.fiduRequested
-                  ? formatCrypto(withdrawalStatus?.fiduRequested, {
-                      includeToken: true,
-                    })
-                  : null}
+                {formatCrypto({
+                  token: SupportedCrypto.Fidu,
+                  amount: existingWithdrawalRequest.fiduRequested,
+                })}
               </div>
               <div className="text-sm">
                 {formatCrypto(

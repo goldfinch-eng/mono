@@ -23,12 +23,11 @@ import {
 import {
   SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
-import { WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS } from "./withdrawal-cancel-modal2";
-import { WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS } from "./withdrawal-request-modal2";
 
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
@@ -38,8 +37,7 @@ gql`
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
 
-  ${WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS}
-  ${WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS}
+  ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -81,21 +79,9 @@ gql`
         token
         amount
       }
-      withdrawalStatus {
-        usdcWithdrawable {
-          token
-          amount
-        }
-        fiduRequested {
-          token
-          amount
-        }
-        withdrawalToken
-      }
     }
     seniorPoolWithdrawalRequests(where: { user: $user }) {
-      ...WithdrawalRequestModalWithdrawalFields
-      ...WithdrawalCancelModalWithdrawalFields
+      ...SeniorPoolWithdrawalPanelWithdrawalRequestFields
     }
   }
 `;
@@ -118,7 +104,7 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
       data?.vaultedStakedPositions.length !== 0 ||
-      data?.viewer.withdrawalStatus);
+      data?.seniorPoolWithdrawalRequests.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -202,7 +188,6 @@ export default function SeniorPoolPage() {
               <SeniorPoolWithdrawalPanel
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
                 epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
-                withdrawalStatus={data.viewer.withdrawalStatus}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={data.seniorPoolStakedPositions}

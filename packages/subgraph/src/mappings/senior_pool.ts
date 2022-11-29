@@ -106,19 +106,12 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
     transaction.save()
   }
-
-  const withdrawalRequest = SeniorPoolWithdrawalRequest.load(event.params.capitalProvider.toHexString())
-  if (withdrawalRequest) {
-    withdrawalRequest.usdcWithdrawable = BigInt.zero()
-    withdrawalRequest.save()
-  }
 }
 
 export function handleWithdrawalRequest(event: WithdrawalRequested): void {
   const withdrawalRequest = new SeniorPoolWithdrawalRequest(event.params.operator.toHexString())
   withdrawalRequest.user = getOrInitUser(event.params.operator).id
   withdrawalRequest.fiduRequested = event.params.fiduRequested
-  withdrawalRequest.usdcWithdrawable = BigInt.zero()
   withdrawalRequest.requestedAt = event.block.timestamp.toI32()
   withdrawalRequest.save()
 
@@ -181,7 +174,6 @@ export function handleEpochEnded(event: EpochEnded): void {
 
     const proRataUsdc = epoch.usdcAllocated.times(withdrawalRequest.fiduRequested).div(epoch.fiduRequested)
     const fiduLiquidated = epoch.fiduLiquidated.times(withdrawalRequest.fiduRequested).div(epoch.fiduRequested)
-    withdrawalRequest.usdcWithdrawable = withdrawalRequest.usdcWithdrawable.plus(proRataUsdc)
     withdrawalRequest.fiduRequested = withdrawalRequest.fiduRequested.minus(fiduLiquidated)
     withdrawalRequest.save()
 

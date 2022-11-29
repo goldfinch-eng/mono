@@ -108,14 +108,6 @@ type Viewer {
   gfiGrants: [GfiGrant!]!
   claimableMembershipRewards: CryptoAmount
   accruedMembershipRewardsThisEpoch: CryptoAmount
-  withdrawalStatus: WithdrawalStatus
-}
-
-# TODO remove this
-type WithdrawalStatus {
-  usdcWithdrawable: CryptoAmount
-  fiduRequested: CryptoAmount
-  withdrawalToken: BigInt
 }
 
 type BlockInfo {
@@ -139,6 +131,7 @@ extend type Query {
 
 extend type SeniorPoolWithdrawalRequest {
   tokenId: BigInt!
+  usdcWithdrawable: BigInt!
 }
 
 extend type SeniorPoolStatus {
