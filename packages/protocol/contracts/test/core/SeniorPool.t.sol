@@ -3,7 +3,6 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";

@@ -320,13 +320,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
     epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
-
-    // If an epoch can't be finalized, meaning that there isn't BOTH USDC and
-    // FIDU available to liquidate then the epoch needs to be extended. This
-    // means that the endsAt time is updated to the _next_ epoch endTime.
-    // Additionally, an epoch cannot be finalized if the FIDU amount in the
-    // epoch would result in 0 USDC being allocated to it. There's no point in
-    // liquidating the epoch because of this.
+    /*
+    If usdc available is zero for an epoch, or the epoch's usdc equivalent
+    of its fidu requested is zero, then the epoch is extended instead of finalized.
+    Why? Because if usdc available is zero then we can't liquidate any fidu,
+    and if the fidu requested is zero (in usdc terms) then there's no need to
+    allocate usdc. 
+    */
     if (_usdcAvailable == 0 || usdcNeededToFullyLiquidate == 0) {
       // When we extend the epoch, we need to add an additional epoch to the end so that
       // the next time a checkpoint happens it won't immediately finalize the epoch
@@ -378,10 +378,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
         just zero out the request so when they claim they don't need to
         unnecessarily iterate through many epochs where they receive nothing.
 
-        At the epoch level, the sum of the withdraw request that are "dust" (would
-        result in 0 usdc) may result in a non zero usdc allocation at the epoch
-        level. USDC will be allocated to these "dusty" requests, but the very
-        small amount of usdc will not be claimable by anyone.
+        The sum of the withdraw request that are "dust" (would result in 0 usdc)
+        may result in a non zero usdc allocation at the epoch level. USDC will
+        be allocated to these "dusty" requests, but the very small amount of
+        usdc will not be claimable by anyone.
         */
         uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(epoch.fiduLiquidated);
         bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(wr.fiduRequested, epochSharePrice) == 0;
