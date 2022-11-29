@@ -81,6 +81,7 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
+  WithdrawalRequestTokenInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
@@ -205,11 +206,14 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
   await migrate290.main()
 
+  const requestTokens = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
+
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
   return {
     poolTokens,
     seniorPool,
+    requestTokens,
     seniorPoolStrategy,
     usdc,
     fidu,
@@ -249,6 +253,7 @@ describe("mainnet forking tests", async function () {
     seniorPool: SeniorPoolInstance,
     seniorPoolStrategy,
     go: GoInstance,
+    requestTokens: WithdrawalRequestTokenInstance,
     stakingRewards: StakingRewardsInstance,
     curvePool: ICurveLPInstance,
     backerRewards: BackerRewardsInstance,
@@ -318,6 +323,7 @@ describe("mainnet forking tests", async function () {
       network,
       ethersUniqueIdentity,
       poolTokens,
+      requestTokens,
     } = await setupTest())
     reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
@@ -495,8 +501,12 @@ describe("mainnet forking tests", async function () {
             () => usdc.balanceOf(seniorPool.address),
             {byCloseTo: userUsdc.add(reserveUsdc).neg(), threshold: HALF_CENT},
           ],
-          [async () => (await seniorPool.withdrawalRequest(requestId + 1)).usdcWithdrawable, {to: ZERO}],
         ])
+
+        expect(
+          (await requestTokens.balanceOf(stakedFiduHolders[requestId]!.address)).eq(new BN("0")) ||
+            (await seniorPool.withdrawalRequest(requestId)).usdcWithdrawable.eq(new BN("0"))
+        ).to.be.true
       }
     })
 
