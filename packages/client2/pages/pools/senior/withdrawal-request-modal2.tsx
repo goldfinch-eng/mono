@@ -278,6 +278,31 @@ function ConfirmStep({
   };
   return (
     <FormStep rhfMethods={rhfMethods} onSubmit={onSubmit} requireScrolled>
+      <div className="mb-8 border-tidepool-200 bg-tidepool-100 p-3 text-xs text-tidepool-600">
+        <p className="mb-2">
+          Withdrawal requests are processed every two weeks, and it may take
+          multiple distribution periods to fulfill the request. Additionally:
+        </p>
+        <ul className="list-disc space-y-2 pl-6">
+          <li>
+            No Staking or Membership rewards are earned on FIDU that is
+            requested for withdraw
+          </li>
+          <li>
+            A cancellation fee of {formatPercent(cancellationFee)} is assessed
+            on withdraws that are cancelled before they are completely filled
+          </li>
+          <li>
+            <Link
+              className="text-tidepool-800"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
+              openInNewTab
+            >
+              Read more about Senior Pool Liquidity
+            </Link>
+          </li>
+        </ul>
+      </div>
       {existingWithdrawalRequest ? (
         <div className="mb-8">
           <div className="mb-8">
@@ -353,26 +378,15 @@ function ConfirmStep({
           </div>
         </div>
       </div>
-      <div className="mb-6 border-tidepool-200 bg-tidepool-100 p-3 text-xs text-tidepool-600">
-        Withdrawal requests are processed every two weeks, and it may take
-        multiple distribution periods to fulfill the request.{" "}
-        <Link
-          className="text-tidepool-800"
-          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
-          openInNewTab
-        >
-          Read more
-        </Link>
-      </div>
       <div className="mb-8 text-sm text-sand-400">
-        <p className="mb-1">
+        <p className="mb-2">
           By clicking &ldquo;Submit&rdquo; below, I hereby agree to the{" "}
           <Link href="/senior-pool-agreement-interstitial">
             Senior Pool Agreement
-          </Link>
-          , including:
+          </Link>{" "}
+          and <Link href="/terms">Terms of Service</Link>, including:
         </p>
-        <ul className="list-disc pl-6">
+        <ul className="list-disc space-y-2 pl-6">
           <li>
             Once a request has been submitted, it can only be increased or
             cancelled, not reduced
