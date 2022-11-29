@@ -23,14 +23,14 @@ import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 import {
-  WithdrawalCancelModal as WithdrawalCancelModal2,
+  WithdrawalCancelModal,
   WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS,
-} from "./withdrawal-cancel-modal2";
-import { WithdrawalHistoryModal as WithdrawalHistoryModal2 } from "./withdrawal-history-modal2";
+} from "./withdrawal-cancel-modal";
+import { WithdrawalHistoryModal } from "./withdrawal-history-modal";
 import {
-  WithdrawalRequestModal as WithdrawalRequestModal2,
+  WithdrawalRequestModal,
   WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS,
-} from "./withdrawal-request-modal2";
+} from "./withdrawal-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -260,7 +260,7 @@ export function SeniorPoolWithdrawalPanel({
         ) : null}
       </div>
 
-      <WithdrawalRequestModal2
+      <WithdrawalRequestModal
         isOpen={isWithdrawalModal2Open}
         onClose={() => setIsWithdrawalModal2Open(false)}
         sharePrice={seniorPoolSharePrice}
@@ -278,14 +278,14 @@ export function SeniorPoolWithdrawalPanel({
         nextDistributionTimestamp={epochEndsAt}
       />
       {existingWithdrawalRequest ? (
-        <WithdrawalCancelModal2
+        <WithdrawalCancelModal
           isOpen={isCancelModal2Open}
           onClose={() => setIsCancelModal2Open(false)}
           cancellationFee={cancellationFee}
           existingWithdrawalRequest={existingWithdrawalRequest}
         />
       ) : null}
-      <WithdrawalHistoryModal2
+      <WithdrawalHistoryModal
         isOpen={isHistoryModal2Open}
         onClose={() => setIsHistoryModal2Open(false)}
       />
