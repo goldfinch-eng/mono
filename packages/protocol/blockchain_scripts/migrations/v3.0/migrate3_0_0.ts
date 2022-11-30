@@ -11,12 +11,12 @@ export async function main() {
   const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
 
   const deployEffects = await getDeployEffects({
-    title: "v2.9 upgrade",
+    title: "v3.0 upgrade",
     description: "SeniorPool Epoch Withdrawals",
   })
 
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["SeniorPool", "StakingRewards", "Zapper", "Fidu"],
+    contracts: ["SeniorPool", "StakingRewards", "Zapper"],
   })
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 

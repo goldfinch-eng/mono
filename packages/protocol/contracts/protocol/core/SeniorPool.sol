@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/SafeCast.sol";
 import {SignedSafeMath} from "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
@@ -34,6 +35,8 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   using SignedSafeMath for int256;
   using Math for uint256;
+  using SafeCast for uint256;
+  using SafeCast for int256;
   using ConfigHelper for GoldfinchConfig;
   using SafeERC20 for IFidu;
   using SafeERC20 for IERC20withDec;
@@ -101,7 +104,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // When we're updating the epoch duration we need to update the head epoch endsAt
     // time to be the new epoch duration
     if (headEpoch.endsAt > block.timestamp) {
-      headEpoch.endsAt = headEpoch.endsAt.sub(_epochDuration).add(newEpochDuration);
+      /*
+      This codepath happens when we successfully finalize the previous epoch. This results
+      in a timestamp in the future. In this case we need to account for no-op epochs that
+      would be created by setting the duration to a value less than the previous epoch.
+      */
+
+      uint256 previousEpochEndsAt = headEpoch.endsAt.sub(_epochDuration);
+      _epochDuration = newEpochDuration;
+      headEpoch.endsAt = _mostRecentEndsAtAfter(previousEpochEndsAt).add(newEpochDuration);
+      assert(headEpoch.endsAt > block.timestamp);
     } else {
       headEpoch.endsAt = _mostRecentEndsAtAfter(headEpoch.endsAt).add(newEpochDuration);
     }
@@ -213,7 +225,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
     config.getFidu().safeTransferFrom(msg.sender, address(this), fiduAmount);
 
-    emit WithdrawalRequested(_checkpointedEpochId, msg.sender, fiduAmount);
+    emit WithdrawalRequested(_checkpointedEpochId, tokenId, msg.sender, fiduAmount);
     return tokenId;
   }
 
@@ -226,8 +238,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
 
     (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
+    require(request.fiduRequested != 0, "Cant cancel");
 
     uint256 reserveBps = config.getSeniorPoolWithdrawalCancelationFeeInBps();
+    require(reserveBps <= 10_000, "Invalid Bps");
     uint256 reserveFidu = request.fiduRequested.mul(reserveBps).div(10_000);
     uint256 userFidu = request.fiduRequested.sub(reserveFidu);
 
@@ -244,7 +258,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     config.getFidu().safeTransfer(reserve, reserveFidu);
 
     emit ReserveSharesCollected(msg.sender, reserve, reserveFidu);
-    emit WithdrawalCanceled(_checkpointedEpochId, msg.sender, userFidu, reserveFidu);
+    emit WithdrawalCanceled(_checkpointedEpochId, tokenId, msg.sender, userFidu, reserveFidu);
+    return userFidu;
   }
 
   /**
@@ -495,7 +510,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
     } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
+      uint256 oldEndsAt = epoch.endsAt;
       epoch.endsAt = checkpointedEpoch.endsAt;
+      emit EpochExtended(_checkpointedEpochId, epoch.endsAt, oldEndsAt);
       return epoch;
     } else {
       // copy checkpointed data
@@ -664,14 +681,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       return;
     }
 
-    int256 writedownDelta = int256(prevWritedownAmount).sub(int256(writedownAmount));
+    int256 writedownDelta = prevWritedownAmount.toInt256().sub(writedownAmount.toInt256());
     writedownsByPoolToken[tokenId] = writedownAmount;
     _distributeLosses(writedownDelta);
     if (writedownDelta > 0) {
       // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
-      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
+      totalWritedowns = totalWritedowns.sub(writedownDelta.toUint256());
     } else {
-      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
+      totalWritedowns = totalWritedowns.add((writedownDelta * -1).toUint256());
     }
     emit PrincipalWrittenDown(address(pool), writedownDelta);
   }
@@ -760,11 +777,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function _distributeLosses(int256 writedownDelta) internal {
     _applyEpochCheckpoints();
     if (writedownDelta > 0) {
-      uint256 delta = _usdcToSharePrice(uint256(writedownDelta));
+      uint256 delta = _usdcToSharePrice(writedownDelta.toUint256());
       sharePrice = sharePrice.add(delta);
     } else {
       // If delta is negative, convert to positive uint, and sub from sharePrice
-      uint256 delta = _usdcToSharePrice(uint256(writedownDelta * -1));
+      uint256 delta = _usdcToSharePrice((writedownDelta * -1).toUint256());
       sharePrice = sharePrice.sub(delta);
     }
   }

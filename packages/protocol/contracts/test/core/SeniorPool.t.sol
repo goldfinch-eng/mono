@@ -11,6 +11,7 @@ import {TestConstants} from "./TestConstants.t.sol";
 import {TestTranchedPool} from "../TestTranchedPool.sol";
 import {TestSeniorPoolCaller} from "../../test/TestSeniorPoolCaller.sol";
 import {SeniorPoolBaseTest} from "./BaseSeniorPool.t.sol";
+import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolTest is SeniorPoolBaseTest {
   /*================================================================================
@@ -624,8 +625,8 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     sp.deposit(depositAmount);
     uint256 shares = sp.getNumShares(requestAmount);
 
-    vm.expectEmit(true, true, false, true, address(sp));
-    emit WithdrawalRequested(1, user, shares);
+    vm.expectEmit(true, true, true, true, address(sp));
+    emit WithdrawalRequested(1, 1, user, shares);
     assertZero(requestTokens.balanceOf(user));
     uint256 spFiduBefore = fidu.balanceOf(address(sp));
     uint256 userFiduBefore = fidu.balanceOf(user);
@@ -1187,6 +1188,65 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertZero(requestTokens.balanceOf(user));
   }
 
+  function testCancelWithdrawalRequestRevertsOnAFullyLiquidatedRequest(address user, uint256 amount)
+    public
+    onlyAllowListed(user)
+    goListed(user)
+    tokenApproved(user)
+  {
+    amount = bound(amount, 1, 100_000_000_000e6);
+    fundAddress(user, amount);
+    uint256 receivedShares = depositToSpFrom(user, amount);
+    uint256 tokenId = requestWithdrawalFrom(user, receivedShares);
+
+    uint256 epochEndTime = sp.currentEpoch().endsAt;
+    vm.warp(epochEndTime);
+
+    ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
+
+    assertZero(wr.fiduRequested);
+    assertGt(wr.usdcWithdrawable, 0);
+
+    vm.expectRevert("Cant cancel");
+    cancelWithdrawalRequestFrom(user, tokenId);
+  }
+
+  function testCancelWithdrawalRequestCannotBeCalledMoreThanOnce(
+    address user,
+    uint256 amount,
+    uint256 investAmount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
+    amount = bound(amount, 1e6, 100_000_000e6);
+    fundAddress(user, amount);
+    uint256 receivedShares = depositToSpFrom(user, amount);
+    uint256 tokenId = requestWithdrawalFrom(user, receivedShares);
+
+    // Invest in a tranched pool to suck up liquidity
+    (TestTranchedPool tp, ) = defaultTp();
+    // this should invest half of the users investment
+    depositToTpFrom(GF_OWNER, (amount / 2) / 4, tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
+    uint256 epochEndTime = sp.currentEpoch().endsAt;
+    vm.warp(epochEndTime);
+
+    uint256 expectedRemainingShares = receivedShares / 2;
+    uint256 expectedCancellationFee = cancelationFee(expectedRemainingShares);
+    uint256 expectedReceivedShares = expectedRemainingShares - expectedCancellationFee;
+    uint256 sharesFromCancel = cancelWithdrawalRequestFrom(user, tokenId);
+
+    assertApproxEqAbs(sharesFromCancel, expectedReceivedShares, 1e18);
+
+    {
+      ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
+      assertZero(wr.fiduRequested);
+    }
+
+    vm.expectRevert("Cant cancel");
+    cancelWithdrawalRequestFrom(user, tokenId);
+  }
+
   function testCancelWithdrawalRequestDoesntBurnNftWhenUsdcWithdrawableGtZero(address user)
     public
     onlyAllowListed(user)
@@ -1199,11 +1259,18 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, sp.getNumShares(amount));
     assertEq(requestTokens.balanceOf(user), tokenId);
 
+    // Invest in a tranched pool to suck up liquidity so that there is
+    // _some_ fidu left in the withdraw request so it can be cancelled
+    (TestTranchedPool tp, ) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(1), tp);
+    lockJuniorCap(tp);
+    sp.invest(tp);
+
     vm.warp(block.timestamp + sp.epochDuration());
 
     cancelWithdrawalRequestFrom(user, tokenId);
     assertEq(requestTokens.balanceOf(user), 1);
-    assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, usdcVal(400));
+    assertGt(sp.withdrawalRequest(tokenId).usdcWithdrawable, 0);
   }
 
   function testCancelWithdrawalRequestEmitsReserveSharesCollected(address user)
@@ -1259,11 +1326,11 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     vm.warp(block.timestamp + sp.epochDuration());
 
-    vm.expectEmit(true, true, false, true, address(sp));
+    vm.expectEmit(true, true, true, true, address(sp));
     uint256 canceledShares = sp.getNumShares(usdcVal(300));
     uint256 treasuryShares = cancelationFee(canceledShares);
     uint256 userShares = canceledShares - treasuryShares;
-    emit WithdrawalCanceled(2, user, userShares, treasuryShares);
+    emit WithdrawalCanceled(2, tokenId, user, userShares, treasuryShares);
 
     cancelWithdrawalRequestFrom(user, tokenId);
   }
@@ -1367,6 +1434,18 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     // Request info is empty
     vm.expectRevert("ERC721: owner query for nonexistent token");
     sp.withdrawalRequest(2);
+  }
+
+  function testCancelWithdrawalRequestRevertsForInvalidBps(uint256 bps) public impersonating(GF_OWNER) {
+    vm.assume(bps > 10_000);
+
+    gfConfig.setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps), bps);
+
+    uint256 shares = sp.deposit(usdcVal(1));
+    uint256 requestId = sp.requestWithdrawal(shares);
+
+    vm.expectRevert("Invalid Bps");
+    sp.cancelWithdrawalRequest(requestId);
   }
 
   /*================================================================================
@@ -1895,14 +1974,9 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     claimWithdrawalRequestFrom(user1, token1);
     uint256 gasUsedApprox = gasBeforeClaim - gasleft();
 
-    /*
-    At current gas price (Nov 27 2022)
-    * Gas consumed is 128442
-    * Gas fee is 13.38 gwei
-    * ETH is $1177.03
-    * Cost is 13.38 gwei * 128442 = 0.002204 ETH = $2.59
-    */
-    assertTrue(gasUsedApprox < 130_000);
+    // Assert gasUsed is under the actual gas used plus a decent amount of wriggle room.
+    // Exceeding the limit indicates a siginifacnt gas addition
+    assertTrue(gasUsedApprox < 200_000);
   }
 
   /*================================================================================
@@ -2217,6 +2291,29 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     _startImpersonation(GF_OWNER);
     sp.setEpochDuration(5 weeks);
     assertEq(sp.epochAt(1).endsAt, initialStartsAt + 9 weeks);
+  }
+
+  function testSetEpochDurationCheckpointsCorrectlyWhenNewDurationLtOldDuration(
+    uint256 numberOfNoopEpochs,
+    uint256 newEpochDuration,
+    uint256 offset
+  ) public {
+    vm.assume(newEpochDuration > 0);
+    vm.assume(numberOfNoopEpochs < 100_000_000);
+    vm.assume(offset < sp.epochDuration());
+    vm.assume(newEpochDuration < sp.epochDuration());
+    uint256 initialEndsAt = sp.epochAt(1).endsAt;
+    uint256 endOfEpochsWithPreviousDuration = initialEndsAt + sp.epochDuration() * numberOfNoopEpochs;
+    vm.warp(endOfEpochsWithPreviousDuration + offset);
+
+    _startImpersonation(GF_OWNER);
+    sp.setEpochDuration(newEpochDuration);
+
+    uint256 nextEpochEndsAt = sp.currentEpoch().endsAt;
+
+    // The new epoch
+    assertGt(nextEpochEndsAt, block.timestamp);
+    assertZero((nextEpochEndsAt - endOfEpochsWithPreviousDuration) % newEpochDuration);
   }
 
   function testSetEpochDurationCheckpointsElapsedEpochsCorrectly() public {
@@ -2657,6 +2754,29 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     wr = sp.withdrawalRequest(tokenId);
     assertGt(wr.usdcWithdrawable, 0);
+  }
+
+  function testSeniorPoolEmitsAnEpochExtendedEventAfterANopEpoch(
+    address user,
+    // number of epochs that have passed
+    uint256 nNoopEpochs,
+    // Add a random offset within the epoch
+    uint256 subEpochOffset
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
+    nNoopEpochs = bound(nNoopEpochs, 1, 100_000_000);
+    subEpochOffset = bound(subEpochOffset, 0, sp.epochDuration() - 1);
+    uint256 depositAmount = usdcVal(1);
+    fundAddress(user, depositAmount);
+
+    uint256 epochDuration = sp.epochDuration();
+    uint256 epochEndsAt = sp.currentEpoch().endsAt;
+    uint256 newEpochStart = epochEndsAt + nNoopEpochs * epochDuration;
+    uint256 expectedNewEndsAt = newEpochStart + epochDuration;
+    vm.warp(newEpochStart + subEpochOffset);
+
+    vm.expectEmit(true, false, false, true);
+    emit EpochExtended(1, expectedNewEndsAt, epochEndsAt);
+    depositToSpFrom(user, depositAmount);
   }
 
   // TODO - Uncomment these tests when the Go changes are merged - https://github.com/warbler-labs/mono/pull/800

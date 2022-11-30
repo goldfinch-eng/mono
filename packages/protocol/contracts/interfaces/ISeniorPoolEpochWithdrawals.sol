@@ -82,7 +82,12 @@ interface ISeniorPoolEpochWithdrawals {
   event EpochDurationChanged(uint256 newDuration);
 
   /// @notice Emitted when a new withdraw request has been created
-  event WithdrawalRequested(uint256 indexed epochId, address indexed operator, uint256 fiduRequested);
+  event WithdrawalRequested(
+    uint256 indexed epochId,
+    uint256 indexed tokenId,
+    address indexed operator,
+    uint256 fiduRequested
+  );
 
   /// @notice Emitted when a user adds to their existing withdraw request
   /// @param epochId epoch that the withdraw was added to
@@ -99,6 +104,7 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice Emitted when a withdraw request has been canceled
   event WithdrawalCanceled(
     uint256 indexed epochId,
+    uint256 indexed tokenId,
     address indexed operator,
     uint256 fiduCanceled,
     uint256 reserveFidu
@@ -117,4 +123,10 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 usdcAllocated,
     uint256 fiduLiquidated
   );
+
+  /// @notice Emitted when an epoch could not be finalized and is extended instead
+  /// @param epochId id of epoch that was extended
+  /// @param newEndTime new epoch end time
+  /// @param oldEndTime previous epoch end time
+  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
 }

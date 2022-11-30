@@ -213,8 +213,8 @@ contract SeniorPoolBaseTest is BaseTest {
     return sp.requestWithdrawal(fiduAmount);
   }
 
-  function cancelWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) {
-    sp.cancelWithdrawalRequest(tokenId);
+  function cancelWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
+    return sp.cancelWithdrawalRequest(tokenId);
   }
 
   function claimWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
@@ -343,9 +343,15 @@ contract SeniorPoolBaseTest is BaseTest {
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
-  event WithdrawalRequested(uint256 indexed epochId, address indexed operator, uint256 fiduRequested);
+  event WithdrawalRequested(
+    uint256 indexed epochId,
+    uint256 indexed tokenId,
+    address indexed operator,
+    uint256 fiduRequested
+  );
   event WithdrawalCanceled(
     uint256 indexed epochId,
+    uint256 indexed tokenId,
     address indexed operator,
     uint256 fiduCanceled,
     uint256 reserveFidu
@@ -356,4 +362,5 @@ contract SeniorPoolBaseTest is BaseTest {
   event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
+  event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
 }

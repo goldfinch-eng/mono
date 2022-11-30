@@ -106,6 +106,10 @@ function getNumShares(usdcAmount: BN, sharePrice: BN) {
   return usdcToFidu(usdcAmount).mul(FIDU_DECIMALS).div(sharePrice)
 }
 
+function usdcFromShares(fiduAmount: BN, sharePrice: BN) {
+  return fiduToUSDC(fiduAmount.mul(sharePrice)).div(FIDU_DECIMALS)
+}
+
 const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
   deployments: DeploymentsExtension,
   contractName: string
@@ -763,6 +767,7 @@ export {
   gfiVal,
   usdcVal,
   fiduVal,
+  usdcFromShares,
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,
