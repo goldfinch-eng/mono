@@ -32,7 +32,7 @@ export async function main() {
       ),
     ],
   })
-  await deployWithdrawalRequestToken(deployer, {config: gfConfig})
+  await deployWithdrawalRequestToken(deployer, {config: gfConfig, deployEffects})
 
   await deployEffects.executeDeferred()
   return {}
