@@ -73,9 +73,9 @@ export function SeniorPoolWithdrawalPanel({
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
 
-  const [isWithdrawalModal2Open, setIsWithdrawalModal2Open] = useState(false);
-  const [isCancelModal2Open, setIsCancelModal2Open] = useState(false);
-  const [isHistoryModal2Open, setIsHistoryModal2Open] = useState(false);
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const rhfMethodsForWithdrawingUsdc = useForm();
   const totalUserFidu = sumTotalShares(
@@ -183,7 +183,7 @@ export function SeniorPoolWithdrawalPanel({
           <Button
             colorScheme="secondary"
             size="xl"
-            onClick={() => setIsWithdrawalModal2Open(true)}
+            onClick={() => setIsWithdrawalModalOpen(true)}
             className="mb-2 block w-full"
           >
             Request withdrawal
@@ -229,7 +229,7 @@ export function SeniorPoolWithdrawalPanel({
                 {format(epochEndsAt * 1000, "MMM d, y")}
               </div>
               <button
-                onClick={() => setIsHistoryModal2Open(true)}
+                onClick={() => setIsHistoryModalOpen(true)}
                 className="text-xs text-white underline"
               >
                 View request history
@@ -242,14 +242,14 @@ export function SeniorPoolWithdrawalPanel({
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
-                  onClick={() => setIsWithdrawalModal2Open(true)}
+                  onClick={() => setIsWithdrawalModalOpen(true)}
                 >
                   Increase
                 </Button>
               </div>
               <div className="flex-1">
                 <Button
-                  onClick={() => setIsCancelModal2Open(true)}
+                  onClick={() => setIsCancelModalOpen(true)}
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
@@ -264,8 +264,8 @@ export function SeniorPoolWithdrawalPanel({
       </div>
 
       <WithdrawalRequestModal
-        isOpen={isWithdrawalModal2Open}
-        onClose={() => setIsWithdrawalModal2Open(false)}
+        isOpen={isWithdrawalModalOpen}
+        onClose={() => setIsWithdrawalModalOpen(false)}
         sharePrice={seniorPoolSharePrice}
         existingWithdrawalRequest={existingWithdrawalRequest}
         walletFidu={fiduBalance}
@@ -282,15 +282,15 @@ export function SeniorPoolWithdrawalPanel({
       />
       {existingWithdrawalRequest ? (
         <WithdrawalCancelModal
-          isOpen={isCancelModal2Open}
-          onClose={() => setIsCancelModal2Open(false)}
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
           cancellationFee={cancellationFee}
           existingWithdrawalRequest={existingWithdrawalRequest}
         />
       ) : null}
       <WithdrawalHistoryModal
-        isOpen={isHistoryModal2Open}
-        onClose={() => setIsHistoryModal2Open(false)}
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
       />
     </>
   );
