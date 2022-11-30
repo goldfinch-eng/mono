@@ -1,7 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
@@ -271,15 +271,16 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         amount: tranchedPool.juniorDeposited,
       }
     : undefined;
+
   const seniorSupply =
     backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
-          // TODO: Zadra - estimatedLeverageRatio is now a FixedNumber, wat do?
-          amount: backerSupply.amount.mul(
-            BigNumber.from(
-              tranchedPool.estimatedLeverageRatio.toString().split(".")[0]
-            )
+          amount: utils.parseUnits(
+            FixedNumber.from(backerSupply.amount)
+              .mulUnsafe(tranchedPool.estimatedLeverageRatio)
+              .toString(),
+            0
           ),
         }
       : undefined;
