@@ -1,5 +1,4 @@
 # MembershipLedger
-Auditor: [Dalton](https://github.com/daltyboy11)
 
 MembershipLedger.sol audit
 
@@ -46,3 +45,29 @@ they don't appear to be harmful to the protocol.
     ```
   * **Suggested Fix**: Checkpoint `totalAmounts` when `alpha` is set.
   * **Commit**: [9608103](https://github.com/warbler-labs/mono/pull/1069/commits/96081036fe09fb62556741a9853a299219ed7fb5)
+
+# Appendix
+Auditor's notes. Not intended to be understood by readers but kept for reference/completeness
+
+## External Functions
+
+### `initialize`
+- [x] uses `initializer` modifier
+- [x] calls dependency intializers
+
+### `resetRewards`
+- [x] onlyOperator
+Resets allocated rewards
+
+### `allocateRewardsTo`
+- [x] onlyOperator
+
+### `setAlpha`
+- [x] onlyAdmin
+- [x] validates input
+
+## External View functions
+
+### `getPendingRewardsFor`
+
+simple view function

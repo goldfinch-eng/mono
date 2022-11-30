@@ -1,4 +1,38 @@
-# CapitalLedger
+# Capital Ledger Audit
+
+CapitalLedger.sol audit
+
+# Summary
+
+* _tokenByIndex_ off-by-one error
+  * **Severity**:  🟡 Medium
+  * **Description**: The first valid position id is 1. The token at position 0 should be 1 and the token at position i should be i + 1.
+  * **Suggested Fix**: We should return `index + 1` instead of `index`
+  * **Commit**: [5495ee0](https://github.com/warbler-labs/mono/pull/1069/commits/5495ee01daa5e24b86a32a3be2dea71c5b83db61)
+
+* Methods to fetch a position should revert if a position doesn't exist
+  * **Severity**: 🟢 Informational
+  * **Description**: It would make sense for the method to revert entirely
+    if a position doesn't exist. That way the caller doesn't need to validate
+    that a position actually exists.
+  * **Suggested Fix**: Add an internal helper method like this
+    ```solidity
+    function _getPosition(uint positionId) internal returns (Position storage) {
+      Position storage p = positions[positionId];
+
+      bool positionExists = /* do some validation here */;
+      if (!positionExists  {
+        revert PositionDoesNotExist();
+      }
+
+      return p;
+    }
+    ```
+    and use it throughout the contract
+  * **Commit**: [5495ee0](https://github.com/warbler-labs/mono/pull/1069/commits/5495ee01daa5e24b86a32a3be2dea71c5b83db61)
+
+# Appendix
+Auditor's notes. Not intended to be understood by readers but kept for reference.
 
 ## External Functions
 

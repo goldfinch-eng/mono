@@ -1,5 +1,4 @@
 # MembershipVault
-Auditor: [Dalton](https://github.com/daltyboy11)
 
 MembershipVault.sol audit
 
@@ -103,3 +102,20 @@ Auditor's notes. Not intended to be understood by readers but kept for reference
 - ❓ _positionOwnedBy(address owner)_
   - ❓ We should either account for non-finalized epochs for the position or conspicuously call
        out in the interface that it does not account for non-finalized epochs.
+
+## Functions
+
+### `adjustHoldings`
+
+* Only callable by the membership director
+
+Set the amount eligible for the current epoch as well as the amount eligible for the next epoch
+
+
+### `_checkpoint`
+
+* carries forward the total balances into future epochs from the 
+  epoch following the last checkpointed epoch
+* promotes a users nextBalance to their elligible balance and updates the last
+  epoch checkpointed cursor
+  

@@ -1,11 +1,10 @@
 # UserEpochTotals Audit
 Auditor: [Dalton](https://github.com/daltyboy11)
 
-UserEpochTotals.sol audit
+UserEpochTotals.sol audit.
 
 # Summary
-
-I have a couple of nits but they're by no means launch blockers.
+We have a couple of nits but they're by no means launch blockers.
 
 * _getTotals_ argument could be `memory` instead of `storage`.
   * **Severity**: 🟢 Informational
@@ -175,3 +174,23 @@ as parameters.
 * ⚪ Speed bumps, circuit breakers, and monitoring
 
 * ⚪ Protocol integrations
+
+## `UserEpochTotal`
+
+a struct that wraps logic for checkpoint how much a user has of something in
+that's elligible in a given epoch. When a user first deposits the amount will be
+count towards the total amount, but not the "elligible" amount. When an epoch is
+crossed over the total amount becomes the ellible amount.
+
+
+### `recordIncrease`
+- [x] checkpoints
+* Increases the amount and checkpoints if we crossed an epoch
+
+### `recordDecrease`
+- [x] checkpoints
+Looks good
+
+### `getTotals`
+- [x] checkpoints
+* Returns the totals

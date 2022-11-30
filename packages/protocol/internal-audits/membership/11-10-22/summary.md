@@ -44,16 +44,25 @@ severity issues.
 
 | **Contract**               | 🛑 | 🟡 | 🟢  | **Total** |
 |----------------------------|---|---|----|-----------|
-| **All**                    | 0 | 8 | 13 | 21        |
-| CapitalLedger.sol          | 0 | 1 | 0  | 1         |
+| **All**                    | 0 | 9 | 18 | 27        |
+| AccessControl.sol          | 0 | 0 | 0  | 0         |
+| Base.sol                   | 0 | 0 | 1  | 1         |
+| CapitalAssets.sol          | 0 | 0 | 0  | 0         |
+| CapitalLedger.sol          | 0 | 1 | 1  | 2         |
+| Context.sol                | 0 | 0 | 0  | 0         |
 | Epochs.sol                 | 0 | 0 | 0  | 0         |
 | ERC20Splitter.sol          | 0 | 0 | 4  | 4         |
-| GFILedger.sol              | 0 | 2 | 1  | 3         |
+| GFILedger.sol              | 0 | 2 | 2  | 4         |
 | MembershipCollector.sol    | 0 | 0 | 1  | 1         |
 | MembershipDirector.sol     | 0 | 0 | 1  | 1         |
 | MembershipLedger.sol       | 0 | 0 | 2  | 2         |
 | MembershipOrchestrator.sol | 0 | 2 | 0  | 2         |
+| MembershipScores           | 0 | 0 | 0  | 0         |
 | MembershipVault.sol        | 0 | 3 | 2  | 5         |
+| PoolTokenAsset.sol         | 0 | 1 | 0  | 1         |
+| Router.sol                 | 0 | 0 | 1  | 1         |
+| Routing.sol                | 0 | 0 | 0  | 0         |
+| StakedFiduAsset.sol        | 0 | 0 | 1  | 1         |
 | UserEpochTotals.sol        | 0 | 0 | 2  | 2         |
 
 ### General Comments

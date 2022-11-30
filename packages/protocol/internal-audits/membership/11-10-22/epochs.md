@@ -1,13 +1,13 @@
 # Epochs.sol audit
-Auditor: [Dalton](https://github.com/daltyboy11)
 
-Epochs.sol Audit
+Epochs.sol Audit.
+
+This is a utility library for converting from timestamps to epochs and vice versa.
+The length of an epoch is completely unchangeable. 
 
 # Summary
 
-I had two approaches and didn't find any issues:
-1. Analyze the library's functions in isolation
-2. Analyze the callsites that use the library's functions
+No issues found
 
 # Appendix
 Auditor's notes. Not intended to be understood by readers but kept for reference/completeness
@@ -211,3 +211,28 @@ Auditor's notes. Not intended to be understood by readers but kept for reference
 * ⚪ Speed bumps, circuit breakers, and monitoring
 
 * ⚪ Protocol integrations
+
+## External view functions
+
+### `fromSeconds`
+
+Correct.
+
+### `current`
+
+Correct.
+### `currentEpochStartTimestamp`
+
+Correct.
+
+### `previous`
+
+Correct.
+
+### `next`
+
+Correct.
+
+### `startOf`
+
+Correct.
