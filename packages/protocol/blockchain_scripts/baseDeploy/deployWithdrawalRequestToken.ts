@@ -8,7 +8,7 @@ const logger = console.log
 
 const CONTRACT_NAME = "WithdrawalRequestToken"
 
-export async function deployWithdrawalRequestToken(deployer: ContractDeployer, {config}: DeployOpts) {
+export async function deployWithdrawalRequestToken(deployer: ContractDeployer, {config, deployEffects}: DeployOpts) {
   const {gf_deployer} = await deployer.getNamedAccounts()
   const protocolOwner = await getProtocolOwner()
   assertIsString(gf_deployer)
@@ -27,7 +27,15 @@ export async function deployWithdrawalRequestToken(deployer: ContractDeployer, {
     },
   })
 
-  await updateConfig(config, "address", CONFIG_KEYS.WithdrawalRequestToken, withdrawalRequestToken.address, {logger})
+  if (deployEffects !== undefined) {
+    await deployEffects.add({
+      deferred: [
+        await config.populateTransaction.setAddress(CONFIG_KEYS.WithdrawalRequestToken, withdrawalRequestToken.address),
+      ],
+    })
+  } else {
+    await updateConfig(config, "address", CONFIG_KEYS.WithdrawalRequestToken, withdrawalRequestToken.address, {logger})
+  }
 
   return withdrawalRequestToken
 }
