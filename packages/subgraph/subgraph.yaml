@@ -66,7 +66,7 @@ dataSources:
     source:
       address: "0xc84D4a45d1d7EB307BBDeA94b282bEE9892bd523"
       abi: WithdrawalRequestToken
-      startBlock: 1
+      startBlock: 16079242
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
