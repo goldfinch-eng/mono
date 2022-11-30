@@ -93,7 +93,7 @@ export function WithdrawalHistoryModal({
       if (index === 0 || current.action === "initial") {
         return prev.concat(current);
       }
-      const prevRow = prev.slice(-1)[0];
+      const prevRow: Row = prev.slice(-1)[0];
       if (current.action === "cancel") {
         return prev.concat({
           ...current,
@@ -128,7 +128,7 @@ export function WithdrawalHistoryModal({
       ) : !data || loading ? (
         <ShimmerLines lines={5} />
       ) : (
-        <table className="w-full border-collapse text-sm">
+        <table className="mb-6 w-full border-collapse text-sm">
           <thead>
             <tr className="text-left text-sand-500">
               <TableHeading>Action</TableHeading>
