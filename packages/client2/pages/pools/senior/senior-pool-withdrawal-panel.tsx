@@ -73,7 +73,8 @@ export function SeniorPoolWithdrawalPanel({
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
 
-  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isIncreaseModalOpen, setIsIncreaseModalOpen] = useState(false); // This should be separate from the modal for new requests because otherwise the New Request modal will become the increase modal as it closes (existingWithdrawalRequest becomes defined)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
@@ -183,7 +184,7 @@ export function SeniorPoolWithdrawalPanel({
           <Button
             colorScheme="secondary"
             size="xl"
-            onClick={() => setIsWithdrawalModalOpen(true)}
+            onClick={() => setIsRequestModalOpen(true)}
             className="mb-2 block w-full"
           >
             Request withdrawal
@@ -242,7 +243,7 @@ export function SeniorPoolWithdrawalPanel({
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
-                  onClick={() => setIsWithdrawalModalOpen(true)}
+                  onClick={() => setIsIncreaseModalOpen(true)}
                 >
                   Increase
                 </Button>
@@ -264,10 +265,9 @@ export function SeniorPoolWithdrawalPanel({
       </div>
 
       <WithdrawalRequestModal
-        isOpen={isWithdrawalModalOpen}
-        onClose={() => setIsWithdrawalModalOpen(false)}
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
         sharePrice={seniorPoolSharePrice}
-        existingWithdrawalRequest={existingWithdrawalRequest}
         walletFidu={fiduBalance}
         stakedFidu={{
           token: SupportedCrypto.Fidu,
@@ -280,6 +280,25 @@ export function SeniorPoolWithdrawalPanel({
         cancellationFee={cancellationFee}
         nextDistributionTimestamp={epochEndsAt}
       />
+      {existingWithdrawalRequest ? (
+        <WithdrawalRequestModal
+          isOpen={isIncreaseModalOpen}
+          onClose={() => setIsIncreaseModalOpen(false)}
+          sharePrice={seniorPoolSharePrice}
+          existingWithdrawalRequest={existingWithdrawalRequest}
+          walletFidu={fiduBalance}
+          stakedFidu={{
+            token: SupportedCrypto.Fidu,
+            amount: sum("amount", stakedPositions),
+          }}
+          vaultedFidu={{
+            token: SupportedCrypto.Fidu,
+            amount: sum("amount", vaultedStakedPositions),
+          }}
+          cancellationFee={cancellationFee}
+          nextDistributionTimestamp={epochEndsAt}
+        />
+      ) : null}
       {existingWithdrawalRequest ? (
         <WithdrawalCancelModal
           isOpen={isCancelModalOpen}
