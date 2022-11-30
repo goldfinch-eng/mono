@@ -64,9 +64,7 @@ const addresses = {
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
   BackerRewards: contracts.BackerRewards.address,
-  WithdrawalRequestToken:
-    contracts.WithdrawalRequestToken?.address ??
-    "0x0000000000000000000000000000000000000000", // TODO fill this in with the real address from mainnet
+  WithdrawalRequestToken: contracts.WithdrawalRequestToken.address,
   CurvePool:
     contracts.TestFiduUSDCCurveLP?.address ??
     "0x80aa1a80a30055daa084e599836532f3e58c95e2", // This entry refers to the contract for the Fidu/USDC Curve pool itself, not the LP token
