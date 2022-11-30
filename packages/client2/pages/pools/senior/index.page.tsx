@@ -9,6 +9,7 @@ import {
   Button,
   goldfinchLogoWhiteBgPngUrl,
   Link,
+  HeavyTable,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -22,6 +23,7 @@ import {
 import {
   SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
@@ -34,6 +36,9 @@ gql`
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
+
+  ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
+
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
@@ -58,6 +63,7 @@ gql`
         sharePrice
         usdcBalance
         cancellationFee
+        epochEndsAt @client
       }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -73,20 +79,9 @@ gql`
         token
         amount
       }
-      withdrawalStatus {
-        usdcWithdrawable {
-          token
-          amount
-        }
-        fiduRequested {
-          token
-          amount
-        }
-        withdrawalToken
-      }
     }
-    currentWithdrawalEpoch @client {
-      endTime
+    seniorPoolWithdrawalRequests(where: { user: $user }) {
+      ...SeniorPoolWithdrawalPanelWithdrawalRequestFields
     }
   }
 `;
@@ -109,7 +104,7 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
       data?.vaultedStakedPositions.length !== 0 ||
-      data?.viewer.withdrawalStatus);
+      data?.seniorPoolWithdrawalRequests.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -192,8 +187,7 @@ export default function SeniorPoolPage() {
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithdrawalPanel
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
-                currentEpoch={data.currentWithdrawalEpoch}
-                withdrawalStatus={data.viewer.withdrawalStatus}
+                epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={data.seniorPoolStakedPositions}
@@ -201,6 +195,7 @@ export default function SeniorPoolPage() {
                   (s) => s.seniorPoolStakedPosition
                 )}
                 seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
+                existingWithdrawalRequest={data.seniorPoolWithdrawalRequests[0]}
               />
             )}
 
@@ -225,9 +220,9 @@ export default function SeniorPoolPage() {
               may be outdated.
             </HelperText>
           ) : null}
-          {seniorPool ? (
-            <StatusSection className="mb-12" seniorPool={seniorPool} />
-          ) : null}
+
+          <StatusSection className="mb-12" seniorPool={seniorPool} />
+
           <div className="mb-20">
             <h2 className="mb-8 text-3xl">Overview</h2>
             <p className="mb-8 text-2xl font-light">
@@ -270,16 +265,12 @@ export default function SeniorPoolPage() {
             <div className="mb-8">
               <h2 className="text-lg font-semibold">Liquidity options</h2>
             </div>
-            <table className="w-full border-collapse border border-sand-200 text-sand-600">
-              <tbody>
-                <tr className="border border-sand-200">
-                  <th
-                    scope="row"
-                    className="bg-sand-50 p-5 text-left align-top font-medium sm:min-w-[260px]"
-                  >
-                    Withdrawal Request
-                  </th>
-                  <td className="p-5 align-top">
+            <HeavyTable
+              rows={[
+                [
+                  "Withdrawal Request",
+                  null,
+                  <div key="withdrawal-request">
                     <div className="mb-2">
                       To withdraw capital from the Senior Pool, an LP must
                       submit a Withdrawal Request. Capital is distributed for
@@ -289,16 +280,15 @@ export default function SeniorPoolPage() {
                     <Link
                       href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
                       iconRight="ArrowTopRight"
-                      className="text-sand-400 underline"
-                      target="_blank"
-                      rel="noreferrer"
+                      className="text-sand-500"
+                      openInNewTab
                     >
                       Read more
                     </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>,
+                ],
+              ]}
+            />
           </div>
 
           <TransactionTable />

@@ -51,7 +51,9 @@ export const PERSONA_CONFIG: PersonaConfig =
       };
 
 export const SERVER_URL =
-  networkName === "mainnet"
+  typeof process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL
+    : networkName === "mainnet"
     ? ""
     : networkName === "murmuration"
     ? "https://murmuration.goldfinch.finance"

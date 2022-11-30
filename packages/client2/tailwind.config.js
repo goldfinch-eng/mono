@@ -120,9 +120,6 @@ module.exports = {
         800: "#204949",
         900: "#113535",
       },
-      redclay: {
-        500: "#CA5E5A",
-      },
       transparent: "transparent",
       current: "currentColor",
       white: colors.white,

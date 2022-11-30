@@ -242,18 +242,21 @@ export function SeniorPoolSupplyPanel({
     <div className="rounded-xl bg-midnight-01 p-5 text-white">
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm">Total est. APY</span>
-        <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
+        <InfoIconTooltip
+          className="!text-white/60"
+          content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY."
+        />
       </div>
-      <div className="mb-7 flex items-start gap-4">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <div className="text-6xl">
+          <div className="text-6xl font-medium">
             {formatPercent(
               seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat)
             )}
           </div>
         </div>
-        <div className="w-full rounded border border-white/20">
-          <table className="w-full text-xs">
+        <div className="rounded border border-white/20">
+          <table className="text-xs">
             <tbody>
               <tr className="border-b border-white/20">
                 <td className="p-2">USDC</td>
@@ -343,12 +346,14 @@ export function SeniorPoolSupplyPanel({
                 seniorPoolApyFromGfiFiat
               )})`}
               labelDecoration={
-                <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
+                <InfoIconTooltip
+                  className="!text-white/60"
+                  content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance."
+                />
               }
               colorScheme="dark"
               className="mb-3"
             />
-            {/* TODO senior pool agreement page */}
             <div className="mb-4 text-xs">
               By clicking “Supply” below, I hereby agree to the{" "}
               <Link href="/senior-pool-agreement-interstitial">

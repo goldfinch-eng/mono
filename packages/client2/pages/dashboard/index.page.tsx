@@ -91,12 +91,6 @@ gql`
           isAccepted
         }
       }
-      withdrawalStatus {
-        fiduRequested {
-          token
-          amount
-        }
-      }
       claimableMembershipRewards {
         token
         amount
@@ -162,6 +156,10 @@ gql`
       source
       index
       totalClaimed
+    }
+    seniorPoolWithdrawalRequests(where: { user: $userId }, first: 1) {
+      id
+      fiduRequested
     }
   }
 `;
@@ -240,6 +238,10 @@ export default function DashboardPage() {
         .add(data.viewer.fiduBalance?.amount ?? BigNumber.from(0))
         .add(
           data.viewer.claimableMembershipRewards?.amount ?? BigNumber.from(0)
+        )
+        .add(
+          data.seniorPoolWithdrawalRequests[0]?.fiduRequested ??
+            BigNumber.from(0)
         ),
       sharePrice
     );
@@ -554,31 +556,21 @@ export default function DashboardPage() {
                                   }),
                                 ]
                               : []),
-                            ...(data.viewer.withdrawalStatus?.fiduRequested &&
-                            !data.viewer.withdrawalStatus?.fiduRequested.amount.isZero()
+                            ...(data.seniorPoolWithdrawalRequests.length > 0 &&
+                            !data.seniorPoolWithdrawalRequests[0].fiduRequested.isZero()
                               ? [
-                                  {
+                                  transformFiduToHolding({
                                     name: "Requested for withdrawal",
-                                    percentage: computePercentage(
-                                      sharesToUsdc(
-                                        data.viewer.withdrawalStatus
-                                          .fiduRequested.amount,
-                                        data.seniorPools[0].latestPoolStatus
-                                          .sharePrice
-                                      ).amount,
-                                      totalUsdc.amount
-                                    ),
-                                    quantity:
-                                      data.viewer.withdrawalStatus.fiduRequested
-                                        .amount,
-                                    usdcValue: sharesToUsdc(
-                                      data.viewer.withdrawalStatus.fiduRequested
-                                        .amount,
-                                      data.seniorPools[0].latestPoolStatus
-                                        .sharePrice
-                                    ),
                                     url: "/pools/senior",
-                                  },
+                                    fidu: {
+                                      token: SupportedCrypto.Fidu,
+                                      amount:
+                                        data.seniorPoolWithdrawalRequests[0]
+                                          .fiduRequested,
+                                    },
+                                    sharePrice,
+                                    totalUsdc,
+                                  }),
                                 ]
                               : []),
                           ]}

@@ -72,7 +72,6 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
-  withdrawalTransactions: [WithdrawalTransaction!]! @derivedFrom(field: "user")
 
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
@@ -335,30 +334,6 @@ type CommunityRewardsToken @entity {
   endTime: BigInt!
 }
 
-type WithdrawalTransaction @entity {
-  id: Bytes!
-  epochId: BigInt!
-  user: User!
-  amount: BigInt
-  category: WithdrawalTransactionCategory!
-  timestamp: Int!
-  blockNumber: Int!
-}
-
-enum WithdrawalTransactionCategory {
-  WITHDRAWAL_REQUEST
-  ADD_TO_WITHDRAWAL_REQUEST
-  CANCEL_WITHDRAWAL_REQUEST
-}
-
-type WithdrawalEpoch @entity {
-  id: ID!
-  endsAt: Int!
-  fiduRequested: BigInt!
-  usdcAllocated: BigInt!
-  fiduLiquidated: BigInt!
-}
-
 type MembershipEpoch @entity(immutable: true) {
   id: ID!
   epoch: BigInt! # The epoch number
@@ -410,4 +385,39 @@ type MembershipRewardDisbursement @entity(immutable: true) {
   epoch: BigInt! # The epoch number
   allocatedAt: Int!
   rewards: BigInt!
+}
+
+type SeniorPoolWithdrawalRequest @entity {
+  id: ID! # corresponds to the user address, since each user can only have one withdrawal request active at a time
+  tokenId: BigInt! # corresponds to the WithdrawalRequest token
+  user: User!
+  usdcWithdrawable: BigInt!
+  fiduRequested: BigInt!
+  requestedAt: Int!
+  increasedAt: Int
+  canceledAt: Int
+}
+
+type SeniorPoolWithdrawalEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # the epoch number
+  endsAt: Int!
+  fiduRequested: BigInt!
+  fiduLiquidated: BigInt!
+  usdcAllocated: BigInt!
+}
+
+# Singleton that keeps track of all outstanding withdrawal requests
+type SeniorPoolWithdrawalRequestRoster @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  requests: [SeniorPoolWithdrawalRequest!]!
+}
+
+type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  epoch: BigInt! # The epoch number. Not a reference.
+  allocatedAt: Int!
+  usdcAllocated: BigInt!
+  fiduLiquidated: BigInt!
 }
