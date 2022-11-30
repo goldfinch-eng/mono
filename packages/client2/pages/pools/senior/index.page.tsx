@@ -220,9 +220,9 @@ export default function SeniorPoolPage() {
               may be outdated.
             </HelperText>
           ) : null}
-          {seniorPool ? (
-            <StatusSection className="mb-12" seniorPool={seniorPool} />
-          ) : null}
+
+          <StatusSection className="mb-12" seniorPool={seniorPool} />
+
           <div className="mb-20">
             <h2 className="mb-8 text-3xl">Overview</h2>
             <p className="mb-8 text-2xl font-light">
