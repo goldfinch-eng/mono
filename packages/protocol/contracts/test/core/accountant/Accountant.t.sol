@@ -10,6 +10,7 @@ import {BaseTest} from "../../core/BaseTest.t.sol";
 import {TestCreditLine} from "../../../test/TestCreditLine.sol";
 import {AccountantTestHelpers} from "./AccountantTestHelpers.t.sol";
 import {TestConstants} from "../../core/TestConstants.sol";
+import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 
 contract AccountantTest is BaseTest, AccountantTestHelpers {
   using FixedPoint for FixedPoint.Unsigned;
@@ -22,10 +23,6 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   uint256 internal constant gracePeriodInDays = 1000 days;
 
   TestCreditLine internal cl;
-
-  function usdcVal(uint256 amount) private view returns (uint256) {
-    return amount * 10**TestConstants.USDC_DECIMALS;
-  }
 
   function interestOwedForOnePeriod(
     uint256 _balance,
@@ -43,7 +40,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
     cl = new TestCreditLine();
     cl.initialize(
-      address(goldfinchConfig),
+      address(protocol.gfConfig()),
       PROTOCOL_OWNER,
       borrower,
       usdcVal(10_000_000), // max limit
