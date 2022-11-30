@@ -130,7 +130,6 @@ extend type Query {
 }
 
 extend type SeniorPoolWithdrawalRequest {
-  tokenId: BigInt!
   """
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """

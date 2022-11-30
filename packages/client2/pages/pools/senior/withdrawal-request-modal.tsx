@@ -30,7 +30,7 @@ import { useWallet } from "@/lib/wallet";
 export const WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalRequestModalWithdrawalFields on SeniorPoolWithdrawalRequest {
     id
-    tokenId @client
+    tokenId
     previewFiduRequested @client
     requestedAt
     increasedAt

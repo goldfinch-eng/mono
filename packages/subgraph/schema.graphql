@@ -389,6 +389,7 @@ type MembershipRewardDisbursement @entity(immutable: true) {
 
 type SeniorPoolWithdrawalRequest @entity {
   id: ID! # corresponds to the user address, since each user can only have one withdrawal request active at a time
+  tokenId: BigInt! # corresponds to the WithdrawalRequest token
   user: User!
   usdcWithdrawable: BigInt!
   fiduRequested: BigInt!

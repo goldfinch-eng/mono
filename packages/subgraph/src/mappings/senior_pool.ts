@@ -116,6 +116,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
 export function handleWithdrawalRequest(event: WithdrawalRequested): void {
   const withdrawalRequest = new SeniorPoolWithdrawalRequest(event.params.operator.toHexString())
+  withdrawalRequest.tokenId = event.params.tokenId
   withdrawalRequest.user = getOrInitUser(event.params.operator).id
   withdrawalRequest.usdcWithdrawable = BigInt.zero()
   withdrawalRequest.fiduRequested = event.params.fiduRequested
