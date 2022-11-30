@@ -118,6 +118,7 @@ function InputFiduStep({
         <div className="mb-8">
           <div className="mb-2 text-sm">Original request amount</div>
           <AssetBox
+            nativeAmountIsPrimary
             asset={{
               name: "FIDU",
               description: `Requested for withdrawal on ${formatDate(
@@ -159,6 +160,7 @@ function InputFiduStep({
         </div>
         {!vaultedFidu.amount.isZero() ? (
           <AssetBox
+            nativeAmountIsPrimary
             asset={{
               name: "Vaulted FIDU",
               description: "FIDU deposited in the Member Vault",
@@ -183,6 +185,7 @@ function InputFiduStep({
         ) : null}
         {!stakedFidu.amount.isZero() ? (
           <AssetBox
+            nativeAmountIsPrimary
             asset={{
               name: "Staked FIDU",
               description: "FIDU currently staked",
@@ -283,6 +286,7 @@ function ConfirmStep({
           <div className="mb-8">
             <div className="mb-2 text-sm">Original request amount</div>
             <AssetBox
+              nativeAmountIsPrimary
               asset={{
                 name: "FIDU",
                 description: `Requested for withdrawal on ${formatDate(
@@ -305,6 +309,7 @@ function ConfirmStep({
               Additional amount to request for withdrawal
             </div>
             <AssetBox
+              nativeAmountIsPrimary
               asset={{
                 name: "FIDU",
                 description: "Additional amount to request for withdrawal",
