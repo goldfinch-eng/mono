@@ -61,7 +61,10 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolRedemption,
 ];
 
-const sentTokenCategories = [TransactionCategory.TranchedPoolDeposit];
+const sentTokenCategories = [
+  TransactionCategory.TranchedPoolDeposit,
+  TransactionCategory.TranchedPoolRepayment,
+];
 
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
