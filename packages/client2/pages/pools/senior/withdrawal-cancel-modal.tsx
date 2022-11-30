@@ -23,7 +23,7 @@ export const WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalCancelModalWithdrawalFields on SeniorPoolWithdrawalRequest {
     id
     tokenId @client
-    fiduRequested
+    previewFiduRequested @client
   }
 `;
 
@@ -41,7 +41,7 @@ export function WithdrawalCancelModal({
   cancellationFee,
 }: WithdrawalCancelModalProps) {
   const computedFee = BigNumber.from(
-    FixedNumber.from(existingWithdrawalRequest.fiduRequested)
+    FixedNumber.from(existingWithdrawalRequest.previewFiduRequested)
       .mulUnsafe(cancellationFee)
       .toString()
       .split(".")[0]
@@ -99,7 +99,7 @@ export function WithdrawalCancelModal({
           tooltip="FIDU you previously submitted a withdrawal request for."
           right={formatCrypto({
             token: SupportedCrypto.Fidu,
-            amount: existingWithdrawalRequest.fiduRequested,
+            amount: existingWithdrawalRequest.previewFiduRequested,
           })}
           faded
         />

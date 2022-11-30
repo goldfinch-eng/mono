@@ -390,7 +390,7 @@ type MembershipRewardDisbursement @entity(immutable: true) {
 type SeniorPoolWithdrawalRequest @entity {
   id: ID! # corresponds to the user address, since each user can only have one withdrawal request active at a time
   user: User!
-  # You might think that usdcWithdrawable should go here too, but that's actually more accurately represented with the preview function on the Senior Pool contract. It's not an easily event-driven value unfortunately
+  usdcWithdrawable: BigInt!
   fiduRequested: BigInt!
   requestedAt: Int!
   increasedAt: Int

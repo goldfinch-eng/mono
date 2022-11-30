@@ -44,7 +44,8 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS = gql`
   ${WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS}
   fragment SeniorPoolWithdrawalPanelWithdrawalRequestFields on SeniorPoolWithdrawalRequest {
     id
-    usdcWithdrawable @client
+    previewUsdcWithdrawable @client
+    previewFiduRequested @client
     ...WithdrawalCancelModalWithdrawalFields
     ...WithdrawalRequestModalWithdrawalFields
   }
@@ -80,7 +81,8 @@ export function SeniorPoolWithdrawalPanel({
   const totalUserFidu = sumTotalShares(
     fiduBalance,
     {
-      amount: existingWithdrawalRequest?.fiduRequested ?? BigNumber.from(0),
+      amount:
+        existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
       token: SupportedCrypto.Fidu,
     },
     stakedPositions.concat(vaultedStakedPositions)
@@ -90,7 +92,7 @@ export function SeniorPoolWithdrawalPanel({
     seniorPoolSharePrice
   ).amount;
   const currentRequestUsdc = sharesToUsdc(
-    existingWithdrawalRequest?.fiduRequested ?? BigNumber.from(0),
+    existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
     seniorPoolSharePrice
   ).amount;
 
@@ -153,7 +155,7 @@ export function SeniorPoolWithdrawalPanel({
             <div className="text-3xl font-medium">
               {formatCrypto({
                 amount:
-                  existingWithdrawalRequest?.usdcWithdrawable ??
+                  existingWithdrawalRequest?.previewUsdcWithdrawable ??
                   BigNumber.from(0),
                 token: SupportedCrypto.Usdc,
               })}
@@ -171,7 +173,7 @@ export function SeniorPoolWithdrawalPanel({
               type="submit"
               colorScheme="secondary"
               size="xl"
-              disabled={existingWithdrawalRequest.usdcWithdrawable.isZero()}
+              disabled={existingWithdrawalRequest.previewUsdcWithdrawable.isZero()}
               className="mb-2 block w-full"
             >
               Withdraw USDC
@@ -201,7 +203,7 @@ export function SeniorPoolWithdrawalPanel({
               <div className="text-3xl font-medium">
                 {formatCrypto({
                   token: SupportedCrypto.Fidu,
-                  amount: existingWithdrawalRequest.fiduRequested,
+                  amount: existingWithdrawalRequest.previewFiduRequested,
                 })}
               </div>
               <div className="text-sm">
@@ -251,6 +253,7 @@ export function SeniorPoolWithdrawalPanel({
                   colorScheme="twilight"
                   size="xl"
                   className="block w-full"
+                  disabled={existingWithdrawalRequest.previewFiduRequested.isZero()}
                 >
                   Cancel
                 </Button>

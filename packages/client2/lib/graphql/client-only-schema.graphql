@@ -131,7 +131,14 @@ extend type Query {
 
 extend type SeniorPoolWithdrawalRequest {
   tokenId: BigInt!
-  usdcWithdrawable: BigInt!
+  """
+  Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
+  """
+  previewUsdcWithdrawable: BigInt!
+  """
+  Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
+  """
+  previewFiduRequested: BigInt!
 }
 
 extend type SeniorPoolStatus {

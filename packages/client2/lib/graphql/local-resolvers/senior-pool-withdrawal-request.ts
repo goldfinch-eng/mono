@@ -22,7 +22,7 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
   ): Promise<BigNumber> {
     return getWithdrawalTokenId(withdrawalRequest.id); // Recall that withdrawalRequest.id is equal to the owner's address
   },
-  async usdcWithdrawable(
+  async previewUsdcWithdrawable(
     withdrawalRequest: SeniorPoolWithdrawalRequest
   ): Promise<BigNumber> {
     const tokenId = await getWithdrawalTokenId(withdrawalRequest.id);
@@ -33,5 +33,17 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
     });
     const preview = await seniorPoolContract.withdrawalRequest(tokenId);
     return preview.usdcWithdrawable;
+  },
+  async previewFiduRequested(
+    withdrawalRequest: SeniorPoolWithdrawalRequest
+  ): Promise<BigNumber> {
+    const tokenId = await getWithdrawalTokenId(withdrawalRequest.id);
+    const provider = await getProvider();
+    const seniorPoolContract = await getContract({
+      name: "SeniorPool",
+      provider,
+    });
+    const preview = await seniorPoolContract.withdrawalRequest(tokenId);
+    return preview.fiduRequested;
   },
 };

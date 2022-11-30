@@ -31,7 +31,7 @@ export const WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalRequestModalWithdrawalFields on SeniorPoolWithdrawalRequest {
     id
     tokenId @client
-    fiduRequested
+    previewFiduRequested @client
     requestedAt
     increasedAt
   }
@@ -126,10 +126,10 @@ function InputFiduStep({
               )}`,
               nativeAmount: {
                 token: SupportedCrypto.Fidu,
-                amount: existingWithdrawalRequest.fiduRequested,
+                amount: existingWithdrawalRequest.previewFiduRequested,
               },
               usdcAmount: sharesToUsdc(
-                existingWithdrawalRequest.fiduRequested,
+                existingWithdrawalRequest.previewFiduRequested,
                 sharePrice
               ),
             }}
@@ -227,7 +227,7 @@ function ConfirmStep({
   const newRequestTotalFidu = {
     token: SupportedCrypto.Fidu,
     amount: existingWithdrawalRequest
-      ? existingWithdrawalRequest.fiduRequested.add(fiduInputted.amount)
+      ? existingWithdrawalRequest.previewFiduRequested.add(fiduInputted.amount)
       : fiduInputted.amount,
   };
   const { account, provider } = useWallet();
@@ -291,10 +291,10 @@ function ConfirmStep({
                 )}`,
                 nativeAmount: {
                   token: SupportedCrypto.Fidu,
-                  amount: existingWithdrawalRequest.fiduRequested,
+                  amount: existingWithdrawalRequest.previewFiduRequested,
                 },
                 usdcAmount: sharesToUsdc(
-                  existingWithdrawalRequest.fiduRequested,
+                  existingWithdrawalRequest.previewFiduRequested,
                   sharePrice
                 ),
               }}
