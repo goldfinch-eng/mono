@@ -297,7 +297,7 @@ export function FormStep<T extends FieldValues>({
             disabled={requireScrolled && !didScrollBottom ? true : undefined}
             customBehaviour
           >
-            {submitButtonLabel}
+            {submitButtonLabel ?? step === numSteps - 1 ? "Submit" : undefined}
           </StepperButton>
         }
       >
