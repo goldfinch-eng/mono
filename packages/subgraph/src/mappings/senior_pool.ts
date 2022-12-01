@@ -13,11 +13,13 @@ import {
   WithdrawalAddedTo,
   WithdrawalCanceled,
   EpochEnded,
+  EpochExtended,
 } from "../../generated/SeniorPool/SeniorPool"
 import {
   SeniorPoolWithdrawalEpoch,
   SeniorPoolWithdrawalDisbursement,
   SeniorPoolWithdrawalRequest,
+  SeniorPoolWithdrawalDisbursementPostponement,
 } from "../../generated/schema"
 
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
@@ -203,5 +205,25 @@ export function handleEpochEnded(event: EpochEnded): void {
     disbursement.usdcAllocated = proRataUsdc
     disbursement.fiduLiquidated = fiduLiquidated
     disbursement.save()
+  }
+}
+
+export function handleEpochExtended(event: EpochExtended): void {
+  const roster = getOrInitSeniorPoolWithdrawalRoster()
+  for (let i = 0; i < roster.requests.length; i++) {
+    const withdrawalRequest = SeniorPoolWithdrawalRequest.load(roster.requests[i])
+    if (!withdrawalRequest || withdrawalRequest.fiduRequested.isZero()) {
+      continue
+    }
+
+    const postponement = new SeniorPoolWithdrawalDisbursementPostponement(
+      `${event.params.epochId}-${withdrawalRequest.id}-${event.params.newEndTime}`
+    )
+    postponement.user = withdrawalRequest.user
+    postponement.tokenId = withdrawalRequest.tokenId
+    postponement.extendedEpoch = event.params.epochId
+    postponement.oldEndsAt = event.params.oldEndTime.toI32()
+    postponement.newEndsAt = event.params.newEndTime.toI32()
+    postponement.save()
   }
 }

@@ -425,3 +425,15 @@ type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
   usdcAllocated: BigInt!
   fiduLiquidated: BigInt!
 }
+
+"""
+This entity is created when there is no money to allocate at the end of a withdrawal epoch
+"""
+type SeniorPoolWithdrawalDisbursementPostponement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  tokenId: BigInt!
+  extendedEpoch: BigInt! # The epoch that was extended
+  oldEndsAt: Int!
+  newEndsAt: Int!
+}
