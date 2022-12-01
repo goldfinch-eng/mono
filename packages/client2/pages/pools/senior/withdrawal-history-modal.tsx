@@ -270,7 +270,7 @@ function TableData({
   return (
     <td
       className={clsx(
-        "p-2 first:border-r first:border-sand-200 first:bg-sand-100",
+        "p-2 text-sand-500 first:border-r first:border-sand-200 first:bg-sand-100 first:text-sand-700 last:font-medium last:text-sand-700",
         rightAligned ? "text-right" : "text-left"
       )}
     >
