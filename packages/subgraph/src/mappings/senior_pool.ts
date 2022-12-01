@@ -159,6 +159,8 @@ export function handleWithdrawalRequestCanceled(event: WithdrawalCanceled): void
   transaction.save()
 }
 
+const fiduZeroingThreshold = BigInt.fromString("10").pow(12)
+
 export function handleEpochEnded(event: EpochEnded): void {
   const epoch = new SeniorPoolWithdrawalEpoch(event.params.epochId.toString())
   epoch.epoch = event.params.epochId
@@ -176,14 +178,21 @@ export function handleEpochEnded(event: EpochEnded): void {
   const roster = getOrInitSeniorPoolWithdrawalRoster()
   for (let i = 0; i < roster.requests.length; i++) {
     const withdrawalRequest = SeniorPoolWithdrawalRequest.load(roster.requests[i])
-    if (!withdrawalRequest) {
+    if (!withdrawalRequest || withdrawalRequest.fiduRequested.isZero()) {
       continue
     }
 
     const proRataUsdc = epoch.usdcAllocated.times(withdrawalRequest.fiduRequested).div(epoch.fiduRequested)
-    const fiduLiquidated = epoch.fiduLiquidated.times(withdrawalRequest.fiduRequested).div(epoch.fiduRequested)
+    let fiduLiquidated = epoch.fiduLiquidated.times(withdrawalRequest.fiduRequested).div(epoch.fiduRequested)
     withdrawalRequest.usdcWithdrawable = withdrawalRequest.usdcWithdrawable.plus(proRataUsdc)
-    withdrawalRequest.fiduRequested = withdrawalRequest.fiduRequested.minus(fiduLiquidated)
+    const newFiduRequested = withdrawalRequest.fiduRequested.minus(fiduLiquidated)
+    // Similar to the "zeroing out" logic on the smart contract, which zeroes out requests with fiduRequested too low
+    if (newFiduRequested.le(fiduZeroingThreshold)) {
+      fiduLiquidated = withdrawalRequest.fiduRequested
+      withdrawalRequest.fiduRequested = BigInt.zero()
+    } else {
+      withdrawalRequest.fiduRequested = newFiduRequested
+    }
     withdrawalRequest.save()
 
     const disbursement = new SeniorPoolWithdrawalDisbursement(`${epoch.id}-${withdrawalRequest.id}`)
