@@ -124,6 +124,17 @@ export async function updateReferenceId(account: PersonaAccount, newReferenceId:
   }
 
   const url = `${PERSONA_BASE_URL}accounts/${account.personaId}`
+  const attributes = {
+    // The fields we're overwriting
+    "reference-id": newReferenceId,
+    tags: [],
+    // The fields we don't want to overwrite but still have to include
+    "email-address": account.email,
+  }
+  if (account.countryCode) {
+    attributes["country-code"] = account.countryCode
+  }
+
   const options = {
     method: "PATCH",
     headers: {
@@ -137,14 +148,7 @@ export async function updateReferenceId(account: PersonaAccount, newReferenceId:
     // but need to include the other fields so we don't accidentally wipe them
     body: JSON.stringify({
       data: {
-        attributes: {
-          // The fields we're overwriting
-          "reference-id": newReferenceId,
-          tags: [],
-          // The fields we don't want to overwrite but still have to include
-          "country-code": account.countryCode,
-          "email-address": account.email,
-        },
+        attributes,
       },
     }),
   }

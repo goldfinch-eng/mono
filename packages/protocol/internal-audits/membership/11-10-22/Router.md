@@ -1,6 +1,14 @@
 # Router
-
 Central repository for getting contracts relevant for cake
+
+# Summary
+* No event emitted when _setContract_ is called
+  * **Severity**: 🟢 Informational
+  * **Description**: No event is emitted when a new contract is set but we should have one
+  * **Suggested Fix**: Add an event
+
+# Appendix
+Auditor's notes. Not intended to be understood by readers but kept for reference/completeness
 
 ## Functions
 

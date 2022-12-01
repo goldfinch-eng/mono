@@ -1,5 +1,4 @@
 # GFILedger
-Auditor: [Dalton](https://github.com/daltyboy11)
 
 GFILedger.sol audit
 
@@ -24,6 +23,27 @@ I found a couple of medium-severity issues that should be fixed before going to 
   * **Description**: The interface says it returns how much was deposited but the impl returns the position id
   * **Suggested Fix**: Update the impl to conform to the interface or vice versa (probably the latter because current usage
   treats the return value as the position id)
+  * **Commit**: [5495ee0](https://github.com/warbler-labs/mono/pull/1069/commits/5495ee01daa5e24b86a32a3be2dea71c5b83db61)
+
+* Methods to fetch a position should revert if a position doesn't exist
+  * **Severity**: 🟢 Informational
+  * **Description**: It would make sense for the method to revert entirely
+    if a position doesn't exist. That way the caller doesn't need to validate
+    that a position actually exists.
+  * **Suggested Fix**: Add an internal helper method like this
+    ```solidity
+    function _getPosition(uint positionId) internal returns (Position storage) {
+      Position storage p = positions[positionId];
+
+      bool positionExists = /* do some validation here */;
+      if (!positionExists  {
+        revert PositionDoesNotExist();
+      }
+
+      return p;
+    }
+    ```
+    and use it throughout the contract
   * **Commit**: [5495ee0](https://github.com/warbler-labs/mono/pull/1069/commits/5495ee01daa5e24b86a32a3be2dea71c5b83db61)
 
 # Appendix
@@ -403,3 +423,50 @@ Auditor's notes. Not intended to be understood by readers but kept for reference
 * Protocol integrations
   * ✅  Assessing the impact of these changes on protocol integrations
     * There aren't any protocol integrations because this is a greenfield project
+
+## External Functions
+
+### `deposit`
+- [x] onlyOperator
+- [x] transfers GFI
+- [x] creates a position
+### `withdraw`
+- [x] onlyOperator
+- [x] transfer GFI to owner
+- [x] deletes position when fully withdrawing
+- [x] does not delete the position when partially withdrawing
+
+### External View Functions
+
+### `balanceOf`
+
+### `totalsOf`
+
+### `positions`
+* 🚑 Consider making this revert if a position doesnt exist
+
+
+### `ownerOf`
+* 🚑 Consider making this revert if a position doesnt exist
+
+calls
+
+## Issues
+* 🚑 For a number of methods that fetch a position, it would make sense for the
+  method to revert entirely if a position doesn't exist. That way the caller
+  doesn't need to validate that a position actually exists. To make this easier
+  I would suggest adding an internal helper method like this
+  ```solidity
+  function _getPosition(uint positionId) internal returns (Position storage) {
+    Position storage p = positions[positionId];
+
+    bool positionExists = /* do some validation here */;
+    if (!positionExists  {
+      revert PositionDoesNotExist();
+    }
+
+    return p;
+  }
+  ```
+
+  and use it throughout the contract
