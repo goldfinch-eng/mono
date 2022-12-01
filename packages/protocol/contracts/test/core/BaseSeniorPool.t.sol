@@ -356,6 +356,12 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 fiduCanceled,
     uint256 reserveFidu
   );
+  event WithdrawalAddedTo(
+    uint256 indexed epochId,
+    uint256 indexed tokenId,
+    address indexed operator,
+    uint256 fiduRequested
+  );
   event ReserveSharesCollected(address indexed user, address indexed reserve, uint256 amount);
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
   event EpochDurationChanged(uint256 newDuration);

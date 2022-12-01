@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-// TODO - use a newer version of this contract if we can
 import {ERC721PresetMinterPauserAutoIdUpgradeSafe} from "../../external/ERC721PresetMinterPauserAutoId.sol";
 import {ERC721UpgradeSafe} from "../../external/ERC721.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -56,14 +55,17 @@ contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPa
     _burn(tokenId);
   }
 
+  /// @notice Disabled
   function approve(address, uint256) public override(IERC721, ERC721UpgradeSafe) {
     revert("Disabled");
   }
 
+  /// @notice Disabled
   function setApprovalForAll(address, bool) public override(IERC721, ERC721UpgradeSafe) {
     revert("Disabled");
   }
 
+  /// @notice Disabled
   function transferFrom(
     address,
     address,
@@ -72,6 +74,7 @@ contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPa
     revert("Disabled");
   }
 
+  /// @notice Disabled
   function safeTransferFrom(
     address,
     address,
@@ -80,6 +83,7 @@ contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPa
     revert("Disabled");
   }
 
+  /// @notice Disabled
   function safeTransferFrom(
     address,
     address,

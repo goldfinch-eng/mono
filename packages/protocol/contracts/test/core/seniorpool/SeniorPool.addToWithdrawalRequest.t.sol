@@ -353,6 +353,28 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     assertEq(sp.epochAt(2).usdcAllocated, usdcVal(600));
   }
 
+  function testAddToWithdrawalEmitsWithdrawalAddedTo(
+    address user,
+    uint256 requestAmount,
+    uint256 addAmount
+  ) public {
+    vm.assume(fuzzHelper.isAllowed(user));
+    requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
+    addAmount = bound(addAmount, usdcVal(1), requestAmount);
+    addToGoList(user);
+    uint256 depositAmount = requestAmount + addAmount;
+    approveTokensMaxAmount(user);
+    fundAddress(user, depositAmount);
+
+    depositToSpFrom(user, depositAmount);
+    uint256 requestAmountShares = sp.getNumShares(requestAmount);
+    uint256 tokenId = requestWithdrawalFrom(user, requestAmountShares);
+    uint256 addAmountShares = sp.getNumShares(addAmount);
+    vm.expectEmit(true, true, true, true, address(sp));
+    emit WithdrawalAddedTo(1, 1, user, addAmountShares);
+    addToWithdrawalRequestFrom(user, addAmountShares, tokenId);
+  }
+
   // TODO - Uncomment these tests when the Go changes are merged - https://github.com/warbler-labs/mono/pull/800
 
   // function testAddToWithdrawalRequestRevertsWhenOriginHasValidUidAndCallerHasNothing(

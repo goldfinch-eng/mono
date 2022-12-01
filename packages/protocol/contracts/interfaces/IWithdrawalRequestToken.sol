@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import {IERC721Enumerable} from "./openzeppelin/IERC721Enumerable.sol";
 
-// Use base non-transferrable ERC721 class?
 interface IWithdrawalRequestToken is IERC721Enumerable {
   /// @notice Mint a withdrawal request token to `receiver`
   /// @dev succeeds if and only if called by senior pool

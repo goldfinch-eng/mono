@@ -711,7 +711,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID
-  function getReward(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {
+  function getReward(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {
     /// @dev AD: Access denied
     require(ownerOf(tokenId) == msg.sender, "AD");
     uint256 reward = claimableRewards(tokenId);
