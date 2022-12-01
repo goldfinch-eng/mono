@@ -19,11 +19,10 @@ import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
   SeniorPoolSupplyPanelUserFieldsFragment,
   SupportedCrypto,
-  UidType,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
-  canUserParticipateInPool,
+  canUserParticipateInSeniorPool,
   computeApyFromGfiInFiat,
 } from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
@@ -195,15 +194,7 @@ export function SeniorPoolSupplyPanel({
     user?.isNonUsIndividual;
   const canUserParticipate = !user
     ? false
-    : canUserParticipateInPool(
-        [
-          UidType.NonUsEntity,
-          UidType.NonUsIndividual,
-          UidType.UsEntity,
-          UidType.UsAccreditedIndividual,
-        ],
-        user
-      );
+    : canUserParticipateInSeniorPool(user);
 
   const validateMaximumAmount = async (value: string) => {
     if (!account || !provider) {

@@ -13,6 +13,7 @@ import {
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
+import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
@@ -104,7 +105,9 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
       data?.vaultedStakedPositions.length !== 0 ||
-      data?.seniorPoolWithdrawalRequests.length !== 0);
+      data?.seniorPoolWithdrawalRequests.length !== 0) &&
+    user &&
+    canUserParticipateInSeniorPool(user);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
