@@ -197,6 +197,7 @@ export function handleEpochEnded(event: EpochEnded): void {
 
     const disbursement = new SeniorPoolWithdrawalDisbursement(`${epoch.id}-${withdrawalRequest.id}`)
     disbursement.user = withdrawalRequest.user
+    disbursement.tokenId = withdrawalRequest.tokenId
     disbursement.epoch = event.params.epochId
     disbursement.allocatedAt = epoch.endsAt
     disbursement.usdcAllocated = proRataUsdc

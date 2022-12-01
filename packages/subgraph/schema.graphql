@@ -416,6 +416,10 @@ type SeniorPoolWithdrawalRequestRoster @entity {
 type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
   id: ID!
   user: User!
+  """
+  If the user has had multiple withdrawal requests submitted and fulfilled over time, it might be useful to know what tokenId this distribution was associated with.
+  """
+  tokenId: BigInt!
   epoch: BigInt! # The epoch number. Not a reference.
   allocatedAt: Int!
   usdcAllocated: BigInt!
