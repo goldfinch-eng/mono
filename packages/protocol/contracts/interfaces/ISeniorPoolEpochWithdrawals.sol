@@ -12,7 +12,7 @@ interface ISeniorPoolEpochWithdrawals {
    *                      carried over from previous epochs
    * @param fiduLiquidated Amount of fidu that was liquidated at the end of this epoch
    * @param usdcAllocated Amount of usdc that was allocated to liquidate fidu.
-   *                      Does not consider fees.
+   *                      Does not consider withdrawal fees.
    */
   struct Epoch {
     uint256 endsAt;
@@ -53,7 +53,7 @@ interface ISeniorPoolEpochWithdrawals {
 
   /**
    * @notice Submit a request to withdraw `fiduAmount` of FIDU. Request is rejected
-   * if callers already owns a request token. A non-transferrable request token is
+   * if caller already owns a request token. A non-transferrable request token is
    * minted to the caller
    * @return tokenId token minted to caller
    */

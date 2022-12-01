@@ -356,6 +356,12 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 fiduCanceled,
     uint256 reserveFidu
   );
+  event WithdrawalAddedTo(
+    uint256 indexed epochId,
+    uint256 indexed tokenId,
+    address indexed operator,
+    uint256 fiduRequested
+  );
   event ReserveSharesCollected(address indexed user, address indexed reserve, uint256 amount);
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
   event EpochDurationChanged(uint256 newDuration);
@@ -363,4 +369,11 @@ contract SeniorPoolBaseTest is BaseTest {
   event PrincipalCollected(address indexed payer, uint256 amount);
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
   event EpochExtended(uint256 indexed epochId, uint256 newEndTime, uint256 oldEndTime);
+  event EpochEnded(
+    uint256 indexed epochId,
+    uint256 endTime,
+    uint256 fiduRequested,
+    uint256 usdcAllocated,
+    uint256 fiduLiquidated
+  );
 }
