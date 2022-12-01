@@ -2,8 +2,9 @@ import {HardhatRuntimeEnvironment} from "hardhat/types"
 
 import * as migrate310 from "../blockchain_scripts/migrations/v3.1.0/migrate"
 import * as migrate311 from "../blockchain_scripts/migrations/v3.1.1/migrate"
+import {MAINNET_CHAIN_ID} from "../blockchain_scripts/deployHelpers"
 
-/*
+/**
  * Setup pending mainnet migration contracts in the Goldfinch contract ecosystem.
  * As we move the hardhat mainnet fork forward, migrations should be moved from
  * this deploy script in to the baseDeploy script if they have already been run
@@ -17,5 +18,6 @@ async function main(hre: HardhatRuntimeEnvironment) {
 }
 
 module.exports = main
-module.exports.dependencies = ["baseDeploy"]
 module.exports.tags = ["pendingMainnetMigrations"]
+
+module.exports.skip = () => process.env.HARDHAT_FORK !== "mainnet"
