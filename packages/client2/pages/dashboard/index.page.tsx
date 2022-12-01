@@ -157,6 +157,10 @@ gql`
       index
       totalClaimed
     }
+    seniorPoolWithdrawalRequests(where: { user: $userId }, first: 1) {
+      id
+      fiduRequested
+    }
   }
 `;
 
@@ -234,6 +238,10 @@ export default function DashboardPage() {
         .add(data.viewer.fiduBalance?.amount ?? BigNumber.from(0))
         .add(
           data.viewer.claimableMembershipRewards?.amount ?? BigNumber.from(0)
+        )
+        .add(
+          data.seniorPoolWithdrawalRequests[0]?.fiduRequested ??
+            BigNumber.from(0)
         ),
       sharePrice
     );
@@ -543,6 +551,23 @@ export default function DashboardPage() {
                                     url: "/membership",
                                     fidu: data.viewer
                                       .claimableMembershipRewards,
+                                    sharePrice,
+                                    totalUsdc,
+                                  }),
+                                ]
+                              : []),
+                            ...(data.seniorPoolWithdrawalRequests.length > 0 &&
+                            !data.seniorPoolWithdrawalRequests[0].fiduRequested.isZero()
+                              ? [
+                                  transformFiduToHolding({
+                                    name: "Requested for withdrawal",
+                                    url: "/pools/senior",
+                                    fidu: {
+                                      token: SupportedCrypto.Fidu,
+                                      amount:
+                                        data.seniorPoolWithdrawalRequests[0]
+                                          .fiduRequested,
+                                    },
                                     sharePrice,
                                     totalUsdc,
                                   }),

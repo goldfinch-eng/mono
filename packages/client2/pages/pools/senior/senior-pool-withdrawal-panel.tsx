@@ -1,37 +1,53 @@
 import { gql, useApolloClient } from "@apollo/client";
-import { BigNumber, utils } from "ethers";
+import { format } from "date-fns";
+import { BigNumber, FixedNumber } from "ethers";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
   Button,
-  confirmDialog,
-  DollarInput,
   Form,
   Icon,
   InfoIconTooltip,
-  Link,
 } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
+  SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import {
-  sharesToUsdc,
-  sum,
-  usdcToShares,
-  usdcWithinEpsilon,
-} from "@/lib/pools";
+import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
+
+import {
+  WithdrawalCancelModal,
+  WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS,
+} from "./withdrawal-cancel-modal";
+import { WithdrawalHistoryModal } from "./withdrawal-history-modal";
+import {
+  WithdrawalRequestModal,
+  WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS,
+} from "./withdrawal-request-modal";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
     id
     amount
+  }
+`;
+
+export const SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS = gql`
+  ${WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS}
+  ${WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS}
+  fragment SeniorPoolWithdrawalPanelWithdrawalRequestFields on SeniorPoolWithdrawalRequest {
+    id
+    previewUsdcWithdrawable @client
+    previewFiduRequested @client
+    ...WithdrawalCancelModalWithdrawalFields
+    ...WithdrawalRequestModalWithdrawalFields
   }
 `;
 
@@ -41,239 +57,284 @@ interface SeniorPoolWithdrawalPanelProps {
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
   seniorPoolLiquidity: BigNumber;
+  epochEndsAt: number;
+  cancellationFee: FixedNumber;
+  existingWithdrawalRequest?: SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment;
 }
 
-interface FormFields {
-  amount: string;
-}
-
-export function SeniorPoolWithDrawalPanel({
+export function SeniorPoolWithdrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
+  epochEndsAt,
+  cancellationFee,
   vaultedStakedPositions = [],
-  seniorPoolLiquidity,
+  existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
-  const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
+  const { provider } = useWallet();
+
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isIncreaseModalOpen, setIsIncreaseModalOpen] = useState(false); // This should be separate from the modal for new requests because otherwise the New Request modal will become the increase modal as it closes (existingWithdrawalRequest becomes defined)
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  const rhfMethodsForWithdrawingUsdc = useForm();
+  const totalUserFidu = sumTotalShares(
+    fiduBalance,
+    {
+      amount:
+        existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
+      token: SupportedCrypto.Fidu,
+    },
+    stakedPositions.concat(vaultedStakedPositions)
+  );
   const totalSharesUsdc = sharesToUsdc(
     totalUserFidu,
     seniorPoolSharePrice
   ).amount;
-  const maxWithdrawableUsdc = totalSharesUsdc.gt(seniorPoolLiquidity)
-    ? seniorPoolLiquidity
-    : totalSharesUsdc;
+  const currentRequestUsdc = sharesToUsdc(
+    existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
+    seniorPoolSharePrice
+  ).amount;
 
   const apolloClient = useApolloClient();
-  const { provider } = useWallet();
 
-  const rhfMethods = useForm<FormFields>();
-  const { control } = rhfMethods;
-
-  const onSubmit = async (data: FormFields) => {
+  const withdrawUsdcWithToken = async () => {
     if (!provider) {
-      return;
+      throw new Error("Bad wallet connection");
+    } else if (!existingWithdrawalRequest) {
+      throw new Error("No withdrawal request");
     }
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
       provider,
     });
-    const sharePrice = await seniorPoolContract.sharePrice(); // ensures that share price is as up-to-date as possible by fetching it when withdrawal is performed.
-    let withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
-    if (usdcWithinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
-      withdrawAmountUsdc = maxWithdrawableUsdc;
-    }
-    const withdrawAmountFidu =
-      withdrawAmountUsdc.eq(maxWithdrawableUsdc) &&
-      maxWithdrawableUsdc.lt(seniorPoolLiquidity)
-        ? totalUserFidu
-        : usdcToShares(withdrawAmountUsdc, sharePrice).amount;
-    if (withdrawAmountFidu.lte(fiduBalance.amount)) {
-      const transaction = seniorPoolContract.withdrawInFidu(withdrawAmountFidu);
-      await toastTransaction({ transaction });
-      await apolloClient.refetchQueries({ include: "active" });
-    } else {
-      // If the user's unstaked FIDU was not sufficient for the amount they want to withdraw, unstake-and-withdraw
-      // from however many of their staked positions are necessary and sufficient for the remaining portion of the
-      // amount they want to withdraw. To be user-friendly, we exit these positions in reverse order of their vesting
-      // end time; positions whose rewards vesting schedule has not completed will be exited before positions whose
-      // rewards vesting schedule has completed, which is desirable for the user as that maximizes the rate at which
-      // they continue to earn vested (i.e. claimable) rewards. Also, note that among the (unstakeable) positions
-      // whose rewards vesting schedule has completed, there is no reason to prefer exiting one position versus
-      // another, as all such positions earn rewards at the same rate.
-      const stakingRewardsContract = await getContract({
-        name: "StakingRewards",
-        provider,
-      });
-      const unstakedWithdrawalPortion = fiduBalance.amount;
-      const details = await Promise.all(
-        stakedPositions.map((position) =>
-          stakingRewardsContract.positions(position.id)
-        )
-      );
-      const detailedPositions = stakedPositions.map((position, index) => ({
-        ...position,
-        details: details[index],
-      }));
-      detailedPositions.sort((a, b) =>
-        b.details.rewards.endTime.sub(a.details.rewards.endTime).toNumber()
-      );
-      let remainingWithdrawalAmount = withdrawAmountFidu.sub(
-        unstakedWithdrawalPortion
-      );
-      const tokenIds: string[] = [];
-      const fiduAmounts: BigNumber[] = [];
-      for (const position of detailedPositions) {
-        if (remainingWithdrawalAmount.isZero()) {
-          break;
-        }
-        if (position.amount.isZero()) {
-          continue;
-        }
-        const amountFromThisToken = position.details.amount.gt(
-          remainingWithdrawalAmount
-        )
-          ? remainingWithdrawalAmount
-          : position.details.amount;
-        tokenIds.push(position.id);
-        fiduAmounts.push(amountFromThisToken);
-        remainingWithdrawalAmount =
-          remainingWithdrawalAmount.sub(amountFromThisToken);
-      }
-      if (!remainingWithdrawalAmount.isZero()) {
-        throw new Error("Insufficient balance to withdraw");
-      }
-      const confirmation = await confirmDialog(
-        `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position.`
-      );
-      if (!confirmation) {
-        throw new Error("User backed out");
-      }
-      if (!unstakedWithdrawalPortion.isZero()) {
-        const transaction1 = seniorPoolContract.withdrawInFidu(
-          unstakedWithdrawalPortion
-        );
-        // purposefully don't await this one, otherwise the second withdrawal will wait for this one to confirm
-        toastTransaction({
-          transaction: transaction1,
-          pendingPrompt: "Submitted withdrawal of unstaked position.",
-          successPrompt: "Successfully withdrew unstaked position.",
-        }).then(() => apolloClient.refetchQueries({ include: "active" }));
-      }
-      const transaction2 =
-        stakingRewardsContract.unstakeAndWithdrawMultipleInFidu(
-          tokenIds,
-          fiduAmounts
-        );
-      await toastTransaction({
-        transaction: transaction2,
-        pendingPrompt: "Submitted withdrawal of staked position(s).",
-        successPrompt: "Successfully withdrew from staked position(s).",
-      });
-      await apolloClient.refetchQueries({ include: "active" });
-    }
-  };
-
-  const validateAmount = async (value: string) => {
-    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
-    if (valueAsUsdc.lte(BigNumber.from(0))) {
-      return "Amount must be greater than 0";
-    }
-    if (
-      valueAsUsdc.gt(maxWithdrawableUsdc) &&
-      !usdcWithinEpsilon(valueAsUsdc, maxWithdrawableUsdc)
-    ) {
-      return "Amount exceeds what is available to withdraw";
-    }
+    await toastTransaction({
+      transaction: seniorPoolContract.claimWithdrawalRequest(
+        existingWithdrawalRequest.tokenId
+      ),
+    });
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   return (
-    <div className="rounded-xl bg-sunrise-01 p-5 text-white">
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between gap-1 text-sm">
-          <div>Available to withdraw</div>
-          <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
-        </div>
-        <div className="flex items-center gap-3 text-5xl">
-          {formatCrypto({
-            token: SupportedCrypto.Usdc,
-            amount: maxWithdrawableUsdc,
-          })}
-          <Icon name="Usdc" size="sm" />
-        </div>
-      </div>
-      <div className="mb-9">
-        <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-          <div>Your senior pool position</div>
-          <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xl">
+    <>
+      <div className="rounded-xl bg-midnight-01 p-5 text-white">
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between gap-1 text-sm">
+            <div>Your current position</div>
+            <InfoIconTooltip
+              className="!text-white/60"
+              content="The USD value of your current position in the Senior Pool."
+            />
+          </div>
+          <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
+            {formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: totalSharesUsdc,
+            })}
+          </div>
+          <div>
             {formatCrypto(
-              sharesToUsdc(
-                fiduBalance.amount.add(
-                  sum("amount", stakedPositions.concat(vaultedStakedPositions))
-                ),
-                seniorPoolSharePrice
-              )
+              {
+                token: SupportedCrypto.Fidu,
+                amount: totalUserFidu,
+              },
+              { includeToken: true }
             )}
           </div>
-          <Icon name="Usdc" size="sm" />
         </div>
-      </div>
-      <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-        <div className="mb-3">
-          <DollarInput
-            name="amount"
-            label="Withdrawal amount"
-            control={control}
-            textSize="xl"
-            colorScheme="dark"
-            rules={{ required: "Required", validate: validateAmount }}
-            labelClassName="!mb-3 text-sm"
-            maxValue={maxWithdrawableUsdc}
-          />
-        </div>
-        <div className="mb-3 text-sm">
-          Please be aware that Goldfinch charges a withdrawal fee of 0.5%
-        </div>
-        <Button
-          colorScheme="secondary"
-          size="xl"
-          className="block w-full"
-          type="submit"
-        >
-          Withdraw
-        </Button>
-        {vaultedStakedPositions.length > 0 ? (
-          <div className="flex-column mt-3 flex items-center justify-between gap-4 rounded bg-mustard-200 p-3 text-xs md:flex-row">
-            <div className="text-mustard-900">
-              You cannot withdraw capital from your positions while they are in
-              the Vault
+        <div className="mb-5">
+          <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+            <div>Ready to withdraw</div>
+            <InfoIconTooltip
+              className="!text-white/60"
+              content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet."
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-3xl font-medium">
+              {formatCrypto({
+                amount:
+                  existingWithdrawalRequest?.previewUsdcWithdrawable ??
+                  BigNumber.from(0),
+                token: SupportedCrypto.Usdc,
+              })}
             </div>
-            <Link
-              href="/membership"
-              iconRight="ArrowSmRight"
-              className="whitespace-nowrap font-medium text-mustard-700"
+            <Icon name="Usdc" size="sm" />
+          </div>
+        </div>
+
+        {existingWithdrawalRequest ? (
+          <Form
+            rhfMethods={rhfMethodsForWithdrawingUsdc}
+            onSubmit={withdrawUsdcWithToken}
+          >
+            <Button
+              type="submit"
+              colorScheme="secondary"
+              size="xl"
+              disabled={existingWithdrawalRequest.previewUsdcWithdrawable.isZero()}
+              className="mb-2 block w-full"
             >
-              Go to Vault
-            </Link>
+              Withdraw USDC
+            </Button>
+          </Form>
+        ) : (
+          <Button
+            colorScheme="secondary"
+            size="xl"
+            onClick={() => setIsRequestModalOpen(true)}
+            className="mb-2 block w-full"
+          >
+            Request withdrawal
+          </Button>
+        )}
+
+        {existingWithdrawalRequest ? (
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+              <div>Withdrawal request</div>
+              <InfoIconTooltip
+                className="!text-white/60"
+                content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request."
+              />
+            </div>
+            <div className="mb-3 flex items-end justify-between gap-2">
+              <div className="text-3xl font-medium">
+                {formatCrypto({
+                  token: SupportedCrypto.Fidu,
+                  amount: existingWithdrawalRequest.previewFiduRequested,
+                })}
+              </div>
+              <div className="text-sm">
+                {formatCrypto(
+                  {
+                    token: SupportedCrypto.Usdc,
+                    amount: currentRequestUsdc,
+                  },
+                  { includeSymbol: true }
+                )}
+              </div>
+            </div>
+
+            <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+              <div>Next distribution</div>
+              <InfoIconTooltip
+                className="!text-white/60"
+                content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled."
+              />
+            </div>
+            <div className="mb-5 flex items-end justify-between gap-1">
+              <div className="text-2xl">
+                {format(epochEndsAt * 1000, "MMM d, y")}
+              </div>
+              <button
+                onClick={() => setIsHistoryModalOpen(true)}
+                className="text-xs text-white underline"
+              >
+                View request history
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Button
+                  colorScheme="twilight"
+                  size="xl"
+                  className="block w-full"
+                  onClick={() => setIsIncreaseModalOpen(true)}
+                >
+                  Increase
+                </Button>
+              </div>
+              <div className="flex-1">
+                <Button
+                  onClick={() => setIsCancelModalOpen(true)}
+                  colorScheme="twilight"
+                  size="xl"
+                  className="block w-full"
+                  disabled={existingWithdrawalRequest.previewFiduRequested.isZero()}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
           </div>
         ) : null}
-      </Form>
-    </div>
+      </div>
+
+      <WithdrawalRequestModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        sharePrice={seniorPoolSharePrice}
+        walletFidu={fiduBalance}
+        stakedFidu={{
+          token: SupportedCrypto.Fidu,
+          amount: sum("amount", stakedPositions),
+        }}
+        vaultedFidu={{
+          token: SupportedCrypto.Fidu,
+          amount: sum("amount", vaultedStakedPositions),
+        }}
+        cancellationFee={cancellationFee}
+        nextDistributionTimestamp={epochEndsAt}
+      />
+      {existingWithdrawalRequest ? (
+        <WithdrawalRequestModal
+          isOpen={isIncreaseModalOpen}
+          onClose={() => setIsIncreaseModalOpen(false)}
+          sharePrice={seniorPoolSharePrice}
+          existingWithdrawalRequest={existingWithdrawalRequest}
+          walletFidu={fiduBalance}
+          stakedFidu={{
+            token: SupportedCrypto.Fidu,
+            amount: sum("amount", stakedPositions),
+          }}
+          vaultedFidu={{
+            token: SupportedCrypto.Fidu,
+            amount: sum("amount", vaultedStakedPositions),
+          }}
+          cancellationFee={cancellationFee}
+          nextDistributionTimestamp={epochEndsAt}
+        />
+      ) : null}
+      {existingWithdrawalRequest ? (
+        <WithdrawalCancelModal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          cancellationFee={cancellationFee}
+          existingWithdrawalRequest={existingWithdrawalRequest}
+        />
+      ) : null}
+      <WithdrawalHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+      />
+    </>
   );
+}
+
+function sumStakedShares(
+  staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
+): BigNumber {
+  const totalStaked = staked.reduce(
+    (previous, current) => previous.add(current.amount),
+    BigNumber.from(0)
+  );
+
+  return totalStaked;
 }
 
 function sumTotalShares(
   unstaked: CryptoAmount,
+  requested: CryptoAmount,
   staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
 ): BigNumber {
   if (unstaked.token !== SupportedCrypto.Fidu) {
     throw new Error("Unstaked is not a CryptoAmount in FIDU");
   }
-  const totalStaked = staked.reduce(
-    (previous, current) => previous.add(current.amount),
-    BigNumber.from(0)
-  );
-  return unstaked.amount.add(totalStaked);
+  const totalStaked = sumStakedShares(staked);
+
+  return unstaked.amount.add(totalStaked).add(requested.amount);
 }

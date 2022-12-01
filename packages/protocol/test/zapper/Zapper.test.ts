@@ -152,7 +152,6 @@ const baseSetupTest = deployments.createFixture(async () => {
   } = await deployBaseFixture()
 
   // Set up contracts
-  await seniorPool.initZapperRole()
   await go.initZapperRole()
   await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), zapper.address)
   await go.grantRole(await go.ZAPPER_ROLE(), zapper.address)

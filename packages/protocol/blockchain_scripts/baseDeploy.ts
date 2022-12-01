@@ -25,6 +25,7 @@ import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
+import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
 
 const logger: Logger = console.log
 
@@ -61,6 +62,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const seniorPool = await deploySeniorPool(deployer, {config, fidu})
   await deployBorrower(deployer, {config})
   await deploySeniorPoolStrategies(deployer, {config})
+  logger("Deploying WithdrawalRequestToken")
+  await deployWithdrawalRequestToken(deployer, {config})
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deployer, {config})
   await deployClImplementation(deployer, {config})
@@ -92,7 +95,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   logger("deploying Zapper and granting it ZAPPER_ROLE role on SeniorPool, StakingRewards, and Go")
   const zapper = await deployZapper(deployer, {config, deployEffects})
-  await seniorPool.initZapperRole({from: trustedSigner})
   await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
   await go.contract.initZapperRole({from: trustedSigner})
   await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
