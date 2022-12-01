@@ -100,12 +100,12 @@ export function WithdrawalHistoryModal({
               action: "postpone",
               description: (
                 <div className="flex items-center gap-2">
-                  <div>Postponed</div>
+                  <div>No distribution</div>
                   <InfoIconTooltip
-                    content={`This distribution has been postponed to ${formatDate(
+                    content={`This occurs when the Senior Pool receives no deposits or borrower repayments during a two week period. The next distribution occurs on ${formatDate(
                       postponement.newEndsAt * 1000,
                       "MMM dd, yyyy"
-                    )}. This occurs when there is no liquidity in the Senior Pool to be distributed.`}
+                    )}.`}
                   />
                 </div>
               ),
