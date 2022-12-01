@@ -9,6 +9,7 @@ export const seniorPoolStatusResolvers: Resolvers[string] = {
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
       provider,
+      useSigner: false,
     });
     const currentEpoch = await seniorPoolContract.currentEpoch();
     return currentEpoch.endsAt.toNumber();
