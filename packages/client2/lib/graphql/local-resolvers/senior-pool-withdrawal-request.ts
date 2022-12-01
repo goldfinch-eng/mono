@@ -15,6 +15,7 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
       provider,
+      useSigner: false,
     });
     const preview = await seniorPoolContract.withdrawalRequest(tokenId);
     return preview.usdcWithdrawable;
@@ -27,6 +28,7 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
       provider,
+      useSigner: false,
     });
     const preview = await seniorPoolContract.withdrawalRequest(tokenId);
     return preview.fiduRequested;
