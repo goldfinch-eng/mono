@@ -241,7 +241,7 @@ These tests are special. They use existing mainnet state, so
 that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
-describe.only("mainnet forking tests", async function () {
+describe("mainnet forking tests", async function () {
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory: GoldfinchFactoryInstance, busd, usdt, cUSDC
@@ -355,7 +355,6 @@ describe.only("mainnet forking tests", async function () {
 
       await pool.assess()
 
-      // Advance to Oct 23rd
       await advanceTime({toSecond: await cl.nextDueTime()})
       await pool.assess()
 
@@ -389,7 +388,10 @@ describe.only("mainnet forking tests", async function () {
       const withdrawalRequestsByEpoch: any[] = []
 
       // Each staked fidu holder is going to unstake and request to withdraw
-      fiduRequestedByEpoch.push(ZERO)
+      const currentEpoch = await seniorPool.currentEpoch()
+      const latestMainnetWithdrawalRequestIndex = (await requestTokens.totalSupply()).toNumber()
+
+      fiduRequestedByEpoch.push(new BN(currentEpoch.fiduRequested))
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         const fiduBalance = await stakingRewards.stakedBalanceOf(stakedFiduHolders[i]!.stakingRewardsTokenId)
         await impersonateAccount(hre, stakedFiduHolders[i]!.address)
@@ -403,6 +405,7 @@ describe.only("mainnet forking tests", async function () {
           [() => fidu.balanceOf(stakedFiduHolders[i]!.address), {by: fiduBalance.neg()}],
           [() => fidu.balanceOf(seniorPool.address), {by: fiduBalance}],
         ])
+
         fiduRequestedByEpoch[0] = fiduRequestedByEpoch[0]!.add(fiduBalance)
       }
 
@@ -410,11 +413,16 @@ describe.only("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcAvailable)
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[0].push(await seniorPool.withdrawalRequest(i + 1))
+        withdrawalRequestsByEpoch[0].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
-      // Stratos repayment
+      // Stratos repayment  (also advances time to payment due date)
       await repayPool(0, owner)
+
+      // Advance to next epoch - may not function as expected if mainnet forking block is moved forward
+      await advanceAndMineBlock({days: 14})
 
       // IN EPOCH 2
       usdcAvailable = await redeemPool(613)
@@ -423,11 +431,16 @@ describe.only("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcAvailable)
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[1].push(await seniorPool.withdrawalRequest(i + 1))
+        withdrawalRequestsByEpoch[1].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
-      // Addem Repayment
+      // Addem Repayment (also advances time to payment due date)
       await repayPool(1, owner)
+
+      // Advance to next epoch - may not function as expected if mainnet forking block is moved forward
+      await advanceAndMineBlock({days: 14})
 
       // IN EPOCH 3
       usdcAvailable = await redeemPool(738)
@@ -437,7 +450,9 @@ describe.only("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcFromShares(fiduRequestedByEpoch[2]!, await seniorPool.sharePrice()))
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[2].push(await seniorPool.withdrawalRequest(i + 1))
+        withdrawalRequestsByEpoch[2].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Advance to Epoch 4
@@ -451,7 +466,9 @@ describe.only("mainnet forking tests", async function () {
       fiduRequestedByEpoch.push(fiduRequestedByEpoch[2]!.sub(expectedFiduLiquidatedByEpoch[2]!))
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[3].push(await seniorPool.withdrawalRequest(i + 1))
+        withdrawalRequestsByEpoch[3].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Verify that the request after each epoch had the correct usdc withdrawable and fidu requested
@@ -498,8 +515,11 @@ describe.only("mainnet forking tests", async function () {
         const request = withdrawalRequestsByEpoch[3][requestId]
         const userUsdc = amountLessProtocolFee(new BN(request.usdcWithdrawable))
         const reserveUsdc = protocolFee(new BN(request.usdcWithdrawable))
+
         await expectAction(() =>
-          seniorPool.claimWithdrawalRequest(requestId + 1, {from: stakedFiduHolders[requestId]!.address})
+          seniorPool.claimWithdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1, {
+            from: stakedFiduHolders[requestId]!.address,
+          })
         ).toChange([
           [() => usdc.balanceOf(stakedFiduHolders[requestId]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
           [() => usdc.balanceOf(reserveAddress), {by: reserveUsdc}],
@@ -511,7 +531,9 @@ describe.only("mainnet forking tests", async function () {
 
         expect(
           (await requestTokens.balanceOf(stakedFiduHolders[requestId]!.address)).eq(new BN("0")) ||
-            (await seniorPool.withdrawalRequest(requestId)).usdcWithdrawable.eq(new BN("0"))
+            (
+              await seniorPool.withdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1)
+            ).usdcWithdrawable.eq(new BN("0"))
         ).to.be.true
       }
     })
@@ -521,6 +543,7 @@ describe.only("mainnet forking tests", async function () {
       await impersonateAccount(hre, fiduHolder.address)
       await stakingRewards.unstake(fiduHolder.stakingRewardsTokenId, fiduVal(10_000), {from: fiduHolder.address})
       await fidu.approve(seniorPool.address, fiduVal(10_000), {from: fiduHolder.address})
+      const totalSupply = await requestTokens.totalSupply()
       await seniorPool.requestWithdrawal(fiduVal(10_000), {from: fiduHolder.address})
 
       const cancelationFeeInBps = await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeInBps)
@@ -529,7 +552,9 @@ describe.only("mainnet forking tests", async function () {
 
       const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
 
-      await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: fiduHolder.address})).toChange([
+      await expectAction(() =>
+        seniorPool.cancelWithdrawalRequest(totalSupply.add(new BN(1)), {from: fiduHolder.address})
+      ).toChange([
         [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
         [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
