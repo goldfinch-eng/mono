@@ -105,9 +105,7 @@ export default function SeniorPoolPage() {
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
       data?.vaultedStakedPositions.length !== 0 ||
-      data?.seniorPoolWithdrawalRequests.length !== 0) &&
-    user &&
-    canUserParticipateInSeniorPool(user);
+      data?.seniorPoolWithdrawalRequests.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -189,6 +187,9 @@ export default function SeniorPoolPage() {
 
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithdrawalPanel
+                canUserParticipate={
+                  user ? canUserParticipateInSeniorPool(user) : false
+                }
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
                 epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
