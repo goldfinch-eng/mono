@@ -149,7 +149,3 @@ longer possible.
 
 The biggest upside to Epoch Withdrawals is that it prioritizes fairness and ensures all LPs can have at least partial
 liquidity on their positions.
-
-## Auditing
-The Epoch Withdrawal System was internally audited by members of the Warbler Labs engineering team. The internal audit
-report is available here (TODO - when the audit PR is merged).
