@@ -10,6 +10,7 @@ const CONFIG_KEYS_BY_TYPE = {
     DrawdownPeriodInSeconds: 7,
     TransferPeriodRestrictionInDays: 8,
     LeverageRatio: 9,
+    SeniorPoolWithdrawalCancelationFeeInBps: 10,
   },
   addresses: {
     Pool: 0,
@@ -37,6 +38,7 @@ const CONFIG_KEYS_BY_TYPE = {
     StakingRewards: 21,
     FiduUSDCCurveLP: 22,
     TranchedPoolImplementationRepository: 23,
+    WithdrawalRequestToken: 24,
   },
 }
 

@@ -11,6 +11,10 @@ import {
   Link,
   ModalStepper,
   useStepperContext,
+  AssetPicker,
+  AssetBox,
+  AssetBoxPlaceholder,
+  AssetInputBox,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
@@ -33,14 +37,11 @@ import {
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import {
-  AssetBox,
-  GfiBox,
-  AssetPicker,
-  AssetBoxPlaceholder,
-  convertPoolTokenToAsset,
-} from "./asset-box";
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
+import {
+  convertStakedPositionToAsset,
+  convertPoolTokenToAsset,
+} from "./helpers";
 import { Legalese } from "./legal-agreement";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
@@ -244,11 +245,17 @@ function SelectionStep({
         {maxVaultableGfi.amount.isZero() ? (
           <BuyGfiCta />
         ) : (
-          <GfiBox
-            maxGfi={maxVaultableGfi}
+          <AssetInputBox
+            asset={{
+              name: "GFI",
+              description: "Goldfinch Token",
+              nativeAmount: maxVaultableGfi,
+              usdcAmount: gfiToUsdc(maxVaultableGfi, fiatPerGfi),
+            }}
             fiatPerGfi={fiatPerGfi}
-            name="gfiToVault"
             control={control}
+            name="gfiToVault"
+            label="GFI to Vault"
           />
         )}
       </div>
@@ -266,15 +273,7 @@ function SelectionStep({
               control={control}
               options={vaultableStakedPositions.map((vsp) => ({
                 id: vsp.id,
-                asset: {
-                  name: "Staked FIDU",
-                  description: "Goldfinch Senior Pool Position",
-                  usdcAmount: sharesToUsdc(vsp.amount, sharePrice),
-                  nativeAmount: {
-                    token: SupportedCrypto.Fidu,
-                    amount: vsp.amount,
-                  },
-                },
+                asset: convertStakedPositionToAsset(vsp, sharePrice),
               }))}
             />
             <AssetPicker
@@ -476,15 +475,7 @@ function ReviewStep({
           {stakedPositionsToVault.map((s) => (
             <AssetBox
               key={`staked-fidu-${s.id}`}
-              asset={{
-                name: "Staked FIDU",
-                description: "Goldfinch Senior Pool Position",
-                usdcAmount: sharesToUsdc(s.amount, sharePrice),
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: s.amount,
-                },
-              }}
+              asset={convertStakedPositionToAsset(s, sharePrice)}
             />
           ))}
           {poolTokensToVault.map((p) => (

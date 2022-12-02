@@ -80,6 +80,35 @@ export default function DevToolsButtons({
         <div className="px-2">
           <Button
             size="lg"
+            isLoading={loading === "currentUser"}
+            disabled={disabled}
+            onClick={async () => {
+              setDisabled(true);
+              setLoading("currentUser");
+
+              const response = await fetch(`${SERVER_URL}/setupCurrentUser`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  address: account,
+                }),
+              });
+
+              setDisabled(false);
+              setLoading(null);
+
+              if (!response.ok) {
+                throw new Error("Could not setup local user");
+              }
+            }}
+          >
+            Add FIDU & Golist
+          </Button>
+        </div>
+
+        <div className="px-2">
+          <Button
+            size="lg"
             isLoading={loading === "advance1"}
             disabled={disabled}
             onClick={async () => {
@@ -129,6 +158,19 @@ export default function DevToolsButtons({
             }}
           >
             Advance - 30 Days
+          </Button>
+        </div>
+
+        <div className="px-2">
+          <Button
+            size="lg"
+            isLoading={loading === "drainSeniorPool"}
+            disabled={disabled}
+            onClick={async () => {
+              setPanel("drain-senior-pool");
+            }}
+          >
+            Drain Senior Pool
           </Button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.4;
 
-import "../protocol/core/UniqueIdentity.sol";
+import {UniqueIdentity} from "../protocol/core/UniqueIdentity.sol";
 
 contract TestUniqueIdentity is UniqueIdentity {
   function _mintForTest(
@@ -12,5 +12,9 @@ contract TestUniqueIdentity is UniqueIdentity {
     bytes memory data
   ) public onlyAdmin incrementNonce(to) {
     _mint(to, id, amount, data);
+  }
+
+  function _burnForTest(address account, uint256 id) public onlyAdmin incrementNonce(account) {
+    _burn(account, id, 1);
   }
 }

@@ -30,7 +30,7 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal, USDC_DECIMALS} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -472,6 +472,48 @@ async function createBorrowerContractAndPools({
   logger(`Pools ready for ${address}`)
 }
 
+export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment, usdcAmount: string) {
+  const {
+    deployments: {getOrNull},
+  } = hre
+  const chainId = await hre.getChainId()
+  const {erc20} = await getERC20s({hre, chainId})
+  const protocol_owner = await getProtocolOwner()
+  const underwriter = protocol_owner
+  const borrower = protocol_owner
+  const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
+
+  const seniorAmount = new BN(usdcAmount).mul(USDC_DECIMALS)
+  // Senior pool invests 4x the junio investment
+  const juniorAmount = seniorAmount.div(new BN("4"))
+
+  const pool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower,
+    erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
+    limitInDollars: 1_000_000_000, // set a very large limit
+  })
+
+  // Invest in Junior Tranche
+  const ownerSigner = ethers.provider.getSigner(protocol_owner)
+  const approveTxn = await erc20.connect(ownerSigner).approve(pool.address, juniorAmount.toNumber())
+  await approveTxn.wait()
+  const juniorDepositTxn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, juniorAmount.toNumber())
+  await juniorDepositTxn.wait()
+  const juniorLockTx = await pool.connect(ownerSigner).lockJuniorCapital()
+  await juniorLockTx.wait()
+
+  // Invest in Senior Tranche
+  const seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  const seniorDepositTxn = await seniorPool.invest(pool.address)
+  await seniorDepositTxn.wait()
+
+  return pool.address
+}
+
 async function createUnfilledPool(
   address: string,
   bwrConAddr: string,
@@ -636,6 +678,56 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
     const {contract} = erc20
     const decimals = ten.pow(new BN(await contract.decimals()))
     await contract.transfer(userToFund, String(new BN(250000).mul(decimals)))
+  }
+}
+
+export async function addUserToGoList(address: string) {
+  const {
+    deployments: {getOrNull, log},
+  } = hre
+
+  logger = log
+
+  const protocol_owner = await getProtocolOwner()
+
+  const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
+
+  let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
+  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  if (!isMainnetForking()) {
+    go = go.connect(protocolOwnerSigner)
+    await go.setLegacyGoList(goldfinchConfig.address)
+  }
+  const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
+    at: await go.legacyGoList(),
+  })
+
+  return await addUsersToGoList(legacyGoldfinchConfig, [address])
+}
+
+export async function fundUser(address: string) {
+  const {
+    deployments: {log},
+  } = hre
+
+  logger = log
+
+  const chainId = await hre.getChainId()
+
+  const {erc20s} = await getERC20s({hre, chainId})
+
+  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+    await fundFromLocalWhale(address, erc20s, {logger})
+  }
+
+  if (isMainnetForking()) {
+    const protocolOwner = await getProtocolOwner()
+    await impersonateAccount(hre, protocolOwner)
+    await fundWithWhales(["ETH"], [protocolOwner])
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], 75000)
+
+    // Patch USDC DOMAIN_SEPARATOR to make permit work locally
+    await overrideUsdcDomainSeparator()
   }
 }
 

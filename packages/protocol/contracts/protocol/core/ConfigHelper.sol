@@ -7,6 +7,7 @@ import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {ConfigOptions} from "./ConfigOptions.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IFidu} from "../../interfaces/IFidu.sol";
+import {IWithdrawalRequestToken} from "../../interfaces/IWithdrawalRequestToken.sol";
 import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
 import {ISeniorPoolStrategy} from "../../interfaces/ISeniorPoolStrategy.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
@@ -83,6 +84,10 @@ library ConfigHelper {
       ImplementationRepository(
         config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository))
       );
+  }
+
+  function getWithdrawalRequestToken(GoldfinchConfig config) internal view returns (IWithdrawalRequestToken) {
+    return IWithdrawalRequestToken(config.getAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken)));
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
@@ -192,5 +197,9 @@ library ConfigHelper {
 
   function getLeverageRatio(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio));
+  }
+
+  function getSeniorPoolWithdrawalCancelationFeeInBps(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps));
   }
 }

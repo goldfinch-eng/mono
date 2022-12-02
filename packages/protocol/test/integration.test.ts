@@ -141,6 +141,11 @@ describe("Goldfinch", async function () {
       return tranchedPool
     }
 
+    async function requestWithdrawal(amount, investor) {
+      await erc20Approve(fidu, seniorPool.address, amount, [investor])
+      await seniorPool.requestWithdrawal(amount, {from: investor})
+    }
+
     async function depositToSeniorPool(amount, investor?) {
       investor = investor || investor1
       await seniorPool.deposit(amount, {from: investor})
@@ -289,18 +294,6 @@ describe("Goldfinch", async function () {
           [creditLine.interestOwed, {to: new BN(0)}],
         ])
 
-        // There was 10k already in the pool, so each investor has a third
-        const grossExpectedReturn = amount.add(expectedSeniorInterest.div(new BN(3)))
-        const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
-        const availableFidu = await getBalance(investor2, fidu)
-        await expectAction(async () => {
-          await withdrawFromSeniorPool("max")
-          await withdrawFromSeniorPoolInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
-        }).toChange([
-          [() => getBalance(investor1, usdc), {byCloseTo: expectedReturn}],
-          [() => getBalance(investor2, usdc), {byCloseTo: expectedReturn}], // Also ensures share price is correctly incorporated
-        ])
-
         // Only 2 junior investors, and both were for the same amount. 10% was drawdown, so 90% of junior principal is redeemable
         const principalFractionUsed = (await creditLine.balance()).mul(ONE_HUNDRED).div(limit)
         const juniorPrincipalAvailable = getPercent(juniorAmount, ONE_HUNDRED.sub(principalFractionUsed))
@@ -311,6 +304,21 @@ describe("Goldfinch", async function () {
         }).toChange([
           [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
+        ])
+
+        // There was 10k already in the pool, so each investor has a third
+        const grossExpectedReturn = amount.add(expectedSeniorInterest.div(new BN(3)))
+        const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
+        const availableFidu = await getBalance(investor2, fidu)
+        await requestWithdrawal(availableFidu, investor1)
+        await requestWithdrawal(availableFidu, investor2)
+        await advanceTime({days: 14})
+        await expectAction(async () => {
+          await seniorPool.claimWithdrawalRequest("1", {from: investor1})
+          await seniorPool.claimWithdrawalRequest("2", {from: investor2})
+        }).toChange([
+          [() => usdc.balanceOf(investor1), {byCloseTo: expectedReturn}],
+          [() => usdc.balanceOf(investor2), {byCloseTo: expectedReturn}],
         ])
       })
 
@@ -341,7 +349,8 @@ describe("Goldfinch", async function () {
         // All the main actions should still work as expected!
         await expect(drawdown(tranchedPool, new BN(10))).to.be.rejected
         await depositToSeniorPool(new BN(10))
-        await withdrawFromSeniorPool(new BN(10))
+        await erc20Approve(fidu, seniorPool.address, new BN(10), [investor1])
+        await requestWithdrawal(new BN(10), investor1)
         await makePayment(tranchedPool, new BN(10))
       })
 

@@ -1,9 +1,10 @@
 import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {Fidu as FiduContract} from "../../generated/SeniorPool/Fidu"
 import {USDC as UsdcContract} from "../../generated/SeniorPool/USDC"
-import {CONFIG_KEYS_ADDRESSES} from "../constants"
+import {CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
 import {getAddressFromConfig} from "../utils"
@@ -28,7 +29,6 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   if (!poolStatus) {
     poolStatus = new SeniorPoolStatus(SENIOR_POOL_STATUS_ID)
     poolStatus.rawBalance = new BigInt(0)
-    poolStatus.compoundBalance = new BigInt(0)
     poolStatus.balance = new BigInt(0)
     poolStatus.totalShares = new BigInt(0)
     poolStatus.sharePrice = new BigInt(0)
@@ -43,6 +43,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.tranchedPools = []
     poolStatus.usdcBalance = BigInt.zero()
+    poolStatus.cancellationFee = BigDecimal.zero()
     poolStatus.save()
   }
   return poolStatus
@@ -72,11 +73,11 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
 
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(seniorPoolContract.config())
   const fidu_contract = FiduContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.Fidu))
   const usdc_contract = UsdcContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.USDC))
 
   let sharePrice = seniorPoolContract.sharePrice()
-  let compoundBalance = seniorPoolContract.compoundBalance()
   let totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
   let totalSupply = fidu_contract.totalSupply()
   let totalPoolAssets = totalSupply.times(sharePrice)
@@ -86,9 +87,11 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
     .minus(seniorPoolContract.totalLoansOutstanding())
     .plus(seniorPoolContract.totalWritedowns())
   let rawBalance = balance
+  let cancellationFee = goldfinchConfigContract.getNumber(
+    BigInt.fromI32(CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeInBps)
+  )
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
-  poolStatus.compoundBalance = compoundBalance
   poolStatus.totalLoansOutstanding = totalLoansOutstanding
   poolStatus.totalShares = totalSupply
   poolStatus.balance = balance
@@ -97,6 +100,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.usdcBalance = usdc_contract.balanceOf(seniorPoolAddress)
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
+  poolStatus.cancellationFee = new BigDecimal(cancellationFee).div(BigDecimal.fromString("10000"))
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
   updateEstimatedApyFromGfiRaw()

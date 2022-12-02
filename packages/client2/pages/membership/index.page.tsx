@@ -2,7 +2,14 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import { Button, Heading, Link } from "@/components/design-system";
+import {
+  Button,
+  Heading,
+  Link,
+  AssetBox,
+  Asset,
+  AssetBoxPlaceholder,
+} from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -14,19 +21,16 @@ import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
 import {
-  AssetBox,
-  Asset,
-  AssetBoxPlaceholder,
-  POOL_TOKEN_FIELDS_FOR_ASSETS,
-  convertPoolTokenToAsset,
-} from "./asset-box";
-import {
   AssetGroup,
   AssetGroupSubheading,
   AssetGroupButton,
 } from "./asset-group";
 import { BuyGfiCta, LpInSeniorPoolCta, BalancedIsBest } from "./ctas";
 import { Explainer } from "./explainer";
+import {
+  convertPoolTokenToAsset,
+  convertStakedPositionToAsset,
+} from "./helpers";
 import { IntroVideoSection } from "./intro-video-section";
 import {
   RemoveFromVault,
@@ -46,7 +50,19 @@ gql`
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
   ${CHART_DISBURSEMENT_FIELDS}
-  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
+  fragment StakedPositionFieldsForAssets on SeniorPoolStakedPosition {
+    id
+    amount
+  }
+  fragment PoolTokenFieldsForAssets on TranchedPoolToken {
+    id
+    principalAmount
+    principalRedeemed
+    tranchedPool {
+      id
+      name @client
+    }
+  }
   query MembershipPage($userId: String!) {
     seniorPools {
       id
@@ -84,8 +100,7 @@ gql`
       orderBy: startTime
       orderDirection: desc
     ) {
-      id
-      amount
+      ...StakedPositionFieldsForAssets
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -185,15 +200,9 @@ export default function MembershipPage() {
     data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      vaultableCapitalAssets.push({
-        name: "Staked FIDU",
-        description: "Goldfinch Senior Pool Position",
-        usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
-        nativeAmount: {
-          token: SupportedCrypto.Fidu,
-          amount: seniorPoolStakedPosition.amount,
-        },
-      });
+      vaultableCapitalAssets.push(
+        convertStakedPositionToAsset(seniorPoolStakedPosition, sharePrice)
+      );
     });
   }
 
@@ -467,18 +476,10 @@ export default function MembershipPage() {
                       {data.vaultedStakedPositions.map((vsp) => (
                         <AssetBox
                           key={vsp.id}
-                          asset={{
-                            name: "Staked FIDU",
-                            description: "Goldfinch Senior Pool Position",
-                            nativeAmount: {
-                              token: SupportedCrypto.Fidu,
-                              amount: vsp.seniorPoolStakedPosition.amount,
-                            },
-                            usdcAmount: {
-                              token: SupportedCrypto.Usdc,
-                              amount: vsp.usdcEquivalent,
-                            },
-                          }}
+                          asset={convertStakedPositionToAsset(
+                            vsp.seniorPoolStakedPosition,
+                            sharePrice
+                          )}
                         />
                       ))}
                       {data.vaultedPoolTokens.map((vpt) => (

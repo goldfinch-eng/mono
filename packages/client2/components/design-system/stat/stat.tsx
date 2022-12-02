@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { ReactNode } from "react";
 
-import { InfoIconTooltip } from "@/components/design-system";
+import { InfoIconTooltip, Shimmer } from "@/components/design-system";
 
 interface StatProps {
   /**
@@ -10,7 +10,7 @@ interface StatProps {
   label: string;
 
   /**
-   * The content of the stat to display
+   * The content of the stat to display. If not provided, a <Shimmer /> component will be rendered to indicate it is loading.
    */
   value?: ReactNode;
 
@@ -28,7 +28,7 @@ export function Stat({ label, value, tooltip }: StatProps) {
         {tooltip && <InfoIconTooltip size="sm" content={tooltip} />}
       </div>
       <div className="text-xl font-medium text-sand-700 md:text-2xl">
-        {value}
+        {value ?? <Shimmer style={{ width: "10ch" }} />}
       </div>
     </div>
   );
