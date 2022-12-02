@@ -1,5 +1,6 @@
+import clsx from "clsx";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 
 import { Button, Drawer } from "@/components/design-system";
 
@@ -18,15 +19,10 @@ export function DevTools() {
         className="group fixed bottom-5 right-5 z-10 scale-100 shadow-xl !transition-all hover:scale-105"
       >
         Dev Tools 2
-        <TwinkleSvg
-          className="pointer-events-none absolute -left-1 -top-1 h-6 w-6 scale-0 text-mustard-450 group-hover:animate-twinkle"
-          aria-hidden="true"
-          style={{ animationFillMode: "forwards" }}
-        />
-        <TwinkleSvg
-          className="pointer-events-none absolute -right-2 bottom-0 h-6 w-6 scale-0 text-mustard-450 group-hover:animate-twinkle"
-          aria-hidden="true"
-          style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}
+        <AnimatedTwinkle className="-left-1 -top-1" />
+        <AnimatedTwinkle
+          className="-right-2 bottom-0"
+          style={{ animationDelay: "0.2s" }}
         />
       </Button>
       <Drawer
@@ -38,5 +34,24 @@ export function DevTools() {
         <DevToolsRouter />
       </Drawer>
     </>
+  );
+}
+
+function AnimatedTwinkle({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <TwinkleSvg
+      className={clsx(
+        "pointer-events-none absolute h-6 w-6 scale-0 text-mustard-450 group-hover:animate-twinkle",
+        className
+      )}
+      style={style}
+      aria-hidden="true"
+    />
   );
 }
