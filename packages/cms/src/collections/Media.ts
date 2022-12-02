@@ -1,10 +1,14 @@
 import type { CollectionConfig } from "payload/types";
+import { afterMediaChange } from "../hooks/media";
 
 const Media: CollectionConfig = {
   slug: "media",
   labels: {
     singular: "Media",
     plural: "Media",
+  },
+  hooks: {
+    afterChange: [afterMediaChange],
   },
   access: {
     read: () => true,
