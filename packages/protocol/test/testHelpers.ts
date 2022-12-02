@@ -39,6 +39,8 @@ import {
   TestStakingRewardsInstance,
   TestPoolTokensInstance,
   StakingRewardsInstance,
+  WithdrawalRequestTokenInstance,
+  TestSeniorPoolCallerInstance,
   MembershipCollectorInstance,
   ERC20SplitterInstance,
 } from "../typechain/truffle"
@@ -102,6 +104,10 @@ function fiduToUSDC(number: BN | number) {
 
 function getNumShares(usdcAmount: BN, sharePrice: BN) {
   return usdcToFidu(usdcAmount).mul(FIDU_DECIMALS).div(sharePrice)
+}
+
+function usdcFromShares(fiduAmount: BN, sharePrice: BN) {
+  return fiduToUSDC(fiduAmount.mul(sharePrice)).div(FIDU_DECIMALS)
 }
 
 const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
@@ -297,6 +303,7 @@ async function deployAllContracts(
   options: DeployAllContractsOptions = {}
 ): Promise<{
   seniorPool: SeniorPoolInstance
+  seniorPoolCaller: TestSeniorPoolCallerInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
@@ -315,10 +322,10 @@ async function deployAllContracts(
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
   zapper: ZapperInstance
+  withdrawalRequestToken: WithdrawalRequestTokenInstance
   reserveSplitter: ERC20SplitterInstance
   membershipCollector: MembershipCollectorInstance
 }> {
-  await deployments.fixture("baseDeploy")
   await deployments.fixture("pendingMainnetMigrations")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
@@ -375,6 +382,12 @@ async function deployAllContracts(
     merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
   }
 
+  await deployments.deploy("TestSeniorPoolCaller", {
+    from: await getProtocolOwner(),
+    args: [seniorPool.address, usdc.address, fidu.address],
+  })
+  const seniorPoolCaller = await getTruffleContract<TestSeniorPoolCallerInstance>("TestSeniorPoolCaller")
+
   const uniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity")
   const go = await getTruffleContract<GoInstance>("Go")
 
@@ -383,8 +396,11 @@ async function deployAllContracts(
   const reserveSplitter = await getTruffleContract<ERC20SplitterInstance>("ERC20Splitter")
   const membershipCollector = await getTruffleContract<MembershipCollectorInstance>("MembershipCollector")
 
+  const withdrawalRequestToken = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
+
   return {
     seniorPool,
+    seniorPoolCaller,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
@@ -405,6 +421,7 @@ async function deployAllContracts(
     zapper,
     reserveSplitter,
     membershipCollector,
+    withdrawalRequestToken,
   }
 }
 
@@ -690,11 +707,6 @@ export const stakedFiduHolders = [
     address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
     stakingRewardsTokenId: 2118,
   },
-  // ~600K FIDU
-  {
-    address: "0xcFD727653C3d5a1B943f675781d3245B884f1d34",
-    stakingRewardsTokenId: 2116,
-  },
   // ~19k FIDU
   {
     address: "0x7AdC457434e8C57737AD2aCE768a863865f2AaBc",
@@ -754,6 +766,7 @@ export {
   gfiVal,
   usdcVal,
   fiduVal,
+  usdcFromShares,
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,

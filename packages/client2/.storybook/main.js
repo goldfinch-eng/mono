@@ -55,6 +55,12 @@ module.exports = {
         },
       ],
     });
+    // Allows .graphql files to be imported literally. Not because Storybook needs it, but some source files accidentally pull it in
+    rules.push({
+      test: /\.graphql$/i,
+      issuer: /\.[jt]sx?$/,
+      type: "asset/source",
+    });
 
     // Mocks the Next.js <Image /> component for Storybook
     config.resolve.alias["next/image"] = require.resolve(

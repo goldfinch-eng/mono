@@ -4,7 +4,7 @@ import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
-import { Link, Table } from "@/components/design-system";
+import { Link, Table, goldfinchLogoPngUrl } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   TransactionCategory,
@@ -26,6 +26,7 @@ gql`
           SENIOR_POOL_WITHDRAWAL
           SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
           SENIOR_POOL_UNSTAKE
+          SENIOR_POOL_DISTRIBUTION
         ]
       }
       orderBy: timestamp
@@ -59,12 +60,14 @@ const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
   TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
+  TransactionCategory.SeniorPoolDistribution,
 ]);
 
 const sentTokenCategories = new Set<TransactionCategory>([
   TransactionCategory.SeniorPoolStake,
   TransactionCategory.SeniorPoolDepositAndStake,
   TransactionCategory.TranchedPoolRepayment,
+  TransactionCategory.SeniorPoolDistribution,
 ]);
 
 export function TransactionTable() {
@@ -115,6 +118,18 @@ export function TransactionTable() {
               alt=""
             />
             <div>{transaction.tranchedPool?.borrowerName}</div>
+          </>
+        ) : transaction.category ===
+          TransactionCategory.SeniorPoolDistribution ? (
+          <>
+            <Image
+              src={goldfinchLogoPngUrl}
+              width={24}
+              height={24}
+              className="shrink-0 overflow-hidden rounded-full"
+              alt=""
+            />
+            <div>Goldfinch Protocol</div>
           </>
         ) : (
           <Address address={transaction.user.id} />

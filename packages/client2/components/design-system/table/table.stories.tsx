@@ -1,6 +1,6 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { Table } from "./table";
+import { Table, HeavyTable } from "./index";
 
 export default {
   title: "Components/Table",
@@ -14,6 +14,21 @@ export const TableStory: ComponentStory<typeof Table> = () => {
     <Table
       headings={["Alpha", "Beta", "Gamma"]}
       rows={[row, row, row, row, row, row, row, row]}
+    />
+  );
+};
+
+export const HeavyTableStory: ComponentStory<typeof HeavyTable> = () => {
+  return (
+    <HeavyTable
+      rows={[
+        ["Heading1", null, "Lorem ipsum dolor sit amet"],
+        [
+          "Heading2",
+          "Heading2 tooltip",
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        ],
+      ]}
     />
   );
 };

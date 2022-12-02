@@ -1,0 +1,10 @@
+query stakingRewardsTokenMetadata($id: ID!) {
+  seniorPoolStakedPosition(id: $id) {
+    id
+    initialAmount
+    amount
+    positionType
+    startTime
+    totalRewardsClaimed
+  }
+}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 interface SentinelProps {
   onVisibilityChange: (b: boolean) => void;
@@ -6,7 +6,9 @@ interface SentinelProps {
 
 export function Sentinel({ onVisibilityChange }: SentinelProps) {
   const divRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
+  // This might seem like a use case for useLayoutEffect, but I've found that useLayoutEffect actually runs too fast.
+  // The sentinel will not have any styles applied in the DOM and will not be considered intersecting on the first frame, even if it should be
+  useEffect(() => {
     if (!divRef.current) {
       return;
     }

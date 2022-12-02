@@ -3,5 +3,7 @@ export const RPC_URLS: { [chainId: number]: string } = {
   31337:
     process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
       ? "https://murmuration.goldfinch.finance/_chain"
+      : typeof process.env.NEXT_PUBLIC_LOCALHOST_RPC_URL !== "undefined"
+      ? process.env.NEXT_PUBLIC_LOCALHOST_RPC_URL
       : "http://localhost:8545",
 };

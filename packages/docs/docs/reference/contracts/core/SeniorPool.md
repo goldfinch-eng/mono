@@ -7,10 +7,16 @@ https://etherscan.io/address/0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822
 Main entry point for senior LPs (a.k.a. capital providers)
  Automatically invests across borrower pools using an adjustable strategy.
 
-### config
+### USDC_MANTISSA
 
 ```solidity
-contract GoldfinchConfig config
+uint256 USDC_MANTISSA
+```
+
+### FIDU_MANTISSA
+
+```solidity
+uint256 FIDU_MANTISSA
 ```
 
 ### ZAPPER_ROLE
@@ -19,70 +25,73 @@ contract GoldfinchConfig config
 bytes32 ZAPPER_ROLE
 ```
 
+### config
+
+```solidity
+contract GoldfinchConfig config
+```
+
 ### compoundBalance
 
 ```solidity
 uint256 compoundBalance
 ```
 
+_DEPRECATED!_
+
 ### writedowns
 
 ```solidity
-mapping(contract ITranchedPool &#x3D;&gt; uint256) writedowns
+mapping(contract ITranchedPool => uint256) writedowns
 ```
 
-### DepositMade
+_DEPRECATED, DO NOT USE._
+
+### writedownsByPoolToken
 
 ```solidity
-event DepositMade(address capitalProvider, uint256 amount, uint256 shares)
+mapping(uint256 => uint256) writedownsByPoolToken
 ```
 
-### WithdrawalMade
+_Writedowns by PoolToken id. This is used to ensure writedowns are incremental.
+  Example: At t1, a pool is late and should be written down by 10%. At t2, the pool
+  is even later, and should be written down by 25%. This variable helps ensure that
+  if writedowns occur at both t1 and t2, t2's writedown is only by the delta of 15%,
+  rather than double-counting the writedown percent from t1._
+
+### _checkpointedEpochId
 
 ```solidity
-event WithdrawalMade(address capitalProvider, uint256 userAmount, uint256 reserveAmount)
+uint256 _checkpointedEpochId
 ```
 
-### InterestCollected
+### _epochs
 
 ```solidity
-event InterestCollected(address payer, uint256 amount)
+mapping(uint256 => struct ISeniorPoolEpochWithdrawals.Epoch) _epochs
 ```
 
-### PrincipalCollected
+### _withdrawalRequests
 
 ```solidity
-event PrincipalCollected(address payer, uint256 amount)
+mapping(uint256 => struct ISeniorPoolEpochWithdrawals.WithdrawalRequest) _withdrawalRequests
 ```
 
-### ReserveFundsCollected
+### _usdcAvailable
 
 ```solidity
-event ReserveFundsCollected(address user, uint256 amount)
+uint256 _usdcAvailable
 ```
 
-### PrincipalWrittenDown
+_Tracks usdc available for investments, zaps, withdrawal allocations etc. Due to the time
+based nature of epochs, if the last epoch has ended but isn't checkpointed yet then this var
+doesn't reflect the true usdc available at the current timestamp. To query for the up to date
+usdc available without having to execute a tx, use the usdcAvailable() view fn_
+
+### _epochDuration
 
 ```solidity
-event PrincipalWrittenDown(address tranchedPool, int256 amount)
-```
-
-### InvestmentMadeInSenior
-
-```solidity
-event InvestmentMadeInSenior(address tranchedPool, uint256 amount)
-```
-
-### InvestmentMadeInJunior
-
-```solidity
-event InvestmentMadeInJunior(address tranchedPool, uint256 amount)
-```
-
-### GoldfinchConfigUpdated
-
-```solidity
-event GoldfinchConfigUpdated(address who, address configAddress)
+uint256 _epochDuration
 ```
 
 ### initialize
@@ -91,14 +100,36 @@ event GoldfinchConfigUpdated(address who, address configAddress)
 function initialize(address owner, contract GoldfinchConfig _config) public
 ```
 
+### setEpochDuration
+
+```solidity
+function setEpochDuration(uint256 newEpochDuration) external
+```
+
+Update epoch duration
+
+_Triggers a checkpoint_
+
+### initializeEpochs
+
+```solidity
+function initializeEpochs() external
+```
+
+Initialize the epoch withdrawal system. This includes writing the
+         initial epoch and snapshotting usdcAvailable at the current usdc balance of
+         the senior pool.
+
 ### deposit
 
 ```solidity
 function deposit(uint256 amount) public returns (uint256 depositShares)
 ```
 
-Deposits &#x60;amount&#x60; USDC from msg.sender into the SeniorPool, and grants you the
+Deposits `amount` USDC from msg.sender into the SeniorPool, and grants you the
  equivalent value of FIDU tokens
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -107,11 +138,13 @@ Deposits &#x60;amount&#x60; USDC from msg.sender into the SeniorPool, and grants
 ### depositWithPermit
 
 ```solidity
-function depositWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public returns (uint256 depositShares)
+function depositWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (uint256 depositShares)
 ```
 
 Identical to deposit, except it allows for a passed up signature to permit
  the Senior Pool to move funds on behalf of the user, all within one transaction.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -121,6 +154,216 @@ Identical to deposit, except it allows for a passed up signature to permit
 | r | bytes32 | secp256k1 signature component |
 | s | bytes32 | secp256k1 signature component |
 
+### addToWithdrawalRequest
+
+```solidity
+function addToWithdrawalRequest(uint256 fiduAmount, uint256 tokenId) external
+```
+
+Add `fiduAmount` FIDU to a withdrawal request for `tokenId`. Caller
+must own tokenId
+
+_Reverts if a withdrawal with the given tokenId does not exist
+Reverts if the caller is not the owner of the given token
+Triggers a checkpoint_
+
+### requestWithdrawal
+
+```solidity
+function requestWithdrawal(uint256 fiduAmount) external returns (uint256)
+```
+
+Submit a request to withdraw `fiduAmount` of FIDU. Request is rejected
+if callers already owns a request token. A non-transferrable request token is
+minted to the caller
+
+_triggers a checkpoint_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | tokenId token minted to caller |
+
+### cancelWithdrawalRequest
+
+```solidity
+function cancelWithdrawalRequest(uint256 tokenId) external returns (uint256)
+```
+
+Cancel request for tokenId. The fiduRequested (minus a fee) is returned
+to the caller. Caller must own tokenId.
+
+_triggers a checkpoint_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | fiduReceived the fidu amount returned to the caller |
+
+### claimWithdrawalRequest
+
+```solidity
+function claimWithdrawalRequest(uint256 tokenId) external returns (uint256)
+```
+
+Transfer the usdcWithdrawable of request for tokenId to the caller.
+Caller must own tokenId
+
+_triggers a checkpoint_
+
+### epochDuration
+
+```solidity
+function epochDuration() external view returns (uint256)
+```
+
+Current duration of withdrawal epochs, in seconds
+
+### withdrawalRequest
+
+```solidity
+function withdrawalRequest(uint256 tokenId) external view returns (struct ISeniorPoolEpochWithdrawals.WithdrawalRequest)
+```
+
+Get request by tokenId. A request is considered active if epochCursor > 0.
+
+### _previewEpochCheckpoint
+
+```solidity
+function _previewEpochCheckpoint(struct ISeniorPoolEpochWithdrawals.Epoch epoch) internal view returns (struct ISeniorPoolEpochWithdrawals.Epoch, enum SeniorPool.EpochCheckpointStatus)
+```
+
+Preview the effects of attempting to checkpoint a given epoch. If
+        the epoch doesn't need to be checkpointed then the same epoch will be return
+         along with a bool indicated it didn't need to be checkpointed.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| epoch | struct ISeniorPoolEpochWithdrawals.Epoch | epoch to checkpoint |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct ISeniorPoolEpochWithdrawals.Epoch | maybeCheckpointedEpoch the checkpointed epoch if the epoch was                                  able to be checkpointed, otherwise the same epoch |
+| [1] | enum SeniorPool.EpochCheckpointStatus | epochStatus If the epoch can't be finalized, returns `Unapplied`.                      If the Epoch is after the end time of the epoch the epoch will be extended.                      An extended epoch will have its endTime set to the next endtime but won't                      have any usdc allocated to it. If the epoch can be finalized and its after                      the end time, it will have usdc allocated to it. |
+
+### _headEpoch
+
+```solidity
+function _headEpoch() internal view returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+Returns the most recent, uncheckpointed epoch
+
+### _previewWithdrawRequestCheckpoint
+
+```solidity
+function _previewWithdrawRequestCheckpoint(struct ISeniorPoolEpochWithdrawals.WithdrawalRequest wr) internal view returns (struct ISeniorPoolEpochWithdrawals.WithdrawalRequest)
+```
+
+Returns the state of a withdraw request after checkpointing
+
+### _mostRecentEndsAtAfter
+
+```solidity
+function _mostRecentEndsAtAfter(uint256 endsAt) internal view returns (uint256)
+```
+
+Returns the most recent time an epoch would end assuming the current epoch duration
+         and the starting point of `endsAt`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| endsAt | uint256 | basis for calculating the most recent endsAt time |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | mostRecentEndsAt The most recent endsAt |
+
+### _sendToReserve
+
+```solidity
+function _sendToReserve(uint256 amount, address userForEvent) internal
+```
+
+### _applyInitializeNextEpochFrom
+
+```solidity
+function _applyInitializeNextEpochFrom(struct ISeniorPoolEpochWithdrawals.Epoch previousEpoch) internal returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+Initialize the next epoch using a given epoch by carrying forward its oustanding fidu
+
+### _initializeNextEpochFrom
+
+```solidity
+function _initializeNextEpochFrom(struct ISeniorPoolEpochWithdrawals.Epoch previousEpoch) internal view returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+### _applyEpochCheckpoints
+
+```solidity
+function _applyEpochCheckpoints() private returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+Increment _checkpointedEpochId cursor up to the current epoch
+
+### _applyWithdrawalRequestCheckpoint
+
+```solidity
+function _applyWithdrawalRequestCheckpoint(uint256 tokenId) internal returns (struct ISeniorPoolEpochWithdrawals.WithdrawalRequest)
+```
+
+### _applyEpochAndRequestCheckpoints
+
+```solidity
+function _applyEpochAndRequestCheckpoints(uint256 tokenId) internal returns (struct ISeniorPoolEpochWithdrawals.Epoch, struct ISeniorPoolEpochWithdrawals.WithdrawalRequest)
+```
+
+### _applyEpochCheckpoint
+
+```solidity
+function _applyEpochCheckpoint(struct ISeniorPoolEpochWithdrawals.Epoch epoch) internal returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+Checkpoint an epoch, returning the same epoch if it doesn't need
+to be checkpointed or a newly initialized epoch if the given epoch was
+successfully checkpointed. In other words, return the most current epoch
+
+_To decrease storage writes we have introduced optimizations based on two observations
+     1. If block.timestamp < endsAt, then the epoch is unchanged and we can return
+      the unmodified epoch (checkpointStatus == Unappled).
+     2. If the epoch has ended but its fiduRequested is 0 OR the senior pool's usdcAvailable
+      is 0, then the next epoch will have the SAME fiduRequested, and the only variable we have to update
+      is endsAt (chekpointStatus == Extended)._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| epoch | struct ISeniorPoolEpochWithdrawals.Epoch | epoch to checkpoint |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct ISeniorPoolEpochWithdrawals.Epoch | currentEpoch current epoch |
+
+### _burnWithdrawRequest
+
+```solidity
+function _burnWithdrawRequest(uint256 tokenId) internal
+```
+
 ### withdraw
 
 ```solidity
@@ -128,6 +371,8 @@ function withdraw(uint256 usdcAmount) external returns (uint256 amount)
 ```
 
 Withdraws USDC from the SeniorPool to msg.sender, and burns the equivalent value of FIDU tokens
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -141,59 +386,43 @@ function withdrawInFidu(uint256 fiduAmount) external returns (uint256 amount)
 
 Withdraws USDC (denominated in FIDU terms) from the SeniorPool to msg.sender
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | fiduAmount | uint256 | The amount of USDC to withdraw in terms of FIDU shares |
 
-### sweepToCompound
+### _withdraw
 
 ```solidity
-function sweepToCompound() public
+function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal returns (uint256 userAmount)
 ```
-
-Moves any USDC still in the SeniorPool to Compound, and tracks the amount internally.
-This is done to earn interest on latent funds until we have other borrowers who can use it.
-
-Requirements:
- - The caller must be an admin.
-
-### sweepFromCompound
-
-```solidity
-function sweepFromCompound() public
-```
-
-Moves any USDC from Compound back to the SeniorPool, and recognizes interest earned.
-This is done automatically on drawdown or withdraw, but can be called manually if necessary.
-
-Requirements:
- - The caller must be an admin.
 
 ### invest
 
 ```solidity
-function invest(contract ITranchedPool pool) public
+function invest(contract ITranchedPool pool) external returns (uint256)
 ```
 
-Invest in an ITranchedPool&#x27;s senior tranche using the senior pool&#x27;s strategy
+Invest in an ITranchedPool's senior tranche using the senior pool's strategy
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | pool | contract ITranchedPool | An ITranchedPool whose senior tranche should be considered for investment |
 
-### estimateInvestment
-
-```solidity
-function estimateInvestment(contract ITranchedPool pool) public view returns (uint256)
-```
-
 ### redeem
 
 ```solidity
-function redeem(uint256 tokenId) public
+function redeem(uint256 tokenId) external
 ```
 
 Redeem interest and/or principal from an ITranchedPool investment
+
+_triggers a checkpoint_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -202,63 +431,97 @@ Redeem interest and/or principal from an ITranchedPool investment
 ### writedown
 
 ```solidity
-function writedown(uint256 tokenId) public
+function writedown(uint256 tokenId) external
 ```
 
-Write down an ITranchedPool investment. This will adjust the senior pool&#x27;s share price
- down if we&#x27;re considering the investment a loss, or up if the borrower has subsequently
+Write down an ITranchedPool investment. This will adjust the senior pool's share price
+ down if we're considering the investment a loss, or up if the borrower has subsequently
  made repayments that restore confidence that the full loan will be repaid.
+
+_triggers a checkpoint_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | the ID of an IPoolTokens token to be considered for writedown |
 
+### usdcAvailable
+
+```solidity
+function usdcAvailable() public view returns (uint256)
+```
+
+Returns the amount of unallocated usdc in the senior pool, taking into account
+        usdc that _will_ be allocated to withdrawals when a checkpoint happens
+
+### currentEpoch
+
+```solidity
+function currentEpoch() external view returns (struct ISeniorPoolEpochWithdrawals.Epoch)
+```
+
+The current withdrawal epoch
+
+### assets
+
+```solidity
+function assets() external view returns (uint256)
+```
+
+Returns the net assests controlled by and owed to the pool
+
+### sharesOutstanding
+
+```solidity
+function sharesOutstanding() external view returns (uint256)
+```
+
+Returns the number of shares outstanding, accounting for shares that will be burned
+         when an epoch checkpoint happens
+
+### getNumShares
+
+```solidity
+function getNumShares(uint256 usdcAmount) public view returns (uint256)
+```
+
+### estimateInvestment
+
+```solidity
+function estimateInvestment(contract ITranchedPool pool) external view returns (uint256)
+```
+
 ### calculateWritedown
 
 ```solidity
-function calculateWritedown(uint256 tokenId) public view returns (uint256)
+function calculateWritedown(uint256 tokenId) external view returns (uint256)
 ```
 
 Calculates the writedown amount for a particular pool position
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | The token reprsenting the position |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | The amount in dollars the principal should be written down by |
 
-### assets
+### _getNumShares
 
 ```solidity
-function assets() public view returns (uint256)
+function _getNumShares(uint256 _usdcAmount, uint256 _sharePrice) internal pure returns (uint256)
 ```
-
-Returns the net assests controlled by and owed to the pool
-
-### getNumShares
-
-```solidity
-function getNumShares(uint256 amount) public view returns (uint256)
-```
-
-Converts and USDC amount to FIDU amount
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| amount | uint256 | USDC amount to convert to FIDU |
 
 ### _calculateWritedown
 
 ```solidity
 function _calculateWritedown(contract ITranchedPool pool, uint256 principal) internal view returns (uint256 writedownPercent, uint256 writedownAmount)
-```
-
-### currentTime
-
-```solidity
-function currentTime() internal view virtual returns (uint256)
 ```
 
 ### _distributeLosses
@@ -267,94 +530,10 @@ function currentTime() internal view virtual returns (uint256)
 function _distributeLosses(int256 writedownDelta) internal
 ```
 
-### _fiduMantissa
-
-```solidity
-function _fiduMantissa() internal pure returns (uint256)
-```
-
-### _usdcMantissa
-
-```solidity
-function _usdcMantissa() internal pure returns (uint256)
-```
-
-### _usdcToFidu
-
-```solidity
-function _usdcToFidu(uint256 amount) internal pure returns (uint256)
-```
-
-### _fiduToUSDC
-
-```solidity
-function _fiduToUSDC(uint256 amount) internal pure returns (uint256)
-```
-
-### _getUSDCAmountFromShares
-
-```solidity
-function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256)
-```
-
-### doUSDCTransfer
-
-```solidity
-function doUSDCTransfer(address from, address to, uint256 amount) internal returns (bool)
-```
-
-### _withdraw
-
-```solidity
-function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal returns (uint256 userAmount)
-```
-
-### _sweepToCompound
-
-```solidity
-function _sweepToCompound(contract ICUSDCContract cUSDC, uint256 usdcAmount) internal
-```
-
-### _sweepFromCompound
-
-```solidity
-function _sweepFromCompound() internal
-```
-
-### _sweepFromCompound
-
-```solidity
-function _sweepFromCompound(contract ICUSDCContract cUSDC, uint256 cUSDCAmount) internal
-```
-
-### _cUSDCToUSDC
-
-```solidity
-function _cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal pure returns (uint256)
-```
-
 ### _collectInterestAndPrincipal
 
 ```solidity
 function _collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) internal
-```
-
-### _sendToReserve
-
-```solidity
-function _sendToReserve(uint256 amount, address userForEvent) internal
-```
-
-### _usdcToSharePrice
-
-```solidity
-function _usdcToSharePrice(uint256 usdcAmount) internal view returns (uint256)
-```
-
-### totalShares
-
-```solidity
-function totalShares() internal view returns (uint256)
 ```
 
 ### _isValidPool
@@ -369,16 +548,40 @@ function _isValidPool(contract ITranchedPool pool) internal view returns (bool)
 function _approvePool(contract ITranchedPool pool, uint256 allowance) internal
 ```
 
-### isZapper
+### _usdcToFidu
 
 ```solidity
-function isZapper() public view returns (bool)
+function _usdcToFidu(uint256 amount) internal pure returns (uint256)
 ```
 
-### initZapperRole
+### _fiduToUsdc
 
 ```solidity
-function initZapperRole() external
+function _fiduToUsdc(uint256 amount) internal pure returns (uint256)
+```
+
+### _getUSDCAmountFromShares
+
+```solidity
+function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256)
+```
+
+### _getUSDCAmountFromShares
+
+```solidity
+function _getUSDCAmountFromShares(uint256 _fiduAmount, uint256 _sharePrice) internal pure returns (uint256)
+```
+
+### _usdcToSharePrice
+
+```solidity
+function _usdcToSharePrice(uint256 usdcAmount) internal view returns (uint256)
+```
+
+### _totalShares
+
+```solidity
+function _totalShares() internal view returns (uint256)
 ```
 
 ### _sliceIndexToSeniorTrancheId
@@ -389,11 +592,31 @@ function _sliceIndexToSeniorTrancheId(uint256 index) internal pure returns (uint
 
 Returns the senion tranche id for the given slice index
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | index | uint256 | slice index |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | senior tranche id of given slice index |
+
+### onlyZapper
+
+```solidity
+modifier onlyZapper()
+```
+
+### EpochCheckpointStatus
+
+```solidity
+enum EpochCheckpointStatus {
+  Unapplied,
+  Extended,
+  Finalized
+}
+```
 
