@@ -44,6 +44,11 @@ const Media: CollectionConfig = {
       label: "Alt Text",
       type: "text",
     },
+    {
+      name: "fileNameOverride",
+      label: "File Name Override",
+      type: "text",
+    },
   ],
 };
 
