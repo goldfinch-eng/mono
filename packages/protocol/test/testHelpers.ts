@@ -326,7 +326,7 @@ async function deployAllContracts(
   reserveSplitter: ERC20SplitterInstance
   membershipCollector: MembershipCollectorInstance
 }> {
-  await deployments.fixture("pendingMainnetMigrations")
+  await deployments.fixture("baseDeploy")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
