@@ -437,6 +437,7 @@ describe("mainnet forking tests", async function () {
       }
 
       // Addem Repayment (also advances time to payment due date)
+      fundWithWhales(["USDC"], [owner.address])
       await repayPool(1, owner)
 
       // Advance to next epoch - may not function as expected if mainnet forking block is moved forward
