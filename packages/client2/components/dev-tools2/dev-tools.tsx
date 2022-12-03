@@ -30,8 +30,11 @@ export function DevTools() {
         from="bottom"
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+        title="Dev Tools"
       >
-        <DevToolsRouter />
+        <div style={{ height: "35vh", overflow: "auto" }}>
+          <DevToolsRouter />
+        </div>
       </Drawer>
     </>
   );
