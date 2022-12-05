@@ -18,7 +18,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = mainnetDeployments["1"].mainnet.contracts;
+  contracts = mainnetDeployments["1"].find(
+    (i: { name: string }) => i.name === "mainnet"
+  ).contracts;
 } else if (networkName === "localhost") {
   const localDeployments = JSON.parse(
     fs
@@ -27,7 +29,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = localDeployments["31337"].localhost.contracts;
+  contracts = localDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else if (networkName === "murmuration") {
   const murmurationDeployments = JSON.parse(
     fs
@@ -39,7 +43,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = murmurationDeployments["31337"].localhost.contracts;
+  contracts = murmurationDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else {
   throw new Error(`Unrecognized network name ${networkName}`);
 }

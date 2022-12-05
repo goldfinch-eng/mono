@@ -79,7 +79,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     ================================================================================*/
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
 
     __BaseUpgradeablePausable__init(owner);
     _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
@@ -146,7 +149,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *  equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount) public override whenNotPaused nonReentrant returns (uint256 depositShares) {
+  function deposit(
+    uint256 amount
+  ) public override whenNotPaused nonReentrant returns (uint256 depositShares) {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(amount > 0, "Must deposit more than zero");
     _applyEpochCheckpoints();
@@ -154,7 +159,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     emit DepositMade(msg.sender, amount, depositShares);
-    require(config.getUSDC().transferFrom(msg.sender, address(this), amount), "Failed to transfer for deposit");
+    require(
+      config.getUSDC().transferFrom(msg.sender, address(this), amount),
+      "Failed to transfer for deposit"
+    );
 
     config.getFidu().mintTo(msg.sender, depositShares);
     return depositShares;
@@ -185,12 +193,17 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @dev Reverts if the caller is not the owner of the given token
    * @dev Triggers a checkpoint
    */
-  function addToWithdrawalRequest(uint256 fiduAmount, uint256 tokenId) external override whenNotPaused nonReentrant {
+  function addToWithdrawalRequest(
+    uint256 fiduAmount,
+    uint256 tokenId
+  ) external override whenNotPaused nonReentrant {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     IWithdrawalRequestToken requestTokens = config.getWithdrawalRequestToken();
     require(msg.sender == requestTokens.ownerOf(tokenId), "NA");
 
-    (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
+    (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(
+      tokenId
+    );
 
     request.fiduRequested = request.fiduRequested.add(fiduAmount);
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
@@ -209,7 +222,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @inheritdoc ISeniorPoolEpochWithdrawals
    * @dev triggers a checkpoint
    */
-  function requestWithdrawal(uint256 fiduAmount) external override whenNotPaused nonReentrant returns (uint256) {
+  function requestWithdrawal(
+    uint256 fiduAmount
+  ) external override whenNotPaused nonReentrant returns (uint256) {
     IWithdrawalRequestToken requestTokens = config.getWithdrawalRequestToken();
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(requestTokens.balanceOf(msg.sender) == 0, "Existing request");
@@ -233,11 +248,15 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @inheritdoc ISeniorPoolEpochWithdrawals
    * @dev triggers a checkpoint
    */
-  function cancelWithdrawalRequest(uint256 tokenId) external override whenNotPaused nonReentrant returns (uint256) {
+  function cancelWithdrawalRequest(
+    uint256 tokenId
+  ) external override whenNotPaused nonReentrant returns (uint256) {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
 
-    (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
+    (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(
+      tokenId
+    );
     require(request.fiduRequested != 0, "Cant cancel");
 
     uint256 reserveBps = config.getSeniorPoolWithdrawalCancelationFeeInBps();
@@ -266,7 +285,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @inheritdoc ISeniorPoolEpochWithdrawals
    * @dev triggers a checkpoint
    */
-  function claimWithdrawalRequest(uint256 tokenId) external override whenNotPaused nonReentrant returns (uint256) {
+  function claimWithdrawalRequest(
+    uint256 tokenId
+  ) external override whenNotPaused nonReentrant returns (uint256) {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
     (, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
@@ -298,7 +319,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
-  function withdrawalRequest(uint256 tokenId) external view override returns (WithdrawalRequest memory) {
+  function withdrawalRequest(
+    uint256 tokenId
+  ) external view override returns (WithdrawalRequest memory) {
     // This call will revert if the tokenId does not exist
     config.getWithdrawalRequestToken().ownerOf(tokenId);
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
@@ -321,7 +344,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *                      have any usdc allocated to it. If the epoch can be finalized and its after
    *                      the end time, it will have usdc allocated to it.
    */
-  function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, EpochCheckpointStatus) {
+  function _previewEpochCheckpoint(
+    Epoch memory epoch
+  ) internal view returns (Epoch memory, EpochCheckpointStatus) {
     if (block.timestamp < epoch.endsAt) {
       return (epoch, EpochCheckpointStatus.Unapplied);
     }
@@ -358,11 +383,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /// @notice Returns the state of a withdraw request after checkpointing
-  function _previewWithdrawRequestCheckpoint(WithdrawalRequest memory wr)
-    internal
-    view
-    returns (WithdrawalRequest memory)
-  {
+  function _previewWithdrawRequestCheckpoint(
+    WithdrawalRequest memory wr
+  ) internal view returns (WithdrawalRequest memory) {
     Epoch memory epoch;
     // Iterate through each epoch, calculating the amount of USDC that would be
     // allocated to the withdraw request by using the proportion of FIDU the
@@ -393,8 +416,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
         be allocated to these "dusty" requests, but the very small amount of
         usdc will not be claimable by anyone.
         */
-        uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(epoch.fiduLiquidated);
-        bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(wr.fiduRequested, epochSharePrice) == 0;
+        uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(
+          epoch.fiduLiquidated
+        );
+        bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(
+          wr.fiduRequested,
+          epochSharePrice
+        ) == 0;
         if (noUsdcValueRemainingInRequest) {
           wr.fiduRequested = 0;
         }
@@ -430,15 +458,21 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   /**
    * @notice Initialize the next epoch using a given epoch by carrying forward its oustanding fidu
    */
-  function _applyInitializeNextEpochFrom(Epoch storage previousEpoch) internal returns (Epoch storage) {
+  function _applyInitializeNextEpochFrom(
+    Epoch storage previousEpoch
+  ) internal returns (Epoch storage) {
     _epochs[++_checkpointedEpochId] = _initializeNextEpochFrom(previousEpoch);
     return _epochs[_checkpointedEpochId];
   }
 
-  function _initializeNextEpochFrom(Epoch memory previousEpoch) internal view returns (Epoch memory) {
+  function _initializeNextEpochFrom(
+    Epoch memory previousEpoch
+  ) internal view returns (Epoch memory) {
     Epoch memory nextEpoch;
     nextEpoch.endsAt = previousEpoch.endsAt.add(_epochDuration);
-    uint256 fiduToCarryOverFromLastEpoch = previousEpoch.fiduRequested.sub(previousEpoch.fiduLiquidated);
+    uint256 fiduToCarryOverFromLastEpoch = previousEpoch.fiduRequested.sub(
+      previousEpoch.fiduLiquidated
+    );
     nextEpoch.fiduRequested = fiduToCarryOverFromLastEpoch;
     return nextEpoch;
   }
@@ -448,7 +482,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return _applyEpochCheckpoint(_headEpoch());
   }
 
-  function _applyWithdrawalRequestCheckpoint(uint256 tokenId) internal returns (WithdrawalRequest storage) {
+  function _applyWithdrawalRequestCheckpoint(
+    uint256 tokenId
+  ) internal returns (WithdrawalRequest storage) {
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
     Epoch storage epoch;
 
@@ -470,8 +506,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       level. USDC will be allocated to these "dusty" requests, but the very
       small amount of usdc will not be claimable by anyone.
       */
-      uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(epoch.fiduLiquidated);
-      bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(wr.fiduRequested, epochSharePrice) == 0;
+      uint256 epochSharePrice = epoch.usdcAllocated.mul(FIDU_MANTISSA).mul(1e12).div(
+        epoch.fiduLiquidated
+      );
+      bool noUsdcValueRemainingInRequest = _getUSDCAmountFromShares(
+        wr.fiduRequested,
+        epochSharePrice
+      ) == 0;
       if (noUsdcValueRemainingInRequest) {
         wr.fiduRequested = 0;
       }
@@ -483,10 +524,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return wr;
   }
 
-  function _applyEpochAndRequestCheckpoints(uint256 tokenId)
-    internal
-    returns (Epoch storage, WithdrawalRequest storage)
-  {
+  function _applyEpochAndRequestCheckpoints(
+    uint256 tokenId
+  ) internal returns (Epoch storage, WithdrawalRequest storage) {
     Epoch storage headEpoch = _applyEpochCheckpoints();
     WithdrawalRequest storage wr = _applyWithdrawalRequestCheckpoint(tokenId);
     return (headEpoch, wr);
@@ -506,7 +546,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @return currentEpoch current epoch
    */
   function _applyEpochCheckpoint(Epoch storage epoch) internal returns (Epoch storage) {
-    (Epoch memory checkpointedEpoch, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(epoch);
+    (
+      Epoch memory checkpointedEpoch,
+      EpochCheckpointStatus checkpointStatus
+    ) = _previewEpochCheckpoint(epoch);
     if (checkpointStatus == EpochCheckpointStatus.Unapplied) {
       return epoch;
     } else if (checkpointStatus == EpochCheckpointStatus.Extended) {
@@ -525,7 +568,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       Epoch storage newEpoch = _applyInitializeNextEpochFrom(epoch);
       config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
-      emit EpochEnded(endingEpochId, epoch.endsAt, epoch.fiduRequested, epoch.usdcAllocated, epoch.fiduLiquidated);
+      emit EpochEnded(
+        endingEpochId,
+        epoch.endsAt,
+        epoch.fiduRequested,
+        epoch.usdcAllocated,
+        epoch.fiduLiquidated
+      );
       return newEpoch;
     }
   }
@@ -542,14 +591,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Withdraws USDC from the SeniorPool to msg.sender, and burns the equivalent value of FIDU tokens
    * @param usdcAmount The amount of USDC to withdraw
    */
-  function withdraw(uint256 usdcAmount)
-    external
-    override
-    whenNotPaused
-    nonReentrant
-    onlyZapper
-    returns (uint256 amount)
-  {
+  function withdraw(
+    uint256 usdcAmount
+  ) external override whenNotPaused nonReentrant onlyZapper returns (uint256 amount) {
     require(usdcAmount > 0, "Must withdraw more than zero");
     uint256 withdrawShares = getNumShares(usdcAmount);
     return _withdraw(usdcAmount, withdrawShares);
@@ -559,14 +603,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Withdraws USDC (denominated in FIDU terms) from the SeniorPool to msg.sender
    * @param fiduAmount The amount of USDC to withdraw in terms of FIDU shares
    */
-  function withdrawInFidu(uint256 fiduAmount)
-    external
-    override
-    whenNotPaused
-    nonReentrant
-    onlyZapper
-    returns (uint256 amount)
-  {
+  function withdrawInFidu(
+    uint256 fiduAmount
+  ) external override whenNotPaused nonReentrant onlyZapper returns (uint256 amount) {
     require(fiduAmount > 0, "Must withdraw more than zero");
     uint256 usdcAmount = _getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
@@ -575,13 +614,19 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   // Zapper Withdraw: Internal functions
   //--------------------------------------------------------------------------------
-  function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal returns (uint256 userAmount) {
+  function _withdraw(
+    uint256 usdcAmount,
+    uint256 withdrawShares
+  ) internal returns (uint256 userAmount) {
     _applyEpochCheckpoints();
     IFidu fidu = config.getFidu();
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = fidu.balanceOf(msg.sender);
     // Ensure the address has enough value in the pool
-    require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
+    require(
+      withdrawShares <= currentShares,
+      "Amount requested is greater than what this address owns"
+    );
 
     _usdcAvailable = _usdcAvailable.sub(usdcAmount, "IB");
     // Send to reserves
@@ -611,7 +656,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
-  function invest(ITranchedPool pool) external override whenNotPaused nonReentrant returns (uint256) {
+  function invest(
+    ITranchedPool pool
+  ) external override whenNotPaused nonReentrant returns (uint256) {
     require(_isValidPool(pool), "Pool must be valid");
     _applyEpochCheckpoints();
 
@@ -661,7 +708,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    */
   function writedown(uint256 tokenId) external override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
-    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
+    require(
+      address(this) == poolTokens.ownerOf(tokenId),
+      "Only tokens owned by the senior pool can be written down"
+    );
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
@@ -673,7 +723,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
 
-    (uint256 writedownPercent, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
+    (uint256 writedownPercent, uint256 writedownAmount) = _calculateWritedown(
+      pool,
+      principalRemaining
+    );
 
     uint256 prevWritedownAmount = writedownsByPoolToken[tokenId];
 
@@ -705,7 +758,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals
   function currentEpoch() external view override returns (Epoch memory) {
-    (Epoch memory e, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(_headEpoch());
+    (Epoch memory e, EpochCheckpointStatus checkpointStatus) = _previewEpochCheckpoint(
+      _headEpoch()
+    );
     if (checkpointStatus == EpochCheckpointStatus.Finalized) e = _initializeNextEpochFrom(e);
     return e;
   }
@@ -759,11 +814,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return _usdcToFidu(_usdcAmount).mul(FIDU_MANTISSA).div(_sharePrice);
   }
 
-  function _calculateWritedown(ITranchedPool pool, uint256 principal)
-    internal
-    view
-    returns (uint256 writedownPercent, uint256 writedownAmount)
-  {
+  function _calculateWritedown(
+    ITranchedPool pool,
+    uint256 principal
+  ) internal view returns (uint256 writedownPercent, uint256 writedownAmount) {
     return
       Accountant.calculateWritedownForPrincipal(
         pool.creditLine(),
@@ -829,7 +883,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return _getUSDCAmountFromShares(fiduAmount, sharePrice);
   }
 
-  function _getUSDCAmountFromShares(uint256 _fiduAmount, uint256 _sharePrice) internal pure returns (uint256) {
+  function _getUSDCAmountFromShares(
+    uint256 _fiduAmount,
+    uint256 _sharePrice
+  ) internal pure returns (uint256) {
     return _fiduToUsdc(_fiduAmount.mul(_sharePrice)).div(FIDU_MANTISSA);
   }
 

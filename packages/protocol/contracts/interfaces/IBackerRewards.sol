@@ -8,5 +8,8 @@ interface IBackerRewards {
 
   function onTranchedPoolDrawdown(uint256 sliceIndex) external;
 
-  function setPoolTokenAccRewardsPerPrincipalDollarAtMint(address poolAddress, uint256 tokenId) external;
+  function setPoolTokenAccRewardsPerPrincipalDollarAtMint(
+    address poolAddress,
+    uint256 tokenId
+  ) external;
 }

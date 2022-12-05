@@ -14,11 +14,7 @@ import {IERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/E
 contract TestSeniorPoolCaller {
   TestSeniorPool private immutable seniorPool;
 
-  constructor(
-    TestSeniorPool _seniorPool,
-    address usdc,
-    address fidu
-  ) public {
+  constructor(TestSeniorPool _seniorPool, address usdc, address fidu) public {
     seniorPool = _seniorPool;
     IERC20(usdc).approve(address(_seniorPool), type(uint256).max);
     IERC20(fidu).approve(address(_seniorPool), type(uint256).max);

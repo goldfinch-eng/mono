@@ -31,7 +31,9 @@ library ConfigHelper {
     return ISeniorPool(seniorPoolAddress(config));
   }
 
-  function getSeniorPoolStrategy(GoldfinchConfig config) internal view returns (ISeniorPoolStrategy) {
+  function getSeniorPoolStrategy(
+    GoldfinchConfig config
+  ) internal view returns (ISeniorPoolStrategy) {
     return ISeniorPoolStrategy(seniorPoolStrategyAddress(config));
   }
 
@@ -75,19 +77,22 @@ library ConfigHelper {
     return IStakingRewards(stakingRewardsAddress(config));
   }
 
-  function getTranchedPoolImplementationRepository(GoldfinchConfig config)
-    internal
-    view
-    returns (ImplementationRepository)
-  {
+  function getTranchedPoolImplementationRepository(
+    GoldfinchConfig config
+  ) internal view returns (ImplementationRepository) {
     return
       ImplementationRepository(
         config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository))
       );
   }
 
-  function getWithdrawalRequestToken(GoldfinchConfig config) internal view returns (IWithdrawalRequestToken) {
-    return IWithdrawalRequestToken(config.getAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken)));
+  function getWithdrawalRequestToken(
+    GoldfinchConfig config
+  ) internal view returns (IWithdrawalRequestToken) {
+    return
+      IWithdrawalRequestToken(
+        config.getAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken))
+      );
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
@@ -191,7 +196,9 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
   }
 
-  function getTransferRestrictionPeriodInDays(GoldfinchConfig config) internal view returns (uint256) {
+  function getTransferRestrictionPeriodInDays(
+    GoldfinchConfig config
+  ) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays));
   }
 
@@ -199,7 +206,9 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio));
   }
 
-  function getSeniorPoolWithdrawalCancelationFeeInBps(GoldfinchConfig config) internal view returns (uint256) {
+  function getSeniorPoolWithdrawalCancelationFeeInBps(
+    GoldfinchConfig config
+  ) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps));
   }
 }

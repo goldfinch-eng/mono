@@ -17,19 +17,11 @@ abstract contract ERC721NonTransferable is IERC721Upgradeable {
   // Throw if a mutating function is called
   error ReadOnly();
 
-  function safeTransferFrom(
-    address,
-    address,
-    uint256
-  ) external pure {
+  function safeTransferFrom(address, address, uint256) external pure {
     revert ReadOnly();
   }
 
-  function transferFrom(
-    address,
-    address,
-    uint256
-  ) external pure {
+  function transferFrom(address, address, uint256) external pure {
     revert ReadOnly();
   }
 
@@ -49,12 +41,7 @@ abstract contract ERC721NonTransferable is IERC721Upgradeable {
     revert ReadOnly();
   }
 
-  function safeTransferFrom(
-    address,
-    address,
-    uint256,
-    bytes calldata
-  ) external pure {
+  function safeTransferFrom(address, address, uint256, bytes calldata) external pure {
     revert ReadOnly();
   }
 }

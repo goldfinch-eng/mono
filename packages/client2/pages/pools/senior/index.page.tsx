@@ -13,6 +13,7 @@ import {
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
+import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
@@ -186,6 +187,9 @@ export default function SeniorPoolPage() {
 
             {seniorPool && shouldShowWithdrawal && (
               <SeniorPoolWithdrawalPanel
+                canUserParticipate={
+                  user ? canUserParticipateInSeniorPool(user) : false
+                }
                 cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
                 epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}

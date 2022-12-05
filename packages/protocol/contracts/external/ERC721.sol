@@ -216,7 +216,10 @@ contract ERC721UpgradeSafe is
    * @param index uint256 representing the index to be accessed of the requested tokens list
    * @return uint256 token ID at the given index of the tokens list owned by the requested address
    */
-  function tokenOfOwnerByIndex(address owner, uint256 index) public view override returns (uint256) {
+  function tokenOfOwnerByIndex(
+    address owner,
+    uint256 index
+  ) public view override returns (uint256) {
     return _holderTokens[owner].at(index);
   }
 
@@ -303,13 +306,12 @@ contract ERC721UpgradeSafe is
    * @param to address to receive the ownership of the given token ID
    * @param tokenId uint256 ID of the token to be transferred
    */
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public virtual override {
+  function transferFrom(address from, address to, uint256 tokenId) public virtual override {
     //solhint-disable-next-line max-line-length
-    require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+    require(
+      _isApprovedOrOwner(_msgSender(), tokenId),
+      "ERC721: transfer caller is not owner nor approved"
+    );
 
     _transfer(from, to, tokenId);
   }
@@ -325,11 +327,7 @@ contract ERC721UpgradeSafe is
    * @param to address to receive the ownership of the given token ID
    * @param tokenId uint256 ID of the token to be transferred
    */
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public virtual override {
+  function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
     safeTransferFrom(from, to, tokenId, "");
   }
 
@@ -351,7 +349,10 @@ contract ERC721UpgradeSafe is
     uint256 tokenId,
     bytes memory _data
   ) public virtual override {
-    require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+    require(
+      _isApprovedOrOwner(_msgSender(), tokenId),
+      "ERC721: transfer caller is not owner nor approved"
+    );
     _safeTransfer(from, to, tokenId, _data);
   }
 
@@ -374,7 +375,10 @@ contract ERC721UpgradeSafe is
     bytes memory _data
   ) internal virtual {
     _transfer(from, to, tokenId);
-    require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+    require(
+      _checkOnERC721Received(from, to, tokenId, _data),
+      "ERC721: transfer to non ERC721Receiver implementer"
+    );
   }
 
   /**
@@ -396,7 +400,9 @@ contract ERC721UpgradeSafe is
   function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
     require(_exists(tokenId), "ERC721: operator query for nonexistent token");
     address owner = ownerOf(tokenId);
-    return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
+    return (spender == owner ||
+      getApproved(tokenId) == spender ||
+      isApprovedForAll(owner, spender));
   }
 
   /**
@@ -424,11 +430,7 @@ contract ERC721UpgradeSafe is
    * @param tokenId uint256 ID of the token to be minted
    * @param _data bytes data to send along with a safe transfer check
    */
-  function _safeMint(
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) internal virtual {
+  function _safeMint(address to, uint256 tokenId, bytes memory _data) internal virtual {
     _mint(to, tokenId);
     require(
       _checkOnERC721Received(address(0), to, tokenId, _data),
@@ -487,11 +489,7 @@ contract ERC721UpgradeSafe is
    * @param to address to receive the ownership of the given token ID
    * @param tokenId uint256 ID of the token to be transferred
    */
-  function _transfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {
+  function _transfer(address from, address to, uint256 tokenId) internal virtual {
     require(ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
     require(to != address(0), "ERC721: transfer to the zero address");
 
@@ -552,7 +550,13 @@ contract ERC721UpgradeSafe is
     }
     // solhint-disable-next-line avoid-low-level-calls
     (bool success, bytes memory returndata) = to.call(
-      abi.encodeWithSelector(IERC721Receiver(to).onERC721Received.selector, _msgSender(), from, tokenId, _data)
+      abi.encodeWithSelector(
+        IERC721Receiver(to).onERC721Received.selector,
+        _msgSender(),
+        from,
+        tokenId,
+        _data
+      )
     );
     if (!success) {
       if (returndata.length > 0) {
@@ -589,11 +593,7 @@ contract ERC721UpgradeSafe is
    *
    * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
    */
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {}
+  function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual {}
 
   uint256[41] private __gap;
 }

@@ -28,8 +28,9 @@ contract CapitalLedgerTest is Test {
   address public constant SENIOR_POOL_ADDRESS = 0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822;
   address public constant FIDU_ADDRESS = 0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF;
 
-  uint256 public constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-  uint256 public constant FIDU_SHARE_PRICE_UPPER_BOUND = 1 * 10**36;
+  uint256 public constant MAX_UINT256 =
+    0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+  uint256 public constant FIDU_SHARE_PRICE_UPPER_BOUND = 1 * 10 ** 36;
   uint256 public constant FIDU_AMOUNT_UPPER_BOUND = MAX_UINT256 / FiduConversions.FIDU_MANTISSA;
 
   CakeHelper private cake;
@@ -72,7 +73,13 @@ contract CapitalLedgerTest is Test {
       POOL_TOKENS_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("getTokenInfo(uint256)"))),
       abi.encode(
-        IPoolTokens.TokenInfo(poolTokenAddress, tranche, principalAmount, principalAmount / 2, principalAmount / 5)
+        IPoolTokens.TokenInfo(
+          poolTokenAddress,
+          tranche,
+          principalAmount,
+          principalAmount / 2,
+          principalAmount / 5
+        )
       )
     );
 
@@ -91,7 +98,11 @@ contract CapitalLedgerTest is Test {
       principalAmount - principalAmount / 2
     );
 
-    uint256 id = ledger.depositERC721({owner: owner, assetAddress: assetAddress, assetTokenId: assetId});
+    uint256 id = ledger.depositERC721({
+      owner: owner,
+      assetAddress: assetAddress,
+      assetTokenId: assetId
+    });
 
     assertEq(ledger.erc721IdOf(id), assetId);
     assertEq(ledger.assetAddressOf(id), assetAddress);
@@ -113,7 +124,11 @@ contract CapitalLedgerTest is Test {
     );
 
     uint256 sharePrice = 1e12;
-    vm.mockCall(SENIOR_POOL_ADDRESS, abi.encodeWithSelector(bytes4(keccak256("sharePrice()"))), abi.encode(sharePrice));
+    vm.mockCall(
+      SENIOR_POOL_ADDRESS,
+      abi.encodeWithSelector(bytes4(keccak256("sharePrice()"))),
+      abi.encode(sharePrice)
+    );
 
     vm.expectEmit(true, false, false, true);
     emit CapitalERC721Deposit(
@@ -135,17 +150,20 @@ contract CapitalLedgerTest is Test {
       );
     }
 
-    uint256 id = ledger.depositERC721({owner: owner, assetAddress: STAKING_REWARDS_ADDRESS, assetTokenId: assetId});
+    uint256 id = ledger.depositERC721({
+      owner: owner,
+      assetAddress: STAKING_REWARDS_ADDRESS,
+      assetTokenId: assetId
+    });
 
     assertEq(ledger.erc721IdOf(id), assetId);
     assertEq(ledger.assetAddressOf(id), STAKING_REWARDS_ADDRESS);
     assertEq(ledger.ownerOf(id), owner);
   }
 
-  function test_depositERC721_invalidAsset(address assetAddress)
-    public
-    assume(assetAddress != STAKING_REWARDS_ADDRESS && assetAddress != POOL_TOKENS_ADDRESS)
-  {
+  function test_depositERC721_invalidAsset(
+    address assetAddress
+  ) public assume(assetAddress != STAKING_REWARDS_ADDRESS && assetAddress != POOL_TOKENS_ADDRESS) {
     vm.expectRevert(abi.encodeWithSelector(CapitalAssets.InvalidAsset.selector, assetAddress));
     ledger.depositERC721({owner: address(2), assetAddress: assetAddress, assetTokenId: 10});
   }
@@ -162,15 +180,25 @@ contract CapitalLedgerTest is Test {
       );
     }
 
-    vm.expectRevert(abi.encodeWithSelector(CapitalAssets.InvalidAssetWithId.selector, STAKING_REWARDS_ADDRESS, 10));
-    ledger.depositERC721({owner: address(2), assetAddress: STAKING_REWARDS_ADDRESS, assetTokenId: 10});
+    vm.expectRevert(
+      abi.encodeWithSelector(CapitalAssets.InvalidAssetWithId.selector, STAKING_REWARDS_ADDRESS, 10)
+    );
+    ledger.depositERC721({
+      owner: address(2),
+      assetAddress: STAKING_REWARDS_ADDRESS,
+      assetTokenId: 10
+    });
   }
 
   function test_erc721IdOf(
     address owner,
     uint256 poolTokenId,
     uint256 stakedFiduId
-  ) public withDeposit_poolToken(owner, poolTokenId, 20e18) withDeposit_stakedFidu(owner, stakedFiduId, 100e18, 1e12) {
+  )
+    public
+    withDeposit_poolToken(owner, poolTokenId, 20e18)
+    withDeposit_stakedFidu(owner, stakedFiduId, 100e18, 1e12)
+  {
     assertEq(ledger.erc721IdOf(1), poolTokenId);
     assertEq(ledger.erc721IdOf(2), stakedFiduId);
   }
@@ -179,7 +207,11 @@ contract CapitalLedgerTest is Test {
     address owner,
     uint256 id,
     uint256 poolTokenAmount
-  ) public withDeposit_poolToken(owner, id, poolTokenAmount) withDeposit_stakedFidu(owner, 2, 10e18, 1e12) {
+  )
+    public
+    withDeposit_poolToken(owner, id, poolTokenAmount)
+    withDeposit_stakedFidu(owner, 2, 10e18, 1e12)
+  {
     vm.expectEmit(true, false, false, true);
     emit CapitalERC721Withdrawal(owner, 1, POOL_TOKENS_ADDRESS, block.timestamp);
 
@@ -235,7 +267,9 @@ contract CapitalLedgerTest is Test {
     assertEq(ledger.ownerOf(4), address(0));
   }
 
-  function test_tokenByIndex(uint256 amount)
+  function test_tokenByIndex(
+    uint256 amount
+  )
     public
     withDeposit_poolToken(address(1), 101, amount)
     withDeposit_stakedFidu(address(2), 100, amount, 1e12)
@@ -260,20 +294,16 @@ contract CapitalLedgerTest is Test {
     _;
   }
 
-  function boundFiduParameters(uint256 fiduAmount, uint256 fiduSharePrice)
-    private
-    returns (uint256 boundedFiduAmount, uint256 boundedFiduSharePrice)
-  {
+  function boundFiduParameters(
+    uint256 fiduAmount,
+    uint256 fiduSharePrice
+  ) private returns (uint256 boundedFiduAmount, uint256 boundedFiduSharePrice) {
     boundedFiduSharePrice = bound(fiduSharePrice, 1, FIDU_SHARE_PRICE_UPPER_BOUND);
     boundedFiduAmount = bound(fiduAmount, FiduConversions.USDC_MANTISSA, FIDU_AMOUNT_UPPER_BOUND);
     vm.assume((MAX_UINT256 / boundedFiduAmount) / boundedFiduSharePrice > 0);
   }
 
-  function depositERC721(
-    address owner,
-    address assetAddress,
-    uint256 tokenId
-  ) private {
+  function depositERC721(address owner, address assetAddress, uint256 tokenId) private {
     vm.mockCall(
       assetAddress,
       abi.encodeWithSelector(
@@ -331,11 +361,7 @@ contract CapitalLedgerTest is Test {
     return (stakedBalance, fiduSharePrice);
   }
 
-  function depositPoolToken(
-    address owner,
-    uint256 assetTokenId,
-    uint256 value
-  ) private {
+  function depositPoolToken(address owner, uint256 assetTokenId, uint256 value) private {
     vm.assume(owner != address(0));
     vm.assume(value < type(uint256).max / 4);
 
@@ -346,7 +372,13 @@ contract CapitalLedgerTest is Test {
     );
 
     vm.expectEmit(true, false, false, true);
-    emit CapitalERC721Deposit(owner, POOL_TOKENS_ADDRESS, ledger.totalSupply() + 1, assetTokenId, value);
+    emit CapitalERC721Deposit(
+      owner,
+      POOL_TOKENS_ADDRESS,
+      ledger.totalSupply() + 1,
+      assetTokenId,
+      value
+    );
 
     depositERC721(owner, POOL_TOKENS_ADDRESS, assetTokenId);
   }

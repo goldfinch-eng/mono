@@ -27,7 +27,13 @@ contract ImplementationRepositoryTest is BaseTest {
     address caller,
     address impl,
     address otherImpl
-  ) public impersonating(caller) withFakeContract(caller) withFakeContract(impl) withFakeContract(otherImpl) {
+  )
+    public
+    impersonating(caller)
+    withFakeContract(caller)
+    withFakeContract(impl)
+    withFakeContract(otherImpl)
+  {
     // first call should succeed
     repo.initialize(caller, impl);
 
@@ -41,12 +47,20 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.append(owner);
   }
 
-  function testCreatingLineageWithEoaReverts() public afterInitializingRepository impersonating(owner) {
+  function testCreatingLineageWithEoaReverts()
+    public
+    afterInitializingRepository
+    impersonating(owner)
+  {
     vm.expectRevert("not a contract");
     repo.createLineage(owner);
   }
 
-  function testInitializeSetsCorrectState(address _owner, address impl) public notNull(_owner) withFakeContract(impl) {
+  function testInitializeSetsCorrectState(address _owner, address impl)
+    public
+    notNull(_owner)
+    withFakeContract(impl)
+  {
     repo.initialize(_owner, impl);
     assertTrue(repo.hasRole(repo.OWNER_ROLE(), _owner));
     assertTrue(repo.hasRole(repo.PAUSER_ROLE(), _owner));
@@ -145,7 +159,10 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(address(repo.nextImplementationOf(c)), address(b));
   }
 
-  function testSetUpgradeDataForSucceedsWhenOwnerWithRegisteredContract(address impl, bytes calldata data)
+  function testSetUpgradeDataForSucceedsWhenOwnerWithRegisteredContract(
+    address impl,
+    bytes calldata data
+  )
     public
     afterInitializingRepository
     impersonating(owner)
@@ -171,7 +188,11 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.currentImplementation(lineageId);
   }
 
-  function testGetNextImplementationOfRevertsWhenPaused() public impersonating(owner) afterInitializingRepository {
+  function testGetNextImplementationOfRevertsWhenPaused()
+    public
+    impersonating(owner)
+    afterInitializingRepository
+  {
     repo.pause();
     vm.expectRevert("Pausable: paused");
     repo.nextImplementationOf(address(initialImpl));
@@ -191,7 +212,12 @@ contract ImplementationRepositoryTest is BaseTest {
     address caller,
     address implementation,
     bytes calldata data
-  ) public afterInitializingRepository assume(caller != owner && caller != address(0)) impersonating(caller) {
+  )
+    public
+    afterInitializingRepository
+    assume(caller != owner && caller != address(0))
+    impersonating(caller)
+  {
     vm.expectRevert("Must have admin role to perform this action");
     repo.setUpgradeDataFor(implementation, data);
   }
@@ -373,7 +399,11 @@ contract ImplementationRepositoryTest is BaseTest {
     _;
   }
 
-  event Added(uint256 indexed lineageId, address indexed newImplementation, address indexed oldImplementation);
+  event Added(
+    uint256 indexed lineageId,
+    address indexed newImplementation,
+    address indexed oldImplementation
+  );
   event Removed(uint256 indexed lineageId, address indexed implementation);
   event UpgradeDataSet(address indexed implementation, bytes data);
 }

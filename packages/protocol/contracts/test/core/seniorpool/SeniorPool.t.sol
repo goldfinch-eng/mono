@@ -18,7 +18,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   getNumShares
   ================================================================================*/
 
-  function testGetNumSharesCalculatesSharesBasedOnSharePrice(uint256 amount, uint256 sharePrice) public {
+  function testGetNumSharesCalculatesSharesBasedOnSharePrice(
+    uint256 amount,
+    uint256 sharePrice
+  ) public {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     sharePrice = bound(sharePrice, fiduVal(1) / 2, fiduVal(2));
     sp._setSharePrice(sharePrice);
@@ -30,7 +33,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   withdrawalRequest view tests
   ================================================================================*/
 
-  function testWithdrawalRequestReturnsCorrectFiduRequestedAndUsdcWithdrawable(address user1, address user2) public {
+  function testWithdrawalRequestReturnsCorrectFiduRequestedAndUsdcWithdrawable(
+    address user1,
+    address user2
+  ) public {
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -111,12 +117,10 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   Pool Assets 
   ================================================================================*/
 
-  function testPoolAssetsDoesntIncludeUsdcAllocatedFroWithdrawals(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testPoolAssetsDoesntIncludeUsdcAllocatedFroWithdrawals(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, amount);
     uint256 shares = depositToSpFrom(user, amount);
@@ -183,7 +187,9 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   Assets Matching Liabilities
   ================================================================================*/
 
-  function testAssetLiabilityMismatchShouldPreventNewFiduMintsWhenMismatchExceedsThreshold() public {
+  function testAssetLiabilityMismatchShouldPreventNewFiduMintsWhenMismatchExceedsThreshold()
+    public
+  {
     // TODO - fuzzed inputs
     depositToSpFrom(GF_OWNER, usdcVal(1));
     // Difference in share price must be enough to exceed the asset/liability mismatch threshold

@@ -68,7 +68,10 @@ contract ERC1155PresetPauserUpgradeable is
    * - the caller must have the `PAUSER_ROLE`.
    */
   function pause() public virtual {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC1155PresetPauser: must have pauser role to pause");
+    require(
+      hasRole(PAUSER_ROLE, _msgSender()),
+      "ERC1155PresetPauser: must have pauser role to pause"
+    );
     _pause();
   }
 
@@ -82,14 +85,19 @@ contract ERC1155PresetPauserUpgradeable is
    * - the caller must have the `PAUSER_ROLE`.
    */
   function unpause() public virtual {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC1155PresetPauser: must have pauser role to unpause");
+    require(
+      hasRole(PAUSER_ROLE, _msgSender()),
+      "ERC1155PresetPauser: must have pauser role to unpause"
+    );
     _unpause();
   }
 
   /**
    * @dev See {IERC165-supportsInterface}.
    */
-  function supportsInterface(bytes4 interfaceId)
+  function supportsInterface(
+    bytes4 interfaceId
+  )
     public
     view
     virtual

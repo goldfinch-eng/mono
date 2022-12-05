@@ -18,7 +18,10 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = _config;
   }

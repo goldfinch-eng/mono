@@ -79,7 +79,13 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     uint256 id,
     uint256 expiresAt,
     bytes calldata signature
-  ) public payable override onlySigner(_msgSender(), id, expiresAt, signature) incrementNonce(_msgSender()) {
+  )
+    public
+    payable
+    override
+    onlySigner(_msgSender(), id, expiresAt, signature)
+    incrementNonce(_msgSender())
+  {
     _mintTo(_msgSender(), id);
   }
 
@@ -88,7 +94,13 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     uint256 id,
     uint256 expiresAt,
     bytes calldata signature
-  ) public payable override onlySignerMintTo(recipient, id, expiresAt, signature) incrementNonce(_msgSender()) {
+  )
+    public
+    payable
+    override
+    onlySignerMintTo(recipient, id, expiresAt, signature)
+    incrementNonce(_msgSender())
+  {
     require(balanceOf(_msgSender(), id) == 0, "msgSender already owns UID");
     _mintTo(recipient, id);
   }
@@ -136,9 +148,14 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   ) {
     require(block.timestamp < expiresAt, "Signature has expired");
 
-    bytes32 hash = keccak256(abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid));
+    bytes32 hash = keccak256(
+      abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid)
+    );
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
-    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
+    require(
+      hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)),
+      "Invalid signer"
+    );
     _;
   }
 
@@ -151,11 +168,22 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     require(block.timestamp < expiresAt, "Signature has expired");
 
     bytes32 hash = keccak256(
-      abi.encodePacked(_msgSender(), mintToAddress, id, expiresAt, address(this), nonces[_msgSender()], block.chainid)
+      abi.encodePacked(
+        _msgSender(),
+        mintToAddress,
+        id,
+        expiresAt,
+        address(this),
+        nonces[_msgSender()],
+        block.chainid
+      )
     );
 
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
-    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
+    require(
+      hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)),
+      "Invalid signer"
+    );
     _;
   }
 

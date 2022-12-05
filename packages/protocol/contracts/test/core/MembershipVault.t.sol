@@ -59,7 +59,10 @@ contract MembershipVaultTest is Test {
     assertEq(vault.ownerOf(1), address(0));
   }
 
-  function test_balanceOf(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_balanceOf(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     assertEq(vault.balanceOf(owner), 1);
   }
 
@@ -67,7 +70,10 @@ contract MembershipVaultTest is Test {
     assertEq(vault.balanceOf(TEST_OWNER), 0);
   }
 
-  function test_tokenOfOwnerByIndex(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_tokenOfOwnerByIndex(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     uint256 id = vault.tokenOfOwnerByIndex(owner, 0);
 
     assertEq(vault.currentValueOwnedBy(owner), 0);
@@ -84,19 +90,17 @@ contract MembershipVaultTest is Test {
     vault.tokenOfOwnerByIndex(TEST_OWNER, 0);
   }
 
-  function test_tokenOfOwnerByIndex_invalidIndex(address owner, uint256 amount)
-    public
-    withExistingPosition(owner, amount)
-  {
+  function test_tokenOfOwnerByIndex_invalidIndex(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     vm.expectRevert(MembershipVault.OneTokenPerAddress.selector);
     vault.tokenOfOwnerByIndex(owner, 1);
   }
 
-  function test_tokenByIndex(uint256 amount)
-    public
-    withExistingPosition(address(1), amount)
-    withExistingPosition(address(2), amount)
-  {
+  function test_tokenByIndex(
+    uint256 amount
+  ) public withExistingPosition(address(1), amount) withExistingPosition(address(2), amount) {
     assertEq(vault.tokenByIndex(0), 1);
     assertEq(vault.currentValueOwnedBy(address(1)), 0);
 
@@ -145,7 +149,11 @@ contract MembershipVaultTest is Test {
     assertEq(vault.symbol(), "GFMEMBER");
   }
 
-  function test_tokenURI() public withExistingPosition(address(2), 5) withExistingPosition(address(3), 6) {
+  function test_tokenURI()
+    public
+    withExistingPosition(address(2), 5)
+    withExistingPosition(address(3), 6)
+  {
     cake.accessControl().setAdmin(address(vault), address(this));
     vault.setBaseURI("http://www.some.com/");
 
@@ -167,14 +175,20 @@ contract MembershipVaultTest is Test {
   ////////////////////////////////////////////////////////////////////
   //// IMembershipVault
 
-  function test_currentValueOwnedBy(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_currentValueOwnedBy(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     assertEq(vault.currentValueOwnedBy(owner), 0);
 
     skip(Epochs.EPOCH_SECONDS);
     assertEq(vault.currentValueOwnedBy(owner), amount);
   }
 
-  function test_currentValueOwnedBy_multipleUpdates(address owner, uint256 amount)
+  function test_currentValueOwnedBy_multipleUpdates(
+    address owner,
+    uint256 amount
+  )
     public
     withExistingPosition(owner, amount)
     withExistingPosition(owner, amount + 1)
@@ -190,14 +204,20 @@ contract MembershipVaultTest is Test {
     assertEq(vault.currentValueOwnedBy(TEST_OWNER), 0);
   }
 
-  function test_currentTotal(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_currentTotal(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     assertEq(vault.currentTotal(), 0);
 
     skip(Epochs.EPOCH_SECONDS);
     assertEq(vault.currentTotal(), amount);
   }
 
-  function test_currentTotal_multipleUpdates(address owner, uint256 amount)
+  function test_currentTotal_multipleUpdates(
+    address owner,
+    uint256 amount
+  )
     public
     withExistingPosition(owner, amount)
     withExistingPosition(owner, amount + 1)
@@ -209,7 +229,10 @@ contract MembershipVaultTest is Test {
     assertEq(vault.currentTotal(), amount + 2);
   }
 
-  function test_checkpoint(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_checkpoint(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     // Epoch: 1
     {
       Position memory checkpoint = vault.positionOwnedBy(owner);
@@ -365,7 +388,10 @@ contract MembershipVaultTest is Test {
     vault.adjustHoldings(address(0), 0, 10);
   }
 
-  function test_decreaseHoldings(address owner, uint256 amount) public withExistingPosition(owner, amount) {
+  function test_decreaseHoldings(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     // Force amount to be divisible by 8 so we can split amount into quarters for testing
     vm.assume(amount % 8 == 0);
 
@@ -423,7 +449,9 @@ contract MembershipVaultTest is Test {
   }
 
   function test_adjustHoldings_nextEpochGreater() public {
-    vm.expectRevert(abi.encodeWithSelector(MembershipVault.InvalidHoldingsAdjustment.selector, 6, 3));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipVault.InvalidHoldingsAdjustment.selector, 6, 3)
+    );
     vault.adjustHoldings(address(5), 6, 3);
   }
 
@@ -463,10 +491,10 @@ contract MembershipVaultTest is Test {
     assertEq(vault.currentValueOwnedBy(owner), 10000);
   }
 
-  function test_scenario_depositAndWithdraw_immediate(address owner, uint256 amount)
-    public
-    withExistingPosition(owner, amount)
-  {
+  function test_scenario_depositAndWithdraw_immediate(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     {
       uint256 expectedAmount = 0;
       assertEq(vault.currentValueOwnedBy(owner), expectedAmount);
@@ -493,10 +521,10 @@ contract MembershipVaultTest is Test {
     }
   }
 
-  function test_scenario_depositAndWithdraw_multiEpoch(address owner, uint256 amount)
-    public
-    withExistingPosition(owner, amount)
-  {
+  function test_scenario_depositAndWithdraw_multiEpoch(
+    address owner,
+    uint256 amount
+  ) public withExistingPosition(owner, amount) {
     vm.assume(amount % 8 == 0);
 
     {

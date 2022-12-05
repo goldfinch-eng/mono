@@ -10,11 +10,7 @@ import {TranchedPool} from "../protocol/core/TranchedPool.sol";
 import {TranchingLogic} from "../protocol/core/TranchingLogic.sol";
 
 contract TestTranchedPool is TranchedPool {
-  function collectInterestAndPrincipal(
-    address from,
-    uint256 interest,
-    uint256 principal
-  ) public {
+  function collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) public {
     _collectInterestAndPrincipal(from, interest, principal);
   }
 

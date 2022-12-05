@@ -44,7 +44,7 @@ import {
   MembershipCollectorInstance,
   ERC20SplitterInstance,
 } from "../typechain/truffle"
-import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -58,8 +58,7 @@ const HALF_CENT = usdcVal(1).div(new BN(200))
 const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
-import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
-import {ERC20Splitter} from "../typechain/ethers"
+import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")

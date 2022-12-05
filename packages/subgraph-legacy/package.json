@@ -18,6 +18,6 @@
     "@types/js-yaml": "^3.12.7",
     "js-yaml": "^3.14.1",
     "matchstick-as": "^0.2.2",
-    "ts-node": "^10.2.1"
+    "ts-node": "^10.9.1"
   }
 }

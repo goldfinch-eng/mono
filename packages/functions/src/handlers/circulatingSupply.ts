@@ -3,7 +3,7 @@ import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {BigNumber} from "bignumber.js"
 import {genRequestHandler, getBlockchain} from "../helpers"
 
-import type {GFI} from "@goldfinch-eng/protocol/typechain/ethers/GFI"
+import type {GFI} from "@goldfinch-eng/protocol/typechain/ethers/contracts/protocol/core/GFI"
 import GFI_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/GFI.json"
 import STAKING_REWARDS_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/StakingRewards.json"
 import COMMUNITY_REWARDS_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/CommunityRewards.json"

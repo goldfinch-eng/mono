@@ -49,7 +49,10 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @dev reverts when caller is not an admin
   /// @dev reverts when the contract is paused
   /// @dev reverts if the given implementation isn't registered
-  function setUpgradeDataFor(address implementation, bytes calldata data) external onlyAdmin whenNotPaused {
+  function setUpgradeDataFor(
+    address implementation,
+    bytes calldata data
+  ) external onlyAdmin whenNotPaused {
     _setUpgradeDataFor(implementation, data);
   }
 
@@ -59,7 +62,9 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @dev reverts if `implementation` is not a contract
   /// @param implementation implementation that will be the first implementation in the lineage
   /// @return newly created lineage's id
-  function createLineage(address implementation) external onlyAdmin whenNotPaused returns (uint256) {
+  function createLineage(
+    address implementation
+  ) external onlyAdmin whenNotPaused returns (uint256) {
     return _createLineage(implementation);
   }
 
@@ -115,7 +120,9 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @dev reverts when contract is paused
   /// @param implementation implementation to get the upgraded implementation for
   /// @return Next Implementation
-  function nextImplementationOf(address implementation) external view whenNotPaused returns (address) {
+  function nextImplementationOf(
+    address implementation
+  ) external view whenNotPaused returns (address) {
     return _nextImplementationOf[implementation];
   }
 
@@ -205,7 +212,11 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   }
 
   // //////// Events //////////////////////////////////////////////////////////////
-  event Added(uint256 indexed lineageId, address indexed newImplementation, address indexed oldImplementation);
+  event Added(
+    uint256 indexed lineageId,
+    address indexed newImplementation,
+    address indexed oldImplementation
+  );
   event Removed(uint256 indexed lineageId, address indexed implementation);
   event UpgradeDataSet(address indexed implementation, bytes data);
 }

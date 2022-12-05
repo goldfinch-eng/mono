@@ -4,12 +4,11 @@ import {
   getEthersContract,
   getPauserAdmin,
   getProtocolOwner,
-  getTruffleContract,
   populateTxAndLog,
 } from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
+import {AccessControl} from "@goldfinch-eng/protocol/typechain/ethers/contracts/cake"
 import {
-  AccessControl,
   Context,
   MembershipOrchestrator,
   Router,

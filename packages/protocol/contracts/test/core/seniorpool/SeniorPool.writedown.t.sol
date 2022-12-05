@@ -8,7 +8,9 @@ import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
 contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
-  function testWritedownCallableByNonGovernance(address user) public goListed(user) impersonating(user) {
+  function testWritedownCallableByNonGovernance(
+    address user
+  ) public goListed(user) impersonating(user) {
     (TestTranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
@@ -85,8 +87,16 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
 
     sp.writedown(poolToken);
 
-    assertApproxEqAbs(sp.totalWritedowns(), expectedWritedown - newExpectedWritedown, thresholdUsdc());
-    assertApproxEqAbs(sp.assets(), assetsBefore - (expectedWritedown - newExpectedWritedown), thresholdUsdc());
+    assertApproxEqAbs(
+      sp.totalWritedowns(),
+      expectedWritedown - newExpectedWritedown,
+      thresholdUsdc()
+    );
+    assertApproxEqAbs(
+      sp.assets(),
+      assetsBefore - (expectedWritedown - newExpectedWritedown),
+      thresholdUsdc()
+    );
 
     uint256 finalSharePrice = sp.sharePrice();
     uint256 delta = originalSharePrice - finalSharePrice;

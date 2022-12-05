@@ -4,7 +4,12 @@ import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 import { ReactNode, useEffect, useMemo } from "react";
 
-import { Button, Modal, ShimmerLines } from "@/components/design-system";
+import {
+  Button,
+  InfoIconTooltip,
+  Modal,
+  ShimmerLines,
+} from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -19,8 +24,8 @@ interface WithdrawalHistoryModal {
 }
 
 interface Row {
-  action: "cancel" | "increase" | "initial" | "distribution";
-  description: string;
+  action: "cancel" | "increase" | "initial" | "distribution" | "postpone";
+  description: ReactNode;
   timestamp: number;
   fiduChange: BigNumber;
   fiduRemaining: BigNumber;
@@ -87,6 +92,28 @@ export function WithdrawalHistoryModal({
             } as Row;
           }
         })
+      )
+      .concat(
+        data.seniorPoolWithdrawalDisbursementPostponements.map(
+          (postponement) =>
+            ({
+              action: "postpone",
+              description: (
+                <div className="flex items-center gap-2">
+                  <div>No distribution</div>
+                  <InfoIconTooltip
+                    content={`This occurs when the Senior Pool receives no deposits or borrower repayments during a two week period. The next distribution occurs on ${formatDate(
+                      postponement.newEndsAt * 1000,
+                      "MMM dd, yyyy"
+                    )}.`}
+                  />
+                </div>
+              ),
+              timestamp: postponement.oldEndsAt * 1000,
+              fiduChange: BigNumber.from(0),
+              fiduRemaining: BigNumber.from(0),
+            } as Row)
+        )
       );
     r.sort((a, b) => a.timestamp - b.timestamp);
     return r.reduce((prev, current, index) => {
@@ -94,7 +121,12 @@ export function WithdrawalHistoryModal({
         return prev.concat(current);
       }
       const prevRow: Row = prev.slice(-1)[0];
-      if (current.action === "cancel") {
+      if (current.action === "postpone") {
+        return prev.concat({
+          ...current,
+          fiduRemaining: prevRow.fiduRemaining,
+        });
+      } else if (current.action === "cancel") {
         return prev.concat({
           ...current,
           fiduChange: prevRow.fiduRemaining.mul("-1"),
@@ -196,6 +228,15 @@ gql`
       allocatedAt
       fiduLiquidated
     }
+    seniorPoolWithdrawalDisbursementPostponements(
+      where: { user: $user }
+      orderBy: oldEndsAt
+      orderDirection: asc
+    ) {
+      id
+      oldEndsAt
+      newEndsAt
+    }
   }
 `;
 
@@ -229,7 +270,7 @@ function TableData({
   return (
     <td
       className={clsx(
-        "p-2 first:border-r first:border-sand-200 first:bg-sand-100",
+        "p-2 text-sand-500 first:border-r first:border-sand-200 first:bg-sand-100 first:text-sand-700 last:font-medium last:text-sand-700",
         rightAligned ? "text-right" : "text-left"
       )}
     >

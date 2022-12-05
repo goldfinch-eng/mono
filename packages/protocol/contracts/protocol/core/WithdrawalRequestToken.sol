@@ -12,7 +12,11 @@ import {HasAdmin} from "./HasAdmin.sol";
 import {IERC721} from "../../interfaces/openzeppelin/IERC721.sol";
 
 // TODO - supportsInterface and setBaseURI functions
-contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin {
+contract WithdrawalRequestToken is
+  IWithdrawalRequestToken,
+  ERC721PresetMinterPauserAutoIdUpgradeSafe,
+  HasAdmin
+{
   using ConfigHelper for GoldfinchConfig;
 
   GoldfinchConfig private config;
@@ -23,7 +27,10 @@ contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPa
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
 
     __Context_init_unchained();
     __AccessControl_init_unchained();
@@ -66,20 +73,12 @@ contract WithdrawalRequestToken is IWithdrawalRequestToken, ERC721PresetMinterPa
   }
 
   /// @notice Disabled
-  function transferFrom(
-    address,
-    address,
-    uint256
-  ) public override(IERC721, ERC721UpgradeSafe) {
+  function transferFrom(address, address, uint256) public override(IERC721, ERC721UpgradeSafe) {
     revert("Disabled");
   }
 
   /// @notice Disabled
-  function safeTransferFrom(
-    address,
-    address,
-    uint256
-  ) public override(IERC721, ERC721UpgradeSafe) {
+  function safeTransferFrom(address, address, uint256) public override(IERC721, ERC721UpgradeSafe) {
     revert("Disabled");
   }
 

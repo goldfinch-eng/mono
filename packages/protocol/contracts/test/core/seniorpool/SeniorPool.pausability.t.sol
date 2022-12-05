@@ -43,7 +43,10 @@ contract SeniorPoolPausabilityTest is SeniorPoolBaseTest {
     sp.requestWithdrawal(amount);
   }
 
-  function testWhenPausedDisallowsAddToWithdrawalRequest(uint256 amount, uint256 requestId) public paused {
+  function testWhenPausedDisallowsAddToWithdrawalRequest(
+    uint256 amount,
+    uint256 requestId
+  ) public paused {
     vm.expectRevert("Pausable: paused");
     sp.addToWithdrawalRequest(amount, requestId);
   }
@@ -68,12 +71,16 @@ contract SeniorPoolPausabilityTest is SeniorPoolBaseTest {
     assertTrue(sp.paused());
   }
 
-  function testNonOwnerCannotPause(address nonOwner) public onlyAllowListed(nonOwner) impersonating(nonOwner) {
+  function testNonOwnerCannotPause(
+    address nonOwner
+  ) public onlyAllowListed(nonOwner) impersonating(nonOwner) {
     vm.expectRevert(bytes("NA"));
     sp.pause();
   }
 
-  function testNonOwnerCannotUnpause(address nonOwner) public paused onlyAllowListed(nonOwner) impersonating(nonOwner) {
+  function testNonOwnerCannotUnpause(
+    address nonOwner
+  ) public paused onlyAllowListed(nonOwner) impersonating(nonOwner) {
     vm.expectRevert(bytes("NA"));
     sp.unpause();
   }

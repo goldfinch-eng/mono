@@ -77,7 +77,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
 
     __Context_init_unchained();
     __AccessControl_init_unchained();
@@ -102,14 +105,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
    * @param to The address that should own the position
    * @return tokenId The token ID (auto-incrementing integer across all pools)
    */
-  function mint(MintParams calldata params, address to)
-    external
-    virtual
-    override
-    onlyPool
-    whenNotPaused
-    returns (uint256 tokenId)
-  {
+  function mint(
+    MintParams calldata params,
+    address to
+  ) external virtual override onlyPool whenNotPaused returns (uint256 tokenId) {
     address poolAddress = _msgSender();
     tokenId = _createToken(params, poolAddress);
     _mint(to, tokenId);
@@ -145,7 +144,14 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     );
     token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
 
-    emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
+    emit TokenRedeemed(
+      ownerOf(tokenId),
+      poolAddr,
+      tokenId,
+      principalRedeemed,
+      interestRedeemed,
+      token.tranche
+    );
   }
 
   /** @notice reduce a given pool token's principalAmount and principalRedeemed by a specified amount
@@ -170,13 +176,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
    * @param tokenId The token id to update (must be owned by the pool calling this function)
    * @param principalAmount The incremental amount of principal redeemed (cannot be more than principal deposited)
    */
-  function withdrawPrincipal(uint256 tokenId, uint256 principalAmount)
-    external
-    virtual
-    override
-    onlyPool
-    whenNotPaused
-  {
+  function withdrawPrincipal(
+    uint256 tokenId,
+    uint256 principalAmount
+  ) external virtual override onlyPool whenNotPaused {
     TokenInfo storage token = tokens[tokenId];
     address poolAddr = token.pool;
     require(_msgSender() == poolAddr, "Invalid sender");
@@ -189,7 +192,13 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
 
     token.principalAmount = token.principalAmount.sub(principalAmount);
 
-    emit TokenPrincipalWithdrawn(ownerOf(tokenId), poolAddr, tokenId, principalAmount, token.tranche);
+    emit TokenPrincipalWithdrawn(
+      ownerOf(tokenId),
+      poolAddr,
+      tokenId,
+      principalAmount,
+      token.tranche
+    );
   }
 
   /**
@@ -202,7 +211,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     bool fromTokenPool = _validPool(_msgSender()) && token.pool == _msgSender();
     address owner = ownerOf(tokenId);
     require(canBurn || fromTokenPool, "ERC721Burnable: caller cannot burn this token");
-    require(token.principalRedeemed == token.principalAmount, "Can only burn fully redeemed tokens");
+    require(
+      token.principalRedeemed == token.principalAmount,
+      "Can only burn fully redeemed tokens"
+    );
     _destroyAndBurn(tokenId);
     emit TokenBurned(owner, token.pool, tokenId);
   }
@@ -226,7 +238,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
    * @param tokenId The token id to check for
    * @return True if approved to redeem/transfer/burn the token, false if not
    */
-  function isApprovedOrOwner(address spender, uint256 tokenId) external view override returns (bool) {
+  function isApprovedOrOwner(
+    address spender,
+    uint256 tokenId
+  ) external view override returns (bool) {
     return _isApprovedOrOwner(spender, tokenId);
   }
 
@@ -234,7 +249,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     return _validPool(sender);
   }
 
-  function _createToken(MintParams calldata params, address poolAddress) internal returns (uint256 tokenId) {
+  function _createToken(
+    MintParams calldata params,
+    address poolAddress
+  ) internal returns (uint256 tokenId) {
     PoolInfo storage pool = pools[poolAddress];
 
     _tokenIdTracker.increment();
@@ -269,7 +287,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   /// @param _salePrice The sale price of the NFT asset specified by _tokenId
   /// @return receiver Address that should receive royalties
   /// @return royaltyAmount The royalty payment amount for _salePrice
-  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view override returns (address, uint256) {
+  function royaltyInfo(
+    uint256 _tokenId,
+    uint256 _salePrice
+  ) external view override returns (address, uint256) {
     return royaltyParams.royaltyInfo(_tokenId, _salePrice);
   }
 
@@ -286,7 +307,9 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     _setBaseURI(baseURI_);
   }
 
-  function supportsInterface(bytes4 id) public view override(ERC165UpgradeSafe, IERC165) returns (bool) {
+  function supportsInterface(
+    bytes4 id
+  ) public view override(ERC165UpgradeSafe, IERC165) returns (bool) {
     return (id == _INTERFACE_ID_ERC721 ||
       id == _INTERFACE_ID_ERC721_METADATA ||
       id == _INTERFACE_ID_ERC721_ENUMERABLE ||

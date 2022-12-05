@@ -44,11 +44,10 @@ contract MembershipLedger is IMembershipLedger, Base, Initializable {
   }
 
   /// @inheritdoc IMembershipLedger
-  function allocateRewardsTo(address addr, uint256 amount)
-    external
-    onlyOperator(Routing.Keys.MembershipDirector)
-    returns (uint256 rewards)
-  {
+  function allocateRewardsTo(
+    address addr,
+    uint256 amount
+  ) external onlyOperator(Routing.Keys.MembershipDirector) returns (uint256 rewards) {
     allocatedRewards[addr] += amount;
 
     return allocatedRewards[addr];

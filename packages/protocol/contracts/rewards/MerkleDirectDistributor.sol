@@ -18,11 +18,7 @@ contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePau
   // @dev This is a packed array of booleans.
   mapping(uint256 => uint256) private acceptedBitMap;
 
-  function initialize(
-    address owner,
-    address _gfi,
-    bytes32 _merkleRoot
-  ) public initializer {
+  function initialize(address owner, address _gfi, bytes32 _merkleRoot) public initializer {
     require(owner != address(0), "Owner address cannot be empty");
     require(_gfi != address(0), "GFI address cannot be empty");
     require(_merkleRoot != 0, "Invalid Merkle root");

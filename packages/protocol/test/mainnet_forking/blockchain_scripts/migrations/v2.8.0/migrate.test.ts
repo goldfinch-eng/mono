@@ -11,6 +11,7 @@ import {
   SIGNER_ROLE,
   USDC_TO_GFI_MANTISSA,
   GFI_MANTISSA,
+  getEthersContract,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {assertIsString} from "packages/utils/src/type"
 
@@ -67,10 +68,11 @@ import {
   setupAndDepositMultiple,
   DepositType,
 } from "@goldfinch-eng/protocol/test/util/membershipRewards"
-import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/GFILedger"
-import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/ICapitalLedger"
+import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/membership/GFILedger"
+import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/ICapitalLedger"
 import bn from "bignumber.js"
 import {routingIdOf} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers/routingIdOf"
+import {MembershipLedger} from "@goldfinch-eng/protocol/typechain/ethers"
 
 const INITIALIZABLE_ERROR = "Initializable: contract is already initialized"
 const EPOCH_LENGTH_IN_DAYS = 7

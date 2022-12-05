@@ -44,11 +44,10 @@ contract WithdrawalRequestTokenTest is BaseTest {
     token.__initialize__(GF_OWNER, gfConfig);
   }
 
-  function testMintRevertsWhenCalledByNonSeniorPool(address notSeniorPool, address tokenOwner)
-    public
-    onlyAllowListed(notSeniorPool)
-    impersonating(notSeniorPool)
-  {
+  function testMintRevertsWhenCalledByNonSeniorPool(
+    address notSeniorPool,
+    address tokenOwner
+  ) public onlyAllowListed(notSeniorPool) impersonating(notSeniorPool) {
     vm.expectRevert(bytes("NA"));
     token.mint(tokenOwner);
   }
@@ -58,12 +57,10 @@ contract WithdrawalRequestTokenTest is BaseTest {
     assertEq(token.balanceOf(tokenOwner), 1);
   }
 
-  function testBurnRevertsWhenCalledByNonSeniorPool(address notSeniorPool, address tokenOwner)
-    public
-    onlyAllowListed(notSeniorPool)
-    onlyAllowListed(tokenOwner)
-    impersonating(notSeniorPool)
-  {
+  function testBurnRevertsWhenCalledByNonSeniorPool(
+    address notSeniorPool,
+    address tokenOwner
+  ) public onlyAllowListed(notSeniorPool) onlyAllowListed(tokenOwner) impersonating(notSeniorPool) {
     vm.expectRevert(bytes("NA"));
     token.burn(1);
 
@@ -72,11 +69,9 @@ contract WithdrawalRequestTokenTest is BaseTest {
     token.burn(tokenId);
   }
 
-  function testBurnSucceedsForSeniorPool(address tokenOwner)
-    public
-    onlyAllowListed(tokenOwner)
-    impersonating(address(seniorPool))
-  {
+  function testBurnSucceedsForSeniorPool(
+    address tokenOwner
+  ) public onlyAllowListed(tokenOwner) impersonating(address(seniorPool)) {
     uint256 tokenId = mint(tokenOwner);
     assertEq(token.balanceOf(tokenOwner), 1);
 
@@ -84,12 +79,10 @@ contract WithdrawalRequestTokenTest is BaseTest {
     assertZero(token.balanceOf(tokenOwner));
   }
 
-  function testApproveReverts(address tokenOwner, address approvedAddress)
-    public
-    onlyAllowListed(tokenOwner)
-    onlyAllowListed(approvedAddress)
-    impersonating(tokenOwner)
-  {
+  function testApproveReverts(
+    address tokenOwner,
+    address approvedAddress
+  ) public onlyAllowListed(tokenOwner) onlyAllowListed(approvedAddress) impersonating(tokenOwner) {
     uint256 tokenId = mint(tokenOwner);
 
     vm.expectRevert("Disabled");
@@ -107,12 +100,10 @@ contract WithdrawalRequestTokenTest is BaseTest {
     token.setApprovalForAll(approvedAddress, approved);
   }
 
-  function testTransferFromReverts(address tokenOwner, address receiver)
-    public
-    onlyAllowListed(tokenOwner)
-    onlyAllowListed(receiver)
-    impersonating(tokenOwner)
-  {
+  function testTransferFromReverts(
+    address tokenOwner,
+    address receiver
+  ) public onlyAllowListed(tokenOwner) onlyAllowListed(receiver) impersonating(tokenOwner) {
     uint256 tokenId = mint(tokenOwner);
 
     vm.expectRevert("Disabled");

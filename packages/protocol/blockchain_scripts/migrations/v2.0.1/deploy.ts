@@ -2,7 +2,7 @@ import {ContractDeployer, ETHDecimals, getTempMultisig} from "../../deployHelper
 import hre, {ethers} from "hardhat"
 import {DeployEffects} from "../deployEffects"
 import {assertIsString} from "packages/utils/src/type"
-import {GFI} from "packages/protocol/typechain/ethers/GFI"
+import {GFI} from "packages/protocol/typechain/ethers/contracts/protocol/core/GFI"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 
 export async function deploy(deployEffects: DeployEffects) {

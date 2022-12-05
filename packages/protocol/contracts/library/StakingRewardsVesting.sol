@@ -28,7 +28,12 @@ library StakingRewardsVesting {
   }
 
   function checkpoint(Rewards storage rewards) internal {
-    uint256 newTotalVested = totalVestedAt(rewards.startTime, rewards.endTime, block.timestamp, rewards.currentGrant());
+    uint256 newTotalVested = totalVestedAt(
+      rewards.startTime,
+      rewards.endTime,
+      block.timestamp,
+      rewards.currentGrant()
+    );
 
     if (newTotalVested > rewards.totalVested) {
       uint256 difference = newTotalVested.sub(rewards.totalVested);

@@ -52,7 +52,13 @@ library Accountant {
     uint256 endTime,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccruedOverPeriod(cl, balance, startTime, endTime, lateFeeGracePeriod);
+    uint256 interestAccrued = calculateInterestAccruedOverPeriod(
+      cl,
+      balance,
+      startTime,
+      endTime,
+      lateFeeGracePeriod
+    );
     uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, endTime);
     return (interestAccrued, principalAccrued);
   }
@@ -80,7 +86,8 @@ library Accountant {
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
   ) public view returns (uint256, uint256) {
-    return calculateWritedownForPrincipal(cl, cl.balance(), timestamp, gracePeriodInDays, maxDaysLate);
+    return
+      calculateWritedownForPrincipal(cl, cl.balance(), timestamp, gracePeriodInDays, maxDaysLate);
   }
 
   function calculateWritedownForPrincipal(
@@ -114,19 +121,30 @@ library Accountant {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
     } else {
-      writedownPercent = FixedPoint.min(FixedPoint.fromUnscaledUint(1), (daysLate.sub(fpGracePeriod)).div(maxLate));
+      writedownPercent = FixedPoint.min(
+        FixedPoint.fromUnscaledUint(1),
+        (daysLate.sub(fpGracePeriod)).div(maxLate)
+      );
     }
 
-    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(FP_SCALING_FACTOR);
+    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(
+      FP_SCALING_FACTOR
+    );
     // This will return a number between 0-100 representing the write down percent with no decimals
     uint256 unscaledWritedownPercent = writedownPercent.mul(100).div(FP_SCALING_FACTOR).rawValue;
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory) {
+  function calculateAmountOwedForOneDay(ICreditLine cl)
+    public
+    view
+    returns (FixedPoint.Unsigned memory)
+  {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
+    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint
+      .fromUnscaledUint(totalInterestPerYear)
+      .div(365);
     return interestOwedForOneDay.add(cl.principalOwed());
   }
 
@@ -145,7 +163,14 @@ library Accountant {
     // this function's purpose is just to normalize balances, and handing in a past timestamp
     // will necessarily return zero interest accrued (because zero elapsed time), which is correct.
     uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
-    return calculateInterestAccruedOverPeriod(cl, balance, startTime, timestamp, lateFeeGracePeriodInDays);
+    return
+      calculateInterestAccruedOverPeriod(
+        cl,
+        balance,
+        startTime,
+        timestamp,
+        lateFeeGracePeriodInDays
+      );
   }
 
   function calculateInterestAccruedOverPeriod(
@@ -163,7 +188,10 @@ library Accountant {
     // has a grace period before late fee interest starts to accrue. This grace period applies for
     // every due time (termEndTime is not a special case).
     uint256 lateFeeInterestOwed = 0;
-    uint256 lateFeeStartsAt = Math.max(startTime, cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY)));
+    uint256 lateFeeStartsAt = Math.max(
+      startTime,
+      cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY))
+    );
     if (lateFeeStartsAt < endTime) {
       uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);

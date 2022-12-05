@@ -162,6 +162,20 @@ export function canUserParticipateInPool(
   return false;
 }
 
+export function canUserParticipateInSeniorPool(
+  user: UserEligibilityFieldsFragment
+) {
+  return canUserParticipateInPool(
+    [
+      UidType.NonUsEntity,
+      UidType.NonUsIndividual,
+      UidType.UsEntity,
+      UidType.UsAccreditedIndividual,
+    ],
+    user
+  );
+}
+
 export async function signAgreement(
   account: string,
   fullName: string,

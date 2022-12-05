@@ -77,7 +77,12 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
    */
-  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
+  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes)
+    public
+    view
+    override
+    returns (bool)
+  {
     require(account != address(0), "Zero address is not go-listed");
 
     if (hasRole(ZAPPER_ROLE, account)) {
@@ -133,10 +138,17 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function getSeniorPoolIdTypes() public pure returns (uint256[] memory) {
     // using a fixed size array because you can only define fixed size array literals.
-    uint256[4] memory allowedSeniorPoolIdTypesStaging = [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
+    uint256[4] memory allowedSeniorPoolIdTypesStaging = [
+      ID_TYPE_0,
+      ID_TYPE_1,
+      ID_TYPE_3,
+      ID_TYPE_4
+    ];
 
     // create a dynamic array and copy the fixed array over so we return a dynamic array
-    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](allowedSeniorPoolIdTypesStaging.length);
+    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](
+      allowedSeniorPoolIdTypesStaging.length
+    );
     for (uint256 i = 0; i < allowedSeniorPoolIdTypesStaging.length; i++) {
       allowedSeniorPoolIdTypes[i] = allowedSeniorPoolIdTypesStaging[i];
     }

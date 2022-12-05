@@ -59,7 +59,9 @@ contract AccessControlTest is Test {
     vm.assume(someOtherAddress != address(0) && someOtherAddress != admin);
 
     accessControl.setAdmin(resource, admin);
-    vm.expectRevert(abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, resource, someOtherAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, resource, someOtherAddress)
+    );
     accessControl.requireAdmin(resource, someOtherAddress);
   }
 
@@ -76,7 +78,11 @@ contract AccessControlTest is Test {
     vm.assume(someOtherAddress != address(0) && someOtherAddress != superAdmin);
 
     vm.expectRevert(
-      abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(accessControl), someOtherAddress)
+      abi.encodeWithSelector(
+        IAccessControl.RequiresAdmin.selector,
+        address(accessControl),
+        someOtherAddress
+      )
     );
     accessControl.requireSuperAdmin(someOtherAddress);
   }
