@@ -80,7 +80,6 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
-  let compoundBalance = contract.compoundBalance()
   let totalLoansOutstanding = contract.totalLoansOutstanding()
   let totalSupply = fidu_contract.totalSupply()
   let totalPoolAssets = totalSupply.times(sharePrice)
@@ -89,7 +88,6 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let rawBalance = balance
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
-  poolStatus.compoundBalance = compoundBalance
   poolStatus.totalLoansOutstanding = totalLoansOutstanding
   poolStatus.totalShares = totalSupply
   poolStatus.balance = balance
