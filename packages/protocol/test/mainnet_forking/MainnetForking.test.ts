@@ -84,8 +84,8 @@ import {
   WithdrawalRequestTokenInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
-import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
+import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/TranchedPool"
+import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/rewards/CommunityRewards"
 import {assertCommunityRewardsVestingRewards} from "../communityRewardsHelpers"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
 import {promises as fs} from "fs"
@@ -102,7 +102,7 @@ import {
   RewardPaid,
   Staked,
   Unstaked,
-} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
+} from "@goldfinch-eng/protocol/typechain/truffle/contracts/rewards/StakingRewards"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -115,7 +115,10 @@ import {
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
-import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
+import {
+  BorrowerCreated,
+  PoolCreated,
+} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {config} from "dotenv"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3

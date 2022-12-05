@@ -7,25 +7,20 @@ import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 
 contract SeniorPoolDepositTest is SeniorPoolBaseTest {
-  function testDepositRevertsWhenTransferAmountExceedsAllowance(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-  {
+  function testDepositRevertsWhenTransferAmountExceedsAllowance(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) {
     amount = bound(amount, 1, 10_000_000);
     fundAddress(user, amount);
     vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
     sp.deposit(amount);
   }
 
-  function testDepositIncreasesUsdcAvailableByDepositedAmount(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-    tokenApproved(user)
-  {
+  function testDepositIncreasesUsdcAvailableByDepositedAmount(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) tokenApproved(user) {
     amount = bound(amount, 1, 10_000_000);
     fundAddress(user, amount);
 
@@ -67,13 +62,10 @@ contract SeniorPoolDepositTest is SeniorPoolBaseTest {
     assertEq(liquidatedEpoch.fiduLiquidated, shares);
   }
 
-  function testDepositTransferUsdcFromUserToSeniorPool(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-    tokenApproved(user)
-  {
+  function testDepositTransferUsdcFromUserToSeniorPool(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) tokenApproved(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, amount);
 
@@ -89,13 +81,10 @@ contract SeniorPoolDepositTest is SeniorPoolBaseTest {
     depositToSpFrom(GF_OWNER, 0);
   }
 
-  function testDepositMintsFiduToUser(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-    tokenApproved(user)
-  {
+  function testDepositMintsFiduToUser(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) tokenApproved(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, amount);
 
@@ -108,13 +97,10 @@ contract SeniorPoolDepositTest is SeniorPoolBaseTest {
     assertEq(fidu.balanceOf(user), userFiduBefore + shares);
   }
 
-  function testDepositEmitsDepositMade(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-    tokenApproved(user)
-  {
+  function testDepositEmitsDepositMade(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) tokenApproved(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, amount);
     vm.expectEmit(true, false, false, true);
@@ -126,7 +112,10 @@ contract SeniorPoolDepositTest is SeniorPoolBaseTest {
   Deposit with Permit
   ================================================================================*/
 
-  function testDepositWithPermitDepositsForValidPermit(uint256 key, uint256 amount) public validPrivateKey(key) {
+  function testDepositWithPermitDepositsForValidPermit(
+    uint256 key,
+    uint256 amount
+  ) public validPrivateKey(key) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     address user = vm.addr(key);
 

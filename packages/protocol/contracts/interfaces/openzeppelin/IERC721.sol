@@ -34,11 +34,7 @@ interface IERC721 is IERC165 {
    * - If the caller is not `from`, it must be have been allowed to move this
    * NFT by either {approve} or {setApprovalForAll}.
    */
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function safeTransferFrom(address from, address to, uint256 tokenId) external;
 
   /**
    * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
@@ -48,11 +44,7 @@ interface IERC721 is IERC165 {
    * - If the caller is not `from`, it must be approved to move this NFT by
    * either {approve} or {setApprovalForAll}.
    */
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) external;
+  function transferFrom(address from, address to, uint256 tokenId) external;
 
   function approve(address to, uint256 tokenId) external;
 

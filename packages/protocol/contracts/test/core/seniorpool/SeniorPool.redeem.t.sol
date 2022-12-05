@@ -27,17 +27,22 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
 
     sp.redeem(poolToken);
 
-    uint256 principalRedeemed = poolTokens.getTokenInfo(poolToken).principalRedeemed - tokenBefore.principalRedeemed;
+    uint256 principalRedeemed = poolTokens.getTokenInfo(poolToken).principalRedeemed -
+      tokenBefore.principalRedeemed;
     // Junior contributed 100$, senior levered by 4x (400$). Total limit 500$. Since
     // everything was paid back, senior can redeem full amount.
     uint256 principalRedeemedExpected = usdcVal(400);
-    uint256 interestRedeemed = poolTokens.getTokenInfo(poolToken).interestRedeemed - tokenBefore.interestRedeemed;
+    uint256 interestRedeemed = poolTokens.getTokenInfo(poolToken).interestRedeemed -
+      tokenBefore.interestRedeemed;
     // $5 of interest * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
     uint256 interestRedeemedExpected = usdcVal(2) + (usdcVal(1) / 100) * 80;
 
     assertEq(principalRedeemed, principalRedeemedExpected);
     assertEq(interestRedeemed, interestRedeemedExpected);
-    assertEq(usdc.balanceOf(address(sp)), spUsdcBefore + principalRedeemedExpected + interestRedeemedExpected);
+    assertEq(
+      usdc.balanceOf(address(sp)),
+      spUsdcBefore + principalRedeemedExpected + interestRedeemedExpected
+    );
     assertEq(usdc.balanceOf(TREASURY), reserveUsdcBefore);
   }
 
@@ -59,8 +64,10 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
 
     sp.redeem(poolToken);
 
-    uint256 interestRedeemed = poolTokens.getTokenInfo(poolToken).interestRedeemed - tokenBefore.interestRedeemed;
-    uint256 sharePriceExpected = (((interestRedeemed * sp.fiduMantissa()) / sp.usdcMantissa()) * sp.fiduMantissa()) /
+    uint256 interestRedeemed = poolTokens.getTokenInfo(poolToken).interestRedeemed -
+      tokenBefore.interestRedeemed;
+    uint256 sharePriceExpected = (((interestRedeemed * sp.fiduMantissa()) / sp.usdcMantissa()) *
+      sp.fiduMantissa()) /
       fidu.totalSupply() +
       sharePriceBefore;
 
@@ -117,6 +124,9 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
     uint256 usdcAvailableBefore = sp.usdcAvailable();
     sp.redeem(poolToken);
 
-    assertEq(sp.usdcAvailable(), usdcAvailableBefore + interestRedeemedExpected + principalRedeemedExpected);
+    assertEq(
+      sp.usdcAvailable(),
+      usdcAvailableBefore + interestRedeemedExpected + principalRedeemedExpected
+    );
   }
 }

@@ -26,7 +26,9 @@ contract TestAccountant {
     return Accountant.calculateWritedownFor(cl, blockNumber, gracePeriod, maxLatePeriods);
   }
 
-  function calculateAmountOwedForOneDay(address creditLineAddress) public view returns (FixedPoint.Unsigned memory) {
+  function calculateAmountOwedForOneDay(
+    address creditLineAddress
+  ) public view returns (FixedPoint.Unsigned memory) {
     CreditLine cl = CreditLine(creditLineAddress);
     return Accountant.calculateAmountOwedForOneDay(cl);
   }

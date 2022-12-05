@@ -35,7 +35,9 @@ contract SeniorPoolEpochDurationTest is SeniorPoolBaseTest {
     vm.assume(offset < sp.epochDuration());
     vm.assume(newEpochDuration < sp.epochDuration());
     uint256 initialEndsAt = sp.epochAt(1).endsAt;
-    uint256 endOfEpochsWithPreviousDuration = initialEndsAt + sp.epochDuration() * numberOfNoopEpochs;
+    uint256 endOfEpochsWithPreviousDuration = initialEndsAt +
+      sp.epochDuration() *
+      numberOfNoopEpochs;
     vm.warp(endOfEpochsWithPreviousDuration + offset);
 
     _startImpersonation(GF_OWNER);
@@ -67,12 +69,16 @@ contract SeniorPoolEpochDurationTest is SeniorPoolBaseTest {
     assertEq(sp.epochDuration(), epochDuration);
   }
 
-  function testSetEpochDurationReversForNonAdmin(address user) public onlyAllowListed(user) impersonating(user) {
+  function testSetEpochDurationReversForNonAdmin(
+    address user
+  ) public onlyAllowListed(user) impersonating(user) {
     vm.expectRevert("Must have admin role to perform this action");
     sp.setEpochDuration(1 days);
   }
 
-  function testSetEpochDurationEmitsEpochDurationChanged(uint256 epochDuration) public impersonating(GF_OWNER) {
+  function testSetEpochDurationEmitsEpochDurationChanged(
+    uint256 epochDuration
+  ) public impersonating(GF_OWNER) {
     epochDuration = bound(epochDuration, 1 days, 10 weeks);
     vm.assume(epochDuration != sp.epochDuration());
     vm.expectEmit(false, false, false, true);
@@ -105,7 +111,11 @@ contract SeniorPoolEpochDurationTest is SeniorPoolBaseTest {
 
     ISeniorPoolEpochWithdrawals.WithdrawalRequest memory wr = sp.withdrawalRequest(tokenId);
 
-    assertEq(wr.usdcWithdrawable, 0, "user should not have usdc withdrawable before the next epoch");
+    assertEq(
+      wr.usdcWithdrawable,
+      0,
+      "user should not have usdc withdrawable before the next epoch"
+    );
 
     vm.warp(endsAtAfterWithdrawal + 100000);
 

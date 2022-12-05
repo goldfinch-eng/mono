@@ -28,7 +28,12 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../typechain/truffle/TranchedPool"
+import {
+  DepositMade,
+  TrancheLocked,
+  PaymentApplied,
+  SharePriceUpdated,
+} from "../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,

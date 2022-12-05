@@ -41,7 +41,9 @@ abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
 
   function writedown(uint256 tokenId) external virtual;
 
-  function calculateWritedown(uint256 tokenId) external view virtual returns (uint256 writedownAmount);
+  function calculateWritedown(
+    uint256 tokenId
+  ) external view virtual returns (uint256 writedownAmount);
 
   function sharesOutstanding() external view virtual returns (uint256);
 

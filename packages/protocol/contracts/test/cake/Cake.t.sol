@@ -14,9 +14,12 @@ using TestRouting for Context;
 
 library TestRoutingKeys {
   bytes4 internal constant TestContract = bytes4(keccak256(abi.encode("TestContract")));
-  bytes4 internal constant TestContractDependency = bytes4(keccak256(abi.encode("TestContractDependency")));
-  bytes4 internal constant TestContractDependency2 = bytes4(keccak256(abi.encode("TestContractDependency2")));
-  bytes4 internal constant TestContractDependency3 = bytes4(keccak256(abi.encode("TestContractDependency3")));
+  bytes4 internal constant TestContractDependency =
+    bytes4(keccak256(abi.encode("TestContractDependency")));
+  bytes4 internal constant TestContractDependency2 =
+    bytes4(keccak256(abi.encode("TestContractDependency2")));
+  bytes4 internal constant TestContractDependency3 =
+    bytes4(keccak256(abi.encode("TestContractDependency3")));
 }
 
 library TestRouting {
@@ -25,15 +28,22 @@ library TestRouting {
   }
 
   function testContractDependency(Context context) internal view returns (TestContractDependency) {
-    return TestContractDependency(context.router().contracts(TestRoutingKeys.TestContractDependency));
+    return
+      TestContractDependency(context.router().contracts(TestRoutingKeys.TestContractDependency));
   }
 
-  function testContractDependency2(Context context) internal view returns (TestContractDependency2) {
-    return TestContractDependency2(context.router().contracts(TestRoutingKeys.TestContractDependency2));
+  function testContractDependency2(
+    Context context
+  ) internal view returns (TestContractDependency2) {
+    return
+      TestContractDependency2(context.router().contracts(TestRoutingKeys.TestContractDependency2));
   }
 
-  function testContractDependency3(Context context) internal view returns (TestContractDependency3) {
-    return TestContractDependency3(context.router().contracts(TestRoutingKeys.TestContractDependency3));
+  function testContractDependency3(
+    Context context
+  ) internal view returns (TestContractDependency3) {
+    return
+      TestContractDependency3(context.router().contracts(TestRoutingKeys.TestContractDependency3));
   }
 }
 

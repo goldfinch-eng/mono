@@ -1,6 +1,6 @@
 import {CommunityRewards, GFI} from "@goldfinch-eng/protocol/typechain/ethers"
 import {CommunityRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle/GFI"
+import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GFI"
 import hre from "hardhat"
 import path from "path"
 import {promises as fs} from "fs"

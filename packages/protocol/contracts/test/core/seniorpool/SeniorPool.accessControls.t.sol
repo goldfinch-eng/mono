@@ -17,7 +17,9 @@ contract SeniorPoolAccessControlsTest is SeniorPoolBaseTest {
     assertEq(sp.getRoleAdmin(TestConstants.PAUSER_ROLE), TestConstants.OWNER_ROLE);
   }
 
-  function testAllowsOwnerToAddToRoles(address nonOwner) public impersonating(GF_OWNER) onlyAllowListed(nonOwner) {
+  function testAllowsOwnerToAddToRoles(
+    address nonOwner
+  ) public impersonating(GF_OWNER) onlyAllowListed(nonOwner) {
     assertFalse(sp.hasRole(TestConstants.OWNER_ROLE, nonOwner));
     assertFalse(sp.hasRole(TestConstants.PAUSER_ROLE, nonOwner));
     sp.grantRole(TestConstants.OWNER_ROLE, nonOwner);
@@ -26,7 +28,9 @@ contract SeniorPoolAccessControlsTest is SeniorPoolBaseTest {
     assertTrue(sp.hasRole(TestConstants.PAUSER_ROLE, nonOwner));
   }
 
-  function testNonOwnerCannotAddToRoles(address nonOwner) public onlyAllowListed(nonOwner) impersonating(nonOwner) {
+  function testNonOwnerCannotAddToRoles(
+    address nonOwner
+  ) public onlyAllowListed(nonOwner) impersonating(nonOwner) {
     vm.expectRevert(bytes("AccessControl: sender must be an admin to grant"));
     sp.grantRole(TestConstants.OWNER_ROLE, nonOwner);
   }

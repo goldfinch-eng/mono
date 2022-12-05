@@ -27,7 +27,13 @@ contract ImplementationRepositoryTest is BaseTest {
     address caller,
     address impl,
     address otherImpl
-  ) public impersonating(caller) withFakeContract(caller) withFakeContract(impl) withFakeContract(otherImpl) {
+  )
+    public
+    impersonating(caller)
+    withFakeContract(caller)
+    withFakeContract(impl)
+    withFakeContract(otherImpl)
+  {
     // first call should succeed
     repo.initialize(caller, impl);
 
@@ -41,12 +47,19 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.append(owner);
   }
 
-  function testCreatingLineageWithEoaReverts() public afterInitializingRepository impersonating(owner) {
+  function testCreatingLineageWithEoaReverts()
+    public
+    afterInitializingRepository
+    impersonating(owner)
+  {
     vm.expectRevert("not a contract");
     repo.createLineage(owner);
   }
 
-  function testInitializeSetsCorrectState(address _owner, address impl) public notNull(_owner) withFakeContract(impl) {
+  function testInitializeSetsCorrectState(
+    address _owner,
+    address impl
+  ) public notNull(_owner) withFakeContract(impl) {
     repo.initialize(_owner, impl);
     assertTrue(repo.hasRole(repo.OWNER_ROLE(), _owner));
     assertTrue(repo.hasRole(repo.PAUSER_ROLE(), _owner));
@@ -59,12 +72,9 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.initialize(address(0), impl);
   }
 
-  function testCreateSetSucceedsWhenOwnerCalls(address impl)
-    external
-    impersonating(owner)
-    afterInitializingRepository
-    withFakeContract(impl)
-  {
+  function testCreateSetSucceedsWhenOwnerCalls(
+    address impl
+  ) external impersonating(owner) afterInitializingRepository withFakeContract(impl) {
     uint256 previousLineageId = repo.currentLineageId();
     uint256 expectedLineageId = previousLineageId + 1;
     // should be the next lineage id
@@ -76,12 +86,10 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(repo.currentImplementation(expectedLineageId), impl);
   }
 
-  function testCreateSetFailsWhenNonOwnerCalls(address impl, address caller)
-    external
-    impersonating(caller)
-    withFakeContract(impl)
-    onlyAllowListed(caller)
-  {
+  function testCreateSetFailsWhenNonOwnerCalls(
+    address impl,
+    address caller
+  ) external impersonating(caller) withFakeContract(impl) onlyAllowListed(caller) {
     vm.expectRevert(bytes("Must have admin role to perform this action"));
     repo.createLineage(impl);
   }
@@ -145,7 +153,10 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(address(repo.nextImplementationOf(c)), address(b));
   }
 
-  function testSetUpgradeDataForSucceedsWhenOwnerWithRegisteredContract(address impl, bytes calldata data)
+  function testSetUpgradeDataForSucceedsWhenOwnerWithRegisteredContract(
+    address impl,
+    bytes calldata data
+  )
     public
     afterInitializingRepository
     impersonating(owner)
@@ -169,17 +180,20 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.currentImplementation(lineageId);
   }
 
-  function testGetNextImplementationOfRevertsWhenPaused() public impersonating(owner) afterInitializingRepository {
+  function testGetNextImplementationOfRevertsWhenPaused()
+    public
+    impersonating(owner)
+    afterInitializingRepository
+  {
     repo.pause();
     vm.expectRevert("Pausable: paused");
     repo.nextImplementationOf(address(initialImpl));
   }
 
-  function testSetUpgradeDataForFailsWhenPaused(address implementation, bytes calldata data)
-    public
-    afterInitializingRepository
-    impersonating(owner)
-  {
+  function testSetUpgradeDataForFailsWhenPaused(
+    address implementation,
+    bytes calldata data
+  ) public afterInitializingRepository impersonating(owner) {
     repo.pause();
     vm.expectRevert("Pausable: paused");
     repo.setUpgradeDataFor(implementation, data);
@@ -189,7 +203,12 @@ contract ImplementationRepositoryTest is BaseTest {
     address caller,
     address implementation,
     bytes calldata data
-  ) public afterInitializingRepository assume(caller != owner && caller != address(0)) impersonating(caller) {
+  )
+    public
+    afterInitializingRepository
+    assume(caller != owner && caller != address(0))
+    impersonating(caller)
+  {
     vm.expectRevert("Must have admin role to perform this action");
     repo.setUpgradeDataFor(implementation, data);
   }
@@ -199,11 +218,9 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.initialize(_owner, address(0));
   }
 
-  function testThatItIsImpossibleToCreateOrphanImplementationsByAppending(address[5] calldata impls)
-    external
-    impersonating(owner)
-    afterInitializingRepository
-  {
+  function testThatItIsImpossibleToCreateOrphanImplementationsByAppending(
+    address[5] calldata impls
+  ) external impersonating(owner) afterInitializingRepository {
     // no impls should be equal to another impl
     for (uint256 i = 0; i < impls.length - 1; i++) {
       for (uint256 j = i + 1; j < impls.length; j++) {
@@ -239,7 +256,10 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(cursor, current);
   }
 
-  function testLineagesWorkAsExpected(address a, address b)
+  function testLineagesWorkAsExpected(
+    address a,
+    address b
+  )
     public
     impersonating(owner)
     afterInitializingRepository
@@ -272,7 +292,9 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(repo.currentImplementation(startingLineageId), b);
   }
 
-  function testAppendRevertsWhenPassedAnInvalidLineageId(address impl)
+  function testAppendRevertsWhenPassedAnInvalidLineageId(
+    address impl
+  )
     public
     impersonating(owner)
     withFakeContract(impl)
@@ -283,7 +305,9 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.append(impl, 0);
   }
 
-  function testAppendFailsWhenPaused(address impl)
+  function testAppendFailsWhenPaused(
+    address impl
+  )
     public
     afterInitializingRepository
     impersonating(owner)
@@ -296,7 +320,10 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.append(impl);
   }
 
-  function testAppendSetsCurrent(address first, address second)
+  function testAppendSetsCurrent(
+    address first,
+    address second
+  )
     public
     impersonating(owner)
     afterInitializingRepository
@@ -321,17 +348,17 @@ contract ImplementationRepositoryTest is BaseTest {
     assertEq(address(repo.currentImplementation()), address(second));
   }
 
-  function testOnlyOwnerCanAppend(address caller, address impl)
-    public
-    impersonating(caller)
-    afterInitializingRepository
-    assume(caller != owner)
-  {
+  function testOnlyOwnerCanAppend(
+    address caller,
+    address impl
+  ) public impersonating(caller) afterInitializingRepository assume(caller != owner) {
     vm.expectRevert("Must have admin role to perform this action");
     repo.append(impl);
   }
 
-  function testAppendFailsWhenImplementationIsAlreadyRegistered(address impl)
+  function testAppendFailsWhenImplementationIsAlreadyRegistered(
+    address impl
+  )
     public
     impersonating(owner)
     afterInitializingRepository
@@ -372,7 +399,11 @@ contract ImplementationRepositoryTest is BaseTest {
     _;
   }
 
-  event Added(uint256 indexed lineageId, address indexed newImplementation, address indexed oldImplementation);
+  event Added(
+    uint256 indexed lineageId,
+    address indexed newImplementation,
+    address indexed oldImplementation
+  );
   event Removed(uint256 indexed lineageId, address indexed implementation);
   event UpgradeDataSet(address indexed implementation, bytes data);
 }

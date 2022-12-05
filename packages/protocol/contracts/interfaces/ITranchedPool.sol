@@ -74,23 +74,23 @@ abstract contract ITranchedPool {
     bytes32 s
   ) external virtual returns (uint256 tokenId);
 
-  function availableToWithdraw(uint256 tokenId)
-    external
-    view
-    virtual
-    returns (uint256 interestRedeemable, uint256 principalRedeemable);
+  function availableToWithdraw(
+    uint256 tokenId
+  ) external view virtual returns (uint256 interestRedeemable, uint256 principalRedeemable);
 
-  function withdraw(uint256 tokenId, uint256 amount)
-    external
-    virtual
-    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
+  function withdraw(
+    uint256 tokenId,
+    uint256 amount
+  ) external virtual returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
 
-  function withdrawMax(uint256 tokenId)
-    external
-    virtual
-    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
+  function withdrawMax(
+    uint256 tokenId
+  ) external virtual returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
 
-  function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) external virtual;
+  function withdrawMultiple(
+    uint256[] calldata tokenIds,
+    uint256[] calldata amounts
+  ) external virtual;
 
   function numSlices() external view virtual returns (uint256);
 }

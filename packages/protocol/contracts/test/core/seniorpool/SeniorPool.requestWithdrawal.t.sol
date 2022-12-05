@@ -63,7 +63,10 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user, withdrawAmount);
   }
 
-  function testRequestWithdrawalRevertsForNoUidAndNoGoList(address user, uint256 amount) public onlyAllowListed(user) {
+  function testRequestWithdrawalRevertsForNoUidAndNoGoList(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     mintUid(user, 1, 1, "");
@@ -76,9 +79,10 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user, withdrawAmount);
   }
 
-  function testRequestWithdrawalFailsWhenCallerIsErc1155ApprovedForInvalidUid(uint256 amount, uint256 invalidUid)
-    public
-  {
+  function testRequestWithdrawalFailsWhenCallerIsErc1155ApprovedForInvalidUid(
+    uint256 amount,
+    uint256 invalidUid
+  ) public {
     invalidUid = bound(invalidUid, 5, type(uint256).max);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     mintUid(address(this), 1, 1, "");
@@ -101,7 +105,10 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     caller.requestWithdrawal(shares);
   }
 
-  function testRequestWithdrawalFailsWhenOriginHasValidUidButCallerHasNothing(uint256 amount, uint256 validUid) public {
+  function testRequestWithdrawalFailsWhenOriginHasValidUidButCallerHasNothing(
+    uint256 amount,
+    uint256 validUid
+  ) public {
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
@@ -123,7 +130,9 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     caller.requestWithdrawal(shares);
   }
 
-  function testRequestWithdrawalWorksWhenOriginHasNothingAndCallerIsGoListed(uint256 amount) public {
+  function testRequestWithdrawalWorksWhenOriginHasNothingAndCallerIsGoListed(
+    uint256 amount
+  ) public {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
     addToGoList(address(caller));
@@ -138,12 +147,10 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
   Request Withdrawal Tests
   ================================================================================*/
 
-  function testRequestWithdrawalRevertsForOutstandingRequest(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-  {
+  function testRequestWithdrawalRevertsForOutstandingRequest(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) {
     amount = bound(amount, usdcVal(2), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, amount);

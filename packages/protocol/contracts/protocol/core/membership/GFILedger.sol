@@ -51,11 +51,10 @@ contract GFILedger is IGFILedger, Base {
   constructor(Context _context) Base(_context) {}
 
   /// @inheritdoc IGFILedger
-  function deposit(address owner, uint256 amount)
-    external
-    onlyOperator(Routing.Keys.MembershipOrchestrator)
-    returns (uint256 positionId)
-  {
+  function deposit(
+    address owner,
+    uint256 amount
+  ) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256 positionId) {
     if (amount == 0) {
       revert ZeroDepositAmount();
     }
@@ -63,20 +62,25 @@ contract GFILedger is IGFILedger, Base {
 
     totals[owner].recordIncrease(amount);
 
-    context.gfi().safeTransferFrom(address(context.membershipOrchestrator()), address(this), amount);
+    context.gfi().safeTransferFrom(
+      address(context.membershipOrchestrator()),
+      address(this),
+      amount
+    );
   }
 
   /// @inheritdoc IGFILedger
-  function withdraw(uint256 positionId) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256) {
+  function withdraw(
+    uint256 positionId
+  ) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256) {
     return _withdraw(positionId);
   }
 
   /// @inheritdoc IGFILedger
-  function withdraw(uint256 positionId, uint256 amount)
-    external
-    onlyOperator(Routing.Keys.MembershipOrchestrator)
-    returns (uint256)
-  {
+  function withdraw(
+    uint256 positionId,
+    uint256 amount
+  ) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256) {
     Position memory position = positions[positionId];
 
     if (amount > position.amount) revert InvalidWithdrawAmount(amount, position.amount);
@@ -109,7 +113,9 @@ contract GFILedger is IGFILedger, Base {
   }
 
   /// @inheritdoc IGFILedger
-  function totalsOf(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
+  function totalsOf(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
     return totals[addr].getTotals();
   }
 

@@ -29,7 +29,9 @@ contract RouterTest is Test {
 
   function testSetContractRevertsForNonAdmin() public {
     vm.startPrank(someAddress);
-    vm.expectRevert(abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(router), someAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(router), someAddress)
+    );
     router.setContract(Routing.Keys.AccessControl, someOtherAddress);
   }
 

@@ -8,12 +8,10 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {TestTranchedPool} from "../../TestTranchedPool.sol";
 
 contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
-  function testNonZapperCannotWithdraw(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    impersonating(user)
-  {
+  function testNonZapperCannotWithdraw(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) impersonating(user) {
     vm.expectRevert("Not Zapper");
     sp.withdraw(amount);
   }
@@ -60,7 +58,10 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     assertEq(usdc.balanceOf(address(sp)), spUsdcBefore - withdrawAmount);
   }
 
-  function testWithdrawRevertsIfYouWithdrawMoreThanUsdcAvailable(address user, uint256 depositAmount)
+  function testWithdrawRevertsIfYouWithdrawMoreThanUsdcAvailable(
+    address user,
+    uint256 depositAmount
+  )
     public
     onlyAllowListed(user)
     impersonating(user)
@@ -101,7 +102,11 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     grantRole(TestConstants.ZAPPER_ROLE, user2);
     depositAmount1 = bound(depositAmount1, usdcVal(1), usdcVal(10_000_000));
     depositAmount2 = bound(depositAmount2, usdcVal(1), usdcVal(10_000_000));
-    withdrawAmount = bound(withdrawAmount, depositAmount1 + usdcVal(1), depositAmount1 + depositAmount2);
+    withdrawAmount = bound(
+      withdrawAmount,
+      depositAmount1 + usdcVal(1),
+      depositAmount1 + depositAmount2
+    );
     fundAddress(user1, depositAmount1);
     fundAddress(user2, depositAmount2);
 
@@ -113,7 +118,10 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     withdrawFrom(user1, withdrawAmount);
   }
 
-  function testWithdrawLetsYouWithdrawExactHoldings(address user, uint256 depositAmount)
+  function testWithdrawLetsYouWithdrawExactHoldings(
+    address user,
+    uint256 depositAmount
+  )
     public
     onlyAllowListed(user)
     goListed(user)
@@ -129,12 +137,10 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     assertEq(usdc.balanceOf(user), usdcBalanceBefore + depositAmount);
   }
 
-  function testWithdrawInFidu(address user, uint256 depositAmount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testWithdrawInFidu(
+    address user,
+    uint256 depositAmount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     grantRole(TestConstants.ZAPPER_ROLE, user);
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, depositAmount);

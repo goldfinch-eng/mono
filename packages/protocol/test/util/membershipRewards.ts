@@ -1,5 +1,5 @@
 import BN from "bn.js"
-import {decodeAndGetFirstLog, erc20Approve, getNumShares, gfiVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {decodeAndGetFirstLog, erc20Approve, getNumShares} from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   UniqueIdentityInstance,
@@ -16,12 +16,12 @@ import {
   GFILedgerInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {TokenMinted} from "@goldfinch-eng/protocol/typechain/truffle/IPoolTokens"
-import {GoldfinchFactoryInstance} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
+import {TokenMinted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/IPoolTokens"
+import {GoldfinchFactoryInstance} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {createTranchedPool} from "./tranchedPool"
 import {mintUidIfNotMinted} from "./uniqueIdentity"
-import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/ICapitalLedger"
-import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/IGFILedger"
+import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/ICapitalLedger"
+import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/IGFILedger"
 
 export enum DepositType {
   GFI,

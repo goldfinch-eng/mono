@@ -29,11 +29,9 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
   constructor(Context _context) Base(_context) {}
 
   /// @inheritdoc IMembershipDirector
-  function consumeHoldingsAdjustment(address owner)
-    external
-    onlyOperator(Routing.Keys.MembershipOrchestrator)
-    returns (uint256)
-  {
+  function consumeHoldingsAdjustment(
+    address owner
+  ) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256) {
     _allocateRewards(owner);
 
     (uint256 eligibleGFI, uint256 totalGFI) = context.gfiLedger().totalsOf(owner);
@@ -48,11 +46,9 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
   }
 
   /// @inheritdoc IMembershipDirector
-  function collectRewards(address owner)
-    external
-    onlyOperator(Routing.Keys.MembershipOrchestrator)
-    returns (uint256 rewards)
-  {
+  function collectRewards(
+    address owner
+  ) external onlyOperator(Routing.Keys.MembershipOrchestrator) returns (uint256 rewards) {
     rewards = _allocateRewards(owner);
 
     context.membershipLedger().resetRewards(owner);
@@ -80,7 +76,9 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
   }
 
   /// @inheritdoc IMembershipDirector
-  function currentScore(address owner) external view returns (uint256 eligibleScore, uint256 totalScore) {
+  function currentScore(
+    address owner
+  ) external view returns (uint256 eligibleScore, uint256 totalScore) {
     Position memory position = context.membershipVault().positionOwnedBy(owner);
     return (position.eligibleAmount, position.nextEpochAmount);
   }
@@ -99,7 +97,11 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
   }
 
   /// @inheritdoc IMembershipDirector
-  function totalMemberScores() external view returns (uint256 eligibleTotal, uint256 nextEpochTotal) {
+  function totalMemberScores()
+    external
+    view
+    returns (uint256 eligibleTotal, uint256 nextEpochTotal)
+  {
     return (
       context.membershipVault().totalAtEpoch(Epochs.current()),
       context.membershipVault().totalAtEpoch(Epochs.next())
@@ -156,7 +158,11 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
 
     context.membershipVault().checkpoint(owner);
 
-    uint256 rewards = _calculateRewards(position.checkpointEpoch, position.eligibleAmount, position.nextEpochAmount);
+    uint256 rewards = _calculateRewards(
+      position.checkpointEpoch,
+      position.eligibleAmount,
+      position.nextEpochAmount
+    );
 
     return context.membershipLedger().allocateRewardsTo(owner, rewards);
   }

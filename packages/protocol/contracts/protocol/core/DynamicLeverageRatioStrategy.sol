@@ -41,8 +41,12 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
     LeverageRatioInfo memory ratioInfo = ratios[address(pool)];
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Junior)
+    );
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Senior)
+    );
 
     require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio has not been set yet.");
     if (seniorTranche.lockedUntil > 0) {
@@ -88,8 +92,12 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     uint256 juniorTrancheLockedUntil,
     bytes32 version
   ) public onlySetterRole {
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Junior)
+    );
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Senior)
+    );
 
     // NOTE: We allow a `leverageRatio` of 0.
     require(
@@ -97,9 +105,18 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
       "Leverage ratio must not exceed 10 (adjusted for decimals)."
     );
 
-    require(juniorTranche.lockedUntil > 0, "Cannot set leverage ratio if junior tranche is not locked.");
-    require(seniorTranche.lockedUntil == 0, "Cannot set leverage ratio if senior tranche is locked.");
-    require(juniorTrancheLockedUntil == juniorTranche.lockedUntil, "Invalid `juniorTrancheLockedUntil` timestamp.");
+    require(
+      juniorTranche.lockedUntil > 0,
+      "Cannot set leverage ratio if junior tranche is not locked."
+    );
+    require(
+      seniorTranche.lockedUntil == 0,
+      "Cannot set leverage ratio if senior tranche is locked."
+    );
+    require(
+      juniorTrancheLockedUntil == juniorTranche.lockedUntil,
+      "Invalid `juniorTrancheLockedUntil` timestamp."
+    );
 
     ratios[address(pool)] = LeverageRatioInfo({
       leverageRatio: leverageRatio,

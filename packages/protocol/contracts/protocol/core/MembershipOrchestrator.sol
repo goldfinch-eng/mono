@@ -59,12 +59,9 @@ contract MembershipOrchestrator is
   }
 
   /// @inheritdoc IMembershipOrchestrator
-  function deposit(Deposit calldata depositData)
-    external
-    nonReentrant
-    whenNotPaused
-    returns (DepositResult memory result)
-  {
+  function deposit(
+    Deposit calldata depositData
+  ) external nonReentrant whenNotPaused returns (DepositResult memory result) {
     if (depositData.gfi > 0) {
       result.gfiPositionId = _depositGFI(depositData.gfi);
     }
@@ -74,7 +71,10 @@ contract MembershipOrchestrator is
     result.capitalPositionIds = new uint256[](numCapitalDeposits);
     for (uint256 i = 0; i < numCapitalDeposits; i++) {
       CapitalDeposit memory capitalDeposit = depositData.capitalDeposits[i];
-      result.capitalPositionIds[i] = _depositCapitalERC721(capitalDeposit.assetAddress, capitalDeposit.id);
+      result.capitalPositionIds[i] = _depositCapitalERC721(
+        capitalDeposit.assetAddress,
+        capitalDeposit.id
+      );
     }
 
     result.membershipId = context.membershipDirector().consumeHoldingsAdjustment(msg.sender);
@@ -133,17 +133,23 @@ contract MembershipOrchestrator is
   }
 
   /// @inheritdoc IMembershipOrchestrator
-  function totalGFIHeldBy(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
+  function totalGFIHeldBy(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
     return context.gfiLedger().totalsOf(addr);
   }
 
   /// @inheritdoc IMembershipOrchestrator
-  function totalCapitalHeldBy(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
+  function totalCapitalHeldBy(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
     return context.capitalLedger().totalsOf(addr);
   }
 
   /// @inheritdoc IMembershipOrchestrator
-  function memberScoreOf(address addr) external view returns (uint256 eligibleScore, uint256 totalScore) {
+  function memberScoreOf(
+    address addr
+  ) external view returns (uint256 eligibleScore, uint256 totalScore) {
     return context.membershipDirector().currentScore(addr);
   }
 
@@ -171,7 +177,11 @@ contract MembershipOrchestrator is
   }
 
   /// @inheritdoc IMembershipOrchestrator
-  function totalMemberScores() external view returns (uint256 eligibleTotal, uint256 nextEpochTotal) {
+  function totalMemberScores()
+    external
+    view
+    returns (uint256 eligibleTotal, uint256 nextEpochTotal)
+  {
     return context.membershipDirector().totalMemberScores();
   }
 

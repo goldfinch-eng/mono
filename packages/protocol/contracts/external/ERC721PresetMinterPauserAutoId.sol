@@ -56,7 +56,10 @@ contract ERC721PresetMinterPauserAutoIdUpgradeSafe is
    * - the caller must have the `PAUSER_ROLE`.
    */
   function pause() public {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to pause");
+    require(
+      hasRole(PAUSER_ROLE, _msgSender()),
+      "ERC721PresetMinterPauserAutoId: must have pauser role to pause"
+    );
     _pause();
   }
 
@@ -70,7 +73,10 @@ contract ERC721PresetMinterPauserAutoIdUpgradeSafe is
    * - the caller must have the `PAUSER_ROLE`.
    */
   function unpause() public {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to unpause");
+    require(
+      hasRole(PAUSER_ROLE, _msgSender()),
+      "ERC721PresetMinterPauserAutoId: must have pauser role to unpause"
+    );
     _unpause();
   }
 

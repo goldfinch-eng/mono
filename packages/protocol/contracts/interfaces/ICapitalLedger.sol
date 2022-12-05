@@ -128,5 +128,7 @@ interface ICapitalLedger {
    * @dev this is used by Membership to determine how much is eligible in
    *  the current epoch vs the next epoch.
    */
-  function totalsOf(address owner) external view returns (uint256 eligibleAmount, uint256 totalAmount);
+  function totalsOf(
+    address owner
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount);
 }

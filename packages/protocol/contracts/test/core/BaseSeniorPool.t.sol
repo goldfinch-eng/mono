@@ -121,8 +121,14 @@ contract SeniorPoolBaseTest is BaseTest {
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(sp));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken), address(requestTokens));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository), address(tpImplRepo));
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
+      address(requestTokens)
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
+      address(tpImplRepo)
+    );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation), address(clImpl));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(stakingRewards));
@@ -193,7 +199,10 @@ contract SeniorPoolBaseTest is BaseTest {
     tp.pay(amount);
   }
 
-  function drawdownTp(uint256 amount, TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function drawdownTp(
+    uint256 amount,
+    TestTranchedPool tp
+  ) internal impersonating(tp.creditLine().borrower()) {
     tp.drawdown(amount);
   }
 
@@ -205,19 +214,31 @@ contract SeniorPoolBaseTest is BaseTest {
     tp.lockPool();
   }
 
-  function depositToSpFrom(address user, uint256 amount) internal impersonating(user) returns (uint256) {
+  function depositToSpFrom(
+    address user,
+    uint256 amount
+  ) internal impersonating(user) returns (uint256) {
     return sp.deposit(amount);
   }
 
-  function requestWithdrawalFrom(address user, uint256 fiduAmount) internal impersonating(user) returns (uint256) {
+  function requestWithdrawalFrom(
+    address user,
+    uint256 fiduAmount
+  ) internal impersonating(user) returns (uint256) {
     return sp.requestWithdrawal(fiduAmount);
   }
 
-  function cancelWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
+  function cancelWithdrawalRequestFrom(
+    address user,
+    uint256 tokenId
+  ) internal impersonating(user) returns (uint256) {
     return sp.cancelWithdrawalRequest(tokenId);
   }
 
-  function claimWithdrawalRequestFrom(address user, uint256 tokenId) internal impersonating(user) returns (uint256) {
+  function claimWithdrawalRequestFrom(
+    address user,
+    uint256 tokenId
+  ) internal impersonating(user) returns (uint256) {
     return sp.claimWithdrawalRequest(tokenId);
   }
 
@@ -267,19 +288,11 @@ contract SeniorPoolBaseTest is BaseTest {
     uniqueIdentity._burnForTest(account, id);
   }
 
-  function transferFidu(
-    address from,
-    address to,
-    uint256 amount
-  ) internal impersonating(from) {
+  function transferFidu(address from, address to, uint256 amount) internal impersonating(from) {
     fidu.transfer(to, amount);
   }
 
-  function approveForAll(
-    address from,
-    address to,
-    bool approval
-  ) internal impersonating(from) {
+  function approveForAll(address from, address to, bool approval) internal impersonating(from) {
     uniqueIdentity.setApprovalForAll(to, approval);
   }
 
@@ -287,18 +300,18 @@ contract SeniorPoolBaseTest is BaseTest {
     address user,
     uint256 userPrivateKey,
     uint256 amount
-  )
-    internal
-    returns (
-      uint8,
-      bytes32,
-      bytes32
-    )
-  {
+  ) internal returns (uint8, bytes32, bytes32) {
     uint256 nonce = usdc.nonces(user);
     uint256 deadline = type(uint256).max;
     // Get signature for permit
-    bytes32 digest = DepositWithPermitHelpers.approvalDigest(usdc, user, address(sp), amount, nonce, deadline);
+    bytes32 digest = DepositWithPermitHelpers.approvalDigest(
+      usdc,
+      user,
+      address(sp),
+      amount,
+      nonce,
+      deadline
+    );
     return vm.sign(userPrivateKey, digest);
   }
 
@@ -321,7 +334,9 @@ contract SeniorPoolBaseTest is BaseTest {
 
   modifier validPrivateKey(uint256 key) {
     // valid private key space is from [1, secp256k1n − 1]
-    vm.assume(key > 0 && key <= uint256(0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141));
+    vm.assume(
+      key > 0 && key <= uint256(0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141)
+    );
     _;
   }
 

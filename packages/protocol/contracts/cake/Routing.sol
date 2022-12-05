@@ -84,7 +84,9 @@ library Context {
     return IMembershipDirector(context.router().contracts(Keys.MembershipDirector));
   }
 
-  function membershipOrchestrator(ContextContract context) internal view returns (IMembershipOrchestrator) {
+  function membershipOrchestrator(
+    ContextContract context
+  ) internal view returns (IMembershipOrchestrator) {
     return IMembershipOrchestrator(context.router().contracts(Keys.MembershipOrchestrator));
   }
 
@@ -116,7 +118,9 @@ library Context {
     return IMembershipLedger(context.router().contracts(Keys.MembershipLedger));
   }
 
-  function membershipCollector(ContextContract context) internal view returns (IMembershipCollector) {
+  function membershipCollector(
+    ContextContract context
+  ) internal view returns (IMembershipCollector) {
     return IMembershipCollector(context.router().contracts(Keys.MembershipCollector));
   }
 

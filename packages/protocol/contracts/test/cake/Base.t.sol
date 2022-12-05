@@ -45,7 +45,13 @@ contract BaseTest is Test {
     cake.router().setContract(TestOperator, address(operator));
 
     vm.startPrank(someOtherAddress);
-    vm.expectRevert(abi.encodeWithSelector(Base.RequiresOperator.selector, address(testContract), someOtherAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        Base.RequiresOperator.selector,
+        address(testContract),
+        someOtherAddress
+      )
+    );
     testContract.operatorFunction();
   }
 
@@ -69,7 +75,13 @@ contract BaseTest is Test {
     cake.router().setContract(TestOperator2, address(operator2));
 
     vm.startPrank(someOtherAddress);
-    vm.expectRevert(abi.encodeWithSelector(Base.RequiresOperator.selector, address(testContract), someOtherAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        Base.RequiresOperator.selector,
+        address(testContract),
+        someOtherAddress
+      )
+    );
     testContract.operatorsFunction();
   }
 
@@ -98,7 +110,11 @@ contract BaseTest is Test {
     cake.accessControl().setAdmin(address(testContract), admin);
     vm.startPrank(someOtherAddress);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(testContract), someOtherAddress)
+      abi.encodeWithSelector(
+        IAccessControl.RequiresAdmin.selector,
+        address(testContract),
+        someOtherAddress
+      )
     );
     testContract.adminFunction();
   }
