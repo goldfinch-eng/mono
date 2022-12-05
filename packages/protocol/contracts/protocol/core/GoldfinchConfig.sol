@@ -160,7 +160,10 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   }
 
   modifier onlyGoListerRole() {
-    require(hasRole(GO_LISTER_ROLE, _msgSender()), "Must have go-lister role to perform this action");
+    require(
+      hasRole(GO_LISTER_ROLE, _msgSender()),
+      "Must have go-lister role to perform this action"
+    );
     _;
   }
 }

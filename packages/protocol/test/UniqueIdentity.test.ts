@@ -7,7 +7,7 @@ import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"
 import {getTruffleContract, OWNER_ROLE, PAUSER_ROLE, SIGNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {UNIQUE_IDENTITY_METADATA_URI} from "../blockchain_scripts/uniqueIdentity/constants"
-import {TestUniqueIdentityInstance} from "../typechain/truffle/TestUniqueIdentity"
+import {TestUniqueIdentityInstance} from "../typechain/truffle/contracts/test/TestUniqueIdentity"
 import {
   BurnParams,
   BURN_MESSAGE_ELEMENT_TYPES,

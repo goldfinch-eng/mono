@@ -9,10 +9,14 @@ import {TestERC20} from "../TestERC20.sol";
 /// @notice Library for generating signatures for EIP712 depositWithPermit
 library DepositWithPermitHelpers {
   bytes32 internal constant PERMIT_TYPEHASH =
-    keccak256(bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"));
+    keccak256(
+      bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
+    );
 
   bytes32 internal constant EIP712_DOMAIN_HASH =
-    keccak256(bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"));
+    keccak256(
+      bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+    );
 
   function domainSeparator(TestERC20 token) internal view returns (bytes32) {
     uint256 chainId;
@@ -22,7 +26,13 @@ library DepositWithPermitHelpers {
     }
     return
       keccak256(
-        abi.encode(EIP712_DOMAIN_HASH, keccak256(bytes(token.name())), keccak256(bytes("1")), chainId, address(token))
+        abi.encode(
+          EIP712_DOMAIN_HASH,
+          keccak256(bytes(token.name())),
+          keccak256(bytes("1")),
+          chainId,
+          address(token)
+        )
       );
   }
 

@@ -99,7 +99,10 @@ async function getDeployments(networkId) {
   const fileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
   return import(`@goldfinch-eng/protocol/deployments/all${fileNameSuffix}.json`)
     .then((result) => {
-      config = transformedConfig(result)
+      config = {
+        mainnet: result["1"][0],
+        hardhat: result["31337"][0],
+      }
 
       if (networkId === "localhost" && isMainnetForking()) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
@@ -117,6 +120,7 @@ async function getDeployments(networkId) {
           }
         })
       }
+
       return config[networkId]
     })
     .catch(console.error)

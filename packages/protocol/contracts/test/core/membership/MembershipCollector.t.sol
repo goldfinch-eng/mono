@@ -91,7 +91,10 @@ contract MembershipCollectorTest is BaseTest {
     _shares[0] = 1;
     _shares[1] = 1;
 
-    ERC20Splitter reserveSplitter = new ERC20Splitter(cake.context(), IERC20(address(protocol.usdc())));
+    ERC20Splitter reserveSplitter = new ERC20Splitter(
+      cake.context(),
+      IERC20(address(protocol.usdc()))
+    );
     cake.accessControl().setAdmin(address(reserveSplitter), address(this));
     reserveSplitter.replacePayees(_payees, _shares);
     reserveSplitterAddress = address(reserveSplitter);
@@ -112,7 +115,9 @@ contract MembershipCollectorTest is BaseTest {
     // solhint-disable avoid-low-level-calls
     vm.startPrank(addr);
 
-    vm.expectRevert(abi.encodeWithSelector(Base.RequiresOperator.selector, address(membershipCollector), addr));
+    vm.expectRevert(
+      abi.encodeWithSelector(Base.RequiresOperator.selector, address(membershipCollector), addr)
+    );
     membershipCollector.distributeFiduTo(address(1), 1);
 
     vm.stopPrank();
@@ -137,10 +142,9 @@ contract MembershipCollectorTest is BaseTest {
     assertEq(protocol.usdc().balanceOf(address(membershipCollector)), 0);
   }
 
-  function test_onReceive_allocatesProportionallyToElapsedUnfinalizedEpochs(uint256 elapsedEpochs)
-    public
-    impersonating(reserveSplitterAddress)
-  {
+  function test_onReceive_allocatesProportionallyToElapsedUnfinalizedEpochs(
+    uint256 elapsedEpochs
+  ) public impersonating(reserveSplitterAddress) {
     vm.assume(elapsedEpochs < 20);
 
     // Initialize starting epoch
@@ -172,7 +176,8 @@ contract MembershipCollectorTest is BaseTest {
     for (uint256 i = 1; i <= elapsedEpochs; i++) {
       assertApproxEqAbs(
         membershipCollector.rewardsForEpoch(startingEpoch + i),
-        (fiduAmount * Epochs.EPOCH_SECONDS) / (Epochs.EPOCH_SECONDS * elapsedEpochs + Epochs.EPOCH_SECONDS / 4),
+        (fiduAmount * Epochs.EPOCH_SECONDS) /
+          (Epochs.EPOCH_SECONDS * elapsedEpochs + Epochs.EPOCH_SECONDS / 4),
         1e18
       );
     }
@@ -180,7 +185,8 @@ contract MembershipCollectorTest is BaseTest {
     // Current epoch should receive 0.25 / (elapsedEpochs + 0.25) of second distribution
     assertApproxEqAbs(
       membershipCollector.rewardsForEpoch(Epochs.current()),
-      ((fiduAmount * Epochs.EPOCH_SECONDS) / 4) / (Epochs.EPOCH_SECONDS * elapsedEpochs + Epochs.EPOCH_SECONDS / 4),
+      ((fiduAmount * Epochs.EPOCH_SECONDS) / 4) /
+        (Epochs.EPOCH_SECONDS * elapsedEpochs + Epochs.EPOCH_SECONDS / 4),
       1e18
     );
 
@@ -218,12 +224,18 @@ contract MembershipCollectorTest is BaseTest {
     assertApproxEqAbs(membershipCollector.rewardsForEpoch(startingEpoch + 1), fiduAmount / 2, 1e18);
   }
 
-  function test_onReceive_revertsForNonReserveSplitterAddress() public impersonating(someOtherAddress) {
+  function test_onReceive_revertsForNonReserveSplitterAddress()
+    public
+    impersonating(someOtherAddress)
+  {
     vm.expectRevert(abi.encodeWithSelector(MembershipCollector.InvalidReceiveCaller.selector));
     membershipCollector.onReceive(100e6);
   }
 
-  function test_onReceive_allocatesToFirstRewardEpoch() public impersonating(reserveSplitterAddress) {
+  function test_onReceive_allocatesToFirstRewardEpoch()
+    public
+    impersonating(reserveSplitterAddress)
+  {
     uint256 firstRewardEpoch = startingEpoch + 5;
 
     // Custom collector so we can set firstRewardEpoch
@@ -258,7 +270,10 @@ contract MembershipCollectorTest is BaseTest {
     fundAddress(address(membershipCollector), usdcAmount);
     membershipCollector.onReceive(usdcAmount);
 
-    assertEq(membershipCollector.rewardsForEpoch(firstRewardEpoch), fiduAmount * 2 + fiduAmount / 2);
+    assertEq(
+      membershipCollector.rewardsForEpoch(firstRewardEpoch),
+      fiduAmount * 2 + fiduAmount / 2
+    );
     assertEq(membershipCollector.rewardsForEpoch(Epochs.current() - 1), fiduAmount / 2);
   }
 
@@ -296,11 +311,17 @@ contract MembershipCollectorTest is BaseTest {
 
     // Pending finalization
     // 2/3 of pendingDistributionAmountFidu because the previous epoch accounts for 1 / 1.5 epoch time
-    assertEq(membershipCollector.estimateRewardsFor(Epochs.previous()), (pendingDistributionAmountFidu * 2) / 3);
+    assertEq(
+      membershipCollector.estimateRewardsFor(Epochs.previous()),
+      (pendingDistributionAmountFidu * 2) / 3
+    );
 
     // Current
     // 1/3 of pendingDistributionAmountFidu because the current epoch accounts for 0.5 / 1.5 epoch time
-    assertEq(membershipCollector.estimateRewardsFor(Epochs.current()), pendingDistributionAmountFidu / 3);
+    assertEq(
+      membershipCollector.estimateRewardsFor(Epochs.current()),
+      pendingDistributionAmountFidu / 3
+    );
 
     // Finalize previous
     fundAddress(address(membershipCollector), usdcAmount);
@@ -309,14 +330,20 @@ contract MembershipCollectorTest is BaseTest {
     // Current and none pending finalization
     // fiduAmount / 3 because the onRecieve above distributed fiduAmount pro-rata across 1.5 epochs
     // usdcAmount * 3 because reserveSplitterAddress still has usdcAmount * 6 in it
-    assertEq(membershipCollector.estimateRewardsFor(Epochs.current()), fiduAmount / 3 + pendingDistributionAmountFidu);
+    assertEq(
+      membershipCollector.estimateRewardsFor(Epochs.current()),
+      fiduAmount / 3 + pendingDistributionAmountFidu
+    );
 
     // Future
     assertEq(membershipCollector.estimateRewardsFor(Epochs.next()), 0);
     assertEq(membershipCollector.estimateRewardsFor(Epochs.next() + 1), 0);
   }
 
-  function test_estimateRewardsFor_partiallyCheckpointedEpoch() public impersonating(reserveSplitterAddress) {
+  function test_estimateRewardsFor_partiallyCheckpointedEpoch()
+    public
+    impersonating(reserveSplitterAddress)
+  {
     uint256 usdcAmount = 110_000e6;
     uint256 fiduAmount = 100_000e18;
     seniorPool.mockDepositShares(fiduAmount);
@@ -339,7 +366,11 @@ contract MembershipCollectorTest is BaseTest {
     fundAddress(reserveSplitterAddress, usdcAmount * 2);
 
     // Epoch 1 estimate should have half of the reward distribution since it was checkpointed halfway through
-    assertApproxEqAbs(membershipCollector.estimateRewardsFor(startingEpoch), pendingDistributionAmountFidu / 2, 1e18);
+    assertApproxEqAbs(
+      membershipCollector.estimateRewardsFor(startingEpoch),
+      pendingDistributionAmountFidu / 2,
+      1e18
+    );
 
     // Epoch 2 estimate should have half of the reward distribution since it is halfway through
     assertApproxEqAbs(
@@ -391,7 +422,10 @@ contract MembershipCollectorTest is BaseTest {
 
     // First reward epoch
     // Collects the deposits from previous epochs and includes 50% of reserveSplitterAddress
-    assertEq(membershipCollector.estimateRewardsFor(Epochs.current()), fiduAmount * 2 + pendingDistributionAmountFidu);
+    assertEq(
+      membershipCollector.estimateRewardsFor(Epochs.current()),
+      fiduAmount * 2 + pendingDistributionAmountFidu
+    );
 
     // Now halfway through epoch after firstRewardEpoch
     skip(Epochs.EPOCH_SECONDS); // firstRewardEpoch + 1 1/2
@@ -411,7 +445,10 @@ contract MembershipCollectorTest is BaseTest {
 
     // Epoch after first reward epoch
     // Collects the deposits from previous epochs and includes 50% of reserveSplitterAddress
-    assertEq(membershipCollector.estimateRewardsFor(Epochs.current()), pendingDistributionAmountFidu / 3);
+    assertEq(
+      membershipCollector.estimateRewardsFor(Epochs.current()),
+      pendingDistributionAmountFidu / 3
+    );
   }
 
   event EpochFinalized(uint256 indexed epoch, uint256 totalRewards);

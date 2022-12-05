@@ -82,7 +82,9 @@ contract UserEpochTotalsTest is Test {
     assertEq(current, 2);
     assertEq(next, 2);
 
-    vm.expectRevert(abi.encodeWithSelector(UserEpochTotals.InvalidDepositEpoch.selector, Epochs.next()));
+    vm.expectRevert(
+      abi.encodeWithSelector(UserEpochTotals.InvalidDepositEpoch.selector, Epochs.next())
+    );
     total.recordDecrease(1, Epochs.next() * Epochs.EPOCH_SECONDS);
   }
 }

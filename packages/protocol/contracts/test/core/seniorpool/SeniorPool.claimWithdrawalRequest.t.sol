@@ -47,7 +47,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     sp.withdrawalRequest(1);
   }
 
-  function testClaimWithdrawalRevertsForInvalidUid(address user, uint256 invalidUidType) public onlyAllowListed(user) {
+  function testClaimWithdrawalRevertsForInvalidUid(
+    address user,
+    uint256 invalidUidType
+  ) public onlyAllowListed(user) {
     invalidUidType = bound(invalidUidType, 5, type(uint256).max);
     approveTokensMaxAmount(user);
     mintUid(user, 1, 1, "");
@@ -65,7 +68,9 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     claimWithdrawalRequestFrom(user, tokenId);
   }
 
-  function testClaimWithdrawalRevertsForNoUidAndNoGoList(address user) public onlyAllowListed(user) {
+  function testClaimWithdrawalRevertsForNoUidAndNoGoList(
+    address user
+  ) public onlyAllowListed(user) {
     approveTokensMaxAmount(user);
     mintUid(user, 1, 1, "");
     fundAddress(user, usdcVal(4000));
@@ -98,11 +103,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
   Claim Withdrawal Request Tests
   ================================================================================*/
 
-  function testClaimWithdrawalRequestNoOpsOnEarlyWithdrawal(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-  {
+  function testClaimWithdrawalRequestNoOpsOnEarlyWithdrawal(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, amount);
@@ -122,11 +126,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     assertEq(sp.withdrawalRequest(tokenId).usdcWithdrawable, request.usdcWithdrawable);
   }
 
-  function testClaimWithdrawalRequestBurnsNftWhenAllFiduIsLiquidated(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-  {
+  function testClaimWithdrawalRequestBurnsNftWhenAllFiduIsLiquidated(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, amount);
@@ -141,7 +144,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     assertZero(requestTokens.balanceOf(user));
   }
 
-  function testClaimWithdrawalRequestWithdrawsUpToTheCurrentEpoch(address user1, address user2) public {
+  function testClaimWithdrawalRequestWithdrawsUpToTheCurrentEpoch(
+    address user1,
+    address user2
+  ) public {
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -185,18 +191,28 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 fiduEpoch1 = (fiduVal(1000) * 125) / 1000;
     uint256 usdcEpoch2 = (usdcVal(1000) - usdcEpoch1) / 10;
     uint256 fiduEpoch2 = (fiduVal(1000) - fiduEpoch1) / 10;
-    uint256 usdcEpoch3 = ((usdcVal(1000) - usdcEpoch2 - usdcEpoch1) * 31_746_031_746) / 100_000_000_000;
-    uint256 fiduEpoch3 = ((fiduVal(1000) - fiduEpoch2 - fiduEpoch1) * 31_746_031_746) / 100_000_000_000;
+    uint256 usdcEpoch3 = ((usdcVal(1000) - usdcEpoch2 - usdcEpoch1) * 31_746_031_746) /
+      100_000_000_000;
+    uint256 fiduEpoch3 = ((fiduVal(1000) - fiduEpoch2 - fiduEpoch1) * 31_746_031_746) /
+      100_000_000_000;
     uint256 usdcWithdrawable = usdcEpoch1 + usdcEpoch2 + usdcEpoch3;
     uint256 fiduLiquidated = fiduEpoch1 + fiduEpoch2 + fiduEpoch3;
     uint256 userUsdcBefore = usdc.balanceOf(address(user1));
 
     claimWithdrawalRequestFrom(user1, 1);
 
-    assertApproxEqAbs(usdc.balanceOf(address(sp)), usdcVal(1850) - usdcWithdrawable, thresholdUsdc());
+    assertApproxEqAbs(
+      usdc.balanceOf(address(sp)),
+      usdcVal(1850) - usdcWithdrawable,
+      thresholdUsdc()
+    );
     assertApproxEqAbs(usdc.balanceOf(TREASURY), withdrawalFee(usdcWithdrawable), thresholdUsdc());
     assertEq(usdc.balanceOf(user1), userUsdcBefore + withdrawalAmountLessFees(usdcWithdrawable));
-    assertApproxEqAbs(sp.withdrawalRequest(1).fiduRequested, fiduVal(1000) - fiduLiquidated, thresholdFidu());
+    assertApproxEqAbs(
+      sp.withdrawalRequest(1).fiduRequested,
+      fiduVal(1000) - fiduLiquidated,
+      thresholdFidu()
+    );
     assertZero(sp.withdrawalRequest(1).usdcWithdrawable);
     assertEq(sp.withdrawalRequest(1).epochCursor, 4);
 
@@ -215,20 +231,31 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
       uint256 treasuryUsdcBefore = usdc.balanceOf(address(TREASURY));
       claimWithdrawalRequestFrom(user2, 2);
 
-      assertApproxEqAbs(usdc.balanceOf(address(sp)), spUsdcBefore - usdcWithdrawable, thresholdUsdc());
+      assertApproxEqAbs(
+        usdc.balanceOf(address(sp)),
+        spUsdcBefore - usdcWithdrawable,
+        thresholdUsdc()
+      );
       assertApproxEqAbs(
         usdc.balanceOf(TREASURY),
         treasuryUsdcBefore + withdrawalFee(usdcWithdrawable),
         thresholdUsdc()
       );
       assertEq(usdc.balanceOf(user2), userUsdcBefore + withdrawalAmountLessFees(usdcWithdrawable));
-      assertApproxEqAbs(sp.withdrawalRequest(2).fiduRequested, fiduVal(3000) - fiduLiquidated, thresholdFidu());
+      assertApproxEqAbs(
+        sp.withdrawalRequest(2).fiduRequested,
+        fiduVal(3000) - fiduLiquidated,
+        thresholdFidu()
+      );
       assertZero(sp.withdrawalRequest(2).usdcWithdrawable);
       assertEq(sp.withdrawalRequest(2).epochCursor, 4);
     }
   }
 
-  function testClaimWithdrawalShouldClearMyPositionWhenClearingInThePast(address user1, address user2) public {
+  function testClaimWithdrawalShouldClearMyPositionWhenClearingInThePast(
+    address user1,
+    address user2
+  ) public {
     (TestTranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
@@ -288,7 +315,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     assertEq(sp.usdcAvailable(), usdcVal(10_500));
   }
 
-  function testClaimWithdrawalClearsMyPositionWhenThereIsEnoughLiquidity(address user, uint256 amount) public {
+  function testClaimWithdrawalClearsMyPositionWhenThereIsEnoughLiquidity(
+    address user,
+    uint256 amount
+  ) public {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     addToGoList(user);
@@ -307,9 +337,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     assertZero(requestTokens.balanceOf(user));
   }
 
-  function testClaimWithdrawalUsesTheSharePriceFromEachEpochToDetermineFiduLiquidated(address user1, address user2)
-    public
-  {
+  function testClaimWithdrawalUsesTheSharePriceFromEachEpochToDetermineFiduLiquidated(
+    address user1,
+    address user2
+  ) public {
     (TestTranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
@@ -395,7 +426,10 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     This function simulates a user waiting many epochs before claiming their request. We want to make sure
     that claiming is not prohibitively expensive, even if they wait a long time.
    */
-  function testClaimWithdrawalRequestAfterLongTimeIsNotTooExpensive(address user1, address user2) public {
+  function testClaimWithdrawalRequestAfterLongTimeIsNotTooExpensive(
+    address user1,
+    address user2
+  ) public {
     (TestTranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);

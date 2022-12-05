@@ -78,7 +78,10 @@ contract Go is IGo, BaseUpgradeablePausable {
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
 
-    if (_getLegacyGoList().goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+    if (
+      _getLegacyGoList().goList(account) ||
+      IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0
+    ) {
       return true;
     }
 
@@ -99,7 +102,10 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
    */
-  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
+  function goOnlyIdTypes(
+    address account,
+    uint256[] memory onlyIdTypes
+  ) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
 
     if (hasRole(ZAPPER_ROLE, account)) {
@@ -111,7 +117,10 @@ contract Go is IGo, BaseUpgradeablePausable {
       if (onlyIdTypes[i] == ID_TYPE_0 && goListSource.goList(account)) {
         return true;
       }
-      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
+      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(
+        account,
+        onlyIdTypes[i]
+      );
       if (idTypeBalance > 0) {
         return true;
       }
@@ -121,10 +130,17 @@ contract Go is IGo, BaseUpgradeablePausable {
 
   function getSeniorPoolIdTypes() public pure returns (uint256[] memory) {
     // using a fixed size array because you can only define fixed size array literals.
-    uint256[4] memory allowedSeniorPoolIdTypesStaging = [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
+    uint256[4] memory allowedSeniorPoolIdTypesStaging = [
+      ID_TYPE_0,
+      ID_TYPE_1,
+      ID_TYPE_3,
+      ID_TYPE_4
+    ];
 
     // create a dynamic array and copy the fixed array over so we return a dynamic array
-    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](allowedSeniorPoolIdTypesStaging.length);
+    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](
+      allowedSeniorPoolIdTypesStaging.length
+    );
     for (uint256 i = 0; i < allowedSeniorPoolIdTypesStaging.length; i++) {
       allowedSeniorPoolIdTypes[i] = allowedSeniorPoolIdTypesStaging[i];
     }
@@ -140,13 +156,18 @@ contract Go is IGo, BaseUpgradeablePausable {
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
     if (
-      account == config.stakingRewardsAddress() || hasRole(ZAPPER_ROLE, account) || _getLegacyGoList().goList(account)
+      account == config.stakingRewardsAddress() ||
+      hasRole(ZAPPER_ROLE, account) ||
+      _getLegacyGoList().goList(account)
     ) {
       return true;
     }
     uint256[] memory seniorPoolIdTypes = getSeniorPoolIdTypes();
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
-      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
+      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(
+        account,
+        seniorPoolIdTypes[i]
+      );
       if (idTypeBalance > 0) {
         return true;
       }

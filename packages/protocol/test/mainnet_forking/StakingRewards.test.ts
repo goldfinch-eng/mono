@@ -33,8 +33,8 @@ import {
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {time} from "@openzeppelin/test-helpers"
-import {Staked} from "../../typechain/truffle/StakingRewards"
-import {DepositMade} from "../../typechain/truffle/SeniorPool"
+import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
+import {DepositMade} from "../../typechain/truffle/contracts/protocol/core/SeniorPool"
 import {MAINNET_TRUSTED_SIGNER_ADDRESS} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 
 const {deployments} = hre

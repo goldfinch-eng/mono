@@ -31,9 +31,9 @@ import {
   USDC_DECIMALS,
 } from "../testHelpers"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "../util/fixtures"
-import {DepositMade} from "../../typechain/truffle/SeniorPool"
-import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/TranchedPool"
-import {Staked} from "../../typechain/truffle/StakingRewards"
+import {DepositMade} from "../../typechain/truffle/contracts/protocol/core/SeniorPool"
+import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/contracts/protocol/core/TranchedPool"
+import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
 import {mint as mintUID} from "../uniqueIdentityHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"

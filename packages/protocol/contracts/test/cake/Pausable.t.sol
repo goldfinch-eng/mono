@@ -55,7 +55,13 @@ contract PausableTest is Test {
 
   function test_pause_revertsForNonOperator() public {
     vm.startPrank(someOtherAddress);
-    vm.expectRevert(abi.encodeWithSelector(Base.RequiresOperator.selector, address(testContract), someOtherAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        Base.RequiresOperator.selector,
+        address(testContract),
+        someOtherAddress
+      )
+    );
     testContract.pause();
   }
 
@@ -75,7 +81,13 @@ contract PausableTest is Test {
 
   function test_unpause_revertsForNonOperator() public {
     vm.startPrank(someOtherAddress);
-    vm.expectRevert(abi.encodeWithSelector(Base.RequiresOperator.selector, address(testContract), someOtherAddress));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        Base.RequiresOperator.selector,
+        address(testContract),
+        someOtherAddress
+      )
+    );
     testContract.unpause();
   }
 

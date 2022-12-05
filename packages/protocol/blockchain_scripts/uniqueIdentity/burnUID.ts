@@ -110,7 +110,7 @@ async function destroyUser(
     "x-goldfinch-address": signerAddress,
     "x-goldfinch-signature": signature,
     "x-goldfinch-signature-plaintext": message,
-    "x-goldfinch-signature-block-num": blockNum,
+    "x-goldfinch-signature-block-num": `${blockNum}`,
     "content-type": "application/json",
   }
 

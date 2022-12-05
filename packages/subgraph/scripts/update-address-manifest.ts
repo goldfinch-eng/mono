@@ -8,20 +8,20 @@ const NETWORK_NAME = (process.env.NETWORK_NAME as KnownNetwork) ?? "mainnet"
 
 console.log(`Updating the address manifest for network ${NETWORK_NAME}`)
 
+const mainnetContracts = mainnetDeployments["1"][0].contracts
+type Contracts = typeof mainnetContracts
+
 const devDeploymentsPath = path.resolve(__dirname, "../../protocol/deployments/all_dev.json")
-let devDeployments: {"31337": {localhost: typeof mainnetDeployments["1"]["mainnet"]}} | null = null
+let devContracts: Contracts | null = null
 if (fs.existsSync(devDeploymentsPath)) {
-  devDeployments = JSON.parse(fs.readFileSync(devDeploymentsPath).toString())
+  devContracts = JSON.parse(fs.readFileSync(devDeploymentsPath).toString())["31337"][0].contracts
 }
 
-if (NETWORK_NAME === "localhost" && !devDeployments) {
-  throw new Error("Requested addresses of localhost contracts, but all_dev.json does not exist")
+if (NETWORK_NAME === "localhost" && !devContracts) {
+  throw new Error("Requested addresses of localhost contracts, but all_dev.json does not exist or is malformed")
 }
 
-const contracts =
-  NETWORK_NAME === "localhost" && devDeployments
-    ? devDeployments["31337"].localhost.contracts
-    : mainnetDeployments["1"].mainnet.contracts
+const contracts = NETWORK_NAME === "localhost" && devContracts ? devContracts : mainnetContracts
 
 function getAddress(contractName: keyof typeof contracts): string {
   return contracts[contractName].address.toLowerCase()

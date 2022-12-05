@@ -42,7 +42,9 @@ contract GFILedgerTest is Test {
     vm.label(address(this), "ContractTester");
   }
 
-  function test_tokenByIndex(uint256 amount) public withDeposit(address(1), amount) withDeposit(address(2), amount) {
+  function test_tokenByIndex(
+    uint256 amount
+  ) public withDeposit(address(1), amount) withDeposit(address(2), amount) {
     assertEq(ledger.tokenByIndex(0), 1);
     assertEq(ledger.balanceOf(address(1)), 1);
 
@@ -71,7 +73,12 @@ contract GFILedgerTest is Test {
 
     vm.expectCall(
       address(gfi),
-      abi.encodeWithSelector(ERC20Upgradeable.transferFrom.selector, membershipOrchestrator, address(ledger), amount)
+      abi.encodeWithSelector(
+        ERC20Upgradeable.transferFrom.selector,
+        membershipOrchestrator,
+        address(ledger),
+        amount
+      )
     );
 
     vm.expectEmit(true, true, false, true);
@@ -87,7 +94,12 @@ contract GFILedgerTest is Test {
 
     vm.expectCall(
       address(gfi),
-      abi.encodeWithSelector(ERC20Upgradeable.transferFrom.selector, membershipOrchestrator, address(ledger), amount)
+      abi.encodeWithSelector(
+        ERC20Upgradeable.transferFrom.selector,
+        membershipOrchestrator,
+        address(ledger),
+        amount
+      )
     );
 
     vm.expectEmit(true, true, false, true);
@@ -124,7 +136,10 @@ contract GFILedgerTest is Test {
   function test_withdraw(address owner, uint256 amount) public withDeposit(owner, amount) {
     vm.assume(amount % 2 == 0);
 
-    vm.expectCall(address(gfi), abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount / 2));
+    vm.expectCall(
+      address(gfi),
+      abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount / 2)
+    );
 
     vm.expectEmit(true, true, false, true);
     emit GFIWithdrawal(owner, 1, amount / 2, amount / 2, block.timestamp);
@@ -137,7 +152,10 @@ contract GFILedgerTest is Test {
     assertEq(eligible, 0);
     assertEq(total, amount / 2);
 
-    vm.expectCall(address(gfi), abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount / 2));
+    vm.expectCall(
+      address(gfi),
+      abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount / 2)
+    );
 
     vm.expectEmit(true, true, false, true);
     emit GFIWithdrawal(owner, 1, amount / 2, 0, block.timestamp);
@@ -149,7 +167,10 @@ contract GFILedgerTest is Test {
   }
 
   function test_withdraw_exact(address owner, uint256 amount) public withDeposit(owner, amount) {
-    vm.expectCall(address(gfi), abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount));
+    vm.expectCall(
+      address(gfi),
+      abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount)
+    );
 
     vm.expectEmit(true, true, false, true);
     emit GFIWithdrawal(owner, 1, amount, 0, block.timestamp);
@@ -161,7 +182,10 @@ contract GFILedgerTest is Test {
   }
 
   function test_withdraw_all(address owner, uint256 amount) public withDeposit(owner, amount) {
-    vm.expectCall(address(gfi), abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount));
+    vm.expectCall(
+      address(gfi),
+      abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount)
+    );
 
     vm.expectEmit(true, true, false, true);
     emit GFIWithdrawal(owner, 1, amount, 0, block.timestamp);
@@ -172,8 +196,13 @@ contract GFILedgerTest is Test {
     assertEq(ledger.ownerOf(1), address(0));
   }
 
-  function test_withdraw_moreThanOwned(address owner, uint256 amount) public withDeposit(owner, amount) {
-    vm.expectRevert(abi.encodeWithSelector(GFILedger.InvalidWithdrawAmount.selector, amount + 1, amount));
+  function test_withdraw_moreThanOwned(
+    address owner,
+    uint256 amount
+  ) public withDeposit(owner, amount) {
+    vm.expectRevert(
+      abi.encodeWithSelector(GFILedger.InvalidWithdrawAmount.selector, amount + 1, amount)
+    );
     ledger.withdraw(1, amount + 1);
   }
 
@@ -268,12 +297,10 @@ contract GFILedgerTest is Test {
     assertEq(afterAmount, amount);
   }
 
-  function test_scenario(address owner, uint256 amount)
-    public
-    withDeposit(owner, amount)
-    withDeposit(owner, amount)
-    withDeposit(owner, amount)
-  {
+  function test_scenario(
+    address owner,
+    uint256 amount
+  ) public withDeposit(owner, amount) withDeposit(owner, amount) withDeposit(owner, amount) {
     vm.assume(amount % 4 == 0);
 
     assertEq(ledger.balanceOf(owner), 3);

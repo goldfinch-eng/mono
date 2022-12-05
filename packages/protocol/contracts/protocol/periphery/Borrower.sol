@@ -36,7 +36,10 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   address private constant DAI_ADDRESS = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
   function initialize(address owner, address _config) external override initializer {
-    require(owner != address(0) && _config != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && _config != address(0),
+      "Owner and config addresses cannot be empty"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
 
@@ -108,11 +111,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     transferERC20(toToken, addressToSendTo, receivedAmount);
   }
 
-  function transferERC20(
-    address token,
-    address to,
-    uint256 amount
-  ) public onlyAdmin {
+  function transferERC20(address token, address to, uint256 amount) public onlyAdmin {
     bytes memory _data = abi.encodeWithSignature("transfer(address,uint256)", to, amount);
     _invoke(token, _data);
   }
@@ -153,7 +152,10 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     require(success, "Failed to transfer USDC");
 
     _transferAndPay(usdc, poolAddress, amount);
-    require(ITranchedPool(poolAddress).creditLine().balance() == 0, "Failed to fully pay off creditline");
+    require(
+      ITranchedPool(poolAddress).creditLine().balance() == 0,
+      "Failed to fully pay off creditline"
+    );
   }
 
   function payWithSwapOnOneInch(
@@ -199,11 +201,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     }
   }
 
-  function _transferAndPay(
-    IERC20withDec usdc,
-    address poolAddress,
-    uint256 amount
-  ) internal {
+  function _transferAndPay(IERC20withDec usdc, address poolAddress, uint256 amount) internal {
     ITranchedPool pool = ITranchedPool(poolAddress);
     // We don't use transferFrom since it would require a separate approval per creditline
     bool success = usdc.transfer(address(pool.creditLine()), amount);
@@ -211,15 +209,15 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     pool.assess();
   }
 
-  function transferFrom(
-    address erc20,
-    address sender,
-    address recipient,
-    uint256 amount
-  ) internal {
+  function transferFrom(address erc20, address sender, address recipient, uint256 amount) internal {
     bytes memory _data;
     // Do a low-level _invoke on this transfer, since Tether fails if we use the normal IERC20 interface
-    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", sender, recipient, amount);
+    _data = abi.encodeWithSignature(
+      "transferFrom(address,address,uint256)",
+      sender,
+      recipient,
+      amount
+    );
     _invoke(address(erc20), _data);
   }
 
@@ -281,11 +279,21 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   // Since there are two different versions of the function in the hierarchy, we need to instruct solidity to
   // use the relay recipient version which can actually pull the real sender from the parameters.
   // https://www.notion.so/My-contract-is-using-OpenZeppelin-How-do-I-add-GSN-support-2bee7e9d5f774a0cbb60d3a8de03e9fb
-  function _msgSender() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (address payable) {
+  function _msgSender()
+    internal
+    view
+    override(ContextUpgradeSafe, BaseRelayRecipient)
+    returns (address payable)
+  {
     return BaseRelayRecipient._msgSender();
   }
 
-  function _msgData() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (bytes memory ret) {
+  function _msgData()
+    internal
+    view
+    override(ContextUpgradeSafe, BaseRelayRecipient)
+    returns (bytes memory ret)
+  {
     return BaseRelayRecipient._msgData();
   }
 

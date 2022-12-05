@@ -10,14 +10,14 @@ import {
   TestSeniorPoolInstance,
 } from "../typechain/truffle"
 const {ethers, deployments} = hre
-import {DepositMade} from "../typechain/truffle/SeniorPool"
+import {DepositMade} from "../typechain/truffle/contracts/protocol/core/SeniorPool"
 import {
   DepositedAndStaked,
   DepositedToCurveAndStaked,
   RewardPaid,
   Staked,
   Unstaked,
-} from "../typechain/truffle/StakingRewards"
+} from "../typechain/truffle/contracts/rewards/StakingRewards"
 import {
   usdcVal,
   erc20Transfer,
@@ -41,7 +41,7 @@ import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployBaseFixture} from "./util/fixtures"
 import {StakedPositionType} from "../blockchain_scripts/deployHelpers"
-import {DepositedToCurve, UnstakedMultiple} from "../typechain/truffle/TestStakingRewards"
+import {DepositedToCurve, UnstakedMultiple} from "../typechain/truffle/contracts/test/TestStakingRewards"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 

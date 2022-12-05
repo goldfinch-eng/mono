@@ -3,12 +3,7 @@
 pragma solidity >=0.6.12;
 
 interface ITestUniqueIdentity0612 {
-  function _mintForTest(
-    address to,
-    uint256 id,
-    uint256 amount,
-    bytes memory data
-  ) external;
+  function _mintForTest(address to, uint256 id, uint256 amount, bytes memory data) external;
 
   function _burnForTest(address account, uint256 id) external;
 

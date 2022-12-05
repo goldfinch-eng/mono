@@ -24,7 +24,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @param pool The tranched pool to invest into (as the senior)
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
-  function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+  function invest(
+    ISeniorPool seniorPool,
+    ITranchedPool pool
+  ) public view override returns (uint256) {
     uint256 nSlices = pool.numSlices();
     // If the pool has no slices, we cant invest
     if (nSlices == 0) {
@@ -51,7 +54,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @param pool The tranched pool to invest into (as the senior)
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
-  function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+  function estimateInvestment(
+    ISeniorPool seniorPool,
+    ITranchedPool pool
+  ) public view override returns (uint256) {
     uint256 nSlices = pool.numSlices();
     // If the pool has no slices, we cant invest
     if (nSlices == 0) {
@@ -85,7 +91,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
   /// @param pool pool to fetch tranches from
   /// @param sliceIndex slice index to fetch tranches from
   /// @return (juniorTranche, seniorTranche)
-  function _getTranchesInSlice(ITranchedPool pool, uint256 sliceIndex)
+  function _getTranchesInSlice(
+    ITranchedPool pool,
+    uint256 sliceIndex
+  )
     internal
     view
     returns (

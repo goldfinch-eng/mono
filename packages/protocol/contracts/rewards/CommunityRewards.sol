@@ -14,7 +14,11 @@ import "../protocol/core/ConfigHelper.sol";
 
 import "../library/CommunityRewardsVesting.sol";
 
-contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
+contract CommunityRewards is
+  ICommunityRewards,
+  ERC721PresetMinterPauserAutoIdUpgradeSafe,
+  ReentrancyGuardUpgradeSafe
+{
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
@@ -47,7 +51,10 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     GoldfinchConfig _config,
     uint256 _tokenLaunchTimeInSeconds
   ) external initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
 
     __Context_init_unchained();
     __ERC165_init_unchained();
@@ -95,7 +102,16 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     uint256 revokedAt,
     uint256 time
   ) external pure override returns (uint256 rewards) {
-    return CommunityRewardsVesting.getTotalVestedAt(start, end, granted, cliffLength, vestingInterval, revokedAt, time);
+    return
+      CommunityRewardsVesting.getTotalVestedAt(
+        start,
+        end,
+        granted,
+        cliffLength,
+        vestingInterval,
+        revokedAt,
+        time
+      );
   }
 
   /* ========== MUTATIVE, ADMIN-ONLY FUNCTIONS ========== */

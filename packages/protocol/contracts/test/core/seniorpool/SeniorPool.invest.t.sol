@@ -42,7 +42,10 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
     sp.invest(tp);
 
-    assertEq(tp.getTranche((uint256(ITranchedPool.Tranches.Senior))).principalDeposited, investmentAmount + usdcVal(1));
+    assertEq(
+      tp.getTranche((uint256(ITranchedPool.Tranches.Senior))).principalDeposited,
+      investmentAmount + usdcVal(1)
+    );
   }
 
   function testInvestDepositsToSeniorTranche(uint256 juniorAmount) public {
@@ -53,7 +56,10 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
     uint256 investmentAmount = sp.estimateInvestment(tp);
     depositToSpFrom(GF_OWNER, investmentAmount);
     sp.invest(tp);
-    assertEq(tp.getTranche((uint256(ITranchedPool.Tranches.Senior))).principalDeposited, investmentAmount);
+    assertEq(
+      tp.getTranche((uint256(ITranchedPool.Tranches.Senior))).principalDeposited,
+      investmentAmount
+    );
   }
 
   function testInvestEmitsInvestmentMadeInSeniorEvent(uint256 juniorAmount) public {
@@ -110,11 +116,10 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
     assertZero(sp.usdcAvailable());
   }
 
-  function testInvestLiquidatesEpochIfOneOrMoreEpochsHaveEnded(address user, uint256 epochsElapsed)
-    public
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testInvestLiquidatesEpochIfOneOrMoreEpochsHaveEnded(
+    address user,
+    uint256 epochsElapsed
+  ) public goListed(user) tokenApproved(user) {
     (TestTranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     epochsElapsed = bound(epochsElapsed, 1, 10);
@@ -138,9 +143,9 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
     assertEq(fidu.totalSupply(), investmentShares);
   }
 
-  function testInvestCannotInvestMoreThanUsdcAvailableEvenIfUsdcBalanceExceedsUsdcAvailable(uint256 juniorAmount)
-    public
-  {
+  function testInvestCannotInvestMoreThanUsdcAvailableEvenIfUsdcBalanceExceedsUsdcAvailable(
+    uint256 juniorAmount
+  ) public {
     juniorAmount = bound(juniorAmount, usdcVal(2), usdcVal(1_000_000));
     (TestTranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);

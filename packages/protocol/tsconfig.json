@@ -5,15 +5,7 @@
     "module": "commonjs",
     "target": "es2019",
     "isolatedModules": false,
-    "skipLibCheck": false
+    "skipLibCheck": true
   },
-  "include": [
-    "hardhat.config.ts",
-    "hardhat.config.base.ts",
-    "./index.ts",
-    "./blockchain_scripts",
-    "./deploy",
-    "./test",
-    "typechain/**/*"
-  ]
+  "include": ["hardhat.config.ts", "hardhat.config.base.ts", "./index.ts", "./blockchain_scripts", "./deploy", "./test"]
 }

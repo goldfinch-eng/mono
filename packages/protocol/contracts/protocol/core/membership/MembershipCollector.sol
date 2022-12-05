@@ -97,7 +97,9 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
     uint256 lastFinalizedEpoch = lastFinalizedEpoch();
     if (epoch <= lastFinalizedEpoch) return rewardsForEpoch[epoch];
 
-    uint256 pendingDistributionUsdc = context.reserveSplitter().pendingDistributionFor(address(this));
+    uint256 pendingDistributionUsdc = context.reserveSplitter().pendingDistributionFor(
+      address(this)
+    );
     uint256 pendingDistribution = context.seniorPool().getNumShares(pendingDistributionUsdc);
 
     uint256 epochsToFinalize = Epochs.previous() - lastFinalizedEpoch;
@@ -114,7 +116,9 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
     if (lastCheckpointAt > checkpointEpochStart) {
       secondsAlreadyCheckpointed = lastCheckpointAt - checkpointEpochStart;
     }
-    uint256 durationToFinalize = epochsToFinalize * Epochs.EPOCH_SECONDS - secondsAlreadyCheckpointed;
+    uint256 durationToFinalize = epochsToFinalize *
+      Epochs.EPOCH_SECONDS -
+      secondsAlreadyCheckpointed;
 
     uint256 currentEpochElapsedTime = block.timestamp - Epochs.currentEpochStartTimestamp();
     if (epoch == Epochs.current()) {
@@ -139,7 +143,10 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
   }
 
   /// @inheritdoc IMembershipCollector
-  function distributeFiduTo(address addr, uint256 amount) external onlyOperator(Routing.Keys.MembershipDirector) {
+  function distributeFiduTo(
+    address addr,
+    uint256 amount
+  ) external onlyOperator(Routing.Keys.MembershipDirector) {
     context.fidu().safeTransfer(addr, amount);
   }
 

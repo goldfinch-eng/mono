@@ -97,11 +97,7 @@ interface IOneSplit {
   )
     external
     view
-    returns (
-      uint256 returnAmount,
-      uint256 estimateGasAmount,
-      uint256[] memory distribution
-    );
+    returns (uint256 returnAmount, uint256 estimateGasAmount, uint256[] memory distribution);
 
   function swap(
     IERC20 fromToken,

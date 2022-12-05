@@ -80,7 +80,13 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     uint256 id,
     uint256 expiresAt,
     bytes calldata signature
-  ) public payable override onlySigner(_msgSender(), id, expiresAt, signature) incrementNonce(_msgSender()) {
+  )
+    public
+    payable
+    override
+    onlySigner(_msgSender(), id, expiresAt, signature)
+    incrementNonce(_msgSender())
+  {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(supportedUIDTypes[id] == true, "Token id not supported");
     require(balanceOf(_msgSender(), id) == 0, "Balance before mint must be 0");
@@ -123,9 +129,14 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   ) {
     require(block.timestamp < expiresAt, "Signature has expired");
 
-    bytes32 hash = keccak256(abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid));
+    bytes32 hash = keccak256(
+      abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid)
+    );
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
-    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
+    require(
+      hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)),
+      "Invalid signer"
+    );
     _;
   }
 

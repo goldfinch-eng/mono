@@ -18,11 +18,7 @@ interface IMerkleDirectDistributor {
 
   /// @notice Causes the sender to accept the grant consisting of the given details. Reverts if
   /// the inputs (which includes who the sender is) are invalid.
-  function acceptGrant(
-    uint256 index,
-    uint256 amount,
-    bytes32[] calldata merkleProof
-  ) external;
+  function acceptGrant(uint256 index, uint256 amount, bytes32[] calldata merkleProof) external;
 
   /// @notice This event is triggered whenever a call to #acceptGrant succeeds.
   event GrantAccepted(uint256 indexed index, address indexed account, uint256 amount);

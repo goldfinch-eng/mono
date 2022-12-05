@@ -10,7 +10,7 @@ import {
   GrantRevoked,
   RewardAdded,
   RewardPaid,
-} from "../typechain/truffle/CommunityRewards"
+} from "../typechain/truffle/contracts/rewards/CommunityRewards"
 import {
   assertCommunityRewardsVestingRewards,
   expectStateAfterGetReward,

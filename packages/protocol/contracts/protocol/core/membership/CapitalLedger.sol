@@ -132,9 +132,18 @@ contract CapitalLedger is ICapitalLedger, Base, IERC721ReceiverUpgradeable {
       uint256 assetTokenId = erc721Datas[positionId].assetTokenId;
       delete erc721Datas[positionId];
 
-      IERC721Upgradeable(position.assetAddress).safeTransferFrom(address(this), position.owner, assetTokenId);
+      IERC721Upgradeable(position.assetAddress).safeTransferFrom(
+        address(this),
+        position.owner,
+        assetTokenId
+      );
 
-      emit CapitalERC721Withdrawal(position.owner, positionId, position.assetAddress, position.depositTimestamp);
+      emit CapitalERC721Withdrawal(
+        position.owner,
+        positionId,
+        position.assetAddress,
+        position.depositTimestamp
+      );
     } else {
       revert InvalidAssetType(assetType);
     }
@@ -151,7 +160,9 @@ contract CapitalLedger is ICapitalLedger, Base, IERC721ReceiverUpgradeable {
   }
 
   /// @inheritdoc ICapitalLedger
-  function totalsOf(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
+  function totalsOf(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount) {
     return totals[addr].getTotals();
   }
 

@@ -23,7 +23,8 @@ const getDeploymentsJson = async () => {
 const isArrayOfPlainObject = genIsArrayOf(isPlainObject)
 const getAbi = async (contractName: string): Promise<PlainObject[]> => {
   const deploymentsJson = await getDeploymentsJson()
-  const contract = (deploymentsJson as any)["31337"].hardhat.contracts[contractName]
+  const hardhat = (deploymentsJson as any)["31337"].find((item) => item.name === "hardhat")
+  const contract = hardhat.contracts[contractName]
   if (contract && isArrayOfPlainObject(contract.abi)) {
     return contract.abi
   } else {

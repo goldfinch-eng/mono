@@ -2,12 +2,11 @@
 import {expect, toTruffle} from "./testHelpers"
 import {ContractDeployer} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
-import BN from "bn.js"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 const {deployments} = hre
-import {TestHasAdminInstance} from "../typechain/truffle/TestHasAdmin"
-import {HasAdminInstance} from "../typechain/truffle/HasAdmin"
-import {TestHasAdmin} from "../typechain/ethers/TestHasAdmin"
+import {TestHasAdminInstance} from "../typechain/truffle/contracts/test/TestHasAdmin"
+import {HasAdminInstance} from "../typechain/truffle/contracts/protocol/core/HasAdmin"
+import {TestHasAdmin} from "../typechain/ethers/contracts/test/TestHasAdmin"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [owner, anotherUser] = await web3.eth.getAccounts()

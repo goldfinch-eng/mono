@@ -19,6 +19,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
+import { openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -52,6 +53,7 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS = gql`
 `;
 
 interface SeniorPoolWithdrawalPanelProps {
+  canUserParticipate: boolean;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
@@ -63,6 +65,7 @@ interface SeniorPoolWithdrawalPanelProps {
 }
 
 export function SeniorPoolWithdrawalPanel({
+  canUserParticipate,
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
@@ -180,7 +183,7 @@ export function SeniorPoolWithdrawalPanel({
               Withdraw USDC
             </Button>
           </Form>
-        ) : (
+        ) : canUserParticipate ? (
           <Button
             colorScheme="secondary"
             size="xl"
@@ -188,6 +191,15 @@ export function SeniorPoolWithdrawalPanel({
             className="mb-2 block w-full"
           >
             Request withdrawal
+          </Button>
+        ) : (
+          <Button
+            colorScheme="secondary"
+            size="xl"
+            onClick={openVerificationModal}
+            className="mb-2 block w-full"
+          >
+            Verify my identity
           </Button>
         )}
 
