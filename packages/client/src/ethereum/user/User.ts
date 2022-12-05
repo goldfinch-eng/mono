@@ -32,8 +32,6 @@ import {
   STAKED_EVENT,
   StakingRewardsEventType,
   STAKING_REWARDS_EVENT_TYPES,
-  UNSTAKED_AND_WITHDREW_EVENT,
-  UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_EVENT,
   WITHDRAWAL_MADE_EVENT,
   UNSTAKED_MULTIPLE_EVENT,
@@ -52,7 +50,6 @@ import {
   STAKE_TX_TYPE,
   SUPPLY_AND_STAKE_TX_TYPE,
   SUPPLY_TX_TYPE,
-  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   UNSTAKE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
@@ -340,9 +337,6 @@ export class User {
                     return DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
                   case UNSTAKED_EVENT:
                     return UNSTAKE_TX_NAME
-                  case UNSTAKED_AND_WITHDREW_EVENT:
-                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                    return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
                   case UNSTAKED_MULTIPLE_EVENT:
                     // TODO(@emilyhsia): Update with UNSTAKE_MULTIPLE_TX_TYPE when unstakeMultiple is fixed
                     return UNSTAKE_TX_TYPE
@@ -387,12 +381,6 @@ export class User {
                     return {
                       amount: eventData.returnValues.amount,
                       units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
-                    }
-                  case UNSTAKED_AND_WITHDREW_EVENT:
-                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                    return {
-                      amount: eventData.returnValues.usdcReceivedAmount,
-                      units: "usdc",
                     }
                   case UNSTAKED_MULTIPLE_EVENT:
                     // We can assume that all positions in an "Unstaked Multiple" event are of the same
@@ -666,17 +654,9 @@ function getNonOverlappingStakingRewardsEvents(
           break
         case UNSTAKED_EVENT:
           break
-        case UNSTAKED_AND_WITHDREW_EVENT:
-          acc.unstakedAndWithdrew[curr.blockNumber] = acc.unstakedAndWithdrew[curr.blockNumber] || {}
-          acc.unstakedAndWithdrew[curr.blockNumber]![curr.transactionIndex] = true
-          break
         case UNSTAKED_MULTIPLE_EVENT:
           acc.unstakedMultiple[curr.blockNumber] = acc.unstakedMultiple[curr.blockNumber] || {}
           acc.unstakedMultiple[curr.blockNumber]![curr.transactionIndex] = true
-          break
-        case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-          acc.unstakedAndWithdrewMultiple[curr.blockNumber] = acc.unstakedAndWithdrewMultiple[curr.blockNumber] || {}
-          acc.unstakedAndWithdrewMultiple[curr.blockNumber]![curr.transactionIndex] = true
           break
         case REWARD_PAID_EVENT:
           break
@@ -710,8 +690,6 @@ function getNonOverlappingStakingRewardsEvents(
           !reduced.unstakedAndWithdrewMultiple[eventData.blockNumber]?.[eventData.transactionIndex] &&
           !reduced.unstakedMultiple[eventData.blockNumber]?.[eventData.transactionIndex]
         )
-      case UNSTAKED_AND_WITHDREW_EVENT:
-      case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
       case UNSTAKED_MULTIPLE_EVENT:
       case REWARD_PAID_EVENT:
         return true

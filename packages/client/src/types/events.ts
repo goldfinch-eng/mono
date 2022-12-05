@@ -112,8 +112,6 @@ export type LegacyStakingRewardsEventType =
   | typeof STAKED_EVENT
   | typeof DEPOSITED_AND_STAKED_EVENT
   | typeof UNSTAKED_EVENT
-  | typeof UNSTAKED_AND_WITHDREW_EVENT
-  | typeof UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT
   | typeof REWARD_PAID_EVENT
 
 export function isLegacyStakingRewardsEventType(val: unknown): boolean {
@@ -137,8 +135,6 @@ export const STAKING_REWARDS_LEGACY_EVENT_TYPES = genExhaustiveTuple<LegacyStaki
   STAKED_EVENT,
   DEPOSITED_AND_STAKED_EVENT,
   UNSTAKED_EVENT,
-  UNSTAKED_AND_WITHDREW_EVENT,
-  UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   REWARD_PAID_EVENT
 )
 // All events that in the current version of StakingRewards.

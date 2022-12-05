@@ -17,7 +17,6 @@ type SeniorPoolStatus @entity {
   """
   id: ID!
   rawBalance: BigInt!
-  compoundBalance: BigInt!
   balance: BigInt!
   sharePrice: BigInt!
   totalShares: BigInt!

@@ -329,7 +329,6 @@ async function fetchCapitalProviderData(
 
 type SeniorPoolData = {
   rawBalance: BigNumber
-  compoundBalance: BigNumber
   balance: BigNumber
   sharePrice: BigNumber
   totalShares: BigNumber
@@ -355,19 +354,14 @@ async function fetchSeniorPoolData(
   gfi: GFILoaded,
   currentBlock: BlockInfo
 ): Promise<SeniorPoolData> {
-  const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
-  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(
-    pool.contract.readOnly,
-    attributes,
-    {
-      blockNumber: currentBlock.number,
-    }
-  )
+  const attributes = [{method: "sharePrice"}]
+  let {sharePrice} = await fetchDataFromAttributes(pool.contract.readOnly, attributes, {
+    blockNumber: currentBlock.number,
+  })
   let rawBalance = new BigNumber(
     await erc20.readOnly.methods.balanceOf(pool.address).call(undefined, currentBlock.number)
   )
-  let compoundBalance = new BigNumber(_compoundBalance)
-  let balance = compoundBalance.plus(rawBalance)
+  let balance = rawBalance
   let totalShares = new BigNumber(await pool.fidu.readOnly.methods.totalSupply().call(undefined, currentBlock.number))
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
@@ -410,7 +404,6 @@ async function fetchSeniorPoolData(
 
   return {
     rawBalance,
-    compoundBalance,
     balance,
     totalShares,
     sharePrice,
