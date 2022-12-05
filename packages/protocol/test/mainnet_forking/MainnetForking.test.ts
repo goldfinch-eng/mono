@@ -581,23 +581,26 @@ describe("mainnet forking tests", async function () {
         await getEthersContract<EthersBorrower>("Borrower", {at: "0xf8C4A0fEDf9b249253D89203034374E5A57b617C"})
       ).connect(stratosSigner)
       await erc20Approve(usdc, stratosBrwContract.address, usdcVal(10_000_000), [stratosEoa])
-      const stratosPool = await getEthersContract<TranchedPool>("TranchedPool", {
-        at: "0x00c27FC71b159a346e179b4A1608a0865e8A7470",
+      const addemCapitalPool = await getEthersContract<TranchedPool>("TranchedPool", {
+        at: "0x89d7c618a4eef3065da8ad684859a547548e6169",
       })
-      const stratosCl = await getEthersContract<CreditLine>("CreditLine", {at: await stratosPool.creditLine()})
+      const addemCapitalCl = await getEthersContract<CreditLine>("CreditLine", {
+        at: await addemCapitalPool.creditLine(),
+      })
 
-      while (!(await stratosCl.nextDueTime()).eq(await stratosCl.termEndTime())) {
-        const nextDueTime = await stratosCl.nextDueTime()
+      while (!(await addemCapitalCl.nextDueTime()).eq(await addemCapitalCl.termEndTime())) {
+        const nextDueTime = await addemCapitalCl.nextDueTime()
         await advanceTime({toSecond: nextDueTime.toString()})
-        await stratosPool.assess()
-        const interestOwed = await stratosCl.interestOwed()
-        await stratosBrwContract.pay(stratosPool.address, interestOwed)
+        await addemCapitalPool.assess()
+        const interestOwed = await addemCapitalCl.interestOwed()
+        await stratosBrwContract.pay(addemCapitalPool.address, interestOwed)
       }
 
       const sharePriceBefore = await seniorPool.sharePrice()
-      await advanceTime({toSecond: (await stratosCl.termEndTime()).toString()})
-      await stratosPool.assess()
-      await seniorPool.writedown(613)
+      await advanceTime({toSecond: (await addemCapitalCl.termEndTime()).toString()})
+      await addemCapitalPool.assess()
+      // Pool Token 738 should be SeniorPool poolToken for AddemCapital pool.
+      await seniorPool.writedown(738)
       const sharePriceAfter = await seniorPool.sharePrice()
 
       // The bug caused the share price to tank when calling writedown after termEndTime
