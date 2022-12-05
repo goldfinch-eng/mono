@@ -109,7 +109,10 @@ contract ERC20Splitter is IERC20Splitter, Base, PausableUpgradeable {
   /// @notice Replace all current payees with a new set of payees and shares
   /// @param _payees An array of addresses to receive distributions
   /// @param _shares An array of shares (ordered by `_payees`) to use for distributions
-  function replacePayees(address[] calldata _payees, uint256[] calldata _shares) external onlyAdmin {
+  function replacePayees(
+    address[] calldata _payees,
+    uint256[] calldata _shares
+  ) external onlyAdmin {
     delete payees;
     _setUpPayees(_payees, _shares);
   }

@@ -32,7 +32,10 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   event CreditLineCreated(IV2CreditLine indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = _config;
     _setRoleAdmin(BORROWER_ROLE, OWNER_ROLE);
@@ -44,7 +47,9 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    *  by a TranchedPool during it's creation process.
    */
   function createCreditLine() external returns (IV2CreditLine) {
-    IV2CreditLine creditLine = IV2CreditLine(_deployMinimal(config.creditLineImplementationAddress()));
+    IV2CreditLine creditLine = IV2CreditLine(
+      _deployMinimal(config.creditLineImplementationAddress())
+    );
     emit CreditLineCreated(creditLine);
     return creditLine;
   }

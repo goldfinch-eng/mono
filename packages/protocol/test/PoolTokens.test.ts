@@ -31,9 +31,9 @@ import {
   StakingRewardsInstance,
 } from "../typechain/truffle"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
-import {TokenMinted} from "../typechain/truffle/IPoolTokens"
-import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
-import {PoolCreated} from "../typechain/truffle/GoldfinchFactory"
+import {TokenMinted} from "../typechain/truffle/contracts/interfaces/IPoolTokens"
+import {TokenPrincipalWithdrawn} from "../typechain/truffle/contracts/protocol/core/PoolTokens"
+import {PoolCreated} from "../typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {behavesLikeConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.test"
 import {behavesLikeHasAdmin} from "./HasAdmin.test"
 

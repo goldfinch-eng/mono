@@ -32,7 +32,10 @@ contract TestImplementationRepository is Test {
     assertTrue(repoOwner != proxyOwner);
   }
 
-  function testProxyFailsToUpgradeConstructAndUpgradeWhenRepoIsPaused() public impersonating(repoOwner) {
+  function testProxyFailsToUpgradeConstructAndUpgradeWhenRepoIsPaused()
+    public
+    impersonating(repoOwner)
+  {
     // there should be an upgrade available
     repo.append(address(subtractingImpl));
     assertEq(repo.nextImplementationOf(address(initialImpl)), address(subtractingImpl));
@@ -48,7 +51,9 @@ contract TestImplementationRepository is Test {
     proxy.upgradeImplementation();
   }
 
-  function testProxyContructorRevertsIfRepoIsNotAContract(Repo _repo) public notContract(address(_repo)) {
+  function testProxyContructorRevertsIfRepoIsNotAContract(
+    Repo _repo
+  ) public notContract(address(_repo)) {
     vm.expectRevert("bad repo");
     new UcuProxy(_repo, proxyOwner);
   }
@@ -116,20 +121,32 @@ contract TestImplementationRepository is Test {
     }
   }
 
-  function testProxyDoesNotDelegateCallWithUpgradeDataWhenCreated() public impersonating(repoOwner) {
+  function testProxyDoesNotDelegateCallWithUpgradeDataWhenCreated()
+    public
+    impersonating(repoOwner)
+  {
     repo.append(address(failingImpl));
-    repo.setUpgradeDataFor(address(failingImpl), abi.encodeWithSelector(failingImpl.fn.selector, ""));
+    repo.setUpgradeDataFor(
+      address(failingImpl),
+      abi.encodeWithSelector(failingImpl.fn.selector, "")
+    );
 
     // if the proxy were delegat calling on creation it would fail here because
     // the data we passed to delegate call unconditionally reverts
     UcuProxy proxy = new UcuProxy(repo, proxyOwner);
   }
 
-  function testProxyUpgradeRevertsWhenUpgradeDataDelegateCallFails() public impersonating(repoOwner) {
+  function testProxyUpgradeRevertsWhenUpgradeDataDelegateCallFails()
+    public
+    impersonating(repoOwner)
+  {
     UcuProxy proxy = new UcuProxy(repo, proxyOwner);
 
     repo.append(address(failingImpl));
-    repo.setUpgradeDataFor(address(failingImpl), abi.encodeWithSelector(failingImpl.fn.selector, ""));
+    repo.setUpgradeDataFor(
+      address(failingImpl),
+      abi.encodeWithSelector(failingImpl.fn.selector, "")
+    );
 
     vm.stopPrank();
     vm.startPrank(proxyOwner);
@@ -139,7 +156,10 @@ contract TestImplementationRepository is Test {
 
   function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(repoOwner) {
     repo.append(address(subtractingImpl));
-    repo.setUpgradeDataFor(address(subtractingImpl), abi.encodeWithSelector(subtractingImpl.fn.selector, ""));
+    repo.setUpgradeDataFor(
+      address(subtractingImpl),
+      abi.encodeWithSelector(subtractingImpl.fn.selector, "")
+    );
     vm.stopPrank();
 
     vm.startPrank(proxyOwner);
@@ -225,19 +245,27 @@ contract TestImplementationRepository is Test {
     assertEq(newOwner, proxy.owner());
   }
 
-  function testTransferOwnershipFailsWhenNotOwner(address caller, address newOwner) public impersonating(caller) {
+  function testTransferOwnershipFailsWhenNotOwner(
+    address caller,
+    address newOwner
+  ) public impersonating(caller) {
     vm.assume(caller != proxy.owner());
     vm.expectRevert(bytes("NA"));
     proxy.transferOwnership(newOwner);
   }
 
-  function testProxyUpgradeImplementationRevertsIfNotOwner(address caller) public impersonating(caller) {
+  function testProxyUpgradeImplementationRevertsIfNotOwner(
+    address caller
+  ) public impersonating(caller) {
     vm.assume(caller != proxy.owner());
     vm.expectRevert(bytes("NA"));
     proxy.upgradeImplementation();
   }
 
-  function testProxyUpgradeImplementationFailsIfNextImplIsNotRegistered() public impersonating(proxyOwner) {
+  function testProxyUpgradeImplementationFailsIfNextImplIsNotRegistered()
+    public
+    impersonating(proxyOwner)
+  {
     address currentImpl = repo.currentImplementation();
     assertFalse(repo.hasNext(address(currentImpl)));
 

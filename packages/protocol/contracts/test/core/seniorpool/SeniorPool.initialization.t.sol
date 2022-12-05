@@ -10,7 +10,9 @@ contract SeniorPoolInitializationTest is SeniorPoolBaseTest {
   /*================================================================================
   Initialization
   ================================================================================*/
-  function testInitializationCannotBeCalledTwice(address caller) public onlyAllowListed(caller) impersonating(caller) {
+  function testInitializationCannotBeCalledTwice(
+    address caller
+  ) public onlyAllowListed(caller) impersonating(caller) {
     vm.expectRevert("Contract instance has already been initialized");
     sp.initialize(GF_OWNER, gfConfig);
   }
@@ -43,11 +45,9 @@ contract SeniorPoolInitializationTest is SeniorPoolBaseTest {
     sp2.initializeEpochs();
   }
 
-  function testEpochInitializationFailsForNonOwner(address nonOwner)
-    public
-    onlyAllowListed(nonOwner)
-    impersonating(nonOwner)
-  {
+  function testEpochInitializationFailsForNonOwner(
+    address nonOwner
+  ) public onlyAllowListed(nonOwner) impersonating(nonOwner) {
     TestSeniorPool sp2 = new TestSeniorPool();
     sp2.initialize(GF_OWNER, gfConfig);
 

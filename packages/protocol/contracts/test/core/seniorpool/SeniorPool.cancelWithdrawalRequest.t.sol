@@ -10,11 +10,10 @@ import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
-  function testCancelWithdrawalRequestEoaGoListedWorks(address user, uint256 depositAmount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-  {
+  function testCancelWithdrawalRequestEoaGoListedWorks(
+    address user,
+    uint256 depositAmount
+  ) public onlyAllowListed(user) goListed(user) {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, depositAmount);
@@ -67,10 +66,10 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     cancelWithdrawalRequestFrom(user, tokenId);
   }
 
-  function testCancelWithdrawalRequestRevertsWhenEoaHasNoUidOrGoList(address user, uint256 depositAmount)
-    public
-    onlyAllowListed(user)
-  {
+  function testCancelWithdrawalRequestRevertsWhenEoaHasNoUidOrGoList(
+    address user,
+    uint256 depositAmount
+  ) public onlyAllowListed(user) {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     addToGoList(user);
     approveTokensMaxAmount(user);
@@ -89,7 +88,13 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     address depositor,
     uint256 depositAmount,
     address otherUser
-  ) public onlyAllowListed(depositor) onlyAllowListed(otherUser) goListed(depositor) goListed(otherUser) {
+  )
+    public
+    onlyAllowListed(depositor)
+    onlyAllowListed(otherUser)
+    goListed(depositor)
+    goListed(otherUser)
+  {
     vm.assume(depositor != otherUser);
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(depositor);
@@ -102,7 +107,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     cancelWithdrawalRequestFrom(otherUser, tokenId);
   }
 
-  function testCancelWithdrawalRequestWorksWhenOriginIsGoListedAndCallerHasNothing(uint256 depositAmount) public {
+  function testCancelWithdrawalRequestWorksWhenOriginIsGoListedAndCallerHasNothing(
+    uint256 depositAmount
+  ) public {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
     addToGoList(address(caller));
@@ -120,12 +127,10 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
   Cancel Withdrawal Request Tests
   ================================================================================*/
 
-  function testCancelWithdrawalRequestBurnsNftWhenUsdcWithdrawableIsZero(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestBurnsNftWhenUsdcWithdrawableIsZero(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, amount);
     depositToSpFrom(user, amount);
@@ -135,12 +140,10 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     assertZero(requestTokens.balanceOf(user));
   }
 
-  function testCancelWithdrawalRequestRevertsOnAFullyLiquidatedRequest(address user, uint256 amount)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestRevertsOnAFullyLiquidatedRequest(
+    address user,
+    uint256 amount
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     amount = bound(amount, 1, 100_000_000_000e6);
     fundAddress(user, amount);
     uint256 receivedShares = depositToSpFrom(user, amount);
@@ -194,12 +197,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     cancelWithdrawalRequestFrom(user, tokenId);
   }
 
-  function testCancelWithdrawalRequestDoesntBurnNftWhenUsdcWithdrawableGtZero(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestDoesntBurnNftWhenUsdcWithdrawableGtZero(
+    address user
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     uint256 amount = usdcVal(400);
     fundAddress(user, amount);
     depositToSpFrom(user, amount);
@@ -220,12 +220,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     assertGt(sp.withdrawalRequest(tokenId).usdcWithdrawable, 0);
   }
 
-  function testCancelWithdrawalRequestEmitsReserveSharesCollected(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestEmitsReserveSharesCollected(
+    address user
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     uint256 amount = usdcVal(400);
     fundAddress(user, amount);
     uint256 shares = depositToSpFrom(user, amount);
@@ -251,12 +248,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     cancelWithdrawalRequestFrom(user, tokenId);
   }
 
-  function testCancelWithdrawalRequestEmitsWithdrawalCanceled(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestEmitsWithdrawalCanceled(
+    address user
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     uint256 amount = usdcVal(400);
     fundAddress(user, amount);
     uint256 shares = depositToSpFrom(user, amount);
@@ -282,12 +276,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     cancelWithdrawalRequestFrom(user, tokenId);
   }
 
-  function testCancelWithdrawalRequestInAnEpochAfterTheRequestWasMadeWorks(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testCancelWithdrawalRequestInAnEpochAfterTheRequestWasMadeWorks(
+    address user
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     uint256 amount = usdcVal(400);
     fundAddress(user, amount);
     uint256 shares = depositToSpFrom(user, amount);
@@ -383,7 +374,9 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     sp.withdrawalRequest(2);
   }
 
-  function testCancelWithdrawalRequestRevertsForInvalidBps(uint256 bps) public impersonating(GF_OWNER) {
+  function testCancelWithdrawalRequestRevertsForInvalidBps(
+    uint256 bps
+  ) public impersonating(GF_OWNER) {
     vm.assume(bps > 10_000);
 
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps), bps);

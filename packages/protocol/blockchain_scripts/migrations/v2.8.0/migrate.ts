@@ -1,14 +1,8 @@
 import hre, {ethers} from "hardhat"
-import {
-  ContractDeployer,
-  getEthersContract,
-  getPauserAdmin,
-  getProtocolOwner,
-  getTruffleContract,
-} from "../../deployHelpers"
+import {ContractDeployer, getEthersContract, getPauserAdmin, getProtocolOwner} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
+import {AccessControl} from "@goldfinch-eng/protocol/typechain/ethers/contracts/cake"
 import {
-  AccessControl,
   Context,
   MembershipOrchestrator,
   Router,

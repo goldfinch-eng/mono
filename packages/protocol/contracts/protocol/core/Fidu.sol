@@ -80,7 +80,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
    * - the caller must have the MINTER_ROLE
    */
   function burnFrom(address from, uint256 amount) public override {
-    require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to burn");
+    require(
+      hasRole(MINTER_ROLE, _msgSender()),
+      "ERC20PresetMinterPauser: Must have minter role to burn"
+    );
     require(canBurn(amount), "Cannot burn: it would create an asset/liability mismatch");
     _burn(from, amount);
   }
@@ -90,7 +93,9 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   // canMint assumes that the USDC that backs the new shares has already been sent to the Pool
   function canMint(uint256 newAmount) internal view returns (bool) {
     ISeniorPool seniorPool = config.getSeniorPool();
-    uint256 liabilities = totalSupply().add(newAmount).mul(seniorPool.sharePrice()).div(fiduMantissa());
+    uint256 liabilities = totalSupply().add(newAmount).mul(seniorPool.sharePrice()).div(
+      fiduMantissa()
+    );
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = seniorPool.assets();
     if (_assets >= liabilitiesInDollars) {
@@ -103,7 +108,9 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
     ISeniorPool seniorPool = config.getSeniorPool();
-    uint256 liabilities = totalSupply().sub(amountToBurn).mul(seniorPool.sharePrice()).div(fiduMantissa());
+    uint256 liabilities = totalSupply().sub(amountToBurn).mul(seniorPool.sharePrice()).div(
+      fiduMantissa()
+    );
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = seniorPool.assets();
     if (_assets >= liabilitiesInDollars) {
@@ -118,10 +125,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   }
 
   function fiduMantissa() internal pure returns (uint256) {
-    return uint256(10)**uint256(18);
+    return uint256(10) ** uint256(18);
   }
 
   function usdcMantissa() internal pure returns (uint256) {
-    return uint256(10)**uint256(6);
+    return uint256(10) ** uint256(6);
   }
 }

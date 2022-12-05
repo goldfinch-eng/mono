@@ -21,7 +21,10 @@ abstract contract IGo {
 
   function go(address account) public view virtual returns (bool);
 
-  function goOnlyIdTypes(address account, uint256[] calldata onlyIdTypes) public view virtual returns (bool);
+  function goOnlyIdTypes(
+    address account,
+    uint256[] calldata onlyIdTypes
+  ) public view virtual returns (bool);
 
   /**
    * @notice Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.

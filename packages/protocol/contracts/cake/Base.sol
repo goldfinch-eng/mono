@@ -42,7 +42,8 @@ abstract contract Base {
   function requireAnyOperator(bytes4[2] memory operatorIds, address accessor) private view {
     if (accessor == address(0)) revert ZeroAddress();
 
-    bool validOperator = isOperator(operatorIds[0], accessor) || isOperator(operatorIds[1], accessor);
+    bool validOperator = isOperator(operatorIds[0], accessor) ||
+      isOperator(operatorIds[1], accessor);
 
     if (!validOperator) revert RequiresOperator(address(this), accessor);
   }

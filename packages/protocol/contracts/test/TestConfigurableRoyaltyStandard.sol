@@ -27,7 +27,10 @@ contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
   /// @param _salePrice The sale price of the NFT asset specified by _tokenId
   /// @return receiver Address that should receive royalties
   /// @return royaltyAmount The royalty payment amount for _salePrice
-  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view override returns (address, uint256) {
+  function royaltyInfo(
+    uint256 _tokenId,
+    uint256 _salePrice
+  ) external view override returns (address, uint256) {
     return royaltyParams.royaltyInfo(_tokenId, _salePrice);
   }
 

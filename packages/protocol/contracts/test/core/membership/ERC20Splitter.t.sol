@@ -218,7 +218,9 @@ contract ERC20SplitterTest is Test {
     uint256[] memory shares = new uint256[](1);
     shares[0] = 100;
 
-    vm.expectRevert(abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(splitter), caller));
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccessControl.RequiresAdmin.selector, address(splitter), caller)
+    );
     splitter.replacePayees(payees, shares);
   }
 

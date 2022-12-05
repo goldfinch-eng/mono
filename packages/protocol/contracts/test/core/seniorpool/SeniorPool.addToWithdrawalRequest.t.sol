@@ -108,7 +108,13 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     address depositor,
     uint256 depositAmount,
     address otherUser
-  ) public onlyAllowListed(depositor) onlyAllowListed(otherUser) goListed(depositor) goListed(otherUser) {
+  )
+    public
+    onlyAllowListed(depositor)
+    onlyAllowListed(otherUser)
+    goListed(depositor)
+    goListed(otherUser)
+  {
     vm.assume(depositor != otherUser);
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(depositor);
@@ -212,12 +218,9 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     addToWithdrawalRequestFrom(user, addShares, tokenId);
   }
 
-  function testAddToWithdrawalRequestMultipleTimes(address user)
-    public
-    onlyAllowListed(user)
-    goListed(user)
-    tokenApproved(user)
-  {
+  function testAddToWithdrawalRequestMultipleTimes(
+    address user
+  ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     fundAddress(user, usdcVal(500));
     depositToSpFrom(user, usdcVal(500));
     uint256 tokenId = requestWithdrawalFrom(user, fiduVal(200));
@@ -263,7 +266,11 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     assertEq(beforeWr.usdcWithdrawable, withdrawAmountInUsdc);
 
     uint256 amountWithdrawn = claimWithdrawalRequestFrom(caller, tokenId);
-    assertEq(amountWithdrawn, withdrawalAmountLessFees(withdrawAmountInUsdc), "withdraw amount incorrect");
+    assertEq(
+      amountWithdrawn,
+      withdrawalAmountLessFees(withdrawAmountInUsdc),
+      "withdraw amount incorrect"
+    );
 
     // After claiming when a request is fully liquidated, the token should be burned
     assertZero(requestTokens.balanceOf(caller));

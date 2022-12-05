@@ -58,18 +58,36 @@ contract MembershipOrchestratorTest is Test {
     //
 
     cake.router().setContract(Routing.Keys.MembershipOrchestrator, address(orchestrator));
-    cake.router().setContract(Routing.Keys.MembershipDirector, address(new MembershipDirector(cake.context())));
+    cake.router().setContract(
+      Routing.Keys.MembershipDirector,
+      address(new MembershipDirector(cake.context()))
+    );
     cake.router().setContract(Routing.Keys.GFILedger, address(new GFILedger(cake.context())));
-    cake.router().setContract(Routing.Keys.CapitalLedger, address(new CapitalLedger(cake.context())));
+    cake.router().setContract(
+      Routing.Keys.CapitalLedger,
+      address(new CapitalLedger(cake.context()))
+    );
 
     stakingRewards = new MockedStakingRewards();
     stakingRewards.init();
     cake.router().setContract(Routing.Keys.StakingRewards, address(stakingRewards));
 
-    cake.router().setContract(Routing.Keys.SeniorPool, address(new MockedSeniorPool(cake.context())));
-    cake.router().setContract(Routing.Keys.MembershipVault, address(new MembershipVault(cake.context())));
-    cake.router().setContract(Routing.Keys.MembershipCollector, address(new MembershipCollector(cake.context(), 0)));
-    cake.router().setContract(Routing.Keys.MembershipLedger, address(new MembershipLedger(cake.context())));
+    cake.router().setContract(
+      Routing.Keys.SeniorPool,
+      address(new MockedSeniorPool(cake.context()))
+    );
+    cake.router().setContract(
+      Routing.Keys.MembershipVault,
+      address(new MembershipVault(cake.context()))
+    );
+    cake.router().setContract(
+      Routing.Keys.MembershipCollector,
+      address(new MembershipCollector(cake.context(), 0))
+    );
+    cake.router().setContract(
+      Routing.Keys.MembershipLedger,
+      address(new MembershipLedger(cake.context()))
+    );
 
     gfi = new MockERC20(type(uint256).max);
     cake.router().setContract(Routing.Keys.GFI, address(gfi));
@@ -204,7 +222,9 @@ contract MembershipOrchestratorTest is Test {
     capitalDeposits[1] = CapitalDeposit({assetAddress: address(stakingRewards), id: 2});
     capitalDeposits[2] = CapitalDeposit({assetAddress: address(5), id: 2}); // The hidden, invalid asset!
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.UnsupportedAssetAddress.selector, (address(5))));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.UnsupportedAssetAddress.selector, (address(5)))
+    );
     orchestrator.deposit(Deposit({gfi: 5e18, capitalDeposits: capitalDeposits}));
   }
 
@@ -244,8 +264,15 @@ contract MembershipOrchestratorTest is Test {
     ERC20Withdrawal[] memory gfiPositions = new ERC20Withdrawal[](1);
     gfiPositions[0] = ERC20Withdrawal({id: 1, amount: 50});
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawUnownedAsset.selector, address(this)));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)}));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        address(this)
+      )
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
+    );
   }
 
   function test_withdrawCapital() public withStakedFiduDeposit(21e18) {
@@ -261,7 +288,12 @@ contract MembershipOrchestratorTest is Test {
   }
 
   function test_withdrawCapital_notOwner() public withOtherStakedFiduDeposit(address(5), 21e18) {
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawUnownedAsset.selector, address(this)));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        address(this)
+      )
+    );
     withdrawCapitalERC721(address(this), 1);
   }
 
@@ -272,7 +304,9 @@ contract MembershipOrchestratorTest is Test {
     uint256[] memory capitalPositions = new uint256[](1);
     capitalPositions[0] = 1;
 
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
 
     (uint256 eligible, uint256 total) = orchestrator.totalGFIHeldBy(address(this));
     assertEq(eligible, 0);
@@ -304,7 +338,9 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[2] = 3;
     capitalPositions[3] = 4;
 
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
 
     (uint256 eligible, uint256 total) = orchestrator.totalGFIHeldBy(address(this));
     assertEq(eligible, 0);
@@ -329,7 +365,9 @@ contract MembershipOrchestratorTest is Test {
     uint256[] memory capitalPositions = new uint256[](1);
     capitalPositions[0] = 1;
 
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
 
     (uint256 eligible, uint256 total) = orchestrator.totalGFIHeldBy(address(this));
     assertEq(eligible, 0);
@@ -342,7 +380,9 @@ contract MembershipOrchestratorTest is Test {
 
   function test_withdraw_nothingRequested() public {
     vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.MustWithdrawSomething.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: new uint256[](0)}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: new uint256[](0)})
+    );
   }
 
   function test_withdraw_differentGFIOwners()
@@ -358,16 +398,27 @@ contract MembershipOrchestratorTest is Test {
     uint256[] memory capitalPositions = new uint256[](1);
     capitalPositions[0] = 1;
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector)
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_notGFIOwner() public withOtherGFIDeposit(address(5), 20) {
     ERC20Withdrawal[] memory gfiPositions = new ERC20Withdrawal[](1);
     gfiPositions[0] = ERC20Withdrawal({id: 1, amount: 20});
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawUnownedAsset.selector, address(this)));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)}));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        address(this)
+      )
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
+    );
   }
 
   function test_withdraw_sameGFIPosition() public withGFIDeposit(20) {
@@ -375,7 +426,9 @@ contract MembershipOrchestratorTest is Test {
     gfiPositions[0] = ERC20Withdrawal({id: 1, amount: 10});
     gfiPositions[1] = ERC20Withdrawal({id: 1, amount: 10});
 
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
+    );
 
     (uint256 eligible, uint256 total) = orchestrator.totalGFIHeldBy(address(this));
     assertEq(eligible, 0);
@@ -388,8 +441,12 @@ contract MembershipOrchestratorTest is Test {
     gfiPositions[1] = ERC20Withdrawal({id: 1, amount: 10});
     gfiPositions[2] = ERC20Withdrawal({id: 1, amount: 10});
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)}));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
+    );
   }
 
   function test_withdraw_differentCapitalOwners()
@@ -405,16 +462,27 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[0] = 1;
     capitalPositions[1] = 2;
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector)
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_notCapitalOwner() public withOtherStakedFiduDeposit(address(5), 2e18) {
     uint256[] memory capitalPositions = new uint256[](1);
     capitalPositions[0] = 1;
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawUnownedAsset.selector, address(this)));
-    orchestrator.withdraw(Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: capitalPositions}));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        address(this)
+      )
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_sameCapitalPosition() public withStakedFiduDeposit(21e18) {
@@ -422,8 +490,12 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[0] = 1;
     capitalPositions[1] = 1;
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: capitalPositions}));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_invalidId()
@@ -440,8 +512,12 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[1] = 2;
     capitalPositions[2] = 100; // Invalid id!
 
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    vm.expectRevert(
+      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+    );
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_moreGFIThanOwned()
@@ -458,7 +534,9 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[1] = 2;
 
     vm.expectRevert(abi.encodeWithSelector(GFILedger.InvalidWithdrawAmount.selector, 30, 20));
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
   }
 
   function test_withdraw_paused() public {
@@ -467,7 +545,9 @@ contract MembershipOrchestratorTest is Test {
     vm.stopPrank();
 
     vm.expectRevert(bytes("Pausable: paused"));
-    orchestrator.withdraw(Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: new uint256[](0)}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: new uint256[](0)})
+    );
   }
 
   function test_collectRewards() public {
@@ -501,7 +581,11 @@ contract MembershipOrchestratorTest is Test {
     assertEq(orchestrator.collectRewards(), 0);
   }
 
-  function test_collectRewards_singleEpoch() public withGFIDeposit(5e18) withStakedFiduDeposit(6e18) {
+  function test_collectRewards_singleEpoch()
+    public
+    withGFIDeposit(5e18)
+    withStakedFiduDeposit(6e18)
+  {
     address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
 
     skip(Epochs.EPOCH_SECONDS);
@@ -520,7 +604,11 @@ contract MembershipOrchestratorTest is Test {
     assertEq(orchestrator.collectRewards(), 10e18);
   }
 
-  function test_collectRewards_multiEpoch() public withGFIDeposit(5e18) withStakedFiduDeposit(6e18) {
+  function test_collectRewards_multiEpoch()
+    public
+    withGFIDeposit(5e18)
+    withStakedFiduDeposit(6e18)
+  {
     address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
 
     skip(Epochs.EPOCH_SECONDS);
@@ -863,7 +951,9 @@ contract MembershipOrchestratorTest is Test {
     }
 
     address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
-    MembershipCollector collector = MembershipCollector(cake.contractFor(Routing.Keys.MembershipCollector));
+    MembershipCollector collector = MembershipCollector(
+      cake.contractFor(Routing.Keys.MembershipCollector)
+    );
 
     usdc.transfer(reserveSplitter, 10e6);
 
@@ -970,7 +1060,11 @@ contract MembershipOrchestratorTest is Test {
     orchestrator.estimateMemberScore(address(1), -1, -1);
   }
 
-  function test_estimateMemberScore_existingPosition() public withGFIDeposit(10e18) withStakedFiduDeposit(5e18) {
+  function test_estimateMemberScore_existingPosition()
+    public
+    withGFIDeposit(10e18)
+    withStakedFiduDeposit(5e18)
+  {
     // no changes
     assertEq(orchestrator.estimateMemberScore(address(this), 0, 0), 7071067811865475247);
 
@@ -1031,7 +1125,9 @@ contract MembershipOrchestratorTest is Test {
 
     vm.startPrank(addr);
     gfi.approve(address(orchestrator), amount);
-    id = orchestrator.deposit(Deposit({gfi: amount, capitalDeposits: new CapitalDeposit[](0)})).gfiPositionId;
+    id = orchestrator
+      .deposit(Deposit({gfi: amount, capitalDeposits: new CapitalDeposit[](0)}))
+      .gfiPositionId;
     vm.stopPrank();
 
     (uint256 eligible, uint256 total) = orchestrator.totalGFIHeldBy(addr);
@@ -1045,16 +1141,14 @@ contract MembershipOrchestratorTest is Test {
     withdrawGFI(addr, id, amount);
   }
 
-  function withdrawGFI(
-    address addr,
-    uint256 id,
-    uint256 amount
-  ) private {
+  function withdrawGFI(address addr, uint256 id, uint256 amount) private {
     ERC20Withdrawal[] memory gfiPositions = new ERC20Withdrawal[](1);
     gfiPositions[0] = ERC20Withdrawal({id: id, amount: amount});
 
     vm.prank(addr);
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
+    );
   }
 
   function depositStakedFidu(address addr, uint256 balance) private returns (uint256 id) {
@@ -1068,7 +1162,9 @@ contract MembershipOrchestratorTest is Test {
     stakingRewards.approve(address(orchestrator), stakedFiduId);
     CapitalDeposit[] memory capitalDeposits = new CapitalDeposit[](1);
     capitalDeposits[0] = CapitalDeposit({assetAddress: address(stakingRewards), id: stakedFiduId});
-    id = orchestrator.deposit(Deposit({gfi: 0, capitalDeposits: capitalDeposits})).capitalPositionIds[0];
+    id = orchestrator
+      .deposit(Deposit({gfi: 0, capitalDeposits: capitalDeposits}))
+      .capitalPositionIds[0];
     vm.stopPrank();
 
     (uint256 eligible, uint256 total) = orchestrator.totalCapitalHeldBy(addr);
@@ -1083,14 +1179,12 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[0] = id;
 
     vm.prank(addr);
-    orchestrator.withdraw(Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions}));
+    orchestrator.withdraw(
+      Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
+    );
   }
 
-  function depositPoolToken(
-    address addr,
-    uint256 principle,
-    uint256 principleRedeemed
-  ) private {
+  function depositPoolToken(address addr, uint256 principle, uint256 principleRedeemed) private {
     // todo
   }
 

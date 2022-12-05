@@ -28,7 +28,10 @@ abstract contract BaseTest is Test {
   function setUp() public virtual {
     // We use deployCode and cast to an interface so that BaseTest can be used by both 0.6.x and 0.8.x test files.
     protocol = IProtocolHelper(
-      deployCode("./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json", abi.encode(vm, GF_OWNER, TREASURY))
+      deployCode(
+        "./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json",
+        abi.encode(vm, GF_OWNER, TREASURY)
+      )
     );
 
     excludeAddresses();
@@ -91,7 +94,7 @@ abstract contract BaseTest is Test {
   }
 
   function usdcVal(uint256 amount) internal pure returns (uint256) {
-    return amount * 10**TestConstants.USDC_DECIMALS;
+    return amount * 10 ** TestConstants.USDC_DECIMALS;
   }
 
   function thresholdUsdc() internal pure returns (uint256) {
@@ -100,7 +103,7 @@ abstract contract BaseTest is Test {
   }
 
   function fiduVal(uint256 amount) internal pure returns (uint256) {
-    return amount * 10**TestConstants.FIDU_DECIMALS;
+    return amount * 10 ** TestConstants.FIDU_DECIMALS;
   }
 
   function thresholdFidu() internal pure returns (uint256) {

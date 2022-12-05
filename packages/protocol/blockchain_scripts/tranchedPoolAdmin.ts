@@ -188,7 +188,7 @@ async function getAbi(contractName) {
   const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
   const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
   assertNonNullable(networkName)
-  return deployedABIs[chainId][networkName].contracts[contractName].abi
+  return deployedABIs[chainId].find((i: {name: string}) => i.name === networkName).contracts[contractName].abi
 }
 
 if (require.main === module) {

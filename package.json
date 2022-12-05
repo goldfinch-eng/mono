@@ -2,7 +2,7 @@
   "name": "root",
   "private": true,
   "scripts": {
-    "bootstrap": "npx lerna bootstrap && npm run stub-dev-deployments && npm run build",
+    "bootstrap": "npx lerna bootstrap && husky install && npm run stub-dev-deployments && npm run build",
     "stub-dev-deployments": "sh -c \"[ ! -e \"packages/protocol/deployments/all_dev.json\" ] && echo {} > packages/protocol/deployments/all_dev.json || true\"",
     "start": "npm run kill-ports && REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
     "start:local": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
@@ -12,26 +12,25 @@
     "test:client": "npm run test -- --scope @goldfinch-eng/client",
     "test:protocol": "npm run test -- --scope @goldfinch-eng/protocol",
     "test:autotasks": "npm run test -- --scope @goldfinch-eng/autotasks",
+    "prelint": "npm run stub-dev-deployments",
     "lint": "npx lerna run --ignore @goldfinch-eng/client2 lint --no-bail",
     "lint:fix": "npx lerna run --ignore @goldfinch-eng/client2 lint:fix --no-bail",
-    "prepare": "husky install",
-    "build": "npx lerna run --ignore @goldfinch-eng/client2 build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 build --stream --ignore @goldfinch-eng/protocol",
+    "build": "npx lerna run build --stream --scope @goldfinch-eng/protocol && npx lerna run build --stream --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/protocol",
     "build-netlify": "npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --ignore @goldfinch-eng/protocol",
-    "pre-push": "npx lerna run --ignore @goldfinch-eng/client2 pre-push --stream --concurrency 1 --since HEAD --exclude-dependents",
     "pre-commit": "npx lerna run pre-commit --stream --concurrency 1 --since HEAD --exclude-dependents"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/experimental-utils": "^5.14.0",
-    "@typescript-eslint/parser": "^4.31.1",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@typescript-eslint/experimental-utils": "^5.45.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-chai-friendly": "^0.7.2",
     "eslint-plugin-mocha-no-only": "^1.1.1",
-    "husky": "^7.0.2",
+    "husky": "^8.0.2",
     "lerna": "^5.3.0",
-    "prettier": "^2.4.0",
-    "prettier-plugin-solidity": "^1.0.0-beta.19",
-    "typescript": "^4.4.3"
+    "prettier": "^2.8.0",
+    "prettier-plugin-solidity": "^1.0.0",
+    "typescript": "^4.9.3"
   }
 }

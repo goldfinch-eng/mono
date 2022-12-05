@@ -18,11 +18,7 @@ abstract contract IPool {
     uint256 principal
   ) public virtual;
 
-  function transferFrom(
-    address from,
-    address to,
-    uint256 amount
-  ) public virtual returns (bool);
+  function transferFrom(address from, address to, uint256 amount) public virtual returns (bool);
 
   function drawdown(address to, uint256 amount) public virtual returns (bool);
 

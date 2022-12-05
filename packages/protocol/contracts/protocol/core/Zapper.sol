@@ -33,7 +33,10 @@ contract Zapper is BaseUpgradeablePausable {
   mapping(uint256 => Zap) public tranchedPoolZaps;
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = _config;
   }
@@ -59,7 +62,12 @@ contract Zapper is BaseUpgradeablePausable {
       if (i > 0 && stakingRewardsTokenIds[i] <= stakingRewardsTokenIds[i - 1]) {
         revert("Token ids not sorted");
       }
-      poolTokenIds[i] = _zapFiduAmountToTranchedPool(stakingRewardsTokenIds[i], tranchedPool, tranche, fiduAmounts[i]);
+      poolTokenIds[i] = _zapFiduAmountToTranchedPool(
+        stakingRewardsTokenIds[i],
+        tranchedPool,
+        tranche,
+        fiduAmounts[i]
+      );
     }
 
     return poolTokenIds;
@@ -69,7 +77,9 @@ contract Zapper is BaseUpgradeablePausable {
   ///   You may perform this action anytime before the respective tranche locks.
   /// @param poolTokenIds PoolTokens ERC721 ids to unzap. Token ids MUST be sorted ascending.
   ///   The caller MUST be the address that performed the initial zaps.
-  function unzapMultipleFromTranchedPools(uint256[] calldata poolTokenIds) public whenNotPaused nonReentrant {
+  function unzapMultipleFromTranchedPools(
+    uint256[] calldata poolTokenIds
+  ) public whenNotPaused nonReentrant {
     for (uint256 i = 0; i < poolTokenIds.length; ++i) {
       if (i > 0 && poolTokenIds[i] <= poolTokenIds[i - 1]) {
         revert("Token ids not sorted");
@@ -82,7 +92,9 @@ contract Zapper is BaseUpgradeablePausable {
   ///   only succeeds if the tranched pool has locked.
   /// @param poolTokenIds PoolTokens ERC721 ids to claim. Token ids MUST be sorted ascending.
   ///   The caller MUST be the address that performed the initial zaps.
-  function claimMultipleTranchedPoolZaps(uint256[] calldata poolTokenIds) public whenNotPaused nonReentrant {
+  function claimMultipleTranchedPoolZaps(
+    uint256[] calldata poolTokenIds
+  ) public whenNotPaused nonReentrant {
     for (uint256 i = 0; i < poolTokenIds.length; ++i) {
       if (i > 0 && poolTokenIds[i] <= poolTokenIds[i - 1]) {
         revert("Token ids not sorted");
@@ -234,9 +246,14 @@ contract Zapper is BaseUpgradeablePausable {
 
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
-    ITranchedPool.TrancheInfo memory trancheInfo = ITranchedPool(tokenInfo.pool).getTranche(tokenInfo.tranche);
+    ITranchedPool.TrancheInfo memory trancheInfo = ITranchedPool(tokenInfo.pool).getTranche(
+      tokenInfo.tranche
+    );
 
-    require(trancheInfo.lockedUntil != 0 && block.timestamp > trancheInfo.lockedUntil, "Zap locked");
+    require(
+      trancheInfo.lockedUntil != 0 && block.timestamp > trancheInfo.lockedUntil,
+      "Zap locked"
+    );
 
     IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
@@ -254,7 +271,10 @@ contract Zapper is BaseUpgradeablePausable {
     require(_validPool(tranchedPool), "Invalid pool");
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
     require(_hasAllowedUID(tranchedPool), "Address not go-listed");
-    require(stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu, "Bad positionType");
+    require(
+      stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu,
+      "Bad positionType"
+    );
 
     uint256 shares = seniorPool.getNumShares(usdcAmount);
     stakingRewards.unstake(tokenId, shares);
@@ -289,7 +309,10 @@ contract Zapper is BaseUpgradeablePausable {
     require(_validPool(tranchedPool), "Invalid pool");
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
     require(_hasAllowedUID(tranchedPool), "Address not go-listed");
-    require(stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu, "Bad positionType");
+    require(
+      stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu,
+      "Bad positionType"
+    );
 
     stakingRewards.unstake(tokenId, fiduAmount);
     uint256 withdrawnAmount = seniorPool.withdrawInFidu(fiduAmount);

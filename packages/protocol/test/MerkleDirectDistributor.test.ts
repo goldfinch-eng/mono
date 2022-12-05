@@ -3,13 +3,15 @@ import {BN} from "ethereumjs-util"
 import hre, {getNamedAccounts} from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {MerkleDirectDistributorGrantInfo} from "../blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {GFIInstance} from "../typechain/truffle/GFI"
-import {GrantAccepted, MerkleDirectDistributorInstance} from "../typechain/truffle/MerkleDirectDistributor"
+import {GFIInstance} from "../typechain/truffle/contracts/protocol/core/GFI"
+import {
+  GrantAccepted,
+  MerkleDirectDistributorInstance,
+} from "../typechain/truffle/contracts/rewards/MerkleDirectDistributor"
 import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
 import {fixtures} from "./merkleDirectDistributorHelpers"
 import {
   decodeLogs,
-  deployAllContracts,
   fundWithEthFromLocalWhale,
   genDifferentHexString,
   getOnlyLog,

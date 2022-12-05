@@ -23,11 +23,7 @@ library SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeERC20Transfer(
-    IERC20 erc20,
-    address to,
-    uint256 amount
-  ) internal {
+  function safeERC20Transfer(IERC20 erc20, address to, uint256 amount) internal {
     safeERC20Transfer(erc20, to, amount, "");
   }
 
@@ -43,12 +39,7 @@ library SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeERC20TransferFrom(
-    IERC20 erc20,
-    address from,
-    address to,
-    uint256 amount
-  ) internal {
+  function safeERC20TransferFrom(IERC20 erc20, address from, address to, uint256 amount) internal {
     safeERC20TransferFrom(erc20, from, to, amount, "");
   }
 
@@ -62,11 +53,7 @@ library SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeERC20Approve(
-    IERC20 erc20,
-    address spender,
-    uint256 allowance
-  ) internal {
+  function safeERC20Approve(IERC20 erc20, address spender, uint256 allowance) internal {
     safeERC20Approve(erc20, spender, allowance, "");
   }
 }

@@ -41,7 +41,10 @@ library CapitalAssets {
    * @param assetAddress the address of the asset's contract
    * @return type of the asset
    */
-  function getSupportedType(Context context, address assetAddress) internal view returns (CapitalAssetType) {
+  function getSupportedType(
+    Context context,
+    address assetAddress
+  ) internal view returns (CapitalAssetType) {
     if (StakedFiduAsset.isType(context, assetAddress)) return StakedFiduAsset.AssetType;
     if (PoolTokensAsset.isType(context, assetAddress)) return PoolTokensAsset.AssetType;
 
@@ -64,8 +67,10 @@ library CapitalAssets {
     address assetAddress,
     uint256 assetTokenId
   ) internal view returns (bool) {
-    if (StakedFiduAsset.isType(context, assetAddress)) return StakedFiduAsset.isValid(context, assetTokenId);
-    if (PoolTokensAsset.isType(context, assetAddress)) return PoolTokensAsset.isValid(context, assetTokenId);
+    if (StakedFiduAsset.isType(context, assetAddress))
+      return StakedFiduAsset.isValid(context, assetTokenId);
+    if (PoolTokensAsset.isType(context, assetAddress))
+      return PoolTokensAsset.isValid(context, assetTokenId);
 
     return false;
   }

@@ -12,7 +12,10 @@ abstract contract PausableUpgradeable is Base, OZPausableUpgradeable {
     _pause();
   }
 
-  function unpause() external onlyOperators([Routing.Keys.PauserAdmin, Routing.Keys.ProtocolAdmin]) {
+  function unpause()
+    external
+    onlyOperators([Routing.Keys.PauserAdmin, Routing.Keys.ProtocolAdmin])
+  {
     _unpause();
   }
 }

@@ -31,7 +31,7 @@ import {
   CommunityRewardsInstance,
   GFIInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
+import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/rewards/CommunityRewards"
 import _ from "lodash"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
 import {assertCommunityRewardsVestingRewards} from "@goldfinch-eng/protocol/test/communityRewardsHelpers"

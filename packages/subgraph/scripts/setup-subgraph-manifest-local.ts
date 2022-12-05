@@ -5,11 +5,11 @@ import path from "path"
 import yaml from "js-yaml"
 
 import devDeployments from "../../protocol/deployments/all_dev.json"
-type ContractName = keyof typeof devDeployments["31337"]["localhost"]["contracts"]
+type ContractName = keyof typeof devDeployments["31337"][0]["contracts"]
 
 console.log("Updating subgraph-local.yaml")
 
-const localhostContracts = devDeployments["31337"].localhost.contracts
+const localhostContracts = devDeployments["31337"][0].contracts
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 

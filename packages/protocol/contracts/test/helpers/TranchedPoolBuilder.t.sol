@@ -90,7 +90,9 @@ contract TranchedPoolBuilder {
     return this;
   }
 
-  function withPrincipalGracePeriodInDays(uint256 _principalGracePeriodInDays) external returns (TranchedPoolBuilder) {
+  function withPrincipalGracePeriodInDays(
+    uint256 _principalGracePeriodInDays
+  ) external returns (TranchedPoolBuilder) {
     principalGracePeriodInDays = _principalGracePeriodInDays;
     return this;
   }
@@ -100,7 +102,9 @@ contract TranchedPoolBuilder {
     return this;
   }
 
-  function withAllowedUIDTypes(uint256[] calldata _allowedUIDTypes) external returns (TranchedPoolBuilder) {
+  function withAllowedUIDTypes(
+    uint256[] calldata _allowedUIDTypes
+  ) external returns (TranchedPoolBuilder) {
     allowedUIDTypes = _allowedUIDTypes;
     return this;
   }

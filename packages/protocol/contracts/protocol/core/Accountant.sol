@@ -23,7 +23,7 @@ library Accountant {
   using FixedPoint for uint256;
 
   // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
-  uint256 private constant FP_SCALING_FACTOR = 10**18;
+  uint256 private constant FP_SCALING_FACTOR = 10 ** 18;
   uint256 private constant INTEREST_DECIMALS = 1e18;
   uint256 private constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 private constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
@@ -52,7 +52,13 @@ library Accountant {
     uint256 endTime,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccruedOverPeriod(cl, balance, startTime, endTime, lateFeeGracePeriod);
+    uint256 interestAccrued = calculateInterestAccruedOverPeriod(
+      cl,
+      balance,
+      startTime,
+      endTime,
+      lateFeeGracePeriod
+    );
     uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, endTime);
     return (interestAccrued, principalAccrued);
   }
@@ -80,7 +86,8 @@ library Accountant {
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
   ) public view returns (uint256, uint256) {
-    return calculateWritedownForPrincipal(cl, cl.balance(), timestamp, gracePeriodInDays, maxDaysLate);
+    return
+      calculateWritedownForPrincipal(cl, cl.balance(), timestamp, gracePeriodInDays, maxDaysLate);
   }
 
   function calculateWritedownForPrincipal(
@@ -114,19 +121,28 @@ library Accountant {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
     } else {
-      writedownPercent = FixedPoint.min(FixedPoint.fromUnscaledUint(1), (daysLate.sub(fpGracePeriod)).div(maxLate));
+      writedownPercent = FixedPoint.min(
+        FixedPoint.fromUnscaledUint(1),
+        (daysLate.sub(fpGracePeriod)).div(maxLate)
+      );
     }
 
-    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(FP_SCALING_FACTOR);
+    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(
+      FP_SCALING_FACTOR
+    );
     // This will return a number between 0-100 representing the write down percent with no decimals
     uint256 unscaledWritedownPercent = writedownPercent.mul(100).div(FP_SCALING_FACTOR).rawValue;
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory) {
+  function calculateAmountOwedForOneDay(
+    ICreditLine cl
+  ) public view returns (FixedPoint.Unsigned memory) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
+    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint
+      .fromUnscaledUint(totalInterestPerYear)
+      .div(365);
     return interestOwedForOneDay.add(cl.principalOwed());
   }
 
@@ -145,7 +161,14 @@ library Accountant {
     // this function's purpose is just to normalize balances, and handing in a past timestamp
     // will necessarily return zero interest accrued (because zero elapsed time), which is correct.
     uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
-    return calculateInterestAccruedOverPeriod(cl, balance, startTime, timestamp, lateFeeGracePeriodInDays);
+    return
+      calculateInterestAccruedOverPeriod(
+        cl,
+        balance,
+        startTime,
+        timestamp,
+        lateFeeGracePeriodInDays
+      );
   }
 
   function calculateInterestAccruedOverPeriod(
@@ -160,7 +183,9 @@ library Accountant {
     interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
     if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(
+        SECONDS_PER_YEAR
+      );
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }
 

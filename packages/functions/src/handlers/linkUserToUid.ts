@@ -15,7 +15,7 @@ import {
   validateUidType,
 } from "@goldfinch-eng/utils"
 import firestore = admin.firestore
-import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/UniqueIdentity"
+import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/contracts/protocol/core/UniqueIdentity"
 import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {KycProvider} from "../types"
 
