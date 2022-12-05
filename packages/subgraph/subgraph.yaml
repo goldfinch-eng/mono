@@ -59,6 +59,8 @@ dataSources:
           handler: handleWithdrawalRequestCanceled
         - event: "EpochEnded(indexed uint256,uint256,uint256,uint256,uint256)"
           handler: handleEpochEnded
+        - event: "EpochExtended(indexed uint256,uint256,uint256)"
+          handler: handleEpochExtended
 
   - kind: ethereum/contract
     name: WithdrawalRequestToken
