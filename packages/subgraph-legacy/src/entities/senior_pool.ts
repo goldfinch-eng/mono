@@ -27,7 +27,6 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   if (!poolStatus) {
     poolStatus = new SeniorPoolStatus(SENIOR_POOL_STATUS_ID)
     poolStatus.rawBalance = new BigInt(0)
-    poolStatus.compoundBalance = new BigInt(0)
     poolStatus.balance = new BigInt(0)
     poolStatus.totalShares = new BigInt(0)
     poolStatus.sharePrice = new BigInt(0)
@@ -80,7 +79,6 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
-  let compoundBalance = contract.compoundBalance()
   let totalLoansOutstanding = contract.totalLoansOutstanding()
   let totalSupply = fidu_contract.totalSupply()
   let totalPoolAssets = totalSupply.times(sharePrice)
@@ -89,7 +87,6 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let rawBalance = balance
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
-  poolStatus.compoundBalance = compoundBalance
   poolStatus.totalLoansOutstanding = totalLoansOutstanding
   poolStatus.totalShares = totalSupply
   poolStatus.balance = balance

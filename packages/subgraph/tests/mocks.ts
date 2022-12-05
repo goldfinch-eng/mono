@@ -328,10 +328,6 @@ export function mockUpdatePoolStatusCalls(seniorPoolAddress: string): void {
     .withArgs([])
     .returns([amount])
 
-  createMockedFunction(Address.fromString(seniorPoolAddress), "compoundBalance", "compoundBalance():(uint256)")
-    .withArgs([])
-    .returns([amount])
-
   createMockedFunction(
     Address.fromString(seniorPoolAddress),
     "totalLoansOutstanding",
