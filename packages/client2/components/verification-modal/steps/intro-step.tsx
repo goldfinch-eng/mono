@@ -21,13 +21,13 @@ export function IntroStep() {
       }
     >
       <div className="flex h-full items-center justify-evenly text-center text-sm">
-        <div>
+        <div className="flex flex-col items-center">
           <Image src={greenCheckmark} width={70} height={70} alt="KYC" />
           <div className="mt-2">
             First, complete KYC using Persona or Parallel Markets
           </div>
         </div>
-        <div>
+        <div className="flex flex-col items-center">
           <Image src={uidLogo} width={70} height={70} alt="KYC" />
           <div className="mt-2">
             Then claim your UID NFT for identity management
