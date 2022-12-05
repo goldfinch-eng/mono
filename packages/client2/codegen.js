@@ -30,7 +30,7 @@ const cmsApiUrl =
   typeof env.combinedEnv.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
     ? env.combinedEnv.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
     : env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? ""
+    ? "http://cms.goldfinch.finance/api/graphql"
     : env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "http://localhost:3010/api/graphql"
     : null;

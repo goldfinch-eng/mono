@@ -32,7 +32,7 @@ const cmsApiUrl =
   typeof process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
     ? process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? ""
+    ? "http://cms.goldfinch.finance/api/graphql"
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "http://localhost:3010/api/graphql"
     : null;

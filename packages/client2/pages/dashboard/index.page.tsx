@@ -510,7 +510,8 @@ export default function DashboardPage() {
                       {(data.viewer.fiduBalance &&
                         !data.viewer.fiduBalance.amount.isZero()) ||
                       data.stakedFiduPositions.length > 0 ||
-                      data.vaultedStakedPositions.length > 0 ? (
+                      data.vaultedStakedPositions.length > 0 ||
+                      data.seniorPoolWithdrawalRequests.length > 0 ? (
                         <ExpandableHoldings
                           title="Senior Pool Position"
                           tooltip="Your active investment in the Goldfinch Senior Pool, represented by the value of your FIDU token holdings. This includes FIDU held in your linked wallet and any FIDU you are staking."
