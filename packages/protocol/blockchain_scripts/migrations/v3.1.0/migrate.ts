@@ -12,13 +12,7 @@ export async function main() {
     safeConfig: {safeAddress: MAINNET_WARBLER_LABS_MULTISIG, executor: "0x67c5733ca0101eed21728902ef0ace4ced1cc52a"},
   })
 
-  const {gf_deployer} = await deployer.getNamedAccounts()
-
   const upgrader = new ContractUpgrader(deployer)
-
-  if (!gf_deployer) {
-    throw new Error("gf_deployer not found")
-  }
 
   // Upgrade UniqueIdentity - owned by MAINNET_WARBLER_LABS_MULTISIG
   const upgradeUniqueIdentity = await upgrader.upgrade(
