@@ -6,8 +6,7 @@ import { SERVER_URL } from "@/constants";
 import { getFreshProvider } from "@/lib/wallet";
 
 import { Button, Form, Input } from "../design-system";
-import { ButtonLink, Link } from "./helpers";
-import { AsyncButton } from "./helpers/async-button";
+import { ButtonLink, Link, AsyncButton } from "./helpers";
 
 export function Home() {
   const [onChainTimestamp, setOnChainTimestamp] = useState<number>();
