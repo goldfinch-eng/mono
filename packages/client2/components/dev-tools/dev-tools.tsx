@@ -18,7 +18,7 @@ export function DevTools() {
         onClick={() => setIsDrawerOpen(true)}
         className="group fixed bottom-5 right-5 z-10 scale-100 shadow-xl !transition-all hover:scale-105"
       >
-        Dev Tools 2
+        Dev Tools
         <AnimatedTwinkle className="-left-1 -top-1" />
         <AnimatedTwinkle
           className="-right-2 bottom-0"
