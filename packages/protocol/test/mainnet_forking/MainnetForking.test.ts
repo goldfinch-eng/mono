@@ -589,11 +589,10 @@ describe("mainnet forking tests", async function () {
 
       while (!(await stratosCl.nextDueTime()).eq(await stratosCl.termEndTime())) {
         const nextDueTime = await stratosCl.nextDueTime()
-        if (nextDueTime.gt(await getCurrentTimestamp())) {
-          await advanceTime({toSecond: (await getCurrentTimestamp()).toString()})
+        if (new BN(nextDueTime.toString()).gt(new BN((await getCurrentTimestamp()).toString()))) {
+          await advanceTime({toSecond: nextDueTime.toString()})
         }
 
-        await advanceTime({toSecond: nextDueTime.toString()})
         await stratosPool.assess()
         const interestOwed = await stratosCl.interestOwed()
         await stratosBrwContract.pay(stratosPool.address, interestOwed)

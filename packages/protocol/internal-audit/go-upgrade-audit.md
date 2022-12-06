@@ -228,5 +228,3 @@ There were differing opinions on taking action for events like `DepositMade`, an
 
 - We can pull out tx.origin in subgraph code, so no need to add it directly to the event
 - Making other contracts aware of the tx.origin vs msg.sender distinction is "leaking" Go implementation details to those contracts
-
-### In favor
