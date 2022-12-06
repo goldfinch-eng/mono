@@ -15,7 +15,8 @@ Sentry.init({
   integrations: [
     new Sentry.BrowserTracing({
       // The is done intentionally to prevent Sentry from placing a `baggage` header when communicating with local subgraph. That header results in a CORS rejection, very annoying
-      tracingOrigins: process.env.NODE_ENV === "development" ? ["bogus"] : [],
+      tracingOrigins:
+        process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ? ["bogus"] : [],
     }),
   ],
   // Note: if you want to override the automatic release value, do not set a

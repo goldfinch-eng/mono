@@ -1,47 +1,15 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Input, Button, Select } from "@/components/design-system";
-import { SERVER_URL } from "@/constants";
+import { Input, Select, Button, Form } from "@/components/design-system";
 import { getSignatureForKyc, fetchKycStatus } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
-export default function DevToolsKYC() {
-  const [shownData, setShownData] = useState({});
-  const [isLoading, setLoading] = useState<boolean>(false);
+import { AsyncButton, devserverRequest } from "./helpers";
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors: formErrors },
-  } = useForm<{
-    countryCode: string;
-    residency: "us" | "non-us";
-    kycStatus: string;
-  }>({
-    defaultValues: { kycStatus: "approved" },
-  });
-
-  const handleKYCForm = handleSubmit(async (data) => {
-    setLoading(true);
-
-    const response = await fetch(`${SERVER_URL}/kycStatus`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address: account, ...data }),
-    });
-
-    setLoading(false);
-
-    if (!response.ok) {
-      throw new Error("Could not set KYC status");
-    }
-    await fetchCurrentKycStatus();
-  });
-
+export function Kyc() {
   const { account, provider } = useWallet();
-
+  const [shownData, setShownData] = useState({});
   const fetchCurrentKycStatus = async () => {
     if (!account || !provider) {
       return;
@@ -55,19 +23,52 @@ export default function DevToolsKYC() {
     setShownData(kycStatus);
   };
 
+  type FormFields = {
+    countryCode: string;
+    residency: "us" | "non-us";
+    kycStatus: string;
+  };
+  const rhfMethods = useForm<FormFields>({
+    defaultValues: { kycStatus: "approved" },
+  });
+  const {
+    register,
+    control,
+    formState: { errors: formErrors },
+  } = rhfMethods;
+
+  const onSubmit = async (data: FormFields) => {
+    const response = await devserverRequest("kycStatus", {
+      address: account,
+      ...data,
+    });
+    if (!response.ok) {
+      throw new Error("Could not set KYC status");
+    }
+    await fetchCurrentKycStatus();
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Button onClick={fetchCurrentKycStatus}>
+    <div>
+      <div className="mb-2 text-2xl font-bold">KYC</div>
+      <div className="mb-4 space-y-2">
+        <AsyncButton onClick={fetchCurrentKycStatus}>
           Fetch KYC Data (Signature Required)
-        </Button>
+        </AsyncButton>
         <div>Your current KYC values:</div>
         <pre className="bg-sand-200 p-2">
           {JSON.stringify(shownData, null, 2)}
         </pre>
-        <div>Use the form below to change these values.</div>
+        <div>
+          Use the form below to change these values, this will let you skip
+          Persona in the verification flow.
+        </div>
       </div>
-      <form onSubmit={handleKYCForm} className="block w-[760px]">
+      <Form
+        rhfMethods={rhfMethods}
+        onSubmit={onSubmit}
+        className="w-max rounded border border-sand-200 p-4"
+      >
         <div className="mb-4 flex flex-wrap gap-4">
           <div className="w-64">
             <Input
@@ -77,7 +78,6 @@ export default function DevToolsKYC() {
                 required: "Country code is required.",
               })}
               helperText="This represents the country that issued the user's government ID"
-              errorMessage={formErrors.countryCode?.message}
             />
           </div>
 
@@ -91,7 +91,6 @@ export default function DevToolsKYC() {
                     : true,
               })}
               helperText="This represents where the user permanently resides"
-              errorMessage={formErrors.residency?.message}
             />
           </div>
 
@@ -111,15 +110,10 @@ export default function DevToolsKYC() {
           </div>
         </div>
 
-        <Button
-          type="submit"
-          isLoading={isLoading}
-          disabled={isLoading}
-          size="lg"
-        >
+        <Button type="submit" size="lg">
           Submit
         </Button>
-      </form>
+      </Form>
     </div>
   );
 }

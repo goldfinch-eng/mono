@@ -483,7 +483,7 @@ export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment
   const borrower = protocol_owner
   const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
 
-  const seniorAmount = new BN(usdcAmount).mul(USDC_DECIMALS)
+  const seniorAmount = new BN(usdcAmount)
   // Senior pool invests 4x the junio investment
   const juniorAmount = seniorAmount.div(new BN("4"))
 
@@ -707,17 +707,24 @@ export async function addUserToGoList(address: string) {
 
 export async function fundUser(address: string) {
   const {
-    deployments: {log},
+    deployments: {log, getOrNull},
   } = hre
 
   logger = log
 
   const chainId = await hre.getChainId()
 
-  const {erc20s} = await getERC20s({hre, chainId})
-
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-    await fundFromLocalWhale(address, erc20s, {logger})
+    const fakeUsdcContract = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
+    const gfiContract = await getDeployedAsEthersContract<Contract>(getOrNull, "GFI")
+    await fundFromLocalWhale(
+      address,
+      [
+        {ticker: "USDC", contract: fakeUsdcContract},
+        {ticker: "GFI", contract: gfiContract},
+      ],
+      {logger}
+    )
   }
 
   if (isMainnetForking()) {

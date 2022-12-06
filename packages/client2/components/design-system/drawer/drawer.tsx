@@ -99,7 +99,7 @@ export function Drawer({
                 : null
             )}
           >
-            <div className="mb-10">
+            <div className="mb-8">
               {title && (
                 <Dialog.Title className="font-serif text-3xl font-semibold">
                   {title}
