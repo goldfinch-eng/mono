@@ -246,9 +246,11 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   return tranchedPool
 }
 
-// TODO leverage ratio should really be expressed as a BigDecimal https://linear.app/goldfinch/issue/GFI-951/leverage-ratio-should-be-expressed-as-bigdecimal-in-subgraph
-export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigInt {
-  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
+export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigDecimal {
+  return goldfinchConfigContract
+    .getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
+    .toBigDecimal()
+    .div(FIDU_DECIMALS.toBigDecimal())
 }
 
 class Repayment {
@@ -423,7 +425,7 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
 
     let divisor: BigDecimal = BigDecimal.fromString("1")
     if (tranchedPool.estimatedLeverageRatio !== null) {
-      divisor = tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1)).toBigDecimal()
+      divisor = tranchedPool.estimatedLeverageRatio!.plus(BigDecimal.fromString("1"))
     }
     const juniorPrincipalDollars = creditLine.maxLimit.divDecimal(divisor).div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)

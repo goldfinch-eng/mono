@@ -136,7 +136,7 @@ type TranchedPool @entity {
   estimatedJuniorApy: BigDecimal!
   estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
-  estimatedLeverageRatio: BigInt
+  estimatedLeverageRatio: BigDecimal
   remainingCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!

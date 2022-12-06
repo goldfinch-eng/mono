@@ -1,7 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
@@ -272,11 +272,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         amount: tranchedPool.juniorDeposited,
       }
     : undefined;
+
   const seniorSupply =
     backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
       ? {
           token: SupportedCrypto.Usdc,
-          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
+          amount: utils.parseUnits(
+            FixedNumber.from(backerSupply.amount)
+              .mulUnsafe(tranchedPool.estimatedLeverageRatio)
+              .toString(),
+            0
+          ),
         }
       : undefined;
 
