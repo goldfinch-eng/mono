@@ -12,6 +12,7 @@ import { Icon } from "@/components/design-system";
 import { Home } from "./home";
 import { Kyc } from "./kyc";
 import { Membership } from "./membership";
+import { WithdrawalMechanics } from "./withdrawal-mechanics";
 
 export default function DevToolsRouter2() {
   return (
@@ -21,6 +22,7 @@ export default function DevToolsRouter2() {
         <Route path="/" element={<Home />} />
         <Route path="/kyc" element={<Kyc />} />
         <Route path="/membership" element={<Membership />} />
+        <Route path="/withdrawal-mechanics" element={<WithdrawalMechanics />} />
       </Routes>
     </MemoryRouter>
   );
