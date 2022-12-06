@@ -12,7 +12,6 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
       latestPoolStatus {
         id
         rawBalance
-        compoundBalance
         balance
         totalShares
         sharePrice
@@ -61,7 +60,6 @@ export const GET_SENIOR_POOL_STATUS = gql`
       latestPoolStatus {
         id
         rawBalance
-        compoundBalance
         balance
         totalShares
         sharePrice
