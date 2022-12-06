@@ -7,7 +7,8 @@ import {assertIsString} from "packages/utils/src/type"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
-import {TransferSingle} from "packages/protocol/typechain/truffle/UniqueIdentity"
+import {TransferSingle} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/UniqueIdentity"
+
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {BN, decodeLogs, getOnlyLog} from "packages/protocol/test/testHelpers"
 import {
