@@ -6,7 +6,7 @@ import Head from "next/head";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 
-import { DevTools } from "@/components/dev-tools2";
+import { DevTools } from "@/components/dev-tools";
 import { Layout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
