@@ -707,17 +707,25 @@ export async function addUserToGoList(address: string) {
 
 export async function fundUser(address: string) {
   const {
-    deployments: {log},
+    deployments: {log, getOrNull},
   } = hre
 
   logger = log
 
   const chainId = await hre.getChainId()
 
-  const {erc20s} = await getERC20s({hre, chainId})
-
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-    await fundFromLocalWhale(address, erc20s, {logger})
+    const fakeUsdcContract = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
+    const gfiContract = await getDeployedAsEthersContract<Contract>(getOrNull, "GFI")
+    console.log("address", address)
+    await fundFromLocalWhale(
+      address,
+      [
+        {ticker: "USDC", contract: fakeUsdcContract},
+        {ticker: "GFI", contract: gfiContract},
+      ],
+      {logger}
+    )
   }
 
   if (isMainnetForking()) {
