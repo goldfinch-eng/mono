@@ -10,6 +10,7 @@ import {
 import { Icon } from "@/components/design-system";
 
 import { Home } from "./home";
+import { Kyc } from "./kyc";
 import { Membership } from "./membership";
 
 export default function DevToolsRouter2() {
@@ -18,6 +19,7 @@ export default function DevToolsRouter2() {
       <BackButton />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/kyc" element={<Kyc />} />
         <Route path="/membership" element={<Membership />} />
       </Routes>
     </MemoryRouter>

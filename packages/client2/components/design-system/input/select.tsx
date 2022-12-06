@@ -192,7 +192,7 @@ export function Select({
             isError
               ? "text-clay-500"
               : colorScheme === "light"
-              ? "text-sand-500"
+              ? "text-sand-400"
               : colorScheme === "dark"
               ? "text-sand-300"
               : null,

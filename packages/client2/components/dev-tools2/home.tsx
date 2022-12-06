@@ -90,9 +90,17 @@ export function Home() {
           </div>
         </Section>
         <Section title="Feature-specific tools">
-          <ButtonLink to="/membership" colorScheme="mustard">
-            Membership
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink to="/kyc" colorScheme="tidepool">
+              KYC
+            </ButtonLink>
+            <ButtonLink to="/membership" colorScheme="mustard">
+              Membership
+            </ButtonLink>
+            <ButtonLink to="/withdrawal-mechanics" colorScheme="twilight">
+              Withdrawal Mechanics
+            </ButtonLink>
+          </div>
         </Section>
       </div>
     </div>
