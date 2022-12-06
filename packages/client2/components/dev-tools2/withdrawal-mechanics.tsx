@@ -4,13 +4,18 @@ import { DollarInput, Form, Button } from "@/components/design-system";
 import { stringToCryptoAmount } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
 
-import { devserverRequest } from "./helpers";
+import { AsyncButton, devserverRequest, advanceTimeNDays } from "./helpers";
 
 export function WithdrawalMechanics() {
   return (
     <div>
       <div className="mb-2 text-2xl font-bold">Withdrawal Mechanics</div>
-      <DrainSeniorPoolForm />
+      <div className="space-y-6">
+        <AsyncButton onClick={() => advanceTimeNDays(14)}>
+          Advance time 14 days
+        </AsyncButton>
+        <DrainSeniorPoolForm />
+      </div>
     </div>
   );
 }

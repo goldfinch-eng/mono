@@ -7,3 +7,7 @@ export async function devserverRequest(endpoint: string, args: unknown) {
     body: JSON.stringify(args),
   });
 }
+
+export async function advanceTimeNDays(n: number) {
+  return devserverRequest("advanceTimeNDays", { n });
+}

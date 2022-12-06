@@ -3,10 +3,14 @@ import { useState, useCallback, useEffect, ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button, Form, Input } from "@/components/design-system";
-import { SERVER_URL } from "@/constants";
 import { getFreshProvider, useWallet } from "@/lib/wallet";
 
-import { ButtonLink, AsyncButton, devserverRequest } from "./helpers";
+import {
+  ButtonLink,
+  AsyncButton,
+  devserverRequest,
+  advanceTimeNDays,
+} from "./helpers";
 
 export function Home() {
   const { account } = useWallet();
@@ -23,18 +27,6 @@ export function Home() {
     refreshTimestamp();
   }, [refreshTimestamp]);
 
-  const advanceTime = async (n: number) => {
-    const response = await fetch(`${SERVER_URL}/advanceTimeNDays`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ n }),
-    });
-    if (!response.ok) {
-      throw new Error(await response.json().then((json) => json.message));
-    }
-    await refreshTimestamp();
-  };
-
   return (
     <div>
       <div className="space-y-6">
@@ -46,10 +38,14 @@ export function Home() {
               : null}
           </div>
           <div className="flex flex-wrap gap-4">
-            <AsyncButton onClick={() => advanceTime(1)}>1 Day</AsyncButton>
-            <AsyncButton onClick={() => advanceTime(7)}>7 Days</AsyncButton>
-            <AsyncButton onClick={() => advanceTime(14)}>14 Days</AsyncButton>
-            <InputAndButton onSubmit={(n) => advanceTime(n)} />
+            <AsyncButton onClick={() => advanceTimeNDays(1)}>1 Day</AsyncButton>
+            <AsyncButton onClick={() => advanceTimeNDays(7)}>
+              7 Days
+            </AsyncButton>
+            <AsyncButton onClick={() => advanceTimeNDays(14)}>
+              14 Days
+            </AsyncButton>
+            <InputAndButton onSubmit={(n) => advanceTimeNDays(n)} />
           </div>
         </Section>
         <Section title="Setup user">
@@ -134,7 +130,7 @@ function Section({
 function InputAndButton({
   onSubmit,
 }: {
-  onSubmit: (n: number) => Promise<void>;
+  onSubmit: (n: number) => Promise<unknown>;
 }) {
   const rhfMethods = useForm<{ n: string }>();
   const s = async (data: { n: string }) => {

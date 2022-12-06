@@ -8,6 +8,8 @@ import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
+import { advanceTimeNDays, AsyncButton } from "./helpers";
+
 export function Membership() {
   return (
     <div>
@@ -15,7 +17,12 @@ export function Membership() {
       <div className="mb-4">
         These dev tools are specific to Membership Vaults.
       </div>
-      <SplitterForm />
+      <div className="space-y-6">
+        <AsyncButton onClick={() => advanceTimeNDays(7)}>
+          Advance time 7 days
+        </AsyncButton>
+        <SplitterForm />
+      </div>
     </div>
   );
 }
