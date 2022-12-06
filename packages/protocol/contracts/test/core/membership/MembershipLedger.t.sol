@@ -66,11 +66,7 @@ contract MembershipLedgerTest is Test {
     assertEq(ledger.getPendingRewardsFor(addr), 0);
   }
 
-  function test_allocateRewardsTo(
-    address addr,
-    uint256 amount,
-    uint256 amount2
-  ) public {
+  function test_allocateRewardsTo(address addr, uint256 amount, uint256 amount2) public {
     vm.assume(amount < 1e12);
     vm.assume(amount2 < 1e12);
 
@@ -133,7 +129,10 @@ contract MembershipLedgerTest is Test {
     ledger.setAlpha(21, 2);
 
     vm.expectRevert(abi.encodeWithSelector(MembershipLedger.InvalidAlphaNumerator.selector));
-    ledger.setAlpha(269984665640564039457584007913129639916, 269984665640564039457584007913129639933);
+    ledger.setAlpha(
+      269984665640564039457584007913129639916,
+      269984665640564039457584007913129639933
+    );
   }
 
   function test_alpha_numeratorTooLow() public {

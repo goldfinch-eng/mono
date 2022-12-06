@@ -75,14 +75,15 @@ contract TestStakingRewards is StakingRewards {
   }
 
   function _getFiduStakingTokenMantissa() public view returns (uint256) {
-    return uint256(10)**IERC20withDec(address(stakingToken(StakedPositionType.Fidu))).decimals();
+    return uint256(10) ** IERC20withDec(address(stakingToken(StakedPositionType.Fidu))).decimals();
   }
 
   function _getCurveLPStakingTokenMantissa() public view returns (uint256) {
-    return uint256(10)**IERC20withDec(address(stakingToken(StakedPositionType.CurveLP))).decimals();
+    return
+      uint256(10) ** IERC20withDec(address(stakingToken(StakedPositionType.CurveLP))).decimals();
   }
 
   function _getRewardsTokenMantissa() public view returns (uint256) {
-    return uint256(10)**rewardsToken().decimals();
+    return uint256(10) ** rewardsToken().decimals();
   }
 }

@@ -1,12 +1,13 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import { ReactNode } from "react";
 
 import {
   Button,
   InfoIconTooltip,
   ShimmerLines,
   Link,
+  HeavyTable,
+  HeavyTableRow,
 } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
@@ -120,7 +121,7 @@ export function DealTermsTable({
       {!tranchedPool ? (
         <ShimmerLines truncateFirstLine={false} lines={8} />
       ) : (
-        <Table
+        <HeavyTable
           rows={[
             [
               "Interest Rate",
@@ -213,7 +214,7 @@ interface SecuritiesRecourseTableProps {
 export function SecuritiesRecourseTable({
   details,
 }: SecuritiesRecourseTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
   if (details?.secured) {
     rows.push(["Secured", null, details.secured === "yes" ? "Yes" : "No"]);
   }
@@ -261,7 +262,7 @@ export function SecuritiesRecourseTable({
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Securities and recourse</h2>
-      <Table rows={rows} />
+      <HeavyTable rows={rows} />
     </div>
   );
 }
@@ -275,7 +276,7 @@ export function BorrowerFinancialsTable({
   otherPools,
   borrowerFinancials,
 }: BorrowerFinancialsTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
 
   if (borrowerFinancials?.totalLoansOriginated) {
     rows.push([
@@ -364,7 +365,7 @@ export function BorrowerFinancialsTable({
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Borrower Financials</h2>
-      <Table rows={rows} />
+      <HeavyTable rows={rows} />
     </div>
   );
 }
@@ -376,7 +377,7 @@ interface UnderwritingPerformanceTableProps {
 export function UnderwritingPerformanceTable({
   details,
 }: UnderwritingPerformanceTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
   if (details?.performanceDocument) {
     rows.push([
       "Performance and loss rate",
@@ -413,36 +414,7 @@ export function UnderwritingPerformanceTable({
       <h2 className="mb-8 text-lg font-semibold">
         Underwriting &amp; Performance
       </h2>
-      <Table rows={rows} />
-    </div>
-  );
-}
-
-type TableRow = [string, string | ReactNode | null, ReactNode];
-
-function Table({ rows }: { rows: TableRow[] }) {
-  return (
-    <div className="overflow-auto">
-      <table className="w-full border-collapse border border-sand-200 text-sand-600">
-        <tbody>
-          {rows.map(([heading, tooltip, value], index) => (
-            <tr key={index} className="border border-sand-200">
-              <th
-                scope="row"
-                className="bg-sand-50 p-5 text-left align-top font-medium sm:min-w-[260px]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-sand-600">{heading}</div>
-                  {tooltip ? (
-                    <InfoIconTooltip size="sm" content={tooltip} />
-                  ) : null}
-                </div>
-              </th>
-              <td className="p-5 align-top">{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <HeavyTable rows={rows} />
     </div>
   );
 }

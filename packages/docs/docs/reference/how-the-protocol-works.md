@@ -1,7 +1,7 @@
 ---
 id: how-the-protocol-works
 title: How the Protocol Works
-sidebar_position: 2
+sidebar_position: 1
 ---
 
 As a decentralized credit protocol, the Goldfinch Protocol is a medium through which lenders and borrowers come together and exchange value across time. This guide explains how the set of smart contracts[^1] that comprise the Protocol work together to accomplish this.

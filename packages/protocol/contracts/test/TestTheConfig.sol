@@ -17,22 +17,42 @@ contract TestTheConfig {
   address public goldfinchConfigAddress = address(8);
   address public fiduUSDCCurveLPAddress = 0x55A8a39bc9694714E2874c1ce77aa1E599461E18;
   address public tranchedPoolImplementationRepositoryAddress = address(9);
+  address public withdrawalRequestTokenAddress = address(10);
 
   function validateTheEnums(address configAddress) public {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransactionLimit), 1);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit), 2);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.MaxUnderwriterLimit), 3);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 4);
-    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator), 5);
-    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays), 6);
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.WithdrawFeeDenominator),
+      5
+    );
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays),
+      6
+    );
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessMaxDays), 7);
-    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds), 8);
-    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays), 9);
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds),
+      8
+    );
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays),
+      9
+    );
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), 10);
+    GoldfinchConfig(configAddress).setNumber(
+      uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps),
+      11
+    );
 
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Fidu), fiduAddress);
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Pool), poolAddress);
-    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.CreditDesk), creditDeskAddress);
+    GoldfinchConfig(configAddress).setAddress(
+      uint256(ConfigOptions.Addresses.CreditDesk),
+      creditDeskAddress
+    );
     GoldfinchConfig(configAddress).setAddress(
       uint256(ConfigOptions.Addresses.GoldfinchFactory),
       goldfinchFactoryAddress
@@ -41,12 +61,25 @@ contract TestTheConfig {
       uint256(ConfigOptions.Addresses.TrustedForwarder),
       trustedForwarderAddress
     );
-    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.CUSDCContract), cUSDCAddress);
-    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig), goldfinchConfigAddress);
-    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.FiduUSDCCurveLP), fiduUSDCCurveLPAddress);
+    GoldfinchConfig(configAddress).setAddress(
+      uint256(ConfigOptions.Addresses.CUSDCContract),
+      cUSDCAddress
+    );
+    GoldfinchConfig(configAddress).setAddress(
+      uint256(ConfigOptions.Addresses.GoldfinchConfig),
+      goldfinchConfigAddress
+    );
+    GoldfinchConfig(configAddress).setAddress(
+      uint256(ConfigOptions.Addresses.FiduUSDCCurveLP),
+      fiduUSDCCurveLPAddress
+    );
     GoldfinchConfig(configAddress).setAddress(
       uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
       tranchedPoolImplementationRepositoryAddress
+    );
+    GoldfinchConfig(configAddress).setAddress(
+      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
+      withdrawalRequestTokenAddress
     );
 
     GoldfinchConfig(configAddress).setTreasuryReserve(treasuryReserveAddress);

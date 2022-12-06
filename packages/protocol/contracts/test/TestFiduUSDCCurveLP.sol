@@ -24,11 +24,7 @@ contract TestFiduUSDCCurveLP is
   uint256[2] private _balances = [1e18, 1e18];
   uint256 private _totalSupply = 1e18;
 
-  constructor(
-    uint256 initialSupply,
-    uint8 decimals,
-    GoldfinchConfig _config
-  ) public {
+  constructor(uint256 initialSupply, uint8 decimals, GoldfinchConfig _config) public {
     _setupDecimals(decimals);
     _mint(msg.sender, initialSupply);
     config = _config;
@@ -102,7 +98,10 @@ contract TestFiduUSDCCurveLP is
 
   /// @notice Mock remove_liquidity function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function remove_liquidity(uint256 _amount, uint256[2] memory min_amounts) public override returns (uint256) {
+  function remove_liquidity(
+    uint256 _amount,
+    uint256[2] memory min_amounts
+  ) public override returns (uint256) {
     return 0;
   }
 
@@ -118,11 +117,7 @@ contract TestFiduUSDCCurveLP is
 
   /// @notice Mock get_dy function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function get_dy(
-    uint256 i,
-    uint256 j,
-    uint256 dx
-  ) external view override returns (uint256) {
+  function get_dy(uint256 i, uint256 j, uint256 dx) external view override returns (uint256) {
     return 0;
   }
 

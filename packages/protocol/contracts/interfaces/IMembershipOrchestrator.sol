@@ -86,7 +86,9 @@ interface IMembershipOrchestrator {
    * @return eligibleAmount how much GFI is currently eligible for rewards
    * @return totalAmount how much GFI is currently eligible for rewards
    */
-  function totalGFIHeldBy(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount);
+  function totalGFIHeldBy(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount);
 
   /**
    * @notice Get all capital, denominated in USDC, in Membership held by `addr`. This returns the current
@@ -95,7 +97,9 @@ interface IMembershipOrchestrator {
    * @return eligibleAmount how much USDC of capital is currently eligible for rewards
    * @return totalAmount how much  USDC of capital is currently eligible for rewards
    */
-  function totalCapitalHeldBy(address addr) external view returns (uint256 eligibleAmount, uint256 totalAmount);
+  function totalCapitalHeldBy(
+    address addr
+  ) external view returns (uint256 eligibleAmount, uint256 totalAmount);
 
   /**
    * @notice Get the member score of `addr`
@@ -105,7 +109,9 @@ interface IMembershipOrchestrator {
    *
    * @dev if eligibleScore == totalScore then there are no changes between now and the next epoch
    */
-  function memberScoreOf(address addr) external view returns (uint256 eligibleScore, uint256 totalScore);
+  function memberScoreOf(
+    address addr
+  ) external view returns (uint256 eligibleScore, uint256 totalScore);
 
   /**
    * @notice Estimate rewards for a given epoch. For epochs at or before lastFinalizedEpoch
@@ -131,7 +137,10 @@ interface IMembershipOrchestrator {
    * @return eligibleTotal sum of all member scores that are currently eligible
    * @return nextEpochTotal sum of all member scores that will be eligible next epoch
    */
-  function totalMemberScores() external view returns (uint256 eligibleTotal, uint256 nextEpochTotal);
+  function totalMemberScores()
+    external
+    view
+    returns (uint256 eligibleTotal, uint256 nextEpochTotal);
 
   /**
    * @notice Estimate the score for an existing member, given some changes in GFI and capital

@@ -18,7 +18,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = mainnetDeployments["1"].mainnet.contracts;
+  contracts = mainnetDeployments["1"].find(
+    (i: { name: string }) => i.name === "mainnet"
+  ).contracts;
 } else if (networkName === "localhost") {
   const localDeployments = JSON.parse(
     fs
@@ -27,7 +29,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = localDeployments["31337"].localhost.contracts;
+  contracts = localDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else if (networkName === "murmuration") {
   const murmurationDeployments = JSON.parse(
     fs
@@ -39,7 +43,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = murmurationDeployments["31337"].localhost.contracts;
+  contracts = murmurationDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else {
   throw new Error(`Unrecognized network name ${networkName}`);
 }
@@ -64,6 +70,7 @@ const addresses = {
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
   BackerRewards: contracts.BackerRewards.address,
+  WithdrawalRequestToken: contracts.WithdrawalRequestToken.address,
   CurvePool:
     contracts.TestFiduUSDCCurveLP?.address ??
     "0x80aa1a80a30055daa084e599836532f3e58c95e2", // This entry refers to the contract for the Fidu/USDC Curve pool itself, not the LP token

@@ -58,6 +58,10 @@ export function getEstimatedSeniorPoolInvestment(
   tranchedPoolVersion: string,
   seniorPoolAddress: Address
 ): BigInt {
+  // Known Cauris unitranche deal
+  if (tranchedPoolAddress.toHexString() == "0x538473c3a69da2b305cf11a40cf2f3904de8db5f") {
+    return BigInt.zero()
+  }
   if (tranchedPoolVersion == VERSION_BEFORE_V2_2) {
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment
     const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(fixedLeverageRatioAddress)

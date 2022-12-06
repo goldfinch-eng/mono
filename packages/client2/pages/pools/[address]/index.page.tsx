@@ -213,6 +213,7 @@ const singleDealQuery = gql`
       defaultInterestRate
       transactionStructure {
         filename
+        fileNameOverride
         alt
         url
         mimeType

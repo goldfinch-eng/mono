@@ -34,7 +34,6 @@ type SeniorPoolStatus @entity {
   """
   id: ID!
   rawBalance: BigInt!
-  compoundBalance: BigInt!
   balance: BigInt!
   """
   The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
@@ -53,6 +52,7 @@ type SeniorPoolStatus @entity {
   estimatedApyFromGfiRaw: BigDecimal!
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
+  cancellationFee: BigDecimal!
 }
 
 type User @entity {
@@ -223,6 +223,9 @@ enum TransactionCategory {
   SENIOR_POOL_STAKE
   SENIOR_POOL_WITHDRAWAL
   SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
+  SENIOR_POOL_WITHDRAWAL_REQUEST
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST
   # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction
   # category, because UnstakedAndWithdrew and UnstakedAndWithdrewMultiple events are emitted by
   # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we
@@ -241,6 +244,7 @@ enum TransactionCategory {
   # only a single `amount` value for the transaction, so it "wants" us to do such summing. But we
   # cannot.
   SENIOR_POOL_REDEMPTION
+  SENIOR_POOL_DISTRIBUTION
   TRANCHED_POOL_DEPOSIT
   TRANCHED_POOL_WITHDRAWAL
   TRANCHED_POOL_REPAYMENT
@@ -381,4 +385,55 @@ type MembershipRewardDisbursement @entity(immutable: true) {
   epoch: BigInt! # The epoch number
   allocatedAt: Int!
   rewards: BigInt!
+}
+
+type SeniorPoolWithdrawalRequest @entity {
+  id: ID! # corresponds to the user address, since each user can only have one withdrawal request active at a time
+  tokenId: BigInt! # corresponds to the WithdrawalRequest token
+  user: User!
+  usdcWithdrawable: BigInt!
+  fiduRequested: BigInt!
+  requestedAt: Int!
+  increasedAt: Int
+  canceledAt: Int
+}
+
+type SeniorPoolWithdrawalEpoch @entity(immutable: true) {
+  id: ID!
+  epoch: BigInt! # the epoch number
+  endsAt: Int!
+  fiduRequested: BigInt!
+  fiduLiquidated: BigInt!
+  usdcAllocated: BigInt!
+}
+
+# Singleton that keeps track of all outstanding withdrawal requests
+type SeniorPoolWithdrawalRequestRoster @entity {
+  id: ID! # hard-coded to 1. This is a singleton.
+  requests: [SeniorPoolWithdrawalRequest!]!
+}
+
+type SeniorPoolWithdrawalDisbursement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  """
+  If the user has had multiple withdrawal requests submitted and fulfilled over time, it might be useful to know what tokenId this distribution was associated with.
+  """
+  tokenId: BigInt!
+  epoch: BigInt! # The epoch number. Not a reference.
+  allocatedAt: Int!
+  usdcAllocated: BigInt!
+  fiduLiquidated: BigInt!
+}
+
+"""
+This entity is created when there is no money to allocate at the end of a withdrawal epoch
+"""
+type SeniorPoolWithdrawalDisbursementPostponement @entity(immutable: true) {
+  id: ID!
+  user: User!
+  tokenId: BigInt!
+  extendedEpoch: BigInt! # The epoch that was extended
+  oldEndsAt: Int!
+  newEndsAt: Int!
 }

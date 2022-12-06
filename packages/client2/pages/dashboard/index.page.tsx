@@ -157,6 +157,10 @@ gql`
       index
       totalClaimed
     }
+    seniorPoolWithdrawalRequests(where: { user: $userId }, first: 1) {
+      id
+      fiduRequested
+    }
   }
 `;
 
@@ -234,6 +238,10 @@ export default function DashboardPage() {
         .add(data.viewer.fiduBalance?.amount ?? BigNumber.from(0))
         .add(
           data.viewer.claimableMembershipRewards?.amount ?? BigNumber.from(0)
+        )
+        .add(
+          data.seniorPoolWithdrawalRequests[0]?.fiduRequested ??
+            BigNumber.from(0)
         ),
       sharePrice
     );
@@ -502,7 +510,8 @@ export default function DashboardPage() {
                       {(data.viewer.fiduBalance &&
                         !data.viewer.fiduBalance.amount.isZero()) ||
                       data.stakedFiduPositions.length > 0 ||
-                      data.vaultedStakedPositions.length > 0 ? (
+                      data.vaultedStakedPositions.length > 0 ||
+                      data.seniorPoolWithdrawalRequests.length > 0 ? (
                         <ExpandableHoldings
                           title="Senior Pool Position"
                           tooltip="Your active investment in the Goldfinch Senior Pool, represented by the value of your FIDU token holdings. This includes FIDU held in your linked wallet and any FIDU you are staking."
@@ -543,6 +552,23 @@ export default function DashboardPage() {
                                     url: "/membership",
                                     fidu: data.viewer
                                       .claimableMembershipRewards,
+                                    sharePrice,
+                                    totalUsdc,
+                                  }),
+                                ]
+                              : []),
+                            ...(data.seniorPoolWithdrawalRequests.length > 0 &&
+                            !data.seniorPoolWithdrawalRequests[0].fiduRequested.isZero()
+                              ? [
+                                  transformFiduToHolding({
+                                    name: "Requested for withdrawal",
+                                    url: "/pools/senior",
+                                    fidu: {
+                                      token: SupportedCrypto.Fidu,
+                                      amount:
+                                        data.seniorPoolWithdrawalRequests[0]
+                                          .fiduRequested,
+                                    },
                                     sharePrice,
                                     totalUsdc,
                                   }),

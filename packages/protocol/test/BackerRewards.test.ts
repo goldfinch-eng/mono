@@ -3,7 +3,6 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
 import hre from "hardhat"
-import {CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
 import {FIDU_DECIMALS, interestAprAsBN, OWNER_ROLE, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
   CreditLineInstance,
@@ -16,8 +15,8 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
 } from "../typechain/truffle"
-import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
-import {DepositMade} from "../typechain/truffle/TranchedPool"
+import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
+import {DepositMade} from "../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {
   advanceTime,
   bigVal,
@@ -30,7 +29,6 @@ import {
   getFirstLog,
   getTruffleContractAtAddress,
   SECONDS_PER_YEAR,
-  SECONDS_PER_DAY,
   usdcVal,
   USDC_DECIMALS,
   ZERO_ADDRESS,

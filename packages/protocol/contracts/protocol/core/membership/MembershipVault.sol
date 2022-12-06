@@ -123,7 +123,9 @@ contract MembershipVault is
   }
 
   function supportsInterface(bytes4 id) external pure override returns (bool) {
-    return (id == ERCInterfaces.ERC721 || id == ERCInterfaces.ERC721_ENUMERABLE || id == ERCInterfaces.ERC165);
+    return (id == ERCInterfaces.ERC721 ||
+      id == ERCInterfaces.ERC721_ENUMERABLE ||
+      id == ERCInterfaces.ERC165);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -195,7 +197,8 @@ contract MembershipVault is
     uint256 eligibleAmount,
     uint256 nextEpochAmount
   ) external onlyOperator(Routing.Keys.MembershipDirector) returns (uint256) {
-    if (nextEpochAmount < eligibleAmount) revert InvalidHoldingsAdjustment(eligibleAmount, nextEpochAmount);
+    if (nextEpochAmount < eligibleAmount)
+      revert InvalidHoldingsAdjustment(eligibleAmount, nextEpochAmount);
 
     uint256 membershipId = _fetchOrCreateMembership(owner);
 
@@ -206,10 +209,18 @@ contract MembershipVault is
     positions[membershipId].eligibleAmount = eligibleAmount;
     positions[membershipId].nextEpochAmount = nextEpochAmount;
 
-    totalAmounts[Epochs.current()] = (totalAmounts[Epochs.current()] - position.eligibleAmount) + eligibleAmount;
-    totalAmounts[Epochs.next()] = (totalAmounts[Epochs.next()] - position.nextEpochAmount) + nextEpochAmount;
+    totalAmounts[Epochs.current()] =
+      (totalAmounts[Epochs.current()] - position.eligibleAmount) +
+      eligibleAmount;
+    totalAmounts[Epochs.next()] =
+      (totalAmounts[Epochs.next()] - position.nextEpochAmount) +
+      nextEpochAmount;
 
-    emit AdjustedHoldings({owner: owner, eligibleAmount: eligibleAmount, nextEpochAmount: nextEpochAmount});
+    emit AdjustedHoldings({
+      owner: owner,
+      eligibleAmount: eligibleAmount,
+      nextEpochAmount: nextEpochAmount
+    });
     emit VaultTotalUpdate({
       eligibleAmount: totalAmounts[Epochs.current()],
       nextEpochAmount: totalAmounts[Epochs.next()]

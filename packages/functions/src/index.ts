@@ -25,6 +25,7 @@ admin.initializeApp()
 
 export * from "./handlers/circulatingSupply"
 export * from "./handlers/poolTokenMetadata"
+export * from "./handlers/stakingRewardsTokenMetadata"
 export * from "./handlers/kycStatus"
 export * from "./handlers/signAgreement"
 export * from "./handlers/personaCallback"

@@ -24,14 +24,7 @@ abstract contract IV2CreditLine is ICreditLine {
 
   function drawdown(uint256 amount) external virtual;
 
-  function assess()
-    external
-    virtual
-    returns (
-      uint256,
-      uint256,
-      uint256
-    );
+  function assess() external virtual returns (uint256, uint256, uint256);
 
   function initialize(
     address _config,

@@ -27,11 +27,7 @@ contract ProtocolHelper is IProtocolHelper {
   Fidu internal _fidu;
   TestERC20 internal _usdc;
 
-  constructor(
-    Vm vm,
-    address gfOwner,
-    address treasury
-  ) public {
+  constructor(Vm vm, address gfOwner, address treasury) public {
     vm.startPrank(gfOwner);
 
     _usdc = new TestERC20(type(uint256).max, uint8(TestConstants.USDC_DECIMALS));

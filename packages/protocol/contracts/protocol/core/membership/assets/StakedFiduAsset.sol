@@ -29,7 +29,8 @@ library StakedFiduAsset {
    * @return true if the asset is Fidu type (not CurveLP)
    */
   function isValid(Context context, uint256 assetTokenId) internal view returns (bool) {
-    return context.stakingRewards().getPosition(assetTokenId).positionType == StakedPositionType.Fidu;
+    return
+      context.stakingRewards().getPosition(assetTokenId).positionType == StakedPositionType.Fidu;
   }
 
   /**
@@ -40,7 +41,10 @@ library StakedFiduAsset {
    * @param assetTokenId id of the position to evaluate
    * @return USDC equivalent value
    */
-  function getUsdcEquivalent(Context context, uint256 assetTokenId) internal view returns (uint256) {
+  function getUsdcEquivalent(
+    Context context,
+    uint256 assetTokenId
+  ) internal view returns (uint256) {
     uint256 stakedFiduBalance = context.stakingRewards().stakedBalanceOf(assetTokenId);
     return FiduConversions.fiduToUsdc(stakedFiduBalance, context.seniorPool().sharePrice());
   }

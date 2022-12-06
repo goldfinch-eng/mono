@@ -41,8 +41,4 @@ jobs:
 
       - name: Run tests
         working-directory: packages/protocol/
-        run: RUST_BACKTRACE=full forge test -vvv --gas-report
-
-      - name: Run snapshot
-        working-directory: packages/protocol/
-        run: forge snapshot >> $GITHUB_STEP_SUMMARY
+        run: RUST_BACKTRACE=1 forge test -vvv --gas-report

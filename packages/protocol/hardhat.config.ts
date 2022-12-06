@@ -2,6 +2,7 @@
 import "tsconfig-paths/register"
 import "@nomiclabs/hardhat-truffle5"
 import "@nomiclabs/hardhat-ethers"
+import "@nomicfoundation/hardhat-chai-matchers"
 import "hardhat-deploy"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer" // npx hardhat size-contracts

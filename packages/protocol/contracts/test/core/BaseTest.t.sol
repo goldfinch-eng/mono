@@ -14,8 +14,12 @@ abstract contract BaseTest is Test {
 
   address internal constant TREASURY = 0xE57D6a0996813AA066ab8F1328DaCaff761db5D7; // random address
 
+  struct Impersonation {
+    address sender;
+    address origin;
+  }
   // stack of active pranks
-  address[] private _pranks;
+  Impersonation[] private _pranks;
 
   IProtocolHelper internal protocol;
 
@@ -24,14 +28,19 @@ abstract contract BaseTest is Test {
   function setUp() public virtual {
     // We use deployCode and cast to an interface so that BaseTest can be used by both 0.6.x and 0.8.x test files.
     protocol = IProtocolHelper(
-      deployCode("./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json", abi.encode(vm, GF_OWNER, TREASURY))
+      deployCode(
+        "./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json",
+        abi.encode(vm, GF_OWNER, TREASURY)
+      )
     );
 
     excludeAddresses();
   }
 
   function excludeAddresses() private {
+    fuzzHelper.exclude(address(fuzzHelper));
     fuzzHelper.exclude(address(0));
+    fuzzHelper.exclude(address(protocol));
     fuzzHelper.exclude(address(protocol.usdc()));
     fuzzHelper.exclude(GF_OWNER);
     fuzzHelper.exclude(TREASURY);
@@ -54,11 +63,19 @@ abstract contract BaseTest is Test {
   /// @notice Stop the current prank and, push the `sender` prank onto the prank stack,
   /// and start the prank for `sender`
   function _startImpersonation(address sender) internal {
+    _startImpersonation(sender, address(0));
+  }
+
+  function _startImpersonation(address sender, address origin) internal {
     if (_pranks.length > 0) {
       vm.stopPrank();
     }
-    _pranks.push(sender);
-    vm.startPrank(sender);
+    _pranks.push(Impersonation(sender, origin));
+    if (origin != address(0)) {
+      vm.startPrank(sender, origin);
+    } else {
+      vm.startPrank(sender);
+    }
   }
 
   /// @notice Stop the current prank and pop it off the prank stack. If a previous
@@ -67,20 +84,43 @@ abstract contract BaseTest is Test {
     vm.stopPrank();
     _pranks.pop();
     if (_pranks.length > 0) {
-      vm.startPrank(_pranks[_pranks.length - 1]);
+      Impersonation memory impersonation = _pranks[_pranks.length - 1];
+      if (impersonation.origin != address(0)) {
+        vm.startPrank(impersonation.sender, impersonation.origin);
+      } else {
+        vm.startPrank(impersonation.sender);
+      }
     }
   }
 
-  function usdcVal(uint256 amount) internal view returns (uint256) {
-    return amount * 10**TestConstants.USDC_DECIMALS;
+  function usdcVal(uint256 amount) internal pure returns (uint256) {
+    return amount * 10 ** TestConstants.USDC_DECIMALS;
   }
 
-  function fundAddress(address addressToFund, uint256 amount) public impersonating(GF_OWNER) {
+  function thresholdUsdc() internal pure returns (uint256) {
+    // Half a cent
+    return usdcVal(1) / 200;
+  }
+
+  function fiduVal(uint256 amount) internal pure returns (uint256) {
+    return amount * 10 ** TestConstants.FIDU_DECIMALS;
+  }
+
+  function thresholdFidu() internal pure returns (uint256) {
+    // Half a cent (of fidu)
+    return fiduVal(1) / 200;
+  }
+
+  function fundAddress(address addressToFund, uint256 amount) internal impersonating(GF_OWNER) {
     protocol.usdc().transfer(addressToFund, amount);
   }
 
   function assertZero(uint256 x) internal {
     assertEq(x, 0);
+  }
+
+  function assertZero(uint256 x, string memory msg) internal {
+    assertEq(x, 0, msg);
   }
 
   modifier onlyAllowListed(address _address) {

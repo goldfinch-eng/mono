@@ -43,7 +43,11 @@ contract VersionedImplementationRepositoryTest is BaseTest {
     assertEq(address(repo.getByVersion(secondImpl.getVersion())), address(secondImpl));
   }
 
-  function testImplementationWithoutGetVersionFunctionReverts() public afterInit impersonating(owner) {
+  function testImplementationWithoutGetVersionFunctionReverts()
+    public
+    afterInit
+    impersonating(owner)
+  {
     vm.expectRevert();
     repo.append(address(invalidImpl));
 

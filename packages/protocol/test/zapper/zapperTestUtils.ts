@@ -7,8 +7,8 @@ import {
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {decodeLogs, getFirstLog} from "../testHelpers"
-import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/TranchedPool"
-import {Staked} from "../../typechain/truffle/StakingRewards"
+import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/contracts/protocol/core/TranchedPool"
+import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
 
 /**
  * Helper function to zap multiple staked positions to a tranched pool

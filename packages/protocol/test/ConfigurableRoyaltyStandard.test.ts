@@ -4,11 +4,10 @@ import {ContractDeployer} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
 import BN from "bn.js"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {expectEvent} from "@openzeppelin/test-helpers"
 const {deployments} = hre
-import {TestConfigurableRoyaltyStandard} from "../typechain/ethers/TestConfigurableRoyaltyStandard"
-import {TestConfigurableRoyaltyStandardInstance} from "../typechain/truffle/TestConfigurableRoyaltyStandard"
-import {RoyaltyParamsSet} from "../typechain/truffle/ConfigurableRoyaltyStandard"
+import {TestConfigurableRoyaltyStandard} from "../typechain/ethers/contracts/test/TestConfigurableRoyaltyStandard"
+import {TestConfigurableRoyaltyStandardInstance} from "../typechain/truffle/contracts/test/TestConfigurableRoyaltyStandard"
+import {RoyaltyParamsSet} from "../typechain/truffle/contracts/protocol/core/ConfigurableRoyaltyStandard"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [owner, anotherUser] = await web3.eth.getAccounts()

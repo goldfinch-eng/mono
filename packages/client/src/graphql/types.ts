@@ -33,7 +33,6 @@ export interface getSeniorPoolAndProviders_seniorPools_latestPoolStatus {
    */
   id: string
   rawBalance: any
-  compoundBalance: any
   balance: any
   totalShares: any
   sharePrice: any
@@ -133,7 +132,6 @@ export interface getSeniorPool_seniorPool_latestPoolStatus {
    */
   id: string
   rawBalance: any
-  compoundBalance: any
   balance: any
   totalShares: any
   sharePrice: any
