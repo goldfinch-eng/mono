@@ -483,7 +483,7 @@ export async function createPoolAndFundWithSenior(hre: HardhatRuntimeEnvironment
   const borrower = protocol_owner
   const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
 
-  const seniorAmount = new BN(usdcAmount).mul(USDC_DECIMALS)
+  const seniorAmount = new BN(usdcAmount)
   // Senior pool invests 4x the junio investment
   const juniorAmount = seniorAmount.div(new BN("4"))
 
