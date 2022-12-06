@@ -171,10 +171,17 @@ app.post("/advanceTimeNDays", async (req, res) => {
 })
 
 app.post("/setupCurrentUser", async (req, res) => {
-  const {address} = req.body
+  console.log(JSON.stringify(req.body))
+  const {address, golist = true, fund = true} = req.body
 
-  await addUserToGoList(address)
-  await fundUser(address)
+  if (golist) {
+    console.log("me golist")
+    await addUserToGoList(address)
+  }
+  if (fund) {
+    console.log("me fund")
+    await fundUser(address)
+  }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })

@@ -1,15 +1,23 @@
+import { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
-import { Button, ButtonProps, Form } from "@/components/design-system";
+import { Button, ButtonProps, Form, Tooltip } from "@/components/design-system";
 
 type AsycButtonProps = ButtonProps & {
-  onClick: () => Promise<void>;
+  onClick: () => Promise<unknown>;
+  tooltip?: ReactNode;
 };
 
-export function AsyncButton({ onClick, ...rest }: AsycButtonProps) {
+export function AsyncButton({ onClick, tooltip, ...rest }: AsycButtonProps) {
   return (
     <Form rhfMethods={useForm()} onSubmit={onClick}>
-      <Button type="submit" size="lg" {...rest} />
+      {tooltip ? (
+        <Tooltip content={tooltip}>
+          <Button type="submit" size="lg" {...rest} />
+        </Tooltip>
+      ) : (
+        <Button type="submit" size="lg" {...rest} />
+      )}
     </Form>
   );
 }

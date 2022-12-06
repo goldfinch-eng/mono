@@ -1,14 +1,16 @@
 import { format } from "date-fns";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
+import { Button, Form, Input } from "@/components/design-system";
 import { SERVER_URL } from "@/constants";
-import { getFreshProvider } from "@/lib/wallet";
+import { getFreshProvider, useWallet } from "@/lib/wallet";
 
-import { Button, Form, Input } from "../design-system";
-import { ButtonLink, Link, AsyncButton } from "./helpers";
+import { ButtonLink, AsyncButton, devserverRequest } from "./helpers";
 
 export function Home() {
+  const { account } = useWallet();
+
   const [onChainTimestamp, setOnChainTimestamp] = useState<number>();
   const refreshTimestamp = useCallback(async () => {
     // have to get a new provider every time this is called because otherwise the result for latestBlock is cached
@@ -35,21 +37,79 @@ export function Home() {
 
   return (
     <div>
-      <div className="font-bold">
-        Current on-chain time:{" "}
-        {onChainTimestamp
-          ? format(onChainTimestamp * 1000, "HH:mm:ss MMMM dd, yyyy")
-          : null}
+      <div className="space-y-6">
+        <Section title="Advance Time">
+          <div className="mb-2 font-medium">
+            Current on-chain time:{" "}
+            {onChainTimestamp
+              ? format(onChainTimestamp * 1000, "HH:mm:ss MMMM dd, yyyy")
+              : null}
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <AsyncButton onClick={() => advanceTime(1)}>1 Day</AsyncButton>
+            <AsyncButton onClick={() => advanceTime(7)}>7 Days</AsyncButton>
+            <AsyncButton onClick={() => advanceTime(14)}>14 Days</AsyncButton>
+            <InputAndButton onSubmit={(n) => advanceTime(n)} />
+          </div>
+        </Section>
+        <Section title="Setup user">
+          <div className="flex flex-wrap gap-4">
+            <AsyncButton
+              onClick={() =>
+                devserverRequest("setupCurrentUser", { address: account })
+              }
+              tooltip="You will gain 10 ETH, 250k USDC, and 250k GFI."
+              disabled={!account}
+            >
+              Fund and Golist
+            </AsyncButton>
+            <AsyncButton
+              onClick={() =>
+                devserverRequest("setupCurrentUser", {
+                  address: account,
+                  fund: true,
+                  golist: false,
+                })
+              }
+              disabled={!account}
+            >
+              Fund only
+            </AsyncButton>
+            <AsyncButton
+              onClick={() =>
+                devserverRequest("setupCurrentUser", {
+                  address: account,
+                  fund: false,
+                  golist: true,
+                })
+              }
+              disabled={!account}
+            >
+              Golist only
+            </AsyncButton>
+          </div>
+        </Section>
+        <Section title="Feature-specific tools">
+          <ButtonLink to="/membership" colorScheme="mustard">
+            Membership
+          </ButtonLink>
+        </Section>
       </div>
-      <div className="mb-2 text-xl font-bold">Advance Time</div>
-      <div className="flex flex-wrap gap-4">
-        <AsyncButton onClick={() => advanceTime(1)}>1 Day</AsyncButton>
-        <AsyncButton onClick={() => advanceTime(7)}>7 Days</AsyncButton>
-        <AsyncButton onClick={() => advanceTime(14)}>14 Days</AsyncButton>
-        <InputAndButton onSubmit={(n) => advanceTime(n)} />
-      </div>
-      <Link to="/membership">Go to membership tools</Link>
-      <ButtonLink to="/membership">Membership</ButtonLink>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-2 text-xl font-bold">{title}</div>
+      {children}
     </div>
   );
 }
