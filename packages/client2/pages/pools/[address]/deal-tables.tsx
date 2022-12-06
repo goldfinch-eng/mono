@@ -156,7 +156,7 @@ export function DealTermsTable({
               ),
             ],
             [
-              "Dealtype",
+              "Deal type",
               <div key="dealtype" className="max-w-sm">
                 <p>
                   <b>Unitranche</b> - Pool is funded by a single class of
