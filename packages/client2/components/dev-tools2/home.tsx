@@ -87,6 +87,15 @@ export function Home() {
             >
               Golist only
             </AsyncButton>
+            <AsyncButton
+              onClick={() =>
+                devserverRequest("setupForTesting", { address: account })
+              }
+              disabled={!account}
+              tooltip="This will cause you to gain USDC, become go-listed, and also become the borrower on some new tranched pools. You will not gain GFI."
+            >
+              Legacy setupForTesting
+            </AsyncButton>
           </div>
         </Section>
         <Section title="Feature-specific tools">
