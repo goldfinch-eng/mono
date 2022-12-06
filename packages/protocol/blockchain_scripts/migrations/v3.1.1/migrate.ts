@@ -35,8 +35,8 @@ export async function main() {
     },
   })
 
-  // Upgrade SeniorPool and Go - owned by Protocol Owner/Governance multisig
-  const upgradeGoldfinchGovernanceOwnedContracts = await upgrader.upgrade({contracts: ["SeniorPool", "Go"]})
+  // Upgrade Go - owned by Protocol Owner/Governance multisig
+  const upgradeGoldfinchGovernanceOwnedContracts = await upgrader.upgrade({contracts: ["Go"]})
 
   await deployEffects.add(await changeImplementations({contracts: upgradeGoldfinchGovernanceOwnedContracts}))
 
