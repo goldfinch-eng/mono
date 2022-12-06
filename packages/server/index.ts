@@ -171,15 +171,12 @@ app.post("/advanceTimeNDays", async (req, res) => {
 })
 
 app.post("/setupCurrentUser", async (req, res) => {
-  console.log(JSON.stringify(req.body))
   const {address, golist = true, fund = true} = req.body
 
   if (golist) {
-    console.log("me golist")
     await addUserToGoList(address)
   }
   if (fund) {
-    console.log("me fund")
     await fundUser(address)
   }
 

@@ -717,7 +717,6 @@ export async function fundUser(address: string) {
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     const fakeUsdcContract = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
     const gfiContract = await getDeployedAsEthersContract<Contract>(getOrNull, "GFI")
-    console.log("address", address)
     await fundFromLocalWhale(
       address,
       [
