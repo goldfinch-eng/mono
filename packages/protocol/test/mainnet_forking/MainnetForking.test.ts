@@ -338,7 +338,7 @@ describe("mainnet forking tests", async function () {
     curvePool = await artifacts.require("ICurveLP").at(curveAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     const {gf_deployer} = await getNamedAccounts()
-    fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS, stratosEoa])
+    await fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS, stratosEoa])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
@@ -362,8 +362,10 @@ describe("mainnet forking tests", async function () {
       await advanceTime({toSecond: await cl.nextDueTime()})
       await pool.assess()
 
+      const interestOwed = await cl.interestOwed()
+      await fundWithWhales(["USDC"], [owner.address])
       await impersonateAccount(hre, owner.address)
-      await usdc.approve(pool.address, await cl.interestOwed(), {from: owner.address})
+      await usdc.approve(pool.address, interestOwed, {from: owner.address})
       await pool.pay(await cl.interestOwed(), {from: owner.address})
     }
 
@@ -441,7 +443,6 @@ describe("mainnet forking tests", async function () {
       }
 
       // Addem Repayment (also advances time to payment due date)
-      fundWithWhales(["USDC"], [owner.address])
       await repayPool(1, owner)
 
       // Advance to next epoch - may not function as expected if mainnet forking block is moved forward
