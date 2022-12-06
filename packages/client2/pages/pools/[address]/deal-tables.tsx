@@ -179,7 +179,9 @@ export function DealTermsTable({
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer investments. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
               isMultitranche && tranchedPool.estimatedLeverageRatio
-                ? tranchedPool.estimatedLeverageRatio.toString()
+                ? `${tranchedPool.estimatedLeverageRatio
+                    .toUnsafeFloat()
+                    .toString()}x`
                 : "N/A",
             ],
             [
