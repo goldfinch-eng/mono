@@ -27,6 +27,11 @@ export function Home() {
     refreshTimestamp();
   }, [refreshTimestamp]);
 
+  const advanceAndRefresh = async (n: number) => {
+    await advanceTimeNDays(n);
+    await refreshTimestamp();
+  };
+
   return (
     <div>
       <div className="space-y-6">
@@ -38,14 +43,16 @@ export function Home() {
               : null}
           </div>
           <div className="flex flex-wrap gap-4">
-            <AsyncButton onClick={() => advanceTimeNDays(1)}>1 Day</AsyncButton>
-            <AsyncButton onClick={() => advanceTimeNDays(7)}>
+            <AsyncButton onClick={() => advanceAndRefresh(1)}>
+              1 Day
+            </AsyncButton>
+            <AsyncButton onClick={() => advanceAndRefresh(7)}>
               7 Days
             </AsyncButton>
-            <AsyncButton onClick={() => advanceTimeNDays(14)}>
+            <AsyncButton onClick={() => advanceAndRefresh(14)}>
               14 Days
             </AsyncButton>
-            <InputAndButton onSubmit={(n) => advanceTimeNDays(n)} />
+            <InputAndButton onSubmit={(n) => advanceAndRefresh(n)} />
           </div>
         </Section>
         <Section title="Setup user">
