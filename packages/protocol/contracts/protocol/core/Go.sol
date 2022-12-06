@@ -77,12 +77,10 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
    */
-  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes)
-    public
-    view
-    override
-    returns (bool)
-  {
+  function goOnlyIdTypes(
+    address account,
+    uint256[] memory onlyIdTypes
+  ) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
 
     if (hasRole(ZAPPER_ROLE, account)) {

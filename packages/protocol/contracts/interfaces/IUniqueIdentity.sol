@@ -11,11 +11,7 @@ interface IUniqueIdentity is IERC1155Upgradeable {
   /// @param signature An EIP-191 signature of the corresponding mint params:
   ///                  account, id, expiresAt, address(this), nonces[account], block.chainid
   ///                  from an address with the SIGNER_ROLE.
-  function mint(
-    uint256 id,
-    uint256 expiresAt,
-    bytes calldata signature
-  ) external payable;
+  function mint(uint256 id, uint256 expiresAt, bytes calldata signature) external payable;
 
   /// @notice Mint a new UniqueIdentity token to the `recipient`
   /// @param recipient The recipient address to be minted to.
@@ -38,10 +34,5 @@ interface IUniqueIdentity is IERC1155Upgradeable {
   /// @param signature An EIP-191 signature of the corresponding burn params:
   ///                  (account, id, expiresAt, address(this), nonces[account], block.chainid)
   ///                  from an address with the SIGNER_ROLE.
-  function burn(
-    address account,
-    uint256 id,
-    uint256 expiresAt,
-    bytes calldata signature
-  ) external;
+  function burn(address account, uint256 id, uint256 expiresAt, bytes calldata signature) external;
 }

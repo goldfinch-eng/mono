@@ -23,7 +23,7 @@ library Accountant {
   using FixedPoint for uint256;
 
   // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
-  uint256 private constant FP_SCALING_FACTOR = 10**18;
+  uint256 private constant FP_SCALING_FACTOR = 10 ** 18;
   uint256 private constant INTEREST_DECIMALS = 1e18;
   uint256 private constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 private constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
@@ -135,11 +135,9 @@ library Accountant {
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(ICreditLine cl)
-    public
-    view
-    returns (FixedPoint.Unsigned memory)
-  {
+  function calculateAmountOwedForOneDay(
+    ICreditLine cl
+  ) public view returns (FixedPoint.Unsigned memory) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint

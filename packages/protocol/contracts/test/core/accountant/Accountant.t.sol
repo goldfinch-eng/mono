@@ -31,7 +31,8 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   ) public returns (uint256) {
     uint256 paymentPeriodInSeconds = _paymentPeriodInDays * TestConstants.SECONDS_PER_DAY;
     uint256 totalInterestPerYear = (_balance * _interestApr) / TestConstants.INTEREST_DECIMALS;
-    uint256 result = (totalInterestPerYear * paymentPeriodInSeconds) / TestConstants.SECONDS_PER_YEAR;
+    uint256 result = (totalInterestPerYear * paymentPeriodInSeconds) /
+      TestConstants.SECONDS_PER_YEAR;
     return result;
   }
 
@@ -60,12 +61,14 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
   /// @notice When timestamp < termEndTime then interest should accrue linearly
   /// according to the elapsed time and there should be no principal accrued
-  function test_accrual_timeLtTermEndTime_linearInterest_and_noPrincipal(uint256 _timestamp)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withLateFeeApr(cl, 0)
-  {
-    _timestamp = bound(_timestamp, block.timestamp, block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY - 1);
+  function test_accrual_timeLtTermEndTime_linearInterest_and_noPrincipal(
+    uint256 _timestamp
+  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
+    _timestamp = bound(
+      _timestamp,
+      block.timestamp,
+      block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY - 1
+    );
 
     (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
@@ -73,18 +76,21 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       gracePeriodInDays
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
     assertEq(interestAccr, expectedInterest, "interestAccrued");
     assertEq(principalAccr, 0, "principalAccrued");
   }
 
   /// @notice When the timestamp >= termEndTime then interest should accrue linearly according
   /// to the elapsed time and there should be 100% of principal accrued
-  function test_accrual_timeGteTermEndTime_linearInterest_and_allPrincipal(uint256 _timestamp)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withLateFeeApr(cl, 0)
-  {
+  function test_accrual_timeGteTermEndTime_linearInterest_and_allPrincipal(
+    uint256 _timestamp
+  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
     _timestamp = bound(
       _timestamp,
       block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY,
@@ -97,7 +103,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       gracePeriodInDays
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
     assertEq(interestAccr, expectedInterest, "interestAccrued");
     assertEq(principalAccr, cl.balance(), "principalAccrued");
   }
@@ -105,7 +116,9 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// @notice If we are before the termEndTime and the timestamp is on the
   /// interval[nextDueTime, nextDueTime + gracePeriod] then we should not be
   /// charged any late fees
-  function test_accrual_timeWithinGracePeriod_noLateFees(uint256 _timestamp)
+  function test_accrual_timeWithinGracePeriod_noLateFees(
+    uint256 _timestamp
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
@@ -121,14 +134,21 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
     assertEq(interestAccr, expectedInterest, "interestAccrued");
     assertEq(principalAccr, 0, "principalAccrued");
   }
 
   /// @notice If we are before the termEndtime but the timestamp is after nextDueTime + gracePeriod
   /// then we should be charged late fees on the seconds elapsed between [nextDueTime + gracePeriod, timestamp]
-  function test_accrual_timeAfterGracePeriod_hasLateFees(uint256 _timestamp)
+  function test_accrual_timeAfterGracePeriod_hasLateFees(
+    uint256 _timestamp
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
@@ -144,7 +164,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
     uint256 expectedLateFee = getInterestAccrued(
       nextDueTime + lateFeeGracePeriod,
       _timestamp,
@@ -158,7 +183,9 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
   /// @notice If we are past the termEndTime but within the lateFeeApr grace period then late fees
   /// do not apply
-  function test_lateFeeGracePeriod_still_applies_after_termEndTime(uint256 _timestamp)
+  function test_lateFeeGracePeriod_still_applies_after_termEndTime(
+    uint256 _timestamp
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
@@ -173,7 +200,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
 
     assertEq(interestAccr, expectedInterest, "no late fees");
     assertEq(principalAccr, cl.balance(), "principalAccrued includes balance");
@@ -181,7 +213,9 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
   /// @notice When it comes to the lateFeeApr grace period, termEndTime should not be any different than a due time
   /// in the middle of the loan
-  function test_interestLateFee_applies_after_grace_period_when_nextDueTime_is_termEndTime(uint256 _timestamp)
+  function test_interestLateFee_applies_after_grace_period_when_nextDueTime_is_termEndTime(
+    uint256 _timestamp
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
@@ -196,7 +230,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
     );
 
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedInterest = getInterestAccrued(
+      cl.interestAccruedAsOf(),
+      _timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
     uint256 expectedLateFee = getInterestAccrued(
       cl.termEndTime() + lateFeeGracePeriod,
       _timestamp,
@@ -208,27 +247,27 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   }
 
   /// @notice Late fee should kick in based on my nextDueTime and not be affected by my lastFullPaymentTime
-  function test_lateFeeStart_unchanged_on_lastFullPaymentTime_change(uint256 _timestamp)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
-  {
+  function test_lateFeeStart_unchanged_on_lastFullPaymentTime_change(
+    uint256 _timestamp
+  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, lateFeeApr) {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
     _timestamp = bound(_timestamp, nextDueTime + lateFeeGracePeriod, cl.termEndTime());
 
-    (uint256 interestAccr1, uint256 principalAccr1) = Accountant.calculateInterestAndPrincipalAccrued(
-      cl,
-      _timestamp,
-      lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
-    );
+    (uint256 interestAccr1, uint256 principalAccr1) = Accountant
+      .calculateInterestAndPrincipalAccrued(
+        cl,
+        _timestamp,
+        lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
+      );
 
     cl.setLastFullPaymentTime(block.timestamp);
-    (uint256 interestAccr2, uint256 principalAccr2) = Accountant.calculateInterestAndPrincipalAccrued(
-      cl,
-      _timestamp,
-      lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
-    );
+    (uint256 interestAccr2, uint256 principalAccr2) = Accountant
+      .calculateInterestAndPrincipalAccrued(
+        cl,
+        _timestamp,
+        lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
+      );
 
     assertEq(interestAccr1, interestAccr2, "accrued interest should be unchanged");
     assertEq(principalAccr1, principalAccr2, "accrued principal should be unchanged");
@@ -262,12 +301,20 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     );
 
     assertEq(writedownPercent, 50, "writedownPercent should be 50%");
-    assertApproxEqAbs(writedownAmount, cl.balance() / 2, TOLERANCE, "writedownAmount should be half the balance");
+    assertApproxEqAbs(
+      writedownAmount,
+      cl.balance() / 2,
+      TOLERANCE,
+      "writedownAmount should be half the balance"
+    );
   }
 
   /// @notice If we are past termEndTime, owe interest and/or balance, and before the grace period,
   /// then the principal should not be written down
-  function test_zeroWritedown_within_gracePeriod(uint256 gracePeriodInDays, uint256 daysOfInterestOwed)
+  function test_zeroWritedown_within_gracePeriod(
+    uint256 gracePeriodInDays,
+    uint256 daysOfInterestOwed
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withPaymentPeriodInDays(cl, 30)
@@ -277,7 +324,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     gracePeriodInDays = bound(gracePeriodInDays, 7, 90);
     daysOfInterestOwed = bound(daysOfInterestOwed, 0, gracePeriodInDays);
     cl.setInterestOwed(
-      getInterestAccrued(0, daysOfInterestOwed * TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
+      getInterestAccrued(
+        0,
+        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+        cl.balance(),
+        cl.interestApr()
+      )
     );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
@@ -297,7 +349,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 gracePeriodInDays,
     uint256 maxDaysLate,
     uint256 daysOfInterestOwed
-  ) public withMsgSender(PROTOCOL_OWNER) withPaymentPeriodInDays(cl, 30) withTermEndTime(cl, block.timestamp) {
+  )
+    public
+    withMsgSender(PROTOCOL_OWNER)
+    withPaymentPeriodInDays(cl, 30)
+    withTermEndTime(cl, block.timestamp)
+  {
     // Set gracePeriodInDays within reasonable bounds
     gracePeriodInDays = bound(gracePeriodInDays, 7, 90);
     // Set maxDaysLate within reasonable bounds (but must be greater than or equal to grace period in days)
@@ -305,7 +362,12 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     // days of interest owed should exceed the gracePeriodInDays
     daysOfInterestOwed = bound(daysOfInterestOwed, gracePeriodInDays + 1, maxDaysLate);
     cl.setInterestOwed(
-      getInterestAccrued(0, daysOfInterestOwed * TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
+      getInterestAccrued(
+        0,
+        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+        cl.balance(),
+        cl.interestApr()
+      )
     );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
@@ -315,14 +377,21 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       maxDaysLate
     );
 
-    FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(cl, gracePeriodInDays, maxDaysLate);
+    FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(
+      cl,
+      gracePeriodInDays,
+      maxDaysLate
+    );
     assertEq(
       writedownPercent,
-      expectedWritedownPercent.mul(100).div(10**18).rawValue,
+      expectedWritedownPercent.mul(100).div(10 ** 18).rawValue,
       "writedown percent should be proportional"
     );
 
-    uint256 expectedWritedownAmount = expectedWritedownPercent.mul(cl.balance()).div(10**18).rawValue;
+    uint256 expectedWritedownAmount = expectedWritedownPercent
+      .mul(cl.balance())
+      .div(10 ** 18)
+      .rawValue;
     assertEq(writedownAmount, expectedWritedownAmount, "writedown amount should be proportional");
   }
 
@@ -332,12 +401,24 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 gracePeriodInDays,
     uint256 maxDaysLate,
     uint256 daysOfInterestOwed
-  ) public withMsgSender(PROTOCOL_OWNER) withPaymentPeriodInDays(cl, 30) withTermEndTime(cl, block.timestamp) {
+  )
+    public
+    withMsgSender(PROTOCOL_OWNER)
+    withPaymentPeriodInDays(cl, 30)
+    withTermEndTime(cl, block.timestamp)
+  {
     gracePeriodInDays = bound(gracePeriodInDays, 7, 90);
     maxDaysLate = bound(maxDaysLate, gracePeriodInDays, 120);
-    vm.assume(daysOfInterestOwed > gracePeriodInDays + maxDaysLate && daysOfInterestOwed <= 10000000000);
+    vm.assume(
+      daysOfInterestOwed > gracePeriodInDays + maxDaysLate && daysOfInterestOwed <= 10000000000
+    );
     cl.setInterestOwed(
-      getInterestAccrued(0, daysOfInterestOwed * TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
+      getInterestAccrued(
+        0,
+        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+        cl.balance(),
+        cl.interestApr()
+      )
     );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
@@ -353,12 +434,9 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
   /// @notice If there is no balance on the credit line then nothing should be written down,
   /// even if there is interest/principal owed
-  function test_if_zero_balance_then_zero_writedown(uint256 daysOfInterestOwed)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withBalance(cl, 0)
-    withTermEndTime(cl, block.timestamp)
-  {
+  function test_if_zero_balance_then_zero_writedown(
+    uint256 daysOfInterestOwed
+  ) public withMsgSender(PROTOCOL_OWNER) withBalance(cl, 0) withTermEndTime(cl, block.timestamp) {
     uint256 gracePeriodInDays = 15;
     uint256 maxDaysLate = 40;
     vm.assume(daysOfInterestOwed > gracePeriodInDays && daysOfInterestOwed <= 500);
@@ -379,7 +457,10 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     public
     withMsgSender(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
-    withInterestOwed(cl, getInterestAccrued(0, TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr()))
+    withInterestOwed(
+      cl,
+      getInterestAccrued(0, TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
+    )
   {
     skip(block.timestamp + (paymentPeriodInDays * TestConstants.SECONDS_PER_DAY) / 2);
     uint256 gracePeriodInDays = 30;
@@ -392,8 +473,16 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       maxDaysLate
     );
 
-    assertEq(writedownPercent, 0, "writedown percent should be 0 within grace period after termEndTime");
-    assertEq(writedownAmount, 0, "writedown amount should be 0 within grace period after termEndTime");
+    assertEq(
+      writedownPercent,
+      0,
+      "writedown percent should be 0 within grace period after termEndTime"
+    );
+    assertEq(
+      writedownAmount,
+      0,
+      "writedown amount should be 0 within grace period after termEndTime"
+    );
   }
 
   /// @notice Crossing the termEndTime should not be a significant event, in that the writedown is computed
@@ -404,7 +493,10 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     withBalance(cl, usdcVal(10))
     withTermEndTime(cl, block.timestamp + 2)
     withInterestApr(cl, 30000000000000000)
-    withInterestOwed(cl, interestOwedForOnePeriod(usdcVal(10), 30000000000000000, paymentPeriodInDays) * 2)
+    withInterestOwed(
+      cl,
+      interestOwedForOnePeriod(usdcVal(10), 30000000000000000, paymentPeriodInDays) * 2
+    )
   {
     uint256 gracePeriodInDays = 30;
     uint256 maxDaysLate = 120;
@@ -441,13 +533,20 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
 
   /// @notice We should have proportional writedowns after termEndTime, same as before. The
   /// main difference here is that daysLate will include the seconds elapsed after termEndTime.
-  function test_writedown_past_termEndTime_uses_timestamp_to_writedown_linearly(uint256 daysAfterTermEndTime)
+  function test_writedown_past_termEndTime_uses_timestamp_to_writedown_linearly(
+    uint256 daysAfterTermEndTime
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
     withInterestOwed(
       cl,
-      getInterestAccrued(0, paymentPeriodInDays * TestConstants.SECONDS_PER_DAY + 10, cl.balance(), cl.interestApr())
+      getInterestAccrued(
+        0,
+        paymentPeriodInDays * TestConstants.SECONDS_PER_DAY + 10,
+        cl.balance(),
+        cl.interestApr()
+      )
     )
   {
     uint256 gracePeriodInDays = 30;
@@ -467,26 +566,40 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       maxDaysLate
     );
 
-    FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(cl, gracePeriodInDays, maxDaysLate);
+    FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(
+      cl,
+      gracePeriodInDays,
+      maxDaysLate
+    );
     assertEq(
       writedownPercent,
-      expectedWritedownPercent.mul(100).div(10**18).rawValue,
+      expectedWritedownPercent.mul(100).div(10 ** 18).rawValue,
       "writedownPercent should be proportional"
     );
 
-    uint256 expectedWritedownAmount = expectedWritedownPercent.mul(cl.balance()).div(10**18).rawValue;
+    uint256 expectedWritedownAmount = expectedWritedownPercent
+      .mul(cl.balance())
+      .div(10 ** 18)
+      .rawValue;
     assertEq(writedownAmount, expectedWritedownAmount, "writedownAmount should be proportional");
   }
 
   /// @notice Just like before termEndTime, the writedown percent should not exceed 100% under
   /// any circumstances
-  function test_writedown_past_termEndTime_caps_at_100(uint256 daysAfterTermEndTime)
+  function test_writedown_past_termEndTime_caps_at_100(
+    uint256 daysAfterTermEndTime
+  )
     public
     withMsgSender(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
     withInterestOwed(
       cl,
-      getInterestAccrued(0, paymentPeriodInDays * TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
+      getInterestAccrued(
+        0,
+        paymentPeriodInDays * TestConstants.SECONDS_PER_DAY,
+        cl.balance(),
+        cl.interestApr()
+      )
     )
   {
     uint256 gracePeriodInDays = 30;
@@ -506,12 +619,9 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   }
 
   /// @notice Past termEndTime nothing should be written down if the credit line has no balance
-  function test_no_writedown_for_zero_balance_past_termEndTime(uint256 daysAfterTermEndTime)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withTermEndTime(cl, block.timestamp)
-    withBalance(cl, 0)
-  {
+  function test_no_writedown_for_zero_balance_past_termEndTime(
+    uint256 daysAfterTermEndTime
+  ) public withMsgSender(PROTOCOL_OWNER) withTermEndTime(cl, block.timestamp) withBalance(cl, 0) {
     uint256 gracePeriodInDays = 30;
     uint256 maxDaysLate = 120;
     daysAfterTermEndTime = bound(daysAfterTermEndTime, gracePeriodInDays, 500);
@@ -602,6 +712,10 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 expectedAdditionalBalancePayment = remainingBalance < remainingPayment
       ? remainingBalance
       : remainingPayment;
-    assertEq(pa.additionalBalancePayment, expectedAdditionalBalancePayment, "Repaid additional balance");
+    assertEq(
+      pa.additionalBalancePayment,
+      expectedAdditionalBalancePayment,
+      "Repaid additional balance"
+    );
   }
 }

@@ -12,7 +12,7 @@ import {TestConstants} from "../../core/TestConstants.sol";
 contract AccountantTestHelpers {
   using FixedPoint for FixedPoint.Unsigned;
 
-  uint256 internal TOLERANCE = 10**TestConstants.USDC_DECIMALS / 1000; // $0.001
+  uint256 internal TOLERANCE = 10 ** TestConstants.USDC_DECIMALS / 1000; // $0.001
 
   function getInterestAccrued(
     uint256 start,
@@ -35,12 +35,18 @@ contract AccountantTestHelpers {
 
     FixedPoint.Unsigned memory amountOwedForOneDay = Accountant.calculateAmountOwedForOneDay(cl);
     uint256 totalOwed = cl.interestOwed() + cl.principalOwed();
-    FixedPoint.Unsigned memory fpDaysLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedForOneDay);
+    FixedPoint.Unsigned memory fpDaysLate = FixedPoint.fromUnscaledUint(totalOwed).div(
+      amountOwedForOneDay
+    );
     if (block.timestamp > cl.termEndTime()) {
       uint256 secondsLate = block.timestamp - cl.termEndTime();
-      fpDaysLate = fpDaysLate.add(FixedPoint.fromUnscaledUint(secondsLate).div(TestConstants.SECONDS_PER_DAY));
+      fpDaysLate = fpDaysLate.add(
+        FixedPoint.fromUnscaledUint(secondsLate).div(TestConstants.SECONDS_PER_DAY)
+      );
     }
-    FixedPoint.Unsigned memory expectedWritedownPercent = fpDaysLate.sub(fpGracePeriod).div(fpMaxDaysLate);
+    FixedPoint.Unsigned memory expectedWritedownPercent = fpDaysLate.sub(fpGracePeriod).div(
+      fpMaxDaysLate
+    );
     return expectedWritedownPercent;
   }
 
