@@ -10585,7 +10585,7 @@
           ]
         },
         "CreditLine": {
-          "address": "0x4Df1e7fFB382F79736CA565F378F783678d995D8",
+          "address": "0xA19c6586C600dc714B011b28EB466191349aDc24",
           "abi": [
             {
               "anonymous": false,
@@ -11422,13 +11422,6 @@
             {
               "inputs": [],
               "name": "unpause",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "updateGoldfinchConfig",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -16961,6 +16954,19 @@
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "getAllIdTypes",
+              "outputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "",
+                  "type": "uint256[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "bytes32",
@@ -17292,13 +17298,6 @@
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "updateGoldfinchConfig",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -17444,7 +17443,7 @@
           ]
         },
         "Go_Implementation": {
-          "address": "0x6E1aa379f612AE2D44378021Ad5bAf7f60977C24",
+          "address": "0x9789114F9516E1CD2a41FDa5E9c17E984d31A22E",
           "abi": [
             {
               "anonymous": false,
@@ -17789,6 +17788,19 @@
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "getAllIdTypes",
+              "outputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "",
+                  "type": "uint256[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "bytes32",
@@ -18115,13 +18127,6 @@
             {
               "inputs": [],
               "name": "unpause",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "updateGoldfinchConfig",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
