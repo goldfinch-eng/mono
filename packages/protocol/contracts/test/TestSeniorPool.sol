@@ -50,4 +50,8 @@ contract TestSeniorPool is SeniorPool {
   function _usdcAvailableRaw() external view returns (uint256) {
     return _usdcAvailable;
   }
+
+  function setUsdcAvailable(uint256 newUsdcAvailable) external {
+    _usdcAvailable = newUsdcAvailable;
+  }
 }
