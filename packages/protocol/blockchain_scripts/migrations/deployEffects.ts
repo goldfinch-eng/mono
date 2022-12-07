@@ -411,6 +411,12 @@ export async function getDeployEffects(params?: {
   } else {
     const chainId = await hre.getChainId()
     assertIsChainId(chainId)
-    return new DefenderMultisendEffects({chainId, via, title: params?.title, description: params?.description})
+    return new DefenderMultisendEffects({
+      chainId,
+      via,
+      title: params?.title,
+      description: params?.description,
+      safeConfig,
+    })
   }
 }

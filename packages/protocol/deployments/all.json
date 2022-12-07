@@ -548,7 +548,7 @@
           ]
         },
         "Accountant": {
-          "address": "0xf0F8d382a4e1e2F26891B1a95f9Dcb89406bd4A1",
+          "address": "0x76ee6B1Db228E09aF70B86800c31f8Bd52794045",
           "abi": [
             {
               "inputs": [
@@ -885,35 +885,6 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "contract CreditLine",
-                  "name": "cl",
-                  "type": "CreditLine"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "timestamp",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "gracePeriodInDays",
-                  "type": "uint256"
-                }
-              ],
-              "name": "lateFeeApplicable",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -43204,6 +43175,34 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "recipient",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "expiresAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "signature",
+                  "type": "bytes"
+                }
+              ],
+              "name": "mintTo",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "name",
               "outputs": [
@@ -43610,7 +43609,7 @@
           ]
         },
         "UniqueIdentity_Implementation": {
-          "address": "0xf265eAc216c240f703462981fC4c09411630771f",
+          "address": "0x3d62AE39d4B14554F8257ed5C82377c35F454dE0",
           "abi": [
             {
               "anonymous": false,
@@ -44293,6 +44292,34 @@
                 }
               ],
               "name": "mint",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "recipient",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "expiresAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "signature",
+                  "type": "bytes"
+                }
+              ],
+              "name": "mintTo",
               "outputs": [],
               "stateMutability": "payable",
               "type": "function"
@@ -48457,13 +48484,6 @@
           ]
         }
       }
-    }
-  ],
-  "31337": [
-    {
-      "name": "hardhat",
-      "chainId": "31337",
-      "contracts": {}
     }
   ]
 }
