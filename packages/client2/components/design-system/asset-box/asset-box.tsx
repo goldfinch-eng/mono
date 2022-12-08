@@ -8,7 +8,6 @@ import {
   Shimmer,
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 
 export interface Asset {
   name: ReactNode;

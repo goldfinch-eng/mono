@@ -7,11 +7,7 @@ import {
   CURVE_LP_DECIMALS,
 } from "@/constants";
 
-import {
-  CryptoAmount,
-  FiatAmount,
-  SupportedCrypto,
-} from "../graphql/generated";
+import { FiatAmount, SupportedCrypto } from "../graphql/generated";
 
 export function formatFiat(
   fiatAmount: FiatAmount,

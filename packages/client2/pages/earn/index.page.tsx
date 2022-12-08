@@ -42,10 +42,7 @@ gql`
       }
     }
     viewer @client {
-      fiduBalance {
-        token
-        amount
-      }
+      fiduBalance
     }
   }
 `;

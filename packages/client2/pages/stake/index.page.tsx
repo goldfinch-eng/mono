@@ -72,18 +72,9 @@ gql`
       }
     }
     viewer @client {
-      usdcBalance {
-        token
-        amount
-      }
-      fiduBalance {
-        token
-        amount
-      }
-      curveLpBalance {
-        token
-        amount
-      }
+      usdcBalance
+      fiduBalance
+      curveLpBalance
     }
     curvePool @client {
       estimatedCurveStakingApyRaw

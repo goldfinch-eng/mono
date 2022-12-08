@@ -76,10 +76,7 @@ gql`
       }
     }
     viewer @client {
-      fiduBalance {
-        token
-        amount
-      }
+      fiduBalance
     }
     seniorPoolWithdrawalRequests(where: { user: $user }) {
       ...SeniorPoolWithdrawalPanelWithdrawalRequestFields

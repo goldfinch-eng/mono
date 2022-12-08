@@ -10,7 +10,6 @@ import { FIDU_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   ChartDisbursementFieldsFragment,
-  CryptoAmount,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { epochFinalizedDate } from "@/lib/membership";

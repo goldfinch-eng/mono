@@ -62,6 +62,7 @@ module.exports = {
           BigInt: "TheGraph_BigInt",
           BigDecimal: "TheGraph_BigDecimal",
           Bytes: "string",
+          CryptoAmount: "CryptoAmount",
         },
       },
     },

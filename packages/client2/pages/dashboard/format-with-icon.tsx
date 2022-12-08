@@ -1,6 +1,6 @@
 import { Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
+import { SupportedCrypto } from "@/lib/graphql/generated";
 import { assertUnreachable } from "@/lib/utils";
 
 /**

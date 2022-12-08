@@ -11,7 +11,6 @@ import { getProvider } from "@/lib/wallet";
 import {
   Viewer,
   SupportedCrypto,
-  CryptoAmount,
   IndirectGfiGrant,
   DirectGfiGrant,
 } from "../generated";
@@ -37,7 +36,7 @@ async function erc20Balance(
       provider,
     });
     const balance = await contract.balanceOf(account);
-    return { __typename: "CryptoAmount", token, amount: balance };
+    return { token, amount: balance };
   } catch (e) {
     // This will execute if getAddress() above throws (which happens when a user wallet isn't connected)
     return null;
@@ -128,7 +127,6 @@ export const viewerResolvers: Resolvers[string] = {
         account
       );
       return {
-        __typename: "CryptoAmount",
         token: SupportedCrypto.Fidu,
         amount: availableRewards,
       };

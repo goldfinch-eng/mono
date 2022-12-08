@@ -72,22 +72,10 @@ gql`
       }
     }
     viewer @client(always: true) {
-      gfiBalance {
-        token
-        amount
-      }
-      fiduBalance {
-        token
-        amount
-      }
-      claimableMembershipRewards {
-        token
-        amount
-      }
-      accruedMembershipRewardsThisEpoch {
-        token
-        amount
-      }
+      gfiBalance
+      fiduBalance
+      claimableMembershipRewards
+      accruedMembershipRewardsThisEpoch
     }
     gfiPrice(fiat: USD) @client {
       price {

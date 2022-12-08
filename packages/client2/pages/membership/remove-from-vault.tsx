@@ -20,7 +20,6 @@ import {
   VaultedGfiFieldsFragment,
   VaultedStakedPositionFieldsFragment,
   VaultedPoolTokenFieldsFragment,
-  CryptoAmount,
 } from "@/lib/graphql/generated";
 import {
   calculateNewMonthlyMembershipReward,
