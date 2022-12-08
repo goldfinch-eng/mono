@@ -83,7 +83,10 @@ export function StatusCheckStep() {
   }, [account, provider, setSignature, goToStep, apolloClient]);
 
   return (
-    <div className="flex h-full w-full grow items-center justify-center text-center">
+    <div
+      className="flex h-full w-full grow items-center justify-center text-center"
+      data-id="status-check-step"
+    >
       <div>
         <Spinner className="m-auto mb-8 block !h-16 !w-16" />
         <div>

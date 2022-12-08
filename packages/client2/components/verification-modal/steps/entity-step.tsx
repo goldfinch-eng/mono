@@ -13,7 +13,7 @@ export function EntityStep() {
       heading="Who are you participating on behalf of?"
       headingClassName="w-full"
     >
-      <div className="flex h-full flex-col gap-3">
+      <div className="flex h-full flex-col gap-3" data-id="entity-step">
         <BigButton
           selected={entity === "entity"}
           onClick={() => {

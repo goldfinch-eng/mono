@@ -34,6 +34,7 @@ export function WalletButton() {
         className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
         variant="rounded"
         colorScheme="secondary"
+        data-id="wallet-connected"
       >
         <span className="hidden md:block">
           {account.substring(0, 6)}...{account.substring(account.length - 4)}
@@ -47,6 +48,7 @@ export function WalletButton() {
       variant="rounded"
       colorScheme="primary"
       onClick={openWalletModal}
+      data-id="connect-wallet"
     >
       Connect Wallet
     </Button>

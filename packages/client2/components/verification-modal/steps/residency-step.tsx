@@ -13,7 +13,7 @@ export function ResidencyStep() {
       heading="Where is your permanent residence?"
       headingTooltip="Your eligibility to participate in certain Goldfinch protocol activities depends on your country of permanent residence, not where you have citizenship or temporary residence."
     >
-      <div className="flex h-full flex-col gap-3">
+      <div className="flex h-full flex-col gap-3" data-id="residency-step">
         <BigButton
           selected={residency === "non-us"}
           onClick={() => {

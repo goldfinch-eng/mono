@@ -10,7 +10,7 @@ export function PendingStep() {
       includePrivacyStatement={false}
       footer={<ExitFlowButton>Finish</ExitFlowButton>}
     >
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center" data-id="pending-step">
         <Image
           src={clock}
           width={110}

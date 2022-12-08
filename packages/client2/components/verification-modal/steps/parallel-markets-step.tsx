@@ -37,7 +37,10 @@ export function ParallelMarketsStep() {
         </>
       }
     >
-      <div className="flex flex-col items-center">
+      <div
+        className="flex flex-col items-center"
+        data-id="parallel-markets-step"
+      >
         <Image
           src={parallelMarketsLogo}
           width={110}

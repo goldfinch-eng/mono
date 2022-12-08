@@ -18,6 +18,7 @@ export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
     >
       <div
         style={{ minHeight: "400px", display: "flex", flexDirection: "column" }}
+        data-id="verification-modal"
       >
         <Flow />
       </div>
