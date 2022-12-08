@@ -147,10 +147,16 @@ module.exports = {
           "0%": { transform: "translateX(0%)" },
           "100%": { transform: "translateX(-100%)" },
         },
+        twinkle: {
+          "0%": { transform: "scale(0) rotate(0deg)" },
+          "50%": { transform: "scale(1) rotate(180deg)" },
+          "100%": { transform: "scale(0) rotate(359deg)" },
+        },
       },
       animation: {
         "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
         marquee: "marquee 60s linear infinite",
+        twinkle: "twinkle 1s",
       },
       backgroundImage: {
         "midnight-01": "linear-gradient(180deg, #626A9B 0%, #222749 100%)",

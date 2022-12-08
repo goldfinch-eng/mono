@@ -151,11 +151,34 @@ app.post("/advanceTimeThirtyDays", async (req, res) => {
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
-app.post("/setupCurrentUser", async (req, res) => {
-  const {address} = req.body
+app.post("/advanceTimeNDays", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "advanceTimeThirtyDays only available on local and murmuration"})
+  }
+  const n = req.body.n
+  if (!n || typeof n !== "number") {
+    return res.status(400).send({message: "Must provide parameter `n` (number)"})
+  }
 
-  await addUserToGoList(address)
-  await fundUser(address)
+  try {
+    await advanceTime({days: n})
+    await mineBlock()
+  } catch (e) {
+    return res.status(500).send({message: "advanceTimeNDays error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/setupCurrentUser", async (req, res) => {
+  const {address, golist = true, fund = true} = req.body
+
+  if (golist) {
+    await addUserToGoList(address)
+  }
+  if (fund) {
+    await fundUser(address)
+  }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })

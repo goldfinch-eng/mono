@@ -108,9 +108,7 @@ export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string
 
   const protocolFee = BigDecimal.fromString("0.1")
   const leverageRatio = tranchedPool.estimatedLeverageRatio
-  const seniorFraction = leverageRatio
-    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
-    : ONE.toBigDecimal()
+  const seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
   const seniorBalance = creditLine.balance.toBigDecimal().times(seniorFraction)
   const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
   const isV1Pool = tranchedPool.isV1StyleDeal
@@ -147,10 +145,10 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
-  let seniorFraction = leverageRatio
-    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
-    : ONE.toBigDecimal()
-  let juniorFraction = leverageRatio ? ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ZERO.toBigDecimal()
+  let seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
+  let juniorFraction = leverageRatio
+    ? ONE.toBigDecimal().div(ONE.toBigDecimal().plus(leverageRatio))
+    : ZERO.toBigDecimal()
   let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
   let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
   let reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)

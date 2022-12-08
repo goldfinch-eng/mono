@@ -126,8 +126,13 @@ export default function SupplyPanel({
     isUnitrancheDeal || !estimatedLeverageRatio
       ? maxLimit.sub(juniorDeposited)
       : maxLimit
-          .sub(juniorDeposited.mul(estimatedLeverageRatio.add(1)))
-          .div(estimatedLeverageRatio.add(1));
+          .sub(
+            juniorDeposited.mul(
+              utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1)
+            )
+          )
+          .div(utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1));
+
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
       return;
