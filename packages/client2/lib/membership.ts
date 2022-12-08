@@ -2,7 +2,6 @@ import type { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
 import { getContract } from "./contracts";
-import { SupportedCrypto } from "./graphql/generated";
 
 export const MEMBERSHIP_EPOCH_MS = 604800000;
 
@@ -59,11 +58,11 @@ export async function calculateNewMonthlyMembershipReward(
 
   return {
     newMonthlyReward: {
-      token: SupportedCrypto.Fidu,
+      token: "FIDU",
       amount: newMonthlyReward,
     },
     diff: {
-      token: SupportedCrypto.Fidu,
+      token: "FIDU",
       amount: newMonthlyReward.sub(oldMonthlyReward),
     },
   };

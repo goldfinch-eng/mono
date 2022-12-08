@@ -18,10 +18,8 @@ import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
-  SupportedFiat,
   SupplyPanelTranchedPoolFieldsFragment,
   SupplyPanelUserFieldsFragment,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
@@ -345,7 +343,7 @@ export default function SupplyPanel({
                 <span className="mr-2">
                   {supplyValue
                     ? formatFiat({
-                        symbol: SupportedFiat.Usd,
+                        symbol: "USD",
                         amount:
                           parseFloat(supplyValue) *
                           estimatedJuniorApy.toUnsafeFloat(),
@@ -365,7 +363,7 @@ export default function SupplyPanel({
                 <span className="mr-2">
                   {supplyValue
                     ? formatFiat({
-                        symbol: SupportedFiat.Usd,
+                        symbol: "USD",
                         amount:
                           parseFloat(supplyValue) *
                           totalApyFromGfi.toUnsafeFloat(),
@@ -441,7 +439,7 @@ export default function SupplyPanel({
               <span className="text-xs">
                 Balance:{" "}
                 {formatCrypto(
-                  { token: SupportedCrypto.Usdc, amount: availableBalance },
+                  { token: "USDC", amount: availableBalance },
                   { includeToken: true }
                 )}
               </span>

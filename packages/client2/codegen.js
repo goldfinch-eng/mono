@@ -64,6 +64,7 @@ module.exports = {
           Bytes: "string",
           CryptoAmount: "CryptoAmount",
         },
+        enumsAsTypes: true,
       },
     },
     "lib/graphql/schema.json": {

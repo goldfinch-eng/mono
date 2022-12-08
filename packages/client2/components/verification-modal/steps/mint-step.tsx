@@ -7,11 +7,7 @@ import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { usePoller } from "@/lib/utils";
-import {
-  fetchUniqueIdentitySigner,
-  getUIDLabelFromType,
-  UIDType,
-} from "@/lib/verify";
+import { fetchUniqueIdentitySigner, getUIDLabelFromType } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 import { ExitFlowButton } from "../exit-flow-button";
@@ -166,8 +162,7 @@ export function MintStep() {
                   {getUIDLabelFromType(mintingParameters.id)}
                 </div>
                 <div className="mb-5 text-sm text-sand-500">
-                  {mintingParameters.id ===
-                  UIDType.USNonAccreditedIndividual ? (
+                  {mintingParameters.id === 2 ? (
                     <div className="flex items-center justify-center gap-1">
                       Limited participation{" "}
                       <InfoIconTooltip

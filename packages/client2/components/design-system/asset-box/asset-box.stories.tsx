@@ -3,7 +3,6 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import { SupportedCrypto } from "@/lib/graphql/generated";
 
 import { Form } from "../form";
 import { AssetBox, AssetInputBox } from "./index";
@@ -17,14 +16,14 @@ const gfiAsset = {
   name: "GFI",
   description: "Goldfinch Token",
   nativeAmount: {
-    token: SupportedCrypto.Gfi,
+    token: "GFI",
     amount: BigNumber.from("100000000000000000000"),
   },
   usdcAmount: {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: BigNumber.from("200000000"),
   },
-};
+} as const;
 
 export const AssetBoxStory: ComponentStory<typeof AssetBox> = () => {
   return (
@@ -40,7 +39,7 @@ export const AssetInputBoxStory: ComponentStory<typeof AssetInputBox> = () => {
     <Form
       rhfMethods={rhfMethods}
       onSubmit={(data) =>
-        alert(formatCrypto(stringToCryptoAmount(data.gfi, SupportedCrypto.Gfi)))
+        alert(formatCrypto(stringToCryptoAmount(data.gfi, "GFI")))
       }
     >
       <AssetInputBox

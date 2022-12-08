@@ -11,7 +11,6 @@ import {
   Link,
 } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { SupportedCrypto } from "@/lib/graphql/generated";
 
 export interface Holding {
   name: string;
@@ -54,12 +53,12 @@ export function ExpandableHoldings({
     BigNumber.from(0)
   );
   const totalUsdcValue = {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: holdings.reduce(
       (prev, current) => prev.add(current.usdcValue.amount),
       BigNumber.from(0)
     ),
-  };
+  } as const;
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
       <div

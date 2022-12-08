@@ -6,11 +6,7 @@ import { useForm } from "react-hook-form";
 import { Button, Form } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import {
-  StakedPositionType,
-  StakingCardPositionFieldsFragment,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { StakingCardPositionFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
@@ -46,10 +42,10 @@ interface StakingCardProps {
 
 export function StakingCard({ position, vaulted = false }: StakingCardProps) {
   const stakedToken =
-    position.positionType === StakedPositionType.Fidu
-      ? SupportedCrypto.Fidu
-      : position.positionType === StakedPositionType.CurveLp
-      ? SupportedCrypto.CurveLp
+    position.positionType === "Fidu"
+      ? "FIDU"
+      : position.positionType === "CurveLP"
+      ? "CURVE_LP"
       : assertUnreachable(position.positionType);
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);
@@ -82,12 +78,12 @@ export function StakingCard({ position, vaulted = false }: StakingCardProps) {
         { includeToken: true }
       )}`}
       subheading={`${formatCrypto(
-        { token: SupportedCrypto.Gfi, amount: position.granted },
+        { token: "GFI", amount: position.granted },
         { includeToken: true }
       )} to date - ${formattedDate}`}
-      fadedAmount={formatCrypto({ token: SupportedCrypto.Gfi, amount: locked })}
+      fadedAmount={formatCrypto({ token: "GFI", amount: locked })}
       boldedAmount={formatCrypto(
-        { token: SupportedCrypto.Gfi, amount: position.claimable },
+        { token: "GFI", amount: position.claimable },
         { includeToken: true }
       )}
       action={
@@ -117,7 +113,7 @@ export function StakingCard({ position, vaulted = false }: StakingCardProps) {
             heading="Current earn rate"
             body={`+${formatCrypto(
               {
-                token: SupportedCrypto.Gfi,
+                token: "GFI",
                 amount: position.rewardEarnRate.mul(secondsPerWeek),
               },
               { includeToken: true }

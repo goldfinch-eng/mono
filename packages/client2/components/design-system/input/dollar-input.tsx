@@ -39,18 +39,18 @@ export type DollarInputProps = ComponentProps<typeof Input> &
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
-  [SupportedFiat.Usd]: { mask: "$amount", scale: 2 },
-  [SupportedCrypto.Usdc]: { mask: "$amount USDC", scale: USDC_DECIMALS },
-  [SupportedCrypto.Fidu]: { mask: "amount FIDU", scale: FIDU_DECIMALS },
-  [SupportedCrypto.Gfi]: { mask: "amount GFI", scale: GFI_DECIMALS },
-  [SupportedCrypto.CurveLp]: {
+  USD: { mask: "$amount", scale: 2 },
+  USDC: { mask: "$amount USDC", scale: USDC_DECIMALS },
+  FIDU: { mask: "amount FIDU", scale: FIDU_DECIMALS },
+  GFI: { mask: "amount GFI", scale: GFI_DECIMALS },
+  CURVE_LP: {
     mask: "amount FIDU-USDC-F",
     scale: CURVE_LP_DECIMALS,
   },
 };
 
 export function DollarInput({
-  unit = SupportedCrypto.Usdc,
+  unit = "USDC",
   maxValue,
   onMaxClick,
   onChange: callbackOnChange,
@@ -101,7 +101,7 @@ export function DollarInput({
                 const max =
                   typeof maxValue === "function" ? await maxValue() : maxValue;
                 const formatted: string =
-                  unit === SupportedFiat.Usd
+                  unit === "USD"
                     ? formatFiat({ symbol: unit, amount: max.toNumber() })
                     : formatUnits(max, unitProperties[unit].scale);
                 onChange(formatted);

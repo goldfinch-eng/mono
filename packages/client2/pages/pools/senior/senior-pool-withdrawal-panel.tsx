@@ -15,7 +15,6 @@ import { formatCrypto } from "@/lib/format";
 import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
@@ -65,7 +64,7 @@ interface SeniorPoolWithdrawalPanelProps {
 
 export function SeniorPoolWithdrawalPanel({
   canUserParticipate,
-  fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
+  fiduBalance = { token: "FIDU", amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
   epochEndsAt,
@@ -86,7 +85,7 @@ export function SeniorPoolWithdrawalPanel({
     {
       amount:
         existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
-      token: SupportedCrypto.Fidu,
+      token: "FIDU",
     },
     stakedPositions.concat(vaultedStakedPositions)
   );
@@ -132,14 +131,14 @@ export function SeniorPoolWithdrawalPanel({
           </div>
           <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
             {formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: totalSharesUsdc,
             })}
           </div>
           <div>
             {formatCrypto(
               {
-                token: SupportedCrypto.Fidu,
+                token: "FIDU",
                 amount: totalUserFidu,
               },
               { includeToken: true }
@@ -160,7 +159,7 @@ export function SeniorPoolWithdrawalPanel({
                 amount:
                   existingWithdrawalRequest?.previewUsdcWithdrawable ??
                   BigNumber.from(0),
-                token: SupportedCrypto.Usdc,
+                token: "USDC",
               })}
             </div>
             <Icon name="Usdc" size="sm" />
@@ -214,14 +213,14 @@ export function SeniorPoolWithdrawalPanel({
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
                 {formatCrypto({
-                  token: SupportedCrypto.Fidu,
+                  token: "FIDU",
                   amount: existingWithdrawalRequest.previewFiduRequested,
                 })}
               </div>
               <div className="text-sm">
                 {formatCrypto(
                   {
-                    token: SupportedCrypto.Usdc,
+                    token: "USDC",
                     amount: currentRequestUsdc,
                   },
                   { includeSymbol: true }
@@ -281,11 +280,11 @@ export function SeniorPoolWithdrawalPanel({
         sharePrice={seniorPoolSharePrice}
         walletFidu={fiduBalance}
         stakedFidu={{
-          token: SupportedCrypto.Fidu,
+          token: "FIDU",
           amount: sum("amount", stakedPositions),
         }}
         vaultedFidu={{
-          token: SupportedCrypto.Fidu,
+          token: "FIDU",
           amount: sum("amount", vaultedStakedPositions),
         }}
         cancellationFee={cancellationFee}
@@ -299,11 +298,11 @@ export function SeniorPoolWithdrawalPanel({
           existingWithdrawalRequest={existingWithdrawalRequest}
           walletFidu={fiduBalance}
           stakedFidu={{
-            token: SupportedCrypto.Fidu,
+            token: "FIDU",
             amount: sum("amount", stakedPositions),
           }}
           vaultedFidu={{
-            token: SupportedCrypto.Fidu,
+            token: "FIDU",
             amount: sum("amount", vaultedStakedPositions),
           }}
           cancellationFee={cancellationFee}
@@ -342,7 +341,7 @@ function sumTotalShares(
   requested: CryptoAmount,
   staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
 ): BigNumber {
-  if (unstaked.token !== SupportedCrypto.Fidu) {
+  if (unstaked.token !== "FIDU") {
     throw new Error("Unstaked is not a CryptoAmount in FIDU");
   }
   const totalStaked = sumStakedShares(staked);

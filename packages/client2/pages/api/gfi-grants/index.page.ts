@@ -15,20 +15,16 @@ type ExpectedQuery = {
 };
 
 const fileToSource: Record<string, IndirectGrantSource | DirectGrantSource> = {
-  "./merkleDistributorInfo.json": IndirectGrantSource.MerkleDistributor,
-  "./merkleDistributorInfo.dev.json": IndirectGrantSource.MerkleDistributor,
-  "./backerMerkleDistributorInfo.json":
-    IndirectGrantSource.BackerMerkleDistributor,
-  "./backerMerkleDistributorInfo.dev.json":
-    IndirectGrantSource.BackerMerkleDistributor,
-  "./merkleDirectDistributorInfo.json":
-    DirectGrantSource.MerkleDirectDistributor,
-  "./merkleDirectDistributorInfo.dev.json":
-    DirectGrantSource.MerkleDirectDistributor,
+  "./merkleDistributorInfo.json": "MERKLE_DISTRIBUTOR",
+  "./merkleDistributorInfo.dev.json": "MERKLE_DISTRIBUTOR",
+  "./backerMerkleDistributorInfo.json": "BACKER_MERKLE_DISTRIBUTOR",
+  "./backerMerkleDistributorInfo.dev.json": "BACKER_MERKLE_DISTRIBUTOR",
+  "./merkleDirectDistributorInfo.json": "MERKLE_DIRECT_DISTRIBUTOR",
+  "./merkleDirectDistributorInfo.dev.json": "MERKLE_DIRECT_DISTRIBUTOR",
   "./backerMerkleDirectDistributorInfo.json":
-    DirectGrantSource.BackerMerkleDirectDistributor,
+    "BACKER_MERKLE_DIRECT_DISTRIBUTOR",
   "./backerMerkleDirectDistributorInfo.dev.json":
-    DirectGrantSource.BackerMerkleDirectDistributor,
+    "BACKER_MERKLE_DIRECT_DISTRIBUTOR",
 };
 
 const merkleDistributorFiles: (keyof typeof fileToSource)[] =
