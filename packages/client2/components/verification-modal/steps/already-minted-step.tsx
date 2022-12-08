@@ -6,7 +6,7 @@ export function AlreadyMintedStep() {
     <StepTemplate footer={<ExitFlowButton>Close</ExitFlowButton>}>
       <div
         className="flex h-full w-full items-center justify-center"
-        data-id="already-minted-step"
+        data-id="verification.step.already-minted"
       >
         <div className="text-2xl">You have already minted a UID.</div>
       </div>

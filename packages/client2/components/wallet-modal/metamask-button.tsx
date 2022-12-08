@@ -16,7 +16,7 @@ export function MetaMaskButton() {
     <ProviderButton
       onClick={handleConnectMetaMask}
       errorMessage={error?.message}
-      data-id="connect-metamask"
+      data-id="connect-wallet.metamask"
     >
       {`MetaMask${isActive ? " (Connected)" : ""}`}
       {isActivating ? (

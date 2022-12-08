@@ -127,7 +127,7 @@ export function MintStep() {
     >
       <div
         className="flex h-full flex-col items-center justify-between"
-        data-id="mint-step"
+        data-id="verfication.step.mint"
       >
         <div>
           {errorMessage ? (

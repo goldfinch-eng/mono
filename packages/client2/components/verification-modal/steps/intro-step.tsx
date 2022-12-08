@@ -22,7 +22,7 @@ export function IntroStep() {
     >
       <div
         className="flex h-full items-center justify-evenly text-center text-sm"
-        data-id="intro-step"
+        data-id="verfication.step.intro"
       >
         <div className="flex flex-col items-center">
           <Image src={greenCheckmark} width={70} height={70} alt="KYC" />

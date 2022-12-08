@@ -20,7 +20,7 @@ export function WalletConnectButton() {
     <ProviderButton
       onClick={handleConnection}
       errorMessage={error?.message}
-      data-id="connect-walletconnect"
+      data-id="connect-wallet.walletconnect"
     >
       {`WalletConnect${isActive ? " (Connected)" : ""}`}
       {isActivating ? (

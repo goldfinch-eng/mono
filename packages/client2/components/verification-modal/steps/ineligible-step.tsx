@@ -6,7 +6,7 @@ export function IneligibleStep() {
     <StepTemplate footer={<ExitFlowButton>Close</ExitFlowButton>}>
       <div
         className="flex h-full w-full items-center justify-center"
-        data-id="ineligible-step"
+        data-id="verfication.step.ineligible"
       >
         <div className="text-2xl">
           Sorry, your identity verification has failed and you have been deemed
