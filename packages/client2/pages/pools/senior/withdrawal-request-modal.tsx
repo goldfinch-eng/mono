@@ -19,7 +19,6 @@ import {
   stringToCryptoAmount,
 } from "@/lib/format";
 import {
-  CryptoAmount,
   SupportedCrypto,
   WithdrawalRequestModalWithdrawalFieldsFragment,
 } from "@/lib/graphql/generated";

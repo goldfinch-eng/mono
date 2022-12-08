@@ -3,11 +3,7 @@ import { BigNumber } from "ethers";
 
 import { Tooltip } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
-import {
-  CryptoAmount,
-  SupportedCrypto,
-  SupportedFiat,
-} from "@/lib/graphql/generated";
+import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import diagonals from "./diagonals.png";
 

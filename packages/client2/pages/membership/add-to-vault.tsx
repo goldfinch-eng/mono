@@ -18,11 +18,7 @@ import {
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import {
-  CryptoAmount,
-  MembershipPageQuery,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { MembershipPageQuery, SupportedCrypto } from "@/lib/graphql/generated";
 import {
   calculateNewMonthlyMembershipReward,
   epochFinalizedDate,

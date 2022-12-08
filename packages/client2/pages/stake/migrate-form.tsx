@@ -7,7 +7,6 @@ import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
-  CryptoAmount,
   MigrateFormPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";

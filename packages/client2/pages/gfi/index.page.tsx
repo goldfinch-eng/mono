@@ -35,10 +35,7 @@ gql`
       }
 
       # even if this isn't directly used on the UI on this page, it is helpful to have this refetched and recached along with the rest of the data on this page when apolloClient.refetch({include: "active"}) is run
-      gfiBalance {
-        token
-        amount
-      }
+      gfiBalance
     }
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields

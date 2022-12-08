@@ -2,7 +2,6 @@ import { BigNumber, FixedNumber } from "ethers";
 
 import { Button } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, sharesToUsdc } from "@/lib/pools";
 
 interface UnstakedFiduBannerProps {

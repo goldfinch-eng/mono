@@ -21,7 +21,6 @@ import {
   SupportedCrypto,
   useDashboardPageQuery,
   DashboardPoolTokenFieldsFragment,
-  CryptoAmount,
   DashboardStakedPositionFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum, gfiToUsdc } from "@/lib/pools";
@@ -66,18 +65,9 @@ gql`
       }
     }
     viewer @client {
-      fiduBalance {
-        token
-        amount
-      }
-      gfiBalance {
-        token
-        amount
-      }
-      curveLpBalance {
-        token
-        amount
-      }
+      fiduBalance
+      gfiBalance
+      curveLpBalance
       gfiGrants {
         __typename
         id
@@ -91,10 +81,7 @@ gql`
           isAccepted
         }
       }
-      claimableMembershipRewards {
-        token
-        amount
-      }
+      claimableMembershipRewards
     }
     gfiPrice(fiat: USD) @client {
       price {

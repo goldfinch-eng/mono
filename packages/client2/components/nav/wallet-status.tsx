@@ -30,14 +30,8 @@ gql`
     }
     viewer @client {
       account(format: "lowercase") @export(as: "userAccount")
-      usdcBalance {
-        token
-        amount
-      }
-      gfiBalance {
-        token
-        amount
-      }
+      usdcBalance
+      gfiBalance
     }
     user(id: $userAccount) {
       id

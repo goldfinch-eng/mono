@@ -13,7 +13,6 @@ import {
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
-  CryptoAmount,
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment,
   SupportedCrypto,

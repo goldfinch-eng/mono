@@ -4,11 +4,7 @@ import { useForm } from "react-hook-form";
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import {
-  CryptoAmount,
-  StakedPositionType,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { StakedPositionType, SupportedCrypto } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";

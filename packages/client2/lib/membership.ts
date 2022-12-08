@@ -2,7 +2,7 @@ import type { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
 import { getContract } from "./contracts";
-import { CryptoAmount, SupportedCrypto } from "./graphql/generated";
+import { SupportedCrypto } from "./graphql/generated";
 
 export const MEMBERSHIP_EPOCH_MS = 604800000;
 

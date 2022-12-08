@@ -11,7 +11,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
+import { SupportedCrypto } from "@/lib/graphql/generated";
 
 export interface Holding {
   name: string;

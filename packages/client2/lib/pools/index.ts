@@ -12,7 +12,6 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
-  CryptoAmount,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
