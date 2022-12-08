@@ -13,7 +13,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     assertTrue(gfConfig.goList(userToGoList));
   }
 
-  function testAddToGoListShouldBeAllowedForNonOwnerGoLister(address notGfOwner, address userToGoList) public {
+  function testAddToGoListShouldBeAllowedForNonOwnerGoLister(
+    address notGfOwner,
+    address userToGoList
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
@@ -31,7 +34,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     assertTrue(gfConfig.goList(userToGoList));
   }
 
-  function testAddToGoListRevertsForNonOwnerNonGoLister(address sender, address userToGoList) public {
+  function testAddToGoListRevertsForNonOwnerNonGoLister(
+    address sender,
+    address userToGoList
+  ) public {
     vm.assume(sender != GF_OWNER);
     vm.assume(!gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, sender));
 
@@ -40,7 +46,9 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     gfConfig.addToGoList(userToGoList);
   }
 
-  function testBulkAddToGoListAddsManyPeopleToGoList(address[] calldata usersToAdd) public impersonating(GF_OWNER) {
+  function testBulkAddToGoListAddsManyPeopleToGoList(
+    address[] calldata usersToAdd
+  ) public impersonating(GF_OWNER) {
     for (uint256 i = 0; i < usersToAdd.length; ++i) {
       vm.assume(!gfConfig.goList(usersToAdd[i]));
     }
@@ -52,7 +60,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     }
   }
 
-  function testNonOwnerGoListerCanBulkAddToGoList(address notGfOwner, address[] calldata usersToAdd) public {
+  function testNonOwnerGoListerCanBulkAddToGoList(
+    address notGfOwner,
+    address[] calldata usersToAdd
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
     _startImpersonation(GF_OWNER);
@@ -72,7 +83,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     }
   }
 
-  function testBulkAddToGoListRevertsForNonOwnerNonGoLister(address notGfOwner, address[] calldata usersToAdd) public {
+  function testBulkAddToGoListRevertsForNonOwnerNonGoLister(
+    address notGfOwner,
+    address[] calldata usersToAdd
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
@@ -95,7 +109,9 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     assertFalse(gfConfig.goList(user));
   }
 
-  function testUserNotOnGoListRemovedFromGoListIsStillNotOnGoList(address user) public impersonating(GF_OWNER) {
+  function testUserNotOnGoListRemovedFromGoListIsStillNotOnGoList(
+    address user
+  ) public impersonating(GF_OWNER) {
     assertFalse(gfConfig.goList(user));
     gfConfig.removeFromGoList(user);
     assertFalse(gfConfig.goList(user));
@@ -117,7 +133,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     assertFalse(gfConfig.goList(user));
   }
 
-  function testRemoveFromGoListRevertsForNonOwnerNonGoLister(address notGfOwner, address user) public {
+  function testRemoveFromGoListRevertsForNonOwnerNonGoLister(
+    address notGfOwner,
+    address user
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     vm.assume(!gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
     vm.assume(!gfConfig.goList(user));
@@ -150,7 +169,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     }
   }
 
-  function testNonOwnerGoListerCanBulkRemoveFromGoList(address notGfOwner, address[] calldata users) public {
+  function testNonOwnerGoListerCanBulkRemoveFromGoList(
+    address notGfOwner,
+    address[] calldata users
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     vm.assume(!gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
@@ -176,7 +198,10 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     }
   }
 
-  function testBulkRemoveFromGoListRevertsForNonOwnerNonGoLister(address notGfOwner, address[] calldata users) public {
+  function testBulkRemoveFromGoListRevertsForNonOwnerNonGoLister(
+    address notGfOwner,
+    address[] calldata users
+  ) public {
     vm.assume(notGfOwner != GF_OWNER);
     vm.assume(!gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
     for (uint256 i = 0; i < users.length; ++i) {
