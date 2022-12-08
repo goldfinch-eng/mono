@@ -18,7 +18,10 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
     gfConfig.setAddress(index, newAddress);
   }
 
-  function testSetAddressShouldSetTheAddress(uint256 index, address newAddress) public impersonating(GF_OWNER) {
+  function testSetAddressShouldSetTheAddress(
+    uint256 index,
+    address newAddress
+  ) public impersonating(GF_OWNER) {
     assertEq(gfConfig.getAddress(index), address(0));
     gfConfig.setAddress(index, newAddress);
     assertEq(gfConfig.getAddress(index), newAddress);
@@ -42,21 +45,30 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
     assertEq(gfConfig.getAddress(index), newAddress1);
   }
 
-  function testSetAddressShouldEmitAnEvent(uint256 index, address newAddress) public impersonating(GF_OWNER) {
+  function testSetAddressShouldEmitAnEvent(
+    uint256 index,
+    address newAddress
+  ) public impersonating(GF_OWNER) {
     assertEq(gfConfig.getAddress(index), address(0));
     vm.expectEmit(false, false, false, true);
     emit AddressUpdated(GF_OWNER, index, address(0), newAddress);
     gfConfig.setAddress(index, newAddress);
   }
 
-  function testSetTreasuryReserveRevertsForNonAdmin(address notAdmin, address newTreasuryReserve) public {
+  function testSetTreasuryReserveRevertsForNonAdmin(
+    address notAdmin,
+    address newTreasuryReserve
+  ) public {
     vm.assume(!gfConfig.hasRole(TestConstants.OWNER_ROLE, notAdmin));
     _startImpersonation(notAdmin);
     vm.expectRevert("Must have admin role to perform this action");
     gfConfig.setTreasuryReserve(newTreasuryReserve);
   }
 
-  function testTreasuryReserveCanBeSetMultipleTimes(address reserve1, address reserve2) public impersonating(GF_OWNER) {
+  function testTreasuryReserveCanBeSetMultipleTimes(
+    address reserve1,
+    address reserve2
+  ) public impersonating(GF_OWNER) {
     vm.assume(reserve1 != address(0) && reserve2 != address(0));
     assertEq(gfConfig.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve)), address(0));
 
@@ -70,7 +82,12 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
   function testSetTreasuryReserveEmitsAnEvent(address reserve) public impersonating(GF_OWNER) {
     vm.assume(gfConfig.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve)) != reserve);
     vm.expectEmit(false, false, false, true);
-    emit AddressUpdated(GF_OWNER, uint256(ConfigOptions.Addresses.TreasuryReserve), address(0), reserve);
+    emit AddressUpdated(
+      GF_OWNER,
+      uint256(ConfigOptions.Addresses.TreasuryReserve),
+      address(0),
+      reserve
+    );
     gfConfig.setTreasuryReserve(reserve);
   }
 
@@ -81,7 +98,10 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
     gfConfig.setSeniorPoolStrategy(strat);
   }
 
-  function testSeniorPoolStratCanBeSetMultipleTimes(address strat1, address strat2) public impersonating(GF_OWNER) {
+  function testSeniorPoolStratCanBeSetMultipleTimes(
+    address strat1,
+    address strat2
+  ) public impersonating(GF_OWNER) {
     vm.assume(strat1 != address(0) && strat2 != address(0));
     assertEq(gfConfig.getAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy)), address(0));
 
@@ -95,7 +115,12 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
   function testSetSeniorPoolStratEmitsAnEvent(address strat) public impersonating(GF_OWNER) {
     vm.assume(gfConfig.getAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy)) != strat);
     vm.expectEmit(false, false, false, true);
-    emit AddressUpdated(GF_OWNER, uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(0), strat);
+    emit AddressUpdated(
+      GF_OWNER,
+      uint256(ConfigOptions.Addresses.SeniorPoolStrategy),
+      address(0),
+      strat
+    );
     gfConfig.setSeniorPoolStrategy(strat);
   }
 
