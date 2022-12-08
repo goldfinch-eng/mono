@@ -133,6 +133,12 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(
-  withSentryConfig(withMDX(nextConfig), sentryWebpackPluginOptions)
-);
+let enhancedNextConfig = withMDX(nextConfig);
+if (process.env.SENTRY_AUTH_TOKEN) {
+  enhancedNextConfig = withSentryConfig(
+    enhancedNextConfig,
+    sentryWebpackPluginOptions
+  );
+}
+enhancedNextConfig = withBundleAnalyzer(enhancedNextConfig);
+module.exports = enhancedNextConfig;
