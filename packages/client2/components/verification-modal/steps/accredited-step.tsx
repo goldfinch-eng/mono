@@ -15,7 +15,10 @@ export function AccreditedStep() {
       heading="Are you a U.S. accredited investor?"
       headingTooltip="You are a U.S. accredited investor if EITHER you earned $200,000 or more each year for the last two years OR have a net worth of $1 million or more."
     >
-      <div className="flex h-full flex-col gap-3">
+      <div
+        className="flex h-full flex-col gap-3"
+        data-id="verification.step.accredited"
+      >
         <BigButton
           selected={accredited === "accredited"}
           onClick={() => {
