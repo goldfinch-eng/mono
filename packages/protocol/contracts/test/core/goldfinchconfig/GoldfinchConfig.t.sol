@@ -72,14 +72,20 @@ contract GoldfinchConfigTest is GoldfinchConfigBaseTest {
     assertEq(gfConfig.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds)), 8);
     assertEq(gfConfig.getNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays)), 9);
     assertEq(gfConfig.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio)), 10);
-    assertEq(gfConfig.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps)), 11);
+    assertEq(
+      gfConfig.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeInBps)),
+      11
+    );
 
     // Addresses
     assertEq(
       gfConfig.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation)),
       0xc783df8a850f42e7F7e57013759C285caa701eB6
     );
-    assertEq(gfConfig.getAddress(uint256(ConfigOptions.Addresses.Pool)), 0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE);
+    assertEq(
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.Pool)),
+      0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE
+    );
     assertEq(
       gfConfig.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory)),
       0x0afFE1972479c386A2Ab21a27a7f835361B6C0e9
@@ -88,7 +94,10 @@ contract GoldfinchConfigTest is GoldfinchConfigBaseTest {
       gfConfig.getAddress(uint256(ConfigOptions.Addresses.CreditDesk)),
       0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4
     );
-    assertEq(gfConfig.getAddress(uint256(ConfigOptions.Addresses.Fidu)), 0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96);
+    assertEq(
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.Fidu)),
+      0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96
+    );
     assertEq(
       gfConfig.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve)),
       0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5
@@ -137,15 +146,39 @@ contract GoldfinchConfigTest is GoldfinchConfigBaseTest {
       uint256(ConfigOptions.Addresses.CreditLineImplementation),
       0xc783df8a850f42e7F7e57013759C285caa701eB6
     );
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), 0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.Pool), 0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.CreditDesk), 0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory), 0x0afFE1972479c386A2Ab21a27a7f835361B6C0e9);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.TrustedForwarder), 0x956868751Cc565507B3B58E53a6f9f41B56bed74);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.CUSDCContract), 0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1);
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.Fidu),
+      0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.Pool),
+      0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditDesk),
+      0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.GoldfinchFactory),
+      0x0afFE1972479c386A2Ab21a27a7f835361B6C0e9
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TrustedForwarder),
+      0x956868751Cc565507B3B58E53a6f9f41B56bed74
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CUSDCContract),
+      0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1
+    );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig), address(8));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.FiduUSDCCurveLP), 0x55A8a39bc9694714E2874c1ce77aa1E599461E18);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository), address(9));
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.FiduUSDCCurveLP),
+      0x55A8a39bc9694714E2874c1ce77aa1E599461E18
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
+      address(9)
+    );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken), address(10));
     gfConfig.setTreasuryReserve(0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5);
   }
