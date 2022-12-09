@@ -31,9 +31,17 @@ interface PanelProps {
   body: ReactNode;
   buttonText: ReactNode;
   buttonHref: string;
+  footer?: ReactNode;
 }
 
-function Panel({ title, icon, body, buttonText, buttonHref }: PanelProps) {
+function Panel({
+  title,
+  icon,
+  body,
+  buttonText,
+  buttonHref,
+  footer,
+}: PanelProps) {
   return (
     <div className="flex flex-col rounded-xl bg-clay-50">
       <div className="mx-5 px-5 py-10">
@@ -55,6 +63,7 @@ function Panel({ title, icon, body, buttonText, buttonHref }: PanelProps) {
         >
           {buttonText}
         </Button>
+        <div className="mt-5 items-center text-sm opacity-50">{footer}</div>
       </div>
     </div>
   );
@@ -69,6 +78,8 @@ function larkUrl(poolAddress?: string): string {
 }
 
 enum PanelState {
+  NO_UID,
+  US_UID,
   SELL_POSITIONS,
   NO_POSITIONS,
   BUY_POSITIONS,
@@ -76,10 +87,14 @@ enum PanelState {
 }
 
 function getPanelState({
+  noUid,
+  uidIsUs,
   poolStatus,
   hasBacked,
   data,
 }: {
+  noUid: boolean;
+  uidIsUs: boolean | undefined;
   poolStatus: PoolStatus;
   hasBacked: boolean;
   data: BackerSecondaryMarketStatQuery;
@@ -90,8 +105,15 @@ function getPanelState({
   const poolPositionsAvailable =
     data.backerSecondaryMarket.poolStats.onSaleCount > 0;
 
-  // These are intentionally non-nestd to make the switching logic easier to follow
-  if (poolStatus === PoolStatus.ComingSoon && collectionPositionsAvailable) {
+  // These are intentionally non-nested to make the switching logic easier to follow
+  if (noUid) {
+    return PanelState.NO_UID;
+  } else if (uidIsUs) {
+    return PanelState.US_UID;
+  } else if (
+    poolStatus === PoolStatus.ComingSoon &&
+    collectionPositionsAvailable
+  ) {
     return PanelState.BUY_OTHER_POSITIONS;
   } else if (
     poolStatus === PoolStatus.ComingSoon &&
@@ -126,12 +148,16 @@ function getPanelState({
 }
 
 interface SecondaryMarketPanelProps {
+  noUid: boolean;
+  uidIsUs?: boolean;
   hasBacked: boolean;
   poolStatus: PoolStatus;
   poolAddress: string;
 }
 
 export default function SecondaryMarketPanel({
+  noUid,
+  uidIsUs,
   hasBacked,
   poolStatus,
   poolAddress,
@@ -140,7 +166,18 @@ export default function SecondaryMarketPanel({
     variables: { poolAddress },
   });
 
-  const panelProps: Record<PanelState, Omit<PanelProps, "icon">> = {
+  const panelProps: Record<
+    Exclude<PanelState, PanelState.US_UID>,
+    Omit<PanelProps, "icon">
+  > = {
+    [PanelState.NO_UID]: {
+      title: "Need liquidity? Sell your position on Lark.",
+      body: "Do you know you can sell your position on lark.market?",
+      buttonText: "View positions",
+      buttonHref: larkUrl(poolAddress),
+      footer:
+        "Note: Lark Market is not available to people or companies who are residents of, or are located, incorporated or have a registered agent in, the United States or a restricted territory.",
+    },
     [PanelState.SELL_POSITIONS]: {
       title: "Need liquidity? Sell your position on Lark.",
       body: "Do you know you can sell your position on lark.market?",
@@ -184,8 +221,18 @@ export default function SecondaryMarketPanel({
     return null;
   }
 
-  const panelState = getPanelState({ poolStatus, hasBacked, data });
-  const props = panelProps[panelState];
+  const panelState = getPanelState({
+    noUid,
+    uidIsUs,
+    poolStatus,
+    hasBacked,
+    data,
+  });
 
+  if (panelState === PanelState.US_UID) {
+    return null;
+  }
+
+  const props = panelProps[panelState];
   return <Panel {...props} icon={<LarkLogo className="h-8 w-8" />} />;
 }

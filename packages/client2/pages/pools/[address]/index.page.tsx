@@ -463,6 +463,8 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {tranchedPool && poolStatus ? (
                 <SecondaryMarketPanel
                   hasBacked={hasBacked}
+                  noUid={noUid}
+                  uidIsUs={uidIsUs}
                   poolStatus={poolStatus}
                   poolAddress={tranchedPool.id}
                 />
