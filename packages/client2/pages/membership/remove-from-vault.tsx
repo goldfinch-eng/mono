@@ -103,13 +103,13 @@ export function RemoveFromVault({
 }
 
 interface StepperDataType {
-  gfiToUnvault: CryptoAmount;
+  gfiToUnvault: CryptoAmount<"GFI">;
   stakedPositionsToUnvault: VaultedStakedPositionFieldsFragment[];
   poolTokensToUnvault: VaultedPoolTokenFieldsFragment[];
-  forfeited?: CryptoAmount;
+  forfeited?: CryptoAmount<"FIDU">;
   rewardProjection?: {
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   };
 }
 
@@ -155,8 +155,8 @@ function SelectionStep({
   const { account, provider } = useWallet();
 
   const [rewardProjection, setRewardProjection] = useState<{
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   }>();
   const [forfeited, setForfeited] = useState<CryptoAmount>({
     token: "FIDU",

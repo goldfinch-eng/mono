@@ -14,7 +14,7 @@ export interface Asset {
   description: string;
   tooltip?: string;
   icon?: IconNameType;
-  usdcAmount: CryptoAmount;
+  usdcAmount: CryptoAmount<"USDC">;
   nativeAmount?: CryptoAmount;
 }
 interface AssetBoxProps {

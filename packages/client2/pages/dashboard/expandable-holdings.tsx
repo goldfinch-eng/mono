@@ -16,7 +16,7 @@ export interface Holding {
   name: string;
   percentage: number;
   quantity: BigNumber;
-  usdcValue: CryptoAmount;
+  usdcValue: CryptoAmount<"USDC">;
   url?: string;
   vaulted?: boolean;
 }

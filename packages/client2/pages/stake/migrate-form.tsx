@@ -25,7 +25,7 @@ export const MIGRATE_FORM_POSITION_FIELDS = gql`
 `;
 
 interface StakeCardMigrateFormProps {
-  usdcBalance: CryptoAmount;
+  usdcBalance: CryptoAmount<"USDC">;
   positions: MigrateFormPositionFieldsFragment[];
   sharePrice: BigNumber;
   onComplete: () => void;

@@ -27,7 +27,10 @@ export async function calculateNewMonthlyMembershipReward(
   newGfi: BigNumberish,
   newCapital: BigNumberish,
   previousEpochRewardTotal = BigNumber.from("12500000000000000000000")
-): Promise<{ newMonthlyReward: CryptoAmount; diff: CryptoAmount }> {
+): Promise<{
+  newMonthlyReward: CryptoAmount<"FIDU">;
+  diff: CryptoAmount<"FIDU">;
+}> {
   const membershipOrchestratorContract = await getContract({
     name: "MembershipOrchestrator",
     provider,

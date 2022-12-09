@@ -11,7 +11,7 @@ import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface StakeCardFormProps {
-  max: CryptoAmount;
+  max: CryptoAmount<"FIDU" | "CURVE_LP">;
   positionType: StakedPositionType;
   onComplete: () => Promise<unknown>;
 }

@@ -13,7 +13,7 @@ import { useWallet } from "@/lib/wallet";
 interface RewardClaimerProps {
   sharePrice: BigNumber;
   className?: string;
-  claimable: CryptoAmount;
+  claimable: CryptoAmount<"FIDU">;
 }
 
 export function RewardClaimer({

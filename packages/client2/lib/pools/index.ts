@@ -91,9 +91,9 @@ const sharePriceMantissa = fiduMantissa;
  * @returns a `CryptoAmount` in USDC
  */
 export function sharesToUsdc(
-  numShares: BigNumber,
+  numShares: BigNumber, // TODO refactor numShares to be typed CryptoAmount<"FIDU">
   sharePrice: BigNumber
-): CryptoAmount {
+): CryptoAmount<"USDC"> {
   const amount = numShares
     .mul(sharePrice)
     .div(fiduMantissa)
@@ -109,9 +109,9 @@ export function sharesToUsdc(
  * @returns a `CryptoAmount` in FIDU
  */
 export function usdcToShares(
-  usdcAmount: BigNumber,
+  usdcAmount: BigNumber, // TODO refactor usdcAmount to be typed CryptoAmount<"USDC">
   sharePrice: BigNumber
-): CryptoAmount {
+): CryptoAmount<"FIDU"> {
   const numShares = usdcAmount
     .mul(fiduMantissa)
     .div(usdcMantissa)
@@ -454,7 +454,10 @@ export function sum<T extends string, U extends Record<T, BigNumber>>(
  * @param fiatPerGfi The number of USD per GFI
  * @returns A CryptoAmount in USDC
  */
-export function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
+export function gfiToUsdc(
+  gfi: CryptoAmount,
+  fiatPerGfi: number
+): CryptoAmount<"USDC"> {
   const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
   const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
     FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())

@@ -99,22 +99,22 @@ export function AddToVault({
 }
 
 interface StepperDataType {
-  gfiToVault: CryptoAmount;
+  gfiToVault: CryptoAmount<"GFI">;
   stakedPositionsToVault: StakedPosition[];
   poolTokensToVault: PoolToken[];
   rewardProjection?: {
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   };
 }
 
 interface SelectionStepProps {
-  maxVaultableGfi: CryptoAmount;
+  maxVaultableGfi: CryptoAmount<"GFI">;
   fiatPerGfi: number;
   vaultableStakedPositions: StakedPosition[];
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
-  unstakedFidu: CryptoAmount;
+  unstakedFidu: CryptoAmount<"FIDU">;
   previousEpochRewardTotal?: BigNumber;
 }
 
