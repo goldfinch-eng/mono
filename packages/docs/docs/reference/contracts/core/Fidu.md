@@ -4,9 +4,9 @@
 
 https://etherscan.io/address/0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF
 
-Fidu (symbol: FIDU) is Goldfinch&#x27;s liquidity token, representing shares
+Fidu (symbol: FIDU) is Goldfinch's liquidity token, representing shares
  in the Pool. When you deposit, we mint a corresponding amount of Fidu, and when you withdraw, we
- burn Fidu. The share price of the Pool implicitly represents the &quot;exchange rate&quot; between Fidu
+ burn Fidu. The share price of the Pool implicitly represents the "exchange rate" between Fidu
  and USDC (or whatever currencies the Pool may allow withdraws in during the future)
 
 ### OWNER_ROLE
@@ -45,13 +45,13 @@ function __initialize__(address owner, string name, string symbol, contract Gold
 function mintTo(address to, uint256 amount) public
 ```
 
-_Creates &#x60;amount&#x60; new tokens for &#x60;to&#x60;.
+_Creates `amount` new tokens for `to`.
 
 See {ERC20-_mint}.
 
 Requirements:
 
-- the caller must have the &#x60;MINTER_ROLE&#x60;._
+- the caller must have the `MINTER_ROLE`._
 
 ### burnFrom
 
@@ -59,7 +59,7 @@ Requirements:
 function burnFrom(address from, uint256 amount) public
 ```
 
-_Destroys &#x60;amount&#x60; tokens from &#x60;account&#x60;, deducting from the caller&#x27;s
+_Destroys `amount` tokens from `account`, deducting from the caller's
 allowance.
 
 See {ERC20-_burn} and {ERC20-allowance}.

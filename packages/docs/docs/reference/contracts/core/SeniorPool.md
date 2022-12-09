@@ -174,7 +174,7 @@ function requestWithdrawal(uint256 fiduAmount) external returns (uint256)
 ```
 
 Submit a request to withdraw `fiduAmount` of FIDU. Request is rejected
-if callers already owns a request token. A non-transferrable request token is
+if caller already owns a request token. A non-transferrable request token is
 minted to the caller
 
 _triggers a checkpoint_
@@ -183,7 +183,7 @@ _triggers a checkpoint_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | tokenId token minted to caller |
+| [0] | uint256 |  |
 
 ### cancelWithdrawalRequest
 
@@ -200,7 +200,7 @@ _triggers a checkpoint_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | fiduReceived the fidu amount returned to the caller |
+| [0] | uint256 |  |
 
 ### claimWithdrawalRequest
 

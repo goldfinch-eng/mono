@@ -78,17 +78,21 @@ function go(address account) public view returns (bool)
 
 Returns whether the provided account is go-listed for use of the Goldfinch protocol
 for any of the UID token types.
-This status is defined as: whether &#x60;balanceOf(account, id)&#x60; on the UniqueIdentity
-contract is non-zero (where &#x60;id&#x60; is a supported token id on UniqueIdentity), falling back to the
-account&#x27;s status on the legacy go-list maintained on GoldfinchConfig.
+This status is defined as: whether `balanceOf(account, id)` on the UniqueIdentity
+contract is non-zero (where `id` is a supported token id on UniqueIdentity), falling back to the
+account's status on the legacy go-list maintained on GoldfinchConfig.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | account | address | The account whose go status to obtain |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | The account&#x27;s go status |
+| [0] | bool | The account's go status |
 
 ### goOnlyIdTypes
 
@@ -99,14 +103,18 @@ function goOnlyIdTypes(address account, uint256[] onlyIdTypes) public view retur
 Returns whether the provided account is go-listed for use of the Goldfinch protocol
 for defined UID token types
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | account | address | The account whose go status to obtain |
 | onlyIdTypes | uint256[] | Array of id types to check balances |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | The account&#x27;s go status |
+| [0] | bool | The account's go status |
 
 ### getSeniorPoolIdTypes
 
@@ -122,13 +130,17 @@ function goSeniorPool(address account) public view returns (bool)
 
 Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | account | address | The account whose go status to obtain |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | The account&#x27;s go status |
+| [0] | bool | The account's go status |
 
 ### _getLegacyGoList
 

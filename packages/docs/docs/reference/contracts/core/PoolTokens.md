@@ -50,13 +50,13 @@ struct PoolInfo {
 ### tokens
 
 ```solidity
-mapping(uint256 &#x3D;&gt; struct IPoolTokens.TokenInfo) tokens
+mapping(uint256 => struct IPoolTokens.TokenInfo) tokens
 ```
 
 ### pools
 
 ```solidity
-mapping(address &#x3D;&gt; struct PoolTokens.PoolInfo) pools
+mapping(address => struct PoolTokens.PoolInfo) pools
 ```
 
 ### royaltyParams
@@ -115,10 +115,14 @@ function mint(struct IPoolTokens.MintParams params, address to) external virtual
 
 Called by pool to create a debt position in a particular tranche and amount
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | params | struct IPoolTokens.MintParams | Struct containing the tranche and the amount |
 | to | address | The address that should own the position |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -132,6 +136,8 @@ function redeem(uint256 tokenId, uint256 principalRedeemed, uint256 interestRede
 
 Updates a token to reflect the principal and interest amounts that have been redeemed.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | The token id to update (must be owned by the pool calling this function) |
@@ -144,7 +150,7 @@ Updates a token to reflect the principal and interest amounts that have been red
 function reducePrincipalAmount(uint256 tokenId, uint256 amount) external
 ```
 
-reduce a given pool token&#x27;s principalAmount and principalRedeemed by a specified amount
+reduce a given pool token's principalAmount and principalRedeemed by a specified amount
  @dev uses safemath to prevent underflow
  @dev this function is only intended for use as part of the v2.6.0 upgrade
    to rectify a bug that allowed users to create a PoolToken that had a
@@ -160,8 +166,10 @@ reduce a given pool token&#x27;s principalAmount and principalRedeemed by a spec
 function withdrawPrincipal(uint256 tokenId, uint256 principalAmount) external virtual
 ```
 
-Decrement a token&#x27;s principal amount. This is different from &#x60;redeem&#x60;, which captures changes to
+Decrement a token's principal amount. This is different from `redeem`, which captures changes to
   principal and/or interest that occur when a loan is in progress.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -175,6 +183,8 @@ function burn(uint256 tokenId) external virtual
 ```
 
 _Burns a specific ERC721 token, and removes the data from our mappings_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -195,6 +205,8 @@ function onPoolCreated(address newPool) external
 Called by the GoldfinchFactory to register the pool as a valid pool. Only valid pools can mint/redeem
 tokens
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | newPool | address | The address of the newly created pool |
@@ -207,10 +219,14 @@ function isApprovedOrOwner(address spender, uint256 tokenId) external view retur
 
 Returns a boolean representing whether the spender is the owner or the approved spender of the token
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | spender | address | The address to check |
 | tokenId | uint256 | The token id to check for |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -252,10 +268,14 @@ function _getTokenInfo(uint256 tokenId) internal view returns (struct IPoolToken
 function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view returns (address, uint256)
 ```
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _tokenId | uint256 | The NFT asset queried for royalty information |
 | _salePrice | uint256 | The sale price of the NFT asset specified by _tokenId |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -268,13 +288,15 @@ function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view returns
 function setRoyaltyParams(address newReceiver, uint256 newRoyaltyPercent) external
 ```
 
-Set royalty params used in &#x60;royaltyInfo&#x60;. This function is only callable by
-  an address with &#x60;OWNER_ROLE&#x60;.
+Set royalty params used in `royaltyInfo`. This function is only callable by
+  an address with `OWNER_ROLE`.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| newReceiver | address | The new address which should receive royalties. See &#x60;receiver&#x60;. |
-| newRoyaltyPercent | uint256 | The new percent of &#x60;salePrice&#x60; that should be taken for royalties.   See &#x60;royaltyPercent&#x60;. |
+| newReceiver | address | The new address which should receive royalties. See `receiver`. |
+| newRoyaltyPercent | uint256 | The new percent of `salePrice` that should be taken for royalties.   See `royaltyPercent`. |
 
 ### setBaseURI
 

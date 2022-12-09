@@ -48,28 +48,22 @@ bytes32 LOCKER_ROLE
 bytes32 SENIOR_ROLE
 ```
 
-### FP_SCALING_FACTOR
+### MAJOR_VERSION
 
 ```solidity
-uint256 FP_SCALING_FACTOR
+uint8 MAJOR_VERSION
 ```
 
-### SECONDS_PER_DAY
+### MINOR_VERSION
 
 ```solidity
-uint256 SECONDS_PER_DAY
+uint8 MINOR_VERSION
 ```
 
-### ONE_HUNDRED
+### PATCH_VERSION
 
 ```solidity
-uint256 ONE_HUNDRED
-```
-
-### NUM_TRANCHES_PER_SLICE
-
-```solidity
-uint256 NUM_TRANCHES_PER_SLICE
+uint8 PATCH_VERSION
 ```
 
 ### juniorFeePercent
@@ -102,88 +96,16 @@ uint256 totalDeployed
 uint256 fundableAt
 ```
 
-### poolSlices
+### _poolSlices
 
 ```solidity
-struct ITranchedPool.PoolSlice[] poolSlices
+mapping(uint256 => struct ITranchedPool.PoolSlice) _poolSlices
 ```
 
-### DepositMade
+### numSlices
 
 ```solidity
-event DepositMade(address owner, uint256 tranche, uint256 tokenId, uint256 amount)
-```
-
-### WithdrawalMade
-
-```solidity
-event WithdrawalMade(address owner, uint256 tranche, uint256 tokenId, uint256 interestWithdrawn, uint256 principalWithdrawn)
-```
-
-### TranchedPoolAssessed
-
-```solidity
-event TranchedPoolAssessed(address pool)
-```
-
-### PaymentApplied
-
-```solidity
-event PaymentApplied(address payer, address pool, uint256 interestAmount, uint256 principalAmount, uint256 remainingAmount, uint256 reserveAmount)
-```
-
-### SharePriceUpdated
-
-```solidity
-event SharePriceUpdated(address pool, uint256 tranche, uint256 principalSharePrice, int256 principalDelta, uint256 interestSharePrice, int256 interestDelta)
-```
-
-### ReserveFundsCollected
-
-```solidity
-event ReserveFundsCollected(address from, uint256 amount)
-```
-
-### CreditLineMigrated
-
-```solidity
-event CreditLineMigrated(address oldCreditLine, address newCreditLine)
-```
-
-### DrawdownMade
-
-```solidity
-event DrawdownMade(address borrower, uint256 amount)
-```
-
-### DrawdownsPaused
-
-```solidity
-event DrawdownsPaused(address pool)
-```
-
-### DrawdownsUnpaused
-
-```solidity
-event DrawdownsUnpaused(address pool)
-```
-
-### EmergencyShutdown
-
-```solidity
-event EmergencyShutdown(address pool)
-```
-
-### TrancheLocked
-
-```solidity
-event TrancheLocked(address pool, uint256 trancheId, uint256 lockedUntil)
-```
-
-### SliceCreated
-
-```solidity
-event SliceCreated(address pool, uint256 sliceId)
+uint256 numSlices
 ```
 
 ### initialize
@@ -195,31 +117,35 @@ function initialize(address _config, address _borrower, uint256 _juniorFeePercen
 ### setAllowedUIDTypes
 
 ```solidity
-function setAllowedUIDTypes(uint256[] ids) public
+function setAllowedUIDTypes(uint256[] ids) external
 ```
 
 ### getAllowedUIDTypes
 
 ```solidity
-function getAllowedUIDTypes() public view returns (uint256[])
+function getAllowedUIDTypes() external view returns (uint256[])
 ```
 
 ### deposit
 
 ```solidity
-function deposit(uint256 tranche, uint256 amount) public returns (uint256 tokenId)
+function deposit(uint256 tranche, uint256 amount) public returns (uint256)
 ```
 
 Deposit a USDC amount into the pool for a tranche. Mints an NFT to the caller representing the position
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tranche | uint256 | The number representing the tranche to deposit into |
 | amount | uint256 | The USDC amount to tranfer from the caller to the pool |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | uint256 | The tokenId of the NFT |
+| [0] | uint256 | tokenId The tokenId of the NFT |
 
 ### depositWithPermit
 
@@ -230,20 +156,24 @@ function depositWithPermit(uint256 tranche, uint256 amount, uint256 deadline, ui
 ### withdraw
 
 ```solidity
-function withdraw(uint256 tokenId, uint256 amount) public returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
+function withdraw(uint256 tokenId, uint256 amount) public returns (uint256, uint256)
 ```
 
 Withdraw an already deposited amount if the funds are available
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | uint256 | The NFT representing the position |
-| amount | uint256 | The amount to withdraw (must be &lt;&#x3D; interest+principal currently available to withdraw) |
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| interestWithdrawn | uint256 | The interest amount that was withdrawn |
-| principalWithdrawn | uint256 | The principal amount that was withdrawn |
+| tokenId | uint256 | The NFT representing the position |
+| amount | uint256 | The amount to withdraw (must be <= interest+principal currently available to withdraw) |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | interestWithdrawn The interest amount that was withdrawn |
+| [1] | uint256 | principalWithdrawn The principal amount that was withdrawn |
 
 ### withdrawMultiple
 
@@ -252,6 +182,8 @@ function withdrawMultiple(uint256[] tokenIds, uint256[] amounts) public
 ```
 
 Withdraw from many tokens (that the sender owns) in a single transaction
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -266,9 +198,13 @@ function withdrawMax(uint256 tokenId) external returns (uint256 interestWithdraw
 
 Similar to withdraw but will withdraw all available funds
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | The NFT representing the position |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -283,9 +219,17 @@ function drawdown(uint256 amount) external
 
 Draws down the funds (and locks the pool) to the borrower address. Can only be called by the borrower
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| amount | uint256 | The amount to drawdown from the creditline (must be &lt; limit) |
+| amount | uint256 | The amount to drawdown from the creditline (must be < limit) |
+
+### NUM_TRANCHES_PER_SLICE
+
+```solidity
+function NUM_TRANCHES_PER_SLICE() external pure returns (uint256)
+```
 
 ### lockJuniorCapital
 
@@ -333,6 +277,8 @@ function pay(uint256 amount) external
 
 Allows repaying the creditline. Collects the USDC amount from the sender and triggers an assess
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amount | uint256 | The amount to repay |
@@ -369,6 +315,8 @@ function migrateCreditLine(address _borrower, uint256 _maxLimit, uint256 _intere
 
 Migrates the accounting variables from the current creditline to a brand new one
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _borrower | address | The borrower address |
@@ -378,14 +326,6 @@ Migrates the accounting variables from the current creditline to a brand new one
 | _termInDays | uint256 | The new term in days |
 | _lateFeeApr | uint256 | The new late fee APR |
 | _principalGracePeriodInDays | uint256 |  |
-
-### migrateAndSetNewCreditLine
-
-```solidity
-function migrateAndSetNewCreditLine(address newCl) public
-```
-
-Migrates to a new creditline without copying the accounting variables
 
 ### setLimit
 
@@ -405,45 +345,11 @@ function setMaxLimit(uint256 newAmount) external
 function getTranche(uint256 tranche) public view returns (struct ITranchedPool.TrancheInfo)
 ```
 
-### numSlices
+### poolSlices
 
 ```solidity
-function numSlices() public view returns (uint256)
+function poolSlices(uint256 index) external view returns (struct ITranchedPool.PoolSlice)
 ```
-
-### usdcToSharePrice
-
-```solidity
-function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256)
-```
-
-Converts USDC amounts to share price
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| amount | uint256 | The USDC amount to convert |
-| totalShares | uint256 | The total shares outstanding |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | The share price of the input amount |
-
-### sharePriceToUsdc
-
-```solidity
-function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256)
-```
-
-Converts share price to USDC amounts
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sharePrice | uint256 | The share price to convert |
-| totalShares | uint256 | The total shares outstanding |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | The USDC amount of the input share price |
 
 ### totalJuniorDeposits
 
@@ -453,6 +359,8 @@ function totalJuniorDeposits() external view returns (uint256)
 
 Returns the total junior capital deposited
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | The total USDC amount deposited into all junior tranches |
@@ -460,36 +368,46 @@ Returns the total junior capital deposited
 ### availableToWithdraw
 
 ```solidity
-function availableToWithdraw(uint256 tokenId) public view returns (uint256 interestRedeemable, uint256 principalRedeemable)
+function availableToWithdraw(uint256 tokenId) public view returns (uint256, uint256)
 ```
 
 Determines the amount of interest and principal redeemable by a particular tokenId
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | The token representing the position |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| interestRedeemable | uint256 | The interest available to redeem |
-| principalRedeemable | uint256 | The principal available to redeem |
+| [0] | uint256 | interestRedeemable The interest available to redeem |
+| [1] | uint256 | principalRedeemable The principal available to redeem |
+
+### hasAllowedUID
+
+```solidity
+function hasAllowedUID(address sender) public view returns (bool)
+```
+
+### _collectInterestAndPrincipal
+
+```solidity
+function _collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) internal returns (uint256)
+```
+
+### _createAndSetCreditLine
+
+```solidity
+function _createAndSetCreditLine(address _borrower, uint256 _maxLimit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays) internal
+```
 
 ### _withdraw
 
 ```solidity
-function _withdraw(struct ITranchedPool.TrancheInfo trancheInfo, struct IPoolTokens.TokenInfo tokenInfo, uint256 tokenId, uint256 amount) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
-```
-
-### _isSeniorTrancheId
-
-```solidity
-function _isSeniorTrancheId(uint256 trancheId) internal pure returns (bool)
-```
-
-### redeemableInterestAndPrincipal
-
-```solidity
-function redeemableInterestAndPrincipal(struct ITranchedPool.TrancheInfo trancheInfo, struct IPoolTokens.TokenInfo tokenInfo) internal view returns (uint256 interestRedeemable, uint256 principalRedeemable)
+function _withdraw(struct ITranchedPool.TrancheInfo trancheInfo, struct IPoolTokens.TokenInfo tokenInfo, uint256 tokenId, uint256 amount) internal returns (uint256, uint256)
 ```
 
 ### _lockJuniorCapital
@@ -510,22 +428,10 @@ function _lockPool() internal
 function _initializeNextSlice(uint256 newFundableAt) internal
 ```
 
-### collectInterestAndPrincipal
+### _locked
 
 ```solidity
-function collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) internal returns (uint256 totalReserveAmount)
-```
-
-### locked
-
-```solidity
-function locked() internal view returns (bool)
-```
-
-### createAndSetCreditLine
-
-```solidity
-function createAndSetCreditLine(address _borrower, uint256 _maxLimit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays) internal
+function _locked() internal view returns (bool)
 ```
 
 ### _getTrancheInfo
@@ -534,35 +440,97 @@ function createAndSetCreditLine(address _borrower, uint256 _maxLimit, uint256 _i
 function _getTrancheInfo(uint256 trancheId) internal view returns (struct ITranchedPool.TrancheInfo)
 ```
 
-### currentTime
-
-```solidity
-function currentTime() internal view virtual returns (uint256)
-```
-
-### _sendToReserve
-
-```solidity
-function _sendToReserve(uint256 amount) internal
-```
-
-### _collectPayment
-
-```solidity
-function _collectPayment(uint256 amount) internal
-```
-
 ### _assess
 
 ```solidity
 function _assess() internal
 ```
 
-### hasAllowedUID
+### DepositMade
 
 ```solidity
-function hasAllowedUID(address sender) public view returns (bool)
+event DepositMade(address owner, uint256 tranche, uint256 tokenId, uint256 amount)
 ```
+
+### WithdrawalMade
+
+```solidity
+event WithdrawalMade(address owner, uint256 tranche, uint256 tokenId, uint256 interestWithdrawn, uint256 principalWithdrawn)
+```
+
+### TranchedPoolAssessed
+
+```solidity
+event TranchedPoolAssessed(address pool)
+```
+
+### PaymentApplied
+
+```solidity
+event PaymentApplied(address payer, address pool, uint256 interestAmount, uint256 principalAmount, uint256 remainingAmount, uint256 reserveAmount)
+```
+
+### SharePriceUpdated
+
+```solidity
+event SharePriceUpdated(address pool, uint256 tranche, uint256 principalSharePrice, int256 principalDelta, uint256 interestSharePrice, int256 interestDelta)
+```
+
+### ReserveFundsCollected
+
+```solidity
+event ReserveFundsCollected(address from, uint256 amount)
+```
+
+### CreditLineMigrated
+
+```solidity
+event CreditLineMigrated(contract IV2CreditLine oldCreditLine, contract IV2CreditLine newCreditLine)
+```
+
+### DrawdownMade
+
+```solidity
+event DrawdownMade(address borrower, uint256 amount)
+```
+
+### DrawdownsPaused
+
+```solidity
+event DrawdownsPaused(address pool)
+```
+
+### DrawdownsUnpaused
+
+```solidity
+event DrawdownsUnpaused(address pool)
+```
+
+### EmergencyShutdown
+
+```solidity
+event EmergencyShutdown(address pool)
+```
+
+### TrancheLocked
+
+```solidity
+event TrancheLocked(address pool, uint256 trancheId, uint256 lockedUntil)
+```
+
+### SliceCreated
+
+```solidity
+event SliceCreated(address pool, uint256 sliceId)
+```
+
+### getVersion
+
+```solidity
+function getVersion() external pure returns (uint8[3] version)
+```
+
+Returns the version triplet `[major, minor, patch]`
 
 ### onlyLocker
 
