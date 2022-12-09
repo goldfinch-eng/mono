@@ -37,13 +37,14 @@ export async function fetchBackerSecondaryMarketStat(
 export const backerSecondaryMarketResolvers: Resolvers[string] = {
   async poolStats(
     bsm: BackerSecondaryMarket,
-    args: { poolAddress?: string }
+    args: { poolAddress: string }
   ): Promise<BackerSecondaryMarketStat> {
     const { tokenCount, onSaleCount } = await fetchBackerSecondaryMarketStat(
       args.poolAddress
     );
     return {
       __typename: "BackerSecondaryMarketStat",
+      id: args.poolAddress,
       tokenCount,
       onSaleCount,
     };

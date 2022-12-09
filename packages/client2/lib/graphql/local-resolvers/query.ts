@@ -105,11 +105,16 @@ export const rootQueryResolvers: Resolvers[string] = {
       __typename: "CurvePool",
     };
   },
-  async backerSecondaryMarket(): Promise<Partial<BackerSecondaryMarket>> {
+  async backerSecondaryMarket(): Promise<
+    Omit<BackerSecondaryMarket, "poolStats">
+  > {
     const { tokenCount, onSaleCount } = await fetchBackerSecondaryMarketStat();
     return {
       __typename: "BackerSecondaryMarket",
+      id: "bsm",
       collectionStats: {
+        __typename: "BackerSecondaryMarketStat",
+        id: "collection",
         tokenCount,
         onSaleCount,
       },

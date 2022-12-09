@@ -132,11 +132,13 @@ type CurvePool {
 }
 
 type BackerSecondaryMarketStat {
+  id: ID!
   tokenCount: Int!
   onSaleCount: Int!
 }
 
 type BackerSecondaryMarket {
+  id: ID!
   collectionStats: BackerSecondaryMarketStat!
   poolStats(poolAddress: String!): BackerSecondaryMarketStat!
 }
