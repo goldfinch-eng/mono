@@ -321,10 +321,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   }
 
   const hasBacked = !!(
-    data?.user &&
-    (data?.user.tranchedPoolTokens.length > 0 ||
-      data?.user.zaps.length > 0 ||
-      data?.user.vaultedPoolTokens.length > 0)
+    user &&
+    tranchedPool &&
+    (user.tranchedPoolTokens.length > 0 ||
+      user.zaps.length > 0 ||
+      user.vaultedPoolTokens.length > 0)
   );
 
   return (
