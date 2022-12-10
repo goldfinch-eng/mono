@@ -63,7 +63,12 @@ module.exports = {
           BigDecimal: "TheGraph_BigDecimal",
           Bytes: "string",
           CryptoAmount: "CryptoAmount",
+          UsdcAmount: `CryptoAmount<"USDC">`,
+          FiduAmount: `CryptoAmount<"FIDU">`,
+          GfiAmount: `CryptoAmount<"GFI">`,
+          CurveLpAmount: `CryptoAmount<"CURVE_LP">`,
         },
+        enumsAsTypes: true,
       },
     },
     "lib/graphql/schema.json": {

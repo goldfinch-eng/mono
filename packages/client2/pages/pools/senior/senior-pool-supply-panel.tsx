@@ -18,7 +18,6 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
   SeniorPoolSupplyPanelUserFieldsFragment,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
@@ -222,7 +221,7 @@ export function SeniorPoolSupplyPanel({
       .then((balance) =>
         setAvailableBalance(
           formatCrypto(
-            { token: SupportedCrypto.Usdc, amount: balance },
+            { token: "USDC", amount: balance },
             { includeToken: true }
           )
         )

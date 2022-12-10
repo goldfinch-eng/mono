@@ -6,7 +6,6 @@ import { BigNumber, FixedNumber } from "ethers";
 import { InfoIconTooltip, Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
-  SupportedCrypto,
   RepaymentProgressPanelTranchedPoolFieldsFragment,
   RepaymentProgressPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
@@ -86,7 +85,7 @@ export default function RepaymentProgressPanel({
             heading="Remaining position outstanding"
             tooltip="The total value of your investment that remains for the Borrower to repay to you over the course of the Pool's payment term, including interest and principal repayments."
             value={formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: multiplyByFraction(
                 principalOutstanding.add(backerInterestOutstanding),
                 userPositionRatio
@@ -98,7 +97,7 @@ export default function RepaymentProgressPanel({
               [
                 "Principal",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: multiplyByFraction(
                     principalOutstanding,
                     userPositionRatio
@@ -108,7 +107,7 @@ export default function RepaymentProgressPanel({
               [
                 `Interest (${remainingInterestTime})`,
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: multiplyByFraction(
                     backerInterestOutstanding,
                     userPositionRatio
@@ -118,7 +117,7 @@ export default function RepaymentProgressPanel({
               [
                 "Total",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: multiplyByFraction(
                     principalOutstanding.add(backerInterestOutstanding),
                     userPositionRatio
@@ -134,7 +133,7 @@ export default function RepaymentProgressPanel({
             heading="Total remaining principal and interest"
             tooltip="The total amount of USDC remaining for the Borrower to repay to this Pool over its payment term, including interest and principal repayments."
             value={formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: principalOutstanding.add(interestOutstanding),
             })}
           />
@@ -143,21 +142,21 @@ export default function RepaymentProgressPanel({
               [
                 "Principal",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: principalOutstanding,
                 }),
               ],
               [
                 `Interest (${remainingInterestTime})`,
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: interestOutstanding,
                 }),
               ],
               [
                 "Total",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: principalOutstanding.add(interestOutstanding),
                 }),
               ],
@@ -170,7 +169,7 @@ export default function RepaymentProgressPanel({
             heading="Total USDC repaid"
             tooltip="The total amount of of USDC that the Borrower repaid to this Pool over its payment term, including interest and principal repayments."
             value={formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: totalRepaid,
             })}
           />
@@ -179,21 +178,21 @@ export default function RepaymentProgressPanel({
               [
                 "Principal",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: tranchedPool.principalAmountRepaid,
                 }),
               ],
               [
                 "Interest",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: tranchedPool.interestAmountRepaid,
                 }),
               ],
               [
                 "Total",
                 formatCrypto({
-                  token: SupportedCrypto.Usdc,
+                  token: "USDC",
                   amount: totalRepaid,
                 }),
               ],

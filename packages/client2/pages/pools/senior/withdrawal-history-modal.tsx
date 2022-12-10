@@ -11,11 +11,7 @@ import {
   ShimmerLines,
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import {
-  SupportedCrypto,
-  TransactionCategory,
-  useWithdrawalHistory2LazyQuery,
-} from "@/lib/graphql/generated";
+import { useWithdrawalHistory2LazyQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 interface WithdrawalHistoryModal {
@@ -60,10 +56,7 @@ export function WithdrawalHistoryModal({
       )
       .concat(
         data.transactions.map((transaction) => {
-          if (
-            transaction.category ===
-            TransactionCategory.SeniorPoolWithdrawalRequest
-          ) {
+          if (transaction.category === "SENIOR_POOL_WITHDRAWAL_REQUEST") {
             return {
               action: "initial",
               description: "Initial request",
@@ -72,8 +65,7 @@ export function WithdrawalHistoryModal({
               fiduRemaining: transaction.sentAmount as BigNumber,
             } as Row;
           } else if (
-            transaction.category ===
-            TransactionCategory.SeniorPoolAddToWithdrawalRequest
+            transaction.category === "SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST"
           ) {
             return {
               action: "increase",
@@ -178,13 +170,13 @@ export function WithdrawalHistoryModal({
                 </TableData>
                 <TableData rightAligned>
                   {formatCrypto({
-                    token: SupportedCrypto.Fidu,
+                    token: "FIDU",
                     amount: row.fiduChange,
                   })}
                 </TableData>
                 <TableData rightAligned>
                   {formatCrypto({
-                    token: SupportedCrypto.Fidu,
+                    token: "FIDU",
                     amount: row.fiduRemaining,
                   })}
                 </TableData>

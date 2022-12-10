@@ -17,7 +17,7 @@ import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 interface LpCurveFormProps {
-  balance: CryptoAmount;
+  balance: CryptoAmount<"FIDU" | "USDC">;
   type: "FIDU" | "USDC";
   onComplete: () => Promise<unknown>;
 }

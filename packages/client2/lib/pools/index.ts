@@ -5,7 +5,6 @@ import { IconNameType } from "@/components/design-system";
 import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
-  SupportedCrypto,
   TranchedPoolStatusFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
@@ -91,13 +90,16 @@ const sharePriceMantissa = fiduMantissa;
  * @param sharePrice `sharePrice` as it is reported from the Senior Pool contract
  * @returns a `CryptoAmount` in USDC
  */
-export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
+export function sharesToUsdc(
+  numShares: BigNumber, // TODO refactor numShares to be typed CryptoAmount<"FIDU">
+  sharePrice: BigNumber
+): CryptoAmount<"USDC"> {
   const amount = numShares
     .mul(sharePrice)
     .div(fiduMantissa)
     .div(sharePriceMantissa.div(usdcMantissa));
 
-  return { token: SupportedCrypto.Usdc, amount };
+  return { token: "USDC", amount };
 }
 
 /**
@@ -106,13 +108,16 @@ export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
  * @param sharePrice `sharePrice` as it reported from the Senior Pool contract
  * @returns a `CryptoAmount` in FIDU
  */
-export function usdcToShares(usdcAmount: BigNumber, sharePrice: BigNumber) {
+export function usdcToShares(
+  usdcAmount: BigNumber, // TODO refactor usdcAmount to be typed CryptoAmount<"USDC">
+  sharePrice: BigNumber
+): CryptoAmount<"FIDU"> {
   const numShares = usdcAmount
     .mul(fiduMantissa)
     .div(usdcMantissa)
     .mul(sharePriceMantissa)
     .div(sharePrice);
-  return { token: SupportedCrypto.Fidu, amount: numShares };
+  return { token: "FIDU", amount: numShares };
 }
 
 export const USER_ELIGIBILITY_FIELDS = gql`
@@ -134,28 +139,25 @@ export function canUserParticipateInPool(
   if (user.isGoListed) {
     return true;
   }
-  if (
-    user.isNonUsIndividual &&
-    poolAllowedUids.includes(UidType.NonUsIndividual)
-  ) {
+  if (user.isNonUsIndividual && poolAllowedUids.includes("NON_US_INDIVIDUAL")) {
     return true;
   }
   if (
     user.isUsAccreditedIndividual &&
-    poolAllowedUids.includes(UidType.UsAccreditedIndividual)
+    poolAllowedUids.includes("US_ACCREDITED_INDIVIDUAL")
   ) {
     return true;
   }
   if (
     user.isUsNonAccreditedIndividual &&
-    poolAllowedUids.includes(UidType.UsNonAccreditedIndividual)
+    poolAllowedUids.includes("US_NON_ACCREDITED_INDIVIDUAL")
   ) {
     return true;
   }
-  if (user.isUsEntity && poolAllowedUids.includes(UidType.UsEntity)) {
+  if (user.isUsEntity && poolAllowedUids.includes("US_ENTITY")) {
     return true;
   }
-  if (user.isNonUsEntity && poolAllowedUids.includes(UidType.NonUsEntity)) {
+  if (user.isNonUsEntity && poolAllowedUids.includes("NON_US_ENTITY")) {
     return true;
   }
   return false;
@@ -166,10 +168,10 @@ export function canUserParticipateInSeniorPool(
 ) {
   return canUserParticipateInPool(
     [
-      UidType.NonUsEntity,
-      UidType.NonUsIndividual,
-      UidType.UsEntity,
-      UidType.UsAccreditedIndividual,
+      "NON_US_ENTITY",
+      "NON_US_INDIVIDUAL",
+      "US_ENTITY",
+      "US_ACCREDITED_INDIVIDUAL",
     ],
     user
   );
@@ -267,38 +269,32 @@ export async function approveErc721IfRequired({
 }
 
 const transactionLabels: Record<TransactionCategory, string> = {
-  [TransactionCategory.SeniorPoolStake]: "Senior Pool Stake",
-  [TransactionCategory.SeniorPoolDeposit]: "Senior Pool Supply",
-  [TransactionCategory.SeniorPoolDepositAndStake]:
-    "Senior Pool Supply and Stake",
-  [TransactionCategory.SeniorPoolUnstake]: "Senior Pool Unstake",
-  [TransactionCategory.SeniorPoolWithdrawal]: "Senior Pool Withdrawal",
-  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]:
-    "Senior Pool Unstake and Withdraw",
-  [TransactionCategory.SeniorPoolRedemption]: "Senior Pool Auto Transfer",
-  [TransactionCategory.TranchedPoolDeposit]: "Borrower Pool Supply",
-  [TransactionCategory.TranchedPoolWithdrawal]: "Borrower Pool Withdrawal",
-  [TransactionCategory.TranchedPoolRepayment]: "Repayment",
-  [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
-  [TransactionCategory.UidMinted]: "Mint UID",
-  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
-  [TransactionCategory.CurveFiduSell]: "Curve Swap",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]:
-    "Withdrawal Request Increased",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]:
-    "Cancel Withdrawal Request",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal Request Distribution",
-  [TransactionCategory.StakingRewardsClaimed]: "Staking Rewards Claimed",
-  [TransactionCategory.BackerRewardsClaimed]: "Backer Rewards Claimed",
-  [TransactionCategory.CommunityRewardsClaimed]: "GFI Grant Claimed",
-  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards Claimed",
-  [TransactionCategory.MembershipGfiDeposit]: "Added GFI to Vault",
-  [TransactionCategory.MembershipGfiWithdrawal]: "Removed GFI from Vault",
-  [TransactionCategory.MembershipCapitalDeposit]: "Added Capital to Vault",
-  [TransactionCategory.MembershipCapitalWithdrawal]:
-    "Removed Capital from Vault",
+  SENIOR_POOL_STAKE: "Senior Pool Stake",
+  SENIOR_POOL_DEPOSIT: "Senior Pool Supply",
+  SENIOR_POOL_DEPOSIT_AND_STAKE: "Senior Pool Supply and Stake",
+  SENIOR_POOL_UNSTAKE: "Senior Pool Unstake",
+  SENIOR_POOL_WITHDRAWAL: "Senior Pool Withdrawal",
+  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "Senior Pool Unstake and Withdraw",
+  SENIOR_POOL_REDEMPTION: "Senior Pool Auto Transfer",
+  TRANCHED_POOL_DEPOSIT: "Borrower Pool Supply",
+  TRANCHED_POOL_WITHDRAWAL: "Borrower Pool Withdrawal",
+  TRANCHED_POOL_REPAYMENT: "Repayment",
+  TRANCHED_POOL_DRAWDOWN: "Drawdown",
+  UID_MINTED: "Mint UID",
+  CURVE_FIDU_BUY: "Curve Swap",
+  CURVE_FIDU_SELL: "Curve Swap",
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "Withdrawal Request Increased",
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "Cancel Withdrawal Request",
+  SENIOR_POOL_WITHDRAWAL_REQUEST: "Withdrawal Request",
+  SENIOR_POOL_DISTRIBUTION: "Withdrawal Request Distribution",
+  STAKING_REWARDS_CLAIMED: "Staking Rewards Claimed",
+  BACKER_REWARDS_CLAIMED: "Backer Rewards Claimed",
+  COMMUNITY_REWARDS_CLAIMED: "GFI Grant Claimed",
+  MEMBERSHIP_REWARDS_CLAIMED: "Membership Rewards Claimed",
+  MEMBERSHIP_GFI_DEPOSIT: "Added GFI to Vault",
+  MEMBERSHIP_GFI_WITHDRAWAL: "Removed GFI from Vault",
+  MEMBERSHIP_CAPITAL_DEPOSIT: "Added Capital to Vault",
+  MEMBERSHIP_CAPITAL_WITHDRAWAL: "Removed Capital from Vault",
 };
 
 export function getTransactionLabel(transaction: {
@@ -308,33 +304,32 @@ export function getTransactionLabel(transaction: {
 }
 
 const shortTransactionLabels: Record<TransactionCategory, string> = {
-  [TransactionCategory.SeniorPoolStake]: "Stake",
-  [TransactionCategory.SeniorPoolDeposit]: "Supply",
-  [TransactionCategory.SeniorPoolDepositAndStake]: "Supply and Stake",
-  [TransactionCategory.SeniorPoolUnstake]: "Unstake",
-  [TransactionCategory.SeniorPoolWithdrawal]: "Withdrawal",
-  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "Unstake and Withdraw",
-  [TransactionCategory.SeniorPoolRedemption]: "Auto Transfer",
-  [TransactionCategory.TranchedPoolDeposit]: "Supply",
-  [TransactionCategory.TranchedPoolWithdrawal]: "Withdrawal",
-  [TransactionCategory.TranchedPoolRepayment]: "Repayment",
-  [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
-  [TransactionCategory.UidMinted]: "Mint UID",
-  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
-  [TransactionCategory.CurveFiduSell]: "Curve Swap",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "Increase Withdrawal",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "Cancel Withdrawal",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "Withdrawal Request",
-  [TransactionCategory.SeniorPoolDistribution]:
-    "Withdrawal Request Distribution",
-  [TransactionCategory.StakingRewardsClaimed]: "Rewards Claimed",
-  [TransactionCategory.BackerRewardsClaimed]: "Rewards Claimed",
-  [TransactionCategory.CommunityRewardsClaimed]: "Grant Claimed",
-  [TransactionCategory.MembershipRewardsClaimed]: "Membership Rewards",
-  [TransactionCategory.MembershipGfiDeposit]: "Vaulted GFI",
-  [TransactionCategory.MembershipGfiWithdrawal]: "Unvaulted GFI",
-  [TransactionCategory.MembershipCapitalDeposit]: "Vaulted Capital",
-  [TransactionCategory.MembershipCapitalWithdrawal]: "Unvaulted Capital",
+  SENIOR_POOL_STAKE: "Stake",
+  SENIOR_POOL_DEPOSIT: "Supply",
+  SENIOR_POOL_DEPOSIT_AND_STAKE: "Supply and Stake",
+  SENIOR_POOL_UNSTAKE: "Unstake",
+  SENIOR_POOL_WITHDRAWAL: "Withdrawal",
+  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "Unstake and Withdraw",
+  SENIOR_POOL_REDEMPTION: "Auto Transfer",
+  TRANCHED_POOL_DEPOSIT: "Supply",
+  TRANCHED_POOL_WITHDRAWAL: "Withdrawal",
+  TRANCHED_POOL_REPAYMENT: "Repayment",
+  TRANCHED_POOL_DRAWDOWN: "Drawdown",
+  UID_MINTED: "Mint UID",
+  CURVE_FIDU_BUY: "Curve Swap",
+  CURVE_FIDU_SELL: "Curve Swap",
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "Increase Withdrawal",
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "Cancel Withdrawal",
+  SENIOR_POOL_WITHDRAWAL_REQUEST: "Withdrawal Request",
+  SENIOR_POOL_DISTRIBUTION: "Withdrawal Request Distribution",
+  STAKING_REWARDS_CLAIMED: "Rewards Claimed",
+  BACKER_REWARDS_CLAIMED: "Rewards Claimed",
+  COMMUNITY_REWARDS_CLAIMED: "Grant Claimed",
+  MEMBERSHIP_REWARDS_CLAIMED: "Membership Rewards",
+  MEMBERSHIP_GFI_DEPOSIT: "Vaulted GFI",
+  MEMBERSHIP_GFI_WITHDRAWAL: "Unvaulted GFI",
+  MEMBERSHIP_CAPITAL_DEPOSIT: "Vaulted Capital",
+  MEMBERSHIP_CAPITAL_WITHDRAWAL: "Unvaulted Capital",
 };
 
 /**
@@ -349,32 +344,32 @@ export function getShortTransactionLabel(transaction: {
 }
 
 const transactionIcons: Record<TransactionCategory, IconNameType> = {
-  [TransactionCategory.SeniorPoolStake]: "ArrowUp",
-  [TransactionCategory.SeniorPoolDeposit]: "ArrowUp",
-  [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUp",
-  [TransactionCategory.SeniorPoolUnstake]: "ArrowDown",
-  [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDown",
-  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDown",
-  [TransactionCategory.SeniorPoolRedemption]: "ArrowDown",
-  [TransactionCategory.TranchedPoolDeposit]: "ArrowUp",
-  [TransactionCategory.TranchedPoolWithdrawal]: "ArrowDown",
-  [TransactionCategory.TranchedPoolRepayment]: "ArrowUp",
-  [TransactionCategory.TranchedPoolDrawdown]: "ArrowDown",
-  [TransactionCategory.UidMinted]: "Checkmark",
-  [TransactionCategory.CurveFiduBuy]: "ArrowUp",
-  [TransactionCategory.CurveFiduSell]: "ArrowDown",
-  [TransactionCategory.SeniorPoolAddToWithdrawalRequest]: "ArrowDown",
-  [TransactionCategory.SeniorPoolCancelWithdrawalRequest]: "X",
-  [TransactionCategory.SeniorPoolWithdrawalRequest]: "ArrowDown",
-  [TransactionCategory.SeniorPoolDistribution]: "ArrowDown",
-  [TransactionCategory.StakingRewardsClaimed]: "ArrowUp",
-  [TransactionCategory.BackerRewardsClaimed]: "ArrowUp",
-  [TransactionCategory.CommunityRewardsClaimed]: "ArrowUp",
-  [TransactionCategory.MembershipRewardsClaimed]: "ArrowUp",
-  [TransactionCategory.MembershipGfiDeposit]: "ArrowUp",
-  [TransactionCategory.MembershipGfiWithdrawal]: "ArrowDown",
-  [TransactionCategory.MembershipCapitalDeposit]: "ArrowUp",
-  [TransactionCategory.MembershipCapitalWithdrawal]: "ArrowDown",
+  SENIOR_POOL_STAKE: "ArrowUp",
+  SENIOR_POOL_DEPOSIT: "ArrowUp",
+  SENIOR_POOL_DEPOSIT_AND_STAKE: "ArrowUp",
+  SENIOR_POOL_UNSTAKE: "ArrowDown",
+  SENIOR_POOL_WITHDRAWAL: "ArrowDown",
+  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "ArrowDown",
+  SENIOR_POOL_REDEMPTION: "ArrowDown",
+  TRANCHED_POOL_DEPOSIT: "ArrowUp",
+  TRANCHED_POOL_WITHDRAWAL: "ArrowDown",
+  TRANCHED_POOL_REPAYMENT: "ArrowUp",
+  TRANCHED_POOL_DRAWDOWN: "ArrowDown",
+  UID_MINTED: "Checkmark",
+  CURVE_FIDU_BUY: "ArrowUp",
+  CURVE_FIDU_SELL: "ArrowDown",
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "ArrowDown",
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "X",
+  SENIOR_POOL_WITHDRAWAL_REQUEST: "ArrowDown",
+  SENIOR_POOL_DISTRIBUTION: "ArrowDown",
+  STAKING_REWARDS_CLAIMED: "ArrowUp",
+  BACKER_REWARDS_CLAIMED: "ArrowUp",
+  COMMUNITY_REWARDS_CLAIMED: "ArrowUp",
+  MEMBERSHIP_REWARDS_CLAIMED: "ArrowUp",
+  MEMBERSHIP_GFI_DEPOSIT: "ArrowUp",
+  MEMBERSHIP_GFI_WITHDRAWAL: "ArrowDown",
+  MEMBERSHIP_CAPITAL_DEPOSIT: "ArrowUp",
+  MEMBERSHIP_CAPITAL_WITHDRAWAL: "ArrowDown",
 };
 
 /**
@@ -392,8 +387,8 @@ export function getTransactionIcon(transaction: {
  * Mapping of position type to value for transactions
  */
 export const positionTypeToValue: Record<StakedPositionType, string> = {
-  [StakedPositionType.Fidu]: "0",
-  [StakedPositionType.CurveLp]: "1",
+  Fidu: "0",
+  CurveLP: "1",
 };
 
 /**
@@ -459,14 +454,17 @@ export function sum<T extends string, U extends Record<T, BigNumber>>(
  * @param fiatPerGfi The number of USD per GFI
  * @returns A CryptoAmount in USDC
  */
-export function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
+export function gfiToUsdc(
+  gfi: CryptoAmount,
+  fiatPerGfi: number
+): CryptoAmount<"USDC"> {
   const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
   const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
     FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
   );
   const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
   return {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: BigNumber.from(amount.toString().split(".")[0]),
   };
 }

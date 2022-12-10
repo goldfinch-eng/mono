@@ -24,13 +24,13 @@ async function erc20Balance(
 
     const contract = await getContract({
       name:
-        token === SupportedCrypto.Gfi
+        token === "GFI"
           ? "GFI"
-          : token === SupportedCrypto.Usdc
+          : token === "USDC"
           ? "USDC"
-          : token === SupportedCrypto.Fidu
+          : token === "FIDU"
           ? "Fidu"
-          : token === SupportedCrypto.CurveLp
+          : token === "CURVE_LP"
           ? "CurveLP"
           : assertUnreachable(token),
       provider,
@@ -55,16 +55,16 @@ export const viewerResolvers: Resolvers[string] = {
     return viewer.account;
   },
   async gfiBalance(): Promise<CryptoAmount | null> {
-    return erc20Balance(SupportedCrypto.Gfi);
+    return erc20Balance("GFI");
   },
   async usdcBalance(): Promise<CryptoAmount | null> {
-    return erc20Balance(SupportedCrypto.Usdc);
+    return erc20Balance("USDC");
   },
   async fiduBalance(): Promise<CryptoAmount | null> {
-    return erc20Balance(SupportedCrypto.Fidu);
+    return erc20Balance("FIDU");
   },
   async curveLpBalance(): Promise<CryptoAmount | null> {
-    return erc20Balance(SupportedCrypto.CurveLp);
+    return erc20Balance("CURVE_LP");
   },
   async gfiGrants(viewer: Viewer) {
     if (!viewer || !viewer.account) {
@@ -127,7 +127,7 @@ export const viewerResolvers: Resolvers[string] = {
         account
       );
       return {
-        token: SupportedCrypto.Fidu,
+        token: "FIDU",
         amount: availableRewards,
       };
     } catch (e) {
@@ -160,7 +160,7 @@ export const viewerResolvers: Resolvers[string] = {
       const accrued = eligibleTotal.isZero()
         ? BigNumber.from(0)
         : totalRewardsThisEpoch.mul(eligibleScore).div(eligibleTotal);
-      return { token: SupportedCrypto.Fidu, amount: accrued };
+      return { token: "FIDU", amount: accrued };
     } catch (e) {
       return null;
     }

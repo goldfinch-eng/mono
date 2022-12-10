@@ -6,10 +6,7 @@ import { useForm } from "react-hook-form";
 import { Button, Form } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import {
-  BackerCardTokenFieldsFragment,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { BackerCardTokenFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -75,15 +72,15 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
     <RewardCardScaffold
       heading={`Backer of ${token.tranchedPool.name}`}
       subheading={`${formatCrypto(
-        { token: SupportedCrypto.Gfi, amount: totalAmount },
+        { token: "GFI", amount: totalAmount },
         { includeToken: true }
       )} - ${formattedDate}`}
       fadedAmount={formatCrypto({
-        token: SupportedCrypto.Gfi,
+        token: "GFI",
         amount: BigNumber.from(0),
       })}
       boldedAmount={formatCrypto({
-        token: SupportedCrypto.Gfi,
+        token: "GFI",
         amount: token.rewardsClaimable.add(token.stakingRewardsClaimable),
       })}
       action={
@@ -98,7 +95,7 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
           <Detail
             heading="Transaction details"
             body={`Supplied ${formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: token.principalAmount,
             })} on ${formattedDate}`}
           />
@@ -107,7 +104,7 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
             heading="Unlock status"
             body={`100% (${formatCrypto(
               {
-                token: SupportedCrypto.Gfi,
+                token: "GFI",
                 amount: token.rewardsClaimable.add(
                   token.stakingRewardsClaimable
                 ),
@@ -119,12 +116,12 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
             heading="Claim status"
             body={`${formatCrypto(
               {
-                token: SupportedCrypto.Gfi,
+                token: "GFI",
                 amount: token.rewardsClaimed.add(token.stakingRewardsClaimed),
               },
               { includeToken: true }
             )} claimed of your total unlocked ${formatCrypto(
-              { token: SupportedCrypto.Gfi, amount: totalAmount },
+              { token: "GFI", amount: totalAmount },
               { includeToken: true }
             )}`}
           />

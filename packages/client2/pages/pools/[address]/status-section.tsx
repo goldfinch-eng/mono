@@ -7,10 +7,7 @@ import { FixedNumber } from "ethers";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SupportedCrypto,
-  TranchedPoolStatGridFieldsFragment,
-} from "@/lib/graphql/generated";
+import { TranchedPoolStatGridFieldsFragment } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
 
 // The fragments here are just used for the purpose of typechecking. They don't get sent to the top-level query because of the fragment overlap bug
@@ -102,7 +99,7 @@ export function StatusSection({
       key="principalOutstandingStat"
       label="Principal outstanding"
       value={formatCrypto({
-        token: SupportedCrypto.Usdc,
+        token: "USDC",
         amount: tranchedPool.creditLine.maxLimit.sub(
           tranchedPool.principalAmountRepaid
         ),
@@ -149,7 +146,7 @@ export function StatusSection({
       key="limitStat"
       label="Pool limit"
       value={formatCrypto({
-        token: SupportedCrypto.Usdc,
+        token: "USDC",
         amount: tranchedPool.creditLine.maxLimit,
       })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."

@@ -67,9 +67,9 @@ function getChipContent(
       return "COMING SOON";
     case PoolStatus.Repaid:
       return "REPAID";
-    case Deal_DealType.Unitranche:
+    case "unitranche":
       return "Unitranche";
-    case Deal_DealType.Multitranche:
+    case "multitranche":
       return "Multitranche";
     default:
       return null;

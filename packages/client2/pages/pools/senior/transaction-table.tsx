@@ -56,18 +56,18 @@ gql`
 `;
 
 const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
-  TransactionCategory.SeniorPoolWithdrawal,
-  TransactionCategory.SeniorPoolUnstake,
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
-  TransactionCategory.SeniorPoolDistribution,
+  "SENIOR_POOL_WITHDRAWAL",
+  "SENIOR_POOL_UNSTAKE",
+  "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL",
+  "TRANCHED_POOL_DRAWDOWN",
+  "SENIOR_POOL_DISTRIBUTION",
 ]);
 
 const sentTokenCategories = new Set<TransactionCategory>([
-  TransactionCategory.SeniorPoolStake,
-  TransactionCategory.SeniorPoolDepositAndStake,
-  TransactionCategory.TranchedPoolRepayment,
-  TransactionCategory.SeniorPoolDistribution,
+  "SENIOR_POOL_STAKE",
+  "SENIOR_POOL_DEPOSIT_AND_STAKE",
+  "TRANCHED_POOL_REPAYMENT",
+  "SENIOR_POOL_DISTRIBUTION",
 ]);
 
 export function TransactionTable() {
@@ -107,8 +107,8 @@ export function TransactionTable() {
 
     return [
       <div key={`${transaction.id}-user`} className="flex items-center gap-2">
-        {transaction.category === TransactionCategory.TranchedPoolDrawdown ||
-        transaction.category === TransactionCategory.TranchedPoolRepayment ? (
+        {transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
+        transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
           <>
             <Image
               src={transaction.tranchedPool?.borrowerLogo as string}
@@ -119,8 +119,7 @@ export function TransactionTable() {
             />
             <div>{transaction.tranchedPool?.borrowerName}</div>
           </>
-        ) : transaction.category ===
-          TransactionCategory.SeniorPoolDistribution ? (
+        ) : transaction.category === "SENIOR_POOL_DISTRIBUTION" ? (
           <>
             <Image
               src={goldfinchLogoPngUrl}

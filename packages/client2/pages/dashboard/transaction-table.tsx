@@ -7,8 +7,6 @@ import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
-  SupportedCrypto,
-  SupportedNft,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
@@ -45,18 +43,18 @@ gql`
   }
 `;
 
-const curvePoolCategories = [
-  TransactionCategory.CurveFiduBuy,
-  TransactionCategory.CurveFiduSell,
+const curvePoolCategories: TransactionCategory[] = [
+  "CURVE_FIDU_BUY",
+  "CURVE_FIDU_SELL",
 ];
 
-const seniorPoolCategories = [
-  TransactionCategory.SeniorPoolDeposit,
-  TransactionCategory.SeniorPoolDepositAndStake,
-  TransactionCategory.SeniorPoolStake,
-  TransactionCategory.SeniorPoolUnstake,
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
-  TransactionCategory.SeniorPoolWithdrawal,
+const seniorPoolCategories: TransactionCategory[] = [
+  "SENIOR_POOL_DEPOSIT",
+  "SENIOR_POOL_DEPOSIT_AND_STAKE",
+  "SENIOR_POOL_STAKE",
+  "SENIOR_POOL_UNSTAKE",
+  "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL",
+  "SENIOR_POOL_WITHDRAWAL",
 ];
 
 interface TransactionTableProps {
@@ -84,7 +82,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
       let sentAmount = null,
         receivedAmount = null;
 
-      if (transaction.sentNftType === SupportedNft.PoolToken) {
+      if (transaction.sentNftType === "POOL_TOKEN") {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
@@ -96,7 +94,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
             </Link>
           </div>
         );
-      } else if (transaction.sentNftType === SupportedNft.StakingToken) {
+      } else if (transaction.sentNftType === "STAKING_TOKEN") {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
@@ -123,7 +121,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         );
       }
 
-      if (transaction.receivedNftType === SupportedNft.PoolToken) {
+      if (transaction.receivedNftType === "POOL_TOKEN") {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
@@ -135,7 +133,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
             </Link>
           </div>
         );
-      } else if (transaction.receivedNftType === SupportedNft.StakingToken) {
+      } else if (transaction.receivedNftType === "STAKING_TOKEN") {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
@@ -185,7 +183,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
           {(transaction.fiduPrice &&
             formatCrypto({
               amount: transaction.fiduPrice,
-              token: SupportedCrypto.Fidu,
+              token: "FIDU",
             })) ||
             "--"}
         </div>,

@@ -9,12 +9,9 @@ import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
-  SupportedCrypto,
   GrantCardGrantFieldsFragment,
   GrantCardTokenFieldsFragment,
   GrantReason,
-  IndirectGrantSource,
-  DirectGrantSource,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
@@ -75,14 +72,14 @@ export function GrantCard({ grant, token, claimable, locked }: GrantCardProps) {
       heading={getReasonLabel(grant.reason)}
       subheading={`${formatCrypto(
         {
-          token: SupportedCrypto.Gfi,
+          token: "GFI",
           amount: grant.amount,
         },
         { includeToken: true }
       )} - ${format(TOKEN_LAUNCH_TIME * 1000, "MMM d, y")}`}
-      fadedAmount={formatCrypto({ token: SupportedCrypto.Gfi, amount: locked })}
+      fadedAmount={formatCrypto({ token: "GFI", amount: locked })}
       boldedAmount={formatCrypto({
-        token: SupportedCrypto.Gfi,
+        token: "GFI",
         amount: claimable,
       })}
       action={
@@ -130,14 +127,14 @@ export function GrantCard({ grant, token, claimable, locked }: GrantCardProps) {
 }
 
 const descriptionMapping: Record<GrantReason, string> = {
-  [GrantReason.FlightAcademy]: "participating in Flight Academy",
-  [GrantReason.FlightAcademyAndLiquidityProvider]:
+  FLIGHT_ACADEMY: "participating in Flight Academy",
+  FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER:
     "participating in Flight Academy and as Liquidity Provider",
-  [GrantReason.Backer]: "participating as a Backer",
-  [GrantReason.LiquidityProvider]: "participating as a Liquidity Provider",
-  [GrantReason.GoldfinchInvestment]: "participating as a Goldfinch investor",
-  [GrantReason.Contributor]: "participating as a Goldfinch contributor",
-  [GrantReason.Advisor]: "participating as a Goldfinch advisor",
+  BACKER: "participating as a Backer",
+  LIQUIDITY_PROVIDER: "participating as a Liquidity Provider",
+  GOLDFINCH_INVESTMENT: "participating as a Goldfinch investor",
+  CONTRIBUTOR: "participating as a Goldfinch contributor",
+  ADVISOR: "participating as a Goldfinch advisor",
 };
 
 function displayGrantDescription(
@@ -145,7 +142,7 @@ function displayGrantDescription(
   reason: GrantReason
 ): string {
   const displayAmount = formatCrypto(
-    { amount, token: SupportedCrypto.Gfi },
+    { amount, token: "GFI" },
     { includeToken: true }
   );
   return `${displayAmount} for ${descriptionMapping[reason]}`;
@@ -182,7 +179,7 @@ export function displayUnlockedProgress(
   return `${formatPercent(
     unlockedAsFixed.divUnsafe(totalAmountAsFixed)
   )} (${formatCrypto(
-    { token: SupportedCrypto.Gfi, amount: unlocked },
+    { token: "GFI", amount: unlocked },
     { includeToken: true }
   )}) unlocked`;
 }
@@ -192,11 +189,11 @@ export function displayClaimedStatus(
   unlocked: BigNumber
 ): string {
   const formattedClaimed = formatCrypto(
-    { token: SupportedCrypto.Gfi, amount: claimed },
+    { token: "GFI", amount: claimed },
     { includeToken: true }
   );
   const formattedUnlocked = formatCrypto(
-    { token: SupportedCrypto.Gfi, amount: unlocked },
+    { token: "GFI", amount: unlocked },
     { includeToken: true }
   );
 
@@ -256,7 +253,7 @@ function GrantButton({
 
     if (grant.__typename === "IndirectGfiGrant") {
       switch (grant.indirectSource) {
-        case IndirectGrantSource.MerkleDistributor:
+        case "MERKLE_DISTRIBUTOR":
           if (!token) {
             await toastTransaction({
               transaction: merkleDistributorContract.acceptGrant(
@@ -274,7 +271,7 @@ function GrantButton({
             });
           }
           break;
-        case IndirectGrantSource.BackerMerkleDistributor:
+        case "BACKER_MERKLE_DISTRIBUTOR":
           if (!token) {
             await toastTransaction({
               transaction: backerMerkleDistributorContract.acceptGrant(
@@ -297,7 +294,7 @@ function GrantButton({
       }
     } else if (grant.__typename === "DirectGfiGrant") {
       switch (grant.directSource) {
-        case DirectGrantSource.MerkleDirectDistributor:
+        case "MERKLE_DIRECT_DISTRIBUTOR":
           await toastTransaction({
             transaction: merkleDirectDistributorContract.acceptGrant(
               grant.index,
@@ -306,7 +303,7 @@ function GrantButton({
             ),
           });
           break;
-        case DirectGrantSource.BackerMerkleDirectDistributor:
+        case "BACKER_MERKLE_DIRECT_DISTRIBUTOR":
           await toastTransaction({
             transaction: backerMerkleDirectDistributorContract.acceptGrant(
               grant.index,

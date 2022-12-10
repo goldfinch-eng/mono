@@ -18,7 +18,6 @@ import { formatCrypto } from "@/lib/format";
 import {
   WithdrawalPanelPoolTokenFieldsFragment,
   WithdrawalPanelZapFieldsFragment,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -200,7 +199,7 @@ export function WithdrawalPanel({
     const wallet = [
       {
         label: `Wallet \u00b7 ${formatCrypto({
-          token: SupportedCrypto.Usdc,
+          token: "USDC",
           amount: totalPrincipalRedeemable.add(totalInterestRedeemable),
         })}`,
         value: "wallet",
@@ -208,7 +207,7 @@ export function WithdrawalPanel({
     ];
     const seniorPoolStakedPositions = zaps.map((zap, index) => ({
       label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto({
-        token: SupportedCrypto.Usdc,
+        token: "USDC",
         amount: zap.poolToken.principalRedeemable.add(
           zap.poolToken.interestRedeemable
         ),
@@ -229,7 +228,7 @@ export function WithdrawalPanel({
       </div>
       <div className="mb-9 flex items-center gap-3 text-5xl">
         {formatCrypto({
-          token: SupportedCrypto.Usdc,
+          token: "USDC",
           amount: totalWithdrawable,
         })}
         <Icon name="Usdc" size="sm" />

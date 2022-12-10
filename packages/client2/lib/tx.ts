@@ -1,5 +1,4 @@
-import { TransactionCategory, Transaction } from "./graphql/generated";
-import { assertUnreachable } from "./utils";
+import { Transaction } from "./graphql/generated";
 
 type CorrespondingExistsInfo = {
   [timestamp: number]: {
@@ -42,46 +41,19 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
     overlappingEvents.reduce<OverlapAccumulator>(
       (acc: OverlapAccumulator, curr: T) => {
         switch (curr.category) {
-          case TransactionCategory.SeniorPoolDeposit:
-            break;
-          case TransactionCategory.SeniorPoolDepositAndStake:
+          case "SENIOR_POOL_DEPOSIT_AND_STAKE":
             acc.depositedAndStaked[curr.timestamp] =
               acc.depositedAndStaked[curr.timestamp] || {};
             acc.depositedAndStaked[curr.timestamp][curr.transactionHash] = true;
             break;
-          case TransactionCategory.SeniorPoolRedemption:
-          case TransactionCategory.SeniorPoolStake:
-          case TransactionCategory.SeniorPoolUnstake:
-            break;
-          case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+          case "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL":
             acc.unstakedAndWithdrew[curr.timestamp] =
               acc.unstakedAndWithdrew[curr.timestamp] || {};
             acc.unstakedAndWithdrew[curr.timestamp][curr.transactionHash] =
               true;
             break;
-          case TransactionCategory.SeniorPoolWithdrawal:
-          case TransactionCategory.TranchedPoolDeposit:
-          case TransactionCategory.TranchedPoolDrawdown:
-          case TransactionCategory.TranchedPoolRepayment:
-          case TransactionCategory.TranchedPoolWithdrawal:
-          case TransactionCategory.UidMinted:
-          case TransactionCategory.CurveFiduBuy:
-          case TransactionCategory.CurveFiduSell:
-          case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
-          case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
-          case TransactionCategory.SeniorPoolWithdrawalRequest:
-          case TransactionCategory.SeniorPoolDistribution:
-          case TransactionCategory.StakingRewardsClaimed:
-          case TransactionCategory.BackerRewardsClaimed:
-          case TransactionCategory.CommunityRewardsClaimed:
-          case TransactionCategory.MembershipRewardsClaimed:
-          case TransactionCategory.MembershipGfiDeposit:
-          case TransactionCategory.MembershipGfiWithdrawal:
-          case TransactionCategory.MembershipCapitalDeposit:
-          case TransactionCategory.MembershipCapitalWithdrawal:
-            break;
           default:
-            assertUnreachable(curr.category);
+            break;
         }
         return acc;
       },
@@ -92,38 +64,12 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
     );
   return overlappingEvents.filter((tx: T): boolean => {
     switch (tx.category) {
-      case TransactionCategory.SeniorPoolDeposit:
-      case TransactionCategory.SeniorPoolDepositAndStake:
-      case TransactionCategory.SeniorPoolRedemption:
-        return true;
-      case TransactionCategory.SeniorPoolStake:
+      case "SENIOR_POOL_STAKE":
         return !reduced.depositedAndStaked[tx.timestamp]?.[tx.transactionHash];
-      case TransactionCategory.SeniorPoolUnstake:
+      case "SENIOR_POOL_UNSTAKE":
         return !reduced.unstakedAndWithdrew[tx.timestamp]?.[tx.transactionHash];
-      case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
-      case TransactionCategory.SeniorPoolWithdrawal:
-      case TransactionCategory.TranchedPoolDeposit:
-      case TransactionCategory.TranchedPoolDrawdown:
-      case TransactionCategory.TranchedPoolRepayment:
-      case TransactionCategory.TranchedPoolWithdrawal:
-      case TransactionCategory.UidMinted:
-      case TransactionCategory.CurveFiduBuy:
-      case TransactionCategory.CurveFiduSell:
-      case TransactionCategory.SeniorPoolAddToWithdrawalRequest:
-      case TransactionCategory.SeniorPoolCancelWithdrawalRequest:
-      case TransactionCategory.SeniorPoolWithdrawalRequest:
-      case TransactionCategory.SeniorPoolDistribution:
-      case TransactionCategory.StakingRewardsClaimed:
-      case TransactionCategory.BackerRewardsClaimed:
-      case TransactionCategory.CommunityRewardsClaimed:
-      case TransactionCategory.MembershipRewardsClaimed:
-      case TransactionCategory.MembershipGfiDeposit:
-      case TransactionCategory.MembershipGfiWithdrawal:
-      case TransactionCategory.MembershipCapitalDeposit:
-      case TransactionCategory.MembershipCapitalWithdrawal:
-        return true;
       default:
-        return assertUnreachable(tx.category);
+        return true;
     }
   });
 }
