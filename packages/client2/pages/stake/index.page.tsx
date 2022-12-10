@@ -214,14 +214,14 @@ export default function StakePage() {
                     <Tab.Panel>
                       <StakeForm
                         max={fiduBalance}
-                        positionType={"Fidu"}
+                        positionType="Fidu"
                         onComplete={refetch}
                       />
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
                         positions={fiduPositions}
-                        positionType={"Fidu"}
+                        positionType="Fidu"
                         onComplete={refetch}
                         showVaultWarning={vaultedFiduPositions.length > 0}
                       />
@@ -269,14 +269,14 @@ export default function StakePage() {
                     <Tab.Panel>
                       <StakeForm
                         max={curveBalance}
-                        positionType={"CurveLP"}
+                        positionType="CurveLP"
                         onComplete={refetch}
                       />
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
                         positions={curvePositions}
-                        positionType={"CurveLP"}
+                        positionType="CurveLP"
                         onComplete={refetch}
                       />
                     </Tab.Panel>
