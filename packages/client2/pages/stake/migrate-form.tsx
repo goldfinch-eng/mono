@@ -200,7 +200,7 @@ export function MigrateForm({
               includeSymbol: false,
               includeToken: false,
             })})`}
-            unit={"FIDU"}
+            unit="FIDU"
             rules={{ required: "Required", validate: validateMaxFidu }}
             textSize="xl"
             onMaxClick={handleMaxFidu}
@@ -222,7 +222,7 @@ export function MigrateForm({
             includeSymbol: false,
             includeToken: false,
           })})`}
-          unit={"USDC"}
+          unit="USDC"
           rules={{ required: "Required", validate: validateMaxUsdc }}
           textSize="xl"
           onMaxClick={handleMaxUsdc}
