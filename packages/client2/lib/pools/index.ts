@@ -268,69 +268,147 @@ export async function approveErc721IfRequired({
   }
 }
 
-const transactionLabels: Record<TransactionCategory, string> = {
-  SENIOR_POOL_STAKE: "Senior Pool Stake",
-  SENIOR_POOL_DEPOSIT: "Senior Pool Supply",
-  SENIOR_POOL_DEPOSIT_AND_STAKE: "Senior Pool Supply and Stake",
-  SENIOR_POOL_UNSTAKE: "Senior Pool Unstake",
-  SENIOR_POOL_WITHDRAWAL: "Senior Pool Withdrawal",
-  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "Senior Pool Unstake and Withdraw",
-  SENIOR_POOL_REDEMPTION: "Senior Pool Auto Transfer",
-  TRANCHED_POOL_DEPOSIT: "Borrower Pool Supply",
-  TRANCHED_POOL_WITHDRAWAL: "Borrower Pool Withdrawal",
-  TRANCHED_POOL_REPAYMENT: "Repayment",
-  TRANCHED_POOL_DRAWDOWN: "Drawdown",
-  UID_MINTED: "Mint UID",
-  CURVE_FIDU_BUY: "Curve Swap",
-  CURVE_FIDU_SELL: "Curve Swap",
-  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "Withdrawal Request Increased",
-  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "Cancel Withdrawal Request",
-  SENIOR_POOL_WITHDRAWAL_REQUEST: "Withdrawal Request",
-  SENIOR_POOL_DISTRIBUTION: "Withdrawal Request Distribution",
-  STAKING_REWARDS_CLAIMED: "Staking Rewards Claimed",
-  BACKER_REWARDS_CLAIMED: "Backer Rewards Claimed",
-  COMMUNITY_REWARDS_CLAIMED: "GFI Grant Claimed",
-  MEMBERSHIP_REWARDS_CLAIMED: "Membership Rewards Claimed",
-  MEMBERSHIP_GFI_DEPOSIT: "Added GFI to Vault",
-  MEMBERSHIP_GFI_WITHDRAWAL: "Removed GFI from Vault",
-  MEMBERSHIP_CAPITAL_DEPOSIT: "Added Capital to Vault",
-  MEMBERSHIP_CAPITAL_WITHDRAWAL: "Removed Capital from Vault",
+const transactionPresentation: Record<
+  TransactionCategory,
+  { label: string; shortLabel: string; icon: IconNameType }
+> = {
+  SENIOR_POOL_STAKE: {
+    label: "Senior Pool Stake",
+    shortLabel: "Stake",
+    icon: "ArrowUp",
+  },
+  SENIOR_POOL_DEPOSIT: {
+    label: "Senior Pool Supply",
+    shortLabel: "Supply",
+    icon: "ArrowUp",
+  },
+  SENIOR_POOL_DEPOSIT_AND_STAKE: {
+    label: "Senior Pool Supply and Stake",
+    shortLabel: "Supply and Stake",
+    icon: "ArrowUp",
+  },
+  SENIOR_POOL_UNSTAKE: {
+    label: "Senior Pool Unstake",
+    shortLabel: "Unstake",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_WITHDRAWAL: {
+    label: "Senior Pool Withdrawal",
+    shortLabel: "Withdrawal",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: {
+    label: "Senior Pool Unstake and Withdraw",
+    shortLabel: "Unstake and Withdraw",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_REDEMPTION: {
+    label: "Senior Pool Auto Transfer",
+    shortLabel: "Auto Transfer",
+    icon: "ArrowDown",
+  },
+  TRANCHED_POOL_DEPOSIT: {
+    label: "Borrower Pool Supply",
+    shortLabel: "Supply",
+    icon: "ArrowUp",
+  },
+  TRANCHED_POOL_WITHDRAWAL: {
+    label: "Borrower Pool Withdrawal",
+    shortLabel: "Withdrawal",
+    icon: "ArrowDown",
+  },
+  TRANCHED_POOL_REPAYMENT: {
+    label: "Repayment",
+    shortLabel: "Repayment",
+    icon: "ArrowUp",
+  },
+  TRANCHED_POOL_DRAWDOWN: {
+    label: "Drawdown",
+    shortLabel: "Drawdown",
+    icon: "ArrowDown",
+  },
+  UID_MINTED: {
+    label: "Mint UID",
+    shortLabel: "Mint UID",
+    icon: "Checkmark",
+  },
+  CURVE_FIDU_BUY: {
+    label: "Curve Swap",
+    shortLabel: "Curve Swap",
+    icon: "ArrowUp",
+  },
+  CURVE_FIDU_SELL: {
+    label: "Curve Swap",
+    shortLabel: "Curve Swap",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: {
+    label: "Withdrawal Request Increased",
+    shortLabel: "Increase Withdrawal",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: {
+    label: "Cancel Withdrawal Request",
+    shortLabel: "Cancel Withdrawal",
+    icon: "X",
+  },
+  SENIOR_POOL_WITHDRAWAL_REQUEST: {
+    label: "Withdrawal Request",
+    shortLabel: "Withdrawal Request",
+    icon: "ArrowDown",
+  },
+  SENIOR_POOL_DISTRIBUTION: {
+    label: "Withdrawal Request Distribution",
+    shortLabel: "Withdrawal Request Distribution",
+    icon: "ArrowDown",
+  },
+  STAKING_REWARDS_CLAIMED: {
+    label: "Staking Rewards Claimed",
+    shortLabel: "Rewards Claimed",
+    icon: "ArrowUp",
+  },
+  BACKER_REWARDS_CLAIMED: {
+    label: "Backer Rewards Claimed",
+    shortLabel: "Rewards Claimed",
+    icon: "ArrowUp",
+  },
+  COMMUNITY_REWARDS_CLAIMED: {
+    label: "GFI Grant Claimed",
+    shortLabel: "Grant Claimed",
+    icon: "ArrowUp",
+  },
+  MEMBERSHIP_REWARDS_CLAIMED: {
+    label: "Membership Rewards Claimed",
+    shortLabel: "Membership Rewards",
+    icon: "ArrowUp",
+  },
+  MEMBERSHIP_GFI_DEPOSIT: {
+    label: "Added GFI to Vault",
+    shortLabel: "Vaulted GFI",
+    icon: "ArrowUp",
+  },
+  MEMBERSHIP_GFI_WITHDRAWAL: {
+    label: "Removed GFI from Vault",
+    shortLabel: "Unvaulted GFI",
+    icon: "ArrowDown",
+  },
+  MEMBERSHIP_CAPITAL_DEPOSIT: {
+    label: "Added Capital to Vault",
+    shortLabel: "Vaulted Capital",
+    icon: "ArrowUp",
+  },
+  MEMBERSHIP_CAPITAL_WITHDRAWAL: {
+    label: "Removed Capital from Vault",
+    shortLabel: "Unvaulted Capital",
+    icon: "ArrowDown",
+  },
 };
 
 export function getTransactionLabel(transaction: {
   category: TransactionCategory;
 }): string {
-  return transactionLabels[transaction.category];
+  return transactionPresentation[transaction.category].label;
 }
-
-const shortTransactionLabels: Record<TransactionCategory, string> = {
-  SENIOR_POOL_STAKE: "Stake",
-  SENIOR_POOL_DEPOSIT: "Supply",
-  SENIOR_POOL_DEPOSIT_AND_STAKE: "Supply and Stake",
-  SENIOR_POOL_UNSTAKE: "Unstake",
-  SENIOR_POOL_WITHDRAWAL: "Withdrawal",
-  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "Unstake and Withdraw",
-  SENIOR_POOL_REDEMPTION: "Auto Transfer",
-  TRANCHED_POOL_DEPOSIT: "Supply",
-  TRANCHED_POOL_WITHDRAWAL: "Withdrawal",
-  TRANCHED_POOL_REPAYMENT: "Repayment",
-  TRANCHED_POOL_DRAWDOWN: "Drawdown",
-  UID_MINTED: "Mint UID",
-  CURVE_FIDU_BUY: "Curve Swap",
-  CURVE_FIDU_SELL: "Curve Swap",
-  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "Increase Withdrawal",
-  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "Cancel Withdrawal",
-  SENIOR_POOL_WITHDRAWAL_REQUEST: "Withdrawal Request",
-  SENIOR_POOL_DISTRIBUTION: "Withdrawal Request Distribution",
-  STAKING_REWARDS_CLAIMED: "Rewards Claimed",
-  BACKER_REWARDS_CLAIMED: "Rewards Claimed",
-  COMMUNITY_REWARDS_CLAIMED: "Grant Claimed",
-  MEMBERSHIP_REWARDS_CLAIMED: "Membership Rewards",
-  MEMBERSHIP_GFI_DEPOSIT: "Vaulted GFI",
-  MEMBERSHIP_GFI_WITHDRAWAL: "Unvaulted GFI",
-  MEMBERSHIP_CAPITAL_DEPOSIT: "Vaulted Capital",
-  MEMBERSHIP_CAPITAL_WITHDRAWAL: "Unvaulted Capital",
-};
 
 /**
  * Less descriptive but more brief than regular getTransactionLabel(). Use this only when it's appropriate in context.
@@ -340,37 +418,8 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
 export function getShortTransactionLabel(transaction: {
   category: TransactionCategory;
 }): string {
-  return shortTransactionLabels[transaction.category];
+  return transactionPresentation[transaction.category].shortLabel;
 }
-
-const transactionIcons: Record<TransactionCategory, IconNameType> = {
-  SENIOR_POOL_STAKE: "ArrowUp",
-  SENIOR_POOL_DEPOSIT: "ArrowUp",
-  SENIOR_POOL_DEPOSIT_AND_STAKE: "ArrowUp",
-  SENIOR_POOL_UNSTAKE: "ArrowDown",
-  SENIOR_POOL_WITHDRAWAL: "ArrowDown",
-  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL: "ArrowDown",
-  SENIOR_POOL_REDEMPTION: "ArrowDown",
-  TRANCHED_POOL_DEPOSIT: "ArrowUp",
-  TRANCHED_POOL_WITHDRAWAL: "ArrowDown",
-  TRANCHED_POOL_REPAYMENT: "ArrowUp",
-  TRANCHED_POOL_DRAWDOWN: "ArrowDown",
-  UID_MINTED: "Checkmark",
-  CURVE_FIDU_BUY: "ArrowUp",
-  CURVE_FIDU_SELL: "ArrowDown",
-  SENIOR_POOL_ADD_TO_WITHDRAWAL_REQUEST: "ArrowDown",
-  SENIOR_POOL_CANCEL_WITHDRAWAL_REQUEST: "X",
-  SENIOR_POOL_WITHDRAWAL_REQUEST: "ArrowDown",
-  SENIOR_POOL_DISTRIBUTION: "ArrowDown",
-  STAKING_REWARDS_CLAIMED: "ArrowUp",
-  BACKER_REWARDS_CLAIMED: "ArrowUp",
-  COMMUNITY_REWARDS_CLAIMED: "ArrowUp",
-  MEMBERSHIP_REWARDS_CLAIMED: "ArrowUp",
-  MEMBERSHIP_GFI_DEPOSIT: "ArrowUp",
-  MEMBERSHIP_GFI_WITHDRAWAL: "ArrowDown",
-  MEMBERSHIP_CAPITAL_DEPOSIT: "ArrowUp",
-  MEMBERSHIP_CAPITAL_WITHDRAWAL: "ArrowDown",
-};
 
 /**
  * Returns the icon for the transaction category
@@ -380,7 +429,7 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
 export function getTransactionIcon(transaction: {
   category: TransactionCategory;
 }): IconNameType {
-  return transactionIcons[transaction.category];
+  return transactionPresentation[transaction.category].icon;
 }
 
 /**
