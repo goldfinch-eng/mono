@@ -19,6 +19,9 @@ extend type CreditLine {
   """
   currentInterestOwed: BigInt!
 
+  remainingPeriodDueAmount: BigInt!
+  isActive: Boolean!
+
   collectedPaymentBalance: BigInt
 }
 

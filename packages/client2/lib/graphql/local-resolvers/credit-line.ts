@@ -1,35 +1,43 @@
 import { Resolvers } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { APY_DECIMALS, SECONDS_PER_YEAR } from "@/constants";
+import { APY_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
 import { CreditLine, TranchedPoolCreditLineVersion } from "../generated";
 
 export const creditLineResolvers: Resolvers[string] = {
-  async isLate(creditLine: CreditLine): Promise<boolean | null> {
+  // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
+  async isLate(creditLine: CreditLine): Promise<boolean> {
     const provider = await getProvider();
-    if (!creditLine.id) {
-      throw new Error("CreditLine ID unavailable when querying isLate");
+
+    const currentBlock = await provider.getBlock("latest");
+    if (creditLine.lastFullPaymentTime.isZero()) {
+      // Brand new creditline
+      return false;
     }
-    const creditLineContract = await getContract({
-      name: "CreditLine",
-      address: creditLine.id,
-      provider,
-      useSigner: false,
-    });
-    try {
-      return await creditLineContract.isLate();
-    } catch (e) {
-      return null;
-    }
+
+    const secondsSinceLastFullPayment =
+      currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
+    return (
+      secondsSinceLastFullPayment >
+      creditLine.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
+    );
   },
   currentLimit(creditLine: CreditLine): BigNumber {
+    // TODO ZADRA - check limit vars with solidity dev
+    // if (creditLine.limit.gt(0)) {
+    //   return creditLine.limit;
+    // } else {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    return creditLine.version === TranchedPoolCreditLineVersion.V2_2
-      ? creditLine.maxLimit
-      : creditLine.limit;
+    const maxLimit =
+      creditLine.version === TranchedPoolCreditLineVersion.V2_2
+        ? creditLine.maxLimit
+        : creditLine.limit;
+
+    return maxLimit;
+    // }
   },
   currentInterestOwed(creditLine: CreditLine): BigNumber {
     // TODO ZADRA - this is code from client1, wouldn't this be the case if !isLate...?
@@ -52,27 +60,68 @@ export const creditLineResolvers: Resolvers[string] = {
       .add(BigNumber.from(expectedAdditionalInterest))
       .div(APY_DECIMALS);
 
-    // nextDueAmount
+    return currentInterestOwed;
+  },
+  nextDueAmount(creditLine: CreditLine): BigNumber {
+    const interestOwed = creditLineResolvers.currentInterestOwed(
+      creditLine
+    ) as BigNumber;
+    const balance = creditLine.balance;
+
+    // If the next repayment date exceeds the end of the term, the amount due is the remaining balance + interest owed
     if (creditLine.nextDueTime.gte(creditLine.termEndTime)) {
-      return currentInterestOwed.add(creditLine.balance);
+      return interestOwed.add(balance);
     } else {
-      return currentInterestOwed;
+      return interestOwed;
     }
   },
-  async collectedPaymentBalance(
-    creditLine: CreditLine
-  ): Promise<BigNumber | null> {
+  async remainingPeriodDueAmount(creditLine: CreditLine): Promise<BigNumber> {
     const provider = await getProvider();
-    if (!creditLine.id) {
-      throw new Error(
-        "CreditLine ID unavailable when querying collectedPaymentBalance"
-      );
+
+    const usdcContract = await getContract({ name: "USDC", provider });
+    const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
+
+    const periodDueAmount = creditLineResolvers.nextDueAmount(
+      creditLine
+    ) as BigNumber;
+
+    const remainingPeriodDueAmount = periodDueAmount.sub(
+      collectedPaymentBalance
+    );
+    if (remainingPeriodDueAmount.lte(0)) {
+      return BigNumber.from(0);
     }
-    try {
-      const usdcContract = await getContract({ name: "USDC", provider });
-      return await usdcContract.balanceOf(creditLine.id);
-    } catch (e) {
-      return null;
+
+    return remainingPeriodDueAmount;
+  },
+  async remainingTotalDueAmount(creditLine: CreditLine): Promise<BigNumber> {
+    const provider = await getProvider();
+
+    const usdcContract = await getContract({ name: "USDC", provider });
+    const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
+
+    const interestOwed = creditLineResolvers.currentInterestOwed(
+      creditLine
+    ) as BigNumber;
+
+    const balance = creditLine.balance;
+    const totalDueAmount = interestOwed.add(balance);
+
+    const remainingTotalDueAmount = totalDueAmount.sub(collectedPaymentBalance);
+    if (remainingTotalDueAmount.lte(0)) {
+      return BigNumber.from(0);
     }
+
+    return remainingTotalDueAmount;
+  },
+  // Has an open balance
+  async isActive(creditLine: CreditLine): Promise<boolean> {
+    const remainingTotalDueAmount =
+      (await creditLineResolvers.remainingTotalDueAmount(
+        creditLine
+      )) as BigNumber;
+
+    // TODO ZADRA - must use correct limit here
+    return creditLine.limit.gt(0) && remainingTotalDueAmount.gt(0);
   },
 };

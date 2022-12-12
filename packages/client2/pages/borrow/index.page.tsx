@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { format as formatDate } from "date-fns";
 
 import { Heading } from "../../components/design-system";
 import { formatCrypto, formatPercent } from "../../lib/format";
@@ -15,7 +15,7 @@ gql`
     user(id: $userId) {
       borrowerContracts {
         id
-        tranchedPools(orderBy: createdAt, orderDirection: desc) {
+        tranchedPools(orderBy: createdAt, orderDirection: asc) {
           id
           creditLine {
             id
@@ -37,6 +37,8 @@ gql`
             termEndTime
             lastFullPaymentTime
             collectedPaymentBalance @client
+            remainingPeriodDueAmount @client
+            isActive @client
           }
         }
       }
@@ -102,39 +104,50 @@ export default function PoolPage() {
         <div>
           {tranchedPools.map(({ creditLine }, i) => {
             const id = creditLine.id;
+
             const creditLineLimit = formatCrypto({
               token: SupportedCrypto.Usdc,
               amount: creditLine.currentLimit,
             });
-            const interest = formatPercent(creditLine.interestAprDecimal);
 
-            let remainingPeriodDueAmount = BigNumber.from(0);
-            if (
-              creditLine?.collectedPaymentBalance &&
-              creditLine.currentInterestOwed
-                .sub(creditLine?.collectedPaymentBalance)
-                .gt(BigNumber.from(0))
-            ) {
-              remainingPeriodDueAmount = creditLine.currentInterestOwed.sub(
-                creditLine?.collectedPaymentBalance
-              );
-            }
+            const interest = formatPercent(creditLine.interestAprDecimal);
 
             const nextPayment = formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: remainingPeriodDueAmount,
+              amount: creditLine.remainingPeriodDueAmount,
             });
+
+            // TODO ZADRA - this logic seems wrong according to single views payment status
+            let nextPaymentDate = "N/A";
+            if (creditLine.isLate) {
+              nextPaymentDate = "Due now";
+            } else if (creditLine.remainingPeriodDueAmount.gt(0)) {
+              const formattedNextDueDate = formatDate(
+                new Date(creditLine.nextDueTime.toNumber() * 1000),
+                "MMM d"
+              );
+
+              const dueDate =
+                creditLine.nextDueTime.toNumber() === 0
+                  ? ""
+                  : formattedNextDueDate;
+
+              nextPaymentDate = `${dueDate}`;
+            } else if (creditLine.isActive) {
+              // icon = iconCircleCheck;
+              nextPaymentDate = "Paid";
+            }
 
             return (
               <div key={id}>
-                {/* <p>{`${creditLineLimit} at ${interest}. Next Payment: ${nextPayment}`}</p> */}
+                {/* <p>{`Address: ${id.toLocaleLowerCase()}`}</p> */}
                 <CreditLineCard
                   className="mb-3 w-2/3"
                   slot1={`${creditLineLimit} at ${interest}`}
                   slot1Label={i === 0 ? "Credit Lines" : undefined}
                   slot2={nextPayment}
                   slot2Label={i === 0 ? "Next Payment" : undefined}
-                  slot3={"Dec 26"}
+                  slot3={nextPaymentDate}
                   slot3Label={i === 0 ? "Due Date" : undefined}
                 />
               </div>
