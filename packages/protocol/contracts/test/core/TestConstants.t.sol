@@ -7,6 +7,7 @@ library TestConstants {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
+  bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
   bytes32 public constant GO_LISTER_ROLE = keccak256("GO_LISTER_ROLE");
   bytes32 public constant BORROWER_ROLE = keccak256("BORROWER_ROLE");
   uint256 public constant USDC_DECIMALS = 6;
