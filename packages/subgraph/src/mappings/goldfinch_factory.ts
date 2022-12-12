@@ -4,7 +4,8 @@
 import {INVALID_POOLS} from "../../../utils/src/pools"
 import {TranchedPool as TranchedPoolTemplate} from "../../generated/templates"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
-import {PoolCreated} from "../../generated/GoldfinchFactory/GoldfinchFactory"
+import {BorrowerCreated, PoolCreated} from "../../generated/GoldfinchFactory/GoldfinchFactory"
+import {getOrInitBorrower} from "../entities/borrower"
 
 export function handlePoolCreated(event: PoolCreated): void {
   if (INVALID_POOLS.has(event.params.pool.toHexString())) {
@@ -13,4 +14,8 @@ export function handlePoolCreated(event: PoolCreated): void {
 
   TranchedPoolTemplate.create(event.params.pool)
   getOrInitTranchedPool(event.params.pool, event.block.timestamp)
+}
+
+export function handleBorrowerCreated(event: BorrowerCreated): void {
+  getOrInitBorrower(event.params.borrower, event.params.owner)
 }

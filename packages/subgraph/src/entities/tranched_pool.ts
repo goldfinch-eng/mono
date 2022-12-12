@@ -185,6 +185,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   const creditLineAddress = poolContract.creditLine().toHexString()
   const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
   tranchedPool.creditLine = creditLine.id
+  tranchedPool.borrowerContract = creditLine.borrowerContract
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
   tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
   // This can happen in weird cases where the senior pool investment causes a pool to overfill

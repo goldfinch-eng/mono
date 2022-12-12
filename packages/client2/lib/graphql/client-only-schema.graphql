@@ -12,6 +12,14 @@ extend type TranchedPool {
 
 extend type CreditLine {
   isLate: Boolean
+  currentLimit: BigInt!
+
+  """
+  May be higher than the CreditLine's interestOwed, which adds the additional interest owed when payments are late
+  """
+  currentInterestOwed: BigInt!
+
+  collectedPaymentBalance: BigInt
 }
 
 extend type SeniorPoolStakedPosition {

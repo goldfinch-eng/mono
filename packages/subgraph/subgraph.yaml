@@ -113,6 +113,8 @@ dataSources:
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address)
           handler: handlePoolCreated
+        - event: BorrowerCreated(indexed address,indexed address)
+          handler: handleBorrowerCreated
 
   - kind: ethereum/contract
     name: PoolTokens
