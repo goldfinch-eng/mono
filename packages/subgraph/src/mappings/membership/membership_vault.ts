@@ -1,5 +1,5 @@
 import {Address, BigInt} from "@graphprotocol/graph-ts"
-import {AdjustedHoldings, VaultTotalUpdate} from "../../../generated/MembershipVault/MembershipVault"
+import {AdjustedHoldings, VaultTotalUpdate, Checkpoint} from "../../../generated/MembershipVault/MembershipVault"
 import {Membership, MembershipRoster} from "../../../generated/schema"
 
 export function getOrInitMembershipRoster(): MembershipRoster {
@@ -9,6 +9,7 @@ export function getOrInitMembershipRoster(): MembershipRoster {
     membershipRoster.members = []
     membershipRoster.eligibleScoreTotal = BigInt.zero()
     membershipRoster.nextEpochScoreTotal = BigInt.zero()
+    membershipRoster.lastCheckpointedInEpoch = BigInt.zero()
   }
   return membershipRoster
 }
@@ -43,5 +44,30 @@ export function handleVaultTotalUpdate(event: VaultTotalUpdate): void {
   const membershipRoster = getOrInitMembershipRoster()
   membershipRoster.eligibleScoreTotal = event.params.eligibleAmount
   membershipRoster.nextEpochScoreTotal = event.params.nextEpochAmount
+  membershipRoster.save()
+}
+
+const MEMBERSHIP_EPOCH_SECONDS = BigInt.fromI32(604800)
+function getEpochFromTimestamp(timestamp: BigInt): BigInt {
+  return timestamp.div(MEMBERSHIP_EPOCH_SECONDS)
+}
+
+export function handleCheckpoint(event: Checkpoint): void {
+  const membershipRoster = getOrInitMembershipRoster()
+  const currentEpoch = getEpochFromTimestamp(event.block.timestamp)
+  if (membershipRoster.lastCheckpointedInEpoch.equals(currentEpoch)) {
+    return
+  }
+  membershipRoster.lastCheckpointedInEpoch = currentEpoch
+  // If this is the first checkpointing of the new epoch, rotate all the eligibleScores of members
+  for (let i = 0; i < membershipRoster.members.length; i++) {
+    const membership = Membership.load(membershipRoster.members[i])
+    if (!membership) {
+      continue
+    }
+    membership.eligibleScore = membership.nextEpochScore
+    membership.save()
+  }
+  membershipRoster.eligibleScoreTotal = membershipRoster.nextEpochScoreTotal
   membershipRoster.save()
 }

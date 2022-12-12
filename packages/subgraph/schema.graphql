@@ -377,6 +377,7 @@ type MembershipRoster @entity {
   members: [Membership!]!
   eligibleScoreTotal: BigInt!
   nextEpochScoreTotal: BigInt!
+  lastCheckpointedInEpoch: BigInt!
 }
 
 type MembershipRewardDisbursement @entity(immutable: true) {
