@@ -3,6 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
@@ -97,7 +98,7 @@ library TranchingLogic {
   // We need to create this struct so we don't run into a stack too deep error due to too many variables
   function getSliceInfo(
     ITranchedPool.PoolSlice memory slice,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 totalDeployed,
     uint256 reserveFeePercent
   ) public view returns (SliceInfo memory) {
@@ -116,7 +117,7 @@ library TranchingLogic {
 
   function getTotalInterestAndPrincipal(
     ITranchedPool.PoolSlice memory slice,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 totalDeployed
   ) public view returns (uint256, uint256) {
     uint256 principalAccrued = creditLine.principalOwed();
@@ -163,7 +164,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 juniorFeePercent
   ) external returns (uint256) {
     ApplyResult memory result = TranchingLogic.applyToAllSeniorTranches(
@@ -198,7 +199,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 juniorFeePercent
   ) internal returns (ApplyResult memory) {
     ApplyResult memory seniorApplyResult;
@@ -242,7 +243,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine
+    ICreditLine creditLine
   ) internal returns (uint256 totalReserveAmount) {
     for (uint256 i = 0; i < numSlices; i++) {
       SliceInfo memory sliceInfo = getSliceInfo(
