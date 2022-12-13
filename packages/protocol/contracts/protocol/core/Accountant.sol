@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {IV2TranchedPool} from "../../interfaces/IV2TranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
@@ -27,10 +28,25 @@ library Accountant {
   uint256 private constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 private constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
 
+  /// @notice Payment allocation for a IV2CreditLine
   struct PaymentAllocation {
     uint256 interestPayment;
     uint256 principalPayment;
     uint256 additionalBalancePayment;
+  }
+
+  /// @notice Interest payment allocation for a separated payment on a IV3CreditLine
+  struct InterestPaymentAllocation {
+    uint256 owedInterestPayment;
+    uint256 accruedInterestPayment;
+    uint256 paymentRemaining;
+  }
+
+  /// @notice Principal payment allocation for a separated payment on a IV3CreditLine
+  struct PrincipalPaymentAllocation {
+    uint256 principalPayment;
+    uint256 additionalBalancePayment;
+    uint256 paymentRemaining;
   }
 
   function calculateInterestAndPrincipalAccrued(
@@ -179,27 +195,52 @@ library Accountant {
   ) public view returns (uint256 interestOwed) {
     uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-    if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
+    uint256 regularInterest = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+    uint256 lateFeeInterest = calculateLateFeeInterestAccruedOverPeriod(
+      cl,
+      balance,
+      startTime,
+      endTime,
+      lateFeeGracePeriodInDays
+    );
+    interestOwed = regularInterest.add(lateFeeInterest);
+  }
+
+  function calculateLateFeeInterestAccruedOverPeriod(
+    ICreditLine cl,
+    uint256 balance,
+    uint256 startTime,
+    uint256 endTime,
+    uint256 lateFeeGracePeriodInDays
+  ) internal view returns (uint256) {
+    // It's possible that multiple payment periods have passed since the last time interest was checkpointed
+    // We derive that due time as the due time immediately after lastFullPaymentTime. This isn't the same as
+    // cl.mostRecentLastDueTime() if they are more than one period late
+    uint256 oldestUnpaidDueTime = Math.min(
+      cl.lastFullPaymentTime().add(cl.paymentPeriodInDays().mul(SECONDS_PER_DAY)),
+      cl.termEndTime()
+    );
+
+    uint256 lateFeeStartsAt = Math.max(
+      startTime,
+      oldestUnpaidDueTime.add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY))
+    );
+
+    if (lateFeeStartsAt < endTime) {
+      uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(
-        SECONDS_PER_YEAR
-      );
-      interestOwed = interestOwed.add(additionalLateFeeInterest);
+      return lateFeeInterestPerYear.mul(lateSecondsElapsed).div(SECONDS_PER_YEAR);
     }
 
-    return interestOwed;
+    return 0;
   }
 
-  function lateFeeApplicable(
-    ICreditLine cl,
-    uint256 timestamp,
-    uint256 gracePeriodInDays
-  ) public view returns (bool) {
-    uint256 secondsLate = timestamp.sub(cl.lastFullPaymentTime());
-    return cl.lateFeeApr() > 0 && secondsLate > gracePeriodInDays.mul(SECONDS_PER_DAY);
-  }
-
+  /// @notice Allocate a payment for V1 Tranched Pools
+  /// @param paymentAmount amount to allocate
+  /// @param balance credit line's balance
+  /// @param interestOwed interest owed on the credit line up to the last due time
+  /// @param principalOwed principal owed ont he credit line
+  /// @return PaymentAllocation payment allocation
   function allocatePayment(
     uint256 paymentAmount,
     uint256 balance,
@@ -221,6 +262,96 @@ library Accountant {
         interestPayment: interestPayment,
         principalPayment: principalPayment,
         additionalBalancePayment: additionalBalancePayment
+      });
+  }
+
+  /// @notice Allocate a payment for v2 pools, which allow paying additional interest early
+  /// @param paymentAmount amount to allocate
+  /// @param balance credit line's balance
+  /// @param interestOwed interest owed on the credit line up to the last due time
+  /// @param interestAccrued interest accrued between the last due time and the present time (unless last due time
+  ///   == termEndTime, in which case this param should be 0)
+  /// @param principalOwed principal owed on the credit line
+  /// @return PaymentAllocationV2 payment allocation
+  function allocatePayment(
+    uint256 paymentAmount,
+    uint256 balance,
+    uint256 interestOwed,
+    uint256 interestAccrued,
+    uint256 principalOwed
+  ) public pure returns (IV2TranchedPool.PaymentAllocation memory) {
+    uint256 paymentRemaining = paymentAmount;
+    uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
+    paymentRemaining = paymentRemaining.sub(owedInterestPayment);
+
+    uint256 accruedInterestPayment = Math.min(interestAccrued, paymentRemaining);
+    paymentRemaining = paymentRemaining.sub(accruedInterestPayment);
+
+    uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
+    paymentRemaining = paymentRemaining.sub(principalPayment);
+
+    uint256 balanceRemaining = balance.sub(principalPayment);
+    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
+    paymentRemaining = paymentRemaining.sub(additionalBalancePayment);
+
+    return
+      IV2TranchedPool.PaymentAllocation({
+        owedInterestPayment: owedInterestPayment,
+        accruedInterestPayment: accruedInterestPayment,
+        principalPayment: principalPayment,
+        additionalBalancePayment: additionalBalancePayment,
+        paymentRemaining: paymentRemaining
+      });
+  }
+
+  /// @notice Allocate an interest payment for a v2 separated payment.
+  /// @param paymentAmount amount to be allocate
+  /// @param interestOwed amount in interest owed
+  /// @param interestAccrued amount of interest accrued in the current payment period (not yet owed)
+  /// @return InterestPaymentAllocation the allocated interest payments
+  function allocateInterestPayment(
+    uint256 paymentAmount,
+    uint256 interestOwed,
+    uint256 interestAccrued
+  ) public pure returns (InterestPaymentAllocation memory) {
+    uint256 paymentRemaining = paymentAmount;
+    uint256 owedInterestPayment = Math.min(paymentRemaining, interestOwed);
+    paymentRemaining = paymentRemaining.sub(owedInterestPayment);
+
+    uint256 accruedInterestPayment = Math.min(paymentRemaining, interestAccrued);
+    paymentRemaining = paymentRemaining.sub(accruedInterestPayment);
+
+    return
+      InterestPaymentAllocation({
+        owedInterestPayment: owedInterestPayment,
+        accruedInterestPayment: accruedInterestPayment,
+        paymentRemaining: paymentRemaining
+      });
+  }
+
+  /// @notice Allocate a principal payment for a v2 separated payment.
+  /// @param paymentAmount amount to be allocated
+  /// @param balance outstanding balance on the credit line
+  /// @param principalOwed principal owed on the credit line
+  /// @return PrincipalPaymentAllocation the allocated principal and balance payments
+  function allocatePrincipalPayment(
+    uint256 paymentAmount,
+    uint256 balance,
+    uint256 principalOwed
+  ) public pure returns (PrincipalPaymentAllocation memory) {
+    uint256 paymentRemaining = paymentAmount;
+    uint256 principalPayment = Math.min(paymentRemaining, principalOwed);
+    paymentRemaining = paymentRemaining.sub(principalPayment);
+
+    uint256 balanceRemaining = balance.sub(principalPayment);
+    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
+    paymentRemaining = paymentRemaining.sub(additionalBalancePayment);
+
+    return
+      PrincipalPaymentAllocation({
+        principalPayment: principalPayment,
+        additionalBalancePayment: additionalBalancePayment,
+        paymentRemaining: paymentRemaining
       });
   }
 }
