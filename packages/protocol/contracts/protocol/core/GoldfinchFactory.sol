@@ -7,7 +7,7 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
+import {IV3CreditLine} from "../../interfaces/IV3CreditLine.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {UcuProxy} from "./proxy/UcuProxy.sol";
@@ -29,7 +29,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
-  event CreditLineCreated(IV2CreditLine indexed creditLine);
+  event CreditLineCreated(IV3CreditLine indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(
@@ -46,8 +46,8 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    * @dev There is no value to calling this function directly. It is only meant to be called
    *  by a TranchedPool during it's creation process.
    */
-  function createCreditLine() external returns (IV2CreditLine) {
-    IV2CreditLine creditLine = IV2CreditLine(
+  function createCreditLine() external returns (IV3CreditLine) {
+    IV3CreditLine creditLine = IV3CreditLine(
       _deployMinimal(config.creditLineImplementationAddress())
     );
     emit CreditLineCreated(creditLine);
@@ -101,7 +101,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     // need to enclose in a scope to avoid overflowing stack
     {
       ImplementationRepository repo = config.getTranchedPoolImplementationRepository();
-      UcuProxy poolProxy = new UcuProxy(repo, _borrower);
+      UcuProxy poolProxy = new UcuProxy(repo, _borrower, repo.currentLineageId());
       pool = ITranchedPool(address(poolProxy));
     }
 

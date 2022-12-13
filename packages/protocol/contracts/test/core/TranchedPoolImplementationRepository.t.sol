@@ -10,24 +10,24 @@ import {TranchedPoolImplementationRepository as Repo} from "../../protocol/core/
 import {Test} from "forge-std/Test.sol";
 
 contract TranchedPoolImplementationRepositoryTest is Test {
-  address internal constant owner = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
+  address internal constant OWNER = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
 
-  TranchedPool tranchedPoolImpl = new TranchedPool();
-  Repo repo = new Repo();
+  TranchedPool internal tranchedPoolImpl = new TranchedPool();
+  Repo internal repo = new Repo();
 
   function testCanInitializeWithCurrentImpl() public {
-    repo.initialize(owner, address(tranchedPoolImpl));
+    repo.initialize(OWNER, address(tranchedPoolImpl));
     assertEq(repo.currentImplementation(), address(tranchedPoolImpl));
     assertEq(repo.getByVersion(tranchedPoolImpl.getVersion()), address(tranchedPoolImpl));
     assertTrue(repo.hasVersion(tranchedPoolImpl.getVersion()));
   }
 
   function testProxyInitializesCorrectly() public {
-    repo.initialize(owner, address(tranchedPoolImpl));
+    repo.initialize(OWNER, address(tranchedPoolImpl));
 
     vm.expectEmit(true, false, false, false);
     emit Upgraded(address(tranchedPoolImpl));
-    UcuProxy proxy = new UcuProxy(repo, owner);
+    UcuProxy proxy = new UcuProxy(repo, OWNER, repo.currentLineageId());
     TranchedPool proxyAsTp = TranchedPool(address(proxy));
     assertVersionEq(proxyAsTp.getVersion(), tranchedPoolImpl.getVersion());
   }
