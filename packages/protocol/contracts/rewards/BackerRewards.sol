@@ -2,20 +2,20 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@uniswap/lib/contracts/libraries/Babylonian.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Babylonian} from "@uniswap/lib/contracts/libraries/Babylonian.sol";
 
-import "../library/SafeERC20Transfer.sol";
-import "../protocol/core/ConfigHelper.sol";
-import "../protocol/core/BaseUpgradeablePausable.sol";
+import {SafeERC20Transfer} from "../library/SafeERC20Transfer.sol";
+import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
+import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
+import {BaseUpgradeablePausable} from "../protocol/core/BaseUpgradeablePausable.sol";
 import {ICreditLine} from "../interfaces/ICreditLine.sol";
-import "../interfaces/IPoolTokens.sol";
-import "../interfaces/IStakingRewards.sol";
-import "../interfaces/ITranchedPool.sol";
-import "../interfaces/IBackerRewards.sol";
-import "../interfaces/ISeniorPool.sol";
-import "../interfaces/IEvents.sol";
+import {IPoolTokens} from "../interfaces/IPoolTokens.sol";
+import {IStakingRewards} from "../interfaces/IStakingRewards.sol";
+import {ITranchedPool} from "../interfaces/ITranchedPool.sol";
+import {IBackerRewards} from "../interfaces/IBackerRewards.sol";
+import {ISeniorPool} from "../interfaces/ISeniorPool.sol";
+import {IEvents} from "../interfaces/IEvents.sol";
 import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
 
 // Basically, Every time a interest payment comes back
@@ -36,7 +36,6 @@ import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
 contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  using SafeMath for uint256;
   using SafeERC20Transfer for IERC20withDec;
 
   uint256 internal constant GFI_MANTISSA = 10 ** 18;

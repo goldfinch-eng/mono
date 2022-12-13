@@ -3,14 +3,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./GoldfinchConfig.sol";
-import "./ConfigHelper.sol";
-import "./BaseUpgradeablePausable.sol";
-import "./Accountant.sol";
-import "../../interfaces/IERC20withDec.sol";
-import "../../interfaces/ICreditLine.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {Accountant} from "./Accountant.sol";
+import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
  * @title CreditLine

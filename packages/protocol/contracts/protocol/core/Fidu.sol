@@ -2,8 +2,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
-import "./ConfigHelper.sol";
+// solhint-disable-next-line max-line-length
+import {ERC20PresetMinterPauserUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
 
 /**
  * @title Fidu
