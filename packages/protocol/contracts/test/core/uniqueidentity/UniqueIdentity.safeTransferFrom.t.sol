@@ -4,6 +4,7 @@ pragma solidity 0.8.4;
 import {TestUniqueIdentity} from "../../TestUniqueIdentity.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {UniqueIdentityBaseTest} from "./BaseUniqueIdentity.t.sol";
+import {FuzzingHelper} from "../../helpers/FuzzingHelper.t.sol";
 
 contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
   function testRevertsForTokenOwner(
@@ -18,7 +19,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
   function testRevertsForTokenOwnerWhenPaused(
     address uidHolder,
     address recipient
-  ) public onlyAllowListed(uidHolder) onlyAllowListed(recipient) {
+  ) public onlyAllowListed(uidHolder) isNotContract(uidHolder) onlyAllowListed(recipient) {
     mint({recipient: uidHolder, uidType: 0, amount: 1});
     _startImpersonation(GF_OWNER);
     uid.pause();

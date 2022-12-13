@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {GoBaseTest} from "./BaseGo.t.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
+import {FuzzingHelper} from "../../helpers/FuzzingHelper.t.sol";
 
 contract GoGoTest is GoBaseTest {
   function testGoUsesLegacyGoListWhenSet(
@@ -37,7 +38,7 @@ contract GoGoTest is GoBaseTest {
   function testNonGoListedUserWithValidUidIsGoListed(
     address user,
     uint256 validUidType
-  ) public impersonating(GF_OWNER) {
+  ) public impersonating(GF_OWNER) isNotContract(user) {
     validUidType = bound(validUidType, 0, 4);
     uniqueIdentity._mintForTest(user, validUidType, 1, bytes(""));
     assertTrue(go.go(user));
@@ -46,7 +47,7 @@ contract GoGoTest is GoBaseTest {
   function testGoListedUserWithValidUidIsGoListed(
     address user,
     uint256 validUidType
-  ) public impersonating(GF_OWNER) {
+  ) public impersonating(GF_OWNER) isNotContract(user) {
     validUidType = bound(validUidType, 0, 4);
     uniqueIdentity._mintForTest(user, validUidType, 1, bytes(""));
     gfConfig.addToGoList(user);
