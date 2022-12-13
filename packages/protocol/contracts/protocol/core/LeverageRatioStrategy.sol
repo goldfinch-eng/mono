@@ -3,16 +3,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "../../interfaces/ISeniorPoolStrategy.sol";
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {ISeniorPoolStrategy} from "../../interfaces/ISeniorPoolStrategy.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 
 abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
-  using SafeMath for uint256;
-
   uint256 internal constant LEVERAGE_RATIO_DECIMALS = 1e18;
 
   /**

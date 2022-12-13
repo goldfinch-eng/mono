@@ -3,19 +3,20 @@ pragma solidity 0.6.12;
 
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import {ReentrancyGuardUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
-import "../external/ERC721PresetMinterPauserAutoId.sol";
-import "../interfaces/IERC20withDec.sol";
-import "../interfaces/ISeniorPool.sol";
-import "../interfaces/IStakingRewards.sol";
-import "../protocol/core/GoldfinchConfig.sol";
-import "../protocol/core/ConfigHelper.sol";
-import "../protocol/core/BaseUpgradeablePausable.sol";
+import {ERC721PresetMinterPauserAutoIdUpgradeSafe} from "../external/ERC721PresetMinterPauserAutoId.sol";
+import {IERC20withDec, IERC20} from "../interfaces/IERC20withDec.sol";
+import {ISeniorPool} from "../interfaces/ISeniorPool.sol";
+import {ICurveLP} from "../interfaces/ICurveLP.sol";
+import {IFidu} from "../interfaces/IFidu.sol";
+import {IStakingRewards, StakedPosition, StakedPositionType} from "../interfaces/IStakingRewards.sol";
+import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
+import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
+import {StakingRewardsVesting} from "../library/StakingRewardsVesting.sol";
 
 import {StakingRewardsVesting, Rewards} from "../library/StakingRewardsVesting.sol";
 
@@ -25,7 +26,6 @@ contract StakingRewards is
   ReentrancyGuardUpgradeSafe,
   IStakingRewards
 {
-  using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using SafeERC20 for IERC20;
   using ConfigHelper for GoldfinchConfig;

@@ -3,18 +3,18 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "../../interfaces/openzeppelin/IERC721.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import {IERC721} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/IPoolTokens.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/IRequiresUID.sol";
-import "../../interfaces/IStakingRewards.sol";
-import "./Accountant.sol";
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
+import {IStakingRewards, StakedPositionType} from "../../interfaces/IStakingRewards.sol";
+import {Accountant} from "./Accountant.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 
 /// @title Zapper
 /// @author Emily Hsia, Mark Hudnall, Will Johnston, Dalton Sweeney
@@ -22,7 +22,6 @@ import "./ConfigHelper.sol";
 contract Zapper is BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  using SafeMath for uint256;
 
   struct Zap {
     address owner;
@@ -255,7 +254,7 @@ contract Zapper is BaseUpgradeablePausable {
       "Zap locked"
     );
 
-    IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
+    IERC721(address(poolTokens)).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
 
   /// @notice See zapStakeToTranchedPool

@@ -3,7 +3,7 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./ICreditLine.sol";
+import {ICreditLine} from "./ICreditLine.sol";
 
 abstract contract IV2CreditLine is ICreditLine {
   function principal() external view virtual returns (uint256);

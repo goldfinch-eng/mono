@@ -3,19 +3,16 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "../../interfaces/IGo.sol";
-import "../../interfaces/IUniqueIdentity0612.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {IGo} from "../../interfaces/IGo.sol";
+import {IUniqueIdentity0612} from "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
   address public override uniqueIdentity;
-
-  using SafeMath for uint256;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;

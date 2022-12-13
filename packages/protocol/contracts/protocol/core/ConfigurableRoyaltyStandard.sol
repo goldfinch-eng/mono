@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /// @notice Library to house logic around the ERC2981 royalty standard. Contracts
 ///   using this library should define a ConfigurableRoyaltyStandard.RoyaltyParams
