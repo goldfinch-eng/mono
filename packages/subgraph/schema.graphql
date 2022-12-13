@@ -125,6 +125,8 @@ type CreditLine @entity {
   lateFeeApr: BigDecimal!
   interestAprDecimal: BigDecimal!
   isEligibleForRewards: Boolean!
+  principalOwed: BigInt!
+  isMultipleSlicesCompatible: Boolean!
 }
 
 enum TranchedPoolCreditLineVersion {

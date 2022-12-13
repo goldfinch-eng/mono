@@ -1,7 +1,7 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {CreditLine} from "../../generated/schema"
 import {CreditLine as CreditLineContract} from "../../generated/templates/TranchedPool/CreditLine"
-import {BACKER_REWARDS_EPOCH, FIDU_DECIMALS} from "../constants"
+import {BACKER_REWARDS_EPOCH, FIDU_DECIMALS, MULTIPLE_SLICES_MIGRATION_TIME} from "../constants"
 import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 
 const INTEREST_DECIMALS = BigDecimal.fromString("1000000000000000000")
@@ -38,6 +38,10 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   creditLine.isEligibleForRewards =
     creditLine.termStartTime == BigInt.zero() || creditLine.termStartTime >= BigInt.fromString(BACKER_REWARDS_EPOCH)
   creditLine.lateFeeApr = contract.lateFeeApr().divDecimal(FIDU_DECIMALS.toBigDecimal())
+  creditLine.principalOwed = contract.principalOwed()
+  creditLine.isMultipleSlicesCompatible =
+    creditLine.termStartTime == BigInt.zero() ||
+    creditLine.termStartTime >= BigInt.fromString(MULTIPLE_SLICES_MIGRATION_TIME)
 
   let maxLimit = creditLine.limit
   if (timestamp && isAfterV2_2(timestamp)) {
