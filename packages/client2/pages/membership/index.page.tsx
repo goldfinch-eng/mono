@@ -12,10 +12,7 @@ import {
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
-import {
-  SupportedCrypto,
-  useMembershipPageQuery,
-} from "@/lib/graphql/generated";
+import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -72,22 +69,10 @@ gql`
       }
     }
     viewer @client(always: true) {
-      gfiBalance {
-        token
-        amount
-      }
-      fiduBalance {
-        token
-        amount
-      }
-      claimableMembershipRewards {
-        token
-        amount
-      }
-      accruedMembershipRewardsThisEpoch {
-        token
-        amount
-      }
+      gfiBalance
+      fiduBalance
+      claimableMembershipRewards
+      accruedMembershipRewardsThisEpoch
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -219,7 +204,7 @@ export default function MembershipPage() {
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
   const vaultedGfi = {
-    token: SupportedCrypto.Gfi,
+    token: "GFI",
     amount: sum("amount", data?.vaultedGfis),
   };
 
@@ -340,7 +325,7 @@ export default function MembershipPage() {
                         <AssetGroupSubheading
                           left="Capital"
                           right={formatCrypto({
-                            token: SupportedCrypto.Usdc,
+                            token: "USDC",
                             amount: vaultableCapitalAssets.reduce(
                               (prev, current) =>
                                 prev.add(current.usdcAmount.amount),
@@ -416,7 +401,7 @@ export default function MembershipPage() {
                   <AssetGroupSubheading
                     left="GFI"
                     right={formatCrypto({
-                      token: SupportedCrypto.Gfi,
+                      token: "GFI",
                       amount: vaultedGfi.amount,
                     })}
                   />
@@ -437,12 +422,12 @@ export default function MembershipPage() {
                         description: "Governance Token",
                         icon: "Gfi",
                         nativeAmount: {
-                          token: SupportedCrypto.Gfi,
+                          token: "GFI",
                           amount: vaultedGfi.amount,
                         },
                         usdcAmount: gfiToUsdc(
                           {
-                            token: SupportedCrypto.Gfi,
+                            token: "GFI",
                             amount: vaultedGfi.amount,
                           },
                           data.gfiPrice.price.amount
@@ -457,7 +442,7 @@ export default function MembershipPage() {
                     right={
                       data
                         ? formatCrypto({
-                            token: SupportedCrypto.Usdc,
+                            token: "USDC",
                             amount: sum("usdcEquivalent", [
                               ...data.vaultedStakedPositions,
                               ...data.vaultedPoolTokens,
@@ -496,7 +481,7 @@ export default function MembershipPage() {
                         name: "Capital",
                         description: "Vaulted capital",
                         usdcAmount: {
-                          token: SupportedCrypto.Usdc,
+                          token: "USDC",
                           amount: BigNumber.from(0),
                         },
                       }}
@@ -524,7 +509,7 @@ export default function MembershipPage() {
                   onClose={() => setIsAddToVaultOpen(false)}
                   maxVaultableGfi={
                     data.viewer.gfiBalance ?? {
-                      token: SupportedCrypto.Gfi,
+                      token: "GFI",
                       amount: BigNumber.from(0),
                     }
                   }
@@ -539,7 +524,7 @@ export default function MembershipPage() {
                   sharePrice={sharePrice}
                   unstakedFidu={
                     data.viewer.fiduBalance ?? {
-                      token: SupportedCrypto.Fidu,
+                      token: "FIDU",
                       amount: BigNumber.from(0),
                     }
                   }

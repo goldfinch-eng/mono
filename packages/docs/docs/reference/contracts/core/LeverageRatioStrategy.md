@@ -15,16 +15,20 @@ function invest(contract ISeniorPool seniorPool, contract ITranchedPool pool) pu
 Determines how much money to invest in the senior tranche based on what is committed to the junior
 tranche, what is committed to the senior tranche, and a leverage ratio to the junior tranche. Because
 it takes into account what is already committed to the senior tranche, the value returned by this
-function can be used &quot;idempotently&quot; to achieve the investment target amount without exceeding that target.
+function can be used "idempotently" to achieve the investment target amount without exceeding that target.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | seniorPool | contract ISeniorPool | The senior pool to invest from |
 | pool | contract ITranchedPool | The tranched pool to invest into (as the senior) |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | The amount of money to invest into the tranched pool&#x27;s senior tranche, from the senior pool |
+| [0] | uint256 | The amount of money to invest into the tranched pool's senior tranche, from the senior pool |
 
 ### estimateInvestment
 
@@ -32,18 +36,22 @@ function can be used &quot;idempotently&quot; to achieve the investment target a
 function estimateInvestment(contract ISeniorPool seniorPool, contract ITranchedPool pool) public view returns (uint256)
 ```
 
-A companion of &#x60;invest()&#x60;: determines how much would be returned by &#x60;invest()&#x60;, as the
+A companion of `invest()`: determines how much would be returned by `invest()`, as the
 value to invest into the senior tranche, if the junior tranche were locked and the senior tranche
 were not locked.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | seniorPool | contract ISeniorPool | The senior pool to invest from |
 | pool | contract ITranchedPool | The tranched pool to invest into (as the senior) |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | The amount of money to invest into the tranched pool&#x27;s senior tranche, from the senior pool |
+| [0] | uint256 | The amount of money to invest into the tranched pool's senior tranche, from the senior pool |
 
 ### _invest
 
@@ -59,10 +67,14 @@ function _getTranchesInSlice(contract ITranchedPool pool, uint256 sliceIndex) in
 
 Return the junior and senior tranches from a given pool in a specified slice
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | pool | contract ITranchedPool | pool to fetch tranches from |
 | sliceIndex | uint256 | slice index to fetch tranches from |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -77,9 +89,13 @@ function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint
 
 Returns the junior tranche id for the given slice index
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | index | uint256 | slice index |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -93,9 +109,13 @@ function _sliceIndexToSeniorTrancheId(uint256 index) internal pure returns (uint
 
 Returns the senion tranche id for the given slice index
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | index | uint256 | slice index |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

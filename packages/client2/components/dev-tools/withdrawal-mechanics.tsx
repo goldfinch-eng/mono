@@ -2,7 +2,6 @@ import { useForm } from "react-hook-form";
 
 import { DollarInput, Form, Button } from "@/components/design-system";
 import { stringToCryptoAmount } from "@/lib/format";
-import { SupportedCrypto } from "@/lib/graphql/generated";
 
 import { AsyncButton, devserverRequest, advanceTimeNDays } from "./helpers";
 
@@ -24,7 +23,7 @@ function DrainSeniorPoolForm() {
   type FormFields = { amount: string };
   const rhfMethods = useForm<FormFields>();
   const onSubmit = async (data: FormFields) => {
-    const usdc = stringToCryptoAmount(data.amount, SupportedCrypto.Usdc);
+    const usdc = stringToCryptoAmount(data.amount, "USDC");
     const response = await devserverRequest("drainSeniorPool", {
       usdcAmount: usdc.amount.toString(),
     });
@@ -37,7 +36,7 @@ function DrainSeniorPoolForm() {
       <div className="mb-1 text-lg font-medium">Drain senior pool</div>
       <div className="flex gap-2">
         <DollarInput
-          unit={SupportedCrypto.Usdc}
+          unit={"USDC"}
           control={rhfMethods.control}
           name="amount"
           label="USDC amount"

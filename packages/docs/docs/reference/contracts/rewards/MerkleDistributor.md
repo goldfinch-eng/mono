@@ -23,7 +23,7 @@ Returns the merkle root of the merkle tree containing grant details available to
 ### acceptedBitMap
 
 ```solidity
-mapping(uint256 &#x3D;&gt; uint256) acceptedBitMap
+mapping(uint256 => uint256) acceptedBitMap
 ```
 
 ### constructor

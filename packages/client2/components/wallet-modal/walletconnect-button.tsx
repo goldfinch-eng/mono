@@ -17,7 +17,11 @@ export function WalletConnectButton() {
   const error = walletConnectHooks.useError();
 
   return (
-    <ProviderButton onClick={handleConnection} errorMessage={error?.message}>
+    <ProviderButton
+      onClick={handleConnection}
+      errorMessage={error?.message}
+      data-id="connect-wallet.walletconnect"
+    >
       {`WalletConnect${isActive ? " (Connected)" : ""}`}
       {isActivating ? (
         <Spinner className="!h-10 !w-10 text-[#3f99fc]" />

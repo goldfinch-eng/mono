@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "target": "ES6",
     "jsx": "react",
     "lib": ["DOM"],
     "types": ["node", "@docusaurus/module-type-aliases", "@docusaurus/theme-classic"],

@@ -11,10 +11,7 @@ import {
   Table,
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import {
-  useTranchedPoolTransactionTableQuery,
-  TransactionCategory,
-} from "@/lib/graphql/generated";
+import { useTranchedPoolTransactionTableQuery } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 
@@ -56,14 +53,14 @@ interface TransactionTableProps {
 }
 
 const subtractiveIconTransactionCategories = [
-  TransactionCategory.TranchedPoolWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
-  TransactionCategory.SeniorPoolRedemption,
+  "TRANCHED_POOL_WITHDRAWAL",
+  "TRANCHED_POOL_DRAWDOWN",
+  "SENIOR_POOL_REDEMPTION",
 ];
 
 const sentTokenCategories = [
-  TransactionCategory.TranchedPoolDeposit,
-  TransactionCategory.TranchedPoolRepayment,
+  "TRANCHED_POOL_DEPOSIT",
+  "TRANCHED_POOL_REPAYMENT",
 ];
 
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
@@ -81,8 +78,8 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
     const tranchedPool = transaction.tranchedPool!;
 
     const user =
-      transaction.category === TransactionCategory.TranchedPoolDrawdown ||
-      transaction.category === TransactionCategory.TranchedPoolRepayment ? (
+      transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
+      transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
         <div className="flex items-center gap-2">
           <Image
             src={tranchedPool.borrowerLogo}
@@ -93,7 +90,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
           />
           <span>{tranchedPool.borrowerName}</span>
         </div>
-      ) : transaction.category === TransactionCategory.SeniorPoolRedemption ? (
+      ) : transaction.category === "SENIOR_POOL_REDEMPTION" ? (
         <div className="flex items-center gap-2">
           <GoldfinchLogo className="h-6 w-6" />
           Senior Pool

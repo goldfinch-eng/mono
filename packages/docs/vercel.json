@@ -1,0 +1,4 @@
+{
+  "buildCommand": "CI= && npx lerna bootstrap --ci && npx lerna run build --scope @goldfinch-eng/docs ",
+  "installCommand": "cd ../.. && npm install && cd packages/docs"
+}

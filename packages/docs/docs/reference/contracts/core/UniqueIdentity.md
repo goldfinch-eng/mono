@@ -88,7 +88,7 @@ uint256 MINT_COST_PER_TOKEN
 ### nonces
 
 ```solidity
-mapping(address &#x3D;&gt; uint256) nonces
+mapping(address => uint256) nonces
 ```
 
 _We include a nonce in every hashed message, and increment the nonce as part of a
@@ -97,7 +97,7 @@ state-changing operation, so as to prevent replay attacks, i.e. the reuse of a s
 ### supportedUIDTypes
 
 ```solidity
-mapping(uint256 &#x3D;&gt; bool) supportedUIDTypes
+mapping(uint256 => bool) supportedUIDTypes
 ```
 
 ### initialize
@@ -132,6 +132,8 @@ function name() public pure returns (string)
 
 _Gets the token name._
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | string | string representing the token name |
@@ -143,6 +145,8 @@ function symbol() public pure returns (string)
 ```
 
 _Gets the token symbol._
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

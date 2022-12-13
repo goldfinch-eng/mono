@@ -116,6 +116,17 @@ abstract contract BaseTest is Test {
     protocol.usdc().transfer(addressToFund, amount);
   }
 
+  function grantRole(
+    address gfContract,
+    bytes32 role,
+    address recipient
+  ) internal impersonating(GF_OWNER) {
+    (bool success, ) = gfContract.call(
+      abi.encodeWithSignature("grantRole(bytes32,address)", role, recipient)
+    );
+    require(success, "Failed to grant role");
+  }
+
   function assertZero(uint256 x) internal {
     assertEq(x, 0);
   }
@@ -137,6 +148,13 @@ abstract contract BaseTest is Test {
 
   modifier assume(bool stmt) {
     vm.assume(stmt);
+    _;
+  }
+
+  modifier validPrivateKey(uint256 key) {
+    // valid private key space is from [1, secp256k1n − 1]
+    vm.assume(key > 0);
+    vm.assume(key <= uint256(0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141));
     _;
   }
 }

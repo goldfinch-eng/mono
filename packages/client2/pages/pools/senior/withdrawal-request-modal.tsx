@@ -18,11 +18,7 @@ import {
   formatPercent,
   stringToCryptoAmount,
 } from "@/lib/format";
-import {
-  CryptoAmount,
-  SupportedCrypto,
-  WithdrawalRequestModalWithdrawalFieldsFragment,
-} from "@/lib/graphql/generated";
+import { WithdrawalRequestModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -107,7 +103,7 @@ function InputFiduStep({
     if (!value) {
       return "Required";
     }
-    const parsed = stringToCryptoAmount(value, SupportedCrypto.Fidu);
+    const parsed = stringToCryptoAmount(value, "FIDU");
     if (parsed.amount.isZero()) {
       return "Must be more than 0";
     }
@@ -126,7 +122,7 @@ function InputFiduStep({
                 "MMM dd, yyyy"
               )}`,
               nativeAmount: {
-                token: SupportedCrypto.Fidu,
+                token: "FIDU",
                 amount: existingWithdrawalRequest.previewFiduRequested,
               },
               usdcAmount: sharesToUsdc(
@@ -226,13 +222,13 @@ function ConfirmStep({
 }: ConfirmStepProps) {
   const rhfMethods = useForm<FormData>();
   const { data } = useStepperContext();
-  const fiduInputted = stringToCryptoAmount(data.fidu, SupportedCrypto.Fidu);
+  const fiduInputted = stringToCryptoAmount(data.fidu, "FIDU");
   const newRequestTotalFidu = {
-    token: SupportedCrypto.Fidu,
+    token: "FIDU",
     amount: existingWithdrawalRequest
       ? existingWithdrawalRequest.previewFiduRequested.add(fiduInputted.amount)
       : fiduInputted.amount,
-  };
+  } as const;
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
   const onSubmit = async (data: FormData) => {
@@ -240,7 +236,7 @@ function ConfirmStep({
       throw new Error("Wallet is not connected");
     }
 
-    const fiduInputted = stringToCryptoAmount(data.fidu, SupportedCrypto.Fidu);
+    const fiduInputted = stringToCryptoAmount(data.fidu, "FIDU");
 
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
@@ -294,7 +290,7 @@ function ConfirmStep({
                   "MMM dd, yyyy"
                 )}`,
                 nativeAmount: {
-                  token: SupportedCrypto.Fidu,
+                  token: "FIDU",
                   amount: existingWithdrawalRequest.previewFiduRequested,
                 },
                 usdcAmount: sharesToUsdc(

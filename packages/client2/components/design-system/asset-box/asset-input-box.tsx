@@ -3,7 +3,6 @@ import { BigNumber } from "ethers";
 import { useFormContext } from "react-hook-form";
 
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import { SupportedCrypto } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 
 import { DollarInputProps, DollarInput } from "../input";
@@ -27,7 +26,7 @@ export function AssetInputBox({
   fiatPerGfi,
   ...rest
 }: AssetInputBoxProps) {
-  const unit = asset.nativeAmount?.token ?? SupportedCrypto.Usdc;
+  const unit = asset.nativeAmount?.token ?? "USDC";
   const maxValue =
     rest.maxValue ?? asset.nativeAmount?.amount ?? asset.usdcAmount.amount;
   const formContext = useFormContext();
@@ -40,9 +39,9 @@ export function AssetInputBox({
   const parsedValue = stringToCryptoAmount(watch(rest.name), unit);
 
   const helperText =
-    fiatPerGfi && unit === SupportedCrypto.Gfi
+    fiatPerGfi && unit === "GFI"
       ? formatCrypto(gfiToUsdc(parsedValue, fiatPerGfi as number))
-      : sharePrice && unit === SupportedCrypto.Fidu
+      : sharePrice && unit === "FIDU"
       ? formatCrypto(sharesToUsdc(parsedValue.amount, sharePrice))
       : undefined;
 

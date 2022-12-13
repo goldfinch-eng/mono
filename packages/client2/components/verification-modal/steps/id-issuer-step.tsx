@@ -14,7 +14,10 @@ export function IdIssuerStep() {
       headingTooltip="You will need your government ID to complete identity verification."
       subheading="If you have both ID types, please select “a country other than the United States” and use your Non-U.S. ID for identity verification."
     >
-      <div className="flex h-full flex-col gap-3">
+      <div
+        className="flex h-full flex-col gap-3"
+        data-id="verfication.step.id-issuer"
+      >
         <BigButton
           selected={idIssuer === "non-us"}
           onClick={() => {

@@ -11,10 +11,7 @@ import {
 import { GFI_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
-import {
-  SupportedFiat,
-  useCurrentUserWalletInfoQuery,
-} from "@/lib/graphql/generated";
+import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
 import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
@@ -30,14 +27,8 @@ gql`
     }
     viewer @client {
       account(format: "lowercase") @export(as: "userAccount")
-      usdcBalance {
-        token
-        amount
-      }
-      gfiBalance {
-        token
-        amount
-      }
+      usdcBalance
+      gfiBalance
     }
     user(id: $userAccount) {
       id
@@ -74,7 +65,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const gfiBalanceAsFiat =
     viewer?.gfiBalance && gfiPrice
       ? formatFiat({
-          symbol: SupportedFiat.Usd,
+          symbol: "USD",
           amount: gfiPrice * cryptoToFloat(viewer?.gfiBalance),
         })
       : null;

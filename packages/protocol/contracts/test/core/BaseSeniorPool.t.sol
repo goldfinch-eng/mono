@@ -266,10 +266,6 @@ contract SeniorPoolBaseTest is BaseTest {
     gfConfig.removeFromGoList(user);
   }
 
-  function grantRole(bytes32 role, address user) internal impersonating(GF_OWNER) {
-    sp.grantRole(role, user);
-  }
-
   function approveTokensMaxAmount(address user) internal impersonating(user) {
     usdc.approve(address(sp), type(uint256).max);
     fidu.approve(address(sp), type(uint256).max);
@@ -332,16 +328,8 @@ contract SeniorPoolBaseTest is BaseTest {
     _;
   }
 
-  modifier validPrivateKey(uint256 key) {
-    // valid private key space is from [1, secp256k1n − 1]
-    vm.assume(
-      key > 0 && key <= uint256(0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141)
-    );
-    _;
-  }
-
   modifier withRole(address user, bytes32 role) {
-    grantRole(role, user);
+    grantRole(address(sp), role, user);
     _;
   }
 

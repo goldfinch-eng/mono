@@ -18,10 +18,8 @@ import {
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
 import {
-  SupportedCrypto,
   useDashboardPageQuery,
   DashboardPoolTokenFieldsFragment,
-  CryptoAmount,
   DashboardStakedPositionFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum, gfiToUsdc } from "@/lib/pools";
@@ -66,18 +64,9 @@ gql`
       }
     }
     viewer @client {
-      fiduBalance {
-        token
-        amount
-      }
-      gfiBalance {
-        token
-        amount
-      }
-      curveLpBalance {
-        token
-        amount
-      }
+      fiduBalance
+      gfiBalance
+      curveLpBalance
       gfiGrants {
         __typename
         id
@@ -91,10 +80,7 @@ gql`
           isAccepted
         }
       }
-      claimableMembershipRewards {
-        token
-        amount
-      }
+      claimableMembershipRewards
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -209,18 +195,18 @@ export default function DashboardPage() {
       return {};
     }
     const borrowerPoolTotal = {
-      token: SupportedCrypto.Usdc,
+      token: "USDC",
       amount: data.tranchedPoolTokens
         .concat(data.vaultedPoolTokens.map((v) => v.poolToken))
         .reduce(
           (prev, current) => prev.add(valueOfPoolToken(current)),
           BigNumber.from(0)
         ),
-    };
+    } as const;
 
     const gfiTotal = gfiToUsdc(
       {
-        token: SupportedCrypto.Gfi,
+        token: "GFI",
         amount: data.viewer.gfiBalance.amount
           .add(gfiRewardsTotal)
           .add(gfiVaultedTotal),
@@ -256,14 +242,14 @@ export default function DashboardPage() {
     );
 
     const totalUsdc = {
-      token: SupportedCrypto.Usdc,
+      token: "USDC",
       amount: sum("amount", [
         borrowerPoolTotal,
         gfiTotal,
         seniorPoolTotal,
         curveLpTotal,
       ]),
-    };
+    } as const;
 
     const summaryHoldings = [
       {
@@ -465,7 +451,7 @@ export default function DashboardPage() {
                                   transformGfiToHolding({
                                     name: "GFI Rewards",
                                     gfi: {
-                                      token: SupportedCrypto.Gfi,
+                                      token: "GFI",
                                       amount: gfiRewardsTotal,
                                     },
                                     fiatPerGfi: data.gfiPrice.price.amount,
@@ -481,7 +467,7 @@ export default function DashboardPage() {
                                     url: "/membership",
                                     vaulted: true,
                                     gfi: {
-                                      token: SupportedCrypto.Gfi,
+                                      token: "GFI",
                                       amount: gfiVaultedTotal,
                                     },
                                     fiatPerGfi: data.gfiPrice.price.amount,
@@ -493,7 +479,7 @@ export default function DashboardPage() {
                           quantityFormatter={(n: BigNumber) => (
                             <FormatWithIcon
                               cryptoAmount={{
-                                token: SupportedCrypto.Gfi,
+                                token: "GFI",
                                 amount: n,
                               }}
                             />
@@ -564,7 +550,7 @@ export default function DashboardPage() {
                                     name: "Requested for withdrawal",
                                     url: "/pools/senior",
                                     fidu: {
-                                      token: SupportedCrypto.Fidu,
+                                      token: "FIDU",
                                       amount:
                                         data.seniorPoolWithdrawalRequests[0]
                                           .fiduRequested,
@@ -579,7 +565,7 @@ export default function DashboardPage() {
                             <FormatWithIcon
                               cryptoAmount={{
                                 amount: n,
-                                token: SupportedCrypto.Fidu,
+                                token: "FIDU",
                               }}
                             />
                           )}
@@ -643,7 +629,7 @@ export default function DashboardPage() {
                           quantityFormatter={(n: BigNumber) => (
                             <FormatWithIcon
                               cryptoAmount={{
-                                token: SupportedCrypto.CurveLp,
+                                token: "CURVE_LP",
                                 amount: n,
                               }}
                             />
@@ -705,7 +691,7 @@ function curveLpTokensToUsdc(
     .round();
   return {
     amount: BigNumber.from(usdcValue.toString().split(".")[0]),
-    token: SupportedCrypto.Usdc,
+    token: "USDC" as const,
   };
 }
 
@@ -750,7 +736,7 @@ function transformPoolTokenToHolding(
     ),
     quantity: BigNumber.from(1),
     usdcValue: {
-      token: SupportedCrypto.Usdc,
+      token: "USDC",
       amount: valueOfPoolToken(poolToken),
     },
     url: `/pools/${poolToken.tranchedPool.id}`,

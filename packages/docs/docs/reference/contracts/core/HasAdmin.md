@@ -2,7 +2,7 @@
 
 Base contract that provides an OWNER_ROLE and convenience function/modifier for
   checking sender against this role. Inherting contracts must set up this role using
-  &#x60;_setupRole&#x60; and &#x60;_setRoleAdmin&#x60;.
+  `_setupRole` and `_setRoleAdmin`.
 
 ### OWNER_ROLE
 
@@ -19,6 +19,8 @@ function isAdmin() public view returns (bool)
 ```
 
 Determine whether msg.sender has OWNER_ROLE
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

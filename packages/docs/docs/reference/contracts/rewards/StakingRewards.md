@@ -14,93 +14,22 @@ enum LockupPeriod {
 }
 ```
 
-### StakedPositionType
-
-```solidity
-enum StakedPositionType {
-  Fidu,
-  CurveLP
-}
-```
-
-### StakedPosition
-
-```solidity
-struct StakedPosition {
-  uint256 amount;
-  struct StakingRewardsVesting.Rewards rewards;
-  uint256 leverageMultiplier;
-  uint256 lockedUntil;
-  enum StakingRewards.StakedPositionType positionType;
-  uint256 unsafeEffectiveMultiplier;
-  uint256 unsafeBaseTokenExchangeRate;
-}
-```
-
-### RewardsParametersUpdated
-
-```solidity
-event RewardsParametersUpdated(address who, uint256 targetCapacity, uint256 minRate, uint256 maxRate, uint256 minRateAtPercent, uint256 maxRateAtPercent)
-```
-
-### TargetCapacityUpdated
-
-```solidity
-event TargetCapacityUpdated(address who, uint256 targetCapacity)
-```
-
-### VestingScheduleUpdated
-
-```solidity
-event VestingScheduleUpdated(address who, uint256 vestingLength)
-```
-
-### MinRateUpdated
-
-```solidity
-event MinRateUpdated(address who, uint256 minRate)
-```
-
-### MaxRateUpdated
-
-```solidity
-event MaxRateUpdated(address who, uint256 maxRate)
-```
-
-### MinRateAtPercentUpdated
-
-```solidity
-event MinRateAtPercentUpdated(address who, uint256 minRateAtPercent)
-```
-
-### MaxRateAtPercentUpdated
-
-```solidity
-event MaxRateAtPercentUpdated(address who, uint256 maxRateAtPercent)
-```
-
-### EffectiveMultiplierUpdated
-
-```solidity
-event EffectiveMultiplierUpdated(address who, enum StakingRewards.StakedPositionType positionType, uint256 multiplier)
-```
-
 ### MULTIPLIER_DECIMALS
 
 ```solidity
 uint256 MULTIPLIER_DECIMALS
 ```
 
+### USDC_MANTISSA
+
+```solidity
+uint256 USDC_MANTISSA
+```
+
 ### OWNER_ROLE
 
 ```solidity
 bytes32 OWNER_ROLE
-```
-
-### ZAPPER_ROLE
-
-```solidity
-bytes32 ZAPPER_ROLE
 ```
 
 ### config
@@ -131,15 +60,15 @@ Accumulated rewards per token at the last checkpoint
 uint256 rewardsAvailable
 ```
 
-Total rewards available for disbursement at the last checkpoint, denominated in &#x60;rewardsToken()&#x60;
+Total rewards available for disbursement at the last checkpoint, denominated in `rewardsToken()`
 
 ### positionToAccumulatedRewardsPerToken
 
 ```solidity
-mapping(uint256 &#x3D;&gt; uint256) positionToAccumulatedRewardsPerToken
+mapping(uint256 => uint256) positionToAccumulatedRewardsPerToken
 ```
 
-StakedPosition tokenId &#x3D;&gt; accumulatedRewardsPerToken at the position&#x27;s last checkpoint
+StakedPosition tokenId => accumulatedRewardsPerToken at the position's last checkpoint
 
 ### targetCapacity
 
@@ -156,7 +85,7 @@ Desired supply of staked tokens. The reward rate adjusts in a range
 uint256 minRate
 ```
 
-The minimum total disbursed rewards per second, denominated in &#x60;rewardsToken()&#x60;
+The minimum total disbursed rewards per second, denominated in `rewardsToken()`
 
 ### maxRate
 
@@ -164,7 +93,7 @@ The minimum total disbursed rewards per second, denominated in &#x60;rewardsToke
 uint256 maxRate
 ```
 
-The maximum total disbursed rewards per second, denominated in &#x60;rewardsToken()&#x60;
+The maximum total disbursed rewards per second, denominated in `rewardsToken()`
 
 ### maxRateAtPercent
 
@@ -172,8 +101,8 @@ The maximum total disbursed rewards per second, denominated in &#x60;rewardsToke
 uint256 maxRateAtPercent
 ```
 
-The percent of &#x60;targetCapacity&#x60; at which the reward rate reaches &#x60;maxRate&#x60;.
- Represented with &#x60;MULTIPLIER_DECIMALS&#x60;.
+The percent of `targetCapacity` at which the reward rate reaches `maxRate`.
+ Represented with `MULTIPLIER_DECIMALS`.
 
 ### minRateAtPercent
 
@@ -181,8 +110,8 @@ The percent of &#x60;targetCapacity&#x60; at which the reward rate reaches &#x60
 uint256 minRateAtPercent
 ```
 
-The percent of &#x60;targetCapacity&#x60; at which the reward rate reaches &#x60;minRate&#x60;.
- Represented with &#x60;MULTIPLIER_DECIMALS&#x60;.
+The percent of `targetCapacity` at which the reward rate reaches `minRate`.
+ Represented with `MULTIPLIER_DECIMALS`.
 
 ### vestingLength
 
@@ -201,12 +130,12 @@ _UNUSED (definition kept for storage slot)_
 uint256 totalStakedSupply
 ```
 
-_Supply of staked tokens, denominated in &#x60;stakingToken().decimals()&#x60;
-Note that due to the use of &#x60;unsafeBaseTokenExchangeRate&#x60; and &#x60;unsafeEffectiveMultiplier&#x60; on
-a StakedPosition, the sum of &#x60;amount&#x60; across all staked positions will not necessarily
-equal this &#x60;totalStakedSupply&#x60; value; the purpose of the base token exchange rate and
-the effective multiplier is to enable calculation of an &quot;effective amount&quot; -- which is
-what this &#x60;totalStakedSupply&#x60; represents the sum of._
+_Supply of staked tokens, denominated in `stakingToken().decimals()`
+Note that due to the use of `unsafeBaseTokenExchangeRate` and `unsafeEffectiveMultiplier` on
+a StakedPosition, the sum of `amount` across all staked positions will not necessarily
+equal this `totalStakedSupply` value; the purpose of the base token exchange rate and
+the effective multiplier is to enable calculation of an "effective amount" -- which is
+what this `totalStakedSupply` represents the sum of._
 
 ### totalLeveragedStakedSupply
 
@@ -219,7 +148,7 @@ _UNUSED (definition kept for storage slot)_
 ### leverageMultipliers
 
 ```solidity
-mapping(enum StakingRewards.LockupPeriod &#x3D;&gt; uint256) leverageMultipliers
+mapping(enum StakingRewards.LockupPeriod => uint256) leverageMultipliers
 ```
 
 _UNUSED (definition kept for storage slot)_
@@ -227,19 +156,19 @@ _UNUSED (definition kept for storage slot)_
 ### positions
 
 ```solidity
-mapping(uint256 &#x3D;&gt; struct StakingRewards.StakedPosition) positions
+mapping(uint256 => struct StakedPosition) positions
 ```
 
-_NFT tokenId &#x3D;&gt; staked position_
+_NFT tokenId => staked position_
 
 ### effectiveMultipliers
 
 ```solidity
-mapping(enum StakingRewards.StakedPositionType &#x3D;&gt; uint256) effectiveMultipliers
+mapping(enum StakedPositionType => uint256) effectiveMultipliers
 ```
 
 _A mapping of staked position types to multipliers used to denominate positions
-  in &#x60;baseStakingToken()&#x60;. Represented with &#x60;MULTIPLIER_DECIMALS&#x60;._
+  in `baseStakingToken()`. Represented with `MULTIPLIER_DECIMALS`._
 
 ### __initialize__
 
@@ -247,10 +176,10 @@ _A mapping of staked position types to multipliers used to denominate positions
 function __initialize__(address owner, contract GoldfinchConfig _config) external
 ```
 
-### initZapperRole
+### getPosition
 
 ```solidity
-function initZapperRole() external
+function getPosition(uint256 tokenId) external view returns (struct StakedPosition position)
 ```
 
 ### stakedBalanceOf
@@ -264,13 +193,17 @@ Returns the staked balance of a given position token.
 _The value returned is the bare amount, not the effective amount. The bare amount represents
   the number of tokens the user has staked for a given position._
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | A staking position token ID |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of staked tokens denominated in &#x60;stakingToken().decimals()&#x60; |
+| [0] | uint256 | Amount of staked tokens denominated in `stakingToken().decimals()` |
 
 ### rewardsToken
 
@@ -283,18 +216,10 @@ The address of the token being disbursed as rewards
 ### stakingToken
 
 ```solidity
-function stakingToken(enum StakingRewards.StakedPositionType positionType) internal view returns (contract IERC20)
+function stakingToken(enum StakedPositionType positionType) internal view returns (contract IERC20)
 ```
 
 The address of the token that is staked for a given position type
-
-### baseStakingToken
-
-```solidity
-function baseStakingToken() internal view returns (contract IERC20withDec)
-```
-
-The address of the base token used to denominate staking rewards
 
 ### _additionalRewardsPerTokenSinceLastUpdate
 
@@ -303,13 +228,15 @@ function _additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view r
 ```
 
 The additional rewards earned per token, between the provided time and the last
-  time rewards were checkpointed, given the prevailing &#x60;rewardRate()&#x60;. This amount is limited
-  by the amount of rewards that are available for distribution; if there aren&#x27;t enough
-  rewards in the balance of this contract, then we shouldn&#x27;t be giving them out.
+  time rewards were checkpointed, given the prevailing `rewardRate()`. This amount is limited
+  by the amount of rewards that are available for distribution; if there aren't enough
+  rewards in the balance of this contract, then we shouldn't be giving them out.
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of rewards denominated in &#x60;rewardsToken().decimals()&#x60;. |
+| [0] | uint256 | Amount of rewards denominated in `rewardsToken().decimals()`. |
 
 ### rewardPerToken
 
@@ -319,9 +246,11 @@ function rewardPerToken() public view returns (uint256)
 
 Returns accumulated rewards per token up to the current block timestamp
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of rewards denominated in &#x60;rewardsToken().decimals()&#x60; |
+| [0] | uint256 | Amount of rewards denominated in `rewardsToken().decimals()` |
 
 ### earnedSinceLastCheckpoint
 
@@ -332,13 +261,17 @@ function earnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256
 Returns rewards earned by a given position token from its last checkpoint up to the
   current block timestamp.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | A staking position token ID |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of rewards denominated in &#x60;rewardsToken().decimals()&#x60; |
+| [0] | uint256 | Amount of rewards denominated in `rewardsToken().decimals()` |
 
 ### totalOptimisticClaimable
 
@@ -361,9 +294,11 @@ function claimableRewards(uint256 tokenId) public view returns (uint256 rewards)
 Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
   account vesting schedule for legacy positions.
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| rewards | uint256 | Amount of rewards denominated in &#x60;rewardsToken()&#x60; |
+| rewards | uint256 | Amount of rewards denominated in `rewardsToken()` |
 
 ### totalVestedAt
 
@@ -373,9 +308,11 @@ function totalVestedAt(uint256 start, uint256 end, uint256 time, uint256 granted
 
 Returns the rewards that will have vested for some position with the given params.
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| rewards | uint256 | Amount of rewards denominated in &#x60;rewardsToken()&#x60; |
+| rewards | uint256 | Amount of rewards denominated in `rewardsToken()` |
 
 ### rewardRate
 
@@ -383,12 +320,12 @@ Returns the rewards that will have vested for some position with the given param
 function rewardRate() internal view returns (uint256)
 ```
 
-Number of rewards, in &#x60;rewardsToken().decimals()&#x60;, to disburse each second
+Number of rewards, in `rewardsToken().decimals()`, to disburse each second
 
 ### _positionToEffectiveAmount
 
 ```solidity
-function _positionToEffectiveAmount(struct StakingRewards.StakedPosition position) internal view returns (uint256)
+function _positionToEffectiveAmount(struct StakedPosition position) internal view returns (uint256)
 ```
 
 ### toEffectiveAmount
@@ -401,7 +338,9 @@ Calculates the effective amount given the amount, (safe) base token exchange rat
   and (safe) effective multiplier for a position
 
 _Do NOT pass in the unsafeBaseTokenExchangeRate or unsafeEffectiveMultiplier in storage.
-  Convert it to safe values using &#x60;safeBaseTokenExchangeRate()&#x60; and &#x60;safeEffectiveMultiplier()&#x60;_
+  Convert it to safe values using `safeBaseTokenExchangeRate()` and `safeEffectiveMultiplier()`_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -412,13 +351,13 @@ _Do NOT pass in the unsafeBaseTokenExchangeRate or unsafeEffectiveMultiplier in 
 ### stakingAndRewardsTokenMantissa
 
 ```solidity
-function stakingAndRewardsTokenMantissa() internal view returns (uint256)
+function stakingAndRewardsTokenMantissa() internal pure returns (uint256)
 ```
 
 _We overload the responsibility of this function -- i.e. returning a value that can be
-used for both the &#x60;stakingToken()&#x60; mantissa and the &#x60;rewardsToken()&#x60; mantissa --, rather than have
+used for both the `stakingToken()` mantissa and the `rewardsToken()` mantissa --, rather than have
 multiple distinct functions for that purpose, in order to reduce contract size. We rely on a unit
-test to ensure that the tokens&#x27; mantissas are indeed equal and therefore that this approach works._
+test to ensure that the tokens' mantissas are indeed 1e18 and therefore that this approach works._
 
 ### currentEarnRatePerToken
 
@@ -427,13 +366,15 @@ function currentEarnRatePerToken() public view returns (uint256)
 ```
 
 The amount of rewards currently being earned per token per second. This amount takes into
-  account how many rewards are actually available for disbursal -- unlike &#x60;rewardRate()&#x60; which does not.
+  account how many rewards are actually available for disbursal -- unlike `rewardRate()` which does not.
   This function is intended for public consumption, to know the rate at which rewards are being
   earned, and not as an input to the mutative calculations in this contract.
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of rewards denominated in &#x60;rewardsToken().decimals()&#x60;. |
+| [0] | uint256 | Amount of rewards denominated in `rewardsToken().decimals()`. |
 
 ### positionCurrentEarnRate
 
@@ -445,26 +386,38 @@ The amount of rewards currently being earned per second, for a given position. T
   is intended for public consumption, to know the rate at which rewards are being earned
   for a given position, and not as an input to the mutative calculations in this contract.
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | Amount of rewards denominated in &#x60;rewardsToken().decimals()&#x60;. |
+| [0] | uint256 | Amount of rewards denominated in `rewardsToken().decimals()`. |
+
+### setBaseURI
+
+```solidity
+function setBaseURI(string baseURI_) external
+```
 
 ### stake
 
 ```solidity
-function stake(uint256 amount, enum StakingRewards.StakedPositionType positionType) external returns (uint256)
+function stake(uint256 amount, enum StakedPositionType positionType) external returns (uint256)
 ```
 
-Stake &#x60;stakingToken()&#x60; to earn rewards. When you call this function, you&#x27;ll receive an
-  an NFT representing your staked position. You can present your NFT to &#x60;getReward&#x60; or &#x60;unstake&#x60;
+Stake `stakingToken()` to earn rewards. When you call this function, you'll receive an
+  an NFT representing your staked position. You can present your NFT to `getReward` or `unstake`
   to claim rewards or unstake your tokens respectively.
 
 _This function checkpoints rewards._
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| amount | uint256 | The amount of &#x60;stakingToken()&#x60; to stake |
-| positionType | enum StakingRewards.StakedPositionType | The type of the staked position |
+| amount | uint256 | The amount of `stakingToken()` to stake |
+| positionType | enum StakedPositionType | The type of the staked position |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -478,6 +431,8 @@ function depositAndStake(uint256 usdcAmount) public returns (uint256)
 
 Deposit to SeniorPool and stake your shares in the same transaction.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | usdcAmount | uint256 | The amount of USDC to deposit into the senior pool. All shares from deposit   will be staked. |
@@ -488,8 +443,10 @@ Deposit to SeniorPool and stake your shares in the same transaction.
 function depositWithPermitAndStake(uint256 usdcAmount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (uint256)
 ```
 
-Identical to &#x60;depositAndStake&#x60;, except it allows for a signature to be passed that permits
+Identical to `depositAndStake`, except it allows for a signature to be passed that permits
   this contract to move funds on behalf of the user.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -506,7 +463,9 @@ function depositToCurve(uint256 fiduAmount, uint256 usdcAmount) external
 ```
 
 Deposits FIDU and USDC to Curve on behalf of the user. The Curve LP tokens will be minted
-  directly to the user&#x27;s address
+  directly to the user's address
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -527,6 +486,8 @@ function depositToCurveAndStakeFrom(address nftRecipient, uint256 fiduAmount, ui
 
 Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | nftRecipient | address |  |
@@ -542,6 +503,8 @@ function _depositToCurve(address depositor, address lpTokensRecipient, uint256 f
 Deposit to FIDU and USDC into the Curve LP. Returns the amount of Curve LP tokens minted,
   which is denominated in 1e18.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | depositor | address | The address of the depositor (i.e. the current owner of the FIDU and USDC to deposit) |
@@ -552,11 +515,11 @@ Deposit to FIDU and USDC into the Curve LP. Returns the amount of Curve LP token
 ### safeEffectiveMultiplier
 
 ```solidity
-function safeEffectiveMultiplier(struct StakingRewards.StakedPosition position) internal view returns (uint256)
+function safeEffectiveMultiplier(struct StakedPosition position) internal view returns (uint256)
 ```
 
 Returns the effective multiplier for a given position. Defaults to 1 for all staked
-  positions created prior to GIP-1 (before the &#x60;unsafeEffectiveMultiplier&#x60; field was added).
+  positions created prior to GIP-1 (before the `unsafeEffectiveMultiplier` field was added).
 
 _Always use this method to get the effective multiplier to ensure proper handling of
   old staked positions._
@@ -564,11 +527,11 @@ _Always use this method to get the effective multiplier to ensure proper handlin
 ### safeBaseTokenExchangeRate
 
 ```solidity
-function safeBaseTokenExchangeRate(struct StakingRewards.StakedPosition position) internal view returns (uint256)
+function safeBaseTokenExchangeRate(struct StakedPosition position) internal view returns (uint256)
 ```
 
 Returns the base token exchange rate for a given position. Defaults to 1 for all staked
-  positions created prior to GIP-1 (before the &#x60;unsafeBaseTokenExchangeRate&#x60; field was added).
+  positions created prior to GIP-1 (before the `unsafeBaseTokenExchangeRate` field was added).
 
 _Always use this method to get the base token exchange rate to ensure proper handling of
   old staked positions._
@@ -576,29 +539,31 @@ _Always use this method to get the base token exchange rate to ensure proper han
 ### getEffectiveMultiplierForPositionType
 
 ```solidity
-function getEffectiveMultiplierForPositionType(enum StakingRewards.StakedPositionType positionType) public view returns (uint256)
+function getEffectiveMultiplierForPositionType(enum StakedPositionType positionType) public view returns (uint256)
 ```
 
-The effective multiplier to use with new staked positions of the provided &#x60;positionType&#x60;,
-  for denominating them in terms of &#x60;baseStakingToken()&#x60;. This value is denominated in &#x60;MULTIPLIER_DECIMALS&#x60;.
+The effective multiplier to use with new staked positions of the provided `positionType`,
+  for denominating them in terms of `baseStakingToken()`. This value is denominated in `MULTIPLIER_DECIMALS`.
 
 ### getBaseTokenExchangeRate
 
 ```solidity
-function getBaseTokenExchangeRate(enum StakingRewards.StakedPositionType positionType) public view virtual returns (uint256)
+function getBaseTokenExchangeRate(enum StakedPositionType positionType) public view virtual returns (uint256)
 ```
 
 Calculate the exchange rate that will be used to convert the original staked token amount to the
-  &#x60;baseStakingToken()&#x60; amount. The exchange rate is denominated in &#x60;MULTIPLIER_DECIMALS&#x60;.
+  `baseStakingToken()` amount. The exchange rate is denominated in `MULTIPLIER_DECIMALS`.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| positionType | enum StakingRewards.StakedPositionType | Type of the staked postion |
+| positionType | enum StakedPositionType | Type of the staked postion |
 
 ### _stake
 
 ```solidity
-function _stake(address staker, address nftRecipient, uint256 amount, enum StakingRewards.StakedPositionType positionType) internal returns (uint256 tokenId)
+function _stake(address staker, address nftRecipient, uint256 amount, enum StakedPositionType positionType) internal returns (uint256 tokenId)
 ```
 
 ### unstake
@@ -607,15 +572,17 @@ function _stake(address staker, address nftRecipient, uint256 amount, enum Staki
 function unstake(uint256 tokenId, uint256 amount) public
 ```
 
-Unstake an amount of &#x60;stakingToken()&#x60; associated with a given position and transfer to msg.sender.
+Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
   Any remaining staked amount will continue to accrue rewards.
 
 _This function checkpoints rewards_
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | A staking position token ID |
-| amount | uint256 | Amount of &#x60;stakingToken()&#x60; to be unstaked from the position |
+| amount | uint256 | Amount of `stakingToken()` to be unstaked from the position |
 
 ### unstakeMultiple
 
@@ -627,46 +594,12 @@ Unstake multiple positions and transfer to msg.sender.
 
 _This function checkpoints rewards_
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenIds | uint256[] | A list of position token IDs |
-| amounts | uint256[] | A list of amounts of &#x60;stakingToken()&#x60; to be unstaked from the position |
-
-### unstakeAndWithdraw
-
-```solidity
-function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) external
-```
-
-### unstakeAndWithdrawMultiple
-
-```solidity
-function unstakeAndWithdrawMultiple(uint256[] tokenIds, uint256[] usdcAmounts) external
-```
-
-### unstakeAndWithdrawInFidu
-
-```solidity
-function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external
-```
-
-### unstakeAndWithdrawMultipleInFidu
-
-```solidity
-function unstakeAndWithdrawMultipleInFidu(uint256[] tokenIds, uint256[] fiduAmounts) external
-```
-
-### _unstakeAndWithdraw
-
-```solidity
-function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal returns (uint256 usdcAmountReceived, uint256 fiduUsed)
-```
-
-### _unstakeAndWithdrawInFidu
-
-```solidity
-function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal returns (uint256 usdcReceivedAmount)
-```
+| amounts | uint256[] | A list of amounts of `stakingToken()` to be unstaked from the position |
 
 ### _unstake
 
@@ -682,10 +615,12 @@ This function does NOT transfer staked tokens back to the user; the caller of th
   function is responsible for ensuring that tokens are transferred back to the
   owner if necessary._
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | The token ID |
-| amount | uint256 | The amount of of &#x60;stakingToken()&#x60; to be unstaked from the position |
+| amount | uint256 | The amount of of `stakingToken()` to be unstaked from the position |
 
 ### kick
 
@@ -693,7 +628,7 @@ This function does NOT transfer staked tokens back to the user; the caller of th
 function kick(uint256 tokenId) external
 ```
 
-&quot;Kick&quot; a user&#x27;s reward multiplier. If they are past their lock-up period, their reward
+"Kick" a user's reward multiplier. If they are past their lock-up period, their reward
   multiplier will be reset to 1x.
 
 _This will also checkpoint their rewards up to the current time._
@@ -704,7 +639,7 @@ _This will also checkpoint their rewards up to the current time._
 function updatePositionEffectiveMultiplier(uint256 tokenId) external
 ```
 
-Updates a user&#x27;s effective multiplier to the prevailing multiplier. This function gives
+Updates a user's effective multiplier to the prevailing multiplier. This function gives
   users an option to get on a higher multiplier without needing to unstake.
 
 _This will also checkpoint their rewards up to the current time._
@@ -712,10 +647,12 @@ _This will also checkpoint their rewards up to the current time._
 ### getReward
 
 ```solidity
-function getReward(uint256 tokenId) public
+function getReward(uint256 tokenId) external
 ```
 
 Claim rewards for a given staked position
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -727,15 +664,14 @@ Claim rewards for a given staked position
 function addToStake(uint256 tokenId, uint256 amount) external
 ```
 
-Add &#x60;amount&#x60; to an existing FIDU position (&#x60;tokenId&#x60;)
+Add `amount` to an existing FIDU position (`tokenId`)
 
-_For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
-  will be vested. It is optimal to create a new non-vesting position and earn more rewards there._
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | A staking position token ID |
-| amount | uint256 | Amount of &#x60;stakingToken()&#x60; to be added to tokenId&#x27;s position |
+| amount | uint256 | Amount of `stakingToken()` to be added to tokenId's position |
 
 ### loadRewards
 
@@ -754,17 +690,19 @@ function setRewardsParameters(uint256 _targetCapacity, uint256 _minRate, uint256
 ### setEffectiveMultiplier
 
 ```solidity
-function setEffectiveMultiplier(uint256 multiplier, enum StakingRewards.StakedPositionType positionType) external
+function setEffectiveMultiplier(uint256 multiplier, enum StakedPositionType positionType) external
 ```
 
 Set the effective multiplier for a given staked position type. The effective multipler
- is used to denominate a staked position to &#x60;baseStakingToken()&#x60;. The multiplier is represented in
- &#x60;MULTIPLIER_DECIMALS&#x60;
+ is used to denominate a staked position to `baseStakingToken()`. The multiplier is represented in
+ `MULTIPLIER_DECIMALS`
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| multiplier | uint256 | the new multiplier, denominated in &#x60;MULTIPLIER_DECIMALS&#x60; |
-| positionType | enum StakingRewards.StakedPositionType | the type of the position |
+| multiplier | uint256 | the new multiplier, denominated in `MULTIPLIER_DECIMALS` |
+| positionType | enum StakedPositionType | the type of the position |
 
 ### updateReward
 
@@ -790,12 +728,6 @@ function isAdmin() internal view returns (bool)
 modifier onlyAdmin()
 ```
 
-### isZapper
-
-```solidity
-function isZapper() internal view returns (bool)
-```
-
 ### isGoListed
 
 ```solidity
@@ -806,77 +738,5 @@ function isGoListed() internal view returns (bool)
 
 ```solidity
 function canWithdraw(uint256 tokenId) internal view returns (bool)
-```
-
-### RewardAdded
-
-```solidity
-event RewardAdded(uint256 reward)
-```
-
-### Staked
-
-```solidity
-event Staked(address user, uint256 tokenId, uint256 amount, enum StakingRewards.StakedPositionType positionType, uint256 baseTokenExchangeRate)
-```
-
-### DepositedAndStaked
-
-```solidity
-event DepositedAndStaked(address user, uint256 depositedAmount, uint256 tokenId, uint256 amount)
-```
-
-### DepositedToCurve
-
-```solidity
-event DepositedToCurve(address user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokensReceived)
-```
-
-### DepositedToCurveAndStaked
-
-```solidity
-event DepositedToCurveAndStaked(address user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokenId, uint256 amount)
-```
-
-### AddToStake
-
-```solidity
-event AddToStake(address user, uint256 tokenId, uint256 amount, enum StakingRewards.StakedPositionType positionType)
-```
-
-### Unstaked
-
-```solidity
-event Unstaked(address user, uint256 tokenId, uint256 amount, enum StakingRewards.StakedPositionType positionType)
-```
-
-### UnstakedMultiple
-
-```solidity
-event UnstakedMultiple(address user, uint256[] tokenIds, uint256[] amounts)
-```
-
-### UnstakedAndWithdrew
-
-```solidity
-event UnstakedAndWithdrew(address user, uint256 usdcReceivedAmount, uint256 tokenId, uint256 amount)
-```
-
-### UnstakedAndWithdrewMultiple
-
-```solidity
-event UnstakedAndWithdrewMultiple(address user, uint256 usdcReceivedAmount, uint256[] tokenIds, uint256[] amounts)
-```
-
-### RewardPaid
-
-```solidity
-event RewardPaid(address user, uint256 tokenId, uint256 reward)
-```
-
-### GoldfinchConfigUpdated
-
-```solidity
-event GoldfinchConfigUpdated(address who, address configAddress)
 ```
 

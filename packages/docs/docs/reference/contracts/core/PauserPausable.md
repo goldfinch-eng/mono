@@ -1,6 +1,6 @@
 ## PauserPausable
 
-Inheriting from OpenZeppelin&#x27;s Pausable contract, this does small
+Inheriting from OpenZeppelin's Pausable contract, this does small
  augmentations to make it work with a PAUSER_ROLE, leveraging the AccessControl contract.
  It is meant to be inherited.
 

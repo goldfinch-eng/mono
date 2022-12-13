@@ -8,14 +8,13 @@ import {
   Shimmer,
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 
 export interface Asset {
   name: ReactNode;
   description: string;
   tooltip?: string;
   icon?: IconNameType;
-  usdcAmount: CryptoAmount;
+  usdcAmount: CryptoAmount<"USDC">;
   nativeAmount?: CryptoAmount;
 }
 interface AssetBoxProps {

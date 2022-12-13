@@ -7,7 +7,7 @@ https://etherscan.io/address/0xB8276651612df04E48DA5f353c969aa1C0076099
 These contracts represent the a convenient way for a borrower to interact with Goldfinch
  They are 100% optional. However, they let us add many sophisticated and convient features for borrowers
  while still keeping our core protocol small and secure. We therefore expect most borrowers will use them.
- This contract is the &quot;official&quot; borrower contract that will be maintained by Goldfinch governance. However,
+ This contract is the "official" borrower contract that will be maintained by Goldfinch governance. However,
  in theory, anyone can fork or create their own version, or not use any contract at all. The core functionality
  is completely agnostic to whether it is interacting with a contract or an externally owned account (EOA).
 
@@ -65,7 +65,9 @@ function lockPool(address poolAddress) external
 function drawdown(address poolAddress, uint256 amount, address addressToSendTo) external
 ```
 
-Allows a borrower to drawdown on their creditline through the CreditDesk.
+Allows a borrower to drawdown on their credit line through a TranchedPool.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -91,7 +93,9 @@ function transferERC20(address token, address to, uint256 amount) public
 function pay(address poolAddress, uint256 amount) external
 ```
 
-Allows a borrower to payback loans by calling the &#x60;pay&#x60; function directly on the CreditDesk
+Allows a borrower to pay back loans by calling the `pay` function directly on a TranchedPool
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -147,6 +151,8 @@ function _invoke(address _target, bytes _data) internal returns (bytes)
 ```
 
 Performs a generic transaction.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

@@ -4,9 +4,9 @@
 
 https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
 
-This contract stores mappings of useful &quot;protocol config state&quot;, giving a central place
+This contract stores mappings of useful "protocol config state", giving a central place
  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
- are enumerated in the &#x60;ConfigOptions&#x60; library, and can only be changed by admins of the protocol.
+ are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
  Note: While this inherits from BaseUpgradeablePausable, it is not deployed as an upgradeable contract (this
    is mostly to save gas costs of having each call go through a proxy)
 
@@ -19,19 +19,19 @@ bytes32 GO_LISTER_ROLE
 ### addresses
 
 ```solidity
-mapping(uint256 &#x3D;&gt; address) addresses
+mapping(uint256 => address) addresses
 ```
 
 ### numbers
 
 ```solidity
-mapping(uint256 &#x3D;&gt; uint256) numbers
+mapping(uint256 => uint256) numbers
 ```
 
 ### goList
 
 ```solidity
-mapping(address &#x3D;&gt; bool) goList
+mapping(address => bool) goList
 ```
 
 ### AddressUpdated
@@ -132,6 +132,8 @@ function addToGoList(address _member) public
 
 _Adds a user to go-list_
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _member | address | address to add to go-list |
@@ -143,6 +145,8 @@ function removeFromGoList(address _member) public
 ```
 
 _removes a user from go-list_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -156,6 +160,8 @@ function bulkAddToGoList(address[] _members) external
 
 _adds many users to go-list at once_
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _members | address[] | addresses to ad to go-list |
@@ -167,6 +173,8 @@ function bulkRemoveFromGoList(address[] _members) external
 ```
 
 _removes many users from go-list at once_
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

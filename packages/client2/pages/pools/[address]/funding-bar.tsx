@@ -3,11 +3,6 @@ import { BigNumber } from "ethers";
 
 import { Tooltip } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
-import {
-  CryptoAmount,
-  SupportedCrypto,
-  SupportedFiat,
-} from "@/lib/graphql/generated";
 
 import diagonals from "./diagonals.png";
 
@@ -18,7 +13,7 @@ interface FundingBarProps {
   seniorSupply?: CryptoAmount;
 }
 
-const zeroUsdc = { token: SupportedCrypto.Usdc, amount: BigNumber.from(0) };
+const zeroUsdc = { token: "USDC", amount: BigNumber.from(0) } as const;
 
 export default function FundingBar({
   isMultitranche = true,
@@ -61,7 +56,7 @@ export default function FundingBar({
         Supplied{" "}
         <span className="ml-3 inline-block text-base font-medium text-sand-700">
           {formatFiat({
-            symbol: SupportedFiat.Usd,
+            symbol: "USD",
             amount: backerSupplyFloat + seniorSupplyFloat,
           })}
         </span>

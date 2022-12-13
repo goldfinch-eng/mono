@@ -16,11 +16,9 @@ import {
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
-  SupportedCrypto,
   VaultedGfiFieldsFragment,
   VaultedStakedPositionFieldsFragment,
   VaultedPoolTokenFieldsFragment,
-  CryptoAmount,
 } from "@/lib/graphql/generated";
 import {
   calculateNewMonthlyMembershipReward,
@@ -105,13 +103,13 @@ export function RemoveFromVault({
 }
 
 interface StepperDataType {
-  gfiToUnvault: CryptoAmount;
+  gfiToUnvault: CryptoAmount<"GFI">;
   stakedPositionsToUnvault: VaultedStakedPositionFieldsFragment[];
   poolTokensToUnvault: VaultedPoolTokenFieldsFragment[];
-  forfeited?: CryptoAmount;
+  forfeited?: CryptoAmount<"FIDU">;
   rewardProjection?: {
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   };
 }
 
@@ -140,10 +138,7 @@ function SelectionStep({
     defaultValues: { stakedPositionsToUnvault: [], poolTokensToUnvault: [] },
   });
   const { control, watch } = rhfMethods;
-  const gfiToUnvault = stringToCryptoAmount(
-    watch("gfiToUnvault"),
-    SupportedCrypto.Gfi
-  );
+  const gfiToUnvault = stringToCryptoAmount(watch("gfiToUnvault"), "GFI");
   const stakedPositionsToUnvault = vaultedStakedPositions.filter((s) =>
     watch("stakedPositionsToUnvault").includes(s.id)
   );
@@ -151,7 +146,7 @@ function SelectionStep({
     watch("poolTokensToUnvault").includes(p.id)
   );
   const capitalToBeRemoved = {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
       sum("usdcEquivalent", poolTokensToUnvault)
     ),
@@ -160,11 +155,11 @@ function SelectionStep({
   const { account, provider } = useWallet();
 
   const [rewardProjection, setRewardProjection] = useState<{
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   }>();
   const [forfeited, setForfeited] = useState<CryptoAmount>({
-    token: SupportedCrypto.Fidu,
+    token: "FIDU",
     amount: BigNumber.from(0),
   });
   const gfiToUnvaultAmount = gfiToUnvault.amount.mul("-1").toString();
@@ -184,7 +179,7 @@ function SelectionStep({
         capitalToBeRemovedAmount
       );
       setForfeited({
-        token: SupportedCrypto.Fidu,
+        token: "FIDU",
         amount: estimatedForfeiture,
       });
 
@@ -264,7 +259,7 @@ function SelectionStep({
         <SectionHeading
           leftText="Step 1: Choose an amount of GFI"
           rightText={formatCrypto({
-            token: SupportedCrypto.Gfi,
+            token: "GFI",
             amount: sum("amount", vaultedGfi),
           })}
         />
@@ -273,12 +268,12 @@ function SelectionStep({
             name: "GFI",
             description: "Goldfinch Token",
             nativeAmount: {
-              token: SupportedCrypto.Gfi,
+              token: "GFI",
               amount: sum("amount", vaultedGfi),
             },
             usdcAmount: gfiToUsdc(
               {
-                token: SupportedCrypto.Gfi,
+                token: "GFI",
                 amount: sum("amount", vaultedGfi),
               },
               fiatPerGfi
@@ -359,11 +354,11 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
     rewardProjection,
   } = data as StepperDataType;
   const capitalToBeRemoved = {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
       sum("usdcEquivalent", poolTokensToUnvault)
     ),
-  };
+  } as const;
 
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();

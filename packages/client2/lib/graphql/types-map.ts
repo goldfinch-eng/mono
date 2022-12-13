@@ -36,4 +36,8 @@ export const typesMap: FunctionsMap = {
       throw new Error("Invalid value to parse for a BigDecimal");
     },
   },
+  // Important note: there doesn't need to be custom parser/serializer for CryptoAmount because
+  // 1. The type only exists on the client
+  // 2. Since it only exists on the client, it can only be produced by local resolvers
+  // 3. The results from local resolvers do not pass though apollo-link-scalars
 };

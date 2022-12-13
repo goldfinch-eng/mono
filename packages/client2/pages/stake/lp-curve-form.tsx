@@ -12,13 +12,12 @@ import {
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatPercent } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 interface LpCurveFormProps {
-  balance: CryptoAmount;
+  balance: CryptoAmount<"FIDU" | "USDC">;
   type: "FIDU" | "USDC";
   onComplete: () => Promise<unknown>;
 }

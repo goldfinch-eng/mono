@@ -2,10 +2,7 @@ import { gql } from "@apollo/client";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SeniorPoolStatusFieldsFragment,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
 export const SENIOR_POOL_STATUS_FIELDS = gql`
   fragment SeniorPoolStatusFields on SeniorPool {
@@ -33,7 +30,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
         value={
           seniorPool
             ? formatCrypto({
-                token: SupportedCrypto.Usdc,
+                token: "USDC",
                 amount: seniorPool.latestPoolStatus.totalPoolAssetsUsdc,
               })
             : null
@@ -45,7 +42,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
         value={
           seniorPool
             ? formatCrypto({
-                token: SupportedCrypto.Usdc,
+                token: "USDC",
                 amount: seniorPool.latestPoolStatus.totalLoansOutstanding,
               })
             : null

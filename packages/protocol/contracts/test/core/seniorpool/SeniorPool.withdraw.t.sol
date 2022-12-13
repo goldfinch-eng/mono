@@ -25,7 +25,7 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     addToGoList(user);
     approveTokensMaxAmount(user);
-    grantRole(TestConstants.ZAPPER_ROLE, user);
+    grantRole(address(sp), TestConstants.ZAPPER_ROLE, user);
 
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     withdrawAmount = bound(withdrawAmount, usdcVal(1), depositAmount);
@@ -98,8 +98,8 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     tokenApproved(user2)
   {
     vm.assume(user1 != user2);
-    grantRole(TestConstants.ZAPPER_ROLE, user1);
-    grantRole(TestConstants.ZAPPER_ROLE, user2);
+    grantRole(address(sp), TestConstants.ZAPPER_ROLE, user1);
+    grantRole(address(sp), TestConstants.ZAPPER_ROLE, user2);
     depositAmount1 = bound(depositAmount1, usdcVal(1), usdcVal(10_000_000));
     depositAmount2 = bound(depositAmount2, usdcVal(1), usdcVal(10_000_000));
     withdrawAmount = bound(
@@ -141,7 +141,7 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     address user,
     uint256 depositAmount
   ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
-    grantRole(TestConstants.ZAPPER_ROLE, user);
+    grantRole(address(sp), TestConstants.ZAPPER_ROLE, user);
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     fundAddress(user, depositAmount);
     depositToSpFrom(user, depositAmount);

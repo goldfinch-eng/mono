@@ -8,7 +8,7 @@ import {
   sumTotalClaimable,
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
-import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
+import { useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import { BackerCard, BACKER_CARD_TOKEN_FIELDS } from "./backer-card";
@@ -35,10 +35,7 @@ gql`
       }
 
       # even if this isn't directly used on the UI on this page, it is helpful to have this refetched and recached along with the rest of the data on this page when apolloClient.refetch({include: "active"}) is run
-      gfiBalance {
-        token
-        amount
-      }
+      gfiBalance
     }
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
@@ -126,7 +123,7 @@ export default function GfiPage() {
                 ) : (
                   formatCrypto(
                     {
-                      token: SupportedCrypto.Gfi,
+                      token: "GFI",
                       amount: totalClaimable.add(totalLocked),
                     },
                     { includeToken: true }
@@ -141,7 +138,7 @@ export default function GfiPage() {
                   <Shimmer />
                 ) : (
                   formatCrypto(
-                    { token: SupportedCrypto.Gfi, amount: totalClaimable },
+                    { token: "GFI", amount: totalClaimable },
                     { includeToken: true }
                   )
                 )
@@ -154,7 +151,7 @@ export default function GfiPage() {
                   <Shimmer />
                 ) : (
                   formatCrypto(
-                    { token: SupportedCrypto.Gfi, amount: totalLocked },
+                    { token: "GFI", amount: totalLocked },
                     { includeToken: true }
                   )
                 )

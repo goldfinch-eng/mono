@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { Button, Form, InfoIconTooltip } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -14,7 +13,7 @@ import { useWallet } from "@/lib/wallet";
 interface RewardClaimerProps {
   sharePrice: BigNumber;
   className?: string;
-  claimable: CryptoAmount;
+  claimable: CryptoAmount<"FIDU">;
 }
 
 export function RewardClaimer({

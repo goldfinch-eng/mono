@@ -144,6 +144,8 @@ function drawdown(uint256 amount) external
 Updates the internal accounting to track a drawdown as of current block timestamp.
 Does not move any money
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amount | uint256 | The amount in USDC that has been drawndown |
@@ -241,6 +243,8 @@ function assess() public returns (uint256, uint256, uint256)
 Triggers an assessment of the creditline. Any USDC balance available in the creditline is applied
 towards the interest and principal.
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | Any amount remaining after applying payments towards the interest and principal |
@@ -277,11 +281,13 @@ function _termStartTime() internal view returns (uint256)
 function handlePayment(uint256 paymentAmount, uint256 timestamp) internal returns (uint256, uint256, uint256)
 ```
 
-Applies &#x60;amount&#x60; of payment for a given credit line. This moves already collected money into the Pool.
+Applies `amount` of payment for a given credit line. This moves already collected money into the Pool.
  It also updates all the accounting variables. Note that interest is always paid back first, then principal.
  Any extra after paying the minimum will go towards existing principal (reducing the
  effective interest rate). Any extra after the full loan has been paid off will remain in the
  USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

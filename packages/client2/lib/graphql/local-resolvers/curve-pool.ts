@@ -5,8 +5,6 @@ import { getContract } from "@/lib/contracts";
 import { positionTypeToValue, sharesToUsdc } from "@/lib/pools";
 import { getProvider } from "@/lib/wallet";
 
-import { StakedPositionType } from "../generated";
-
 const oneYearSeconds = BigNumber.from(60 * 60 * 24 * 365);
 const apyDecimals = BigNumber.from("1000000000000000000"); // 1e18
 
@@ -25,11 +23,11 @@ export const curvePoolResolvers: Resolvers[string] = {
 
     const curveLPTokenExchangeRate =
       await stakingRewardsContract.getBaseTokenExchangeRate(
-        positionTypeToValue[StakedPositionType.CurveLp]
+        positionTypeToValue["CurveLP"]
       );
     const curveLPTokenMultiplier =
       await stakingRewardsContract.getEffectiveMultiplierForPositionType(
-        positionTypeToValue[StakedPositionType.CurveLp]
+        positionTypeToValue["CurveLP"]
       );
     const currentEarnRatePerYearPerFidu = (
       await stakingRewardsContract.currentEarnRatePerToken()
