@@ -35,14 +35,9 @@ type SeniorPoolStatus @entity {
   id: ID!
   rawBalance: BigInt!
   balance: BigInt!
-  """
-  The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
-  """
-  usdcBalance: BigInt!
   sharePrice: BigInt!
   totalShares: BigInt!
-  totalPoolAssets: BigInt!
-  totalPoolAssetsUsdc: BigInt!
+  assets: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
   tranchedPools: [TranchedPool!]!
