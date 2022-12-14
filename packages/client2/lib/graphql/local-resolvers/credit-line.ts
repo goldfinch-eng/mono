@@ -3,89 +3,76 @@ import { BigNumber, FixedNumber } from "ethers";
 
 import { APY_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "@/constants";
 import { getContract } from "@/lib/contracts";
+import { CreditLine } from "@/lib/graphql/generated";
 import { getProvider } from "@/lib/wallet";
 
-import { CreditLine, TranchedPoolCreditLineVersion } from "../generated";
+const isCreditLinePaymentLate = async (
+  creditLine: CreditLine
+): Promise<boolean> => {
+  // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
+  const provider = await getProvider();
+
+  const currentBlock = await provider.getBlock("latest");
+  if (creditLine.lastFullPaymentTime.isZero()) {
+    // Brand new creditline
+    return false;
+  }
+
+  const secondsSinceLastFullPayment =
+    currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
+
+  return (
+    secondsSinceLastFullPayment >
+    creditLine.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
+  );
+};
+
+const calculateInterestOwed = async (
+  creditLine: CreditLine
+): Promise<BigNumber> => {
+  if (await isCreditLinePaymentLate(creditLine)) {
+    return creditLine.interestOwed;
+  }
+
+  const annualRate = creditLine.interestAprDecimal;
+  const expectedElapsedSeconds = creditLine.nextDueTime.sub(
+    creditLine.interestAccruedAsOf
+  );
+  const interestAccrualRate = annualRate.divUnsafe(
+    FixedNumber.from(SECONDS_PER_YEAR)
+  );
+  const expectedAdditionalInterest = FixedNumber.from(creditLine.balance)
+    .mulUnsafe(interestAccrualRate)
+    .mulUnsafe(FixedNumber.from(expectedElapsedSeconds));
+
+  const currentInterestOwed = creditLine.interestOwed
+    .add(BigNumber.from(expectedAdditionalInterest))
+    .div(APY_DECIMALS);
+
+  return currentInterestOwed;
+};
 
 export const creditLineResolvers: Resolvers[string] = {
-  // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
   async isLate(creditLine: CreditLine): Promise<boolean> {
-    const provider = await getProvider();
-
-    const currentBlock = await provider.getBlock("latest");
-    if (creditLine.lastFullPaymentTime.isZero()) {
-      // Brand new creditline
-      return false;
-    }
-
-    const secondsSinceLastFullPayment =
-      currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
-    return (
-      secondsSinceLastFullPayment >
-      creditLine.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
-    );
+    return await isCreditLinePaymentLate(creditLine);
   },
-  currentLimit(creditLine: CreditLine): BigNumber {
-    // TODO ZADRA - check limit vars with solidity dev
-    // if (creditLine.limit.gt(0)) {
-    //   return creditLine.limit;
-    // } else {
-    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    const maxLimit =
-      creditLine.version === TranchedPoolCreditLineVersion.V2_2
-        ? creditLine.maxLimit
-        : creditLine.limit;
 
-    return maxLimit;
-    // }
-  },
-  currentInterestOwed(creditLine: CreditLine): BigNumber {
-    // TODO ZADRA - this is code from client1, wouldn't this be the case if !isLate...?
-    if (creditLine.isLate) {
-      return creditLine.interestOwed;
-    }
-
-    const annualRate = creditLine.interestAprDecimal;
-    const expectedElapsedSeconds = creditLine.nextDueTime.sub(
-      creditLine.interestAccruedAsOf
-    );
-    const interestAccrualRate = annualRate.divUnsafe(
-      FixedNumber.from(SECONDS_PER_YEAR)
-    );
-    const expectedAdditionalInterest = FixedNumber.from(creditLine.balance)
-      .mulUnsafe(interestAccrualRate)
-      .mulUnsafe(FixedNumber.from(expectedElapsedSeconds));
-
-    const currentInterestOwed = creditLine.interestOwed
-      .add(BigNumber.from(expectedAdditionalInterest))
-      .div(APY_DECIMALS);
-
-    return currentInterestOwed;
-  },
-  nextDueAmount(creditLine: CreditLine): BigNumber {
-    const interestOwed = creditLineResolvers.currentInterestOwed(
-      creditLine
-    ) as BigNumber;
-    const balance = creditLine.balance;
-
-    // If the next repayment date exceeds the end of the term, the amount due is the remaining balance + interest owed
-    if (creditLine.nextDueTime.gte(creditLine.termEndTime)) {
-      return interestOwed.add(balance);
-    } else {
-      return interestOwed;
-    }
-  },
+  // The remaining amount owed for the period
   async remainingPeriodDueAmount(creditLine: CreditLine): Promise<BigNumber> {
     const provider = await getProvider();
-
     const usdcContract = await getContract({ name: "USDC", provider });
     const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
 
-    const periodDueAmount = creditLineResolvers.nextDueAmount(
-      creditLine
-    ) as BigNumber;
+    const currentInterestOwed = await calculateInterestOwed(creditLine);
 
-    const remainingPeriodDueAmount = periodDueAmount.sub(
+    // If we are on our last period of the term, then it's interestOwed + principal
+    // This is a bullet loan, so full principal is paid only at the end of the credit line term
+    if (creditLine.nextDueTime.gte(creditLine.termEndTime)) {
+      return currentInterestOwed.add(creditLine.balance);
+    }
+
+    // collectedPaymentBalance is the amount that's been paid so far for the period
+    const remainingPeriodDueAmount = currentInterestOwed.sub(
       collectedPaymentBalance
     );
     if (remainingPeriodDueAmount.lte(0)) {
@@ -94,18 +81,15 @@ export const creditLineResolvers: Resolvers[string] = {
 
     return remainingPeriodDueAmount;
   },
+
+  // The total remaining amount owed for the loan term
   async remainingTotalDueAmount(creditLine: CreditLine): Promise<BigNumber> {
     const provider = await getProvider();
-
     const usdcContract = await getContract({ name: "USDC", provider });
     const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
 
-    const interestOwed = creditLineResolvers.currentInterestOwed(
-      creditLine
-    ) as BigNumber;
-
-    const balance = creditLine.balance;
-    const totalDueAmount = interestOwed.add(balance);
+    const currentInterestOwed = await calculateInterestOwed(creditLine);
+    const totalDueAmount = currentInterestOwed.add(creditLine.balance);
 
     const remainingTotalDueAmount = totalDueAmount.sub(collectedPaymentBalance);
     if (remainingTotalDueAmount.lte(0)) {
@@ -113,15 +97,5 @@ export const creditLineResolvers: Resolvers[string] = {
     }
 
     return remainingTotalDueAmount;
-  },
-  // Has an open balance
-  async isActive(creditLine: CreditLine): Promise<boolean> {
-    const remainingTotalDueAmount =
-      (await creditLineResolvers.remainingTotalDueAmount(
-        creditLine
-      )) as BigNumber;
-
-    // TODO ZADRA - must use correct limit here
-    return creditLine.limit.gt(0) && remainingTotalDueAmount.gt(0);
   },
 };

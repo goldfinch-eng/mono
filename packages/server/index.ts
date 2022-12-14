@@ -27,6 +27,7 @@ import {
   createPoolAndFundWithSenior,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
+import {assessTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/assessTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
@@ -194,6 +195,25 @@ app.post("/drainSeniorPool", async (req, res) => {
   const poolAddress = await createPoolAndFundWithSenior(hre, usdcAmount)
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true, pool: poolAddress})})
+})
+
+app.post("/assessTranchedPool", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "assessTranchedPool only available on local and murmuration"})
+  }
+
+  try {
+    const {tranchedPoolAddress} = req.body
+    await assessTranchedPool(tranchedPoolAddress)
+
+    return res
+      .status(200)
+      .send({status: "success", result: JSON.stringify({success: true, tranchedPool: tranchedPoolAddress})})
+  } catch (e) {
+    console.error("assessTranchedPool error", e)
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
 app.post("/kycStatus", async (req, res) => {

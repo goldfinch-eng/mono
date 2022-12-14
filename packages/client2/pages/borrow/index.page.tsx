@@ -1,7 +1,9 @@
 import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 
-import { Heading } from "../../components/design-system";
+import { CreditLine } from "@/lib/graphql/generated";
+
+import { Heading, Icon } from "../../components/design-system";
 import { formatCrypto, formatPercent } from "../../lib/format";
 import {
   SupportedCrypto,
@@ -15,7 +17,7 @@ gql`
     user(id: $userId) {
       borrowerContracts {
         id
-        tranchedPools(orderBy: createdAt, orderDirection: asc) {
+        tranchedPools(orderBy: createdAt, orderDirection: desc) {
           id
           creditLine {
             id
@@ -28,23 +30,69 @@ gql`
             nextDueTime
             limit
             maxLimit
-            currentLimit @client
-            isLate @client
             version
             interestOwed
-            currentInterestOwed @client
             termStartTime
             termEndTime
             lastFullPaymentTime
-            collectedPaymentBalance @client
+            isLate @client
             remainingPeriodDueAmount @client
-            isActive @client
+            remainingTotalDueAmount @client
           }
         }
       }
     }
   }
 `;
+
+export enum CreditLineStatus {
+  PaymentLate,
+  PaymentDue,
+  Active,
+  InActive,
+}
+
+export const getCreditLineStatus = (creditLine: CreditLine) => {
+  // Is Late
+  if (creditLine.isLate) {
+    return CreditLineStatus.PaymentLate;
+  }
+
+  // Payment is due - but not late
+  if (creditLine.remainingPeriodDueAmount.gt(0)) {
+    return CreditLineStatus.PaymentDue;
+  }
+
+  // Credit line is active & paid
+  if (creditLine.limit.gt(0) && creditLine.remainingTotalDueAmount.gt(0)) {
+    return CreditLineStatus.Active;
+  }
+
+  return CreditLineStatus.InActive;
+};
+
+const getDueDateLabel = (creditLine: CreditLine) => {
+  const status = getCreditLineStatus(creditLine);
+
+  switch (status) {
+    case CreditLineStatus.PaymentLate:
+      return "Due Now";
+    case CreditLineStatus.PaymentDue:
+      return formatDate(
+        new Date(creditLine.nextDueTime.toNumber() * 1000),
+        "MMM d"
+      );
+    case CreditLineStatus.Active:
+      return (
+        <div className="align-left flex flex-row items-center">
+          <Icon name="CheckmarkCircle" className="mr-1" />
+          <div>Paid</div>
+        </div>
+      );
+    case CreditLineStatus.InActive:
+      return "N/A";
+  }
+};
 
 export default function PoolPage() {
   const { account } = useWallet();
@@ -107,7 +155,7 @@ export default function PoolPage() {
 
             const creditLineLimit = formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: creditLine.currentLimit,
+              amount: creditLine.maxLimit,
             });
 
             const interest = formatPercent(creditLine.interestAprDecimal);
@@ -117,37 +165,18 @@ export default function PoolPage() {
               amount: creditLine.remainingPeriodDueAmount,
             });
 
-            // TODO ZADRA - this logic seems wrong according to single views payment status
-            let nextPaymentDate = "N/A";
-            if (creditLine.isLate) {
-              nextPaymentDate = "Due now";
-            } else if (creditLine.remainingPeriodDueAmount.gt(0)) {
-              const formattedNextDueDate = formatDate(
-                new Date(creditLine.nextDueTime.toNumber() * 1000),
-                "MMM d"
-              );
-
-              const dueDate =
-                creditLine.nextDueTime.toNumber() === 0
-                  ? ""
-                  : formattedNextDueDate;
-
-              nextPaymentDate = `${dueDate}`;
-            } else if (creditLine.isActive) {
-              // icon = iconCircleCheck;
-              nextPaymentDate = "Paid";
-            }
+            const dueDateLabel = getDueDateLabel(creditLine as CreditLine);
 
             return (
               <div key={id}>
-                {/* <p>{`Address: ${id.toLocaleLowerCase()}`}</p> */}
+                <p>{`Address: ${id.toLocaleLowerCase()}`}</p>
                 <CreditLineCard
-                  className="mb-3 w-2/3"
+                  className="mb-3 lg:w-2/3"
                   slot1={`${creditLineLimit} at ${interest}`}
                   slot1Label={i === 0 ? "Credit Lines" : undefined}
                   slot2={nextPayment}
                   slot2Label={i === 0 ? "Next Payment" : undefined}
-                  slot3={nextPaymentDate}
+                  slot3={dueDateLabel}
                   slot3Label={i === 0 ? "Due Date" : undefined}
                 />
               </div>

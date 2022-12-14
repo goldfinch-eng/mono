@@ -2,10 +2,6 @@ import {BigInt} from "@graphprotocol/graph-ts"
 
 export const V2_2_MIGRATION_TIME = "1643943600"
 
-// Protocol migration date to support multiple slices - not related to tranched pool version
-// Feb 4th, 2022
-export const MULTIPLE_SLICES_MIGRATION_TIME = "1643950800"
-
 export const BACKER_REWARDS_EPOCH = "1644021439"
 export const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 export const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
