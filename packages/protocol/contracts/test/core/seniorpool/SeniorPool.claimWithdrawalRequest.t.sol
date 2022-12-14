@@ -574,6 +574,6 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     caller.claimWithdrawalRequest(tokenId);
     _stopImpersonation();
 
-    assertZero(sp.withdrawalRequest(1).fiduRequested);
+    assertZero(requestTokens.balanceOf(address(caller)));
   }
 }
