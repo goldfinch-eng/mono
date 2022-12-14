@@ -60,7 +60,7 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
 
     CreditLine clImpl = new CreditLine();
 
-    tpBuilder = new TranchedPoolBuilder(address(gfFactory), address(sp));
+    tpBuilder = new TranchedPoolBuilder(gfFactory, sp);
     // Allows the builder to create pools
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder));
 

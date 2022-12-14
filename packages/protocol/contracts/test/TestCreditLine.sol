@@ -7,11 +7,23 @@ import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../protocol/core/CreditLine.sol";
 
 contract TestCreditLine is CreditLine {
-  function setPaymentPeriodInDays(uint256 _paymentPeriodInDays) public onlyAdmin {
-    paymentPeriodInDays = _paymentPeriodInDays;
-  }
-
   function setInterestApr(uint256 _interestApr) public onlyAdmin {
     interestApr = _interestApr;
+  }
+
+  function _getCheckpointedAsOf() external view returns (uint256) {
+    return _checkpointedAsOf;
+  }
+
+  function setBalance(uint256 _balance) external {
+    balance = _balance;
+  }
+
+  function setLateFeeApr(uint256 _lateFeeApr) external {
+    lateFeeApr = _lateFeeApr;
+  }
+
+  function __checkpoint() external {
+    super._checkpoint();
   }
 }

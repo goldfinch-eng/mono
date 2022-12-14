@@ -3,18 +3,18 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2SetLimitAndMaxLimitTest is TranchedPoolV2BaseTest {
+contract TranchedPoolSetLimitAndMaxLimitTest is TranchedPoolBaseTest {
   function testSetLimitRevertsForNonAdmin(
     address notAdmin,
     uint256 limit
   ) public impersonating(notAdmin) {
     vm.assume(notAdmin != GF_OWNER);
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectRevert("Must have admin role to perform this action");
     pool.setLimit(limit);
   }
@@ -24,14 +24,14 @@ contract TranchedPoolV2SetLimitAndMaxLimitTest is TranchedPoolV2BaseTest {
     uint256 limit
   ) public impersonating(GF_OWNER) {
     limit = bound(limit, 0, maxLimit);
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     pool.setMaxLimit(maxLimit);
     pool.setLimit(limit);
     assertEq(cl.limit(), limit);
   }
 
   function testSetLimitRevertsIfLimitGtMaxLimit(uint256 limit) public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     limit = bound(limit, cl.maxLimit() + 1, type(uint256).max);
     vm.expectRevert("Cannot be more than the max limit");
     pool.setLimit(limit);
@@ -42,13 +42,13 @@ contract TranchedPoolV2SetLimitAndMaxLimitTest is TranchedPoolV2BaseTest {
     uint256 maxLimit
   ) public impersonating(notAdmin) {
     vm.assume(notAdmin != GF_OWNER);
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectRevert("Must have admin role to perform this action");
     pool.setMaxLimit(maxLimit);
   }
 
   function testSetMaxLimitUpdatesMaxLimit(uint256 maxLimit) public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     pool.setMaxLimit(maxLimit);
     assertEq(maxLimit, cl.maxLimit());
   }

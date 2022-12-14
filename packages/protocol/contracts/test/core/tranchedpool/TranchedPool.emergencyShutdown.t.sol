@@ -3,14 +3,14 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2EmergencyShutdownTest is TranchedPoolV2BaseTest {
+contract TranchedPoolEmergencyShutdownTest is TranchedPoolBaseTest {
   function testPausesAndSweepsFunds() public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     usdc.transfer(address(pool), usdcVal(5));
     usdc.transfer(address(cl), usdcVal(3));
     pool.emergencyShutdown();
@@ -21,7 +21,7 @@ contract TranchedPoolV2EmergencyShutdownTest is TranchedPoolV2BaseTest {
   }
 
   function testRevertsForNonAdmin(address notAdmin) public impersonating(notAdmin) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(notAdmin != GF_OWNER);
     vm.expectRevert("Must have admin role to perform this action");
     pool.emergencyShutdown();

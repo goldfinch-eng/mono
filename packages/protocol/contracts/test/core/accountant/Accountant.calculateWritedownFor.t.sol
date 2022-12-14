@@ -66,14 +66,15 @@ contract AccountantCalculateWritedownForTest is AccountantBaseTest {
     // Set gracePeriodInDays within reasonable bounds
     gracePeriodInDays = bound(gracePeriodInDays, 7, 90);
     daysOfInterestOwed = bound(daysOfInterestOwed, 0, gracePeriodInDays);
-    cl.setInterestOwed(
-      getInterestAccrued(
-        0,
-        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
-        cl.balance(),
-        cl.interestApr()
-      )
-    );
+    // TODO(will)
+    // cl.setInterestOwed(
+    //   getInterestAccrued(
+    //     0,
+    //     daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+    //     cl.balance(),
+    //     cl.interestApr()
+    //   )
+    // );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
@@ -106,14 +107,15 @@ contract AccountantCalculateWritedownForTest is AccountantBaseTest {
     maxDaysLate = bound(maxDaysLate, gracePeriodInDays + 1, 120);
     // days of interest owed should exceed the gracePeriodInDays
     daysOfInterestOwed = bound(daysOfInterestOwed, gracePeriodInDays + 1, maxDaysLate);
-    cl.setInterestOwed(
-      getInterestAccrued(
-        0,
-        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
-        cl.balance(),
-        cl.interestApr()
-      )
-    );
+    // TODO(will)
+    // cl.setInterestOwed(
+    //   getInterestAccrued(
+    //     0,
+    //     daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+    //     cl.balance(),
+    //     cl.interestApr()
+    //   )
+    // );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
@@ -158,14 +160,15 @@ contract AccountantCalculateWritedownForTest is AccountantBaseTest {
     vm.assume(
       daysOfInterestOwed > gracePeriodInDays + maxDaysLate && daysOfInterestOwed <= 10000000000
     );
-    cl.setInterestOwed(
-      getInterestAccrued(
-        0,
-        daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
-        cl.balance(),
-        cl.interestApr()
-      )
-    );
+    // TODO(will)
+    // cl.setInterestOwed(
+    //   getInterestAccrued(
+    //     0,
+    //     daysOfInterestOwed * TestConstants.SECONDS_PER_DAY,
+    //     cl.balance(),
+    //     cl.interestApr()
+    //   )
+    // );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,

@@ -105,6 +105,7 @@
     "lodash": "^4.17.21",
     "mocha-each": "^2.0.1",
     "openzeppelin-contracts-0-8-x": "npm:@openzeppelin/contracts@^4.8.0",
+    "BokkyPooBahsDateTimeLibrary": "https://github.com/warbler-labs/BokkyPooBahsDateTimeLibrary.git",
     "truffle-hdwallet-provider": "^1.0.17"
   },
   "devDependencies": {

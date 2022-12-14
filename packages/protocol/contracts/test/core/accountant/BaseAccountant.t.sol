@@ -10,6 +10,9 @@ import {BaseTest} from "../../core/BaseTest.t.sol";
 import {TestCreditLine} from "../../../test/TestCreditLine.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 
 contract AccountantBaseTest is BaseTest {
   using FixedPoint for FixedPoint.Unsigned;
@@ -32,26 +35,48 @@ contract AccountantBaseTest is BaseTest {
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
 
     cl = new TestCreditLine();
-    cl.initialize(
-      address(gfConfig),
-      GF_OWNER,
-      BORROWER,
-      usdcVal(10_000_000), // max limit
-      INTEREST_APR,
-      PAYMENT_PERIOD_IN_DAYS,
-      TERM_IN_DAYS,
-      LATE_FEE_APR,
-      GRACE_PERIOD_IN_DAYS
-    );
+    cl.initialize({
+      _config: address(gfConfig),
+      owner: GF_OWNER,
+      _borrower: BORROWER,
+      _maxLimit: usdcVal(10_000_000), // max limit
+      _interestApr: INTEREST_APR,
+      _schedule: defaultSchedule(),
+      _lateFeeApr: LATE_FEE_APR
+    });
 
     vm.startPrank(GF_OWNER);
-    cl.setInterestAccruedAsOf(block.timestamp);
-    cl.setTermEndTime(block.timestamp + TERM_IN_DAYS * TestConstants.SECONDS_PER_DAY);
     cl.setBalance(usdcVal(10_000_00));
     vm.stopPrank();
 
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(cl));
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 
   function getInterestAccrued(
@@ -118,27 +143,32 @@ contract AccountantBaseTest is BaseTest {
   }
 
   modifier withNextDueTime(TestCreditLine cl, uint256 _nextDueTime) {
-    cl.setNextDueTime(_nextDueTime);
+    // TODO(will)
+    // cl.setNextDueTime(_nextDueTime);
     _;
   }
 
   modifier withTermEndTime(TestCreditLine cl, uint256 _termEndTime) {
-    cl.setTermEndTime(_termEndTime);
+    // TODO(will)
+    // cl.setTermEndTime(_termEndTime);
     _;
   }
 
   modifier withInterestOwed(TestCreditLine cl, uint256 _interestOwed) {
-    cl.setInterestOwed(_interestOwed);
+    // TODO(will)
+    // cl.setInterestOwed(_interestOwed);
     _;
   }
 
   modifier withLastFullPaymentTime(TestCreditLine cl, uint256 _lastFullPaymentTime) {
-    cl.setLastFullPaymentTime(_lastFullPaymentTime);
+    // TODO(will)
+    // cl.setLastFullPaymentTime(_lastFullPaymentTime);
     _;
   }
 
   modifier withPaymentPeriodInDays(TestCreditLine cl, uint256 _paymentPeriodInDays) {
-    cl.setPaymentPeriodInDays(_paymentPeriodInDays);
+    // TODO(will)
+    // cl.setPaymentPeriodInDays(_paymentPeriodInDays);
     _;
   }
 }

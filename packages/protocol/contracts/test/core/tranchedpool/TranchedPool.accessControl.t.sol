@@ -3,31 +3,31 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 
-contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
+contract TranchedPoolAccessControlTest is TranchedPoolBaseTest {
   function testAccessControlOwnerIsGovernance() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     assertTrue(pool.hasRole(pool.OWNER_ROLE(), GF_OWNER));
   }
 
   function testAccessControlPauseIsGovernance() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     assertTrue(pool.hasRole(pool.PAUSER_ROLE(), GF_OWNER));
   }
 
   function testAccessControlLockerIsBorrowerAndGovernance() public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     assertTrue(pool.hasRole(pool.LOCKER_ROLE(), GF_OWNER));
     assertTrue(pool.hasRole(pool.LOCKER_ROLE(), cl.borrower()));
   }
 
   function testOwnerCanGrantRoles(address user) public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
 
     assertFalse(pool.hasRole(pool.OWNER_ROLE(), user));
@@ -40,7 +40,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   }
 
   function testNonOwnerCannotGrantRoles(address user) public impersonating(user) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
 
     bytes32 ownerRole = pool.OWNER_ROLE();
@@ -49,7 +49,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   }
 
   function testPausingPausesFunctions() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     pause(pool);
 
     vm.expectRevert("Pausable: paused");
@@ -100,7 +100,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
     uid._mintForTest(user, 1, 1, "");
     fundAddress(user, usdcVal(200));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     pause(pool);
     unpause(pool);
 
@@ -126,20 +126,20 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   }
 
   function testOwnerCanPause() public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     pool.pause();
     assertTrue(pool.paused());
   }
 
   function testNonOwnerCannotPause(address user) public impersonating(user) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     vm.expectRevert(bytes("NA"));
     pool.pause();
   }
 
   function testBorrowerCanLockTranches(uint256 juniorDepositAmount) public impersonating(BORROWER) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
 
     juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(1000));
     deposit(pool, 2, juniorDepositAmount, GF_OWNER);
@@ -157,7 +157,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   }
 
   function testOwnerCanLockTranches(uint256 juniorDepositAmount) public impersonating(GF_OWNER) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
 
     juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(10_000));
     deposit(pool, 2, juniorDepositAmount, GF_OWNER);
@@ -175,7 +175,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   }
 
   function testCannotLockTrancheTwice() public impersonating(BORROWER) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     pool.lockJuniorCapital();
     assertEq(pool.getTranche(2).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
 
@@ -193,7 +193,7 @@ contract TranchedPoolV2AccessControlTest is TranchedPoolV2BaseTest {
   ) public impersonating(nonBorrowerNonOwner) {
     vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectRevert(bytes("NA"));
     pool.lockJuniorCapital();
 

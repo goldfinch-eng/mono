@@ -11,7 +11,8 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   function testInvestRevertsForInvalidPool() public {
     TestTranchedPool tp = new TestTranchedPool();
     uint256[] memory ids = new uint256[](1);
-    tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, 1, 1, 1, 1, block.timestamp, ids);
+    // TODO(will)
+    // tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, 1, 1, 1, 1, block.timestamp, ids);
     vm.expectRevert("Pool must be valid");
     sp.invest(tp);
   }

@@ -5,14 +5,14 @@ pragma experimental ABIEncoderV2;
 
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
+contract TranchedPoolNextDueTimeTest is TranchedPoolBaseTest {
   function testNextDueTimeIsZeroBeforeDrawdown() public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     assertZero(cl.nextDueTime());
     deposit(pool, 2, usdcVal(1), GF_OWNER);
     lockJuniorTranche(pool);
@@ -23,7 +23,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
   }
 
   function testNextDueTimeSetByDrawdown() public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1), GF_OWNER);
     assertEq(cl.nextDueTime(), block.timestamp + periodInSeconds(pool));
   }
@@ -32,7 +32,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
     uint256 paymentTime,
     uint256 paymentAmount
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     paymentTime = bound(
       paymentTime,
@@ -51,7 +51,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
   }
 
   function testNextDueTimeIsCappedAtTermEndTime(uint256 timestamp) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() * 1000);
     vm.warp(timestamp);
@@ -60,7 +60,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
   }
 
   function testNextDueTimeChangesWhenCrossingPeriods(uint256 timestamp) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
     uint256 oldNextDueTime = cl.nextDueTime();
@@ -76,7 +76,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
   }
 
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     pay(pool, cl.balance() + cl.interestOwed() + cl.interestAccrued());
     assertZero(cl.balance(), "balance not zero");
@@ -99,7 +99,7 @@ contract TranchedPoolV2NextDueTimeTest is TranchedPoolV2BaseTest {
   function testNextDueTimeUnchangedWhenIDrawdownOnZeroBalanceInSamePeriod(
     uint256 timestamp
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     uint256 oldNextDueTime = cl.nextDueTime();
     pay(pool, cl.balance() + cl.interestAccrued() + cl.interestOwed());

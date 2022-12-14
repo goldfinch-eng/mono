@@ -4,7 +4,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
-import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -385,26 +384,6 @@ library TranchingLogic {
         oldInterestSharePrice: oldInterestSharePrice,
         oldPrincipalSharePrice: oldPrincipalSharePrice
       });
-  }
-
-  function migrateAccountingVariables(IV2CreditLine originalCl, IV2CreditLine newCl) external {
-    // Copy over all accounting variables
-    newCl.setBalance(originalCl.balance());
-    newCl.setLimit(originalCl.limit());
-    newCl.setInterestOwed(originalCl.interestOwed());
-    newCl.setPrincipalOwed(originalCl.principalOwed());
-    newCl.setTermEndTime(originalCl.termEndTime());
-    newCl.setNextDueTime(originalCl.nextDueTime());
-    newCl.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
-    newCl.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
-    newCl.setTotalInterestAccrued(originalCl.totalInterestAccrued());
-  }
-
-  function closeCreditLine(IV2CreditLine cl) external {
-    // Close out old CL
-    cl.setBalance(0);
-    cl.setLimit(0);
-    cl.setMaxLimit(0);
   }
 
   function trancheIdToSliceIndex(uint256 trancheId) external pure returns (uint256) {

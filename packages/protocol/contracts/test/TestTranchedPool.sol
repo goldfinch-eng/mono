@@ -8,10 +8,11 @@ import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
 import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
 import {TranchedPool} from "../protocol/core/TranchedPool.sol";
 import {TranchingLogic} from "../protocol/core/TranchingLogic.sol";
+import {ICreditLine} from "../interfaces/ICreditLine.sol";
 
 contract TestTranchedPool is TranchedPool {
-  function collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) public {
-    _collectInterestAndPrincipal(from, interest, principal);
+  function collectInterestAndPrincipal(uint256 interest, uint256 principal) public {
+    _collectInterestAndPrincipal(interest, principal);
   }
 
   function _setSeniorTranchePrincipalDeposited(uint256 principalDeposited) public {

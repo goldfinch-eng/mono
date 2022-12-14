@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
-import {IV2TranchedPool} from "../../interfaces/IV2TranchedPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
@@ -35,64 +35,18 @@ library Accountant {
     uint256 additionalBalancePayment;
   }
 
-  /// @notice Interest payment allocation for a separated payment on a IV3CreditLine
+  /// @notice Interest payment allocation for a separated payment on a ICreditLine
   struct InterestPaymentAllocation {
     uint256 owedInterestPayment;
     uint256 accruedInterestPayment;
     uint256 paymentRemaining;
   }
 
-  /// @notice Principal payment allocation for a separated payment on a IV3CreditLine
+  /// @notice Principal payment allocation for a separated payment on a ICreditLine
   struct PrincipalPaymentAllocation {
     uint256 principalPayment;
     uint256 additionalBalancePayment;
     uint256 paymentRemaining;
-  }
-
-  function calculateInterestAndPrincipalAccrued(
-    ICreditLine cl,
-    uint256 timestamp,
-    uint256 lateFeeGracePeriod
-  ) public view returns (uint256, uint256) {
-    uint256 balance = cl.balance(); // gas optimization
-    uint256 interestAccrued = calculateInterestAccrued(cl, balance, timestamp, lateFeeGracePeriod);
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, timestamp);
-    return (interestAccrued, principalAccrued);
-  }
-
-  function calculateInterestAndPrincipalAccruedOverPeriod(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 lateFeeGracePeriod
-  ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccruedOverPeriod(
-      cl,
-      balance,
-      startTime,
-      endTime,
-      lateFeeGracePeriod
-    );
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, endTime);
-    return (interestAccrued, principalAccrued);
-  }
-
-  function calculatePrincipalAccrued(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 timestamp
-  ) public view returns (uint256) {
-    // If we've already accrued principal as of the term end time, then don't accrue more principal
-    uint256 termEndTime = cl.termEndTime();
-    if (cl.interestAccruedAsOf() >= termEndTime) {
-      return 0;
-    }
-    if (timestamp >= termEndTime) {
-      return balance;
-    } else {
-      return 0;
-    }
   }
 
   function calculateWritedownFor(
@@ -152,87 +106,11 @@ library Accountant {
 
   function calculateAmountOwedForOneDay(
     ICreditLine cl
-  ) public view returns (FixedPoint.Unsigned memory) {
+  ) public view returns (FixedPoint.Unsigned memory interestOwed) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint
-      .fromUnscaledUint(totalInterestPerYear)
-      .div(365);
-    return interestOwedForOneDay.add(cl.principalOwed());
-  }
-
-  function calculateInterestAccrued(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 timestamp,
-    uint256 lateFeeGracePeriodInDays
-  ) public view returns (uint256) {
-    // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
-    // numSecondsElapsed. Typically this shouldn't be possible, because
-    // the interestAccruedAsOf couldn't be *after* the current timestamp. However, when assessing
-    // we allow this function to be called with a past timestamp, which raises the possibility
-    // of overflow.
-    // This use of min should not generate incorrect interest calculations, since
-    // this function's purpose is just to normalize balances, and handing in a past timestamp
-    // will necessarily return zero interest accrued (because zero elapsed time), which is correct.
-    uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
-    return
-      calculateInterestAccruedOverPeriod(
-        cl,
-        balance,
-        startTime,
-        timestamp,
-        lateFeeGracePeriodInDays
-      );
-  }
-
-  function calculateInterestAccruedOverPeriod(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 lateFeeGracePeriodInDays
-  ) public view returns (uint256 interestOwed) {
-    uint256 secondsElapsed = endTime.sub(startTime);
-    uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    uint256 regularInterest = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-    uint256 lateFeeInterest = calculateLateFeeInterestAccruedOverPeriod(
-      cl,
-      balance,
-      startTime,
-      endTime,
-      lateFeeGracePeriodInDays
-    );
-    interestOwed = regularInterest.add(lateFeeInterest);
-  }
-
-  function calculateLateFeeInterestAccruedOverPeriod(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 lateFeeGracePeriodInDays
-  ) internal view returns (uint256) {
-    // It's possible that multiple payment periods have passed since the last time interest was checkpointed
-    // We derive that due time as the due time immediately after lastFullPaymentTime. This isn't the same as
-    // cl.mostRecentLastDueTime() if they are more than one period late
-    uint256 oldestUnpaidDueTime = Math.min(
-      cl.lastFullPaymentTime().add(cl.paymentPeriodInDays().mul(SECONDS_PER_DAY)),
-      cl.termEndTime()
-    );
-
-    uint256 lateFeeStartsAt = Math.max(
-      startTime,
-      oldestUnpaidDueTime.add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY))
-    );
-
-    if (lateFeeStartsAt < endTime) {
-      uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
-      uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      return lateFeeInterestPerYear.mul(lateSecondsElapsed).div(SECONDS_PER_YEAR);
-    }
-
-    return 0;
+    interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
+    return interestOwed;
   }
 
   /// @notice Allocate a payment for V1 Tranched Pools
@@ -279,7 +157,7 @@ library Accountant {
     uint256 interestOwed,
     uint256 interestAccrued,
     uint256 principalOwed
-  ) public pure returns (IV2TranchedPool.PaymentAllocation memory) {
+  ) public pure returns (ITranchedPool.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
     paymentRemaining = paymentRemaining.sub(owedInterestPayment);
@@ -295,7 +173,7 @@ library Accountant {
     paymentRemaining = paymentRemaining.sub(additionalBalancePayment);
 
     return
-      IV2TranchedPool.PaymentAllocation({
+      ITranchedPool.PaymentAllocation({
         owedInterestPayment: owedInterestPayment,
         accruedInterestPayment: accruedInterestPayment,
         principalPayment: principalPayment,

@@ -98,7 +98,7 @@ contract SeniorPoolBaseTest is BaseTest {
 
     CreditLine clImpl = new CreditLine();
 
-    tpBuilder = new TranchedPoolBuilder(address(gfFactory), address(sp));
+    tpBuilder = new TranchedPoolBuilder(gfFactory, sp);
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
 
     // PoolTokens setup

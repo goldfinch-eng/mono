@@ -3,20 +3,20 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2TermStartTimeTest is TranchedPoolV2BaseTest {
+contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
   function testRevertsBeforeFirstDrawdown() public {
-    (, CreditLineV2 cl) = defaultTranchedPool();
+    (, CreditLine cl) = defaultTranchedPool();
     vm.expectRevert("Uninitialized");
     cl.termStartTime();
   }
 
   function testIsSetToTimeOfFirstDrawdown() public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
@@ -27,7 +27,7 @@ contract TranchedPoolV2TermStartTimeTest is TranchedPoolV2BaseTest {
   }
 
   function testDoesntResetOnSubsequentZeroBalanceDrawdowns() public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 

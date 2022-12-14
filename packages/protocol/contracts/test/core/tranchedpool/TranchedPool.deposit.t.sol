@@ -4,14 +4,14 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 
-contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
+contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   event DepositMade(
     address indexed owner,
     uint256 indexed tranche,
@@ -21,14 +21,14 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
 
   function testDepositJuniorFailsWithoutGoListOrUid() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     usdc.approve(address(pool), type(uint256).max);
     vm.expectRevert(bytes("NA"));
     pool.deposit(2, 1);
   }
 
   function testDepositJuniorWorksIfGolistedAndWithoutAllowedUid() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     _startImpersonation(BORROWER);
     uint256[] memory allowedTypes = new uint256[](1);
     allowedTypes[0] = 0; // legacy UID type
@@ -41,7 +41,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorWorksIfAllowedUidButNotGoListed() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
     uint256 poolToken = pool.deposit(2, usdcVal(100));
@@ -49,7 +49,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorRevertsForZeroDeposit() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
     vm.expectRevert(bytes("IA"));
@@ -57,7 +57,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorRevertsIfJuniorCapitalLocked() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
     pool.deposit(2, usdcVal(100));
@@ -67,7 +67,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorRevertsIfSeniorCapitalLocked() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
     pool.deposit(2, usdcVal(100));
@@ -78,7 +78,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorRevertsForInvalidTranche() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
     vm.expectRevert(bytes("invalid tranche"));
@@ -86,7 +86,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositJuniorUpdatesTrancheInfoAndMintsToken() public impersonating(DEPOSITOR) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
 
@@ -123,7 +123,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
     uint256 total = amount1 + amount2; // Check for underflow
     vm.assume(amount2 < total && total <= usdc.balanceOf(DEPOSITOR));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(pool), type(uint256).max);
 
@@ -141,7 +141,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testLockSeniorTrancheEmitsEvent() public impersonating(BORROWER) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     lockJuniorTranche(pool);
 
     // TODO - this is a bug that should be fixed
@@ -154,7 +154,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testLockJuniorTrancheEmitsEvent() public impersonating(BORROWER) {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectEmit(true, false, false, true);
     emit TrancheLocked(address(pool), 2, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
     lockJuniorTranche(pool);
@@ -163,7 +163,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   function testDepositSeniorRevertsIfDepositorIsNotSeniorPool(address notSeniorPool) public {
     vm.assume(notSeniorPool != address(seniorPool));
     vm.assume(notSeniorPool != address(0));
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
 
     lockJuniorTranche(pool);
 
@@ -174,13 +174,13 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
   }
 
   function testDepositSeniorRevertsForZeroAmount() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectRevert(bytes("IA"));
     pool.deposit(1, 0);
   }
 
   function testSeniorDepositUpdatesTrancheInfoAndMintsToken() public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
     deposit(pool, 2, usdcVal(1000), DEPOSITOR);
@@ -218,7 +218,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
 
   function testDepositFailsForInvalidTranches(uint256 trancheId) public {
     vm.assume(trancheId > 2);
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     _startImpersonation(DEPOSITOR);
@@ -238,7 +238,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
 
     fundAddress(user, usdcVal(100));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
 
     uint256 nonce = usdc.nonces(user);
     uint256 deadline = block.timestamp + 1;
@@ -284,7 +284,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
     limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
     depositAmount = bound(depositAmount, limit, limit * 10);
 
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     setMaxLimit(pool, limit);
 
     deposit(pool, 2, depositAmount, GF_OWNER);
@@ -298,7 +298,7 @@ contract TranchedPoolV2DepositTest is TranchedPoolV2BaseTest {
     limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
     depositAmount = bound(depositAmount, usdcVal(1), limit);
 
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     setMaxLimit(pool, limit);
 
     deposit(pool, 2, depositAmount, GF_OWNER);

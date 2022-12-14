@@ -4,14 +4,14 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {IVersioned} from "../../interfaces/IVersioned.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {SafeERC20Transfer} from "../../library/SafeERC20Transfer.sol";
 import {BaseUpgradeablePausable} from "../core/BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "../core/ConfigHelper.sol";
-import {CreditLine} from "../core/CreditLine.sol";
 import {GoldfinchConfig} from "../core/GoldfinchConfig.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {IV2TranchedPool} from "../../interfaces/IV2TranchedPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
 import {ContextUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
@@ -174,7 +174,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 interestAmount
   ) external onlyAdmin {
     // Take the minimum USDC to cover actual amounts owed
-    IV2TranchedPool pool = IV2TranchedPool(poolAddress);
+    ITranchedPool pool = ITranchedPool(poolAddress);
     uint256 maxPrincipalPayment = pool.creditLine().balance();
     uint256 maxInterestPayment = pool.creditLine().interestOwed().add(
       pool.creditLine().interestAccrued()
@@ -187,7 +187,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
       principalPayment + interestPayment
     );
 
-    IV2TranchedPool.PaymentAllocation memory pa = _payV2Separate(
+    ITranchedPool.PaymentAllocation memory pa = _payV2Separate(
       poolAddress,
       principalPayment,
       interestPayment
@@ -258,8 +258,8 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     address poolAddress,
     uint256 principalAmount,
     uint256 interestAmount
-  ) internal returns (IV2TranchedPool.PaymentAllocation memory) {
-    IV2TranchedPool pool = IV2TranchedPool(poolAddress);
+  ) internal returns (ITranchedPool.PaymentAllocation memory) {
+    ITranchedPool pool = ITranchedPool(poolAddress);
     config.getUSDC().safeERC20Approve(poolAddress, principalAmount + interestAmount);
     return pool.pay(principalAmount, interestAmount);
   }

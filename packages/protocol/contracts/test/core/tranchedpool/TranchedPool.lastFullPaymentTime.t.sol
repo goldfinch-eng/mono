@@ -3,16 +3,16 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
+contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
   function testLastFullPaymentTimeNotSetWhenInterestPaymentIsLessThanInterestOwed(
     uint256 interestPayment
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -30,7 +30,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
     uint256 interestPayment,
     uint256 periodsToAdvance
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -53,7 +53,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
   function testLastFullPaymentTimeNotSetWhenIPayInterestButNotPrincipalPastTermEndTime(
     uint256 payment
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -70,7 +70,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
   function testLastFullPaymentTimeSetWhenIPayInterestAndPrincipalPastTermEndTime(
     uint256 secondsPastTermEndTime
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -87,7 +87,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
   function testLastFullPaymentTimeNotSetWhenSeparateInterestPaymentIsLessThanInterestOwed(
     uint256 interestPayment
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -105,7 +105,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
     uint256 interestPayment,
     uint256 periodsToAdvance
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -129,7 +129,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
     uint256 interestPayment,
     uint256 principalPayment
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));
@@ -147,7 +147,7 @@ contract TranchedPoolV2LastFullPaymentTimeTest is TranchedPoolV2BaseTest {
   function testLastFullPaymentTimeSetWhenIPaySeparateInterestAndPrincipalPastTermEndTime(
     uint256 secondsPastTermEndTime
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
     seniorDepositAndInvest(pool, usdcVal(400));

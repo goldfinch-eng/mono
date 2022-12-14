@@ -3,13 +3,13 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
-import {TranchedPoolV2BaseTest} from "./BaseTranchedPoolV2.t.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
-contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
+contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
   event WithdrawalMade(
     address indexed owner,
     uint256 indexed tranche,
@@ -21,7 +21,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   function testAvailableToWithdrawIsZeroWhenJuniorTrancheIsLocked(uint256 amount) public {
     vm.assume(0 < amount && amount <= usdc.balanceOf(GF_OWNER));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
 
     _startImpersonation(GF_OWNER);
     usdc.approve(address(pool), type(uint256).max);
@@ -49,7 +49,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     uid._mintForTest(otherDepositor, 1, 1, "");
 
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
 
     uint256 token1 = deposit(pool, 2, amount1, DEPOSITOR);
     uint256 token2 = deposit(pool, 2, amount2, otherDepositor);
@@ -112,7 +112,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   function testWithdrawFailsIfNotGoListedAndWithoutAllowedUid(uint256 amount) public {
     amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
 
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     _startImpersonation(BORROWER);
     uint256[] memory uids = new uint256[](1);
     uids[0] = 0;
@@ -129,7 +129,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawSucceedsForNonGoListedWithAllowedUid(address user, uint256 amount) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
     uid._mintForTest(user, 1, 1, "");
@@ -142,7 +142,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount,
     address withdrawer
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(owner));
     vm.assume(fuzzHelper.isAllowed(withdrawer));
     vm.assume(owner != withdrawer);
@@ -161,8 +161,8 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount1,
     uint256 amount2
   ) public {
-    (TranchedPoolV2 pool1, ) = defaultTranchedPool();
-    (TranchedPoolV2 pool2, ) = defaultTranchedPool();
+    (TranchedPool pool1, ) = defaultTranchedPool();
+    (TranchedPool pool2, ) = defaultTranchedPool();
 
     vm.assume(fuzzHelper.isAllowed(user));
     amount1 = bound(amount1, usdcVal(1), usdcVal(100_000_000));
@@ -183,7 +183,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawFailsIfNoAmountsAvailable(address user, uint256 amount) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
@@ -194,7 +194,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawFailsIfAttemptingToWithdrawZero(address user, uint256 amount) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
@@ -208,7 +208,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 depositAmount,
     uint256 withdrawAmount
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_000));
     withdrawAmount = bound(withdrawAmount, usdcVal(1), depositAmount);
@@ -224,7 +224,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 depositAmount,
     uint256 secondsElapsed
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     secondsElapsed = bound(secondsElapsed, 0, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
@@ -251,7 +251,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 depositAmount,
     uint256 secondsElapsed
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     secondsElapsed = bound(secondsElapsed, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS + 1, 1000 days);
@@ -283,7 +283,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount1,
     uint256 amount2
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(user1 != user2);
     vm.assume(fuzzHelper.isAllowed(user1));
     vm.assume(fuzzHelper.isAllowed(user2));
@@ -338,7 +338,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawEmitsAnEvent(address user) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
 
@@ -363,7 +363,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount1,
     uint256 amount2
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user1));
     vm.assume(fuzzHelper.isAllowed(user2));
     vm.assume(user1 != user2);
@@ -393,7 +393,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   ) public {
     amount1 = bound(amount1, usdcVal(1), usdcVal(100_000_000));
     amount2 = bound(amount2, usdcVal(1), usdcVal(100_000_000));
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     uint256[] memory tokens = new uint256[](2);
     tokens[0] = deposit(pool, 2, amount1, GF_OWNER);
     tokens[1] = deposit(pool, 2, amount2, GF_OWNER);
@@ -408,14 +408,14 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256[] memory tokens,
     uint256[] memory amounts
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(tokens.length != amounts.length);
     vm.expectRevert(bytes("LEN"));
     withdrawMultiple(pool, tokens, amounts, GF_OWNER);
   }
 
   function testWithdrawMultipleSuccess(address user, uint256 amount1, uint256 amount2) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount1 = bound(amount1, usdcVal(1), usdcVal(100_000_000));
     amount2 = bound(amount2, usdcVal(1), usdcVal(100_000_000));
@@ -442,7 +442,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount,
     address withdrawer
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(owner != withdrawer);
     vm.assume(fuzzHelper.isAllowed(owner));
     vm.assume(fuzzHelper.isAllowed(withdrawer));
@@ -457,8 +457,8 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawMaxFailsForPoolTokenFromDifferentPool(address user, uint256 amount) public {
-    (TranchedPoolV2 pool1, ) = defaultTranchedPool();
-    (TranchedPoolV2 pool2, ) = defaultTranchedPool();
+    (TranchedPool pool1, ) = defaultTranchedPool();
+    (TranchedPool pool2, ) = defaultTranchedPool();
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     vm.assume(fuzzHelper.isAllowed(user));
 
@@ -477,7 +477,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawMaxFailsIfNoAmountsAvailable(address user, uint256 amount) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
@@ -488,7 +488,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawMaxBeforePoolLockedAllowsWithdrawl(address user, uint256 amount) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
@@ -503,7 +503,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount,
     uint256 secondsElapsed
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_100));
     secondsElapsed = bound(secondsElapsed, 0, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
@@ -523,7 +523,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     uint256 amount,
     uint256 secondsElapsed
   ) public {
-    (TranchedPoolV2 pool, ) = defaultTranchedPool();
+    (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     secondsElapsed = bound(secondsElapsed, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS + 1, 1000 days);
@@ -541,7 +541,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
   }
 
   function testWithdrawMaxEmitsEvent(address user) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(pool, 2, usdcVal(1000), user);
@@ -558,7 +558,7 @@ contract TranchedPoolV2WithdrawTest is TranchedPoolV2BaseTest {
     address user,
     uint256 limit
   ) public {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = defaultTranchedPool();
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     limit = bound(limit, usdcVal(100), usdcVal(10_000_000));
     setMaxLimit(pool, limit);

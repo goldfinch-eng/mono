@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
@@ -8,6 +8,10 @@ import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestTranchedPool} from "../TestTranchedPool.sol";
 import {CreditLine} from "../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ISchedule} from "../../interfaces/ISchedule.sol";
+import {MonthlyPeriodMapper} from "../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../protocol/core/schedule/Schedule.sol";
+import {TestConstants} from "../core/TestConstants.t.sol";
 
 contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;
@@ -30,9 +34,9 @@ contract TranchedPoolBuilder {
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
-  constructor(address _gfFactory, address _seniorPool) public {
-    gfFactory = GoldfinchFactory(_gfFactory);
-    seniorPool = SeniorPool(_seniorPool);
+  constructor(GoldfinchFactory _gfFactory, SeniorPool _seniorPool) public {
+    gfFactory = _gfFactory;
+    seniorPool = _seniorPool;
     juniorFeePercent = DEFAULT_JUNIOR_FEE_PERCENT;
     maxLimit = DEFAULT_MAX_LIMIT;
     apr = DEFAULT_APR;
@@ -43,16 +47,40 @@ contract TranchedPoolBuilder {
     fundableAt = block.timestamp;
   }
 
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
+  }
+
   function build(address borrower) external returns (TestTranchedPool, CreditLine) {
     ITranchedPool created = gfFactory.createPool(
       borrower,
       juniorFeePercent,
       maxLimit,
       apr,
-      periodInDays,
-      termInDays,
+      defaultSchedule(),
       lateFeeApr,
-      principalGracePeriodInDays,
       fundableAt,
       allowedUIDTypes
     );

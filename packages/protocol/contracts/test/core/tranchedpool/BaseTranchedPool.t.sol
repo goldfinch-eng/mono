@@ -4,10 +4,10 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
-import {TranchedPoolV2} from "../../../protocol/core/TranchedPoolV2.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {TranchingLogic} from "../../../protocol/core/TranchingLogic.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
-import {CreditLineV2} from "../../../protocol/core/CreditLineV2.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
@@ -21,13 +21,13 @@ import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 
-import {TranchedPoolV2Builder} from "../../helpers/TranchedPoolV2Builder.t.sol";
+import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
 import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
 
-contract TranchedPoolV2BaseTest is BaseTest {
+contract TranchedPoolBaseTest is BaseTest {
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
   address public constant DEPOSITOR = 0x89b8CbAeBd6C623a69a4DEBe9EE03131b5F4Ff96; // random address
 
@@ -43,7 +43,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   LeverageRatioStrategy internal strat;
   WithdrawalRequestToken internal requestTokens;
   ITestUniqueIdentity0612 internal uid;
-  TranchedPoolV2Builder internal poolBuilder;
+  TranchedPoolBuilder internal poolBuilder;
   PoolTokens internal poolTokens;
   Go internal go;
 
@@ -101,7 +101,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
     fuzzHelper.exclude(address(uid));
 
-    poolBuilder = new TranchedPoolV2Builder(gfFactory, seniorPool);
+    poolBuilder = new TranchedPoolBuilder(gfFactory, seniorPool);
     fuzzHelper.exclude(address(poolBuilder));
     // Allow the builder to create pools
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
@@ -125,7 +125,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
     fuzzHelper.exclude(address(go));
 
     // TranchedPool setup
-    TranchedPoolV2 tranchedPoolImpl = new TranchedPoolV2();
+    TranchedPool tranchedPoolImpl = new TranchedPool();
     TranchedPoolImplementationRepository tranchedPoolRepo = new TranchedPoolImplementationRepository();
     tranchedPoolRepo.initialize(GF_OWNER, address(tranchedPoolImpl));
     gfConfig.setAddress(
@@ -136,7 +136,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
     fuzzHelper.exclude(address(tranchedPoolRepo));
 
     // CreditLine setup
-    CreditLineV2 creditLineImpl = new CreditLineV2();
+    CreditLine creditLineImpl = new CreditLine();
     gfConfig.setAddress(
       uint256(ConfigOptions.Addresses.CreditLineImplementation),
       address(creditLineImpl)
@@ -169,9 +169,9 @@ contract TranchedPoolV2BaseTest is BaseTest {
   function defaultTranchedPool()
     internal
     impersonating(GF_OWNER)
-    returns (TranchedPoolV2, CreditLineV2)
+    returns (TranchedPool, CreditLine)
   {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = poolBuilder.build(BORROWER);
+    (TranchedPool pool, CreditLine cl) = poolBuilder.build(BORROWER);
     fuzzHelper.exclude(address(pool));
     fuzzHelper.exclude(address(cl));
     pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
@@ -181,8 +181,8 @@ contract TranchedPoolV2BaseTest is BaseTest {
   function tranchedPoolWithLateFees(
     uint256 lateFeeApr,
     uint256 lateFeeGracePeriodInDays
-  ) public impersonating(GF_OWNER) returns (TranchedPoolV2, CreditLineV2) {
-    (TranchedPoolV2 pool, CreditLineV2 cl) = poolBuilder.withLateFeeApr(lateFeeApr).build(BORROWER);
+  ) public impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
+    (TranchedPool pool, CreditLine cl) = poolBuilder.withLateFeeApr(lateFeeApr).build(BORROWER);
     fuzzHelper.exclude(address(pool));
     fuzzHelper.exclude(address(cl));
     pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
@@ -199,7 +199,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function seniorDepositAndInvest(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 amount
   ) internal impersonating(GF_OWNER) returns (uint256) {
     seniorPool.deposit(amount);
@@ -207,7 +207,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function deposit(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 tranche,
     uint256 depositAmount,
     address depositor
@@ -221,19 +221,19 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function lockJuniorTranche(
-    TranchedPoolV2 pool
+    TranchedPool pool
   ) internal impersonating(pool.creditLine().borrower()) {
     pool.lockJuniorCapital();
   }
 
   function lockSeniorTranche(
-    TranchedPoolV2 pool
+    TranchedPool pool
   ) internal impersonating(pool.creditLine().borrower()) {
     pool.lockPool();
   }
 
   function lockAndDrawdown(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 amount
   ) internal impersonating(pool.creditLine().borrower()) {
     pool.lockJuniorCapital();
@@ -242,7 +242,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function pay(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 amount
   ) internal impersonating(pool.creditLine().borrower()) {
     usdc.approve(address(pool), amount);
@@ -254,7 +254,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function pay(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 principal,
     uint256 interest
   ) internal impersonating(pool.creditLine().borrower()) {
@@ -268,7 +268,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function withdraw(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 token,
     uint256 amount,
     address withdrawer
@@ -277,7 +277,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function withdrawMax(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 token,
     address withdrawer
   ) internal impersonating(withdrawer) returns (uint256, uint256) {
@@ -285,7 +285,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function withdrawMultiple(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256[] memory tokens,
     uint256[] memory amounts,
     address withdrawer
@@ -294,30 +294,30 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function drawdown(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 amount
   ) internal impersonating(pool.creditLine().borrower()) {
     pool.drawdown(amount);
   }
 
-  function setLimit(TranchedPoolV2 pool, uint256 limit) internal impersonating(GF_OWNER) {
+  function setLimit(TranchedPool pool, uint256 limit) internal impersonating(GF_OWNER) {
     pool.setLimit(limit);
   }
 
-  function setMaxLimit(TranchedPoolV2 pool, uint256 maxLimit) internal impersonating(GF_OWNER) {
+  function setMaxLimit(TranchedPool pool, uint256 maxLimit) internal impersonating(GF_OWNER) {
     pool.setMaxLimit(maxLimit);
   }
 
-  function pause(TranchedPoolV2 pool) internal impersonating(GF_OWNER) {
+  function pause(TranchedPool pool) internal impersonating(GF_OWNER) {
     pool.pause();
   }
 
-  function unpause(TranchedPoolV2 pool) internal impersonating(GF_OWNER) {
+  function unpause(TranchedPool pool) internal impersonating(GF_OWNER) {
     pool.unpause();
   }
 
   function depositWithPermit(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 tranche,
     uint256 amount,
     uint256 deadline,
@@ -334,7 +334,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
   }
 
   function fundAndDrawdown(
-    TranchedPoolV2 pool,
+    TranchedPool pool,
     uint256 juniorAmount,
     address juniorInvestor
   ) internal impersonating(pool.creditLine().borrower()) {
@@ -357,8 +357,10 @@ contract TranchedPoolV2BaseTest is BaseTest {
     return interest;
   }
 
-  function periodInSeconds(TranchedPoolV2 pool) internal returns (uint256) {
-    return pool.creditLine().paymentPeriodInDays() * TestConstants.SECONDS_PER_DAY;
+  function periodInSeconds(TranchedPool pool) internal returns (uint256) {
+    // TODO(will)
+    return 0;
+    // return pool.creditLine().paymentPeriodInDays() * TestConstants.SECONDS_PER_DAY;
   }
 
   function addToGoList(address user) internal impersonating(GF_OWNER) {
