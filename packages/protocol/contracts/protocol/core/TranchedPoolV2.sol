@@ -98,11 +98,13 @@ contract TranchedPoolV2 is BaseUpgradeablePausable, IV2TranchedPool, IRequiresUI
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
-    require(
-      _poolSlices[0].juniorTranche.principalDeposited == 0 &&
-        _poolSlices[0].seniorTranche.principalDeposited == 0,
-      "has balance"
-    );
+    for (uint256 i = 0; i < numSlices; ++i) {
+      require(
+        _poolSlices[i].juniorTranche.principalDeposited == 0 &&
+          _poolSlices[i].seniorTranche.principalDeposited == 0,
+        "has balance"
+      );
+    }
     allowedUIDTypes = ids;
   }
 
@@ -126,7 +128,7 @@ contract TranchedPoolV2 is BaseUpgradeablePausable, IV2TranchedPool, IRequiresUI
     require(trancheInfo.lockedUntil == 0, "TL");
     require(amount > 0, "IA");
     require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp > fundableAt, "Not open");
+    require(block.timestamp >= fundableAt, "Not open");
     // senior tranche ids are always odd numbered
     if (TranchingLogic.isSeniorTrancheId(trancheInfo.id)) {
       require(hasRole(SENIOR_ROLE, _msgSender()), "NA");
@@ -150,7 +152,7 @@ contract TranchedPoolV2 is BaseUpgradeablePausable, IV2TranchedPool, IRequiresUI
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public override returns (uint256 tokenId) {
+  ) public override whenNotPaused returns (uint256 tokenId) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
     return deposit(tranche, amount);
   }
