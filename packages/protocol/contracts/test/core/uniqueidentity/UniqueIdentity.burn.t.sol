@@ -9,7 +9,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
   function testBurnDecreasesBalance(
     address recipient,
     uint256 amountToMint
-  ) public onlyAllowListed(recipient) isNotContract(recipient) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) {
     amountToMint = bound(amountToMint, 1, type(uint256).max);
     uid._mintForTest(recipient, 0, amountToMint, bytes(""));
     uid._burnForTest(recipient, 0);
@@ -20,7 +20,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address uidHolder
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -45,7 +45,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     address notUidHolder
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
     vm.assume(uidHolder != notUidHolder);
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -67,7 +67,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address uidHolder
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -92,7 +92,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 invalidChainId
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
     vm.assume(invalidChainId != block.chainid);
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -114,7 +114,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address uidHolder
   ) public validPrivateKey(signerKey) onlyAllowListed(uidHolder) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
     bytes memory sig = uidSign({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
@@ -137,7 +137,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 expiresAt = block.timestamp + 1 days;
     burnTime = bound(burnTime, expiresAt, type(uint256).max);
 
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -164,7 +164,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
   ) public validPrivateKey(signerKey) onlyAllowListed(uidHolder) {
     vm.assume(invalidUidAddress != address(uid));
 
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -186,7 +186,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address uidHolder
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -220,7 +220,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
   ) public onlyAllowListed(uidHolder) onlyAllowListed(anySender) validPrivateKey(signerKey) {
     vm.assume(uidHolder != anySender);
 
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -280,7 +280,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     // Bound within range of valid UIDs
     uidType = bound(uidType, 0, 4);
 
-    mint(uidHolder, uidType, 1);
+    uid._mintForTest(uidHolder, uidType, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -325,7 +325,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     // Bound within range of valid UIDs
     uidType = bound(uidType, 0, 4);
 
-    mint(uidHolder, uidType, 1);
+    uid._mintForTest(uidHolder, uidType, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
     uint256[] memory uidTypes = new uint256[](0);
@@ -367,7 +367,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     vm.assume(mintAmount > 1);
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
-    mint(uidHolder, 0, mintAmount);
+    uid._mintForTest(uidHolder, 0, mintAmount, "");
 
     bytes memory sig = uidSign({
       uidType: 0,
@@ -390,7 +390,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     // Bound within range of valid UIDs
     uidType = bound(uidType, 0, 4);
 
-    mint(uidHolder, uidType, 1);
+    uid._mintForTest(uidHolder, uidType, 1, "");
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -413,7 +413,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address uidHolder
   ) public validPrivateKey(signerKey) onlyAllowListed(uidHolder) {
-    mint(uidHolder, 0, 1);
+    uid._mintForTest(uidHolder, 0, 1, "");
     address signer = vm.addr(signerKey);
 
     _startImpersonation(GF_OWNER);

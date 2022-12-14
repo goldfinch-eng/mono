@@ -38,7 +38,7 @@ contract GoGoTest is GoBaseTest {
   function testNonGoListedUserWithValidUidIsGoListed(
     address user,
     uint256 validUidType
-  ) public impersonating(GF_OWNER) isNotContract(user) onlyAllowListed(user) {
+  ) public impersonating(GF_OWNER) onlyAllowListed(user) {
     validUidType = bound(validUidType, 0, 4);
     uniqueIdentity._mintForTest(user, validUidType, 1, bytes(""));
     assertTrue(go.go(user));
@@ -47,7 +47,7 @@ contract GoGoTest is GoBaseTest {
   function testGoListedUserWithValidUidIsGoListed(
     address user,
     uint256 validUidType
-  ) public impersonating(GF_OWNER) isNotContract(user) onlyAllowListed(user) {
+  ) public impersonating(GF_OWNER) onlyAllowListed(user) {
     validUidType = bound(validUidType, 0, 4);
     uniqueIdentity._mintForTest(user, validUidType, 1, bytes(""));
     gfConfig.addToGoList(user);

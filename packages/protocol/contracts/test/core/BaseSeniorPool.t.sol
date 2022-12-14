@@ -266,10 +266,6 @@ contract SeniorPoolBaseTest is BaseTest {
     fidu.approve(address(sp), type(uint256).max);
   }
 
-  function mintUid(address to, uint256 id, uint256 amount, bytes memory data) internal {
-    uniqueIdentity._mintForTest(to, id, amount, data);
-  }
-
   function burnUid(address account, uint256 id) internal impersonating(GF_OWNER) {
     uniqueIdentity._burnForTest(account, id);
   }

@@ -140,11 +140,6 @@ abstract contract BaseTest is Test {
     _;
   }
 
-  modifier isNotContract(address _address) {
-    vm.assume(fuzzHelper.isNotContract(_address));
-    _;
-  }
-
   modifier assume(bool stmt) {
     vm.assume(stmt);
     _;

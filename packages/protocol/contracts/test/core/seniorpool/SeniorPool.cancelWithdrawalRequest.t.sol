@@ -33,7 +33,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public onlyAllowListed(user) {
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(user, validUid, 1, "");
+    uniqueIdentity._mintForTest(user, validUid, 1, "");
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, depositAmount);
@@ -52,8 +52,8 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 invalidUid
   ) public onlyAllowListed(user) {
     invalidUid = bound(invalidUid, 5, type(uint256).max);
-    mintUid(user, 1, 1, "");
-    mintUid(user, invalidUid, 1, "");
+    uniqueIdentity._mintForTest(user, 1, 1, "");
+    uniqueIdentity._mintForTest(user, invalidUid, 1, "");
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
     fundAddress(user, depositAmount);
@@ -395,7 +395,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     approveTokensMaxAmount(address(this));
     fundAddress(address(this), depositAmount);
     uint256 depositShares = depositToSpFrom(address(this), depositAmount);
@@ -419,7 +419,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     approveTokensMaxAmount(address(this));
     fundAddress(address(this), depositAmount);
     uint256 depositShares = depositToSpFrom(address(this), depositAmount);
@@ -442,8 +442,8 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000_000));
     invalidUid = bound(invalidUid, 5, type(uint256).max);
-    mintUid(address(this), invalidUid, 1, "");
-    mintUid(address(this), 1, 1, "");
+    uniqueIdentity._mintForTest(address(this), invalidUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), 1, 1, "");
     approveTokensMaxAmount(address(this));
     fundAddress(address(this), depositAmount);
     uint256 depositShares = depositToSpFrom(address(this), depositAmount);
