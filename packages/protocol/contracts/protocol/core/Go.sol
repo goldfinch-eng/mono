@@ -70,6 +70,8 @@ contract Go is IGo, BaseUpgradeablePausable {
    * Go-listed is defined as: whether `balanceOf(account, id)` on the UniqueIdentity
    * contract is non-zero (where `id` is a supported token id on UniqueIdentity), falling back to the
    * account's status on the legacy go-list maintained on GoldfinchConfig.
+   * NOTE: If tx.origin is 0x0 (e.g. in blockchain explorers such as Etherscan) this function will throw an error
+   *       if the account is not go listed.
    * @param account The account whose go status to obtain
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
