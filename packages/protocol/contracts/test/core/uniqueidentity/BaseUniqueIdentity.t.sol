@@ -32,7 +32,7 @@ contract UniqueIdentityBaseTest is BaseTest {
     address recipient,
     uint256 uidType,
     uint256 amount
-  ) internal impersonating(GF_OWNER) {
+  ) internal impersonating(GF_OWNER) isNotContract(recipient) {
     uid._mintForTest(recipient, uidType, amount, "");
   }
 

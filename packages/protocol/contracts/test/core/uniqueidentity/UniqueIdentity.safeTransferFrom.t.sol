@@ -19,7 +19,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
   function testRevertsForTokenOwnerWhenPaused(
     address uidHolder,
     address recipient
-  ) public onlyAllowListed(uidHolder) isNotContract(uidHolder) onlyAllowListed(recipient) {
+  ) public onlyAllowListed(uidHolder) onlyAllowListed(recipient) {
     mint({recipient: uidHolder, uidType: 0, amount: 1});
     _startImpersonation(GF_OWNER);
     uid.pause();

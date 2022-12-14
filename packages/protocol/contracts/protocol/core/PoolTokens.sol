@@ -2,14 +2,16 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../external/ERC721PresetMinterPauserAutoId.sol";
-import "./GoldfinchConfig.sol";
-import "./ConfigHelper.sol";
-import "./HasAdmin.sol";
-import "./ConfigurableRoyaltyStandard.sol";
-import "../../interfaces/IERC2981.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/IPoolTokens.sol";
+import {ERC721PresetMinterPauserAutoIdUpgradeSafe} from "../../external/ERC721PresetMinterPauserAutoId.sol";
+import {ERC165UpgradeSafe} from "../../external/ERC721PresetMinterPauserAutoId.sol";
+import {IERC165} from "../../external/ERC721PresetMinterPauserAutoId.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {HasAdmin} from "./HasAdmin.sol";
+import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
+import {IERC2981} from "../../interfaces/IERC2981.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 
 /**
  * @title PoolTokens

@@ -15,7 +15,7 @@ contract GoGoOnlyIdTypesTest is GoBaseTest {
   function testGoOnlyIdTypesReturnsTrueIfHasUidAndNotLegacyGoListed(
     address user,
     uint256 validUidType
-  ) public impersonating(GF_OWNER) {
+  ) public onlyAllowListed(user) impersonating(GF_OWNER) {
     vm.assume(user != address(protocol.stakingRewards()));
     validUidType = bound(validUidType, 0, 4);
     uint256[] memory uidTypes = new uint256[](1);
@@ -38,6 +38,7 @@ contract GoGoOnlyIdTypesTest is GoBaseTest {
   }
 
   function testGoOnlyIdTypesReturnsFalseIfNotGoListedAndNoUid(address user) public {
+    vm.assume(user != address(0));
     uint256[] memory uidTypes = new uint256[](1);
     uidTypes[0] = 0;
     assertFalse(go.goOnlyIdTypes(user, uidTypes));

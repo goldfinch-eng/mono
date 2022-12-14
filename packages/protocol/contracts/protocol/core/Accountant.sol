@@ -3,11 +3,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./CreditLine.sol";
-import "../../interfaces/ICreditLine.sol";
-import "../../external/FixedPoint.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {FixedPoint} from "../../external/FixedPoint.sol";
+import {SafeMath} from "../../library/SafeMath.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
  * @title The Accountant
@@ -35,7 +34,7 @@ library Accountant {
   }
 
   function calculateInterestAndPrincipalAccrued(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 timestamp,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
@@ -46,7 +45,7 @@ library Accountant {
   }
 
   function calculateInterestAndPrincipalAccruedOverPeriod(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 balance,
     uint256 startTime,
     uint256 endTime,
@@ -147,7 +146,7 @@ library Accountant {
   }
 
   function calculateInterestAccrued(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 balance,
     uint256 timestamp,
     uint256 lateFeeGracePeriodInDays
@@ -172,7 +171,7 @@ library Accountant {
   }
 
   function calculateInterestAccruedOverPeriod(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 balance,
     uint256 startTime,
     uint256 endTime,
