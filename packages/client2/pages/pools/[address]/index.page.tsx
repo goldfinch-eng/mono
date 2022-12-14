@@ -93,6 +93,7 @@ gql`
         limit
         maxLimit
         id
+        lastFullPaymentTime
         isLate @client
         termInDays
         paymentPeriodInDays
@@ -440,7 +441,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   )}
                   zaps={data.user.zaps}
                   isPoolLocked={
-                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
+                    !tranchedPool?.juniorTranches[0]?.lockedUntil?.isZero() &&
                     BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
                       tranchedPool.juniorTranches[0].lockedUntil
                     )
