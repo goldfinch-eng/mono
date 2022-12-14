@@ -1,5 +1,5 @@
 import chai from "chai"
-import hardhat, {artifacts, web3, ethers, getNamedAccounts} from "hardhat"
+import hardhat, {artifacts, web3, ethers, getNamedAccounts, deployments} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -17,6 +17,7 @@ import {
   getProtocolOwner,
   POOL_VERSION1,
   POOL_VERSION2,
+  isMainnetForking,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -45,6 +46,7 @@ import {
   TestSeniorPoolCallerInstance,
   MembershipCollectorInstance,
   ERC20SplitterInstance,
+  TestGoldfinchConfigInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -62,10 +64,12 @@ import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
 import {getTranchedPoolImplName} from "../blockchain_scripts/baseDeploy/deployTranchedPool"
-import {poolVersionToCreditLines} from "../blockchain_scripts/baseDeploy/deployClImplementation"
+import {getClContractName, poolVersionToCreditLines} from "../blockchain_scripts/baseDeploy/deployClImplementation"
 import {TestTranchedPoolInstance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle"
 import {TestTranchedPoolV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/TestTranchedPoolV2"
 import {CreditLineV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/CreditLineV2"
+import {getDeploymentFor, poolVersionToLineageId} from "./util/fixtures"
+import {TestGoldfinchFactoryInstance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/TestGoldfinchFactory"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -522,7 +526,6 @@ export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddres
 
 const createPoolWithCreditLine = async ({
   people,
-  goldfinchFactory,
   usdc,
   juniorFeePercent = new BN("20"),
   interestApr = interestAprAsBN("15.0"),
@@ -533,10 +536,10 @@ const createPoolWithCreditLine = async ({
   principalGracePeriodInDays = new BN(185),
   fundableAt = new BN(0),
   allowedUIDTypes = [0],
+  version = "0.1.0",
 }: {
   people: {owner: string; borrower: string}
   usdc: ERC20Instance
-  goldfinchFactory: GoldfinchFactoryInstance
   juniorFeePercent?: Numberish
   interestApr?: Numberish
   paymentPeriodInDays?: Numberish
@@ -546,6 +549,7 @@ const createPoolWithCreditLine = async ({
   principalGracePeriodInDays?: Numberish
   fundableAt?: Numberish
   allowedUIDTypes?: Numberish[]
+  version?: string
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -558,19 +562,51 @@ const createPoolWithCreditLine = async ({
     throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
   }
 
-  const result = await goldfinchFactory.createPool(
-    thisBorrower,
-    juniorFeePercent,
-    limit,
-    interestApr,
-    paymentPeriodInDays,
-    termInDays,
-    lateFeeApr,
-    principalGracePeriodInDays,
-    fundableAt,
-    allowedUIDTypes,
-    {from: thisOwner}
-  )
+  // Set the credit line implementation to point to the correct version
+  const goldfinchConfig = isMainnetForking()
+    ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
+    : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
+
+  const creditLineContractName = getClContractName(version)
+  const creditLineDeployment = await deployments.get(creditLineContractName)
+  await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
+
+  let result: $TSFixMe
+  if (isMainnetForking()) {
+    const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
+    result = await goldfinchFactory.createPool(
+      thisBorrower,
+      juniorFeePercent,
+      limit,
+      interestApr,
+      paymentPeriodInDays,
+      termInDays,
+      lateFeeApr,
+      principalGracePeriodInDays,
+      fundableAt,
+      allowedUIDTypes,
+      {from: thisOwner}
+    )
+  } else {
+    const goldfinchFactory = await getDeploymentFor<TestGoldfinchFactoryInstance>("TestGoldfinchFactory")
+    const lineageId = poolVersionToLineageId[version]
+    result = await goldfinchFactory.createPoolForLineage(
+      thisBorrower,
+      lineageId,
+      [
+        juniorFeePercent,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr,
+        principalGracePeriodInDays,
+        fundableAt,
+      ],
+      allowedUIDTypes,
+      {from: thisOwner}
+    )
+  }
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)

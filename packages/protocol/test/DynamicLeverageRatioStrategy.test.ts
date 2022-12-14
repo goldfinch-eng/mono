@@ -2,7 +2,7 @@
 import hre from "hardhat"
 import {expectEvent} from "@openzeppelin/test-helpers"
 const {deployments, artifacts} = hre
-import {expect, BN, usdcVal, createPoolWithCreditLine} from "./testHelpers"
+import {expect, BN, usdcVal, getTranchedPoolAndCreditLine} from "./testHelpers"
 import {
   interestAprAsBN,
   LEVERAGE_RATIO_DECIMALS,
@@ -10,9 +10,10 @@ import {
   PAUSER_ROLE,
   LEVERAGE_RATIO_SETTER_ROLE,
   TRANCHES,
+  POOL_VERSION1,
 } from "../blockchain_scripts/deployHelpers"
 import {assertNonNullable} from "packages/utils/src/type"
-import {deployBaseFixture} from "./util/fixtures"
+import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "./util/fixtures"
 const DynamicLeverageRatioStrategy = artifacts.require("DynamicLeverageRatioStrategy")
 
 const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
@@ -37,17 +38,17 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const termInDays = new BN(365)
   const lateFeeApr = new BN(0)
   const juniorFeePercent = new BN(20)
-  const {tranchedPool} = await createPoolWithCreditLine({
-    people: {owner, borrower},
-    goldfinchFactory,
+  const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("dynamic leverage ratio")({
+    borrower,
     juniorFeePercent,
     limit,
     interestApr,
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
-    usdc,
+    usdcAddress: usdc.address,
   })
+  const {tranchedPool} = await getTranchedPoolAndCreditLine(poolAddress, clAddress, POOL_VERSION1)
 
   const strategy = await DynamicLeverageRatioStrategy.new({from: owner})
   await strategy.initialize(owner)
