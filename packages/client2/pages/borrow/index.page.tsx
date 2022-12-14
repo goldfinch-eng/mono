@@ -12,7 +12,7 @@ import { CreditLineCard } from "./credit-line-card";
 gql`
   query BorrowPage($userId: ID!) {
     user(id: $userId) {
-      borrowerContracts {
+      borrowerContracts(orderBy: createdAt, orderDirection: desc) {
         id
         tranchedPools(orderBy: createdAt, orderDirection: desc) {
           id
@@ -103,10 +103,10 @@ export default function PoolPage() {
 
   const borrowerContracts = data?.user?.borrowerContracts;
 
-  // TODO ZADRA explain better
+  // Get the most recently created borrower contract - older events have no associated pools
   const tranchedPools =
     borrowerContracts && borrowerContracts.length > 0
-      ? borrowerContracts[borrowerContracts.length - 1].tranchedPools
+      ? borrowerContracts[0].tranchedPools
       : null;
 
   if (loading) {

@@ -17,5 +17,5 @@ export function handlePoolCreated(event: PoolCreated): void {
 }
 
 export function handleBorrowerCreated(event: BorrowerCreated): void {
-  getOrInitBorrower(event.params.borrower, event.params.owner)
+  getOrInitBorrower(event.params.borrower, event.params.owner, event.block.timestamp)
 }

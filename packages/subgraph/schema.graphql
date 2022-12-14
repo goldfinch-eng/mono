@@ -57,6 +57,7 @@ type SeniorPoolStatus @entity {
 
 type BorrowerContract @entity {
   id: ID!
+  createdAt: BigInt!
   user: User!
   tranchedPools: [TranchedPool!]! @derivedFrom(field: "borrowerContract")
   creditLines: [CreditLine!]! @derivedFrom(field: "borrowerContract")
