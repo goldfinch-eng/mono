@@ -99,6 +99,7 @@ contract TranchedPoolV2BaseTest is BaseTest {
       supportedUidValues[i] = true;
     }
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
+    fuzzHelper.exclude(address(uid));
 
     poolBuilder = new TranchedPoolV2Builder(gfFactory, seniorPool);
     fuzzHelper.exclude(address(poolBuilder));
