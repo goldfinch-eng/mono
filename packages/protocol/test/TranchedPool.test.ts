@@ -18,9 +18,16 @@ import {
   getCurrentTimestamp,
   mineBlock,
   bigVal,
-  HALF_CENT,
 } from "./testHelpers"
-import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
+import {
+  interestAprAsBN,
+  TRANCHES,
+  MAX_UINT,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  getTruffleContract,
+  POOL_VERSION1,
+} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
 import hre from "hardhat"
 import BN from "bn.js"
@@ -28,12 +35,7 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {
-  DepositMade,
-  TrancheLocked,
-  PaymentApplied,
-  SharePriceUpdated,
-} from "../typechain/truffle/contracts/protocol/core/TranchedPool"
+import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../typechain/truffle/TranchedPool"
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,
@@ -50,13 +52,14 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mint} from "./uniqueIdentityHelpers"
-import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "./util/fixtures"
+import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture, TranchedPoolOptions} from "./util/fixtures"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const ASSESS_EVENT = "TranchedPoolAssessed"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
+const HALF_CENT = usdcVal(1).div(new BN(200))
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -118,7 +121,7 @@ describe("TranchedPool", () => {
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({usdc, goldfinchConfig, fidu, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi, stakingRewards} =
-      await deployBaseFixture())
+      await deployBaseFixture({tranchedPoolVersion: "1"}))
 
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
@@ -132,10 +135,9 @@ describe("TranchedPool", () => {
     await fidu.approve(stakingRewards.address, bigVal(100), {from: otherPerson})
     await stakingRewards.stake(bigVal(100), new BN(0), {from: otherPerson})
 
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    const {tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
-      usdcAddress: usdc.address,
+    const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("TranchedPool")({
       borrower,
+      usdcAddress: usdc.address,
       principalGracePeriodInDays,
       limit,
       interestApr,
@@ -144,8 +146,12 @@ describe("TranchedPool", () => {
       fundableAt,
       lateFeeApr,
       juniorFeePercent,
-      id: "TranchedPool",
+      version: POOL_VERSION1,
     })
+
+    const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {at: poolAddress})
+    const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
+
     await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     return {tranchedPool, creditLine}
   })
@@ -377,7 +383,9 @@ describe("TranchedPool", () => {
     const newLimit = new BN(500)
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+      const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(
+        "TranchedPool setLimit and setMaxLimit"
+      )({
         usdcAddress: usdc.address,
         borrower,
         principalGracePeriodInDays,
@@ -388,8 +396,9 @@ describe("TranchedPool", () => {
         fundableAt,
         lateFeeApr,
         juniorFeePercent,
-        id: "TranchedPool",
-      }))
+      })
+      tranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {at: poolAddress})
+      creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
       await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
     it("can only be called by governance", async () => {
@@ -406,6 +415,11 @@ describe("TranchedPool", () => {
         [async () => clFnFromPool(tranchedPool, "limit"), {unchanged: true}],
         [async () => clFnFromPool(tranchedPool, "maxLimit"), {to: newLimit}],
       ])
+    })
+    it("should not update the limit past the maxLimit", async () => {
+      await expect(tranchedPool.setLimit((await creditLine.maxLimit()).add(new BN(1)))).to.be.rejectedWith(
+        /Cannot be more than the max limit/
+      )
     })
   })
 
@@ -721,7 +735,7 @@ describe("TranchedPool", () => {
       it("does not allow you to withdraw if pool token is from a different pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        const {tranchedPool: otherTranchedPool} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+        const {poolAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("TranchedPool  withdraw")({
           usdcAddress: usdc.address,
           borrower,
           principalGracePeriodInDays,
@@ -732,7 +746,9 @@ describe("TranchedPool", () => {
           fundableAt,
           lateFeeApr,
           juniorFeePercent,
-          id: "newPool",
+        })
+        const otherTranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {
+          at: poolAddress,
         })
         await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
 
@@ -1658,7 +1674,7 @@ describe("TranchedPool", () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+      const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("TranchedPool tranching")({
         usdcAddress: usdc.address,
         borrower,
         interestApr,
@@ -1668,8 +1684,9 @@ describe("TranchedPool", () => {
         paymentPeriodInDays,
         fundableAt,
         lateFeeApr,
-        id: "TranchedPool",
-      }))
+      })
+      tranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {at: poolAddress})
+      creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
       await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
 
@@ -2139,7 +2156,9 @@ describe("TranchedPool", () => {
     beforeEach(async () => {
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+      const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(
+        "TranchedPool multiple drawdowns"
+      )({
         usdcAddress: usdc.address,
         borrower,
         interestApr,
@@ -2149,8 +2168,9 @@ describe("TranchedPool", () => {
         paymentPeriodInDays,
         fundableAt,
         lateFeeApr,
-        id: "TranchedPool",
-      }))
+      })
+      tranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {at: poolAddress})
+      creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
       await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
 
