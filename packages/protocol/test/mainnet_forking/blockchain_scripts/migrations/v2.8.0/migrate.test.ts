@@ -2132,7 +2132,6 @@ describe.skip("v2.8.0", async function () {
       })
     })
   })
-
   context("Router addresses", async () => {
     it("sets core protocol addresses", async () => {
       expect(await router.contracts(routingIdOf("GFI"))).to.eq("0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b")

@@ -160,7 +160,9 @@ contract ImplementationRepositoryTest is BaseTest {
     public
     afterInitializingRepository
     impersonating(owner)
-    assume(impl != owner && impl != initialImpl)
+    assume(impl != owner)
+    assume(impl != address(repo))
+    assume(impl != initialImpl)
     withFakeContract(impl)
   {
     repo.append(impl);
@@ -221,16 +223,13 @@ contract ImplementationRepositoryTest is BaseTest {
   function testThatItIsImpossibleToCreateOrphanImplementationsByAppending(
     address[5] calldata impls
   ) external impersonating(owner) afterInitializingRepository {
-    // no impls should be equal to another impl
     for (uint256 i = 0; i < impls.length - 1; i++) {
+      _withFakeContract(impls[i]);
+      vm.assume(impls[i] != address(0) && impls[i] != initialImpl);
+      // no impls should be equal to another impl
       for (uint256 j = i + 1; j < impls.length; j++) {
         vm.assume(impls[i] != impls[j]);
       }
-    }
-
-    for (uint256 i = 0; i < impls.length; i++) {
-      _withFakeContract(impls[i]);
-      vm.assume(!repo.has(impls[i]));
 
       repo.append(impls[i]);
       assertEq(repo.currentImplementation(), impls[i]);
@@ -298,6 +297,7 @@ contract ImplementationRepositoryTest is BaseTest {
     public
     impersonating(owner)
     withFakeContract(impl)
+    assume(impl != address(repo))
     afterInitializingRepository
     assume(!repo.has(impl))
   {
@@ -385,6 +385,7 @@ contract ImplementationRepositoryTest is BaseTest {
   }
 
   modifier withFakeContract(address x) {
+    vm.assume(x != address(0));
     _withFakeContract(x);
     _;
   }

@@ -57,6 +57,7 @@ export async function upgradeContracts({
   signer,
   deployFrom,
   deployer,
+  proxyOwner,
   logger = console.log,
 }: {
   contractsToUpgrade: string[]
@@ -64,6 +65,7 @@ export async function upgradeContracts({
   signer: string | Signer
   deployFrom: any
   deployer: ContractDeployer
+  proxyOwner?: string
   logger: Logger
 }): Promise<UpgradedContracts> {
   logger("Deploying accountant")
@@ -94,7 +96,7 @@ export async function upgradeContracts({
     await deployer.deploy(contractToDeploy, {
       from: deployFrom,
       proxy: {
-        owner: await getProtocolOwner(),
+        owner: proxyOwner || (await getProtocolOwner()),
       },
       libraries: dependencies[contractName],
     })

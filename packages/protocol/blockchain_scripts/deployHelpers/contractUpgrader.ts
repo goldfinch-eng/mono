@@ -17,7 +17,7 @@ export class ContractUpgrader {
     this.deployer = deployer
   }
 
-  async upgrade({contracts}: {contracts: string[]}): Promise<UpgradedContracts> {
+  async upgrade({contracts}: {contracts: string[]}, options: {proxyOwner?: string} = {}): Promise<UpgradedContracts> {
     const {gf_deployer} = await this.hre.getNamedAccounts()
     assertNonNullable(gf_deployer)
     const chainId = await currentChainId()
@@ -29,6 +29,7 @@ export class ContractUpgrader {
       signer: gf_deployer,
       deployFrom: gf_deployer,
       deployer: this.deployer,
+      proxyOwner: options.proxyOwner,
       logger: this.logger,
     })
     return upgradedContracts

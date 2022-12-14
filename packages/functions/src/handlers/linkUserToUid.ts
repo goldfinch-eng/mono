@@ -29,7 +29,7 @@ const getUniqueIdentityDeployment = (chainId: number) => {
   if (chainId === 1) {
     return UNIQUE_IDENTITY_MAINNET_DEPLOYMENT
   } else {
-    return deployedDevABIs?.[chainId]?.["localhost"]?.contracts?.["UniqueIdentity"]
+    return deployedDevABIs?.[chainId]?.[0]?.contracts?.["UniqueIdentity"]
   }
 }
 

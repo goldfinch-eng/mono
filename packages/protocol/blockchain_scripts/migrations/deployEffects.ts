@@ -55,16 +55,21 @@ export type Effects = {
   deferred?: PopulatedTransaction[]
 }
 
-export async function changeImplementations({contracts}: {contracts: UpgradedContracts}): Promise<Effects> {
+export async function changeImplementations(
+  {contracts}: {contracts: UpgradedContracts},
+  proxyOwner?: string
+): Promise<Effects> {
+  const proxyContractConnector = proxyOwner || (await getProtocolOwner())
   const partialTxs = await Promise.all(
     Object.keys(contracts).map(async (contractName) => {
       const contractHolder = contracts[contractName]
       assertNonNullable(contractHolder, "contractHolder is undefined")
-      const proxy = contractHolder.ProxyContract.connect(await getProtocolOwner())
+      const proxy = contractHolder.ProxyContract.connect(proxyContractConnector)
       // hardhat-deploy changed the method name in newer versions
       const upgradeMethod =
         proxy.populateTransaction["changeImplementation"] || proxy.populateTransaction["upgradeToAndCall"]
       assertNonNullable(upgradeMethod, `upgradeMethod is undefined for ${contractName}`)
+
       const unsignedTx = await upgradeMethod(contractHolder.UpgradedImplAddress, "0x")
       return unsignedTx
     })
@@ -246,6 +251,7 @@ const gnosisSafeAbi = [
 class DefenderMultisendEffects extends MultisendEffects {
   private readonly chainId: ChainId
   private readonly via?: string
+  private readonly safeConfig?: {safeAddress: string; executor: string}
   private readonly title: string
   private readonly description: string
 
@@ -254,15 +260,18 @@ class DefenderMultisendEffects extends MultisendEffects {
     via,
     title,
     description,
+    safeConfig,
   }: {
     chainId: ChainId
     via?: string
     title?: string
     description?: string
+    safeConfig?: {safeAddress: string; executor: string}
   }) {
     super()
     this.chainId = chainId
     this.via = via
+    this.safeConfig = safeConfig
     this.title = title ?? "Migrator multisend"
     this.description = description ?? "Executing migrator multisend"
   }
@@ -292,7 +301,7 @@ class DefenderMultisendEffects extends MultisendEffects {
    * Log the encoded Safe transaction so it can be easily simulated in tenderly.
    */
   private async logSafeTx(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
-    const safe = await getSafe({via: this.via})
+    const safe = await getSafe({via: this.via, safeConfig: this.safeConfig})
     const safeTx = await safe.createTransaction(...safeTxs)
     const safeTxHash = await safe.getTransactionHash(safeTx)
     const safeContract = new ethers.Contract(safe.getAddress(), gnosisSafeAbi)
@@ -344,7 +353,10 @@ class IndividualTxEffects extends MultisendEffects {
   }
 }
 
-async function getSafe(overrides?: {via?: string}): Promise<Safe> {
+async function getSafe(overrides?: {
+  via?: string
+  safeConfig?: {safeAddress: string; executor: string}
+}): Promise<Safe> {
   const via = overrides?.via === undefined ? await getProtocolOwner() : overrides.via
 
   let chainId = await hre.getChainId()
@@ -353,7 +365,7 @@ async function getSafe(overrides?: {via?: string}): Promise<Safe> {
     chainId = MAINNET_CHAIN_ID
   }
 
-  const safeConfig = SAFE_CONFIG[chainId]
+  const safeConfig = overrides?.safeConfig === undefined ? SAFE_CONFIG[chainId] : overrides.safeConfig
   assertNonNullable(safeConfig, `Unknown Gnosis Safe for chain id ${chainId}`)
   const {executor} = safeConfig
 
@@ -387,17 +399,24 @@ export async function getDeployEffects(params?: {
   via?: string
   title?: string
   description?: string
+  safeConfig?: {safeAddress: string; executor: string}
 }): Promise<DeployEffects> {
   const via = params?.via
-
+  const safeConfig = params?.safeConfig
   if (isMainnetForking()) {
-    const safe = await getSafe({via})
+    const safe = await getSafe({via, safeConfig})
     return new MainnetForkingMultisendEffects({safe})
   } else if ((await currentChainId()) === LOCAL_CHAIN_ID) {
     return new IndividualTxEffects()
   } else {
     const chainId = await hre.getChainId()
     assertIsChainId(chainId)
-    return new DefenderMultisendEffects({chainId, via, title: params?.title, description: params?.description})
+    return new DefenderMultisendEffects({
+      chainId,
+      via,
+      title: params?.title,
+      description: params?.description,
+      safeConfig,
+    })
   }
 }
