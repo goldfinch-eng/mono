@@ -5,10 +5,7 @@ import { CreditLine } from "@/lib/graphql/generated";
 
 import { Heading, Icon } from "../../components/design-system";
 import { formatCrypto, formatPercent } from "../../lib/format";
-import {
-  SupportedCrypto,
-  useBorrowPageQuery,
-} from "../../lib/graphql/generated";
+import { useBorrowPageQuery } from "../../lib/graphql/generated";
 import { useWallet } from "../../lib/wallet";
 import { CreditLineCard } from "./credit-line-card";
 
@@ -155,14 +152,14 @@ export default function PoolPage() {
             const id = creditLine.id;
 
             const creditLineLimit = formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: creditLine.maxLimit,
             });
 
             const interest = formatPercent(creditLine.interestAprDecimal);
 
             const nextPayment = formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: creditLine.remainingPeriodDueAmount,
             });
 
