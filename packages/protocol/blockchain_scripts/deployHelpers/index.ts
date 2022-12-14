@@ -45,6 +45,10 @@ const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e5
 const LOCAL = "localhost"
 const MAINNET = "mainnet"
 
+const POOL_VERSION1 = "0.1.0" // TranchedPool and CreditLine
+const POOL_VERSION2 = "1.0.0" // TranchedPoolV2 and CreditLineV2
+const POOL_VERSIONS: Array<string> = [POOL_VERSION1, POOL_VERSION2]
+
 export type ChainName = typeof LOCAL | typeof MAINNET
 
 export const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -424,6 +428,9 @@ function fixProvider(providerGiven: any): any {
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
+  POOL_VERSION1,
+  POOL_VERSION2,
+  POOL_VERSIONS,
   MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS,
   MAINNET_COMP_ADDRESS,
