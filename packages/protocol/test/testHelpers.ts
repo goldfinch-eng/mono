@@ -15,6 +15,8 @@ import {
   OWNER_ROLE,
   getTruffleContract,
   getProtocolOwner,
+  POOL_VERSION1,
+  POOL_VERSION2,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -45,7 +47,7 @@ import {
   ERC20SplitterInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
@@ -59,6 +61,11 @@ const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
+import {getTranchedPoolImplName} from "../blockchain_scripts/baseDeploy/deployTranchedPool"
+import {poolVersionToCreditLines} from "../blockchain_scripts/baseDeploy/deployClImplementation"
+import {TestTranchedPoolInstance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle"
+import {TestTranchedPoolV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/TestTranchedPoolV2"
+import {CreditLineV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/CreditLineV2"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -492,6 +499,25 @@ async function getBalance(address, erc20) {
     return new BN(await erc20.balanceOf(address))
   }
   return new BN(await web3.eth.getBalance(address))
+}
+
+export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddress: string, poolVersion: string) {
+  const {testContractName: clContractName} = poolVersionToCreditLines[poolVersion]
+  assertIsString(clContractName)
+
+  const poolContractName = getTranchedPoolImplName(poolVersion)
+
+  if (poolVersion === POOL_VERSION1) {
+    const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>(poolContractName, {at: poolAddress})
+    const creditLine = await getTruffleContract<CreditLineInstance>(clContractName, {at: clAddress})
+    return {tranchedPool, creditLine}
+  } else if (poolVersion === POOL_VERSION2) {
+    const tranchedPool = await getTruffleContract<TestTranchedPoolV2Instance>(poolContractName, {at: poolAddress})
+    const creditLine = await getTruffleContract<CreditLineV2Instance>(clContractName, {at: clAddress})
+    return {tranchedPool, creditLine}
+  } else {
+    throw new Error(`Invalid pool version ${poolVersion}`)
+  }
 }
 
 const createPoolWithCreditLine = async ({
