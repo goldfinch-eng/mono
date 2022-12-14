@@ -1,5 +1,11 @@
 import hre, {ethers} from "hardhat"
-import {ContractDeployer, getEthersContract, getPauserAdmin, getProtocolOwner} from "../../deployHelpers"
+import {
+  ContractDeployer,
+  getEthersContract,
+  getPauserAdmin,
+  getProtocolOwner,
+  populateTxAndLog,
+} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 import {AccessControl} from "@goldfinch-eng/protocol/typechain/ethers/contracts/cake"
 import {
@@ -52,13 +58,6 @@ const EPOCH_SECONDS = 7 * 24 * 60 * 60
 
 const MEMBERSHIP_NFT_BASE_URI =
   "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net/membershipTokenMetadata/"
-
-const populateTxAndLog = (tx: Promise<PopulatedTransaction>, log: string): Promise<PopulatedTransaction> => {
-  return tx.then((tx) => {
-    console.log(log)
-    return tx
-  })
-}
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)

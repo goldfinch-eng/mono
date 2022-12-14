@@ -17,7 +17,7 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import BN from "bn.js"
-import {BaseContract, Contract, Signer} from "ethers"
+import {BaseContract, Contract, PopulatedTransaction, Signer} from "ethers"
 import hre, {artifacts, ethers, getChainId, getNamedAccounts, web3} from "hardhat"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {GoldfinchConfig} from "../../typechain/ethers"
@@ -425,6 +425,13 @@ function fixProvider(providerGiven: any): any {
   return providerGiven
 }
 
+const populateTxAndLog = (tx: Promise<PopulatedTransaction>, log: string): Promise<PopulatedTransaction> => {
+  return tx.then((tx) => {
+    console.log(log)
+    return tx
+  })
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -468,4 +475,5 @@ export {
   ContractDeployer,
   ContractUpgrader,
   fixProvider,
+  populateTxAndLog,
 }

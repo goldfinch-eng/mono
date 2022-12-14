@@ -105,10 +105,6 @@ contract SeniorPoolBaseTest is BaseTest {
     poolTokens = new PoolTokens();
     poolTokens.__initialize__(GF_OWNER, gfConfig);
 
-    // StakingRewards setup
-    StakingRewards stakingRewards = new StakingRewards();
-    stakingRewards.__initialize__(GF_OWNER, gfConfig);
-
     // BackerRewards setup
     BackerRewards backerRewards = new BackerRewards();
     backerRewards.__initialize__(GF_OWNER, gfConfig);
@@ -131,7 +127,6 @@ contract SeniorPoolBaseTest is BaseTest {
     );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation), address(clImpl));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(stakingRewards));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), LEVERAGE_RATIO);
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds), TP_DRAWDOWN_PERIOD);
@@ -158,7 +153,7 @@ contract SeniorPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(poolTokens));
     fuzzHelper.exclude(address(TranchingLogic));
     fuzzHelper.exclude(address(Accountant));
-    fuzzHelper.exclude(address(stakingRewards));
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
     fuzzHelper.exclude(address(backerRewards));
     fuzzHelper.exclude(address(uniqueIdentity));
 

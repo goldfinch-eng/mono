@@ -701,10 +701,10 @@ export function dbg<T>(x: T): T {
 
 // Some staked fidu holders that can be used in mainnet forking tests
 export const stakedFiduHolders = [
-  // ~300K FIDU
+  // ~452 FIDU
   {
-    address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
-    stakingRewardsTokenId: 2118,
+    address: "0x4f59359C1010E47dAEaFab784dCfd13866DcB221",
+    stakingRewardsTokenId: 2119,
   },
   // ~19k FIDU
   {

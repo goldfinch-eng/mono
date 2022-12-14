@@ -9,7 +9,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
   function testBurnDecreasesBalance(
     address recipient,
     uint256 amountToMint
-  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(recipient) isNotContract(recipient) impersonating(GF_OWNER) {
     amountToMint = bound(amountToMint, 1, type(uint256).max);
     uid._mintForTest(recipient, 0, amountToMint, bytes(""));
     uid._burnForTest(recipient, 0);

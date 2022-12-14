@@ -4,6 +4,7 @@ pragma solidity 0.8.4;
 import {TestUniqueIdentity} from "../../TestUniqueIdentity.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {UniqueIdentityBaseTest} from "./BaseUniqueIdentity.t.sol";
+import {FuzzingHelper} from "../../helpers/FuzzingHelper.t.sol";
 
 contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
   function testRevertsForTokenOwner(

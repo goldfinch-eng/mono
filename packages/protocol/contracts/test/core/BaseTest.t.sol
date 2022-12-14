@@ -10,6 +10,7 @@ import {FuzzingHelper} from "../helpers/FuzzingHelper.t.sol";
 import {IProtocolHelper} from "./IProtocolHelper.sol";
 
 abstract contract BaseTest is Test {
+  address internal constant PROTOCOL_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
   address internal constant GF_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2; // random address
 
   address internal constant TREASURY = 0xE57D6a0996813AA066ab8F1328DaCaff761db5D7; // random address
@@ -47,6 +48,7 @@ abstract contract BaseTest is Test {
     fuzzHelper.exclude(address(protocol.gfFactory()));
     fuzzHelper.exclude(address(protocol.fidu()));
     fuzzHelper.exclude(address(protocol.gfConfig()));
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
     // Forge VM
     fuzzHelper.exclude(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // Forge Create2Deployer
@@ -137,6 +139,17 @@ abstract contract BaseTest is Test {
   modifier onlyAllowListed(address _address) {
     vm.assume(fuzzHelper.isAllowed(_address));
     _;
+  }
+
+  modifier isNotContract(address _address) {
+    vm.assume(fuzzHelper.isNotContract(_address));
+    _;
+  }
+
+  modifier withMsgSender(address sender) {
+    vm.startPrank(sender);
+    _;
+    vm.stopPrank();
   }
 
   modifier assume(bool stmt) {

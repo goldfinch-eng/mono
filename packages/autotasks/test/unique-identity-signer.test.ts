@@ -8,10 +8,19 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol
 import {ethers, Signer, Wallet} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
-import * as utils from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  USAccreditedIndividualsList,
+  USAccreditedEntitiesList,
+  NonUSEntitiesList,
+  KYC,
+  FetchKYCFunction,
+  caseInsensitiveIncludes,
+  presignedBurnMessage,
+} from "@goldfinch-eng/utils"
+
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../unique-identity-signer"
-import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
@@ -19,13 +28,13 @@ import axios from "axios"
 
 const TEST_TIMEOUT = 30000
 
-function fetchStubbedKycStatus(kyc: utils.KYC): utils.FetchKYCFunction {
+function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
   return async (_) => {
     return Promise.resolve(kyc)
   }
 }
 
-const fetchEligibleKycStatus: utils.FetchKYCFunction = fetchStubbedKycStatus({
+const fetchEligibleKycStatus: FetchKYCFunction = fetchStubbedKycStatus({
   status: "approved",
   countryCode: "CA",
   residency: "non-us",
@@ -50,6 +59,7 @@ const setupTest = deployments.createFixture(async ({deployments, getNamedAccount
 describe("unique-identity-signer", () => {
   let owner: string
   let anotherUser: string
+  let anotherUser2: string
   let uniqueIdentity: TestUniqueIdentityInstance
   let ethersUniqueIdentity: UniqueIdentity
   let signer: Signer
@@ -59,12 +69,12 @@ describe("unique-identity-signer", () => {
   let nonUSIdType
   let usAccreditedIdType
   let usNonAccreditedIdType
-  let fetchKYCFunction: utils.FetchKYCFunction
+  let fetchKYCFunction: FetchKYCFunction
   const sandbox = sinon.createSandbox()
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({uniqueIdentity, owner, anotherUser} = await setupTest())
+    ;({uniqueIdentity, owner, anotherUser, anotherUser2} = await setupTest())
     signer = hre.ethers.provider.getSigner(await getProtocolOwner())
     anotherUserSigner = hre.ethers.provider.getSigner(anotherUser)
     ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UNIQUE_IDENTITY_ABI, signer) as UniqueIdentity
@@ -108,7 +118,7 @@ describe("unique-identity-signer", () => {
         "x-goldfinch-signature-plaintext": "Sign in to Goldfinch: 3",
         "x-goldfinch-signature-block-num": "3",
       }
-      const fetchFunction: utils.FetchKYCFunction = ({auth, chainId}) => {
+      const fetchFunction: FetchKYCFunction = ({auth, chainId}) => {
         // No other headers should be present
         expect(auth).to.deep.equal(expectedAuth)
         return fetchEligibleKycStatus({auth, chainId})
@@ -395,7 +405,7 @@ describe("unique-identity-signer", () => {
             // mint non-accredited investor
             await uniqueIdentity.mint(usNonAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
 
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
@@ -403,7 +413,8 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            const burnPresigMessage = utils.presignedBurnMessage(
+
+            const burnPresigMessage = presignedBurnMessage(
               anotherUser,
               usNonAccreditedIdType.toNumber(),
               validExpiryTimestamp,
@@ -421,6 +432,29 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
 
+          it("returns a signature that can be used to mintTo", async () => {
+            await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
+
+            const result = await uniqueIdentitySigner.main({
+              auth: validAuthAnotherUser,
+              signer,
+              network,
+              mintToAddress: anotherUser2,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+
+            // mint non-accredited investor
+            await uniqueIdentity.mintTo(anotherUser2, usNonAccreditedIdType, result.expiresAt, result.signature, {
+              from: anotherUser,
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
+            })
+
+            expect(await uniqueIdentity.balanceOf(anotherUser2, nonUSIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser2, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser2, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
+          }).timeout(TEST_TIMEOUT)
+
           it("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
             sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
@@ -430,6 +464,7 @@ describe("unique-identity-signer", () => {
                 signer,
                 network,
                 uniqueIdentity: ethersUniqueIdentity,
+                mintToAddress: anotherUser2,
                 fetchKYCStatus: fetchKYCFunction,
               })
             ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
@@ -457,14 +492,14 @@ describe("unique-identity-signer", () => {
             // mint accredited investor
             await uniqueIdentity.mint(usAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(1))
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            const burnPresigMessage = utils.presignedBurnMessage(
+            const burnPresigMessage = presignedBurnMessage(
               anotherUser,
               usAccreditedIdType.toNumber(),
               validExpiryTimestamp,
@@ -482,6 +517,26 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
 
+          it("returns a signature that can be used to mintTo", async () => {
+            const result = await uniqueIdentitySigner.main({
+              auth: validAuthAnotherUser,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              mintToAddress: anotherUser2,
+              fetchKYCStatus: fetchKYCFunction,
+              getIDType: getUsAccreditedIDType,
+            })
+            // mint accredited investor
+            await uniqueIdentity.mintTo(anotherUser2, usAccreditedIdType, result.expiresAt, result.signature, {
+              from: anotherUser,
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
+            })
+            expect(await uniqueIdentity.balanceOf(anotherUser2, nonUSIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser2, usAccreditedIdType)).to.bignumber.eq(new BN(1))
+            expect(await uniqueIdentity.balanceOf(anotherUser2, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          }).timeout(TEST_TIMEOUT)
+
           it("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
             sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
@@ -491,6 +546,7 @@ describe("unique-identity-signer", () => {
                 signer,
                 network,
                 uniqueIdentity: ethersUniqueIdentity,
+                mintToAddress: anotherUser2,
                 fetchKYCStatus: fetchKYCFunction,
                 getIDType: getUsAccreditedIDType,
               })
@@ -517,14 +573,14 @@ describe("unique-identity-signer", () => {
 
           await uniqueIdentity.mint(0, result.expiresAt, result.signature, {
             from: anotherUser,
-            value: web3.utils.toWei("0.00083"),
+            value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
           })
           expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(1))
           expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
 
           // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          const burnPresigMessage = utils.presignedBurnMessage(
+          const burnPresigMessage = presignedBurnMessage(
             anotherUser,
             0,
             validExpiryTimestamp,
@@ -540,6 +596,33 @@ describe("unique-identity-signer", () => {
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
         }).timeout(TEST_TIMEOUT)
 
+        it("returns a signature that can be used to mintTo", async () => {
+          const auth = {
+            "x-goldfinch-address": anotherUser,
+            "x-goldfinch-signature": await anotherUserSigner.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+            "x-goldfinch-signature-block-num": `${latestBlockNum}`,
+            "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
+          }
+          await uniqueIdentity.setSupportedUIDTypes([0], [true])
+
+          const result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            mintToAddress: anotherUser2,
+            fetchKYCStatus: fetchKYCFunction,
+          })
+
+          await uniqueIdentity.mintTo(anotherUser2, 0, result.expiresAt, result.signature, {
+            from: anotherUser,
+            value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
+          })
+          expect(await uniqueIdentity.balanceOf(anotherUser2, 0)).to.bignumber.eq(new BN(1))
+          expect(await uniqueIdentity.balanceOf(anotherUser2, 1)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(anotherUser2, 2)).to.bignumber.eq(new BN(0))
+        }).timeout(TEST_TIMEOUT)
+
         it("throws an error if linking their KYC to their recipient fails", async () => {
           sandbox.restore()
           sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
@@ -549,6 +632,7 @@ describe("unique-identity-signer", () => {
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
+              mintToAddress: anotherUser2,
               fetchKYCStatus: fetchKYCFunction,
             })
           ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
@@ -575,16 +659,16 @@ describe("unique-identity-signer", () => {
       const testAddressUppwerCase = testAddress.toUpperCase()
       const notInTheArray = "0X8F40DCD6ba523561a8a497001896330965520000"
 
-      expect(utils.caseInsensitiveIncludes(data, testAddress)).to.be.true
-      expect(utils.caseInsensitiveIncludes(data, testAddressLowerCase)).to.be.true
-      expect(utils.caseInsensitiveIncludes(data, testAddressUppwerCase)).to.be.true
-      expect(utils.caseInsensitiveIncludes(data, notInTheArray)).to.be.false
+      expect(caseInsensitiveIncludes(data, testAddress)).to.be.true
+      expect(caseInsensitiveIncludes(data, testAddressLowerCase)).to.be.true
+      expect(caseInsensitiveIncludes(data, testAddressUppwerCase)).to.be.true
+      expect(caseInsensitiveIncludes(data, notInTheArray)).to.be.false
     })
   })
 
   describe("eligible json files", () => {
     it("checks for duplicates", () => {
-      const data = [utils.USAccreditedIndividualsList, utils.USAccreditedEntitiesList, utils.NonUSEntitiesList]
+      const data = [USAccreditedIndividualsList, USAccreditedEntitiesList, NonUSEntitiesList]
       data.reduce((acc, curr) => {
         if (acc.some((x) => curr.includes(x))) {
           throw new Error("Array intersection")

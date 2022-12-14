@@ -33,15 +33,12 @@ contract GoGoSeniorPoolTest is GoBaseTest {
   }
 
   function testGoSeniorPoolReturnsTrueForStakignRewards() public impersonating(GF_OWNER) {
-    StakingRewards stakingRewards = new StakingRewards();
-    stakingRewards.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(stakingRewards));
-    assertTrue(go.goSeniorPool(address(stakingRewards)));
+    assertTrue(go.goSeniorPool(address(protocol.stakingRewards())));
   }
 
   function testGoSeniorPoolReturnsTrueIfUserHasNonUsUidAndNotLegacyGoListed(
     address user
-  ) public onlyAllowListed(user) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(user) impersonating(GF_OWNER) isNotContract(user) {
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
       uint256 uidType = seniorPoolIdTypes[i];
       uniqueIdentity._mintForTest(user, uidType, 1, bytes(""));

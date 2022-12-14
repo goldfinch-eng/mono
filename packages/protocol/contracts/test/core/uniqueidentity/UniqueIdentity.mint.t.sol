@@ -10,7 +10,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     address recipient,
     uint256 uidType,
     uint256 amountToMint
-  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) isNotContract(recipient) {
     // Need to set the uidType to be supported before mint
     uint256[] memory uidTypes = new uint256[](1);
     uidTypes[0] = uidType;
@@ -26,7 +26,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   function testSigWithWrongUidTypeReverts(
     uint256 signerKey,
     address recipient
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
@@ -52,7 +52,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 invalidChainId
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     vm.assume(invalidChainId != block.chainid);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -79,7 +79,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     address invalidUidAddress
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     vm.assume(invalidUidAddress != address(uid));
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -105,7 +105,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 mintTime
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     uint256 expiresAt = block.timestamp + 1 days;
     mintTime = bound(mintTime, expiresAt, type(uint256).max);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
@@ -138,7 +138,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   function testRevertsForSignerWithoutSignerRole(
     uint256 signerKey,
     address recipient
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     address signer = vm.addr(signerKey);
     uint256 expiresAt = block.timestamp + 1 days;
     bytes memory sig = uidSign({
@@ -161,7 +161,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   function testReusedSigReverts(
     uint256 signerKey,
     address recipient
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
@@ -192,7 +192,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   function testMintsForSignerWithSignerRole(
     uint256 signerKey,
     address recipient
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
@@ -219,7 +219,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 uidType
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     uidType = bound(uidType, 5, type(uint256).max);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -245,7 +245,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 uidType
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     // Valid uidTypes are 0...4
     uidType = bound(uidType, 0, 4);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
@@ -274,7 +274,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 payment
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     payment = bound(payment, uid.MINT_COST_PER_TOKEN(), type(uint256).max);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -302,7 +302,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 payment
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     payment = bound(payment, 0, uid.MINT_COST_PER_TOKEN() - 1);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -328,7 +328,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 uidType
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     // Valid uidTypes are 0...4
     uidType = bound(uidType, 0, 4);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
@@ -370,7 +370,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 uidType
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) isNotContract(recipient) onlyAllowListed(recipient) {
     uidType = bound(uidType, 0, 4);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
@@ -399,7 +399,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   function testRevertsWhenPaused(
     uint256 signerKey,
     address recipient
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) isNotContract(recipient) {
     address signer = vm.addr(signerKey);
     _startImpersonation(GF_OWNER);
     uid.grantRole(TestConstants.SIGNER_ROLE, signer);

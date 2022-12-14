@@ -155,6 +155,7 @@ Pick up the transaction hash from the output of the test and run export as above
 - Run `npm test` to run tests for all packages.
 - Note if you want to only run tests for a particular test, then use `it.only` or `describe.only` inside the test file itself, which will focus to only those tests.
 - If you want to run tests for a specific package, say just the protocol contracts, you can use lerna's `--scope` flag e.g. `npm run test -- --scope @goldfinch-eng/protocol`.
+- Run `npm run test:coverage` in the protocol package to generate a coverage report for smart contract typescript tests. You can specify a set of files with a glob pattern, e.g. `npm run test:coverage -- --testfiles test/TranchedPool.test.ts`. See [soliditiy-coverage](https://github.com/sc-forks/solidity-coverage) for more info.
 
 ### Testing UID Locally
 - Start the app

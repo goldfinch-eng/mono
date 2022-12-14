@@ -16,7 +16,6 @@ import {LeverageRatioStrategy} from "../../../protocol/core/LeverageRatioStrateg
 import {FixedLeverageRatioStrategy} from "../../../protocol/core/FixedLeverageRatioStrategy.sol";
 import {WithdrawalRequestToken} from "../../../protocol/core/WithdrawalRequestToken.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
-import {StakingRewards} from "../../../rewards/StakingRewards.sol";
 import {BackerRewards} from "../../../rewards/BackerRewards.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
@@ -111,12 +110,6 @@ contract TranchedPoolV2BaseTest is BaseTest {
     poolTokens.__initialize__(GF_OWNER, gfConfig);
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
     fuzzHelper.exclude(address(poolTokens));
-
-    // StakingRewards setup
-    StakingRewards stakingRewards = new StakingRewards();
-    stakingRewards.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(stakingRewards));
-    fuzzHelper.exclude(address(stakingRewards));
 
     // BackerRewards setup
     BackerRewards backerRewards = new BackerRewards();
