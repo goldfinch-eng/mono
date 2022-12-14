@@ -84,6 +84,11 @@ contract TranchedPoolV2BaseTest is BaseTest {
     // WithdrawalRequestToken setup
     requestTokens = new WithdrawalRequestToken();
     requestTokens.__initialize__(GF_OWNER, gfConfig);
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
+      address(requestTokens)
+    );
+    fuzzHelper.exclude(address(requestTokens));
 
     // UniqueIdentity setup
     uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
