@@ -145,12 +145,6 @@ abstract contract BaseTest is Test {
     _;
   }
 
-  modifier withMsgSender(address sender) {
-    vm.startPrank(sender);
-    _;
-    vm.stopPrank();
-  }
-
   modifier assume(bool stmt) {
     vm.assume(stmt);
     _;

@@ -63,7 +63,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// according to the elapsed time and there should be no principal accrued
   function test_accrual_timeLtTermEndTime_linearInterest_and_noPrincipal(
     uint256 _timestamp
-  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
+  ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
     _timestamp = bound(
       _timestamp,
       block.timestamp,
@@ -90,7 +90,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// to the elapsed time and there should be 100% of principal accrued
   function test_accrual_timeGteTermEndTime_linearInterest_and_allPrincipal(
     uint256 _timestamp
-  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
+  ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
     _timestamp = bound(
       _timestamp,
       block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY,
@@ -120,7 +120,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 _timestamp
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
     withNextDueTime(cl, block.timestamp + paymentPeriodInDays * TestConstants.SECONDS_PER_DAY)
   {
@@ -150,7 +150,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 _timestamp
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
     withNextDueTime(cl, block.timestamp + paymentPeriodInDays * TestConstants.SECONDS_PER_DAY)
   {
@@ -187,7 +187,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 _timestamp
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
     withNextDueTime(cl, cl.termEndTime())
   {
@@ -217,7 +217,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 _timestamp
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withLateFeeApr(cl, lateFeeApr)
     withNextDueTime(cl, cl.termEndTime())
   {
@@ -249,7 +249,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// @notice Late fee should kick in based on my nextDueTime and not be affected by my lastFullPaymentTime
   function test_lateFeeStart_unchanged_on_lastFullPaymentTime_change(
     uint256 _timestamp
-  ) public withMsgSender(PROTOCOL_OWNER) withLateFeeApr(cl, lateFeeApr) {
+  ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, lateFeeApr) {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
     _timestamp = bound(_timestamp, nextDueTime + lateFeeGracePeriod, cl.termEndTime());
@@ -277,7 +277,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// then the principal should be written down proportionally to how close we are to maxDaysLate
   function test_writedown_when_paymentPeriod_gt_gracePeriodInDays()
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withBalance(cl, usdcVal(10))
     withInterestApr(cl, 30000000000000000)
     withPaymentPeriodInDays(cl, 90)
@@ -316,7 +316,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 daysOfInterestOwed
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withPaymentPeriodInDays(cl, 30)
     withTermEndTime(cl, block.timestamp)
   {
@@ -351,7 +351,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 daysOfInterestOwed
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withPaymentPeriodInDays(cl, 30)
     withTermEndTime(cl, block.timestamp)
   {
@@ -403,7 +403,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 daysOfInterestOwed
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withPaymentPeriodInDays(cl, 30)
     withTermEndTime(cl, block.timestamp)
   {
@@ -436,7 +436,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// even if there is interest/principal owed
   function test_if_zero_balance_then_zero_writedown(
     uint256 daysOfInterestOwed
-  ) public withMsgSender(PROTOCOL_OWNER) withBalance(cl, 0) withTermEndTime(cl, block.timestamp) {
+  ) public impersonating(PROTOCOL_OWNER) withBalance(cl, 0) withTermEndTime(cl, block.timestamp) {
     uint256 gracePeriodInDays = 15;
     uint256 maxDaysLate = 40;
     vm.assume(daysOfInterestOwed > gracePeriodInDays && daysOfInterestOwed <= 500);
@@ -455,7 +455,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// grace period
   function test_writedown_uses_timestamp_to_check_if_in_gracecPeriod_past_termEndTime()
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
     withInterestOwed(
       cl,
@@ -489,7 +489,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// the same as if we crossed an arbitrary point in time
   function test_writedown_no_change_when_you_just_cross_termEndTime()
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withBalance(cl, usdcVal(10))
     withTermEndTime(cl, block.timestamp + 2)
     withInterestApr(cl, 30000000000000000)
@@ -537,7 +537,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 daysAfterTermEndTime
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
     withInterestOwed(
       cl,
@@ -590,7 +590,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 daysAfterTermEndTime
   )
     public
-    withMsgSender(PROTOCOL_OWNER)
+    impersonating(PROTOCOL_OWNER)
     withTermEndTime(cl, block.timestamp)
     withInterestOwed(
       cl,
@@ -621,7 +621,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// @notice Past termEndTime nothing should be written down if the credit line has no balance
   function test_no_writedown_for_zero_balance_past_termEndTime(
     uint256 daysAfterTermEndTime
-  ) public withMsgSender(PROTOCOL_OWNER) withTermEndTime(cl, block.timestamp) withBalance(cl, 0) {
+  ) public impersonating(PROTOCOL_OWNER) withTermEndTime(cl, block.timestamp) withBalance(cl, 0) {
     uint256 gracePeriodInDays = 30;
     uint256 maxDaysLate = 120;
     daysAfterTermEndTime = bound(daysAfterTermEndTime, gracePeriodInDays, 500);

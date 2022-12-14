@@ -35,6 +35,7 @@ contract GoBaseTest is BaseTest {
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(go));
     fuzzHelper.exclude(address(uniqueIdentity));
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
 
     _stopImpersonation();
   }
