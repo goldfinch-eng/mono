@@ -3,12 +3,13 @@ import { BigNumber, FixedNumber } from "ethers";
 
 import { APY_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "@/constants";
 import { getContract } from "@/lib/contracts";
+import { roundUpPenny } from "@/lib/format";
 import { CreditLine } from "@/lib/graphql/generated";
 import { getProvider } from "@/lib/wallet";
 
-const isCreditLinePaymentLate = async (
+async function isCreditLinePaymentLate(
   creditLine: CreditLine
-): Promise<boolean> => {
+): Promise<boolean> {
   // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
   const provider = await getProvider();
 
@@ -25,13 +26,26 @@ const isCreditLinePaymentLate = async (
     secondsSinceLastFullPayment >
     creditLine.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
   );
-};
+}
 
-const calculateInterestOwed = async (
+async function calculateInterestOwed(
   creditLine: CreditLine
-): Promise<BigNumber> => {
-  if (await isCreditLinePaymentLate(creditLine)) {
-    return creditLine.interestOwed;
+): Promise<BigNumber> {
+  const provider = await getProvider();
+
+  // It seems like The Graph is not properly updating CreditLine.interestOwed - fetch from contract
+  const creditLineContract = await getContract({
+    name: "CreditLine",
+    address: creditLine.id,
+    provider,
+    useSigner: false,
+  });
+  const isLate = await isCreditLinePaymentLate(creditLine);
+
+  const interestOwed = await creditLineContract.interestOwed();
+
+  if (isLate) {
+    return interestOwed;
   }
 
   const annualRate = creditLine.interestAprDecimal;
@@ -45,12 +59,12 @@ const calculateInterestOwed = async (
     .mulUnsafe(interestAccrualRate)
     .mulUnsafe(FixedNumber.from(expectedElapsedSeconds));
 
-  const currentInterestOwed = creditLine.interestOwed
+  const currentInterestOwed = interestOwed
     .add(BigNumber.from(expectedAdditionalInterest))
     .div(APY_DECIMALS);
 
   return currentInterestOwed;
-};
+}
 
 export const creditLineResolvers: Resolvers[string] = {
   async isLate(creditLine: CreditLine): Promise<boolean> {
@@ -79,7 +93,9 @@ export const creditLineResolvers: Resolvers[string] = {
       return BigNumber.from(0);
     }
 
-    return remainingPeriodDueAmount;
+    // We need to round up here to ensure the creditline is always fully paid,
+    // this does mean the borrower may overpay by a penny max each time.
+    return roundUpPenny(remainingPeriodDueAmount);
   },
 
   // The total remaining amount owed for the loan term
@@ -96,6 +112,8 @@ export const creditLineResolvers: Resolvers[string] = {
       return BigNumber.from(0);
     }
 
-    return remainingTotalDueAmount;
+    // We need to round up here to ensure the creditline is always fully paid,
+    // this does mean the borrower may overpay by a penny max each time.
+    return roundUpPenny(remainingTotalDueAmount);
   },
 };

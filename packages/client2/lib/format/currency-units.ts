@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 
 import {
   USDC_DECIMALS,
@@ -100,4 +100,17 @@ export function stringToCryptoAmount(
     cryptoPrecision[token]
   );
   return { token, amount };
+}
+
+export function roundUpPenny(amount: BigNumber) {
+  const float = cryptoToFloat({
+    token: "USDC",
+    amount: amount,
+  });
+  const pennyRoundedUpFloat = Math.ceil(float * 100) / 100;
+  const result = BigNumber.from(
+    pennyRoundedUpFloat * Math.pow(10, USDC_DECIMALS)
+  );
+
+  return result;
 }
