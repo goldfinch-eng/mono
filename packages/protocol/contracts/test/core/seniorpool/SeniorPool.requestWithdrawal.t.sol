@@ -258,29 +258,28 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     assertEq(liquidatedEpoch.fiduLiquidated, requestAmount1InFidu);
   }
 
-  // TODO - Uncomment these tests when the Go changes are merged - https://github.com/warbler-labs/mono/pull/800
+  function testRequestWithdrawalSucceedsWhenCallerIsErc1155ApprovedForValidUid(
+    uint256 amount,
+    uint256 validUid
+  ) public {
+    validUid = bound(validUid, 1, 4);
+    vm.assume(validUid != 2);
+    amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
+    approveTokensMaxAmount(address(this));
+    mintUid(address(this), validUid, 1, "");
+    fundAddress(address(this), amount);
+    depositToSpFrom(address(this), amount);
 
-  // function testRequestWithdrawalSucceedsWhenCallerIsErc1155ApprovedForValidUid(uint256 amount, uint256 validUid)
-  //   public
-  // {
-  //   validUid = bound(validUid, 1, 4);
-  //   vm.assume(validUid != 2);
-  //   amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
-  //   approveTokensMaxAmount(address(this));
-  //   mintUid(address(this), validUid, 1, "");
-  //   fundAddress(address(this), amount);
-  //   depositToSpFrom(address(this), amount);
+    TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
+    approveForAll(address(this), address(caller), true);
+    approveTokensMaxAmount(address(caller));
 
-  //   TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
-  //   approveForAll(address(this), address(caller), true);
-  //   approveTokensMaxAmount(address(caller));
+    uint256 shares = sp.getNumShares(amount);
+    transferFidu(address(this), address(caller), shares);
 
-  //   uint256 shares = sp.getNumShares(amount);
-  //   transferFidu(address(this), address(caller), shares);
+    _startImpersonation(address(this), address(this));
+    uint256 requestToken = caller.requestWithdrawal(shares);
 
-  //   _startImpersonation(address(this), address(this));
-  //   uint256 requestToken = caller.requestWithdrawal(shares);
-
-  //   assertEq(address(caller), requestTokens.ownerOf(requestToken));
-  // }
+    assertEq(address(caller), requestTokens.ownerOf(requestToken));
+  }
 }

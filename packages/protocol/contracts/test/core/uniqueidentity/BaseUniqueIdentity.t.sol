@@ -32,7 +32,19 @@ contract UniqueIdentityBaseTest is BaseTest {
     address recipient,
     uint256 uidType,
     uint256 amount
-  ) internal impersonating(GF_OWNER) isNotContract(recipient) {
+  ) internal impersonating(GF_OWNER) {
+    mint(recipient, uidType, amount, true);
+  }
+
+  function mint(
+    address recipient,
+    uint256 uidType,
+    uint256 amount,
+    bool assumeNotContract
+  ) internal impersonating(GF_OWNER) {
+    if (assumeNotContract) {
+      vm.assume(fuzzHelper.isNotContract(recipient));
+    }
     uid._mintForTest(recipient, uidType, amount, "");
   }
 

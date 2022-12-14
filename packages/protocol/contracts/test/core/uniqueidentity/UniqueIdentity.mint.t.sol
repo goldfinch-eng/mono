@@ -10,7 +10,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     address recipient,
     uint256 uidType,
     uint256 amountToMint
-  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(recipient) impersonating(GF_OWNER) isNotContract(recipient) {
     // Need to set the uidType to be supported before mint
     uint256[] memory uidTypes = new uint256[](1);
     uidTypes[0] = uidType;

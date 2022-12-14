@@ -38,7 +38,7 @@ contract GoGoSeniorPoolTest is GoBaseTest {
 
   function testGoSeniorPoolReturnsTrueIfUserHasNonUsUidAndNotLegacyGoListed(
     address user
-  ) public onlyAllowListed(user) impersonating(GF_OWNER) {
+  ) public onlyAllowListed(user) impersonating(GF_OWNER) isNotContract(user) {
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
       uint256 uidType = seniorPoolIdTypes[i];
       uniqueIdentity._mintForTest(user, uidType, 1, bytes(""));
