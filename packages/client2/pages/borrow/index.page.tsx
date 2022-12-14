@@ -105,7 +105,8 @@ export default function PoolPage() {
   });
 
   const borrowerContracts = data?.user?.borrowerContracts;
-  // TODO: Zadra explain better - We get the last borrower contract in the array - FOR SOME REASON
+
+  // TODO ZADRA explain better
   const tranchedPools =
     borrowerContracts && borrowerContracts.length > 0
       ? borrowerContracts[borrowerContracts.length - 1].tranchedPools
@@ -169,9 +170,9 @@ export default function PoolPage() {
 
             return (
               <div key={id}>
-                <p>{`Address: ${id.toLocaleLowerCase()}`}</p>
+                {/* <p>{`Address: ${id.toLocaleLowerCase()}`}</p> */}
                 <CreditLineCard
-                  className="mb-3 lg:w-2/3"
+                  className="mb-3 lg:w-3/5"
                   slot1={`${creditLineLimit} at ${interest}`}
                   slot1Label={i === 0 ? "Credit Lines" : undefined}
                   slot2={nextPayment}
