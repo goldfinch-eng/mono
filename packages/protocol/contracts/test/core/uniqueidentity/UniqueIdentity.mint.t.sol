@@ -370,7 +370,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uint256 signerKey,
     address recipient,
     uint256 uidType
-  ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
+  ) public validPrivateKey(signerKey) isNotContract(recipient) onlyAllowListed(recipient) {
     uidType = bound(uidType, 0, 4);
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
