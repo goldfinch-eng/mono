@@ -20,9 +20,7 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
-    _startImpersonation(GF_OWNER);
-    gfConfig.grantRole(TestConstants.GO_LISTER_ROLE, notGfOwner);
-    _stopImpersonation();
+    grantRole(address(gfConfig), TestConstants.GO_LISTER_ROLE, notGfOwner);
 
     assertTrue(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
     assertFalse(gfConfig.goList(userToGoList));
@@ -66,9 +64,7 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
   ) public {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
-    _startImpersonation(GF_OWNER);
-    gfConfig.grantRole(TestConstants.GO_LISTER_ROLE, notGfOwner);
-    _stopImpersonation();
+    grantRole(address(gfConfig), TestConstants.GO_LISTER_ROLE, notGfOwner);
     assertTrue(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
     for (uint256 i = 0; i < usersToAdd.length; ++i) {
@@ -120,9 +116,7 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
   function testNonOwnerGoListerCanRemoveFromGoList(address notGfOwner, address user) public {
     vm.assume(notGfOwner != GF_OWNER);
     assertFalse(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
-    _startImpersonation(GF_OWNER);
-    gfConfig.grantRole(TestConstants.GO_LISTER_ROLE, notGfOwner);
-    _stopImpersonation();
+    grantRole(address(gfConfig), TestConstants.GO_LISTER_ROLE, notGfOwner);
     assertTrue(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
     vm.assume(!gfConfig.goList(user));
@@ -180,9 +174,7 @@ contract GoldfinchConfigGoListingTest is GoldfinchConfigBaseTest {
       vm.assume(!gfConfig.goList(users[i]));
     }
 
-    _startImpersonation(GF_OWNER);
-    gfConfig.grantRole(TestConstants.GO_LISTER_ROLE, notGfOwner);
-    _stopImpersonation();
+    grantRole(address(gfConfig), TestConstants.GO_LISTER_ROLE, notGfOwner);
     assertTrue(gfConfig.hasRole(TestConstants.GO_LISTER_ROLE, notGfOwner));
 
     _startImpersonation(notGfOwner);

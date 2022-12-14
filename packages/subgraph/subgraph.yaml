@@ -511,6 +511,8 @@ dataSources:
           handler: handleAdjustedHoldings
         - event: VaultTotalUpdate(uint256,uint256)
           handler: handleVaultTotalUpdate
+        - event: Checkpoint(uint256)
+          handler: handleCheckpoint
       file: ./src/mappings/membership/membership_vault.ts
 
 templates:

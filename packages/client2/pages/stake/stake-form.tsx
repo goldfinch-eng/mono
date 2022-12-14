@@ -4,14 +4,14 @@ import { useForm } from "react-hook-form";
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { StakedPositionType, SupportedCrypto } from "@/lib/graphql/generated";
+import { StakedPositionType } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface StakeCardFormProps {
-  max: CryptoAmount;
+  max: CryptoAmount<"FIDU" | "CURVE_LP">;
   positionType: StakedPositionType;
   onComplete: () => Promise<unknown>;
 }
@@ -46,9 +46,7 @@ export function StakeForm({
 
     const value = utils.parseUnits(
       data.amount,
-      positionType === StakedPositionType.Fidu
-        ? FIDU_DECIMALS
-        : CURVE_LP_DECIMALS
+      positionType === "Fidu" ? FIDU_DECIMALS : CURVE_LP_DECIMALS
     );
 
     await approveErc20IfRequired({
@@ -56,9 +54,7 @@ export function StakeForm({
       spender: stakingRewardsContract.address,
       amount: value,
       erc20Contract:
-        positionType === StakedPositionType.Fidu
-          ? fiduContract
-          : curveLpTokenContract,
+        positionType === "Fidu" ? fiduContract : curveLpTokenContract,
     });
     await toastTransaction({
       transaction: stakingRewardsContract.stake(
@@ -74,9 +70,7 @@ export function StakeForm({
   const validateMax = async (value: string) => {
     const parsedValue = utils.parseUnits(
       value,
-      positionType === StakedPositionType.Fidu
-        ? FIDU_DECIMALS
-        : CURVE_LP_DECIMALS
+      positionType === "Fidu" ? FIDU_DECIMALS : CURVE_LP_DECIMALS
     );
 
     if (parsedValue.gt(max.amount)) {
@@ -97,10 +91,10 @@ export function StakeForm({
             label="Stake amount"
             hideLabel
             unit={
-              positionType === StakedPositionType.Fidu
-                ? SupportedCrypto.Fidu
-                : positionType === StakedPositionType.CurveLp
-                ? SupportedCrypto.CurveLp
+              positionType === "Fidu"
+                ? "FIDU"
+                : positionType === "CurveLP"
+                ? "CURVE_LP"
                 : assertUnreachable(positionType)
             }
             rules={{ required: "Required", validate: validateMax }}

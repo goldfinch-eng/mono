@@ -46,6 +46,10 @@ type GfiPrice {
 # 2. Since it only exists on the client, it can only be produced by local resolvers
 # 3. The results from local resolvers do not pass though apollo-link-scalars
 scalar CryptoAmount
+scalar UsdcAmount
+scalar FiduAmount
+scalar GfiAmount
+scalar CurveLpAmount
 
 enum IndirectGrantSource {
   MERKLE_DISTRIBUTOR
@@ -104,13 +108,13 @@ type DirectGfiGrant implements GfiGrant {
 
 type Viewer {
   account(format: String): String
-  usdcBalance: CryptoAmount
-  gfiBalance: CryptoAmount
-  fiduBalance: CryptoAmount
-  curveLpBalance: CryptoAmount
+  usdcBalance: UsdcAmount
+  gfiBalance: GfiAmount
+  fiduBalance: FiduAmount
+  curveLpBalance: CurveLpAmount
   gfiGrants: [GfiGrant!]!
-  claimableMembershipRewards: CryptoAmount
-  accruedMembershipRewardsThisEpoch: CryptoAmount
+  claimableMembershipRewards: FiduAmount
+  accruedMembershipRewardsThisEpoch: FiduAmount
 }
 
 type BlockInfo {

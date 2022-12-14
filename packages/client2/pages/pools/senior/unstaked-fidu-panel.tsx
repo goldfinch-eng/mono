@@ -5,7 +5,7 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { computeApyFromGfiInFiat, sharesToUsdc } from "@/lib/pools";
 
 interface UnstakedFiduBannerProps {
-  fiduBalance: CryptoAmount;
+  fiduBalance: CryptoAmount<"FIDU">;
   sharePrice: BigNumber;
   estimatedApyFromGfiRaw: FixedNumber;
   fiatPerGfi: number;

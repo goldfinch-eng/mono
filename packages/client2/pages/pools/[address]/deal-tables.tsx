@@ -12,12 +12,10 @@ import {
 import { RichText } from "@/components/rich-text";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
 import {
-  SupportedCrypto,
   DealTermsTableFieldsFragment,
   SecuritiesRecourseTableFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
   BorrowerFinancialsTableFieldsFragment,
-  SupportedFiat,
   BorrowerPerformanceTableFieldsFragment,
   Deal_DealType,
 } from "@/lib/graphql/generated";
@@ -134,7 +132,7 @@ export function DealTermsTable({
               "Drawdown cap",
               "The total funds that the Borrower can drawdown from this Pool.",
               formatCrypto({
-                token: SupportedCrypto.Usdc,
+                token: "USDC",
                 amount: tranchedPool.creditLine.maxLimit,
               }),
             ],
@@ -288,7 +286,7 @@ export function BorrowerFinancialsTable({
       null,
       formatFiat({
         amount: borrowerFinancials.totalLoansOriginated,
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
       }),
     ]);
   }
@@ -298,7 +296,7 @@ export function BorrowerFinancialsTable({
       null,
       formatFiat({
         amount: borrowerFinancials.currentLoansOutstanding,
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
       }),
     ]);
   }
@@ -307,7 +305,7 @@ export function BorrowerFinancialsTable({
       "AUM",
       null,
       formatFiat({
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
         amount: borrowerFinancials.aum,
       }),
     ]);

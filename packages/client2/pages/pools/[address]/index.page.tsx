@@ -22,13 +22,10 @@ import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
-  SupportedCrypto,
-  UidType,
   useSingleTranchedPoolDataQuery,
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
-  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -257,7 +254,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-  const isMultitranche = dealDetails.dealType === Deal_DealType.Multitranche;
+  const isMultitranche = dealDetails.dealType === "multitranche";
 
   if (error) {
     return (
@@ -269,31 +266,31 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
   const backerSupply = tranchedPool?.juniorDeposited
-    ? {
-        token: SupportedCrypto.Usdc,
+    ? ({
+        token: "USDC",
         amount: tranchedPool.juniorDeposited,
-      }
+      } as const)
     : undefined;
 
   const seniorSupply =
     backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
-      ? {
-          token: SupportedCrypto.Usdc,
+      ? ({
+          token: "USDC",
           amount: utils.parseUnits(
             FixedNumber.from(backerSupply.amount)
               .mulUnsafe(tranchedPool.estimatedLeverageRatio)
               .toString(),
             0
           ),
-        }
+        } as const)
       : undefined;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =
-    tranchedPool?.allowedUidTypes.includes(UidType.UsAccreditedIndividual) ||
-    tranchedPool?.allowedUidTypes.includes(UidType.UsEntity);
+    tranchedPool?.allowedUidTypes.includes("US_ACCREDITED_INDIVIDUAL") ||
+    tranchedPool?.allowedUidTypes.includes("US_ENTITY");
   const noUid =
     !user?.isNonUsEntity &&
     !user?.isNonUsIndividual &&
@@ -391,7 +388,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {
-                      token: SupportedCrypto.Usdc,
+                      token: "USDC",
                       amount: tranchedPool.creditLine.maxLimit,
                     }
                   : undefined
@@ -427,9 +424,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   }
                   seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                   agreement={dealDetails.agreement}
-                  isUnitrancheDeal={
-                    dealDetails.dealType === Deal_DealType.Unitranche
-                  }
+                  isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />
               ) : null}
 

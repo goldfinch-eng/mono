@@ -4,7 +4,7 @@
 
 https://etherscan.io/address/0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b
 
-GFI is Goldfinch&#x27;s governance token.
+GFI is Goldfinch's governance token.
 
 ### OWNER_ROLE
 
@@ -82,7 +82,7 @@ See {ERC20Pausable} and {Pausable-_pause}.
 
 Requirements:
 
-- the caller must have the &#x60;PAUSER_ROLE&#x60;._
+- the caller must have the `PAUSER_ROLE`._
 
 ### unpause
 
@@ -96,7 +96,7 @@ See {ERC20Pausable} and {Pausable-_unpause}.
 
 Requirements:
 
-- the caller must have the &#x60;PAUSER_ROLE&#x60;._
+- the caller must have the `PAUSER_ROLE`._
 
 ### _beforeTokenTransfer
 

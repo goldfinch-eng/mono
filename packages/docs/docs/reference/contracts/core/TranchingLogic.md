@@ -6,10 +6,26 @@ https://etherscan.io/address/0x9BCE1F08012DD6e72756Cd015E50068f90963D22
 
 Library for handling the payments waterfall
 
-### SharePriceUpdated
+### SliceInfo
 
 ```solidity
-event SharePriceUpdated(address pool, uint256 tranche, uint256 principalSharePrice, int256 principalDelta, uint256 interestSharePrice, int256 interestDelta)
+struct SliceInfo {
+  uint256 reserveFeePercent;
+  uint256 interestAccrued;
+  uint256 principalAccrued;
+}
+```
+
+### ApplyResult
+
+```solidity
+struct ApplyResult {
+  uint256 interestRemaining;
+  uint256 principalRemaining;
+  uint256 reserveDeduction;
+  uint256 oldInterestSharePrice;
+  uint256 oldPrincipalSharePrice;
+}
 ```
 
 ### FP_SCALING_FACTOR
@@ -18,10 +34,10 @@ event SharePriceUpdated(address pool, uint256 tranche, uint256 principalSharePri
 uint256 FP_SCALING_FACTOR
 ```
 
-### ONE_HUNDRED
+### NUM_TRANCHES_PER_SLICE
 
 ```solidity
-uint256 ONE_HUNDRED
+uint256 NUM_TRANCHES_PER_SLICE
 ```
 
 ### usdcToSharePrice
@@ -36,10 +52,16 @@ function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure retur
 function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256)
 ```
 
+### lockTranche
+
+```solidity
+function lockTranche(struct ITranchedPool.TrancheInfo tranche, contract GoldfinchConfig config) external
+```
+
 ### redeemableInterestAndPrincipal
 
 ```solidity
-function redeemableInterestAndPrincipal(struct ITranchedPool.TrancheInfo trancheInfo, struct IPoolTokens.TokenInfo tokenInfo) public view returns (uint256 interestRedeemable, uint256 principalRedeemable)
+function redeemableInterestAndPrincipal(struct ITranchedPool.TrancheInfo trancheInfo, struct IPoolTokens.TokenInfo tokenInfo) public view returns (uint256, uint256)
 ```
 
 ### calculateExpectedSharePrice
@@ -57,13 +79,13 @@ function scaleForSlice(struct ITranchedPool.PoolSlice slice, uint256 amount, uin
 ### getSliceInfo
 
 ```solidity
-function getSliceInfo(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed, uint256 reserveFeePercent) public view returns (struct ITranchedPool.SliceInfo)
+function getSliceInfo(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed, uint256 reserveFeePercent) public view returns (struct TranchingLogic.SliceInfo)
 ```
 
 ### getTotalInterestAndPrincipal
 
 ```solidity
-function getTotalInterestAndPrincipal(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed) public view returns (uint256 interestAccrued, uint256 principalAccrued)
+function getTotalInterestAndPrincipal(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed) public view returns (uint256, uint256)
 ```
 
 ### scaleByFraction
@@ -72,75 +94,150 @@ function getTotalInterestAndPrincipal(struct ITranchedPool.PoolSlice slice, cont
 function scaleByFraction(uint256 amount, uint256 fraction, uint256 total) public pure returns (uint256)
 ```
 
+### applyToAllSlices
+
+```solidity
+function applyToAllSlices(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine, uint256 juniorFeePercent) external returns (uint256)
+```
+
+apply a payment to all slices
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| poolSlices | mapping(uint256 &#x3D;&gt; struct ITranchedPool.PoolSlice) | slices to apply to |
+| numSlices | uint256 | number of slices |
+| interest | uint256 | amount of interest to apply |
+| principal | uint256 | amount of principal to apply |
+| reserveFeePercent | uint256 | percentage that protocol will take for reserves |
+| totalDeployed | uint256 | total amount of principal deployed |
+| creditLine | contract IV2CreditLine | creditline to account for |
+| juniorFeePercent | uint256 | percentage the junior tranche will take |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | total amount that will be sent to reserves |
+
 ### applyToAllSeniorTranches
 
 ```solidity
-function applyToAllSeniorTranches(struct ITranchedPool.PoolSlice[] poolSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine, uint256 juniorFeePercent) public returns (struct ITranchedPool.ApplyResult)
+function applyToAllSeniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine, uint256 juniorFeePercent) internal returns (struct TranchingLogic.ApplyResult)
 ```
 
 ### applyToAllJuniorTranches
 
 ```solidity
-function applyToAllJuniorTranches(struct ITranchedPool.PoolSlice[] poolSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine) public returns (uint256 totalReserveAmount)
+function applyToAllJuniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine) internal returns (uint256 totalReserveAmount)
 ```
 
 ### emitSharePriceUpdatedEvent
 
 ```solidity
-function emitSharePriceUpdatedEvent(struct ITranchedPool.TrancheInfo tranche, struct ITranchedPool.ApplyResult applyResult) internal
+function emitSharePriceUpdatedEvent(struct ITranchedPool.TrancheInfo tranche, struct TranchingLogic.ApplyResult applyResult) internal
 ```
 
 ### applyToSeniorTranche
 
 ```solidity
-function applyToSeniorTranche(struct ITranchedPool.PoolSlice slice, uint256 interestRemaining, uint256 principalRemaining, uint256 juniorFeePercent, struct ITranchedPool.SliceInfo sliceInfo) public returns (struct ITranchedPool.ApplyResult)
+function applyToSeniorTranche(struct ITranchedPool.PoolSlice slice, uint256 interestRemaining, uint256 principalRemaining, uint256 juniorFeePercent, struct TranchingLogic.SliceInfo sliceInfo) internal returns (struct TranchingLogic.ApplyResult)
 ```
 
 ### applyToJuniorTranche
 
 ```solidity
-function applyToJuniorTranche(struct ITranchedPool.PoolSlice slice, uint256 interestRemaining, uint256 principalRemaining, struct ITranchedPool.SliceInfo sliceInfo) public returns (struct ITranchedPool.ApplyResult)
-```
-
-### applyBySharePrice
-
-```solidity
-function applyBySharePrice(struct ITranchedPool.TrancheInfo tranche, uint256 interestRemaining, uint256 principalRemaining, uint256 desiredInterestSharePrice, uint256 desiredPrincipalSharePrice) public returns (uint256, uint256)
-```
-
-### applyByAmount
-
-```solidity
-function applyByAmount(struct ITranchedPool.TrancheInfo tranche, uint256 interestRemaining, uint256 principalRemaining, uint256 desiredInterestAmount, uint256 desiredPrincipalAmount) public returns (uint256, uint256)
+function applyToJuniorTranche(struct ITranchedPool.PoolSlice slice, uint256 interestRemaining, uint256 principalRemaining, struct TranchingLogic.SliceInfo sliceInfo) public returns (struct TranchingLogic.ApplyResult)
 ```
 
 ### migrateAccountingVariables
 
 ```solidity
-function migrateAccountingVariables(address originalClAddr, address newClAddr) public
+function migrateAccountingVariables(contract IV2CreditLine originalCl, contract IV2CreditLine newCl) external
 ```
 
 ### closeCreditLine
 
 ```solidity
-function closeCreditLine(address originalCl) public
+function closeCreditLine(contract IV2CreditLine cl) external
 ```
 
-### desiredAmountFromSharePrice
+### trancheIdToSliceIndex
 
 ```solidity
-function desiredAmountFromSharePrice(uint256 desiredSharePrice, uint256 actualSharePrice, uint256 totalShares) public pure returns (uint256)
+function trancheIdToSliceIndex(uint256 trancheId) external pure returns (uint256)
 ```
 
-### applyToSharePrice
+### initializeNextSlice
 
 ```solidity
-function applyToSharePrice(uint256 amountRemaining, uint256 currentSharePrice, uint256 desiredAmount, uint256 totalShares) public pure returns (uint256, uint256)
+function initializeNextSlice(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 sliceIndex) external
 ```
 
-### scaleByPercentOwnership
+### sliceIndexToJuniorTrancheId
 
 ```solidity
-function scaleByPercentOwnership(struct ITranchedPool.TrancheInfo tranche, uint256 amount, struct ITranchedPool.PoolSlice slice) public pure returns (uint256)
+function sliceIndexToJuniorTrancheId(uint256 sliceIndex) public pure returns (uint256)
+```
+
+### sliceIndexToSeniorTrancheId
+
+```solidity
+function sliceIndexToSeniorTrancheId(uint256 sliceIndex) public pure returns (uint256)
+```
+
+### isSeniorTrancheId
+
+```solidity
+function isSeniorTrancheId(uint256 trancheId) external pure returns (bool)
+```
+
+### isJuniorTrancheId
+
+```solidity
+function isJuniorTrancheId(uint256 trancheId) external pure returns (bool)
+```
+
+### _applyToSharePrice
+
+```solidity
+function _applyToSharePrice(uint256 amountRemaining, uint256 currentSharePrice, uint256 desiredAmount, uint256 totalShares) internal pure returns (uint256, uint256)
+```
+
+### _scaleByPercentOwnership
+
+```solidity
+function _scaleByPercentOwnership(struct ITranchedPool.TrancheInfo tranche, uint256 amount, struct ITranchedPool.PoolSlice slice) internal pure returns (uint256)
+```
+
+### _desiredAmountFromSharePrice
+
+```solidity
+function _desiredAmountFromSharePrice(uint256 desiredSharePrice, uint256 actualSharePrice, uint256 totalShares) internal pure returns (uint256)
+```
+
+### _applyByAmount
+
+```solidity
+function _applyByAmount(struct ITranchedPool.TrancheInfo tranche, uint256 interestRemaining, uint256 principalRemaining, uint256 desiredInterestAmount, uint256 desiredPrincipalAmount) internal returns (uint256, uint256)
+```
+
+### _applyBySharePrice
+
+```solidity
+function _applyBySharePrice(struct ITranchedPool.TrancheInfo tranche, uint256 interestRemaining, uint256 principalRemaining, uint256 desiredInterestSharePrice, uint256 desiredPrincipalSharePrice) internal returns (uint256, uint256)
+```
+
+### TrancheLocked
+
+```solidity
+event TrancheLocked(address pool, uint256 trancheId, uint256 lockedUntil)
+```
+
+### SharePriceUpdated
+
+```solidity
+event SharePriceUpdated(address pool, uint256 tranche, uint256 principalSharePrice, int256 principalDelta, uint256 interestSharePrice, int256 interestDelta)
 ```
 

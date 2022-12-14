@@ -116,23 +116,23 @@ totalRewards/totalGFISupply * 100, times 1e18
 ### tokens
 
 ```solidity
-mapping(uint256 &#x3D;&gt; struct BackerRewards.BackerRewardsTokenInfo) tokens
+mapping(uint256 => struct BackerRewards.BackerRewardsTokenInfo) tokens
 ```
 
-poolTokenId -&gt; BackerRewardsTokenInfo
+poolTokenId -> BackerRewardsTokenInfo
 
 ### pools
 
 ```solidity
-mapping(address &#x3D;&gt; struct BackerRewards.BackerRewardsInfo) pools
+mapping(address => struct BackerRewards.BackerRewardsInfo) pools
 ```
 
-pool.address -&gt; BackerRewardsInfo
+pool.address -> BackerRewardsInfo
 
 ### poolStakingRewards
 
 ```solidity
-mapping(contract ITranchedPool &#x3D;&gt; struct BackerRewards.StakingRewardsPoolInfo) poolStakingRewards
+mapping(contract ITranchedPool => struct BackerRewards.StakingRewardsPoolInfo) poolStakingRewards
 ```
 
 Staking rewards info for each pool
@@ -140,7 +140,7 @@ Staking rewards info for each pool
 ### tokenStakingRewards
 
 ```solidity
-mapping(uint256 &#x3D;&gt; struct BackerRewards.StakingRewardsTokenInfo) tokenStakingRewards
+mapping(uint256 => struct BackerRewards.StakingRewardsTokenInfo) tokenStakingRewards
 ```
 
 Staking rewards info for each pool token
@@ -171,6 +171,8 @@ function allocateRewards(uint256 _interestPaymentAmount) external
 Calculates the accRewardsPerPrincipalDollar for a given pool,
          when a interest payment is received by the protocol
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _interestPaymentAmount | uint256 | The amount of total dollars the interest payment, expects 10^6 value |
@@ -182,6 +184,8 @@ function setTotalRewards(uint256 _totalRewards) public
 ```
 
 Set the total gfi rewards and the % of total GFI
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -196,6 +200,8 @@ function setTotalInterestReceived(uint256 _totalInterestReceived) public
 Set the total interest received to date.
 This should only be called once on contract deploy.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _totalInterestReceived | uint256 | The amount of interest the protocol has received to date, expects 10^6 value |
@@ -207,6 +213,8 @@ function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) publ
 ```
 
 Set the max dollars across the entire protocol that are eligible for GFI rewards
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -220,6 +228,8 @@ function setPoolTokenAccRewardsPerPrincipalDollarAtMint(address poolAddress, uin
 
 When a pool token is minted for multiple drawdowns,
  set accRewardsPerPrincipalDollarAtMint to the current accRewardsPerPrincipalDollar price
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -244,9 +254,13 @@ function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256
 
 Calculate the gross available gfi rewards for a PoolToken
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | Pool token id |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -262,9 +276,13 @@ Calculates the amount of staking rewards already claimed for a PoolToken.
 This function is provided for the sake of external (e.g. frontend client) consumption;
 it is not necessary as an input to the mutative calculations in this contract.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | Pool token id |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -278,6 +296,8 @@ function withdrawMultiple(uint256[] tokenIds) public
 
 PoolToken request to withdraw multiple PoolTokens allocated rewards
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenIds | uint256[] | Array of pool token id |
@@ -289,6 +309,8 @@ function withdraw(uint256 tokenId) public
 ```
 
 PoolToken request to withdraw all allocated rewards
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -303,9 +325,13 @@ function stakingRewardsEarnedSinceLastWithdraw(uint256 tokenId) public view retu
 Returns the amount of staking rewards earned by a given token since the last
 time its staking rewards were withdrawn.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | token id to get rewards |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -331,6 +357,8 @@ function _checkpointPoolStakingRewards(contract ITranchedPool pool, bool publish
 
 Checkpoints staking reward accounting for a given pool.
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | pool | contract ITranchedPool | pool to checkpoint |
@@ -343,6 +371,8 @@ function _checkpointSliceStakingRewards(contract ITranchedPool pool, uint256 sli
 ```
 
 checkpoint the staking rewards accounting for a single tranched pool slice
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -358,6 +388,8 @@ function _checkpointTokenStakingRewards(uint256 tokenId) internal
 
 Updates the staking rewards accounting for for a given tokenId
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | token id to checkpoint |
@@ -370,6 +402,8 @@ function _calculateNewGrossGFIRewardsForInterestAmount(uint256 _interestPaymentA
 
 Calculate the rewards earned for a given interest payment
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _interestPaymentAmount | uint256 | interest payment amount times 1e6 |
@@ -380,9 +414,11 @@ Calculate the rewards earned for a given interest payment
 function _isSeniorTrancheToken(struct IPoolTokens.TokenInfo tokenInfo) internal pure returns (bool)
 ```
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | Whether the provided &#x60;tokenInfo&#x60; is a token corresponding to a senior tranche. |
+| [0] | bool | Whether the provided `tokenInfo` is a token corresponding to a senior tranche. |
 
 ### _usdcToAtomic
 
@@ -408,10 +444,14 @@ function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (
 
 Returns the equivalent amount of USDC given an amount of fidu and a share price
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amount | uint256 | amount of FIDU |
 | sharePrice | uint256 | share price of FIDU |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -425,9 +465,13 @@ function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint
 
 Returns the junior tranche id for the given slice index
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | index | uint256 | slice index |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -441,9 +485,13 @@ function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (
 
 Returns the slice index for the given junior tranche id
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | trancheId | uint256 | tranche id |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -457,6 +505,8 @@ function _getUpdatedStakingRewards() internal returns (contract IStakingRewards)
 
 get the StakingRewards contract after checkpoint the rewards values
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | contract IStakingRewards | StakingRewards with updated rewards values |
@@ -467,7 +517,9 @@ get the StakingRewards contract after checkpoint the rewards values
 function _poolRewardsHaveBeenInitialized(contract ITranchedPool pool) internal view returns (bool)
 ```
 
-Returns true if a TranchedPool&#x27;s rewards parameters have been initialized, otherwise false
+Returns true if a TranchedPool's rewards parameters have been initialized, otherwise false
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -479,7 +531,7 @@ Returns true if a TranchedPool&#x27;s rewards parameters have been initialized, 
 function _poolStakingRewardsInfoHaveBeenInitialized(struct BackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (bool)
 ```
 
-Returns true if a given pool&#x27;s staking rewards parameters have been initialized
+Returns true if a given pool's staking rewards parameters have been initialized
 
 ### _sliceRewardsHaveBeenInitialized
 
@@ -487,7 +539,7 @@ Returns true if a given pool&#x27;s staking rewards parameters have been initial
 function _sliceRewardsHaveBeenInitialized(contract ITranchedPool pool, uint256 sliceIndex) internal view returns (bool)
 ```
 
-Returns true if a TranchedPool&#x27;s slice&#x27;s rewards parameters have been initialized, otherwise false
+Returns true if a TranchedPool's slice's rewards parameters have been initialized, otherwise false
 
 ### _getSliceAccumulatorAtLastCheckpoint
 
@@ -495,8 +547,8 @@ Returns true if a TranchedPool&#x27;s slice&#x27;s rewards parameters have been 
 function _getSliceAccumulatorAtLastCheckpoint(struct BackerRewards.StakingRewardsSliceInfo sliceInfo, struct BackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (uint256)
 ```
 
-Return a slice&#x27;s rewards accumulator if it has been intialized,
-          otherwise return the TranchedPool&#x27;s accumulator
+Return a slice's rewards accumulator if it has been intialized,
+          otherwise return the TranchedPool's accumulator
 
 ### _getTokenAccumulatorAtLastWithdraw
 
@@ -504,7 +556,7 @@ Return a slice&#x27;s rewards accumulator if it has been intialized,
 function _getTokenAccumulatorAtLastWithdraw(struct BackerRewards.StakingRewardsTokenInfo tokenInfo, struct BackerRewards.StakingRewardsSliceInfo sliceInfo) internal pure returns (uint256)
 ```
 
-Return a tokenss rewards accumulator if its been initialized, otherwise return the slice&#x27;s accumulator
+Return a tokenss rewards accumulator if its been initialized, otherwise return the slice's accumulator
 
 ### _getJuniorTrancheForTranchedPoolSlice
 
@@ -514,10 +566,14 @@ function _getJuniorTrancheForTranchedPoolSlice(contract ITranchedPool pool, uint
 
 Returns the junior tranche of a pool given a slice index
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | pool | contract ITranchedPool | pool to retreive tranche from |
 | sliceIndex | uint256 | slice index |
+
+#### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -530,6 +586,8 @@ function _getPrincipalDeployedForTranche(struct ITranchedPool.TrancheInfo tranch
 ```
 
 Return the amount of principal currently deployed in a given slice
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -549,19 +607,23 @@ Return an initialized StakingRewardsSliceInfo with the given parameters
 function _calculateProRatedRewardsForPeriod(uint256 rewardsAccruedSinceLastCheckpoint, uint256 lastUpdatedTime, uint256 currentTime, uint256 endTime) internal pure returns (uint256)
 ```
 
-Returns the amount of rewards accrued from &#x60;lastUpdatedTime&#x60; to &#x60;endTime&#x60;
+Returns the amount of rewards accrued from `lastUpdatedTime` to `endTime`
           We assume the reward rate was linear during this time
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| rewardsAccruedSinceLastCheckpoint | uint256 | rewards accumulated between &#x60;lastUpdatedTime&#x60; and &#x60;currentTime&#x60; |
+| rewardsAccruedSinceLastCheckpoint | uint256 | rewards accumulated between `lastUpdatedTime` and `currentTime` |
 | lastUpdatedTime | uint256 | the last timestamp the rewards accumulator was updated |
 | currentTime | uint256 | the current timestamp |
 | endTime | uint256 | the end time of the period that is elligible to accrue rewards |
 
+#### Return Values
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | approximate rewards accrued from &#x60;lastUpdateTime&#x60; to &#x60;endTime&#x60; |
+| [0] | uint256 | approximate rewards accrued from `lastUpdateTime` to `endTime` |
 
 ### _updateStakingRewardsPoolInfoAccumulator
 
@@ -569,7 +631,7 @@ Returns the amount of rewards accrued from &#x60;lastUpdatedTime&#x60; to &#x60;
 function _updateStakingRewardsPoolInfoAccumulator(struct BackerRewards.StakingRewardsPoolInfo poolInfo, uint256 newAccumulatorValue) internal
 ```
 
-update a Pool&#x27;s staking rewards accumulator
+update a Pool's staking rewards accumulator
 
 ### onlyPool
 

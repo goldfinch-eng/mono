@@ -3,15 +3,18 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../core/BaseUpgradeablePausable.sol";
-import "../core/ConfigHelper.sol";
-import "../core/CreditLine.sol";
-import "../core/GoldfinchConfig.sol";
-import "../../interfaces/IERC20withDec.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/IBorrower.sol";
-import "../../external/BaseRelayRecipient.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {IVersioned} from "../../interfaces/IVersioned.sol";
+import {SafeERC20Transfer} from "../../library/SafeERC20Transfer.sol";
+import {BaseUpgradeablePausable} from "../core/BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "../core/ConfigHelper.sol";
+import {CreditLine} from "../core/CreditLine.sol";
+import {GoldfinchConfig} from "../core/GoldfinchConfig.sol";
+import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {IBorrower} from "../../interfaces/IBorrower.sol";
+import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
+import {ContextUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -25,8 +28,6 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
  */
 
 contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
-  using SafeMath for uint256;
-
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 

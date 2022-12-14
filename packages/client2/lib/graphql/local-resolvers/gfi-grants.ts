@@ -5,11 +5,7 @@ import { getContract } from "@/lib/contracts";
 import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
-import {
-  DirectGfiGrant,
-  DirectGrantSource,
-  IndirectGfiGrant,
-} from "../generated";
+import { DirectGfiGrant, IndirectGfiGrant } from "../generated";
 
 export const indirectGfiGrantResolvers: Resolvers[string] = {
   async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
@@ -40,7 +36,7 @@ export const directGfiGrantResolvers: Resolvers[string] = {
   async isAccepted(gfiDirectGrant: DirectGfiGrant): Promise<boolean> {
     const provider = await getProvider();
     switch (gfiDirectGrant.directSource) {
-      case DirectGrantSource.MerkleDirectDistributor:
+      case "MERKLE_DIRECT_DISTRIBUTOR":
         const merkleDirectDistributorContract = await getContract({
           name: "MerkleDirectDistributor",
           provider,
@@ -48,7 +44,7 @@ export const directGfiGrantResolvers: Resolvers[string] = {
         return await merkleDirectDistributorContract.isGrantAccepted(
           gfiDirectGrant.index
         );
-      case DirectGrantSource.BackerMerkleDirectDistributor:
+      case "BACKER_MERKLE_DIRECT_DISTRIBUTOR":
         const backerMerkleDirectDistributorContract = await getContract({
           name: "BackerMerkleDirectDistributor",
           provider,

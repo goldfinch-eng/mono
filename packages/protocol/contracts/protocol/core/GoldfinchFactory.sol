@@ -3,12 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./GoldfinchConfig.sol";
-import "./BaseUpgradeablePausable.sol";
-import "../../interfaces/IBorrower.sol";
-import "../../interfaces/ITranchedPool.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {IBorrower} from "../../interfaces/IBorrower.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
-import "./ConfigHelper.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {UcuProxy} from "./proxy/UcuProxy.sol";
 

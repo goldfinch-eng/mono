@@ -3,13 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "./LeverageRatioStrategy.sol";
-import "../../interfaces/ISeniorPoolStrategy.sol";
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {LeverageRatioStrategy} from "./LeverageRatioStrategy.sol";
+import {ISeniorPoolStrategy} from "../../interfaces/ISeniorPoolStrategy.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 
 contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   bytes32 public constant LEVERAGE_RATIO_SETTER_ROLE = keccak256("LEVERAGE_RATIO_SETTER_ROLE");

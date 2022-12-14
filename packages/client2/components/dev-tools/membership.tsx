@@ -4,7 +4,6 @@ import { Button, DollarInput, Form } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
-import { SupportedCrypto } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -41,7 +40,7 @@ function SplitterForm() {
       name: "ERC20Splitter",
       provider,
     });
-    const usdcToSend = stringToCryptoAmount(amount, SupportedCrypto.Usdc);
+    const usdcToSend = stringToCryptoAmount(amount, "USDC");
 
     await toastTransaction({
       transaction: usdcContract.transfer(
@@ -61,7 +60,7 @@ function SplitterForm() {
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit} className="flex gap-2">
       <DollarInput
         name="amount"
-        unit={SupportedCrypto.Usdc}
+        unit={"USDC"}
         label="Amount to send"
         hideLabel
         control={rhfMethods.control}

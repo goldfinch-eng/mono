@@ -24,6 +24,8 @@ function mint(address receiver) external returns (uint256)
 
 Can only be called by senior pool or protocol admin
 
+_succeeds if and only if called by senior pool_
+
 ### burn
 
 ```solidity
@@ -40,11 +42,15 @@ _suceeds if and only if called by senior pool_
 function approve(address, uint256) public
 ```
 
+Disabled
+
 ### setApprovalForAll
 
 ```solidity
 function setApprovalForAll(address, bool) public
 ```
+
+Disabled
 
 ### transferFrom
 
@@ -52,17 +58,23 @@ function setApprovalForAll(address, bool) public
 function transferFrom(address, address, uint256) public
 ```
 
+Disabled
+
 ### safeTransferFrom
 
 ```solidity
 function safeTransferFrom(address, address, uint256) public
 ```
 
+Disabled
+
 ### safeTransferFrom
 
 ```solidity
 function safeTransferFrom(address, address, uint256, bytes) public
 ```
+
+Disabled
 
 ### onlySeniorPool
 

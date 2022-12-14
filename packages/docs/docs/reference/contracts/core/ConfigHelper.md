@@ -3,12 +3,6 @@
 A convenience library for getting easy access to other contracts and constants within the
  protocol, through the use of the GoldfinchConfig contract
 
-### getPool
-
-```solidity
-function getPool(contract GoldfinchConfig config) internal view returns (contract IPool)
-```
-
 ### getSeniorPool
 
 ```solidity
@@ -25,12 +19,6 @@ function getSeniorPoolStrategy(contract GoldfinchConfig config) internal view re
 
 ```solidity
 function getUSDC(contract GoldfinchConfig config) internal view returns (contract IERC20withDec)
-```
-
-### getCreditDesk
-
-```solidity
-function getCreditDesk(contract GoldfinchConfig config) internal view returns (contract ICreditDesk)
 ```
 
 ### getFidu
@@ -87,6 +75,18 @@ function getGo(contract GoldfinchConfig config) internal view returns (contract 
 function getStakingRewards(contract GoldfinchConfig config) internal view returns (contract IStakingRewards)
 ```
 
+### getTranchedPoolImplementationRepository
+
+```solidity
+function getTranchedPoolImplementationRepository(contract GoldfinchConfig config) internal view returns (contract ImplementationRepository)
+```
+
+### getWithdrawalRequestToken
+
+```solidity
+function getWithdrawalRequestToken(contract GoldfinchConfig config) internal view returns (contract IWithdrawalRequestToken)
+```
+
 ### oneInchAddress
 
 ```solidity
@@ -113,12 +113,6 @@ _deprecated because we no longer use GSN_
 function configAddress(contract GoldfinchConfig config) internal view returns (address)
 ```
 
-### poolAddress
-
-```solidity
-function poolAddress(contract GoldfinchConfig config) internal view returns (address)
-```
-
 ### poolTokensAddress
 
 ```solidity
@@ -141,12 +135,6 @@ function seniorPoolAddress(contract GoldfinchConfig config) internal view return
 
 ```solidity
 function seniorPoolStrategyAddress(contract GoldfinchConfig config) internal view returns (address)
-```
-
-### creditDeskAddress
-
-```solidity
-function creditDeskAddress(contract GoldfinchConfig config) internal view returns (address)
 ```
 
 ### goldfinchFactoryAddress
@@ -189,12 +177,6 @@ function usdcAddress(contract GoldfinchConfig config) internal view returns (add
 
 ```solidity
 function tranchedPoolAddress(contract GoldfinchConfig config) internal view returns (address)
-```
-
-### migratedTranchedPoolAddress
-
-```solidity
-function migratedTranchedPoolAddress(contract GoldfinchConfig config) internal view returns (address)
 ```
 
 ### reserveAddress
@@ -267,5 +249,11 @@ function getTransferRestrictionPeriodInDays(contract GoldfinchConfig config) int
 
 ```solidity
 function getLeverageRatio(contract GoldfinchConfig config) internal view returns (uint256)
+```
+
+### getSeniorPoolWithdrawalCancelationFeeInBps
+
+```solidity
+function getSeniorPoolWithdrawalCancelationFeeInBps(contract GoldfinchConfig config) internal view returns (uint256)
 ```
 

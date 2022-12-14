@@ -17,17 +17,14 @@ interface Holding {
   name: string;
   tooltip?: string;
   colorClass: string;
-  /**
-   * CryptoAmount expressed in USDC
-   */
-  usdc: CryptoAmount;
+  usdc: CryptoAmount<"USDC">;
   percentage: number;
 }
 
 interface PortfolioSummaryProps {
   className?: string;
   holdings: Holding[];
-  totalUsdc: CryptoAmount;
+  totalUsdc: CryptoAmount<"USDC">;
 }
 
 export function PortfolioSummary({

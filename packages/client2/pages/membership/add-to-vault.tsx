@@ -18,7 +18,7 @@ import {
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import { MembershipPageQuery, SupportedCrypto } from "@/lib/graphql/generated";
+import { MembershipPageQuery } from "@/lib/graphql/generated";
 import {
   calculateNewMonthlyMembershipReward,
   epochFinalizedDate,
@@ -99,22 +99,22 @@ export function AddToVault({
 }
 
 interface StepperDataType {
-  gfiToVault: CryptoAmount;
+  gfiToVault: CryptoAmount<"GFI">;
   stakedPositionsToVault: StakedPosition[];
   poolTokensToVault: PoolToken[];
   rewardProjection?: {
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   };
 }
 
 interface SelectionStepProps {
-  maxVaultableGfi: CryptoAmount;
+  maxVaultableGfi: CryptoAmount<"GFI">;
   fiatPerGfi: number;
   vaultableStakedPositions: StakedPosition[];
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
-  unstakedFidu: CryptoAmount;
+  unstakedFidu: CryptoAmount<"FIDU">;
   previousEpochRewardTotal?: BigNumber;
 }
 
@@ -128,12 +128,12 @@ function SelectionStep({
   previousEpochRewardTotal,
 }: SelectionStepProps) {
   const availableCapitalTotal = {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: sharesToUsdc(
       sum("amount", vaultableStakedPositions),
       sharePrice
     ).amount.add(sum("principalAmount", vaultablePoolTokens)),
-  };
+  } as const;
   const rhfMethods = useForm<{
     gfiToVault: string;
     stakedPositionsToVault: string[];
@@ -142,10 +142,7 @@ function SelectionStep({
     defaultValues: { stakedPositionsToVault: [], poolTokensToVault: [] },
   });
   const { control, watch } = rhfMethods;
-  const gfiToVault = stringToCryptoAmount(
-    watch("gfiToVault"),
-    SupportedCrypto.Gfi
-  );
+  const gfiToVault = stringToCryptoAmount(watch("gfiToVault"), "GFI");
   const stakedPositionsToVault = vaultableStakedPositions.filter((s) =>
     watch("stakedPositionsToVault").includes(s.id)
   );
@@ -154,7 +151,7 @@ function SelectionStep({
   );
   const selectedCapitalTotal = useMemo(
     () => ({
-      token: SupportedCrypto.Usdc,
+      token: "USDC",
       amount: sharesToUsdc(
         sum("amount", stakedPositionsToVault),
         sharePrice
@@ -351,13 +348,14 @@ function ReviewStep({
     rewardProjection,
   } = data as StepperDataType;
   const selectedCapitalTotal = useMemo(
-    () => ({
-      token: SupportedCrypto.Usdc,
-      amount: sharesToUsdc(
-        sum("amount", stakedPositionsToVault),
-        sharePrice
-      ).amount.add(sum("principalAmount", poolTokensToVault)),
-    }),
+    () =>
+      ({
+        token: "USDC",
+        amount: sharesToUsdc(
+          sum("amount", stakedPositionsToVault),
+          sharePrice
+        ).amount.add(sum("principalAmount", poolTokensToVault)),
+      } as const),
     [stakedPositionsToVault, poolTokensToVault, sharePrice]
   );
 

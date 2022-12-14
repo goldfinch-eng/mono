@@ -30,19 +30,13 @@ event BorrowerCreated(address borrower, address owner)
 ### PoolCreated
 
 ```solidity
-event PoolCreated(address pool, address borrower)
-```
-
-### GoldfinchConfigUpdated
-
-```solidity
-event GoldfinchConfigUpdated(address who, address configAddress)
+event PoolCreated(contract ITranchedPool pool, address borrower)
 ```
 
 ### CreditLineCreated
 
 ```solidity
-event CreditLineCreated(address creditLine)
+event CreditLineCreated(contract IV2CreditLine creditLine)
 ```
 
 ### initialize
@@ -51,28 +45,16 @@ event CreditLineCreated(address creditLine)
 function initialize(address owner, contract GoldfinchConfig _config) public
 ```
 
-### performUpgrade
-
-```solidity
-function performUpgrade() external
-```
-
-### _performUpgrade
-
-```solidity
-function _performUpgrade() internal
-```
-
 ### createCreditLine
 
 ```solidity
-function createCreditLine() external returns (address)
+function createCreditLine() external returns (contract IV2CreditLine)
 ```
 
 Allows anyone to create a CreditLine contract instance
 
 _There is no value to calling this function directly. It is only meant to be called
- by a TranchedPool during it&#x27;s creation process._
+ by a TranchedPool during it's creation process._
 
 ### createBorrower
 
@@ -82,6 +64,8 @@ function createBorrower(address owner) external returns (address)
 
 Allows anyone to create a Borrower contract instance
 
+#### Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | owner | address | The address that will own the new Borrower instance |
@@ -89,10 +73,12 @@ Allows anyone to create a Borrower contract instance
 ### createPool
 
 ```solidity
-function createPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (address pool)
+function createPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (contract ITranchedPool)
 ```
 
 Allows anyone to create a new TranchedPool for a single borrower
+
+#### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -101,17 +87,11 @@ Allows anyone to create a new TranchedPool for a single borrower
 | _limit | uint256 | The maximum amount a borrower can drawdown from this CreditLine |
 | _interestApr | uint256 | The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.  We assume 18 digits of precision. For example, to submit 15.34%, you would pass up 153400000000000000,  and 5.34% would be 53400000000000000 |
 | _paymentPeriodInDays | uint256 | How many days in each payment period.  ie. the frequency with which they need to make payments. |
-| _termInDays | uint256 | Number of days in the credit term. It is used to set the &#x60;termEndTime&#x60; upon first drawdown.  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown. |
+| _termInDays | uint256 | Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown. |
 | _lateFeeApr | uint256 | The additional interest you will pay if you are late. For example, if this is 3%, and your  normal rate is 15%, then you will pay 18% while you are late. Also expressed as an 18 decimal precision integer Requirements:  You are the admin |
 | _principalGracePeriodInDays | uint256 |  |
 | _fundableAt | uint256 |  |
 | _allowedUIDTypes | uint256[] |  |
-
-### createMigratedPool
-
-```solidity
-function createMigratedPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (address pool)
-```
 
 ### _deployMinimal
 
@@ -129,11 +109,5 @@ function isBorrower() public view returns (bool)
 
 ```solidity
 modifier onlyAdminOrBorrower()
-```
-
-### onlyCreditDesk
-
-```solidity
-modifier onlyCreditDesk()
 ```
 

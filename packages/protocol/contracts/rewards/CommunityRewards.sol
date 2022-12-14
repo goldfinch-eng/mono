@@ -2,24 +2,22 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import {ReentrancyGuardUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 
-import "../external/ERC721PresetMinterPauserAutoId.sol";
-import "../interfaces/IERC20withDec.sol";
-import "../interfaces/ICommunityRewards.sol";
-import "../protocol/core/GoldfinchConfig.sol";
-import "../protocol/core/ConfigHelper.sol";
+import {ERC721PresetMinterPauserAutoIdUpgradeSafe} from "../external/ERC721PresetMinterPauserAutoId.sol";
+import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
+import {ICommunityRewards} from "../interfaces/ICommunityRewards.sol";
+import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
+import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
 
-import "../library/CommunityRewardsVesting.sol";
+import {CommunityRewardsVesting} from "../library/CommunityRewardsVesting.sol";
 
 contract CommunityRewards is
   ICommunityRewards,
   ERC721PresetMinterPauserAutoIdUpgradeSafe,
   ReentrancyGuardUpgradeSafe
 {
-  using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
 

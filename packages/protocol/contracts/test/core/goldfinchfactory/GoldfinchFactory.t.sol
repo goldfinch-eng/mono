@@ -73,9 +73,7 @@ contract GoldfinchFactoryTest is BaseTest {
   function testBorrowerCanCreatePool() public {
     assertFalse(gfFactory.hasRole(TestConstants.BORROWER_ROLE, address(this)));
 
-    _startImpersonation(GF_OWNER);
-    gfFactory.grantRole(TestConstants.BORROWER_ROLE, address(this));
-    _stopImpersonation();
+    grantRole(address(gfFactory), TestConstants.BORROWER_ROLE, address(this));
 
     uint256[] memory allowedIdTypes = new uint256[](1);
     vm.expectEmit(true, true, false, false);
@@ -140,8 +138,7 @@ contract GoldfinchFactoryTest is BaseTest {
     vm.assume(!gfFactory.hasRole(TestConstants.BORROWER_ROLE, newBorrower));
     vm.assume(!gfFactory.hasRole(TestConstants.OWNER_ROLE, borrower));
 
-    _startImpersonation(GF_OWNER);
-    gfFactory.grantRole(TestConstants.BORROWER_ROLE, borrower);
+    grantRole(address(gfFactory), TestConstants.BORROWER_ROLE, address(this));
 
     _startImpersonation(borrower);
     vm.expectRevert("AccessControl: sender must be an admin to grant");

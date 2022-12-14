@@ -26,11 +26,5 @@ export function handleEpochFinalized(event: EpochFinalized): void {
       : membership.eligibleScore.times(event.params.totalRewards).div(membershipRoster.eligibleScoreTotal)
     disbursement.allocatedAt = event.block.timestamp.toI32()
     disbursement.save()
-
-    // update eligibleScore for each member
-    membership.eligibleScore = membership.nextEpochScore
-    membership.save()
   }
-  membershipRoster.eligibleScoreTotal = membershipRoster.nextEpochScoreTotal
-  membershipRoster.save()
 }

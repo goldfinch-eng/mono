@@ -12,10 +12,7 @@ import {
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SupportedCrypto,
-  WithdrawalCancelModalWithdrawalFieldsFragment,
-} from "@/lib/graphql/generated";
+import { WithdrawalCancelModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -98,7 +95,7 @@ export function WithdrawalCancelModal({
           left="Current request amount"
           tooltip="FIDU you previously submitted a withdrawal request for."
           right={formatCrypto({
-            token: SupportedCrypto.Fidu,
+            token: "FIDU",
             amount: existingWithdrawalRequest.previewFiduRequested,
           })}
           faded
@@ -114,7 +111,7 @@ export function WithdrawalCancelModal({
             cancellationFee
           )} of the total request.`}
           right={formatCrypto({
-            token: SupportedCrypto.Fidu,
+            token: "FIDU",
             amount: computedFee,
           })}
           negative
