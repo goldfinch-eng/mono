@@ -1,7 +1,6 @@
 import { Resolvers } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { SECONDS_PER_YEAR } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { roundUpPenny } from "@/lib/format";
 import { CreditLine } from "@/lib/graphql/generated";
@@ -41,8 +40,9 @@ async function calculateInterestOwed(
   const expectedElapsedSeconds = creditLine.nextDueTime.sub(
     creditLine.interestAccruedAsOf
   );
+  const secondsPerYear = BigNumber.from(60 * 60 * 24 * 365);
   const interestAccrualRate = annualRate.divUnsafe(
-    FixedNumber.from(SECONDS_PER_YEAR)
+    FixedNumber.from(secondsPerYear)
   );
   const expectedAdditionalInterest = FixedNumber.from(creditLine.balance)
     .mulUnsafe(interestAccrualRate)
