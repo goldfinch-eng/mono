@@ -14,10 +14,10 @@ contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     setMaxLimit(pool, amount * 5);
 
-    vm.expectRevert(bytes("NA"));
-    cl.termEndTime();
+    assertZero(cl.termEndTime());
     fundAndDrawdown(pool, amount, GF_OWNER);
-    assertEq(cl.termEndTime(), block.timestamp + termInSeconds(cl));
+    // This is >= because of the creation of the stub period
+    assertGe(cl.termEndTime(), block.timestamp + termInSeconds(cl));
   }
 
   // TODO - bug when you drawdown multiple times!

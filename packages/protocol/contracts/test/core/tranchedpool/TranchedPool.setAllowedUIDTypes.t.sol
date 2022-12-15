@@ -25,6 +25,9 @@ contract TranchedPoolSetAllowedUIDTypesTest is TranchedPoolBaseTest {
     numSlices = bound(numSlices, 1, 5);
     (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
+    uid._mintForTest(user, 1, 1, "");
+    deposit(pool, 2, usdcVal(1), user);
+
     // Skip a random number of slices and then deposit in the final slice initialized
     // to verify that setting the UIDs is reject if ANY slice has capital
     for (uint256 i = 0; i < numSlices - 1; ++i) {
@@ -33,9 +36,6 @@ contract TranchedPoolSetAllowedUIDTypesTest is TranchedPoolBaseTest {
       pool.initializeNextSlice(block.timestamp);
     }
 
-    // Cannot set uids if there is junior capital
-    uid._mintForTest(user, 1, 1, "");
-    deposit(pool, numSlices * 2, usdcVal(1), user);
     uint256[] memory newIds = new uint256[](0);
     vm.expectRevert("has balance");
     pool.setAllowedUIDTypes(newIds);

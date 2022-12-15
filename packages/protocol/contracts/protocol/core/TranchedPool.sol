@@ -320,7 +320,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 amountToPay = Math.min(amount, maxPayableAmount);
     config.getUSDC().safeERC20TransferFrom(msg.sender, address(this), amountToPay);
 
-    uint256 interestAmount = amount.saturatingSub(creditLine.interestOwed());
+    // pay interest first, then principal
+    uint256 interestAmount = Math.min(
+      amount,
+      creditLine.interestOwed().add(creditLine.interestAccrued())
+    );
     uint256 principalAmount = amount.saturatingSub(interestAmount);
 
     PaymentAllocation memory pa = _pay(principalAmount, interestAmount);

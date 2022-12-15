@@ -420,15 +420,15 @@ library PaymentScheduleLib {
   function nextDueTimeAt(
     PaymentSchedule storage s,
     uint256 timestamp
-  ) internal view isActiveMod(s) returns (uint256) {
-    return s.schedule.nextDueTimeAt(s.startTime, timestamp);
+  ) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.nextDueTimeAt(s.startTime, timestamp) : 0;
   }
 
   function withinPrincipalGracePeriodAt(
     PaymentSchedule storage s,
     uint256 timestamp
-  ) internal view isActiveMod(s) returns (bool) {
-    return s.schedule.withinPrincipalGracePeriodAt(s.startTime, timestamp);
+  ) internal view returns (bool) {
+    return !s.isActive() || s.schedule.withinPrincipalGracePeriodAt(s.startTime, timestamp);
   }
 
   modifier isActiveMod(PaymentSchedule storage s) {

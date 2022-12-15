@@ -358,9 +358,8 @@ contract TranchedPoolBaseTest is BaseTest {
   }
 
   function periodInSeconds(TranchedPool pool) internal returns (uint256) {
-    // return 0;
-    // return pool.creditLine().nextDueTime() - pool.creditLine().previousDueTime();
-    // return pool.creditLine().paymentPeriodInDays() * TestConstants.SECONDS_PER_DAY;
+    // return pool.creditLine().nextDueTime().sub(pool.creditLine().previousDueTime());
+    return 30 days;
   }
 
   function addToGoList(address user) internal impersonating(GF_OWNER) {

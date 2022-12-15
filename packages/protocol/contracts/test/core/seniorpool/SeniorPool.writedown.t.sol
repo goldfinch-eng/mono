@@ -8,6 +8,8 @@ import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
 contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
+  uint256 internal constant SECONDS_IN_30_DAY_MONTH = 2_592_000;
+
   function testWritedownCallableByNonGovernance(
     address user
   ) public goListed(user) impersonating(user) {
@@ -33,8 +35,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
     uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
@@ -66,8 +67,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
     uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
@@ -123,8 +123,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     fundAddress(address(cl), usdcVal(100));
 
@@ -147,8 +146,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     uint256 sharePriceBefore = sp.sharePrice();
     uint256 assetsBefore = sp.assets();
@@ -171,8 +169,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
     uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
@@ -213,8 +210,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertZero(sp.totalWritedowns());
 
     // Advance two payment periods past the term end time
-    // TODO(will)
-    //vm.warp(cl.termEndTime() + 2 * (1 days) * cl.paymentPeriodInDays());
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     // 60 days past termEndTime + ~1 days late on
     // (interestOwed + principalOwed) / (interestOwedPerDay and principalOwedPerDay)
@@ -241,8 +237,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     uint256 sharePriceBefore = sp.sharePrice();
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
     sp.writedown(poolToken);
     assertTrue(sp.sharePrice() < sharePriceBefore);
 
@@ -267,8 +262,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    // TODO(will)
-    // vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
     tp.assess();
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%

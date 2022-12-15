@@ -144,7 +144,9 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) public view override returns (bool) {
-    return periodAt(startTime, timestamp).div(periodsPerPrincipalPeriod) < gracePrincipalPeriods;
+    return
+      timestamp >= startTime &&
+      periodAt(startTime, timestamp).div(periodsPerPrincipalPeriod) < gracePrincipalPeriods;
   }
 
   /// @inheritdoc ISchedule
