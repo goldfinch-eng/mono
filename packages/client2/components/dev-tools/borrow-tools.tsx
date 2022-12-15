@@ -9,13 +9,13 @@ export function BorrowTools() {
     <div>
       <div className="mb-2 text-2xl font-bold">Borrow</div>
       <div className="space-y-6">
-        <AssessTranchePool />
+        <AssessTranchedPool />
       </div>
     </div>
   );
 }
 
-function AssessTranchePool() {
+function AssessTranchedPool() {
   type FormFields = { poolAddress: string };
   const rhfMethods = useForm<FormFields>();
 
