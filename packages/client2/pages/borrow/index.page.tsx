@@ -1,13 +1,13 @@
 import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 
+import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CreditLine } from "@/lib/graphql/generated";
 import { useBorrowPageQuery } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
-import { Button, Heading, Icon } from "../../components/design-system";
 import { CreditLineCard } from "./credit-line-card";
 
 gql`

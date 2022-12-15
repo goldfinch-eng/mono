@@ -1,11 +1,10 @@
 import { Resolvers } from "@apollo/client";
 import { FixedNumber } from "ethers";
 
+import { APY_DECIMALS, SECONDS_PER_YEAR } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { positionTypeToValue, sharesToUsdc } from "@/lib/pools";
 import { getProvider } from "@/lib/wallet";
-
-import { APY_DECIMALS, SECONDS_PER_YEAR } from "../../../constants";
 
 export const curvePoolResolvers: Resolvers[string] = {
   async estimatedCurveStakingApyRaw(): Promise<FixedNumber> {
