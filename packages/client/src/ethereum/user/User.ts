@@ -442,7 +442,7 @@ export class User {
     uidTypeToBalance: UIDTypeToBalance
   }> {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
-    const goListed = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const goListed = await go.readOnly.methods.go(address).call({from: address}, currentBlock.number)
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
