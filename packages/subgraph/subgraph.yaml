@@ -570,3 +570,5 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
+        - event: TranchedPoolAssessed(indexed address)
+          handler: handleTranchedPoolAssessed

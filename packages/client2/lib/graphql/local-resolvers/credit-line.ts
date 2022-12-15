@@ -31,21 +31,8 @@ async function isCreditLinePaymentLate(
 async function calculateInterestOwed(
   creditLine: CreditLine
 ): Promise<BigNumber> {
-  const provider = await getProvider();
-
-  // It seems like The Graph is not properly updating CreditLine.interestOwed - fetch from contract
-  const creditLineContract = await getContract({
-    name: "CreditLine",
-    address: creditLine.id,
-    provider,
-    useSigner: false,
-  });
-  const isLate = await isCreditLinePaymentLate(creditLine);
-
-  const interestOwed = await creditLineContract.interestOwed();
-
-  if (isLate) {
-    return interestOwed;
+  if (await isCreditLinePaymentLate(creditLine)) {
+    return creditLine.interestOwed;
   }
 
   const annualRate = creditLine.interestAprDecimal;
@@ -59,7 +46,7 @@ async function calculateInterestOwed(
     .mulUnsafe(interestAccrualRate)
     .mulUnsafe(FixedNumber.from(expectedElapsedSeconds));
 
-  const currentInterestOwed = interestOwed
+  const currentInterestOwed = creditLine.interestOwed
     .add(BigNumber.from(expectedAdditionalInterest))
     .div(APY_DECIMALS);
 
@@ -77,12 +64,12 @@ export const creditLineResolvers: Resolvers[string] = {
     const usdcContract = await getContract({ name: "USDC", provider });
     const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
 
-    const currentInterestOwed = await calculateInterestOwed(creditLine);
+    let currentInterestOwed = await calculateInterestOwed(creditLine);
 
     // If we are on our last period of the term, then it's interestOwed + principal
     // This is a bullet loan, so full principal is paid only at the end of the credit line term
     if (creditLine.nextDueTime.gte(creditLine.termEndTime)) {
-      currentInterestOwed.add(creditLine.balance);
+      currentInterestOwed = currentInterestOwed.add(creditLine.balance);
     }
 
     // collectedPaymentBalance is the amount that's been paid so far for the period

@@ -23,6 +23,7 @@ gql`
             interestApr
             interestAprDecimal
             interestAccruedAsOf
+            interestOwed
             paymentPeriodInDays
             termInDays
             nextDueTime
