@@ -144,7 +144,7 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) public view override returns (bool) {
-    return _periodToPrincipalPeriod(periodAt(startTime, timestamp)) == 0;
+    return periodAt(startTime, timestamp).div(periodsPerPrincipalPeriod) < gracePrincipalPeriods;
   }
 
   /// @inheritdoc ISchedule
@@ -164,7 +164,6 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) external view override returns (uint256) {
-    // return previousInterestDueTimeAt(startTime, timestamp);
     return
       Math.max(
         previousInterestDueTimeAt(startTime, timestamp),

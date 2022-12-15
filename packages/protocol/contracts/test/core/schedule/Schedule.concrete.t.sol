@@ -240,7 +240,10 @@ contract ConcreteScheduleTest is Test {
       assertEq(s.previousDueTimeAt(startTime, periodMidPoint), expectation.previousDueTime, "MPre");
       assertEq(s.previousDueTimeAt(startTime, periodEndTime), expectation.previousDueTime, "EPre");
 
-      // assertEq(s.withinPrincipalGracePeriodAt(startTime, periodStartTime), expectation.withinGracePeriod);
+      assertEq(
+        s.withinPrincipalGracePeriodAt(startTime, periodStartTime),
+        expectation.withinGracePeriod
+      );
       // assertEq(s.withinPrincipalGracePeriodAt(startTime, periodMidPoint), expectation.withinGracePeriod);
       // assertEq(s.withinPrincipalGracePeriodAt(startTime, periodEndTime), expectation.withinGracePeriod);
     }
