@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
@@ -53,8 +52,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public override balance;
   /// @inheritdoc ICreditLine
   uint256 public override totalInterestPaid;
-  /// @inheritdoc ICreditLine
-  uint256 public override totalPrincipalPaid;
   /// @inheritdoc ICreditLine
   uint256 public override lastFullPaymentTime;
 
@@ -131,10 +128,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 newTotalInterestPaid = totalInterestPaid.add(ipa.owedInterestPayment).add(
       ipa.accruedInterestPayment
     );
-    uint256 newTotalPrincipalPaid = totalPrincipalPaid.add(ppa.principalPayment);
     uint256 newBalance = balance.sub(ppa.principalPayment).sub(ppa.additionalBalancePayment);
     totalInterestPaid = newTotalInterestPaid;
-    totalPrincipalPaid = newTotalPrincipalPaid;
     balance = newBalance;
 
     // If no new interest or principal owed than it was a full payment
@@ -172,7 +167,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     _checkpoint();
 
     balance = balance.add(amount);
-    totalPrincipalPaid = limit().sub(balance);
     require(!_isLate(block.timestamp), "Cannot drawdown when payments are past due");
   }
 
@@ -253,8 +247,14 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
         : _totalInterestOwed;
   }
 
+  /// @inheritdoc ICreditLine
   function limit() public view override returns (uint256) {
     return currentLimit.sub(totalPrincipalOwed());
+  }
+
+  /// @inheritdoc ICreditLine
+  function totalPrincipalPaid() public view override returns (uint256) {
+    return currentLimit.sub(balance);
   }
 
   /// @inheritdoc ICreditLine
@@ -269,7 +269,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   /// @inheritdoc ICreditLine
   function principalOwedAt(uint256 timestamp) public view override returns (uint256) {
-    return totalPrincipalOwedAt(timestamp).sub(totalPrincipalPaid);
+    return totalPrincipalOwedAt(timestamp).sub(totalPrincipalPaid());
   }
 
   /// @inheritdoc ICreditLine
@@ -285,7 +285,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   /// @inheritdoc ICreditLine
   function principalOwed() public view override returns (uint256) {
-    return totalPrincipalOwedAt(block.timestamp).sub(totalPrincipalPaid);
+    return totalPrincipalOwedAt(block.timestamp).sub(totalPrincipalPaid());
   }
 
   /// @inheritdoc ICreditLine
