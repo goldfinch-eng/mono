@@ -1,7 +1,6 @@
 import {BigInt} from "@graphprotocol/graph-ts"
 
 export const V2_2_MIGRATION_TIME = "1643943600"
-
 export const BACKER_REWARDS_EPOCH = "1644021439"
 export const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 export const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
