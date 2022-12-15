@@ -150,7 +150,10 @@ class BorrowerInterface {
   }
 
   pay(creditLineAddress: string, amount: string) {
-    return this.borrowerContract.userWallet.methods.pay(this.getPoolAddress(creditLineAddress), amount)
+    return this.borrowerContract.userWallet.methods["pay(address,uint256)"](
+      this.getPoolAddress(creditLineAddress),
+      amount
+    )
   }
 
   payInFull(creditLineAddress: string, amount: string) {
