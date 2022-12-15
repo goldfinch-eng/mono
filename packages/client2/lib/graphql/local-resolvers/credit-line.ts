@@ -1,7 +1,7 @@
 import { Resolvers } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { APY_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "@/constants";
+import { SECONDS_PER_YEAR } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { roundUpPenny } from "@/lib/format";
 import { CreditLine } from "@/lib/graphql/generated";
@@ -22,9 +22,11 @@ async function isCreditLinePaymentLate(
   const secondsSinceLastFullPayment =
     currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
 
+  const secondsPerDay = 60 * 60 * 24;
+
   return (
     secondsSinceLastFullPayment >
-    creditLine.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
+    creditLine.paymentPeriodInDays.toNumber() * secondsPerDay
   );
 }
 
@@ -48,7 +50,7 @@ async function calculateInterestOwed(
 
   const currentInterestOwed = creditLine.interestOwed
     .add(BigNumber.from(expectedAdditionalInterest))
-    .div(APY_DECIMALS);
+    .div(BigNumber.from("1000000000000000000")); // 1e18
 
   return currentInterestOwed;
 }

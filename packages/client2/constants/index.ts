@@ -17,9 +17,7 @@ export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 
-export const SECONDS_PER_DAY = 60 * 60 * 24;
 export const SECONDS_PER_YEAR = BigNumber.from(60 * 60 * 24 * 365);
-export const APY_DECIMALS = BigNumber.from("1000000000000000000"); // 1e18
 
 export const TRANCHES = {
   Senior: 1,

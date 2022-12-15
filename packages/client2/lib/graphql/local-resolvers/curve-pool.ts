@@ -1,10 +1,12 @@
 import { Resolvers } from "@apollo/client";
-import { FixedNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
-import { APY_DECIMALS, SECONDS_PER_YEAR } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { positionTypeToValue, sharesToUsdc } from "@/lib/pools";
 import { getProvider } from "@/lib/wallet";
+
+const oneYearSeconds = BigNumber.from(60 * 60 * 24 * 365);
+const apyDecimals = BigNumber.from("1000000000000000000"); // 1e18
 
 export const curvePoolResolvers: Resolvers[string] = {
   async estimatedCurveStakingApyRaw(): Promise<FixedNumber> {
@@ -29,18 +31,18 @@ export const curvePoolResolvers: Resolvers[string] = {
       );
     const currentEarnRatePerYearPerFidu = (
       await stakingRewardsContract.currentEarnRatePerToken()
-    ).mul(SECONDS_PER_YEAR);
+    ).mul(oneYearSeconds);
 
     const currentEarnRatePerYearPerCurveToken = currentEarnRatePerYearPerFidu
       // Apply the exchange rate. The exchange rate is denominated in 1e18, so divide by 1e18 to keep the original denomination.
       .mul(curveLPTokenExchangeRate)
-      .div(APY_DECIMALS)
+      .div(apyDecimals)
       // Apply the multiplier. The multiplier is denominated in 1e18, so divide by 1e18 to keep the original denomination.
       .mul(curveLPTokenMultiplier)
-      .div(APY_DECIMALS);
+      .div(apyDecimals);
 
     return FixedNumber.from(currentEarnRatePerYearPerCurveToken).divUnsafe(
-      FixedNumber.from(APY_DECIMALS)
+      FixedNumber.from(apyDecimals)
     );
   },
   async usdcPerLpToken(): Promise<FixedNumber> {
