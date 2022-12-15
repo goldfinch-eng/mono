@@ -100,11 +100,11 @@ contract Schedule is ISchedule {
     require(_periodsPerPrincipalPeriod > 0, "Z");
     require(_periodsPerInterestPeriod > 0, "Z");
 
-    require(_periodsInTerm % _periodsPerPrincipalPeriod == 0, "TODO");
-    require(_periodsInTerm % _periodsPerInterestPeriod == 0, "TODO");
+    require(_periodsInTerm % _periodsPerPrincipalPeriod == 0, "PPPP");
+    require(_periodsInTerm % _periodsPerInterestPeriod == 0, "PPIP");
 
     uint256 nPrincipalPeriods = _periodsInTerm / _periodsPerPrincipalPeriod;
-    require(_gracePrincipalPeriods < nPrincipalPeriods, "TODO");
+    require(_gracePrincipalPeriods < nPrincipalPeriods, "GPP");
 
     periodMapper = _periodMapper;
     periodsInTerm = _periodsInTerm;
@@ -144,7 +144,7 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) public view override returns (bool) {
-    return _principalPeriodToPeriod(gracePrincipalPeriods) > periodAt(startTime, timestamp);
+    return _periodToPrincipalPeriod(periodAt(startTime, timestamp)) == 0;
   }
 
   /// @inheritdoc ISchedule
@@ -157,7 +157,6 @@ contract Schedule is ISchedule {
         _nextPrincipalDueTimeAt(startTime, timestamp),
         _nextInterestDueTimeAt(startTime, timestamp)
       );
-    // return _nextInterestDueTimeAt(startTime, timestamp);
   }
 
   /// @inheritdoc ISchedule
@@ -165,6 +164,7 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) external view override returns (uint256) {
+    // return previousInterestDueTimeAt(startTime, timestamp);
     return
       Math.max(
         previousInterestDueTimeAt(startTime, timestamp),
@@ -200,7 +200,8 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) public view override returns (uint256) {
-    return _startOfInterestPeriod(startTime, interestPeriodAt(startTime, timestamp));
+    uint interestPeriod = interestPeriodAt(startTime, timestamp);
+    return interestPeriod > 0 ? _startOfInterestPeriod(startTime, interestPeriod) : 0;
   }
 
   /// @inheritdoc ISchedule
@@ -208,7 +209,8 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) public view override returns (uint256) {
-    return _startOfPrincipalPeriod(startTime, principalPeriodAt(startTime, timestamp));
+    uint principalPeriod = principalPeriodAt(startTime, timestamp);
+    return principalPeriod > 0 ? _startOfPrincipalPeriod(startTime, principalPeriod) : 0;
   }
 
   //===============================================================================
@@ -287,8 +289,7 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 principalPeriod
   ) internal view returns (uint256) {
-    // principalPeriod = Math.min(principalPeriod, totalPrincipalPeriods());
-    uint256 period = _principalPeriodToPeriod(principalPeriod);
+    uint256 period = _principalPeriodToPeriod(principalPeriod.add(gracePrincipalPeriods));
     uint256 absPeriod = _periodToAbsolutePeriod(startTime, period);
     return periodMapper.startOf(absPeriod);
   }
@@ -298,7 +299,6 @@ contract Schedule is ISchedule {
     uint256 startTime,
     uint256 interestPeriod
   ) internal view returns (uint256) {
-    // interestPeriod = Math.min(interestPeriod, totalInterestPeriods());
     uint256 period = _interestPeriodToPeriod(interestPeriod);
     uint256 absPeriod = _periodToAbsolutePeriod(startTime, period);
     return periodMapper.startOf(absPeriod);

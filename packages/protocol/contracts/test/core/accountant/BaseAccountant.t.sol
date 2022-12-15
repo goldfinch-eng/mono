@@ -142,18 +142,6 @@ contract AccountantBaseTest is BaseTest {
     _;
   }
 
-  modifier withNextDueTime(TestCreditLine cl, uint256 _nextDueTime) {
-    // TODO(will)
-    // cl.setNextDueTime(_nextDueTime);
-    _;
-  }
-
-  modifier withTermEndTime(TestCreditLine cl, uint256 _termEndTime) {
-    // TODO(will)
-    // cl.setTermEndTime(_termEndTime);
-    _;
-  }
-
   modifier withInterestOwed(TestCreditLine cl, uint256 _interestOwed) {
     // TODO(will)
     // cl.setInterestOwed(_interestOwed);
@@ -163,12 +151,6 @@ contract AccountantBaseTest is BaseTest {
   modifier withLastFullPaymentTime(TestCreditLine cl, uint256 _lastFullPaymentTime) {
     // TODO(will)
     // cl.setLastFullPaymentTime(_lastFullPaymentTime);
-    _;
-  }
-
-  modifier withPaymentPeriodInDays(TestCreditLine cl, uint256 _paymentPeriodInDays) {
-    // TODO(will)
-    // cl.setPaymentPeriodInDays(_paymentPeriodInDays);
     _;
   }
 }

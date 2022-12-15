@@ -3,6 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {console2 as console} from "forge-std/console2.sol";
 import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
@@ -161,17 +162,17 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(amount > 0, "Invalid drawdown amount");
 
     if (balance == 0) {
-      lastFullPaymentTime = block.timestamp;
       if (!schedule.isActive()) {
         schedule.startAt(block.timestamp);
       }
+      lastFullPaymentTime = termStartTime();
     }
 
     // The balance is about to change.. checkpoint amounts owed!
     _checkpoint();
 
     balance = balance.add(amount);
-    totalPrincipalPaid = totalPrincipalPaid.saturatingSub(amount);
+    totalPrincipalPaid = limit().sub(balance);
     require(!_isLate(block.timestamp), "Cannot drawdown when payments are past due");
   }
 
@@ -273,6 +274,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   /// @inheritdoc ICreditLine
   function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
+    if (!schedule.isActive()) {
+      return 0;
+    }
+
     uint256 currentPrincipalPeriod = schedule.principalPeriodAt(timestamp);
     uint256 totalPrincipalPeriods = schedule.totalPrincipalPeriods();
     return currentLimit.mul(currentPrincipalPeriod).div(totalPrincipalPeriods);
@@ -298,7 +303,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   /// @inheritdoc ICreditLine
-  function termStartTime() external view override returns (uint256) {
+  function termStartTime() public view override returns (uint256) {
     return schedule.termStartTime();
   }
 
@@ -353,8 +358,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
-    uint256 gracePeriodInSeconds = config.getLatenessGracePeriodInDays() * 1 days;
-    return lastFullPaymentTime < schedule.previousDueTimeAt(timestamp) + gracePeriodInSeconds;
+    uint256 gracePeriodInSeconds = config.getLatenessGracePeriodInDays().mul(SECONDS_PER_DAY);
+    return
+      balance > 0 &&
+      lastFullPaymentTime < schedule.previousDueTimeAt(timestamp).add(gracePeriodInSeconds);
   }
 }
 
@@ -402,12 +409,12 @@ library PaymentScheduleLib {
     return s.startTime != 0;
   }
 
-  function termEndTime(PaymentSchedule storage s) internal view isActiveMod(s) returns (uint256) {
-    return s.schedule.termEndTime(s.startTime);
+  function termEndTime(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.termEndTime(s.startTime) : 0;
   }
 
-  function termStartTime(PaymentSchedule storage s) internal view isActiveMod(s) returns (uint256) {
-    return s.schedule.termStartTime(s.startTime);
+  function termStartTime(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.termStartTime(s.startTime) : 0;
   }
 
   function nextDueTimeAt(
