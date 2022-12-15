@@ -358,8 +358,8 @@ contract TranchedPoolBaseTest is BaseTest {
   }
 
   function periodInSeconds(TranchedPool pool) internal returns (uint256) {
-    // TODO(will)
-    return 0;
+    // return 0;
+    // return pool.creditLine().nextDueTime() - pool.creditLine().previousDueTime();
     // return pool.creditLine().paymentPeriodInDays() * TestConstants.SECONDS_PER_DAY;
   }
 

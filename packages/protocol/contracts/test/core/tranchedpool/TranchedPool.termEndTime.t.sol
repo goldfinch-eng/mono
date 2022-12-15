@@ -14,7 +14,8 @@ contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     setMaxLimit(pool, amount * 5);
 
-    assertZero(cl.termEndTime());
+    vm.expectRevert(bytes("NA"));
+    cl.termEndTime();
     fundAndDrawdown(pool, amount, GF_OWNER);
     assertEq(cl.termEndTime(), block.timestamp + termInSeconds(cl));
   }
@@ -37,8 +38,6 @@ contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
   }
 
   function termInSeconds(CreditLine cl) internal returns (uint256) {
-    return 0;
-    // todo(will)
-    // return cl.termInDays() * (1 days);
+    return cl.termEndTime() - cl.termStartTime();
   }
 }

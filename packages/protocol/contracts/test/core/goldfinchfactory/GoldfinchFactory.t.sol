@@ -5,9 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import {BaseTest} from "../BaseTest.t.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
@@ -55,21 +58,17 @@ contract GoldfinchFactoryTest is BaseTest {
       vm.getNonce(address(gfFactory))
     );
     emit PoolCreated(ITranchedPool(expectedPoolAddress), address(this));
-    // TODO(will)
-    ITranchedPool pool;
-    //   = gfFactory.createPool(
-    //     address(this),
-    //     1,
-    //     2,
-    //     3,
-    //     4,
-    //     5,
-    //     6,
-    //     7,
-    //     block.timestamp,
-    //     allowedIdTypes
-    //   );
-    //   assertEq(address(pool), expectedPoolAddress);
+    ITranchedPool pool = gfFactory.createPool(
+      address(this),
+      1,
+      2,
+      3,
+      defaultSchedule(),
+      7,
+      block.timestamp,
+      allowedIdTypes
+    );
+    assertEq(address(pool), expectedPoolAddress);
   }
 
   function testBorrowerCanCreatePool() public {
@@ -78,26 +77,22 @@ contract GoldfinchFactoryTest is BaseTest {
     grantRole(address(gfFactory), TestConstants.BORROWER_ROLE, address(this));
 
     uint256[] memory allowedIdTypes = new uint256[](1);
-    vm.expectEmit(true, true, false, false);
     address expectedPoolAddress = computeCreateAddress(
       address(gfFactory),
       vm.getNonce(address(gfFactory))
     );
+    vm.expectEmit(true, true, false, false);
     emit PoolCreated(ITranchedPool(expectedPoolAddress), address(this));
-    // TODO(will)
-    ITranchedPool pool;
-    // = gfFactory.createPool(
-    //   address(this),
-    //   1,
-    //   2,
-    //   3,
-    //   4,
-    //   5,
-    //   6,
-    //   7,
-    //   block.timestamp,
-    //   allowedIdTypes
-    // );
+    ITranchedPool pool = gfFactory.createPool(
+      address(this),
+      1,
+      2,
+      3,
+      defaultSchedule(),
+      7,
+      block.timestamp,
+      allowedIdTypes
+    );
     assertEq(address(pool), expectedPoolAddress);
   }
 
@@ -108,21 +103,18 @@ contract GoldfinchFactoryTest is BaseTest {
     vm.assume(!gfFactory.hasRole(TestConstants.BORROWER_ROLE, notAdminOrBorrower));
 
     uint256[] memory allowedIdTypes = new uint256[](1);
+    ISchedule schedule = defaultSchedule();
     vm.expectRevert("Must have admin or borrower role to perform this action");
-    // TODO(will)
-    ITranchedPool pool;
-    // = gfFactory.createPool(
-    //   address(this),
-    //   1,
-    //   2,
-    //   3,
-    //   4,
-    //   5,
-    //   6,
-    //   7,
-    //   block.timestamp,
-    //   allowedIdTypes
-    // );
+    ITranchedPool pool = gfFactory.createPool(
+      address(this),
+      1,
+      2,
+      3,
+      schedule,
+      7,
+      block.timestamp,
+      allowedIdTypes
+    );
   }
 
   function testOwnerCanGrantBorrowerRole(address newBorrower) public impersonating(GF_OWNER) {
@@ -149,6 +141,32 @@ contract GoldfinchFactoryTest is BaseTest {
     _startImpersonation(borrower);
     vm.expectRevert("AccessControl: sender must be an admin to grant");
     gfFactory.grantRole(TestConstants.BORROWER_ROLE, newBorrower);
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);

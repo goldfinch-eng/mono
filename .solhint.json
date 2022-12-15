@@ -109,23 +109,6 @@
           "assess": ["whenNotPaused"],
           "pay": ["whenNotPaused"]
         },
-        "**/TranchedPoolV2.sol:TranchedPoolV2": {
-          "setAllowedUIDTypes": ["onlyLocker"],
-          "deposit": ["whenNotPaused"],
-          "depositWithPermit": [],
-          "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
-          "lockPool": ["whenNotPaused", "onlyLocker"],
-          "setFundableAt": ["onlyLocker"],
-          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
-          "withdraw": ["whenNotPaused"],
-          "withdrawMax": ["whenNotPaused"],
-          "withdrawMultiple": [],
-          "drawdown": ["whenNotPaused"],
-          "pay": ["whenNotPaused"],
-          "paySeparate": ["whenNotPaused"],
-          "checkpoint": ["whenNotPaused"],
-          "assess": ["whenNotPaused"]
-        },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
           "pause": [],

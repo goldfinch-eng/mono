@@ -118,7 +118,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     require(trancheInfo.lockedUntil == 0, "TL");
     require(amount > 0, "IA");
     require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp > fundableAt, "Not open");
+    require(block.timestamp >= fundableAt, "Not open");
     // senior tranche ids are always odd numbered
     if (TranchingLogic.isSeniorTrancheId(trancheInfo.id)) {
       require(hasRole(SENIOR_ROLE, _msgSender()), "NA");

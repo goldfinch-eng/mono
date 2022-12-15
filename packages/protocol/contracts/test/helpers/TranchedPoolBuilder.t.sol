@@ -17,20 +17,14 @@ contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;
   uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
-  uint256 public constant DEFAULT_PERIOD_IN_DAYS = 30;
-  uint256 public constant DEFAULT_TERM_IN_DAYS = 365;
   uint256 public constant DEFAULT_LATE_APR = 0;
-  uint256 public constant DEFAULT_PRINCIPAL_GRACE_PERIOD_DAYS = 185;
 
   GoldfinchFactory private gfFactory;
   SeniorPool private seniorPool;
   uint256 private juniorFeePercent;
   uint256 private maxLimit;
   uint256 private apr;
-  uint256 private periodInDays;
-  uint256 private termInDays;
   uint256 private lateFeeApr;
-  uint256 private principalGracePeriodInDays;
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
@@ -40,10 +34,7 @@ contract TranchedPoolBuilder {
     juniorFeePercent = DEFAULT_JUNIOR_FEE_PERCENT;
     maxLimit = DEFAULT_MAX_LIMIT;
     apr = DEFAULT_APR;
-    periodInDays = DEFAULT_PERIOD_IN_DAYS;
-    termInDays = DEFAULT_TERM_IN_DAYS;
     lateFeeApr = DEFAULT_LATE_APR;
-    principalGracePeriodInDays = DEFAULT_PRINCIPAL_GRACE_PERIOD_DAYS;
     fundableAt = block.timestamp;
   }
 
@@ -103,25 +94,8 @@ contract TranchedPoolBuilder {
     return this;
   }
 
-  function withPeriodInDays(uint256 _periodInDays) external returns (TranchedPoolBuilder) {
-    periodInDays = _periodInDays;
-    return this;
-  }
-
-  function withTermInDays(uint256 _termInDays) external returns (TranchedPoolBuilder) {
-    termInDays = _termInDays;
-    return this;
-  }
-
   function withLateFeeApr(uint256 _lateFeeApr) external returns (TranchedPoolBuilder) {
     lateFeeApr = _lateFeeApr;
-    return this;
-  }
-
-  function withPrincipalGracePeriodInDays(
-    uint256 _principalGracePeriodInDays
-  ) external returns (TranchedPoolBuilder) {
-    principalGracePeriodInDays = _principalGracePeriodInDays;
     return this;
   }
 
