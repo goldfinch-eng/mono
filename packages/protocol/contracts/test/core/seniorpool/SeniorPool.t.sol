@@ -12,6 +12,9 @@ import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 
 contract SeniorPoolTest is SeniorPoolBaseTest {
   /*================================================================================
@@ -246,5 +249,31 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
 
     // Should use the 4x leverage strategy
     assertEq(sp.estimateInvestment(tp), 4 * juniorAmount);
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 }

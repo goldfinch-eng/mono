@@ -3,11 +3,14 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
-import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
-import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
   function testInitializationSetsCorrectTrancheDefaults() public {
@@ -36,39 +39,48 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
   function testInitializationCantHappenTwice() public {
     (TranchedPool pool, ) = defaultTranchedPool();
     uint256[] memory uidTypes = new uint256[](1);
+    ISchedule s = defaultSchedule();
     vm.expectRevert("Contract instance has already been initialized");
-    // TODO(will)
-    // pool.initialize(address(gfConfig), BORROWER, 0, 0, 0, 0, 0, 0, 0, block.timestamp, uidTypes);
+    pool.initialize(address(gfConfig), BORROWER, 0, 0, 0, s, 0, block.timestamp, uidTypes);
   }
 
   function testCreditLineCannotBeReinitialized() public {
     (, CreditLine cl) = defaultTranchedPool();
 
-    // Initializer without "other" cl
+    ISchedule s = defaultSchedule();
     vm.expectRevert("Contract instance has already been initialized");
-    // TODO(will)
-    // cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, 0, 0, 0, 0);
-
-    // Initializer with "other" cl
-    vm.expectRevert("Contract instance has already been initialized");
-    // TODO(will)
-    // cl.initialize(
-    //   address(gfConfig),
-    //   GF_OWNER,
-    //   BORROWER,
-    //   0,
-    //   0,
-    //   0,
-    //   0,
-    //   0,
-    //   0,
-    //   ICreditLine(address(cl))
-    // );
+    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
   }
 
   function testGetAmountsOwedFailedForUninitializedCreditLine() public {
     (TranchedPool pool, ) = defaultTranchedPool();
     vm.expectRevert(bytes("LI"));
     pool.getAmountsOwed(block.timestamp);
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 }

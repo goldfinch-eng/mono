@@ -3,15 +3,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
-import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
-import {TestTranchedPool} from "../TestTranchedPool.sol";
 import {CreditLine} from "../../protocol/core/CreditLine.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {MonthlyPeriodMapper} from "../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {Schedule} from "../../protocol/core/schedule/Schedule.sol";
+import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
+import {TestTranchedPool} from "../TestTranchedPool.sol";
 
 contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;

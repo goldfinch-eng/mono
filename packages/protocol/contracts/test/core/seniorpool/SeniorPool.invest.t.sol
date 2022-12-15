@@ -3,16 +3,18 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 
 contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   function testInvestRevertsForInvalidPool() public {
     TestTranchedPool tp = new TestTranchedPool();
     uint256[] memory ids = new uint256[](1);
-    // TODO(will)
-    // tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, 1, 1, 1, 1, block.timestamp, ids);
+    tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, defaultSchedule(), 1, block.timestamp, ids);
     vm.expectRevert("Pool must be valid");
     sp.invest(tp);
   }
@@ -166,5 +168,31 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
     vm.expectRevert("not enough usdc");
     sp.invest(tp);
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 }
