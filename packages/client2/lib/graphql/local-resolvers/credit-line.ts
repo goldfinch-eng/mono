@@ -82,7 +82,7 @@ export const creditLineResolvers: Resolvers[string] = {
     // If we are on our last period of the term, then it's interestOwed + principal
     // This is a bullet loan, so full principal is paid only at the end of the credit line term
     if (creditLine.nextDueTime.gte(creditLine.termEndTime)) {
-      return currentInterestOwed.add(creditLine.balance);
+      currentInterestOwed.add(creditLine.balance);
     }
 
     // collectedPaymentBalance is the amount that's been paid so far for the period

@@ -1,12 +1,13 @@
 import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { CreditLine } from "@/lib/graphql/generated";
+import { useBorrowPageQuery } from "@/lib/graphql/generated";
+import { openWalletModal } from "@/lib/state/actions";
+import { useWallet } from "@/lib/wallet";
 
-import { Heading, Icon } from "../../components/design-system";
-import { formatCrypto, formatPercent } from "../../lib/format";
-import { useBorrowPageQuery } from "../../lib/graphql/generated";
-import { useWallet } from "../../lib/wallet";
+import { Button, Heading, Icon } from "../../components/design-system";
 import { CreditLineCard } from "./credit-line-card";
 
 gql`
@@ -28,7 +29,6 @@ gql`
             limit
             maxLimit
             version
-            interestOwed
             termStartTime
             termEndTime
             lastFullPaymentTime
@@ -93,12 +93,10 @@ const getDueDateLabel = (creditLine: CreditLine) => {
 
 export default function PoolPage() {
   const { account } = useWallet();
-
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",
     },
-    returnPartialData: true,
   });
 
   const borrowerContracts = data?.user?.borrowerContracts;
@@ -108,14 +106,6 @@ export default function PoolPage() {
     borrowerContracts && borrowerContracts.length > 0
       ? borrowerContracts[0].tranchedPools
       : null;
-
-  if (loading) {
-    return <div className="text-xl">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-2xl">Unable to load credit lines</div>;
-  }
 
   return (
     <div>
@@ -135,7 +125,20 @@ export default function PoolPage() {
         Credit Line
       </Heading>
 
-      {!tranchedPools || tranchedPools.length === 0 ? (
+      {!account && !loading ? (
+        <div className="text-lg font-medium text-clay-500">
+          You must connect your wallet to view your credit lines
+          <div className="mt-3">
+            <Button size="xl" onClick={openWalletModal}>
+              Connect Wallet
+            </Button>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="text-2xl">Unable to load credit lines</div>
+      ) : loading ? (
+        <div className="text-xl">Loading...</div>
+      ) : !tranchedPools || tranchedPools.length === 0 ? (
         <div
           className={
             "max-w-[750px] rounded-xl border border-tidepool-200 bg-tidepool-100 p-5"
@@ -156,7 +159,7 @@ export default function PoolPage() {
               amount: creditLine.maxLimit,
             });
 
-            const interest = formatPercent(creditLine.interestAprDecimal);
+            const interestRate = formatPercent(creditLine.interestAprDecimal);
 
             const nextPayment = formatCrypto({
               token: "USDC",
@@ -167,10 +170,9 @@ export default function PoolPage() {
 
             return (
               <div key={id}>
-                {/* <p>{`Address: ${id.toLocaleLowerCase()}`}</p> */}
                 <CreditLineCard
                   className="mb-3 lg:w-3/5"
-                  slot1={`${creditLineLimit} at ${interest}`}
+                  slot1={`${creditLineLimit} at ${interestRate}`}
                   slot1Label={i === 0 ? "Credit Lines" : undefined}
                   slot2={nextPayment}
                   slot2Label={i === 0 ? "Next Payment" : undefined}
