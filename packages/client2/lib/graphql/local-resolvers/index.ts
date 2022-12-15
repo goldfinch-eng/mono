@@ -11,6 +11,7 @@ import { seniorPoolStatusResolvers } from "./senior-pool-status";
 import { seniorPoolWithdrawalRequestResolvers } from "./senior-pool-withdrawal-request";
 import { stakedPositionResolvers } from "./staked-position";
 import { tranchedPoolResolvers } from "./tranched-pool";
+import { userResolvers } from "./user";
 import { viewerResolvers } from "./viewer";
 
 export const resolvers: Resolvers = {
@@ -24,4 +25,5 @@ export const resolvers: Resolvers = {
   TranchedPool: tranchedPoolResolvers,
   SeniorPoolWithdrawalRequest: seniorPoolWithdrawalRequestResolvers,
   SeniorPoolStatus: seniorPoolStatusResolvers,
+  User: userResolvers,
 };

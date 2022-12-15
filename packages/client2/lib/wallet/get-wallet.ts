@@ -37,3 +37,9 @@ export function getFreshProvider() {
     DESIRED_CHAIN_ID
   );
 }
+
+// TODO yarn patch this to make the batching invervals longer than 10ms
+export const batchProvider = new ethers.providers.JsonRpcBatchProvider(
+  RPC_URLS[DESIRED_CHAIN_ID],
+  DESIRED_CHAIN_ID
+);
