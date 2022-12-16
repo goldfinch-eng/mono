@@ -106,10 +106,10 @@ export async function upgradeContracts({
     const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
     await openzeppelin_assertIsValidImplementation(implDeployment)
     // To upgrade the manifest:
-    //  1. run `npm run generate-manifest` on main
+    //  1. run `yarn generate-manifest` on main
     //  2. checkout your branch
     //  3. copy/paste it to .openzeppelin/unknown-*.json
-    //  4. run `npm run generate-manifest` again
+    //  4. run `yarn generate-manifest` again
     await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
 
     const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDeployment.address})).connect(

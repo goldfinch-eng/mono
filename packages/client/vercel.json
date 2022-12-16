@@ -1,4 +1,7 @@
 {
+  "buildCommand": "yarn workspaces foreach -Rpt run build",
+  "installCommand": "yarn workspaces focus @goldfinch-eng/client",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./ && git diff --quiet HEAD^ HEAD ../../yarn.lock",
   "headers": [
     {
       "source": "/(.*)",

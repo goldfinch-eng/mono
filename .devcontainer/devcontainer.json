@@ -1,43 +1,41 @@
 {
-	"name": "Java 8",
-	"runArgs": ["--init"],
-	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			// Use the VARIANT arg to pick a Debian OS version: buster, bullseye
-			// Use bullseye when running on local arm64/Apple Silicon.
-			"VARIANT": "bullseye",
-			// Options
-			"INSTALL_MAVEN": "false",
-			"INSTALL_GRADLE": "false",
-			"NODE_VERSION": "lts/*"
-		}
-	},
+  "name": "Java 8",
+  "runArgs": ["--init"],
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      // Use the VARIANT arg to pick a Debian OS version: buster, bullseye
+      // Use bullseye when running on local arm64/Apple Silicon.
+      "VARIANT": "bullseye",
+      // Options
+      "INSTALL_MAVEN": "false",
+      "INSTALL_GRADLE": "false",
+      "NODE_VERSION": "lts/*"
+    }
+  },
 
-	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"java.home": "/docker-java-home",
-		"java.import.gradle.java.home": "/usr/local/sdkman/candidates/java/current",
-		"java.configuration.runtimes": [{
-			"default": true,
-			"name": "JavaSE-1.8",
-			"path": "/usr/local/sdkman/candidates/java/current"
-		}]
-	},
+  // Set *default* container specific settings.json values on container create.
+  "settings": {
+    "java.home": "/docker-java-home",
+    "java.import.gradle.java.home": "/usr/local/sdkman/candidates/java/current",
+    "java.configuration.runtimes": [
+      {
+        "default": true,
+        "name": "JavaSE-1.8",
+        "path": "/usr/local/sdkman/candidates/java/current"
+      }
+    ]
+  },
 
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"vscjava.vscode-java-pack",
-		"dbaeumer.vscode-eslint",
-		"JuanBlanco.solidity"
-	],
+  // Add the IDs of extensions you want installed when the container is created.
+  "extensions": ["vscjava.vscode-java-pack", "dbaeumer.vscode-eslint", "JuanBlanco.solidity"],
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "npm install && npm run bootstrap",
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "yarn install && yarn bootstrap",
 
-	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "vscode"
+  // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode"
 }

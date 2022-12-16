@@ -48,7 +48,7 @@ try {
   );
 } catch (e) {
   console.error(
-    "Failed to copy GFI grant files. You probably need to generate them! The easiest way is to run `npm run start:local` from the workspace root."
+    "Failed to copy GFI grant files. You probably need to generate them! The easiest way is to run `yarn start:local` from the workspace root."
   );
   console.error(e);
   exit(1);

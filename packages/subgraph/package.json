@@ -1,23 +1,27 @@
 {
   "name": "@goldfinch-eng/subgraph",
+  "version": "0.1.0",
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  },
   "scripts": {
     "codegen": "graph codegen",
-    "build": "graph codegen && graph build",
+    "build": "yarn prebuild && graph codegen && graph build",
     "prebuild": "ts-node ./scripts/update-address-manifest.ts",
     "test": "graph test",
-    "deploy-prod": "graph codegen && graph deploy --product hosted-service goldfinch-eng/goldfinch-v2",
+    "deploy-prod": "yarn predeploy-prod && graph codegen && graph deploy --product hosted-service goldfinch-eng/goldfinch-v2",
     "predeploy-prod": "ts-node ./scripts/update-address-manifest.ts",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
-    "deploy-local": "graph codegen && graph deploy --node http://localhost:8020 --ipfs http://localhost:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
+    "deploy-local": "yarn predeploy-local && graph codegen && graph deploy --node http://localhost:8020 --ipfs http://localhost:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
     "predeploy-local": "ts-node ./scripts/setup-subgraph-manifest-local.ts && NETWORK_NAME=localhost ts-node ./scripts/update-address-manifest.ts",
-    "deploy-local-nonlocal-ipfs": "graph codegen && graph deploy --node http://localhost:8020 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
-    "predeploy-local-nonlocal-ipfs": "npm run predeploy-local",
+    "deploy-local-nonlocal-ipfs": "yarn predeploy-local-nonlocal-ipfs && graph codegen && graph deploy --node http://localhost:8020 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
+    "predeploy-local-nonlocal-ipfs": "yarn predeploy-local",
     "start-local": "docker compose --env-file .env.local-subgraph up -d",
     "stop-local": "docker compose --env-file .env.local-subgraph down -v && rm -rf data"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.37.0",
+    "@graphprotocol/graph-cli": "^0.37.1",
     "@graphprotocol/graph-ts": "^0.29.0"
   },
   "devDependencies": {
@@ -25,6 +29,6 @@
     "@types/node": "^18.11.9",
     "js-yaml": "^3.14.1",
     "matchstick-as": "^0.5.0",
-    "ts-node": "^10.2.1"
+    "ts-node": "^10.9.1"
   }
 }

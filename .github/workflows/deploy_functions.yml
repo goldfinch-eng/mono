@@ -17,17 +17,10 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Cache node modules
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          cache: yarn
       - name: Cache Firestore emulator
         uses: actions/cache@v2
         env:
@@ -35,13 +28,13 @@ jobs:
         with:
           path: ~/.cache/firebase/emulators
           key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      - run: npx lerna bootstrap --ci --scope @goldfinch-eng/functions --include-dependencies
-      - run: npx lerna run build --stream --scope @goldfinch-eng/functions --include-dependencies
-      - run: npx lerna run ci_test --stream --scope @goldfinch-eng/functions
+      - run: yarn workspaces focus @goldfinch-eng/functions
+      - run: yarn workspaces foreach -ptR --from @goldfinch-eng/functions run build
+      - run: yarn workspace @goldfinch-eng/functions ci_test
       - name: deploy-dev
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
+        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn pre-deploy && yarn firebase deploy --only functions --project dev"
         if: github.ref == 'refs/heads/main'
       - name: Create Sentry release
         uses: getsentry/action-release@v1
@@ -57,7 +50,7 @@ jobs:
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
+        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_prod && yarn pre-deploy && yarn firebase deploy --only functions --project prod"
         if: github.ref == 'refs/heads/main'
       - name: Create Sentry release
         uses: getsentry/action-release@v1
