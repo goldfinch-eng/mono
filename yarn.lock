@@ -4791,6 +4791,7 @@ __metadata:
     "@coinbase/wallet-sdk": ^3.2.0
     "@download/blockies": ^1.0.3
     "@floating-ui/react-dom-interactions": ^0.3.1
+    "@goldfinch-eng/utils": ^0.0.1
     "@graphql-codegen/cli": ^2.6.2
     "@graphql-codegen/introspection": ^2.1.1
     "@graphql-codegen/typescript": ^2.5.1

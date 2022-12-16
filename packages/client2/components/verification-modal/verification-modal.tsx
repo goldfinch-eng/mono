@@ -1,4 +1,5 @@
 import { Modal, ModalProps } from "@/components/design-system";
+import { useState } from "react";
 
 import { Flow } from "./flow";
 
@@ -8,10 +9,11 @@ interface VerificationModalProps {
 }
 
 export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
+  const [title, setTitle] = useState<string>("Verify your identity");
   return (
     <Modal
       size="xs"
-      title="Verify your identity"
+      title={title}
       isOpen={isOpen}
       onClose={onClose}
       divider={true}
@@ -20,7 +22,7 @@ export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
         style={{ minHeight: "400px", display: "flex", flexDirection: "column" }}
         data-id="verification.modal"
       >
-        <Flow />
+        <Flow setTitle={setTitle} />
       </div>
     </Modal>
   );

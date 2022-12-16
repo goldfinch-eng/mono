@@ -8,14 +8,21 @@ import { IdWarningStep } from "./steps/id-warning-step";
 import { IneligibleStep } from "./steps/ineligible-step";
 import { IntroStep } from "./steps/intro-step";
 import { MintStep } from "./steps/mint-step";
+import { MintToAddressEntryStep } from "./steps/mint-to-address-entry-step";
 import { ParallelMarketsStep } from "./steps/parallel-markets-step";
 import { PendingStep } from "./steps/pending-step";
 import { PersonaStep } from "./steps/persona-step";
 import { ResidencyStep } from "./steps/residency-step";
 import { StatusCheckStep } from "./steps/status-check-step";
 import { VerificationFlowContext } from "./verification-flow-context";
+import { useState } from "react";
+import { stringToCryptoAmount } from "@/lib/format";
 
-export function Flow() {
+interface FlowProps {
+  setTitle: (title: string) => void;
+}
+
+export function Flow({ setTitle }: FlowProps) {
   return (
     <VerificationFlowContext>
       <Wizard>
@@ -29,7 +36,8 @@ export function Flow() {
         <PersonaStep />
         <ParallelMarketsStep />
         <PendingStep />
-        <MintStep />
+        <MintStep setTitle={setTitle} />
+        <MintToAddressEntryStep setTitle={setTitle} />
         <IneligibleStep />
         <AlreadyMintedStep />
       </Wizard>

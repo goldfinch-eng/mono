@@ -99,13 +99,14 @@ export function getUIDLabelFromType(type: UIDType): string {
 export async function fetchUniqueIdentitySigner(
   account: string,
   signature: string,
-  signatureBlockNum: number
+  signatureBlockNum: number,
+  mintToAddress?: string
 ) {
   const url = UNIQUE_IDENTITY_SIGNER_URL;
   const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ auth }),
+    body: JSON.stringify({ auth, mintToAddress }),
     method: "POST",
   });
   if (!res.ok) {

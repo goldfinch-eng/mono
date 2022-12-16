@@ -1,12 +1,11 @@
 import { useApolloClient } from "@apollo/client";
 import Image from "next/future/image";
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
+import { Button, InfoIconTooltip, Link } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
-import { usePoller } from "@/lib/utils";
 import {
   fetchUniqueIdentitySigner,
   getUIDLabelFromType,
@@ -19,9 +18,25 @@ import { useVerificationFlowContext } from "../verification-flow-context";
 import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
 import uidLogo2 from "./uid-logo2.png";
+import { useWizard } from "react-use-wizard";
 
-export function MintStep() {
-  const { signature } = useVerificationFlowContext();
+interface MintStepProps {
+  setTitle: (title: string) => void;
+}
+
+export function MintStep({ setTitle }: MintStepProps) {
+  useEffect(() => {
+    setTitle("Mint your UID");
+  });
+  const {
+    signature,
+    mintingParameters,
+    setMintingParameters,
+    mintToAddress,
+    uidVersion,
+    triggerMintTo,
+    setTriggerMintTo,
+  } = useVerificationFlowContext();
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
@@ -29,44 +44,22 @@ export function MintStep() {
   const [isMinting, setIsMinting] = useState(false);
   const [isMinted, setIsMinted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [mintingParameters, setMintingParameters] = useState<{
-    id: number;
-    expiresAt: number;
-    signature: string;
-  }>();
-
-  const poller = useCallback(async () => {
-    if (!account || !signature) {
-      return "CONTINUE_POLLING";
-    }
-    try {
-      const signer = await fetchUniqueIdentitySigner(
-        account,
-        signature.signature,
-        signature.signatureBlockNum
-      );
-      setMintingParameters({
-        id: signer.idVersion,
-        expiresAt: signer.expiresAt,
-        signature: signer.signature,
-      });
-      return "FINISH_POLLING";
-    } catch (e) {
-      return "CONTINUE_POLLING";
-    }
-  }, [account, signature]);
-  const onMaxPoll = useCallback(
-    () => setErrorMessage("Unable to verify eligibility to mint."),
-    []
-  );
-  const { isPolling } = usePoller({
-    callback: poller,
-    delay: 5000,
-    onMaxPoll,
-  });
+  const { nextStep } = useWizard();
 
   const handleMint = async () => {
-    if (!mintingParameters || !provider) {
+    setIsMinting(true);
+    if (!account || !signature) {
+      setErrorMessage("Unable to verify eligibility to mint.");
+    }
+    const signer = await fetchUniqueIdentitySigner(
+      account,
+      signature.signature,
+      signature.signatureBlockNum,
+      mintToAddress
+    );
+    if (!provider) {
+      console.error(e);
+      setErrorMessage("Error while minting");
       return;
     }
     try {
@@ -74,17 +67,32 @@ export function MintStep() {
         name: "UniqueIdentity",
         provider,
       });
-      setIsMinting(true);
+
       const gasPrice = await provider.getGasPrice();
-      const transaction = uidContract.mint(
-        mintingParameters.id,
-        mintingParameters.expiresAt,
-        mintingParameters.signature,
-        {
-          value: UNIQUE_IDENTITY_MINT_PRICE,
-          gasPrice: gasPrice,
-        }
-      );
+
+      let transaction;
+      if (mintToAddress) {
+        transaction = uidContract.mintTo(
+          mintToAddress,
+          signer.idVersion,
+          signer.expiresAt,
+          signer.signature,
+          {
+            value: UNIQUE_IDENTITY_MINT_PRICE,
+            gasPrice: gasPrice,
+          }
+        );
+      } else {
+        transaction = uidContract.mint(
+          signer.idVersion,
+          signer.expiresAt,
+          signer.signature,
+          {
+            value: UNIQUE_IDENTITY_MINT_PRICE,
+            gasPrice: gasPrice,
+          }
+        );
+      }
       await toastTransaction({
         transaction,
         pendingPrompt: "UID mint submitted.",
@@ -93,11 +101,19 @@ export function MintStep() {
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
     } catch (e) {
+      console.error(e);
       setErrorMessage("Error while minting");
     } finally {
+      setTriggerMintTo(false);
       setIsMinting(false);
     }
   };
+
+  useEffect(() => {
+    if (mintToAddress && !isMinting && triggerMintTo) {
+      handleMint();
+    }
+  });
 
   return (
     <StepTemplate
@@ -110,16 +126,28 @@ export function MintStep() {
       headingClassName="font-medium"
       footer={
         !isMinted ? (
-          <Button
-            disabled={!mintingParameters}
-            isLoading={isMinting}
-            size="lg"
-            onClick={handleMint}
-            iconRight="ArrowSmRight"
-            className="w-full"
-          >
-            Claim my UID
-          </Button>
+          <div className="w-full">
+            <Button
+              disabled={isMinting}
+              isLoading={isMinting}
+              size="lg"
+              onClick={handleMint}
+              iconRight="ArrowSmRight"
+              className="w-full"
+            >
+              Claim my UID
+            </Button>
+            <>
+              <Link
+                href="#"
+                style={{ display: "inline-block" }}
+                className="w-full pt-3 text-center text-sand-500"
+                onClick={nextStep}
+              >
+                Mint to a smart contract wallet instead
+              </Link>
+            </>
+          </div>
         ) : (
           <ExitFlowButton>Finish</ExitFlowButton>
         )
@@ -132,16 +160,7 @@ export function MintStep() {
         <div>
           {errorMessage ? (
             <div className="text-clay-500">{errorMessage}</div>
-          ) : isPolling ? (
-            <div>
-              <div className="mb-8">
-                <Spinner className="m-auto block !h-20 !w-20" />
-              </div>
-              <div className="text-center">
-                Fetching data for minting your UID, this may take a moment.
-              </div>
-            </div>
-          ) : mintingParameters ? (
+          ) : (
             <div className="text-center">
               <div className="relative m-auto w-max">
                 <Image
@@ -163,11 +182,10 @@ export function MintStep() {
               </div>
               <div>
                 <div className="font-medium">
-                  {getUIDLabelFromType(mintingParameters.id)}
+                  {uidVersion ? getUIDLabelFromType(uidVersion) : null}
                 </div>
                 <div className="mb-5 text-sm text-sand-500">
-                  {mintingParameters.id ===
-                  UIDType.USNonAccreditedIndividual ? (
+                  {uidVersion === UIDType.USNonAccreditedIndividual ? (
                     <div className="flex items-center justify-center gap-1">
                       Limited participation{" "}
                       <InfoIconTooltip
@@ -181,7 +199,7 @@ export function MintStep() {
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
         <div className="text-center text-xs text-sand-400">
           {!isMinted

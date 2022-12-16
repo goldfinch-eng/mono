@@ -27,7 +27,7 @@ import baseHandler from "../core/handler"
 
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
-const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
+const SIGNATURE_EXPIRY_IN_SECONDS = 1800 // 30 minutes
 
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
 const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)

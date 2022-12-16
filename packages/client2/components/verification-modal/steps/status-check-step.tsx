@@ -1,4 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
+import { getIDType } from "@goldfinch-eng/utils";
 import { useEffect, useState } from "react";
 import { useWizard } from "react-use-wizard";
 
@@ -29,7 +30,7 @@ const statusCheckStepQuery = gql`
 export function StatusCheckStep() {
   const { goToStep } = useWizard();
   const apolloClient = useApolloClient();
-  const { setSignature } = useVerificationFlowContext();
+  const { setSignature, setUidVersion } = useVerificationFlowContext();
   const { account, provider } = useWallet();
   const [error, setError] = useState<string>();
 
@@ -68,6 +69,11 @@ export function StatusCheckStep() {
           signature.signature,
           signature.signatureBlockNum
         );
+        const idVersion = getIDType({
+          address: account,
+          kycStatus,
+        });
+        setUidVersion(idVersion);
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);
         } else if (kycStatus.status === "approved") {
