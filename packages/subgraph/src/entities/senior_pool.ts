@@ -125,8 +125,7 @@ export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   poolStatus.estimatedTotalInterest = estimatedTotalInterest
 
   if (poolStatus.assets.notEqual(BigInt.zero())) {
-    const estimatedApy = estimatedTotalInterest.div(poolStatus.assets.toBigDecimal())
-    poolStatus.estimatedApy = estimatedApy
+    poolStatus.estimatedApy = estimatedTotalInterest.div(poolStatus.assets.toBigDecimal())
   }
 
   poolStatus.save()
