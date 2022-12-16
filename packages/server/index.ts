@@ -27,17 +27,18 @@ import {
   createPoolAndFundWithSenior,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
-import {assessTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/assessTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
   assertIsChainId,
+  getEthersContract,
   isMainnetForking,
   LOCAL_CHAIN_ID,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import admin, {firestore} from "firebase-admin"
 
 import {getDb, getUsers} from "@goldfinch-eng/functions/db"
+import {TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 
 const app = express()
 app.use(express.json())
@@ -197,6 +198,14 @@ app.post("/drainSeniorPool", async (req, res) => {
   return res.status(200).send({status: "success", result: JSON.stringify({success: true, pool: poolAddress})})
 })
 
+/**
+ * Assesses a TranchedPool in order to trigger a repayment from the Credit Line.
+ *
+ * On mainnet, we have a Defender autotask that runs every hour and calls TranchedPoool.assess(). This collects
+ * payment from the Credit Line for the most recently *past* nextDueTime and updates the Credit Line accordingly.
+ *
+ * On local we do not have this bot, thus this allows us to manually trigger the assess for testing purposes.
+ */
 app.post("/assessTranchedPool", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "assessTranchedPool only available on local and murmuration"})
@@ -204,13 +213,16 @@ app.post("/assessTranchedPool", async (req, res) => {
 
   try {
     const {tranchedPoolAddress} = req.body
-    await assessTranchedPool(tranchedPoolAddress)
 
-    return res
-      .status(200)
-      .send({status: "success", result: JSON.stringify({success: true, tranchedPool: tranchedPoolAddress})})
+    console.log("💳 Start assessTranchedPool...")
+
+    const tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: tranchedPoolAddress})
+    await tranchedPool.assess()
+
+    console.log("💳 Successfully assessed")
   } catch (e) {
     console.error("assessTranchedPool error", e)
+    return res.status(500).send({message: "assessTranchedPool error"})
   }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})

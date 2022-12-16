@@ -9,24 +9,37 @@ import { getProvider } from "@/lib/wallet";
 async function isCreditLinePaymentLate(
   creditLine: CreditLine
 ): Promise<boolean> {
-  // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
   const provider = await getProvider();
 
-  const currentBlock = await provider.getBlock("latest");
-  if (creditLine.lastFullPaymentTime.isZero()) {
-    // Brand new creditline
-    return false;
+  const creditLineContract = await getContract({
+    name: "CreditLine",
+    address: creditLine.id,
+    provider,
+    useSigner: false,
+  });
+
+  let isLate = false;
+  try {
+    isLate = await creditLineContract.isLate();
+  } catch (e) {
+    // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
+    const currentBlock = await provider.getBlock("latest");
+    if (creditLine.lastFullPaymentTime.isZero()) {
+      // Brand new creditline
+      return false;
+    }
+
+    const secondsSinceLastFullPayment =
+      currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
+
+    const secondsPerDay = 60 * 60 * 24;
+
+    isLate =
+      secondsSinceLastFullPayment >
+      creditLine.paymentPeriodInDays.toNumber() * secondsPerDay;
   }
 
-  const secondsSinceLastFullPayment =
-    currentBlock.timestamp - creditLine.lastFullPaymentTime.toNumber();
-
-  const secondsPerDay = 60 * 60 * 24;
-
-  return (
-    secondsSinceLastFullPayment >
-    creditLine.paymentPeriodInDays.toNumber() * secondsPerDay
-  );
+  return isLate;
 }
 
 async function calculateInterestOwed(
@@ -50,7 +63,7 @@ async function calculateInterestOwed(
 
   const currentInterestOwed = creditLine.interestOwed
     .add(BigNumber.from(expectedAdditionalInterest))
-    .div(BigNumber.from("1000000000000000000")); // 1e18
+    .div(BigNumber.from(String(1e18)));
 
   return currentInterestOwed;
 }

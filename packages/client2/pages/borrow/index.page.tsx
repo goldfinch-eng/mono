@@ -43,14 +43,14 @@ gql`
   }
 `;
 
-export enum CreditLineStatus {
+enum CreditLineStatus {
   PaymentLate,
   PaymentDue,
   Active,
   InActive,
 }
 
-export const getCreditLineStatus = (creditLine: CreditLine) => {
+const getCreditLineStatus = (creditLine: CreditLine) => {
   // Is Late
   if (creditLine.isLate) {
     return CreditLineStatus.PaymentLate;
@@ -93,11 +93,12 @@ const getDueDateLabel = (creditLine: CreditLine) => {
 };
 
 export default function PoolPage() {
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",
     },
+    skip: !account,
   });
 
   const borrowerContracts = data?.user?.borrowerContracts;
@@ -110,11 +111,7 @@ export default function PoolPage() {
 
   return (
     <div>
-      <Heading
-        as="h1"
-        level={2}
-        className="mb-12 text-center !text-5xl md:!text-6xl lg:text-left"
-      >
+      <Heading level={1} className="mb-12">
         Borrow
       </Heading>
 
@@ -126,7 +123,7 @@ export default function PoolPage() {
         Credit Line
       </Heading>
 
-      {!account && !loading ? (
+      {!account && !isActivating ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit lines
           <div className="mt-3">
@@ -137,7 +134,7 @@ export default function PoolPage() {
         </div>
       ) : error ? (
         <div className="text-2xl">Unable to load credit lines</div>
-      ) : loading ? (
+      ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
       ) : !tranchedPools || tranchedPools.length === 0 ? (
         <div
@@ -151,8 +148,17 @@ export default function PoolPage() {
           </div>
         </div>
       ) : (
-        <div>
-          {tranchedPools.map(({ creditLine }, i) => {
+        <div className="mb-3 lg:w-3/5">
+          <div className="mb-3 grid grid-cols-12 px-6 text-sand-500">
+            <div className="col-span-6 block">Credit Lines</div>
+            <div className="col-span-3 hidden justify-self-end md:block">
+              Next Payment
+            </div>
+            <div className="col-span-6 block justify-self-end md:col-span-3">
+              Due Date
+            </div>
+          </div>
+          {tranchedPools.map(({ creditLine }) => {
             const id = creditLine.id;
 
             const creditLineLimit = formatCrypto({
@@ -172,13 +178,10 @@ export default function PoolPage() {
             return (
               <div key={id}>
                 <CreditLineCard
-                  className="mb-3 lg:w-3/5"
-                  slot1={`${creditLineLimit} at ${interestRate}`}
-                  slot1Label={i === 0 ? "Credit Lines" : undefined}
-                  slot2={nextPayment}
-                  slot2Label={i === 0 ? "Next Payment" : undefined}
-                  slot3={dueDateLabel}
-                  slot3Label={i === 0 ? "Due Date" : undefined}
+                  className="mb-3"
+                  description={`${creditLineLimit} at ${interestRate}`}
+                  nextPayment={nextPayment}
+                  dueDateLabel={dueDateLabel}
                 />
               </div>
             );
