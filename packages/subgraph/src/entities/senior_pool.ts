@@ -94,7 +94,8 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.rawBalance = rawBalance
   poolStatus.assets = !assets.reverted
     ? assets.value
-    : totalSupply.times(sharePrice).times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
+    : // total supply is in FIDU (1e18) and sharePrice is also 1e18, so we need to multiply by USDC_DECIMALS and then divide out FIDU_DECIMALS twice get back to 1e6
+      totalSupply.times(sharePrice).times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
   poolStatus.cancellationFee = new BigDecimal(cancellationFee).div(BigDecimal.fromString("10000"))
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
