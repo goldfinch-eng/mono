@@ -110,8 +110,8 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
 }
 
 export function updatePoolInvestments(tranchedPoolAddress: Address): void {
-  let poolStatus = assert(SeniorPoolStatus.load("1"))
-  poolStatus.tranchedPools.push(tranchedPoolAddress.toHexString())
+  const poolStatus = assert(SeniorPoolStatus.load("1"))
+  poolStatus.tranchedPools = poolStatus.tranchedPools.concat([tranchedPoolAddress.toHexString()])
   poolStatus.save()
 }
 
