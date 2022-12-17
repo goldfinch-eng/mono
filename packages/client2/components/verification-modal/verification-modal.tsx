@@ -1,5 +1,6 @@
-import { Modal, ModalProps } from "@/components/design-system";
 import { useState } from "react";
+
+import { Modal, ModalProps } from "@/components/design-system";
 
 import { Flow } from "./flow";
 

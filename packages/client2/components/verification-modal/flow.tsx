@@ -15,11 +15,9 @@ import { PersonaStep } from "./steps/persona-step";
 import { ResidencyStep } from "./steps/residency-step";
 import { StatusCheckStep } from "./steps/status-check-step";
 import { VerificationFlowContext } from "./verification-flow-context";
-import { useState } from "react";
-import { stringToCryptoAmount } from "@/lib/format";
 
 interface FlowProps {
-  setTitle: (title: string) => void;
+  setTitle?: (title: string) => void;
 }
 
 export function Flow({ setTitle }: FlowProps) {

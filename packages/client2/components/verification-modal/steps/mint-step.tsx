@@ -1,6 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import Image from "next/future/image";
 import { useEffect, useState } from "react";
+import { useWizard } from "react-use-wizard";
 
 import { Button, InfoIconTooltip, Link } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
@@ -18,20 +19,17 @@ import { useVerificationFlowContext } from "../verification-flow-context";
 import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
 import uidLogo2 from "./uid-logo2.png";
-import { useWizard } from "react-use-wizard";
 
 interface MintStepProps {
-  setTitle: (title: string) => void;
+  setTitle?: (title: string) => void;
 }
 
 export function MintStep({ setTitle }: MintStepProps) {
   useEffect(() => {
-    setTitle("Mint your UID");
+    setTitle && setTitle("Mint your UID");
   });
   const {
     signature,
-    mintingParameters,
-    setMintingParameters,
     mintToAddress,
     uidVersion,
     triggerMintTo,
@@ -48,8 +46,9 @@ export function MintStep({ setTitle }: MintStepProps) {
 
   const handleMint = async () => {
     setIsMinting(true);
-    if (!account || !signature) {
+    if (!account || !signature || !provider) {
       setErrorMessage("Unable to verify eligibility to mint.");
+      return;
     }
     const signer = await fetchUniqueIdentitySigner(
       account,
@@ -57,11 +56,6 @@ export function MintStep({ setTitle }: MintStepProps) {
       signature.signatureBlockNum,
       mintToAddress
     );
-    if (!provider) {
-      console.error(e);
-      setErrorMessage("Error while minting");
-      return;
-    }
     try {
       const uidContract = await getContract({
         name: "UniqueIdentity",

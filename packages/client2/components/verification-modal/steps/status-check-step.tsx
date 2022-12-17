@@ -86,7 +86,7 @@ export function StatusCheckStep() {
       }
     };
     asyncEffect();
-  }, [account, provider, setSignature, goToStep, apolloClient]);
+  }, [account, provider, setSignature, goToStep, apolloClient, setUidVersion]);
 
   return (
     <div

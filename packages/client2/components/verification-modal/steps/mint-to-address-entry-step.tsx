@@ -1,25 +1,15 @@
-import { useApolloClient } from "@apollo/client";
-import Image from "next/future/image";
+import { ethers } from "ethers";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useWizard } from "react-use-wizard";
 
 import { Button, InfoIconTooltip, Input } from "@/components/design-system";
-import {
-  fetchUniqueIdentitySigner,
-  getUIDLabelFromType,
-  UIDType,
-} from "@/lib/verify";
-import { useWallet } from "@/lib/wallet";
 
-import { ExitFlowButton } from "../exit-flow-button";
 import { useVerificationFlowContext } from "../verification-flow-context";
-import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
-import { useWizard } from "react-use-wizard";
-import { ethers } from "ethers";
 
 interface MintToAddressEntryStepProps {
-  setTitle: (title: string) => void;
+  setTitle?: (title: string) => void;
 }
 
 interface MintToAddressForm {
@@ -30,17 +20,9 @@ export function MintToAddressEntryStep({
   setTitle,
 }: MintToAddressEntryStepProps) {
   useEffect(() => {
-    setTitle("Enter smart contract wallet address");
+    setTitle && setTitle("Enter smart contract wallet address");
   });
-  const {
-    signature,
-    mintingParameters,
-    setMintingParameters,
-    setMintToAddress,
-    setTriggerMintTo,
-  } = useVerificationFlowContext();
-  const { account, provider } = useWallet();
-  const apolloClient = useApolloClient();
+  const { setMintToAddress, setTriggerMintTo } = useVerificationFlowContext();
 
   const { previousStep } = useWizard();
 
