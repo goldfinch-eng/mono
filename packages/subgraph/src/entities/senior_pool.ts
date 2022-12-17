@@ -121,7 +121,7 @@ export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   let estimatedTotalInterest = BigDecimal.zero()
   for (let i = 0; i < poolStatus.tranchedPools.length; i++) {
     const tranchedPoolId = poolStatus.tranchedPools[i]
-    if (!tranchedPoolId) {
+    if (!tranchedPoolId || tranchedPoolId == "0x538473c3a69da2b305cf11a40cf2f3904de8db5f") {
       continue
     }
     estimatedTotalInterest = estimatedTotalInterest.plus(calculateEstimatedInterestForTranchedPool(tranchedPoolId))
