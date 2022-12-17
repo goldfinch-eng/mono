@@ -109,12 +109,10 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   seniorPool.save()
 }
 
-export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let investments = seniorPool.investmentsMade
-  investments.push(tranchedPoolAddress.toHexString())
-  seniorPool.investmentsMade = investments
-  seniorPool.save()
+export function updatePoolInvestments(tranchedPoolAddress: Address): void {
+  let poolStatus = assert(SeniorPoolStatus.load("1"))
+  poolStatus.tranchedPools.push(tranchedPoolAddress.toHexString())
+  poolStatus.save()
 }
 
 export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
