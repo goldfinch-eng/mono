@@ -23,7 +23,7 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
       paymentPeriodInDays
       termEndTime
       nextDueTime
-      balance
+      maxLimit
     }
   }
 `;
@@ -100,7 +100,9 @@ export function StatusSection({
       label="Principal outstanding"
       value={formatCrypto({
         token: "USDC",
-        amount: tranchedPool.creditLine.balance,
+        amount: tranchedPool.creditLine.maxLimit.sub(
+          tranchedPool.principalAmountRepaid
+        ),
       })}
       tooltip="The total amount of principal remaining for the Borrower to repay to this Pool over its payment term."
     />
@@ -145,7 +147,7 @@ export function StatusSection({
       label="Pool limit"
       value={formatCrypto({
         token: "USDC",
-        amount: tranchedPool.creditLine.balance,
+        amount: tranchedPool.creditLine.maxLimit,
       })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."
     />
