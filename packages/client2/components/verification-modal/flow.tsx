@@ -15,30 +15,33 @@ import { PersonaStep } from "./steps/persona-step";
 import { ResidencyStep } from "./steps/residency-step";
 import { StatusCheckStep } from "./steps/status-check-step";
 import { VerificationFlowContext } from "./verification-flow-context";
+import { WizardStepsContainer } from "./wizard-steps-container";
 
-interface FlowProps {
-  setTitle?: (title: string) => void;
-}
+export function Flow() {
+  /* eslint-disable react/jsx-key */
+  const wrappedSteps = [
+    <StatusCheckStep />,
+    <IntroStep />,
+    <EntityStep />,
+    <ResidencyStep />,
+    <IdIssuerStep />,
+    <AccreditedStep />,
+    <IdWarningStep />,
+    <PersonaStep />,
+    <ParallelMarketsStep />,
+    <PendingStep />,
+    <MintStep />,
+    <MintToAddressEntryStep />,
+    <IneligibleStep />,
+    <AlreadyMintedStep />,
+  ].map((step, index) => (
+    <WizardStepsContainer wizardStep={step} key={index} />
+  ));
+  /* eslint-enable react/jsx-key */
 
-export function Flow({ setTitle }: FlowProps) {
   return (
     <VerificationFlowContext>
-      <Wizard>
-        <StatusCheckStep />
-        <IntroStep />
-        <EntityStep />
-        <ResidencyStep />
-        <IdIssuerStep />
-        <AccreditedStep />
-        <IdWarningStep />
-        <PersonaStep />
-        <ParallelMarketsStep />
-        <PendingStep />
-        <MintStep setTitle={setTitle} />
-        <MintToAddressEntryStep setTitle={setTitle} />
-        <IneligibleStep />
-        <AlreadyMintedStep />
-      </Wizard>
+      <Wizard>{wrappedSteps}</Wizard>
     </VerificationFlowContext>
   );
 }

@@ -1,5 +1,4 @@
 import { ethers } from "ethers";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useWizard } from "react-use-wizard";
 
@@ -8,25 +7,15 @@ import { Button, InfoIconTooltip, Input } from "@/components/design-system";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import { StepTemplate } from "./step-template";
 
-interface MintToAddressEntryStepProps {
-  setTitle?: (title: string) => void;
-}
-
 interface MintToAddressForm {
   address: string;
 }
 
-export function MintToAddressEntryStep({
-  setTitle,
-}: MintToAddressEntryStepProps) {
-  useEffect(() => {
-    setTitle && setTitle("Enter smart contract wallet address");
-  });
+export function MintToAddressEntryStep() {
   const { setMintToAddress, setTriggerMintTo } = useVerificationFlowContext();
 
   const { previousStep } = useWizard();
 
-  // TODO there's probably a better way to express the local state here
   const formMethods = useForm<MintToAddressForm>();
   const { watch, register } = formMethods;
   const watchedAddress = watch("address");

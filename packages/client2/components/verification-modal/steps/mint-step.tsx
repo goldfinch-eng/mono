@@ -153,7 +153,7 @@ export function MintStep({ setTitle }: MintStepProps) {
       >
         <div>
           {errorMessage ? (
-            <div className="text-clay-500">{errorMessage}</div>
+            <div className="mb-8 text-xl text-clay-500">{errorMessage}</div>
           ) : (
             <div className="text-center">
               <div className="relative m-auto w-max">

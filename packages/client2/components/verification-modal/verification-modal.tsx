@@ -1,7 +1,9 @@
-import { useState } from "react";
-
 import { Modal, ModalProps } from "@/components/design-system";
 
+import {
+  VerificationModalContext,
+  useVerificationModalContext,
+} from "../verification-modal-context";
 import { Flow } from "./flow";
 
 interface VerificationModalProps {
@@ -9,22 +11,42 @@ interface VerificationModalProps {
   onClose: ModalProps["onClose"];
 }
 
-export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
-  const [title, setTitle] = useState<string>("Verify your identity");
+export interface VerificationModalOverrides {
+  title?: string;
+  unsetModalMinHeight?: boolean;
+}
+
+function VerificationModalWithoutContext({
+  isOpen,
+  onClose,
+}: VerificationModalProps) {
+  const { modalOverrides } = useVerificationModalContext();
   return (
     <Modal
       size="xs"
-      title={title}
+      title={modalOverrides?.title || "Verify your identity"}
       isOpen={isOpen}
       onClose={onClose}
       divider={true}
     >
       <div
-        style={{ minHeight: "400px", display: "flex", flexDirection: "column" }}
+        style={{
+          minHeight: modalOverrides?.unsetModalMinHeight ? "unset" : "400px",
+          display: "flex",
+          flexDirection: "column",
+        }}
         data-id="verification.modal"
       >
-        <Flow setTitle={setTitle} />
+        <Flow />
       </div>
     </Modal>
+  );
+}
+
+export function VerificationModal(props: VerificationModalProps) {
+  return (
+    <VerificationModalContext>
+      <VerificationModalWithoutContext {...props} />
+    </VerificationModalContext>
   );
 }
