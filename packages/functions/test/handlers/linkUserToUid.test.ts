@@ -94,7 +94,10 @@ describe("linkUserToUid", () => {
 
   let mainUser: Record<string, unknown>
 
-  const expectSuccessfulMint = async (fromAddress: string) => {
+  // Should not be dependent upon actual constant - should use actual value represented in signature.
+  const uniqueIdentitySignatureExpiryTime = 640
+
+  const expectSuccessfulMintLink = async (fromAddress: string) => {
     const startedAt = Date.now()
     const presigMintMessage = presignedMintMessage(
       fromAddress,
@@ -134,7 +137,7 @@ describe("linkUserToUid", () => {
     expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
   }
 
-  const expectSuccessfulMintTo = async (fromAddress: string, recipientAddress: string) => {
+  const expectSuccessfulMintToLink = async (fromAddress: string, recipientAddress: string) => {
     const startedAt = Date.now()
     const presigMintToMessage = presignedMintToMessage(
       fromAddress,
@@ -191,7 +194,7 @@ describe("linkUserToUid", () => {
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})
     const mock = fake.returns(ethers.provider)
     mockGetBlockchain(mock as any)
-    expiresAt = BigNumber.from(currentBlockTimestamp + 3600)
+    expiresAt = BigNumber.from(currentBlockTimestamp + uniqueIdentitySignatureExpiryTime)
     validMintPresigMessage = presignedMintMessage(
       mainUserAddress,
       uidType,
@@ -247,18 +250,27 @@ describe("linkUserToUid", () => {
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
-      await expectSuccessfulMintTo(mainUserAddress, mintToAddress)
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress)
     })
 
     it("links a user to a UID recipient address for a valid mint operation", async () => {
-      await expectSuccessfulMint(mainUserAddress)
+      await expectSuccessfulMintLink(mainUserAddress)
     })
 
-    it("throws a 400 error when the msgSender already has a UID of tokenId linked to a different UID recipient", async () => {
-      await users.doc(mainUserAddress).set({
-        ...mainUser,
-        uidRecipientAuthorizations: {[uidType.toString()]: otherUserAddress},
-      })
+    it("links a user to a UID recipient address for a valid mintTo operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintLink(mainUserAddress)
+      await ethers.provider.send("evm_increaseTime", [uniqueIdentitySignatureExpiryTime])
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress)
+    })
+
+    it("links a user to a UID recipient address for a valid mint operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress)
+      await ethers.provider.send("evm_increaseTime", [uniqueIdentitySignatureExpiryTime])
+      await expectSuccessfulMintLink(mainUserAddress)
+    })
+
+    it("throws a 400 error when the user already received a signature to mint a UID of tokenId linked to a different UID recipient", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, otherUserAddress)
       await testLinkKycToUid(
         mintToRequest,
         expectResponse(400, {
@@ -364,17 +376,17 @@ describe("linkUserToUid", () => {
 
       context("mint", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mint request", async () => {
-          await expectSuccessfulMint(nonUSEntityUserAddress)
-          await expectSuccessfulMint(usAccreditedEntityUserAddress)
-          await expectSuccessfulMint(usAccreditedIndividualUserAddress)
+          await expectSuccessfulMintLink(nonUSEntityUserAddress)
+          await expectSuccessfulMintLink(usAccreditedEntityUserAddress)
+          await expectSuccessfulMintLink(usAccreditedIndividualUserAddress)
         })
       })
 
       context("mintTo", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mintTo request", async () => {
-          await expectSuccessfulMintTo(nonUSEntityUserAddress, nonUsEntityMintToAddress)
-          await expectSuccessfulMintTo(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress)
-          await expectSuccessfulMintTo(usAccreditedIndividualUserAddress, usAccreditedIndividualMintToAddress)
+          await expectSuccessfulMintToLink(nonUSEntityUserAddress, nonUsEntityMintToAddress)
+          await expectSuccessfulMintToLink(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress)
+          await expectSuccessfulMintToLink(usAccreditedIndividualUserAddress, usAccreditedIndividualMintToAddress)
         })
       })
     },

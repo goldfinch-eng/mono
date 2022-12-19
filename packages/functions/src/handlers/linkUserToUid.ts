@@ -56,7 +56,8 @@ if (process.env.NODE_ENV == "test") {
 
 /**
  * Link the provided user's address to their intended UID recipient address.
- * Prevents users with existing UID's (owned on chain or linked in Firestore) from being linked to new UID's.
+ * Assumes that we will immediately provide the user with a presigned message which they will be able to immediately use to mint a new UID.
+ * For this reason, we must prevents users with existing UID's or unexpired UID presigned messages from being linked to new UID's.
  * @param { { address: string, abi: any }? } injectedUidDeployment The specified UniqueIdentity contract deployment, try to determine automatically from the chain ID otherwise.
  * @return {HttpsFunction} Https function that handles the request
  */
@@ -175,9 +176,15 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
           }
 
           const existingUidRecipientAddress = user.data()?.uidRecipientAuthorizations?.[uidTypeId]?.toLowerCase()
-          if (existingUidRecipientAddress && existingUidRecipientAddress !== uidRecipientAddress) {
+          const lastUidSignatureExpired =
+            !user.data()?.lastUidSignatureExpiresAt || user.data()?.lastUidSignatureExpiresAt < Date.now()
+          if (
+            existingUidRecipientAddress &&
+            existingUidRecipientAddress !== uidRecipientAddress &&
+            !lastUidSignatureExpired
+          ) {
             throw new ExistingUidRecipientAddressError(
-              `Address ${msgSender} has already been linked to a different UID recipient address ${existingUidRecipientAddress}`,
+              `Address ${msgSender} has already been linked to a different UID recipient address ${existingUidRecipientAddress}. The signature will expire `,
             )
           }
 
@@ -185,6 +192,7 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
             uidRecipientAuthorizations: {
               [uidTypeId]: uidRecipientAddress.toLowerCase(),
             },
+            lastUidSignatureExpiresAt: expiresAt.toNumber(),
             updatedAt: Date.now(),
           })
         })
