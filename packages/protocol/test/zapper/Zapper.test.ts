@@ -128,6 +128,7 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondPoolStakedTokenIds,
     firstPoolTokenIds,
     secondPoolTokenIds,
+    schedule,
   }
 })
 
@@ -296,6 +297,7 @@ describe("Zapper", async () => {
       fiduUSDCCurveLP,
       uniqueIdentity: uid,
       maxRate: stakingRewardsMaxRate,
+      schedule,
     } = await baseSetupTest())
   })
 
