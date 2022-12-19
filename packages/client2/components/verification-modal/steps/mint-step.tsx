@@ -20,14 +20,7 @@ import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
 import uidLogo2 from "./uid-logo2.png";
 
-interface MintStepProps {
-  setTitle?: (title: string) => void;
-}
-
-export function MintStep({ setTitle }: MintStepProps) {
-  useEffect(() => {
-    setTitle && setTitle("Mint your UID");
-  });
+export function MintStep() {
   const {
     signature,
     mintToAddress,
