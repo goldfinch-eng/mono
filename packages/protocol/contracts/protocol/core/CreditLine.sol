@@ -285,7 +285,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   /// @inheritdoc ICreditLine
   function principalOwed() public view override returns (uint256) {
-    return totalPrincipalOwedAt(block.timestamp).sub(totalPrincipalPaid());
+    return totalPrincipalOwedAt(block.timestamp).saturatingSub(totalPrincipalPaid());
   }
 
   /// @inheritdoc ICreditLine
