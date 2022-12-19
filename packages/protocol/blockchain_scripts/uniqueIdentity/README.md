@@ -28,7 +28,7 @@ If you are running the script locally then set them in your .env.local file. If 
 then set them as encrypted environment variables. More info on that [here](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces#using-secrets).
 
 ```
-npx hardhat run --network mainnet burnUID.ts | tee burn-UID-output.txt
+yarn hardhat run --network mainnet burnUID.ts | tee burn-UID-output.txt
 ```
 
 This will write all script output to file `burn-UID-output.txt`

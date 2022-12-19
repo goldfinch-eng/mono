@@ -37,11 +37,11 @@ Running the app against a local chain is possible as well, but you need to set u
 
 To bring up the machines:
 
-1. In the monorepo root, run `npm run start:local`. This will start up the local chain, the old client, and all of the other related processes. This will include the local GFI airdrops.
-2. In `packages/subgraph`, run `npm run start-local`. This will bring up a subgraph in Docker. The npm command should complete immediately, but the subgraph node may take a few minutes to complete setup in the background.
-3. When Docker is up, run `npm run create-local` then `npm run deploy-local`
-4. In `packages/cms`, run `npm run start:dev` in order to spin up a docker container hosting the cms server.
-5. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `npm run dev`. This will start client2 on port 3001 so it doesn't conflict with the old client on port 3000. 
+1. In the monorepo root, run `yarn start:local`. This will start up the local chain, the old client, and all of the other related processes. This will include the local GFI airdrops.
+2. In `packages/subgraph`, run `yarn start-local`. This will bring up a subgraph in Docker. The yarn command should complete immediately, but the subgraph node may take a few minutes to complete setup in the background.
+3. When Docker is up, run `yarn create-local` then `yarn deploy-local`
+4. In `packages/cms`, run `yarn start:dev` in order to spin up a docker container hosting the cms server.
+5. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `yarn dev`. This will start client2 on port 3001 so it doesn't conflict with the old client on port 3000. 
 
 ## Guidelines and Conventions
 
@@ -49,7 +49,7 @@ To bring up the machines:
 
 The top-level directories are as follows:
 
-- `pages/` - This is where pages are located. Any file in here ending in `.page.tsx` will be a valid route in the webapp. For example, `pages/test.page.tsx` will be rendered at `http://localhost:3000/test`. Nesting a file in a subdirectory here will affect its route: `pages/foo/bar.page.tsx` will be rendered at `http://localhost:3000/foo/bar`. It's possible to create a page that has a dynamic segment in its URL using a unique Next.js convention. For example, `http://localhost:3000/pools/0xdeadbeef` could refer to `pages/pool/[poolAddress].page.tsx`. You can read more about this Next.js routing feature here: https://nextjs.org/docs/routing/dynamic-routes. Note that in this project, we have configured it such that only files ending in `.page.tsx` inside the `pages/` directory can be mapped to routes. This means you are free to place helper components for a page in an adjacent file. Example: `pages/foo/index.page.tsx`, `pages/foo/helpers.tsx` will only produce the page `http://localhost/foo`
+- `pages/` - This is where pages are located. Any file in here ending in `.page.tsx` will be a valid route in the webapp. For example, `pages/test.page.tsx` will be rendered at `http://localhost:3001/test`. Nesting a file in a subdirectory here will affect its route: `pages/foo/bar.page.tsx` will be rendered at `http://localhost:3001/foo/bar`. It's possible to create a page that has a dynamic segment in its URL using a unique Next.js convention. For example, `http://localhost:3001/pools/0xdeadbeef` could refer to `pages/pool/[poolAddress].page.tsx`. You can read more about this Next.js routing feature here: https://nextjs.org/docs/routing/dynamic-routes. Note that in this project, we have configured it such that only files ending in `.page.tsx` inside the `pages/` directory can be mapped to routes. This means you are free to place helper components for a page in an adjacent file. Example: `pages/foo/index.page.tsx`, `pages/foo/helpers.tsx` will only produce the page `http://localhost/foo`
 - `components/design-system/` - This is where the app's shared components live. This place is meant for the UI primitives, such as buttons, links, modals, etc. Generally speaking, these components should be presentational only, meaning they shouldn't do any data-fetching. You can (and are encouraged to) write Storybook entries for your components here. We use the barrel-file convention in this repo for components. Treat each subdirectory in `components/` as its own module, and the `index.ts` file in that subdirectory should dictate what the module exports. For example:
 
 ```
@@ -83,7 +83,7 @@ import MySvg from "./my-svg.svg";
 <MySvg />
 ```
 
-SVGO is also available for reducing SVG file sizes. It runs automatically when you import SVGs, but it's also good to run it manually on SVG files: `npx svgo ./path/to/my/svg`. It has some sane defaults configured on it, like prettifying markup and enforcing the use of `viewBox`
+SVGO is also available for reducing SVG file sizes. It runs automatically when you import SVGs, but it's also good to run it manually on SVG files: `yarn svgo ./path/to/my/svg`. It has some sane defaults configured on it, like prettifying markup and enforcing the use of `viewBox`
 
 - If you're adding a new primitive icon (the single-tone icons that appear throughout the UI), it should go in `compontents/icon`. Add the .svg file in `svg/`, import it in `icon.tsx` and make it available in the `iconManifest`. Then you can use it like so `<Icon name="MyNewIcon" />`
 
@@ -174,13 +174,13 @@ Next.js has long-adopted Webpack5 as their default, but unfortunately Storybook 
 First, run the development server:
 
 ```bash
-npm run dev
+yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
 You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3001/api/hello](http://localhost:3001/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
 
 The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.

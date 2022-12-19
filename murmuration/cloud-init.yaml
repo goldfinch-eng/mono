@@ -1,9 +1,0 @@
-#cloud-config
-
-# Cf. https://cloud.google.com/container-optimized-os/docs/how-to/create-configure-instance#using_cloud-init_with_the_cloud_config_format
-
-# Once-per-boot setup.
-bootcmd:
-# Increase the maximum number of file watchers, to prevent
-# `ENOSPC: System limit for number of file watchers reached` error.
-- echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p

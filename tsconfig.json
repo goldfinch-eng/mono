@@ -10,12 +10,8 @@
       "@goldfinch-eng/client": ["packages/client"],
       "@goldfinch-eng/client/*": ["packages/client/*"],
       "@goldfinch-eng/server": ["packages/server"],
-      "@goldfinch-eng/autotasks": [
-        "packages/autotasks"
-      ],
-      "@goldfinch-eng/autotasks/*": [
-        "packages/autotasks/*"
-      ],
+      "@goldfinch-eng/autotasks": ["packages/autotasks"],
+      "@goldfinch-eng/autotasks/*": ["packages/autotasks/*"],
       "@goldfinch-eng/subgraph": ["packages/subgraph"],
       "@goldfinch-eng/functions": ["packages/functions/src"],
       "@goldfinch-eng/functions/*": ["packages/functions/src/*"],

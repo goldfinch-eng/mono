@@ -95,7 +95,7 @@ function TransactionInput(props: TransactionInputProps) {
                   }
                 : undefined,
               validate: {
-                decimals: (value) => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
+                decimals: (value) => new BigNumber(value).decimalPlaces()! <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,
               },
             }}
