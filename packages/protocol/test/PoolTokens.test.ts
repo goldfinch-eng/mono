@@ -30,6 +30,7 @@ import {
   StakingRewardsInstance,
   ScheduleInstance,
   TestTranchedPoolInstance,
+  CreditLineInstance,
 } from "../typechain/truffle"
 import {
   deployBaseFixture,
@@ -61,9 +62,6 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   } = await deployBaseFixture()
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
-
-  console.log("test setUp schedule")
-  console.log(schedule)
 
   return {
     owner,
@@ -234,9 +232,7 @@ describe("PoolTokens", () => {
 
       // Ensure pool has some interest rewards allocated to it advancing time and paying interest
       await advanceTime({days: new BN(100)})
-      console.log("test about to pay")
       await pool.methods["pay(uint256)"](usdcVal(5), {from: person2})
-      console.log("test done paying")
       await pool.initializeNextSlice(new BN(0), {from: person2})
 
       const result = await pool.deposit(new BN(3), amount, {from: person2})

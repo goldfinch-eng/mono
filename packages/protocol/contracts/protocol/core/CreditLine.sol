@@ -360,8 +360,13 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function _isLate(uint256 timestamp) internal view returns (bool) {
     uint256 gracePeriodInSeconds = config.getLatenessGracePeriodInDays().mul(SECONDS_PER_DAY);
     return
-      balance > 0 &&
-      lastFullPaymentTime < schedule.previousDueTimeAt(timestamp).add(gracePeriodInSeconds);
+      // You can't be late unless you actually owe something
+      (interestOwedAt(timestamp) > 0 || principalOwedAt(timestamp) > 0) &&
+      // If previousDueTimeAt == 0 then this is the first drawdown, and you can't be late on the first drawdown.
+      schedule.previousDueTimeAt(timestamp) > 0 &&
+      // If your last full payment time happened AFTER the last due time, consider yourself not late. We also add
+      // on a grace period so that your not late even if your last full payment time is be slightly in the past.
+      schedule.previousDueTimeAt(timestamp) <= lastFullPaymentTime.add(gracePeriodInSeconds);
   }
 }
 

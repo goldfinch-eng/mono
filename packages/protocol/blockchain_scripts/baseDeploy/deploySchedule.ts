@@ -10,8 +10,8 @@ export async function deploySchedule(deployer: ContractDeployer): Promise<string
   // Deploy a schedule for a 12 month bullet loan
   const periodsInTerm = 12
   const periodsPerInterestPeriod = 1
-  const periodsPerPrincipalPeriod = 12
-  const gracePrincipalPeriods = 0
+  const periodsPerPrincipalPeriod = 6
+  const gracePrincipalPeriods = 1
 
   // Create a monthly schedule
   const monthlyScheduleDeployResult = await deployer.deploy("Schedule", {
@@ -19,8 +19,8 @@ export async function deploySchedule(deployer: ContractDeployer): Promise<string
     args: [
       periodMapperDeployResult.address,
       periodsInTerm,
-      periodsPerInterestPeriod,
       periodsPerPrincipalPeriod,
+      periodsPerInterestPeriod,
       gracePrincipalPeriods,
     ],
   })
