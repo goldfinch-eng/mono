@@ -30,7 +30,6 @@ import {
   StakingRewardsInstance,
   ScheduleInstance,
   TestTranchedPoolInstance,
-  CreditLineInstance,
 } from "../typechain/truffle"
 import {
   deployBaseFixture,
