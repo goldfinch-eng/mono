@@ -15,8 +15,6 @@ import {
   OWNER_ROLE,
   getTruffleContract,
   getProtocolOwner,
-  POOL_VERSION1,
-  POOL_VERSION2,
   isMainnetForking,
 } from "../blockchain_scripts/deployHelpers"
 
@@ -47,8 +45,9 @@ import {
   MembershipCollectorInstance,
   ERC20SplitterInstance,
   TestGoldfinchConfigInstance,
+  ScheduleInstance,
+  TestTranchedPoolInstance,
 } from "../typechain/truffle"
-import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -64,12 +63,8 @@ import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
 import {getTranchedPoolImplName} from "../blockchain_scripts/baseDeploy/deployTranchedPool"
-import {getClContractName, poolVersionToCreditLines} from "../blockchain_scripts/baseDeploy/deployClImplementation"
-import {TestTranchedPoolInstance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle"
-import {TestTranchedPoolV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/TestTranchedPoolV2"
-import {CreditLineV2Instance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/CreditLineV2"
-import {getDeploymentFor, poolVersionToLineageId} from "./util/fixtures"
-import {TestGoldfinchFactoryInstance} from "../blockchain_scripts/uniqueIdentity/typechain/truffle/TestGoldfinchFactory"
+import {getClContractName} from "../blockchain_scripts/baseDeploy/deployClImplementation"
+import {getDeploymentFor} from "./util/fixtures"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -315,7 +310,6 @@ async function deployAllContracts(
   seniorPool: SeniorPoolInstance
   seniorPoolCaller: TestSeniorPoolCallerInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
-  seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
   fidu: FiduInstance
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
@@ -335,16 +329,13 @@ async function deployAllContracts(
   withdrawalRequestToken: WithdrawalRequestTokenInstance
   reserveSplitter: ERC20SplitterInstance
   membershipCollector: MembershipCollectorInstance
+  schedule: ScheduleInstance
 }> {
   await deployments.fixture("baseDeploy")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
     "FixedLeverageRatioStrategy"
-  )
-  const seniorPoolDynamicStrategy = await getDeployedAsTruffleContract<DynamicLeverageRatioStrategyInstance>(
-    deployments,
-    "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
@@ -408,11 +399,12 @@ async function deployAllContracts(
 
   const withdrawalRequestToken = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
 
+  const schedule = await getTruffleContract<ScheduleInstance>("Schedule")
+
   return {
     seniorPool,
     seniorPoolCaller,
     seniorPoolFixedStrategy,
-    seniorPoolDynamicStrategy,
     usdc,
     fidu,
     fiduUSDCCurveLP,
@@ -432,6 +424,7 @@ async function deployAllContracts(
     reserveSplitter,
     membershipCollector,
     withdrawalRequestToken,
+    schedule,
   }
 }
 
@@ -505,23 +498,10 @@ async function getBalance(address, erc20) {
   return new BN(await web3.eth.getBalance(address))
 }
 
-export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddress: string, poolVersion: string) {
-  const {testContractName: clContractName} = poolVersionToCreditLines[poolVersion]
-  assertIsString(clContractName)
-
-  const poolContractName = getTranchedPoolImplName(poolVersion)
-
-  if (poolVersion === POOL_VERSION1) {
-    const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>(poolContractName, {at: poolAddress})
-    const creditLine = await getTruffleContract<CreditLineInstance>(clContractName, {at: clAddress})
-    return {tranchedPool, creditLine}
-  } else if (poolVersion === POOL_VERSION2) {
-    const tranchedPool = await getTruffleContract<TestTranchedPoolV2Instance>(poolContractName, {at: poolAddress})
-    const creditLine = await getTruffleContract<CreditLineV2Instance>(clContractName, {at: clAddress})
-    return {tranchedPool, creditLine}
-  } else {
-    throw new Error(`Invalid pool version ${poolVersion}`)
-  }
+export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddress: string) {
+  const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>(getTranchedPoolImplName(), {at: poolAddress})
+  const creditLine = await getTruffleContract<CreditLineInstance>(getClContractName(), {at: clAddress})
+  return {tranchedPool, creditLine}
 }
 
 const createPoolWithCreditLine = async ({
@@ -529,14 +509,10 @@ const createPoolWithCreditLine = async ({
   usdc,
   juniorFeePercent = new BN("20"),
   interestApr = interestAprAsBN("15.0"),
-  paymentPeriodInDays = new BN(30),
-  termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
-  principalGracePeriodInDays = new BN(185),
   fundableAt = new BN(0),
   allowedUIDTypes = [0],
-  version = "0.1.0",
 }: {
   people: {owner: string; borrower: string}
   usdc: ERC20Instance
@@ -567,9 +543,11 @@ const createPoolWithCreditLine = async ({
     ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
     : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
 
-  const creditLineContractName = getClContractName(version)
+  const creditLineContractName = getClContractName()
   const creditLineDeployment = await deployments.get(creditLineContractName)
   await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
+
+  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
 
   let result: $TSFixMe
   if (isMainnetForking()) {
@@ -579,30 +557,23 @@ const createPoolWithCreditLine = async ({
       juniorFeePercent,
       limit,
       interestApr,
-      paymentPeriodInDays,
-      termInDays,
+      schedule.address,
       lateFeeApr,
-      principalGracePeriodInDays,
       fundableAt,
       allowedUIDTypes,
       {from: thisOwner}
     )
   } else {
-    const goldfinchFactory = await getDeploymentFor<TestGoldfinchFactoryInstance>("TestGoldfinchFactory")
-    const lineageId = poolVersionToLineageId[version]
-    result = await goldfinchFactory.createPoolForLineage(
+    const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
+    const scheudle = await getDeploymentFor<ScheduleInstance>("Schedule")
+    result = await goldfinchFactory.createPool(
       thisBorrower,
-      lineageId,
-      [
-        juniorFeePercent,
-        limit,
-        interestApr,
-        paymentPeriodInDays,
-        termInDays,
-        lateFeeApr,
-        principalGracePeriodInDays,
-        fundableAt,
-      ],
+      juniorFeePercent,
+      limit,
+      interestApr,
+      scheudle.address,
+      lateFeeApr,
+      fundableAt,
       allowedUIDTypes,
       {from: thisOwner}
     )

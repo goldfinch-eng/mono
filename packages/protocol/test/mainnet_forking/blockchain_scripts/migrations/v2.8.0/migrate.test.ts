@@ -11,7 +11,6 @@ import {
   SIGNER_ROLE,
   USDC_TO_GFI_MANTISSA,
   GFI_MANTISSA,
-  getEthersContract,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {assertIsString} from "packages/utils/src/type"
 
@@ -530,7 +529,7 @@ describe.skip("v2.8.0", async function () {
       for (const poolAddress of applicablePoolAddresses) {
         const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", poolAddress)
         await usdc.approve(poolAddress, usdcPaymentVal, {from: mainUser})
-        await tranchedPool.pay(usdcPaymentVal, {from: mainUser})
+        await tranchedPool.methods["pay(uint256)"](usdcPaymentVal, {from: mainUser})
       }
       expectCorrectDistributions = async () => {
         const originalErc20SplitterBalance = await usdc.balanceOf(erc20Splitter.address)

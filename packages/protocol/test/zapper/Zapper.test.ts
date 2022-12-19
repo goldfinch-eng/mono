@@ -7,6 +7,7 @@ import {
   FiduInstance,
   GoldfinchConfigInstance,
   PoolTokensInstance,
+  ScheduleInstance,
   SeniorPoolInstance,
   TestFiduUSDCCurveLPInstance,
   TestStakingRewardsInstance,
@@ -30,7 +31,7 @@ import {
   usdcVal,
   USDC_DECIMALS,
 } from "../testHelpers"
-import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "../util/fixtures"
+import {deployBaseFixture, deployUninitializedV2TranchedPoolFixture, getDeploymentFor} from "../util/fixtures"
 import {DepositMade} from "../../typechain/truffle/contracts/protocol/core/SeniorPool"
 import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
@@ -61,6 +62,7 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondTranchedPool,
     goldfinchConfig,
     borrower,
+    schedule,
   } = await baseSetupTest()
   const firstPoolFiduAmounts = [fiduAmount.div(new BN(4)), fiduAmount.div(new BN(4))]
   const secondPoolFiduAmounts = [fiduAmount.div(new BN(2))]
@@ -148,6 +150,7 @@ const baseSetupTest = deployments.createFixture(async () => {
     fiduUSDCCurveLP,
     usdc,
     zapper,
+    schedule,
     ...others
   } = await deployBaseFixture()
 
@@ -208,7 +211,6 @@ const baseSetupTest = deployments.createFixture(async () => {
   const tranchedPool = (
     await createPoolWithCreditLine({
       people: {owner, borrower},
-      goldfinchFactory,
       juniorFeePercent,
       limit,
       interestApr,
@@ -222,12 +224,9 @@ const baseSetupTest = deployments.createFixture(async () => {
   const secondTranchedPool = (
     await createPoolWithCreditLine({
       people: {owner, borrower},
-      goldfinchFactory,
       juniorFeePercent,
       limit,
       interestApr,
-      paymentPeriodInDays,
-      termInDays,
       lateFeeApr,
       usdc,
     })
@@ -250,6 +249,7 @@ const baseSetupTest = deployments.createFixture(async () => {
     secondTranchedPool,
     fiduUSDCCurveLP,
     maxRate,
+    schedule,
   }
 })
 
@@ -265,6 +265,7 @@ describe("Zapper", async () => {
   let fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   let poolTokens: PoolTokensInstance
   let uid: TestUniqueIdentityInstance
+  let schedule: ScheduleInstance
 
   let owner: string
   let investor1: string
@@ -782,16 +783,14 @@ describe("Zapper", async () => {
         const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
 
         // Wasn't created through our factory
-        const {tranchedPool: fakePool} = await deployUninitializedTranchedPoolFixture()
+        const {tranchedPool: fakePool} = await deployUninitializedV2TranchedPoolFixture()
         await fakePool.initialize(
           goldfinchConfig.address,
           investor1,
           new BN(20),
           usdcVal(1000),
           new BN(15000),
-          new BN(30),
-          new BN(360),
-          new BN(350),
+          schedule.address,
           new BN(180),
           new BN(0),
           []
@@ -973,16 +972,14 @@ describe("Zapper", async () => {
         const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
 
         // Wasn't created through our factory
-        const {tranchedPool: fakePool} = await deployUninitializedTranchedPoolFixture()
+        const {tranchedPool: fakePool} = await deployUninitializedV2TranchedPoolFixture()
         await fakePool.initialize(
           goldfinchConfig.address,
           investor1,
           new BN(20),
           usdcVal(1000),
           new BN(15000),
-          new BN(30),
-          new BN(360),
-          new BN(350),
+          schedule.address,
           new BN(180),
           new BN(0),
           []

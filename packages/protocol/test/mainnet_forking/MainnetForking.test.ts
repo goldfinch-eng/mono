@@ -10,6 +10,7 @@ import {
   getTruffleContract,
   getEthersContract,
   interestAprAsBN,
+  ContractDeployer,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_GOVERNANCE_MULTISIG,
@@ -77,6 +78,7 @@ import {
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
   PoolTokensInstance,
+  ScheduleInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
   TranchedPoolInstance,
@@ -120,6 +122,8 @@ import {
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {config} from "dotenv"
+import {deploySchedule} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deploySchedule"
+import {getDeploymentFor} from "../util/fixtures"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -214,6 +218,11 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
+  // TODO(dalton) deploy this in a migration script
+  const deployer = new ContractDeployer(console.log, hre)
+  await deploySchedule(deployer)
+  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+
   return {
     poolTokens,
     seniorPool,
@@ -237,6 +246,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     ethersUniqueIdentity,
     signer,
     network,
+    schedule,
   }
 })
 
@@ -271,7 +281,8 @@ describe("mainnet forking tests", async function () {
     ethersUniqueIdentity: UniqueIdentity,
     signer: Signer,
     network,
-    poolTokens: PoolTokensInstance
+    poolTokens: PoolTokensInstance,
+    schedule: ScheduleInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -328,6 +339,7 @@ describe("mainnet forking tests", async function () {
       ethersUniqueIdentity,
       poolTokens,
       requestTokens,
+      schedule,
     } = await setupTest())
     reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
@@ -368,7 +380,7 @@ describe("mainnet forking tests", async function () {
       await fundWithWhales(["USDC"], [owner.address])
       await impersonateAccount(hre, owner.address)
       await usdc.approve(pool.address, interestOwed, {from: owner.address})
-      await pool.pay(await cl.interestOwed(), {from: owner.address})
+      await pool.methods["pay(uint256)"](await cl.interestOwed(), {from: owner.address})
     }
 
     async function redeemPool(token: number) {
@@ -609,7 +621,7 @@ describe("mainnet forking tests", async function () {
 
         await stratosPool.assess()
         const interestOwed = await stratosCl.interestOwed()
-        await stratosBrwContract.pay(stratosPool.address, interestOwed)
+        await stratosBrwContract["pay(address,uint256)"](stratosPool.address, interestOwed)
       }
 
       const sharePriceBefore = await seniorPool.sharePrice()
@@ -632,7 +644,6 @@ describe("mainnet forking tests", async function () {
       bwrCon = await createBorrowerContract()
       ;({tranchedPool} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-        goldfinchFactory,
         usdc,
       }))
       await initializeTranchedPool(tranchedPool, bwrCon)
@@ -767,7 +778,6 @@ describe("mainnet forking tests", async function () {
       bwrCon = await createBorrowerContract()
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-        goldfinchFactory,
         usdc,
       }))
 
@@ -836,7 +846,6 @@ describe("mainnet forking tests", async function () {
         this.timeout(TEST_TIMEOUT)
         ;({tranchedPool: tranchedPool2, creditLine: cl2} = await createPoolWithCreditLine({
           people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-          goldfinchFactory,
           usdc,
         }))
 
@@ -903,10 +912,8 @@ describe("mainnet forking tests", async function () {
         "20",
         limit.toString(),
         "100000000000000000",
-        paymentPeriodInDays.toString(),
-        termInDays.toString(),
+        schedule.address,
         "0",
-        termInDays.toString(),
         "0",
         ["0"],
         {from: await getProtocolOwner()}
@@ -1023,7 +1030,7 @@ describe("mainnet forking tests", async function () {
       await (await tranchedPool.assess()).wait()
       const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
       const interestOwed = await creditLine.interestOwed()
-      return (await tranchedPool.pay(interestOwed.toString())).wait()
+      return (await tranchedPool["pay(uint256)"](interestOwed.toString())).wait()
     }
 
     async function fullyRepayTranchedPool(tranchedPool: TranchedPool): Promise<ContractReceipt> {
@@ -1031,7 +1038,7 @@ describe("mainnet forking tests", async function () {
       const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
       const principalOwed = await creditLine.principalOwed()
       const interestOwed = await creditLine.interestOwed()
-      const paymentTx = await (await tranchedPool.pay(principalOwed.add(interestOwed).toString())).wait()
+      const paymentTx = await (await tranchedPool["pay(uint256)"](principalOwed.add(interestOwed).toString())).wait()
       const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
       const interestOwedAfterFinalRepayment = await creditLine.interestOwed()
       expect(String(principalOwedAfterFinalRepayment)).to.bignumber.eq("0")
@@ -1041,8 +1048,8 @@ describe("mainnet forking tests", async function () {
 
     it("backers only earn rewards for full payments", async () => {
       await (await tranchedPoolWithBorrowerConnected.drawdown(String(limit))).wait()
-      await advanceTime({days: (await creditLine.paymentPeriodInDays()).toString()})
-      const partialPaybackTx = await (await tranchedPoolWithBorrowerConnected.pay("1")).wait()
+      await advanceTime({toSecond: (await creditLine.nextDueTime()).toString()})
+      const partialPaybackTx = await (await tranchedPoolWithBorrowerConnected["pay(uint256)"]("1")).wait()
       let backerRewardsEarned = await getBackerStakingRewardsForToken(
         backerStakingTokenId,
         partialPaybackTx.blockNumber
@@ -1050,7 +1057,7 @@ describe("mainnet forking tests", async function () {
       expect(backerRewardsEarned).to.bignumber.eq("0")
 
       const interestOwed = await creditLine.interestOwed()
-      const fullPaybackTx = await (await tranchedPoolWithBorrowerConnected.pay(interestOwed)).wait()
+      const fullPaybackTx = await (await tranchedPoolWithBorrowerConnected["pay(uint256)"](interestOwed)).wait()
       backerRewardsEarned = await getBackerStakingRewardsForToken(backerStakingTokenId, fullPaybackTx.blockNumber)
       expect(backerRewardsEarned).to.not.bignumber.eq("0")
     })
@@ -1429,7 +1436,6 @@ describe("mainnet forking tests", async function () {
         ;({tranchedPool} = await createPoolWithCreditLine({
           people: {borrower: bwr, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
-          goldfinchFactory,
         }))
         await fundWithWhales(["USDC"], [unGoListedUser])
         await erc20Approve(usdc, seniorPool.address, MAX_UINT, [unGoListedUser])
@@ -1469,7 +1475,6 @@ describe("mainnet forking tests", async function () {
         ;({tranchedPool} = await createPoolWithCreditLine({
           people: {borrower, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
-          goldfinchFactory,
         }))
         await fundWithWhales(["USDC"], [goListedUser])
         const goldfinchConfigWithGoListAddress = await go.legacyGoList()
@@ -1630,7 +1635,6 @@ describe("mainnet forking tests", async function () {
               borrower: person3,
             },
             usdc,
-            goldfinchFactory,
           }))
           bwr = person3
           bwrCon = await createBorrowerContract()
@@ -1663,7 +1667,6 @@ describe("mainnet forking tests", async function () {
               borrower: bwr,
             },
             usdc,
-            goldfinchFactory,
           }))
           await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
           await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
@@ -1694,7 +1697,8 @@ describe("mainnet forking tests", async function () {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
-            await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+            await expect(bwrCon.methods["pay(address,uint256)"](tranchedPool.address, usdcVal(10_000), {from: bwr})).to
+              .be.fulfilled
 
             // verify accRewardsPerPrincipalDollar
             const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
@@ -1712,7 +1716,8 @@ describe("mainnet forking tests", async function () {
               await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
               await advanceTime({days: 90})
               await ethers.provider.send("evm_mine", [])
-              await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+              await expect(bwrCon.methods["pay(address,uint256)"](tranchedPool.address, usdcVal(10_000), {from: bwr}))
+                .to.be.fulfilled
               const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
               // right now rewards rates aren't set, so no rewards should be claimable
               expect(rewards).to.bignumber.eq("0")

@@ -14,16 +14,10 @@ import {
   ZERO,
   SECONDS_PER_DAY,
   getTranchedPoolAndCreditLine,
+  getTruffleContractAtAddress,
 } from "./testHelpers"
-import {
-  deployBaseFixture,
-  deployBorrowerWithGoldfinchFactoryFixture,
-  deployFundedTranchedPool,
-  getContractsFromPoolVersion,
-} from "./util/fixtures"
-import {BorrowerInstance, ERC20Instance, TestTranchedPoolInstance} from "../typechain/truffle"
-import {TestTranchedPoolV2Instance} from "../typechain/truffle/TestTranchedPoolV2"
-import {POOL_VERSION1, POOL_VERSION2, POOL_VERSIONS} from "../blockchain_scripts/deployHelpers"
+import {deployBaseFixture, deployBorrowerWithGoldfinchFactoryFixture, deployFundedTranchedPool} from "./util/fixtures"
+import {BorrowerInstance, ERC20Instance, TestCreditLineInstance, TestTranchedPoolInstance} from "../typechain/truffle"
 
 describe("Borrower", async () => {
   let owner,
@@ -36,45 +30,43 @@ describe("Borrower", async () => {
     underwriter,
     reserve
 
-  const setupTest = (poolVersion: string) =>
-    deployments.createFixture(async () => {
-      const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory} = await deployBaseFixture({})
+  const setupTest = deployments.createFixture(async () => {
+    const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory} = await deployBaseFixture({})
 
-      // Approve transfers for our test accounts
-      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower, person3])
-      await goldfinchConfig.bulkAddToGoList([owner, borrower, person3, underwriter, reserve])
-      // Some housekeeping so we have a usable setup for tests
-      await erc20Transfer(usdc, [borrower], usdcVal(1000), owner)
-      await seniorPool.deposit(String(usdcVal(90)), {from: borrower})
-      // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
-      await goldfinchConfig.setTreasuryReserve(reserve)
+    // Approve transfers for our test accounts
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower, person3])
+    await goldfinchConfig.bulkAddToGoList([owner, borrower, person3, underwriter, reserve])
+    // Some housekeeping so we have a usable setup for tests
+    await erc20Transfer(usdc, [borrower], usdcVal(1000), owner)
+    await seniorPool.deposit(String(usdcVal(90)), {from: borrower})
+    // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
+    await goldfinchConfig.setTreasuryReserve(reserve)
 
-      const {borrowerContract} = await deployBorrowerWithGoldfinchFactoryFixture({
-        borrower,
-        usdcAddress: usdc.address,
-        id: "Borrower",
-      })
-      const {poolAddress, clAddress} = await deployFundedTranchedPool({
-        borrower,
-        borrowerContractAddress: borrowerContract.address,
-        usdcAddress: usdc.address,
-        id: `TranchedPool ${poolVersion}`,
-        version: poolVersion,
-      })
-
-      const {tranchedPool, creditLine} = await getContractsFromPoolVersion(poolAddress, clAddress, poolVersion)
-
-      return {
-        seniorPool,
-        usdc,
-        fidu,
-        goldfinchConfig,
-        goldfinchFactory,
-        borrowerContract,
-        tranchedPool,
-        creditLine,
-      }
+    const {borrowerContract} = await deployBorrowerWithGoldfinchFactoryFixture({
+      borrower,
+      usdcAddress: usdc.address,
+      id: "Borrower",
     })
+    const {poolAddress, clAddress} = await deployFundedTranchedPool({
+      borrower,
+      borrowerContractAddress: borrowerContract.address,
+      usdcAddress: usdc.address,
+      id: `TranchedPool`,
+    })
+
+    const {tranchedPool, creditLine} = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
+
+    return {
+      seniorPool,
+      usdc,
+      fidu,
+      goldfinchConfig,
+      goldfinchFactory,
+      borrowerContract,
+      tranchedPool,
+      creditLine,
+    }
+  })
 
   async function pay(borrowerContract, poolAddress, amount) {
     return borrowerContract.methods["pay(address,uint256)"](poolAddress, amount, {from: borrower})
@@ -84,131 +76,120 @@ describe("Borrower", async () => {
     return borrowerContract.methods["pay(address,uint256,uint256)"](poolAddress, principal, interest, {from: borrower})
   }
 
-  POOL_VERSIONS.forEach(async (poolVersion) => {
-    let tranchedPool: TestTranchedPoolInstance | TestTranchedPoolV2Instance
-    describe(`Common tests for TranchedPool version ${poolVersion}`, () => {
-      describe("drawdown", async () => {
-        beforeEach(async () => {
-          accounts = await web3.eth.getAccounts()
-          ;[owner, borrower, person3, underwriter, reserve] = accounts
-          ;({goldfinchConfig, usdc, borrowerContract, tranchedPool} = await setupTest(poolVersion)())
+  let tranchedPool: TestTranchedPoolInstance
+  describe(`Common tests for TranchedPool version`, () => {
+    describe("drawdown", async () => {
+      beforeEach(async () => {
+        accounts = await web3.eth.getAccounts()
+        ;[owner, borrower, person3, underwriter, reserve] = accounts
+        ;({goldfinchConfig, usdc, borrowerContract, tranchedPool} = await setupTest())
+      })
+
+      const amount = usdcVal(10)
+      it("should let you drawdown the amount", async () => {
+        await expectAction(() =>
+          borrowerContract.drawdown(tranchedPool.address, amount, borrower, {from: borrower})
+        ).toChange([[async () => await getBalance(borrower, usdc), {by: amount}]])
+      })
+
+      it("should not let anyone except the borrower drawdown", async () => {
+        return expect(
+          borrowerContract.drawdown(tranchedPool.address, amount, person3, {from: person3})
+        ).to.be.rejectedWith(/Must have admin role/)
+      })
+
+      it("should not let anyone except the borrower drawdown via oneInch", async () => {
+        return expect(
+          borrowerContract.drawdownWithSwapOnOneInch(tranchedPool.address, amount, person3, usdc.address, amount, [], {
+            from: person3,
+          })
+        ).to.be.rejectedWith(/Must have admin role/)
+      })
+
+      it("should block you from drawing down on some random credit line", async () => {
+        const originalBorrowerContract = borrowerContract
+        const originalBorrower = borrower
+        borrower = person3
+        ;({borrowerContract} = await deployBorrowerWithGoldfinchFactoryFixture({
+          borrower,
+          usdcAddress: usdc.address,
+          id: "Borrower",
+        }))
+        const {poolAddress, clAddress} = await deployFundedTranchedPool({
+          id: "TranchedPool",
+          borrower,
+          borrowerContractAddress: borrowerContract.address,
+          usdcAddress: usdc.address,
+        })
+        const tranchedPool2 = (await getTranchedPoolAndCreditLine(poolAddress, clAddress)).tranchedPool
+
+        return expect(
+          originalBorrowerContract.drawdown(tranchedPool2.address, amount, borrower, {from: originalBorrower})
+        ).to.be.rejectedWith(/NA/)
+      })
+
+      describe("address forwarding", async () => {
+        it("should support forwarding the money to another address", async () => {
+          await expectAction(() =>
+            borrowerContract.drawdown(tranchedPool.address, amount, person3, {from: borrower})
+          ).toChange([
+            [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
+            [async () => await getBalance(person3, usdc), {by: amount}],
+          ])
         })
 
-        const amount = usdcVal(10)
-        it("should let you drawdown the amount", async () => {
+        context("addressToSendTo is the zero address", async () => {
+          it("should default to msg.sender", async () => {
+            await expectAction(() =>
+              borrowerContract.drawdown(tranchedPool.address, amount, ZERO_ADDRESS, {from: borrower})
+            ).toChange([
+              [async () => await getBalance(borrower, usdc), {by: amount}],
+              [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
+            ])
+          })
+        })
+
+        context("addressToSendTo is the contract address", async () => {
+          it("should default to msg.sender", async () => {
+            await expectAction(() =>
+              borrowerContract.drawdown(tranchedPool.address, amount, borrowerContract.address, {from: borrower})
+            ).toChange([
+              [async () => await getBalance(borrower, usdc), {by: amount}],
+              [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
+            ])
+          })
+        })
+      })
+
+      describe("transfering ERC20", async () => {
+        it("should allow the borrower to transfer it anywhere", async () => {
+          // Fund the borrower contract (in practice, this would be unexpected)
+          await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
+
+          // Send that money to the borrower!
           await expectAction(() =>
-            borrowerContract.drawdown(tranchedPool.address, amount, borrower, {from: borrower})
+            borrowerContract.transferERC20(usdc.address, borrower, amount, {from: borrower})
           ).toChange([[async () => await getBalance(borrower, usdc), {by: amount}]])
         })
 
-        it("should not let anyone except the borrower drawdown", async () => {
+        it("should even allow transfers not to the borrower themselves", async () => {
+          // Fund the borrower contract (in practice, this would be unexpected)
+          await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
+
+          // Send that money to the borrower!
+          await expectAction(() =>
+            borrowerContract.transferERC20(usdc.address, person3, amount, {from: borrower})
+          ).toChange([[async () => await getBalance(person3, usdc), {by: amount}]])
+        })
+
+        it("should only allow admins to transfer the money", async () => {
+          // Fund the borrower contract (in practice, this would be unexpected)
+          await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
+
+          // Send that money to the borrower!
           return expect(
-            borrowerContract.drawdown(tranchedPool.address, amount, person3, {from: person3})
+            borrowerContract.transferERC20(usdc.address, person3, amount, {from: person3})
           ).to.be.rejectedWith(/Must have admin role/)
-        })
-
-        it("should not let anyone except the borrower drawdown via oneInch", async () => {
-          return expect(
-            borrowerContract.drawdownWithSwapOnOneInch(
-              tranchedPool.address,
-              amount,
-              person3,
-              usdc.address,
-              amount,
-              [],
-              {
-                from: person3,
-              }
-            )
-          ).to.be.rejectedWith(/Must have admin role/)
-        })
-
-        it("should block you from drawing down on some random credit line", async () => {
-          const originalBorrowerContract = borrowerContract
-          const originalBorrower = borrower
-          borrower = person3
-          ;({borrowerContract} = await deployBorrowerWithGoldfinchFactoryFixture({
-            borrower,
-            usdcAddress: usdc.address,
-            id: "Borrower",
-          }))
-          const {poolAddress, clAddress} = await deployFundedTranchedPool({
-            id: "TranchedPool",
-            borrower,
-            borrowerContractAddress: borrowerContract.address,
-            version: poolVersion,
-            usdcAddress: usdc.address,
-          })
-          const tranchedPool2 = (await getTranchedPoolAndCreditLine(poolAddress, clAddress, poolVersion)).tranchedPool
-
-          return expect(
-            originalBorrowerContract.drawdown(tranchedPool2.address, amount, borrower, {from: originalBorrower})
-          ).to.be.rejectedWith(/NA/)
-        })
-
-        describe("address forwarding", async () => {
-          it("should support forwarding the money to another address", async () => {
-            await expectAction(() =>
-              borrowerContract.drawdown(tranchedPool.address, amount, person3, {from: borrower})
-            ).toChange([
-              [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
-              [async () => await getBalance(person3, usdc), {by: amount}],
-            ])
-          })
-
-          context("addressToSendTo is the zero address", async () => {
-            it("should default to msg.sender", async () => {
-              await expectAction(() =>
-                borrowerContract.drawdown(tranchedPool.address, amount, ZERO_ADDRESS, {from: borrower})
-              ).toChange([
-                [async () => await getBalance(borrower, usdc), {by: amount}],
-                [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
-              ])
-            })
-          })
-
-          context("addressToSendTo is the contract address", async () => {
-            it("should default to msg.sender", async () => {
-              await expectAction(() =>
-                borrowerContract.drawdown(tranchedPool.address, amount, borrowerContract.address, {from: borrower})
-              ).toChange([
-                [async () => await getBalance(borrower, usdc), {by: amount}],
-                [async () => await getBalance(borrowerContract.address, usdc), {by: new BN(0)}],
-              ])
-            })
-          })
-        })
-
-        describe("transfering ERC20", async () => {
-          it("should allow the borrower to transfer it anywhere", async () => {
-            // Fund the borrower contract (in practice, this would be unexpected)
-            await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
-
-            // Send that money to the borrower!
-            await expectAction(() =>
-              borrowerContract.transferERC20(usdc.address, borrower, amount, {from: borrower})
-            ).toChange([[async () => await getBalance(borrower, usdc), {by: amount}]])
-          })
-
-          it("should even allow transfers not to the borrower themselves", async () => {
-            // Fund the borrower contract (in practice, this would be unexpected)
-            await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
-
-            // Send that money to the borrower!
-            await expectAction(() =>
-              borrowerContract.transferERC20(usdc.address, person3, amount, {from: borrower})
-            ).toChange([[async () => await getBalance(person3, usdc), {by: amount}]])
-          })
-
-          it("should only allow admins to transfer the money", async () => {
-            // Fund the borrower contract (in practice, this would be unexpected)
-            await erc20Transfer(usdc, [borrowerContract.address], usdcVal(1000), owner)
-
-            // Send that money to the borrower!
-            return expect(
-              borrowerContract.transferERC20(usdc.address, person3, amount, {from: person3})
-            ).to.be.rejectedWith(/Must have admin role/)
-          })
         })
       })
     })
@@ -220,7 +201,7 @@ describe("Borrower", async () => {
     beforeEach(async () => {
       accounts = await web3.eth.getAccounts()
       ;[owner, borrower, person3, underwriter, reserve] = accounts
-      ;({goldfinchConfig, usdc, borrowerContract, tranchedPool, creditLine} = await setupTest(POOL_VERSION2)())
+      ;({goldfinchConfig, usdc, borrowerContract, tranchedPool, creditLine} = await setupTest())
     })
 
     describe("pay", async () => {
@@ -271,14 +252,10 @@ describe("Borrower", async () => {
           borrowerContractAddress: borrowerContract.address,
           usdcAddress: usdc.address,
           id: "Pool",
-          version: POOL_VERSION2,
         })
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;({tranchedPool: pool2, creditLine: cl2} = await getContractsFromPoolVersion(
-          poolAddress,
-          clAddress,
-          POOL_VERSION2
-        ))
+
+        ;({tranchedPool: pool2, creditLine: cl2} = await getTranchedPoolAndCreditLine(poolAddress, clAddress))
         // Drawdown on both pools
         await borrowerContract.drawdown(tranchedPool.address, usdcVal(10), borrower, {from: borrower})
         await borrowerContract.drawdown(pool2.address, usdcVal(20), borrower, {from: borrower})
@@ -351,7 +328,7 @@ describe("Borrower", async () => {
     beforeEach(async () => {
       accounts = await web3.eth.getAccounts()
       ;[owner, borrower, person3, underwriter, reserve] = accounts
-      ;({goldfinchConfig, usdc, borrowerContract, tranchedPool, creditLine} = await setupTest(POOL_VERSION1)())
+      ;({goldfinchConfig, usdc, borrowerContract, tranchedPool, creditLine} = await setupTest())
     })
 
     describe("pay", async () => {
@@ -392,29 +369,25 @@ describe("Borrower", async () => {
         const firstTrancheDeploy = await deployFundedTranchedPool({
           borrower,
           borrowerContractAddress: borrowerContract.address,
-          version: POOL_VERSION1,
           id: "FirstTranchedPool",
           usdcAddress: usdc.address,
         })
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
         ;({tranchedPool, creditLine} = await getTranchedPoolAndCreditLine(
           firstTrancheDeploy.poolAddress,
-          firstTrancheDeploy.clAddress,
-          POOL_VERSION1
+          firstTrancheDeploy.clAddress
         ))
 
         const secondTrancheDeploy = await deployFundedTranchedPool({
           borrower,
           borrowerContractAddress: borrowerContract.address,
-          version: POOL_VERSION1,
           usdcAddress: usdc.address,
           id: "SecondTranchedPool",
         })
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
         ;({tranchedPool: tranchedPool2, creditLine: creditLine2} = await getTranchedPoolAndCreditLine(
           secondTrancheDeploy.poolAddress,
-          secondTrancheDeploy.clAddress,
-          POOL_VERSION1
+          secondTrancheDeploy.clAddress
         ))
 
         expect(creditLine.address).to.not.eq(creditLine2.address)

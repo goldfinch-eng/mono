@@ -1,30 +1,21 @@
 import {getClContractName} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployClImplementation"
 import {
-  getProtocolOwner,
   getTruffleContract,
   interestAprAsBN,
   MAX_UINT,
-  POOL_VERSION1,
-  POOL_VERSION2,
   TRANCHES,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   AccountantInstance,
   BorrowerInstance,
   CreditLineInstance,
-  CreditLineV2Instance,
   ERC20Instance,
   GoldfinchFactoryInstance,
+  ScheduleInstance,
   TestAccountantInstance,
   TestGoldfinchConfigInstance,
-  TestGoldfinchFactoryInstance,
-  TestTranchedPoolInstance,
-  TestTranchedPoolV2Instance,
-  TranchedPoolImplementationRepositoryInstance,
   TranchedPoolInstance,
-  TranchedPoolV2Instance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {TestCreditLineV2Instance} from "@goldfinch-eng/protocol/typechain/truffle/TestCreditLineV2"
 import hre, {deployments, getNamedAccounts} from "hardhat"
 import {FixtureFunc} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
@@ -70,10 +61,7 @@ interface CreditLineParams {
   borrower: string
   maxLimit: BN | string
   interestApr: BN | string
-  paymentPeriodInDays: BN | string
-  termInDays: BN | string
   lateFeeApr: BN | string
-  principalGracePeriodInDays: BN | string
 }
 
 /**
@@ -125,29 +113,11 @@ export const deployInitializedCreditLineFixture = createFixtureWithRequiredOptio
   async (_hre, options: CreditLineParams) => {
     const {creditLine, ...others} = await deployUninitializedCreditLineFixture()
     assertNonNullable(options)
-    const {
-      config,
-      owner,
-      borrower,
-      maxLimit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays,
-    } = options
+    const {config, owner, borrower, maxLimit, interestApr, lateFeeApr} = options
 
-    await creditLine.initialize(
-      config,
-      owner,
-      borrower,
-      maxLimit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays
-    )
+    const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+
+    await creditLine.initialize(config, owner, borrower, maxLimit, interestApr, schedule.address, lateFeeApr)
 
     return {
       creditLine,
@@ -161,28 +131,9 @@ export interface TranchedPoolOptions {
   juniorFeePercent?: Numberish
   limit?: Numberish
   interestApr?: Numberish
-  paymentPeriodInDays?: Numberish
-  termInDays?: Numberish
   lateFeeApr?: Numberish
-  principalGracePeriodInDays?: Numberish
   fundableAt?: Numberish
   allowedUIDTypes?: Numberish[]
-}
-
-export async function getContractsFromPoolVersion(poolAddress: string, clAddress: string, version: string) {
-  if (version === POOL_VERSION1) {
-    // v1 contracts
-    const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>("TestTranchedPool", {at: poolAddress})
-    const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
-    return {tranchedPool, creditLine}
-  } else if (version === POOL_VERSION2) {
-    // v2 contracts
-    const tranchedPool = await getTruffleContract<TestTranchedPoolV2Instance>("TestTranchedPoolV2", {at: poolAddress})
-    const creditLine = await getTruffleContract<TestCreditLineV2Instance>("TestCreditLineV2", {at: clAddress})
-    return {tranchedPool, creditLine}
-  } else {
-    throw new Error(`Invalid TranchedPool ${version}`)
-  }
 }
 
 /**
@@ -219,42 +170,35 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
         juniorFeePercent = new BN("20"),
         limit = usdcVal(10_000),
         interestApr = interestAprAsBN("15.0"),
-        paymentPeriodInDays = new BN(30),
-        termInDays = new BN(365),
         lateFeeApr = interestAprAsBN("3.0"),
-        principalGracePeriodInDays = new BN(185),
         fundableAt = new BN(0),
         allowedUIDTypes = [0],
-        version = POOL_VERSION1,
         usdcAddress,
-      }: TranchedPoolOptions & {usdcAddress: string; version?: string}
+      }: TranchedPoolOptions & {usdcAddress: string}
     ) => {
       const {protocol_owner: owner} = await hre.getNamedAccounts()
       const usdc = await getTruffleContract("ERC20", {at: usdcAddress})
-      const goldfinchFactoryDeployment = await deployments.get("TestGoldfinchFactory")
-      const goldfinchFactory = await getTruffleContract<TestGoldfinchFactoryInstance>("TestGoldfinchFactory", {
+      const goldfinchFactoryDeployment = await deployments.get("GoldfinchFactory")
+      const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
         at: goldfinchFactoryDeployment.address,
       })
+      const scheduleDeployment = await deployments.get("Schedule")
+      const schedule = await getTruffleContract<ScheduleInstance>("Schedule", {at: scheduleDeployment.address})
 
       // Set the credit line implementation to point to the correct version
       const goldfinchConfig = await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
-      const creditLineContractName = getClContractName(version)
+      const creditLineContractName = getClContractName()
       const creditLineDeployment = await deployments.get(creditLineContractName)
       await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
-      const result = await goldfinchFactory.createPoolForLineage(
+      const result = await goldfinchFactory.createPool(
         borrower,
-        poolVersionToLineageId[version],
-        [
-          juniorFeePercent,
-          limit,
-          interestApr,
-          paymentPeriodInDays,
-          termInDays,
-          lateFeeApr,
-          principalGracePeriodInDays,
-          fundableAt,
-        ],
+        juniorFeePercent,
+        limit,
+        interestApr,
+        schedule.address,
+        lateFeeApr,
+        fundableAt,
         allowedUIDTypes,
         {from: owner}
       )
@@ -280,28 +224,12 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
     fixtureId
   )
 
-export const poolVersionToLineageId = {
-  "0.1.0": "1",
-  "1.0.0": "2",
-}
-
-type Input = {
-  hre: HardhatRuntimeEnvironment
-  options: TranchedPoolOptions
-  usdcAddress: string
-  version: [string, string, string]
-  owner?: string
-}
-
 export async function getDeploymentFor<T extends Truffle.ContractInstance>(contractName: string) {
   const deployment = await deployments.get(contractName)
   return getTruffleContract<T>(contractName, {at: deployment.address})
 }
 
-/**
- * Deploy an tranched pool without calling `initialize` on it. This can also be thought of as an "invalid pool"
- */
-export const deployUninitializedTranchedPoolFixture = deployments.createFixture(async (hre) => {
+export const deployUninitializedV2TranchedPoolFixture = deployments.createFixture(async (hre) => {
   const {protocol_owner: owner} = await hre.getNamedAccounts()
   assertNonNullable(owner)
 
@@ -316,29 +244,6 @@ export const deployUninitializedTranchedPoolFixture = deployments.createFixture(
   })
   const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: tranchedPoolResult.address})
   const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", {
-    at: pool.address,
-  })
-
-  return {
-    tranchedPool,
-  }
-})
-
-export const deployUninitializedV2TranchedPoolFixture = deployments.createFixture(async (hre) => {
-  const {protocol_owner: owner} = await hre.getNamedAccounts()
-  assertNonNullable(owner)
-
-  const accountant = await hre.deployments.get("Accountant")
-  const tranchingLogic = await hre.deployments.get("TranchingLogic")
-  const tranchedPoolResult = await hre.deployments.deploy("TranchedPoolV2", {
-    from: owner,
-    libraries: {
-      ["TranchingLogic"]: tranchingLogic.address,
-      ["Accountant"]: accountant.address,
-    },
-  })
-  const pool = await getTruffleContract<TranchedPoolV2Instance>("TranchedPoolV2", {at: tranchedPoolResult.address})
-  const tranchedPool = await getTruffleContract<TranchedPoolV2Instance>("TestTranchedPoolV2", {
     at: pool.address,
   })
 
@@ -371,8 +276,8 @@ export const deployBorrowerWithGoldfinchFactoryFixture = createFixtureWithRequir
   async (hre, {borrower, usdcAddress}: {borrower: string; usdcAddress: string; id: string}) => {
     const {protocol_owner: owner} = await hre.getNamedAccounts()
     assertNonNullable(owner)
-    const goldfinchFactoryDeployment = await hre.deployments.get("TestGoldfinchFactory")
-    const goldfinchFactory = await getTruffleContract<TestGoldfinchFactoryInstance>("TestGoldfinchFactory", {
+    const goldfinchFactoryDeployment = await hre.deployments.get("GoldfinchFactory")
+    const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
       at: goldfinchFactoryDeployment.address,
     })
     const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: asNonNullable(usdcAddress)})
@@ -421,7 +326,6 @@ export const deployFundedTranchedPool = createFixtureWithRequiredOptions(
       borrower,
       borrowerContractAddress,
       id,
-      version,
     }: {
       usdcAddress: string
       borrower: string
@@ -429,7 +333,6 @@ export const deployFundedTranchedPool = createFixtureWithRequiredOptions(
       seniorTrancheAmount?: BN
       juniorTrancheAmount?: BN
       id: string
-      version: string
     }
   ) => {
     const {protocol_owner: owner} = await hre.getNamedAccounts()
@@ -438,7 +341,6 @@ export const deployFundedTranchedPool = createFixtureWithRequiredOptions(
     const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(id)({
       borrower: borrowerContractAddress,
       usdcAddress,
-      version,
     })
 
     // Instantiate a v1 contract to fund and deposit the pool (the implementation is not necessarily) a

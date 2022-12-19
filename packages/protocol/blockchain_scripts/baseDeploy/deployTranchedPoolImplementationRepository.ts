@@ -15,15 +15,13 @@ export async function deployTranchedPoolImplementationRepository(
   assertIsString(gf_deployer)
   const protocolOwner = await getProtocolOwner()
 
-  const tranchedPoolImpls = await deployTranchedPool(deployer, {config, deployEffects})
+  const tranchedPoolImpl = await deployTranchedPool(deployer, {config, deployEffects})
 
   const contractName = "TranchedPoolImplementationRepository"
   logger(`About to deploy ${contractName}...`)
 
   // We have to pass in a pool impl to the repo constructor so it
   // can initialize the first lineage.
-  const firstLineageTranchedPool = tranchedPoolImpls["0.1.0"]
-  assertNonNullable(firstLineageTranchedPool)
   const repository = (await deployer.deploy(contractName, {
     from: gf_deployer,
     proxy: {
@@ -31,25 +29,11 @@ export async function deployTranchedPoolImplementationRepository(
       execute: {
         init: {
           methodName: "initialize",
-          args: [protocolOwner, firstLineageTranchedPool.address],
+          args: [protocolOwner, tranchedPoolImpl],
         },
       },
     },
   })) as TranchedPoolImplementationRepository
-
-  for (const version in tranchedPoolImpls) {
-    if (version === "0.1.0") {
-      // We can skip this one because its lineage was already created in the repo constructor
-      continue
-    }
-    const tranchedPoolImpl = tranchedPoolImpls[version]
-    assertNonNullable(tranchedPoolImpl)
-    console.log(`Creating TranchedPool lineage for ${tranchedPoolImpl.address} (version ${version})`)
-
-    deployEffects.add({
-      deferred: [await repository.populateTransaction.createLineage(tranchedPoolImpl.address)],
-    })
-  }
 
   logger("Updating config...")
   await deployEffects.add({

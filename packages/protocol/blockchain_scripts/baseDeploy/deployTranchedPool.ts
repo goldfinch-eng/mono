@@ -1,24 +1,12 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Contract} from "ethers/lib/ethers"
-import {ContractDeployer, isMainnetForking, isTestEnv, POOL_VERSION1, POOL_VERSION2} from "../deployHelpers"
+import {ContractDeployer, isMainnetForking, isTestEnv} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 
-const versionToContractNames = {
-  [POOL_VERSION1]: {
-    prodContractName: "TranchedPool",
-    testContractName: "TestTranchedPool",
-  },
-  [POOL_VERSION2]: {
-    prodContractName: "TranchedPoolV2",
-    testContractName: "TestTranchedPoolV2",
-  },
-}
-
-export function getTranchedPoolImplName(version: string) {
-  const {prodContractName, testContractName} = versionToContractNames[version]
-  assertIsString(prodContractName)
-  assertIsString(testContractName)
+export function getTranchedPoolImplName() {
+  const prodContractName = "TranchedPool"
+  const testContractName = "TestTranchedPool"
   if (isTestEnv() && isMainnetForking()) {
     return prodContractName
   } else if (isTestEnv()) {
@@ -41,16 +29,11 @@ export async function deployTranchedPool(
 
   const tranchingLogic = await deployer.deployLibrary("TranchingLogic", {from: gf_deployer, args: []})
 
-  const tranchedPoolImpls: {[version: string]: Contract} = {}
-  for (const version in versionToContractNames) {
-    logger(`About to deploy TranchedPool version ${version}...`)
-    const contractName = getTranchedPoolImplName(version)
-    const tranchedPoolImpl = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      libraries: {["TranchingLogic"]: tranchingLogic.address},
-    })
-    tranchedPoolImpls[version] = tranchedPoolImpl
-  }
+  const contractName = getTranchedPoolImplName()
+  const tranchedPoolImpl = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    libraries: {["TranchingLogic"]: tranchingLogic.address},
+  })
 
-  return tranchedPoolImpls
+  return tranchedPoolImpl.address
 }

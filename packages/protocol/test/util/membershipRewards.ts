@@ -309,7 +309,6 @@ export const setupPoolTokenPosition = async ({
   usdcDepositAmount,
   go,
   goldfinchConfig,
-  goldfinchFactory,
   poolTokens,
   uniqueIdentity,
   usdc,
@@ -319,10 +318,8 @@ export const setupPoolTokenPosition = async ({
   const tranchedPool = await createTranchedPool({
     hre,
     borrowerAddress,
-    ownerAddress,
     go,
     goldfinchConfig,
-    goldfinchFactory,
     usdc,
   })
 

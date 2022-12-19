@@ -1,42 +1,21 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {CONFIG_KEYS} from "../configKeys"
-import {
-  ContractDeployer,
-  isMainnetForking,
-  isTestEnv,
-  POOL_VERSION1,
-  POOL_VERSION2,
-  updateConfig,
-} from "../deployHelpers"
+import {ContractDeployer, isMainnetForking, isTestEnv, updateConfig} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 
 const logger = console.log
 
-/**
- * Map from TranchedPool version to its CreditLine contract
- */
-export const poolVersionToCreditLines = {
-  [POOL_VERSION1]: {
-    prodContractName: "CreditLine",
-    testContractName: "TestCreditLine",
-  },
-  [POOL_VERSION2]: {
-    prodContractName: "CreditLineV2",
-    testContractName: "TestCreditLineV2",
-  },
-}
+const PROD_CONTRACT = "CreditLine"
+const TEST_CONTRACT = "TestCreditLine"
 
-export function getClContractName(poolVersion: string) {
-  const {prodContractName, testContractName} = poolVersionToCreditLines[poolVersion]
-  assertIsString(prodContractName)
-  assertIsString(testContractName)
+export function getClContractName() {
   if (isTestEnv() && isMainnetForking()) {
-    return prodContractName
+    return PROD_CONTRACT
   } else if (isTestEnv()) {
-    return testContractName
+    return TEST_CONTRACT
   } else {
-    return prodContractName
+    return PROD_CONTRACT
   }
 }
 
@@ -50,29 +29,21 @@ export async function deployClImplementation(
   const accountant = await deployer.deployLibrary("Accountant", {from: gf_deployer, args: []})
 
   // Deploy all impls
-  const clImpls = {}
-  for (const version in poolVersionToCreditLines) {
-    console.log(`About to deploy CreditLine (Pool version ${version}`)
-    const contractName = getClContractName(version)
-    const clDeployResult = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      libraries: {["Accountant"]: accountant.address},
-    })
-    clImpls[version] = clDeployResult.address
-  }
+  const contractName = getClContractName()
+  const clDeployResult = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    libraries: {["Accountant"]: accountant.address},
+  })
 
   // The config will point to v0.1.0. If you'd like to run tests on different versions than
   // you can change this in your test setup
-  const implAddress = clImpls["0.1.0"]
-  assertIsString(implAddress)
-  console.log(`Setting Goldfinch impl to ${implAddress} (Pool version 0.1.0)`)
   if (deployEffects !== undefined) {
     await deployEffects.add({
-      deferred: [await config.populateTransaction.setCreditLineImplementation(implAddress)],
+      deferred: [await config.populateTransaction.setCreditLineImplementation(clDeployResult.address)],
     })
   } else {
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, implAddress, {logger})
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address, {logger})
   }
 
-  return clImpls
+  return clDeployResult.address
 }
