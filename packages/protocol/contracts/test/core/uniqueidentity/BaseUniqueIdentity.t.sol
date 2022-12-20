@@ -26,26 +26,7 @@ contract UniqueIdentityBaseTest is BaseTest {
 
     fuzzHelper.exclude(address(uid));
     fuzzHelper.exclude(address(this));
-  }
-
-  function mint(
-    address recipient,
-    uint256 uidType,
-    uint256 amount
-  ) internal impersonating(GF_OWNER) {
-    mint(recipient, uidType, amount, true);
-  }
-
-  function mint(
-    address recipient,
-    uint256 uidType,
-    uint256 amount,
-    bool assumeNotContract
-  ) internal impersonating(GF_OWNER) {
-    if (assumeNotContract) {
-      vm.assume(fuzzHelper.isNotContract(recipient));
-    }
-    uid._mintForTest(recipient, uidType, amount, "");
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
   }
 
   function uidSign(
