@@ -451,8 +451,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // It also causes issues trying to allocate payments to an empty slice (divide by zero)
     require(_locked(), "NL");
 
-    uint256 interestAccrued = creditLine.totalInterestAccrued();
-    PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
+    uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
+    PaymentAllocation memory pa = creditLine.pay(amount);
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
 
     distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
