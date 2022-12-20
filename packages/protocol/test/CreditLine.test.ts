@@ -1,20 +1,7 @@
 import hre from "hardhat"
 const {deployments, artifacts, web3} = hre
-import {
-  expect,
-  BN,
-  advanceTime,
-  usdcVal,
-  erc20Transfer,
-  expectAction,
-  SECONDS_PER_DAY,
-  decodeLogs,
-  getFirstLog,
-  Numberish,
-} from "./testHelpers"
-import {expectEvent} from "@openzeppelin/test-helpers"
+import {expect, BN, advanceTime, usdcVal, erc20Transfer, SECONDS_PER_DAY, Numberish} from "./testHelpers"
 import {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} from "../blockchain_scripts/deployHelpers"
-import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import {deployBaseFixture} from "./util/fixtures"
 

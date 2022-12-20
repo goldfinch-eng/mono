@@ -2,7 +2,7 @@ import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {ethers} from "hardhat"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {SeniorPool, TranchedPool} from "../typechain/ethers"
-import {assertIsChainId, getEthersContract, getProtocolOwner} from "./deployHelpers"
+import {getEthersContract, getProtocolOwner} from "./deployHelpers"
 
 /**
  * Locks a TranchedPool so a borrower can start to drawdown. Convenience function for testing various UI elements

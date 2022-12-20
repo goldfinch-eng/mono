@@ -5,7 +5,7 @@ chai.use(AsPromised)
 
 import {getProtocolOwner} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {hardhat} from "@goldfinch-eng/protocol"
-import {bigVal, BN, deployAllContracts, erc20Transfer, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {bigVal, deployAllContracts, erc20Transfer, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 const {deployments} = hardhat
 import * as reserveDistributor from "../reserve-distributor"
 import {assertNonNullable} from "packages/utils/src/type"

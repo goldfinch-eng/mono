@@ -4,7 +4,6 @@ import {
   ERC20Instance,
   FiduInstance,
   GFIInstance,
-  GoldfinchConfigInstance,
   TestStakingRewardsInstance,
   TestFiduUSDCCurveLPInstance,
   TestSeniorPoolInstance,
@@ -55,8 +54,7 @@ describe("StakingRewards", function () {
     seniorPool: TestSeniorPoolInstance,
     fidu: FiduInstance,
     fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance,
-    stakingRewards: TestStakingRewardsInstance,
-    goldfinchConfig: GoldfinchConfigInstance
+    stakingRewards: TestStakingRewardsInstance
 
   let fiduAmount: BN
   let anotherUserFiduAmount: BN
@@ -206,7 +204,6 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
-      goldfinchConfig,
       curveLPAmount,
     } = await testSetup())
   })
@@ -771,22 +768,8 @@ describe("StakingRewards", function () {
 
     context("not go-listed", async () => {
       it("reverts", async () => {
-        const nonce = await (usdc as any).nonces(nonGoListedUser)
-        const deadline = MAX_UINT
-        const amount = usdcVal(1000)
-
-        // Create signature for permit
-        const digest = await getApprovalDigest({
-          token: usdc,
-          owner: nonGoListedUser,
-          spender: stakingRewards.address,
-          value: amount,
-          nonce,
-          deadline,
-        })
         const wallet = await getWallet(nonGoListedUser)
         assertNonNullable(wallet)
-        const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
         await expect(stakingRewards.depositAndStake(usdcVal(1000), {from: nonGoListedUser})).to.be.rejectedWith(/GL/)
       })

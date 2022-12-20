@@ -10,7 +10,7 @@ import {
   GoldfinchFactoryInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {createPoolWithCreditLine, erc20Approve, getTruffleContractAtAddress, usdcVal} from "../testHelpers"
+import {createPoolWithCreditLine, getTruffleContractAtAddress} from "../testHelpers"
 
 interface CreateTranchedPool {
   hre: HardhatRuntimeEnvironment

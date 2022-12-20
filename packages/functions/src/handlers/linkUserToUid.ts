@@ -19,6 +19,7 @@ import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/cont
 import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {KycProvider} from "../types"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let deployedDevABIs: any
 try {
   deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
@@ -60,7 +61,10 @@ if (process.env.NODE_ENV == "test") {
  * @param { { address: string, abi: any }? } injectedUidDeployment The specified UniqueIdentity contract deployment, try to determine automatically from the chain ID otherwise.
  * @return {HttpsFunction} Https function that handles the request
  */
-export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: string; abi: any}) => {
+export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {
+  address: string
+  abi: ethers.ContractInterface
+}) => {
   return genRequestHandler({
     fallbackOnMissingPlaintext: false,
     requireAuth: "signatureWithAllowList",

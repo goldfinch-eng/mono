@@ -11,16 +11,14 @@ import {
   SECONDS_PER_YEAR,
   usdcToFidu,
   expectAction,
-  fiduToUSDC,
   advanceTime,
   Numberish,
   bigVal,
 } from "./testHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
-import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, MAX_UINT} from "../blockchain_scripts/deployHelpers"
+import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, MAX_UINT} from "../blockchain_scripts/deployHelpers"
 import {time} from "@openzeppelin/test-helpers"
 import {deployBaseFixture} from "./util/fixtures"
-import {GFIInstance, StakingRewardsInstance} from "../typechain/truffle"
 import {STAKING_REWARDS_PARAMS} from "../blockchain_scripts/migrations/v2.2/deploy"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
@@ -218,20 +216,6 @@ describe("Goldfinch", async function () {
     async function afterWithdrawalFees(grossAmount) {
       const feeDenominator = await goldfinchConfig.getNumber(CONFIG_KEYS.WithdrawFeeDenominator)
       return grossAmount.sub(grossAmount.div(feeDenominator))
-    }
-
-    async function withdrawFromSeniorPool(usdcAmount, investor?) {
-      investor = investor || investor1
-      if (usdcAmount === "max") {
-        const numShares = await getBalance(investor, fidu)
-        const maxAmount = (await seniorPool.sharePrice()).mul(numShares)
-        usdcAmount = fiduToUSDC(maxAmount.div(ETHDecimals))
-      }
-      return seniorPool.withdraw(usdcAmount, {from: investor})
-    }
-
-    async function withdrawFromSeniorPoolInFidu(fiduAmount, investor) {
-      return seniorPool.withdrawInFidu(fiduAmount, {from: investor})
     }
 
     async function withdrawFromPool(pool, usdcAmount, investor?) {

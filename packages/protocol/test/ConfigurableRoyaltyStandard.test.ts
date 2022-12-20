@@ -1,4 +1,3 @@
-/* global web3 artifacts */
 import {decodeLogs, expect, getFirstLog} from "./testHelpers"
 import BN from "bn.js"
 import {RoyaltyParamsSet} from "../typechain/truffle/contracts/protocol/core/ConfigurableRoyaltyStandard"

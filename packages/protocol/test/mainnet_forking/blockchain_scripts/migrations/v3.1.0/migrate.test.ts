@@ -7,26 +7,20 @@ import {assertIsString} from "packages/utils/src/type"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
-import {TransferSingle} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/UniqueIdentity"
 
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
-import {BN, decodeLogs, getOnlyLog} from "packages/protocol/test/testHelpers"
 import {
   getCurrentTimestamp,
   getDeployedAsTruffleContract,
   SECONDS_PER_DAY,
 } from "@goldfinch-eng/protocol/test/testHelpers"
-import {
-  MAINNET_GOVERNANCE_MULTISIG,
-  MAINNET_WARBLER_LABS_MULTISIG,
-} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
   presignedMintMessage,
   presignedMintToMessage,
   presignedBurnMessage,
 } from "packages/utils/src/uniqueIdentityHelpers"
 import {UniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import BigNumber from "bignumber.js"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
