@@ -14,10 +14,9 @@ import {
   ZERO,
   SECONDS_PER_DAY,
   getTranchedPoolAndCreditLine,
-  getTruffleContractAtAddress,
 } from "./testHelpers"
 import {deployBaseFixture, deployBorrowerWithGoldfinchFactoryFixture, deployFundedTranchedPool} from "./util/fixtures"
-import {BorrowerInstance, ERC20Instance, TestCreditLineInstance, TestTranchedPoolInstance} from "../typechain/truffle"
+import {BorrowerInstance, ERC20Instance, TestTranchedPoolInstance} from "../typechain/truffle"
 
 describe("Borrower", async () => {
   let owner,
@@ -232,8 +231,12 @@ describe("Borrower", async () => {
         ).to.be.rejectedWith(/Failed to fully pay off creditline/)
       })
       it("should pay back if full amount", async () => {
-        await expectAction(() =>
-          borrowerContract.payInFull(tranchedPool.address, amount.mul(new BN(2)), {from: borrower})
+        await expectAction(async () =>
+          borrowerContract.payInFull(
+            tranchedPool.address,
+            (await creditLine.interestOwed()).add(await creditLine.balance()),
+            {from: borrower}
+          )
         ).toChange([
           [creditLine.balance, {to: ZERO}],
           [() => usdc.balanceOf(borrower), {decrease: true}],
@@ -318,139 +321,6 @@ describe("Borrower", async () => {
           [creditLine.balance, {to: ZERO}],
           [creditLine.totalInterestPaid, {by: interestPayment}],
         ])
-      })
-    })
-  })
-
-  describe("TranchedPool 0.1.0", () => {
-    let tranchedPool
-    let creditLine
-    beforeEach(async () => {
-      accounts = await web3.eth.getAccounts()
-      ;[owner, borrower, person3, underwriter, reserve] = accounts
-      ;({goldfinchConfig, usdc, borrowerContract, tranchedPool, creditLine} = await setupTest())
-    })
-
-    describe("pay", async () => {
-      const amount = usdcVal(10)
-      beforeEach(async () => {
-        await borrowerContract.drawdown(tranchedPool.address, amount, borrower, {from: borrower})
-      })
-
-      it("should payback the loan as expected", async () => {
-        await expectAction(() => pay(borrowerContract, tranchedPool.address, amount)).toChange([
-          [async () => await getBalance(creditLine.address, usdc), {increase: true}],
-          [async () => await getBalance(borrower, usdc), {by: amount.neg()}],
-        ])
-
-        await advanceTime({toSecond: (await creditLine.nextDueTime()).add(new BN(1))})
-
-        await expectAction(() => tranchedPool.assess()).toChange([
-          [async () => await creditLine.balance(), {decrease: true}],
-          [async () => await getBalance(creditLine.address, usdc), {by: amount.neg()}],
-          [async () => await getBalance(tranchedPool.address, usdc), {increase: true}],
-        ])
-      })
-    })
-
-    describe("payMultiple", async () => {
-      let tranchedPool2, creditLine2, tranchedPool, creditLine
-      const amount = usdcVal(10)
-      const amount2 = usdcVal(5)
-
-      beforeEach(async () => {
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;({borrowerContract} = await deployBorrowerWithGoldfinchFactoryFixture({
-          borrower: borrower,
-          usdcAddress: usdc.address,
-          id: "Borrower",
-        }))
-
-        const firstTrancheDeploy = await deployFundedTranchedPool({
-          borrower,
-          borrowerContractAddress: borrowerContract.address,
-          id: "FirstTranchedPool",
-          usdcAddress: usdc.address,
-        })
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;({tranchedPool, creditLine} = await getTranchedPoolAndCreditLine(
-          firstTrancheDeploy.poolAddress,
-          firstTrancheDeploy.clAddress
-        ))
-
-        const secondTrancheDeploy = await deployFundedTranchedPool({
-          borrower,
-          borrowerContractAddress: borrowerContract.address,
-          usdcAddress: usdc.address,
-          id: "SecondTranchedPool",
-        })
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;({tranchedPool: tranchedPool2, creditLine: creditLine2} = await getTranchedPoolAndCreditLine(
-          secondTrancheDeploy.poolAddress,
-          secondTrancheDeploy.clAddress
-        ))
-
-        expect(creditLine.address).to.not.eq(creditLine2.address)
-        expect(tranchedPool.address).to.not.eq(tranchedPool2.address)
-        expect(await tranchedPool.creditLine()).to.not.eq(await tranchedPool2.creditLine())
-
-        await borrowerContract.drawdown(tranchedPool.address, amount, borrower, {from: borrower})
-        await borrowerContract.drawdown(tranchedPool2.address, amount2, borrower, {from: borrower})
-      })
-
-      it("should payback the loan as expected", async () => {
-        await expectAction(() =>
-          borrowerContract.payMultiple([tranchedPool.address, tranchedPool2.address], [amount, amount2], {
-            from: borrower,
-          })
-        ).toChange([
-          [() => getBalance(creditLine.address, usdc), {by: amount}],
-          [() => getBalance(creditLine2.address, usdc), {by: amount2}],
-          [() => getBalance(borrower, usdc), {by: amount.add(amount2).neg()}],
-        ])
-
-        await advanceTime({toSecond: (await creditLine.nextDueTime()).add(new BN(100))})
-        await advanceTime({toSecond: (await creditLine2.nextDueTime()).add(new BN(100))})
-
-        await expectAction(() => tranchedPool.assess()).toChange([
-          [() => creditLine.balance(), {decrease: true}],
-          [() => getBalance(tranchedPool.address, usdc), {increase: true}],
-        ])
-        await expectAction(() => tranchedPool2.assess()).toChange([
-          [() => creditLine2.balance(), {decrease: true}],
-          [() => getBalance(tranchedPool2.address, usdc), {increase: true}],
-        ])
-      })
-    })
-
-    describe("payInFull", async () => {
-      const amount = usdcVal(10)
-
-      beforeEach(async () => {
-        await borrowerContract.drawdown(tranchedPool.address, amount, borrower, {from: borrower})
-      })
-
-      it("should fully pay back the loan", async () => {
-        await advanceTime({toSecond: (await creditLine.nextDueTime()).add(new BN(1))})
-        await expectAction(async () =>
-          borrowerContract.payInFull(tranchedPool.address, usdcVal(11), {from: borrower})
-        ).toChange([
-          [async () => creditLine.balance(), {to: new BN(0)}],
-          [async () => getBalance(tranchedPool.address, usdc), {increase: true}],
-        ])
-      })
-
-      describe("paySeparate", () => {
-        it("reverts", async () => {
-          await expect(paySeparate(borrowerContract, tranchedPool.address, ZERO, usdcVal(10))).to.be.rejected
-        })
-      })
-
-      it("fails if the loan is not fully paid off", async () => {
-        await expect(borrowerContract.payInFull(tranchedPool.address, usdcVal(5), {from: borrower})).to.be.rejectedWith(
-          /Failed to fully pay off creditline/
-        )
-        expect(await creditLine.balance()).to.bignumber.gt(new BN(0))
       })
     })
   })
