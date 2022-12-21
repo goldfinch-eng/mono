@@ -30,7 +30,7 @@ contract GoGoOnlyIdTypesTest is GoBaseTest {
 
   function testGoOnlyIdTypesReturnsTrueIfGoListedWithNoUid(
     address user
-  ) public impersonating(GF_OWNER) {
+  ) public onlyAllowListed(user) impersonating(GF_OWNER) {
     uint256[] memory uidTypes = new uint256[](1);
     uidTypes[0] = 0;
     gfConfig.addToGoList(user);
