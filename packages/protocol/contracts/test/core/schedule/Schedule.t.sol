@@ -76,9 +76,7 @@ contract ScheduleTest is Test {
     uint256 t
   ) public initWithValidParams(p) {
     uint256 termEndTime = s.termEndTime(startTime);
-    console.log(termEndTime);
-    console.log(t);
-    vm.assume(t < termEndTime);
+    t = bound(t, 0, termEndTime - 1);
 
     assertGe(s.nextDueTimeAt(startTime, t), t);
   }
@@ -99,7 +97,7 @@ contract ScheduleTest is Test {
     uint256 t
   ) public initWithValidParams(p) {
     uint256 termEndTime = s.termEndTime(startTime);
-    vm.assume(t > termEndTime);
+    t = bound(t, termEndTime + 1, type(uint256).max);
 
     assertEq(s.nextDueTimeAt(startTime, t), termEndTime);
   }
