@@ -7,8 +7,6 @@ import {
   getBalance,
   erc20Approve,
   erc20Transfer,
-  SECONDS_PER_DAY,
-  SECONDS_PER_YEAR,
   usdcToFidu,
   expectAction,
   advanceTime,
@@ -18,13 +16,13 @@ import {
   getTranchedPoolAndCreditLine,
 } from "./testHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
-import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, MAX_UINT} from "../blockchain_scripts/deployHelpers"
+import {TRANCHES, interestAprAsBN, MAX_UINT} from "../blockchain_scripts/deployHelpers"
 import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "./util/fixtures"
 import {STAKING_REWARDS_PARAMS} from "../blockchain_scripts/migrations/v2.2/deploy"
 
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
-let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, goldfinchFactory, poolTokens
+let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, poolTokens
 
 const ONE_HUNDRED = new BN(100)
 
@@ -38,15 +36,10 @@ describe("Goldfinch", async function () {
   let lateFeeApr = interestAprAsBN("0")
   const juniorFeePercent = new BN(20)
   const allowedUIDTypes = [0]
-  let paymentPeriodInDays = new BN(1)
-  let termInDays = new BN(365)
-  const principalGracePeriod = new BN(185)
   const fundableAt = new BN(0)
-  let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi} =
-      await deployBaseFixture()
+    const {seniorPool, usdc, fidu, goldfinchConfig, poolTokens, stakingRewards, gfi} = await deployBaseFixture()
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
@@ -73,33 +66,16 @@ describe("Goldfinch", async function () {
     await seniorPool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
-    return {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi}
+    return {seniorPool, usdc, fidu, goldfinchConfig, poolTokens, stakingRewards, gfi}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower, investor1, investor2, reserve] = accounts
-    ;({usdc, seniorPool, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await setupTest())
+    ;({usdc, seniorPool, fidu, goldfinchConfig, poolTokens} = await setupTest())
   })
 
   describe("functional test", async () => {
-    async function assertCreditLine(
-      balance,
-      interestOwed,
-      collectedPayment,
-      nextDueTime,
-      interestAccruedAsOf,
-      lastFullPaymentTime
-    ) {
-      expect(await creditLine.balance()).to.bignumber.equal(balance)
-      expect(await creditLine.interestOwed()).to.bignumber.equal(interestOwed)
-      expect(await creditLine.principalOwed()).to.bignumber.equal("0") // Principal owed is always 0
-      expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(collectedPayment)
-      expect(await creditLine.nextDueTime()).to.bignumber.equal(new BN(nextDueTime))
-      expect(await creditLine.interestAccruedAsOf()).to.bignumber.equal(new BN(interestAccruedAsOf))
-      expect(await creditLine.lastFullPaymentTime()).to.bignumber.equal(new BN(lastFullPaymentTime))
-    }
-
     async function createPool({
       _borrower,
       _limit,
@@ -169,50 +145,8 @@ describe("Goldfinch", async function () {
       return number.mul(percent).div(ONE_HUNDRED)
     }
 
-    async function calculateInterest(pool, cl, timeInDays, tranche) {
-      const numSeconds = timeInDays.mul(SECONDS_PER_DAY)
-      const totalInterestPerYear = (await cl.balance()).mul(await cl.interestApr()).div(INTEREST_DECIMALS)
-      const totalExpectedInterest = totalInterestPerYear.mul(numSeconds).div(SECONDS_PER_YEAR)
-      if (tranche === null) {
-        return totalExpectedInterest
-      }
-      // To get the senior interest, first we need to scale by levarage ratio
-      const juniorTotal = new BN((await pool.getTranche(TRANCHES.Junior)).principalDeposited)
-      const seniorTotal = new BN((await pool.getTranche(TRANCHES.Senior)).principalDeposited)
-      const seniorLeveragePercent = ONE_HUNDRED.mul(seniorTotal).div(seniorTotal.add(juniorTotal))
-      const reserveFeePercent = ONE_HUNDRED.div(await goldfinchConfig.getNumber(CONFIG_KEYS.ReserveDenominator))
-      const seniorInterest = totalExpectedInterest.mul(seniorLeveragePercent).div(ONE_HUNDRED)
-
-      if (tranche === TRANCHES.Senior) {
-        const seniorFractionNetFees = ONE_HUNDRED.sub(reserveFeePercent).sub(juniorFeePercent)
-        return getPercent(seniorInterest, seniorFractionNetFees)
-      } else if (tranche === TRANCHES.Junior) {
-        const juniorLeveragePercent = ONE_HUNDRED.mul(juniorTotal).div(seniorTotal.add(juniorTotal))
-        let juniorInterest = getPercent(totalExpectedInterest, juniorLeveragePercent)
-        // Subtract fees
-        juniorInterest = getPercent(juniorInterest, ONE_HUNDRED.sub(reserveFeePercent))
-        // Add junior fee
-        const juniorFee = getPercent(seniorInterest, juniorFeePercent)
-        return juniorInterest.add(juniorFee)
-      }
-    }
-
     async function getPoolTokenFor(owner, index?) {
       return poolTokens.tokenOfOwnerByIndex(owner, index || 0)
-    }
-
-    async function assessPool(pool) {
-      await pool.assess()
-      const tokenId = await getPoolTokenFor(seniorPool.address)
-      await seniorPool.redeem(tokenId)
-      await seniorPool.writedown(tokenId)
-    }
-
-    async function checkpointPool(creditLine) {
-      await creditLine._checkpoint()
-      const tokenId = await getPoolTokenFor(seniorPool.address)
-      await seniorPool.redeem(tokenId)
-      await seniorPool.writedown(tokenId)
     }
 
     async function afterWithdrawalFees(grossAmount) {
@@ -241,9 +175,8 @@ describe("Goldfinch", async function () {
           const amount = usdcVal(10000)
           const juniorAmount = usdcVal(1000)
           const drawdownAmount = amount.div(new BN(10))
-          const paymentPeriodInDays = new BN(15)
 
-          ;({tranchedPool} = await createPool())
+          ;({tranchedPool, creditLine} = await createPool())
 
           await expectAction(async () => {
             await depositToSeniorPool(amount, investor1)
@@ -263,22 +196,28 @@ describe("Goldfinch", async function () {
           await lockAndLeveragePool(tranchedPool)
           await drawdown(tranchedPool, drawdownAmount, borrower)
 
-          const totalInterest = await calculateInterest(tranchedPool, creditLine, paymentPeriodInDays, null)
-          const expectedSeniorInterest = await calculateInterest(
-            tranchedPool,
-            creditLine,
-            paymentPeriodInDays,
-            TRANCHES.Senior
-          )
-          const expectedJuniorInterest = await calculateInterest(
-            tranchedPool,
-            creditLine,
-            paymentPeriodInDays,
-            TRANCHES.Junior
-          )
+          const totalInterest = await creditLine.interestOwedAt(await creditLine.nextDueTime())
+
+          // To get the senior interest, first we need to scale by levarage ratio
+          const juniorTotal = new BN((await tranchedPool.getTranche(TRANCHES.Junior)).principalDeposited)
+          const seniorTotal = new BN((await tranchedPool.getTranche(TRANCHES.Senior)).principalDeposited)
+          const seniorLeveragePercent = ONE_HUNDRED.mul(seniorTotal).div(seniorTotal.add(juniorTotal))
+          const reserveFeePercent = ONE_HUNDRED.div(await goldfinchConfig.getNumber(CONFIG_KEYS.ReserveDenominator))
+          let seniorInterest = totalInterest.mul(seniorLeveragePercent).div(ONE_HUNDRED)
+          const seniorFractionNetFees = ONE_HUNDRED.sub(reserveFeePercent).sub(juniorFeePercent)
+          seniorInterest = getPercent(seniorInterest, seniorFractionNetFees)
+
+          const juniorLeveragePercent = ONE_HUNDRED.mul(juniorTotal).div(seniorTotal.add(juniorTotal))
+          let juniorInterest = getPercent(totalInterest, juniorLeveragePercent)
+          // Subtract fees
+          juniorInterest = getPercent(juniorInterest, ONE_HUNDRED.sub(reserveFeePercent))
+          // Add junior fee
+          const juniorFee = getPercent(seniorInterest, juniorFeePercent)
+          juniorInterest = juniorInterest.add(juniorFee)
 
           // Advance to end of payment period and pay back total interest
           await advanceTime({toSecond: await creditLine.nextDueTime()})
+          // WHY DOESNT THE SHARE PRICE INCREASE??!!
           await expectAction(async () => {
             await tranchedPool.pay(totalInterest, {from: borrower})
             const tokenId = await getPoolTokenFor(seniorPool.address)
@@ -288,7 +227,7 @@ describe("Goldfinch", async function () {
           expect(await creditLine.interestOwed()).to.bignumber.eq(ZERO)
 
           // There was 10k already in the pool (from the underwriter), so each investor has a third
-          const grossExpectedReturn = amount.add(expectedSeniorInterest.div(new BN(3)))
+          const grossExpectedReturn = amount.add(seniorInterest.div(new BN(3)))
           const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
           await expectAction(async () => {
             await withdrawFromSeniorPool(1, investor1)
@@ -301,7 +240,7 @@ describe("Goldfinch", async function () {
           // Only 2 junior investors, and both were for the same amount. 10% was drawdown, so 90% of junior principal is redeemable
           const principalFractionUsed = (await creditLine.balance()).mul(ONE_HUNDRED).div(limit)
           const juniorPrincipalAvailable = getPercent(juniorAmount, ONE_HUNDRED.sub(principalFractionUsed))
-          const expectedJuniorReturn = juniorPrincipalAvailable.add(expectedJuniorInterest.div(new BN(2)))
+          const expectedJuniorReturn = juniorPrincipalAvailable.add(juniorInterest.div(new BN(2)))
           await expectAction(async () => {
             await withdrawFromPool(tranchedPool, "max")
             await withdrawFromPool(tranchedPool, expectedJuniorReturn, investor2)
@@ -326,12 +265,15 @@ describe("Goldfinch", async function () {
           await lockAndLeveragePool(tranchedPool)
           await drawdown(tranchedPool, drawdownAmount, borrower)
 
-          await goldfinchConfig.setNumber(CONFIG_KEYS.LatenessGracePeriodInDays, paymentPeriodInDays)
+          await goldfinchConfig.setNumber(CONFIG_KEYS.LatenessGracePeriodInDays, new BN(30))
           // Advance to a point where we would definitely write them down
-          const fourPeriods = (await creditLine.paymentPeriodInDays()).mul(new BN(4))
-          await advanceTime({days: fourPeriods.toNumber()})
+          await advanceTime({days: "180"})
 
-          await expectAction(() => checkpointPool(creditLine)).toChange([
+          await expectAction(async () => {
+            const tokenId = await getPoolTokenFor(seniorPool.address)
+            await seniorPool.redeem(tokenId)
+            await seniorPool.writedown(tokenId)
+          }).toChange([
             [seniorPool.totalWritedowns, {increase: true}],
             [creditLine.interestOwed, {increase: true}],
             [seniorPool.sharePrice, {decrease: true}],
@@ -350,9 +292,6 @@ describe("Goldfinch", async function () {
           limit = usdcVal(10000)
           interestApr = interestAprAsBN("25")
           lateFeeApr = interestAprAsBN("0")
-          paymentPeriodInDays = new BN(1)
-          termInDays = new BN(365)
-          paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
         })
 
         describe("drawdown and isLate", async () => {
