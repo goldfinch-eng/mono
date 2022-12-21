@@ -2,7 +2,7 @@
   "name": "@goldfinch-eng/utils",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/index",
+  "main": "dist/index.js",
   "files": [
     "dist/**"
   ],
@@ -33,14 +33,14 @@
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "lint-staged": "^11.1.2",
+    "lint-staged": "^13.1.0",
     "prettier": "^2.8.0",
     "tsconfig-paths": "^3.11.0",
     "typescript": "^4.9.3"
   },
   "dependencies": {
-    "ethers": "^5.7.2",
     "@types/lodash": "^4.14.172",
+    "ethers": "^5.7.2",
     "lodash": "^4.17.21"
   }
 }

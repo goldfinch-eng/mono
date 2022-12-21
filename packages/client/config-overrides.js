@@ -1,7 +1,7 @@
 /* config-overrides.js */
 const path = require("path")
 const {solidityLoader} = require("./config/webpack")
-const {override, overrideDevServer} = require("customize-cra")
+const {override, overrideDevServer, removeModuleScopePlugin} = require("customize-cra")
 
 const findWebpackPlugin = (webpackConfig, pluginName) =>
   webpackConfig.resolve.plugins.find(({constructor}) => constructor && constructor.name === pluginName)
@@ -96,7 +96,7 @@ const murmuration = () => (config) => {
     config.proxy = {
       ...(config.proxy || {}),
       // In the murmuration environment, we have the Webpack dev server proxy for the hardhat node
-      // (which is run via `npx hardhat node` in the `start:murmuration` npm command). This approach
+      // (which is run via `yarn hardhat node` in the `start:murmuration` npm command). This approach
       // was arrived at after an approach of not colocating the hardhat node and the Webpack dev server
       // in the same environment was determined not to be viable. (See
       // https://github.com/goldfinch-eng/goldfinch-protocol/pull/360#issuecomment-882943366. The issue
@@ -151,6 +151,7 @@ module.exports = {
   webpack: override(
     allowOutsideImports(),
     solidityHotReloading(solidityLoader),
+    removeModuleScopePlugin(),
   ),
   devServer: overrideDevServer(
     localRelayer(),

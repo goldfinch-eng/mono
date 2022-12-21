@@ -1,12 +1,10 @@
 import {
   ContractDeployer,
-  ContractUpgrader,
   ETHDecimals,
   getEthersContract,
   getProtocolOwner,
   getTempMultisig,
   getTruffleContract,
-  isMainnet,
   isMainnetForking,
   LOCAL_CHAIN_ID,
   MAINNET_CHAIN_ID,
@@ -28,8 +26,6 @@ import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {Contract} from "ethers"
-import {promises as fs} from "fs"
-import path from "path"
 import {deployCommunityRewards} from "../../baseDeploy/deployCommunityRewards"
 import {deployConfigProxy} from "../../baseDeploy/deployConfigProxy"
 import {deployLPStakingRewards} from "../../baseDeploy/deployLPStakingRewards"
@@ -104,7 +100,6 @@ export async function getOldConfig() {
 
 export async function deploy(deployEffects: DeployEffects, anonDeployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
-  const upgrader = new ContractUpgrader(deployer)
   const protocolOwner = await getProtocolOwner()
 
   console.log("Starting deployment")

@@ -6,7 +6,7 @@
 // ! 1. Change NEXT_PUBLIC_GRAPHQL_URL in .env.local to a working version of the most recent subgraph. This can be localhost if you're running it. Codegen will now work again for local dev
 // ! If you need prod deployments to work:
 // ! 1. Same as step 1 above
-// ! 2. `npm run codegen-introspection` - Now you'll have an up-to-date introspection result at ./lib/graphql/schema.json
+// ! 2. `yarn codegen-introspection` - Now you'll have an up-to-date introspection result at ./lib/graphql/schema.json
 // ! 3. Remove `lib/graphql/schema.json` from .gitignore, then change `schema` below to use that local file instead of a remote URL (check the comment below)
 // ! 4. Commit the schema.json file and the change to `schema` in this file. Remote builds will now work again because the types are being generated off schema.json
 // ! UNDO THE ABOVE STEPS ONCE THE SUBGRAPH IS WORKING AGAIN. schema.json is an auto-generated file and it'll show up in diffs all the time which is annoying

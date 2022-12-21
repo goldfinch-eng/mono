@@ -4,7 +4,7 @@
   "private": true,
   "description": "",
   "scripts": {
-    "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test --show-stack-traces",
+    "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test yarn hardhat test --show-stack-traces",
     "pre-commit": "lint-staged",
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix .",
@@ -56,7 +56,7 @@
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "lint-staged": "^11.1.2",
+    "lint-staged": "^13.1.0",
     "prettier": "^2.8.0",
     "rollup": "^2.56.3",
     "sinon": "^13.0.1",

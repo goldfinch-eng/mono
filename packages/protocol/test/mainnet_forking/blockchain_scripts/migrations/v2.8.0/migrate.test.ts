@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import hre, {deployments, ethers, getNamedAccounts} from "hardhat"
+import hre, {deployments, getNamedAccounts} from "hardhat"
 import {
   getProtocolOwner,
   getTruffleContract,
@@ -71,7 +71,6 @@ import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/pr
 import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/ICapitalLedger"
 import bn from "bignumber.js"
 import {routingIdOf} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers/routingIdOf"
-import {MembershipLedger} from "@goldfinch-eng/protocol/typechain/ethers"
 
 const INITIALIZABLE_ERROR = "Initializable: contract is already initialized"
 const EPOCH_LENGTH_IN_DAYS = 7

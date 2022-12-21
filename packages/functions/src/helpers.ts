@@ -92,7 +92,7 @@ export let getBlockchain: (origin: string) => BaseProvider = _getBlockchain
  * @callback mocked
  * @param {mocked|undefined} mock The getter to use to mock `getBlockchain()` behavior.
  */
-export const mockGetBlockchain = (mock: ((origin: string) => BaseProvider) | undefined): void => {
+export const mockGetBlockchain = (mock?: (origin: string) => BaseProvider): void => {
   getBlockchain = mock || _getBlockchain
 }
 

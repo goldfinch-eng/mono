@@ -23,6 +23,6 @@ docker-compose up -d;
 
 sleep 30
 
-npm run build
-npm run create-local
-npm run deploy-local
+yarn build
+yarn create-local
+yarn deploy-local

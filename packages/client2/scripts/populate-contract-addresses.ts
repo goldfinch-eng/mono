@@ -7,7 +7,7 @@ const nextEnv = require("@next/env");
 const prettier = require("prettier");
 
 const env = nextEnv.loadEnvConfig(".");
-const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME as string;
+const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME || "mainnet";
 console.log(`Gathering contract addresses for network ${networkName}`);
 let contracts: Record<string, { address: string }>;
 if (networkName === "mainnet") {

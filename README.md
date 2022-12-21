@@ -1,131 +1,81 @@
+<p align="center">
+  <img src="banner.png" alt="Goldfinch Protocol icon" width="100%"/>
+</p>
+
 # Goldfinch Protocol
-Goldfinch is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend and other supporting code.
+[Goldfinch](https://goldfinch.finance/) is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend, and other supporting code. For the latest documentation, check out our [docs](https://docs.goldfinch.finance/).
 
-## Installing
-#### Environment
-Copy the .env.example at the workspace root to a new file .env.local. Fill in the `TEST_USER` field with some development address.
+Stay up to date by joining our [Goldfinch Discord server](https://discord.com/invite/HVeaca3fN8) or following us on [Twitter @goldfinch_fi](https://twitter.com/goldfinch_fi).
 
-If working on the frontend, be sure to follow the same process in packages/client2.
+## Installation
 
-#### Node version
+Goldfinch requires NodeJS to get up and running. We recommend using [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) to manage the Node installation. Once nvm is installed, set up the environment from the project root by running
+```bash
+# setup Node using the version defined in .nvmrc
+nvm install
 
-You will need the correct version of node/npm on your local machine.
-
-Using nvm, you can do this with `nvm install` (this will look at .nvmrc for the version). If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
-
-#### Other Prerequisites 
-
-You will need `python` installed and in your path. Some of the dependencies require [node-gyp](https://github.com/nodejs/node-gyp), which compiles native addons using python. If you don't have `python`, we recommend using `pyenv`, which has instructions [here](https://github.com/pyenv/pyenv).
-
-#### Packages
-
-The repository is organized as a monorepo using [lerna](https://lerna.js.org/). Run the following to install lerna and then use it to install all package dependencies:
-
-```shell
-# Just the first time
-npm install
-npm run bootstrap
+# install yarn for package & workspace management
+npm install --global yarn 
 ```
 
-From here on out, every time you pull the repo and any packages change, you'll need to run
+Now that the environment is set up, prepare the projects with
 
-```shell
-npm install
-# Note use lerna bootstrap, and not npm run bootstrap. It's much faster
-npx lerna bootstrap
+```bash
+# install all dependencies
+yarn install
 ```
+This will also install Husky for utilizing Git Hooks.
 
-#### Foundry Setup
-We use both Foundry and Hardhat for our tests and for compiling our contracts. Hardhat will already be set up, but there's some extra steps for getting Foundry prepared:
-- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
-- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
-  - This will set up foundry and prepare the git submodules
-- Now you can run `forge test` in `packages/protocol`!
-- In the future, you should run `forge install` in `packages/protocol` to update your forge dependencies.
+At this point, you may wish to `yarn build:core` in order to build some of the commonly-used artifacts between packages. This will enable `yarn start:local` or `yarn start` if you are planning to use those.
 
-##### Troubleshooting
+### Other Requirements
 
-###### File Table Overflow
-If you run in to this error during `npm run bootstrap`
-```
-ENFILE: file table overflow
-```
-Try increasing the maximum number of files that can be open
-```
-ulimit -n 10240
-```
+For certain packages, you may also need to:
 
-###### Unrecognized network name
-Similar errors: Accounts array must not be empty, ADD_YOUR_METAMASK_ADDRESS_HERE
+- Install `python` and add it to your path. Some of the dependencies require [node-gyp](https://github.com/nodejs/node-gyp), which compiles native addons using python. If you don't have `python`, we recommend using `pyenv`, which has instructions [here](https://github.com/pyenv/pyenv).
+- Install `Java`. The frontend requires Java for the Firebase emulator.
 
-It's possible your local environment is not set up properly (or at all). You may need to create an .env.local file. Wherever these are needed, there is always an .env.example file that you can copy and rename.
-
-See "One time setup" in "Frontend Development" for an example of this.
-
-## Developing
-
-### Smart Contract Development
-All contracts are located under `packages/protocol/contracts`
-1. Make your changes
-2. Write tests, which should be placed under `packages/protocol/test`
-    - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
-3. Write great commit messages, and put up your PR!
-
-
-### Frontend Development
-- `npm run start:local`
-  - The simplest way to get going. All fresh, local state.
-- `npm run start`
-  - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain. Extremely useful for certain changes.
-  - Requires an Alchemy API key. Sign up for free at https://www.alchemy.com/. To use it, see the one-time setup below.
-
-Both options will start several processes, including your local blockchain and front-end server, which will pop up on http://localhost:3000. It takes a min to spin up.
-
-#### One time setup (only necessary for front-end development)
-- Ensure you have Java installed (Firebase emulator requires the JVM)
-- Copy `.env.example` to `.env.local` (the local will be ignored by git).
-- Find the following variables in `.env.local` and update them with your API key and EOA address. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with
-
-  ```
-  ALCHEMY_API_KEY={your alchemy api key}
-  TEST_USER={your metamask address}
-  ```
-
-- If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
-
-#### Running the front-end app
-
-Changes to the frontend should be automatically hotloaded using react-refresh.
-
-Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
-
-***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
-by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
-then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.
-
-
-### Directory structure
+## Monorepo
 
 * [`packages/`](./packages): Contains all typescript packages and contracts.
   * [`protocol/`](./packages/protocol) (`@goldfinch-eng/protocol`): Solidity smart contracts and tests.
-  * [`client/`](./packages/client) (`@goldfinch-eng/client`): Web3 frontend using React.
+  * [`client/`](./packages/client) (`@goldfinch-eng/client`): Legacy web3 frontend using React.
+  * [`client2/`](./packages/client2) (`@goldfinch-eng/client2`): Web3 frontend using React.
+  * [`subgraph/`](./packages/subgraph) (`@goldfinch-eng/subgraph`): Subgraph powering the frontend.
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
-  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for triggering periodic on-chain calls.
+  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/autotasks`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
   * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
-* [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
 
-### Adding a new packages
+## Smart Contract Development
 
-1. Create the package with lerna:
+All contracts are located under [`packages/protocol/contracts`](./packages/protocol/contracts/)
 
-```sh
-npx lerna create package-name
-```
+### Setup
+Copy the `.env.example` at the workspace root to a new file `.env.local`. Fill in the `TEST_USER` field with some development address that you control.
 
-2. (optional), If this is a typescript package being used from another typescript pacakge, add the new package name to the root `tsconfig.json`.
+### Testing
+All tests should be under `packages/protocol/tests`. There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
 
-### Tenderly debugging
+#### Mainnet Forking
+
+Run `yarn test:mainnet-forking` in `packages/protocol`
+
+#### Regular Tests
+
+Run `forge test` in `packages/protocol`
+
+If you don't already have Foundry installed:
+- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
+- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
+  - This will set up Foundry and prepare the git submodules
+- In the future, you should run `forge install` in `packages/protocol` to update your forge dependencies.
+
+#### Coverage 
+
+Run `yarn test:coverage` in the protocol package to generate a coverage report for smart contract typescript tests. You can specify a set of files with a glob pattern, e.g. `yarn test:coverage -- --testfiles test/TranchedPool.test.ts`. See [soliditiy-coverage](https://github.com/sc-forks/solidity-coverage) for more info.
+
+#### Tenderly debugging
 We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
 
 ```bash
@@ -140,68 +90,86 @@ To get a test transaction, write a MainnetForking test, log the transaction hash
 
 ```
 # Run from the protocol directory
-npm run test:tenderly
+yarn test:tenderly
 ```
 
 Pick up the transaction hash from the output of the test and run export as above
 
-### Contributing
-- See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
-
-### Security
-- See the [`SECURITY.MD`](./SECURITY.MD)
-
-### Testing
-- Run `npm test` to run tests for all packages.
-- Note if you want to only run tests for a particular test, then use `it.only` or `describe.only` inside the test file itself, which will focus to only those tests.
-- If you want to run tests for a specific package, say just the protocol contracts, you can use lerna's `--scope` flag e.g. `npm run test -- --scope @goldfinch-eng/protocol`.
-- Run `npm run test:coverage` in the protocol package to generate a coverage report for smart contract typescript tests. You can specify a set of files with a glob pattern, e.g. `npm run test:coverage -- --testfiles test/TranchedPool.test.ts`. See [soliditiy-coverage](https://github.com/sc-forks/solidity-coverage) for more info.
-
-### Testing UID Locally
-- Start the app
-- Connect with an account that is not golisted and no UID
-- Navigate to `/verify`
-- Use the DevTools and press the `kyc` and set `US`
-- Use the DevTools to fund yourself with eth
-- Refresh page, you should now be able to Create UID
-
-### Compiling Smart Contracts
+### Compilation
 Generally speaking, you shouldn't need to do this, since the test command automatically compiles. But if you need to independently compile, you can run:
 
 ```
-npm run build
+yarn build
 ```
 
-This will run `npm run build` in all packages in the monorepo, including compiling the contracts.
+This will run `build` in all packages in the monorepo, including compiling the contracts. Beware this takes a long time to run, and if you don't have environment variables set up in every package that requires it, it may fail.
 
-### Running tasks in the monorepo
-
-Lerna provides commands to help run common tasks across the monorepo. Some of these commands have been encapsulated as scripts in the top-level `package.json`. For example, when we run `npm run test`, the underlying command is `npx lerna run tests`. This automatically runs `npm run test` in all subpackages that define an `test` npm script.
-
-We can run lerna for a subset of packages using [globs](https://www.npmjs.com/package/glob). For example, to run tests for both the protocol and client (in parallel and with output), we can run:
-
+Alternatively, there's a lightweight version of `build`:
 ```
-npx lerna run test --stream --no-sort --scope "@goldfinch-eng/@(protocol|client)"
+yarn build:core
 ```
+This will build a handful of packages and get you ready to `yarn start:local` or `yarn start`.
 
-If we prefer using the top-level package.json scripts, we can achieve the same thing by running the following:
+## Frontend Development
 
-```
-npm run test -- --no-sort --scope "@goldfinch-eng/@(protocol|client)"
-```
+The frontend is located in [`packages/client2`](./packages/client2/)
 
-For more info, have a look at `npx lerna run -h` and `npx lerna exec -h`.
+### Setup
+Within [`packages/client2`](./packages/client2): 
+1. Copy `.env.example` to `.env.local`
+2. Find the following variables in `.env.local` and update them with your API key and EOA address. Our local dev scripts will use these to automatically send you test ETH, and give you a credit line and USDC to play with 
+    ```js
+    TEST_USER={your metamask address}
 
-### Deployment
-#### Local deployment
-Contract deployment is handled automatically through the `npm run start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and
+    // only necessary if running a mainnet-forked frontend
+    ALCHEMY_API_KEY={your alchemy api key}
+    ```
+
+### Running
+(Make sure you have run `yarn build:core` once before this)
+- `yarn start:local`
+  - The simplest way to get going. All fresh, local state.
+- `yarn start`
+  - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain. Extremely useful for certain changes.
+  - Requires an Alchemy API key. Sign up for free at https://www.alchemy.com/.
+
+Both options will start several processes, including your local blockchain and front-end server. It takes a min to spin up.
+
+Once the services are running, go into `packages/client2` and run `yarn dev` to start the client.
+
+Changes to the frontend should be automatically hotloaded using react-refresh, but changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
+
+> **Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
+by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
+then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.
+
+## Contributing
+
+See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
+
+## Security
+
+See the [`SECURITY.MD`](./SECURITY.MD)
+
+## Deployment
+### Local deployment
+Contract deployment is handled automatically through the `yarn start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and
 custom build scripts in `packages/protocol/blockchain_scripts`.
 
-#### Mainnet deployments:
+### Mainnet deployments
 
 Contracts are already deployed to mainnet. We write custom scripts to do upgrades or deploy new contracts.
 
-### Troubleshooting Frontend Issues
+## Troubleshooting
+
+#### Unrecognized network name
+Similar errors: Accounts array must not be empty, ADD_YOUR_METAMASK_ADDRESS_HERE
+
+It's possible your local environment is not set up properly (or at all). You may need to create an .env.local file. Wherever these are needed, there is always an .env.example file that you can copy and rename.
+
+See "One time setup" in "Frontend Development" for an example of this.
+
+### Frontend
 
 Front-end blockchain development is still early, and has rough edges. Here are some issues you might run into. If you see others, please add them here!
 
@@ -209,5 +177,20 @@ Front-end blockchain development is still early, and has rough edges. Here are s
 - `Cannot set headers of undefined`. If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Mainnet and then back to Localhost)
 - `Error: [ethjs-rpc] rpc error with payload`. This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account, and switch away and back to the local network (eg. local -> mainnet -> local).
   To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
-- If Metamask is unable to / times-out while trying to connect to Localhost 8545: `rm deployments/localhost`, and then re-running `npm run start:local`, was observed to fix this problem and enable Metamask to connect.
+- If Metamask is unable to / times-out while trying to connect to Localhost 8545: `rm deployments/localhost`, and then re-running `yarn start:local`, was observed to fix this problem and enable Metamask to connect.
 - `Error: a provider or signer is needed to resolve ENS names`. You probably have an undefined address somewhere. But generally it means Ethers doesn't understand the address and is trying to interpret it as an ENS address.
+
+## Appendix
+
+### Testing
+
+For testing the whole repo, run `yarn test` from the root
+
+### Testing UID Locally
+
+- Start the app
+- Connect with an account that is not golisted and no UID
+- Navigate to `/verify`
+- Use the DevTools and press the `kyc` and set `US`
+- Use the DevTools to fund yourself with eth
+- Refresh page, you should now be able to Create UID

@@ -1,4 +1,4 @@
-import {AbiItem} from "web3-utils/types"
+import {AbiItem} from "web3-utils"
 
 import getWeb3 from "../web3"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"

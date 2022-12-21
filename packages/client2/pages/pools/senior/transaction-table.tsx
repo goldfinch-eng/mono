@@ -38,6 +38,8 @@ gql`
       transactionHash
       user {
         id
+        ENSName @client
+        ENSAvatar @client
       }
       timestamp
       category
@@ -73,7 +75,7 @@ const sentTokenCategories = new Set<TransactionCategory>([
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
   const { data, error, fetchMore } = useBorrowerTransactionsQuery({
-    variables: { first: 20, skip: 0 },
+    variables: { first: 10, skip: 0 },
   });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -131,7 +133,11 @@ export function TransactionTable() {
             <div>Goldfinch Protocol</div>
           </>
         ) : (
-          <Address address={transaction.user.id} />
+          <Address
+            address={transaction.user.id}
+            ENSName={transaction.user.ENSName}
+            ENSAvatar={transaction.user.ENSAvatar}
+          />
         )}
       </div>,
       <div key={`${transaction.id}-category`} className="text-left">

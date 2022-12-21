@@ -187,16 +187,24 @@ export const stakingRewardsTokenImage = genRequestHandler({
       "POSITION_TYPE",
       "TOTAL_REWARDS_CLAIMED",
     ]
-    const attributeTypeToValue: {[traitType: string]: any} = {}
+    const attributeTypeToValue: Partial<Record<AttributeType, string>> = {}
     attributes.forEach(({type, value}) => {
       attributeTypeToValue[type] = value
     })
 
     const formattedAttributes = formatForImageUri(
-      attributesToDisplay.map((type) => ({
-        type: type,
-        value: attributeTypeToValue[type],
-      })),
+      attributesToDisplay
+        .filter((type) => {
+          // If you're seeing this error, then `getTokenAttributes` is missing a value that
+          // `attributesToDisplay` expects to display
+          console.error(`Staking Rewards token image is missing a value for type ${type}`)
+          return !!attributeTypeToValue[type]
+        })
+        .map((type) => ({
+          type: type,
+          // Typescript can't infer that `attributeTypeToValue[type]` is valid, so we have to `|| ""`
+          value: attributeTypeToValue[type] || "",
+        })),
     )
 
     nested

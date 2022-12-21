@@ -32,6 +32,8 @@ gql`
       transactionHash
       user {
         id
+        ENSName @client
+        ENSAvatar @client
       }
       category
       sentAmount
@@ -66,7 +68,7 @@ const sentTokenCategories = [
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
     useTranchedPoolTransactionTableQuery({
-      variables: { tranchedPoolId, first: 20, skip: 0 },
+      variables: { tranchedPoolId, first: 10, skip: 0 },
     });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -96,7 +98,11 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
           Senior Pool
         </div>
       ) : (
-        <Address address={transaction.user.id} />
+        <Address
+          address={transaction.user.id}
+          ENSName={transaction.user.ENSName}
+          ENSAvatar={transaction.user.ENSAvatar}
+        />
       );
 
     let tokenToDisplay = transaction.receivedToken;

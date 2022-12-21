@@ -2,6 +2,12 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
+# https://circleci.com/developer/orbs/orb/circleci/node
+# Easily install Node.js and its package managers (npm, yarn). Best of all, install your packages with
+# caching enabled by default. Supports Linux x86_64, MacOS, and Arm64 V8.
+orbs:
+  node: circleci/node@5.0.3
+
 commands:
   create_concatenated_sol_file:
     description: "Concatenate all sol files into one file. Useful for detecting changes"
@@ -21,21 +27,21 @@ commands:
     steps:
       - run:
           name: Combine package-lock.json files to single file
-          command: find . -name package-lock.json -type f | grep -v node_modules | xargs cat > << parameters.filename >>
+          command: find . -name yarn.lock -type f | grep -v node_modules | xargs cat > << parameters.filename >>
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   install:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-      - image: cimg/node:16.15.1
-    resource_class: large
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+      - image: "cimg/base:stable"
     steps:
       - checkout
+      - node/install:
+          install-yarn: true
+          node-version: "16.15.1"
+      - run: node --version
+      - run: yarn -v
       - run: git submodule sync
       - run: git submodule update --init
       - create_concatenated_package_lock:
@@ -58,23 +64,19 @@ jobs:
             - contracts-build-cache-{{ checksum "combined-contracts.txt" }}-{{ .Branch }}-
             - contracts-build-cache-{{ checksum "combined-contracts.txt" }}-
             - contracts-build-cache-
-      - run:
-          name: Update and install build environment dependencies
-          command: |
-            sudo apt-add-repository universe
-            sudo apt-get update
-            sudo apt-get install python
-      - run:
-          name: Install project dependencies
-          command: npx lerna bootstrap --no-ci
+      - run: yarn install
       - run:
           name: Build protocol and utils
-          command: npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
+          command: yarn workspaces foreach -ptR --from @goldfinch-eng/protocol run build
       - save_cache:
           name: Save intra-build dependencies cache
           key: deps-v3-{{ checksum "combined-package-lock.txt" }}-{{ .Branch }}-{{ .Revision }}
           paths:
+            # Most packages hoist their dependencies
             - ./node_modules
+            # When utils builds, it places the code in dist
+            - ./packages/utils/dist
+            # Some packages choose not to hoist their dependencies
             - ./packages/autotasks/node_modules/
             - ./packages/protocol/node_modules/
             - ./packages/client/node_modules/
@@ -82,7 +84,6 @@ jobs:
             - ./packages/server/node_modules/
             - ./packages/subgraph/node_modules/
             - ./packages/utils/node_modules/
-            - ./packages/utils/dist
             - ./packages/docs/node_modules/
       - save_cache:
           name: Save intra-build contract build cache
@@ -119,7 +120,7 @@ jobs:
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
-            npm run test:unfiltered $tests
+            yarn test:unfiltered $tests
 
   mainnet_forking:
     docker:
@@ -148,7 +149,7 @@ jobs:
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep mainnet_forking | circleci tests split --split-by=timings)
-            HARDHAT_FORK=mainnet npm run test:unfiltered $tests
+            HARDHAT_FORK=mainnet yarn test:unfiltered $tests
       - run:
           name: Compress hardhat-network-fork cache
           command: cd packages/protocol && tar -cvzf /tmp/hardhat-network-fork.tar.gz cache/hardhat-network-fork

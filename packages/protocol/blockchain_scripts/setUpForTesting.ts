@@ -30,7 +30,7 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal, USDC_DECIMALS} from "../test/testHelpers"
+import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,

@@ -2,13 +2,10 @@
 
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {BN} from "ethereumjs-util"
-import {expectEvent} from "@openzeppelin/test-helpers"
-import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"
-import {getTruffleContract, OWNER_ROLE, PAUSER_ROLE, SIGNER_ROLE} from "../blockchain_scripts/deployHelpers"
-import {UNIQUE_IDENTITY_METADATA_URI} from "../blockchain_scripts/uniqueIdentity/constants"
+import {getTruffleContract, SIGNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {TestUniqueIdentityInstance} from "../typechain/truffle/contracts/test/TestUniqueIdentity"
-import {getCurrentTimestamp, SECONDS_PER_DAY, ZERO} from "./testHelpers"
+import {getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
 import {
   BurnParams,
   EMPTY_STRING_HEX,
@@ -21,7 +18,6 @@ import {
   mintTo as mintToHelper,
   burn as burnHelper,
   sign as signHelper,
-  BURN_MESSAGE_ELEMENT_TYPES,
 } from "./uniqueIdentityHelpers"
 import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
@@ -63,21 +59,11 @@ describe("UniqueIdentity", () => {
     anotherUser: string,
     anotherUser2: string,
     anotherUser3: string,
-    uniqueIdentity: TestUniqueIdentityInstance,
-    uninitializedUniqueIdentityDeployer: string,
-    uninitializedUniqueIdentity: TestUniqueIdentityInstance
+    uniqueIdentity: TestUniqueIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({
-      owner,
-      anotherUser,
-      anotherUser2,
-      anotherUser3,
-      uniqueIdentity,
-      uninitializedUniqueIdentityDeployer,
-      uninitializedUniqueIdentity,
-    } = await setupTest())
+    ;({owner, anotherUser, anotherUser2, anotherUser3, uniqueIdentity} = await setupTest())
   })
 
   async function sign(

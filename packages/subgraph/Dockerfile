@@ -20,8 +20,10 @@ COPY ./ .
 
 RUN rm -rf node_modules/
 
-RUN npm install
-RUN npm run codegen
-RUN npm run build
+RUN npm install --global yarn
+
+RUN yarn install
+RUN yarn codegen
+RUN yarn build
 
 CMD ../binary-linux-20 ${ARGS}
