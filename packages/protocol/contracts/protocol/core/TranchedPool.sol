@@ -452,7 +452,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     require(_locked(), "NL");
 
     uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
-    PaymentAllocation memory pa = creditLine.pay(amount);
+    PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
 
     distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
