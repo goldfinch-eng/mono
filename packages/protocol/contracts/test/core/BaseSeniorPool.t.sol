@@ -19,7 +19,9 @@ import {Go} from "../../protocol/core/Go.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {ITestUniqueIdentity0612} from "../../test/ITestUniqueIdentity0612.t.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {LeverageRatioStrategy} from "../../protocol/core/LeverageRatioStrategy.sol";
+import {Schedule} from "../../protocol/core/schedule/Schedule.sol";
 import {PoolTokens} from "../../protocol/core/PoolTokens.sol";
 import {StakingRewards} from "../../rewards/StakingRewards.sol";
 import {TestConstants} from "./TestConstants.t.sol";
@@ -175,6 +177,9 @@ contract SeniorPoolBaseTest is BaseTest {
     (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
+    (ISchedule schedule, ) = cl.schedule();
+    fuzzHelper.exclude(address(schedule));
+    fuzzHelper.exclude(address(Schedule(address(schedule)).periodMapper()));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));
     return (tp, cl);
   }

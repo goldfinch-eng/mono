@@ -35,13 +35,14 @@ contract AccountantBaseTest is BaseTest {
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
 
     cl = new TestCreditLine();
+    ISchedule schedule = defaultSchedule();
     cl.initialize({
       _config: address(gfConfig),
       owner: GF_OWNER,
       _borrower: BORROWER,
       _maxLimit: usdcVal(10_000_000), // max limit
       _interestApr: INTEREST_APR,
-      _schedule: defaultSchedule(),
+      _schedule: schedule,
       _lateFeeApr: LATE_FEE_APR
     });
 
@@ -51,6 +52,8 @@ contract AccountantBaseTest is BaseTest {
 
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(cl));
+    fuzzHelper.exclude(address(schedule));
+    fuzzHelper.exclude(address(Schedule(address(schedule)).periodMapper()));
   }
 
   function defaultSchedule() public returns (ISchedule) {

@@ -64,7 +64,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 internal _checkpointedAsOf;
 
   // Schedule variables
-  PaymentSchedule internal schedule;
+  PaymentSchedule public schedule;
 
   /*==============================================================================
   External functions

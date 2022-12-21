@@ -4,6 +4,7 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {TranchingLogic} from "../../../protocol/core/TranchingLogic.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
@@ -20,6 +21,7 @@ import {BackerRewards} from "../../../rewards/BackerRewards.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 
 import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
@@ -159,6 +161,7 @@ contract TranchedPoolBaseTest is BaseTest {
     fuzzHelper.exclude(DEPOSITOR);
     fuzzHelper.exclude(address(TranchingLogic));
     fuzzHelper.exclude(address(Accountant));
+    fuzzHelper.exclude(address(this));
 
     // Fund the depositor
     usdc.transfer(DEPOSITOR, usdcVal(1_000_000_000));
@@ -174,6 +177,9 @@ contract TranchedPoolBaseTest is BaseTest {
     (TranchedPool pool, CreditLine cl) = poolBuilder.build(BORROWER);
     fuzzHelper.exclude(address(pool));
     fuzzHelper.exclude(address(cl));
+    (ISchedule schedule, ) = cl.schedule();
+    fuzzHelper.exclude(address(schedule));
+    fuzzHelper.exclude(address(Schedule(address(schedule)).periodMapper()));
     pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
     return (pool, cl);
   }
