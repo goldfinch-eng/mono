@@ -29,7 +29,8 @@ contract UniqueIdentityBaseTest is BaseTest {
     fuzzHelper.exclude(address(protocol.stakingRewards()));
   }
 
-  function uidSign(
+  /// @notice Generate a valid signature for `mint` given a private key
+  function signForMint(
     uint256 uidType,
     uint256 expiresAt,
     uint256 chainId,
@@ -40,6 +41,32 @@ contract UniqueIdentityBaseTest is BaseTest {
   ) internal returns (bytes memory) {
     bytes memory packed = abi.encodePacked(
       recipient,
+      uidType,
+      expiresAt,
+      address(uid),
+      nonce,
+      chainId
+    );
+    bytes32 digest = keccak256(packed);
+    bytes32 ethSignedMessagePayload = ECDSAUpgradeable.toEthSignedMessageHash(digest);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessagePayload);
+    return abi.encodePacked(r, s, v);
+  }
+
+  /// Generate a valid signature for `mintTo` given a private key
+  function signForMintTo(
+    uint256 uidType,
+    uint256 expiresAt,
+    uint256 chainId,
+    uint256 nonce,
+    address sender,
+    address receiver,
+    address uid,
+    uint256 signerPrivateKey
+  ) internal returns (bytes memory) {
+    bytes memory packed = abi.encodePacked(
+      sender,
+      receiver,
       uidType,
       expiresAt,
       address(uid),
