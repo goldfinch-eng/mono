@@ -156,7 +156,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
-    _timestamp = bound(_timestamp, nextDueTime + lateFeeGracePeriod, cl.termEndTime());
+    _timestamp = bound(_timestamp, nextDueTime + lateFeeGracePeriod, cl.termEndTime() - 1);
 
     (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
