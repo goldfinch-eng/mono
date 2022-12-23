@@ -348,10 +348,13 @@ export const poolTokenImage = genRequestHandler({
     const formattedAttributes = formatForImageUri(
       attributesToDisplay
         .filter((type) => {
+          const valueExists = !!attributeTypeToValue[type]
+
           // If you're seeing this error, then `getTokenAttributes` is missing a value that
           // `attributesToDisplay` expects to display
-          console.error(`Pool token image is missing a value for type ${type}`)
-          return !!attributeTypeToValue[type]
+          if (!valueExists) console.error(`Pool token image is missing a value for type ${type}`)
+
+          return valueExists
         })
         .map((type) => ({
           type: type,
