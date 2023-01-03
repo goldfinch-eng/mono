@@ -1,4 +1,4 @@
-/* global web3 artifacts */
+/* global web3 */
 import {expect, toTruffle} from "./testHelpers"
 import {ContractDeployer} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"

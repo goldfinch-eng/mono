@@ -1,8 +1,10 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
+import {BaseProvider} from "@ethersproject/providers"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
+import {Request} from "firebase-functions"
 
 import crypto from "crypto"
 import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
@@ -52,8 +54,8 @@ describe("persona callback", async () => {
           timestamp,
         }
       },
-    })
-    mockGetBlockchain(mock as any)
+    } as BaseProvider)
+    mockGetBlockchain(mock)
   })
 
   beforeEach(() => {
@@ -78,9 +80,9 @@ describe("persona callback", async () => {
   const generatePersonaCallbackRequest = (
     address: string,
     status: string,
-    otherAttributes: Record<string, any> = {},
-    accountAttributes: Record<string, any> = {},
-    verificationAttributes: Record<string, any> = {},
+    otherAttributes: Record<string, unknown> = {},
+    accountAttributes: Record<string, unknown> = {},
+    verificationAttributes: Record<string, unknown> = {},
   ) => {
     const personaCallbackId = crypto.randomBytes(20).toString("hex")
     const attributes = {status, referenceId: address, ...otherAttributes}
@@ -114,7 +116,7 @@ describe("persona callback", async () => {
           },
         },
       },
-    } as any
+    } as unknown as Request
   }
 
   describe("invalid callback", async () => {

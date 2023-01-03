@@ -20,7 +20,6 @@ import {
   bigVal,
 } from "../testHelpers"
 import {
-  getSignerForAddress,
   getTruffleContract,
   getUSDCAddress,
   MAINNET_CHAIN_ID,

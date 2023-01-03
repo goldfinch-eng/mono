@@ -1,4 +1,3 @@
-import {CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   hardhat,
@@ -10,7 +9,6 @@ import {
   usdcVal,
   createPoolWithCreditLine,
   toEthers,
-  SECONDS_PER_DAY,
 } from "@goldfinch-eng/protocol/test/testHelpers"
 const {deployments, web3, ethers} = hardhat
 import {assessIfRequired} from "../assessor"

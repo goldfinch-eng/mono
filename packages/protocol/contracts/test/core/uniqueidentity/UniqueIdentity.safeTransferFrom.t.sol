@@ -11,7 +11,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
     address uidHolder,
     address recipient
   ) public onlyAllowListed(uidHolder) onlyAllowListed(recipient) impersonating(uidHolder) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
     vm.expectRevert("Only mint or burn transfers are allowed");
     uid.safeTransferFrom(uidHolder, recipient, 0, 1, "");
   }
@@ -20,7 +20,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
     address uidHolder,
     address recipient
   ) public onlyAllowListed(uidHolder) onlyAllowListed(recipient) {
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
     _startImpersonation(GF_OWNER);
     uid.pause();
     _startImpersonation(uidHolder);
@@ -34,7 +34,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
     address recipient
   ) public onlyAllowListed(uidHolder) onlyAllowListed(operator) onlyAllowListed(recipient) {
     vm.assume(uidHolder != operator);
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     _startImpersonation(uidHolder);
     uid.setApprovalForAll(operator, true);
@@ -51,7 +51,7 @@ contract UniqueIdentitySafeTransferFromTest is UniqueIdentityBaseTest {
     address recipient
   ) public onlyAllowListed(uidHolder) onlyAllowListed(operator) onlyAllowListed(recipient) {
     vm.assume(uidHolder != operator);
-    mint({recipient: uidHolder, uidType: 0, amount: 1});
+    uid._mintForTest(uidHolder, 0, 1, "");
 
     _startImpersonation(uidHolder);
     uid.setApprovalForAll(operator, true);

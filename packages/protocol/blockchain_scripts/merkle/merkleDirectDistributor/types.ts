@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-redeclare */
+
 import {BigNumber} from "ethers"
 import {
   genIsArrayOf,

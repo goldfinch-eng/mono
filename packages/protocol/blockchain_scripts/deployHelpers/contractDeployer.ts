@@ -57,7 +57,7 @@ export class ContractDeployer {
       // This happens when deploying a new proxy implementation. We want hardhat-deploy to correctly write out
       // the implementation deployment file. But its default behavior is to attempt to change the implementation
       // which we can't do because our owner is a multisig.
-      const impl = await this.hre.deployments.get(`${contractName}_Implementation`)
+      await this.hre.deployments.get(`${contractName}_Implementation`)
       // Be consistent with hardhat-deploy's behavior of returning the proxy deployment
       // (rather than impl deployment) for proxy deploys
       result = {newlyDeployed: false, ...(await this.hre.deployments.get(contractName))}
