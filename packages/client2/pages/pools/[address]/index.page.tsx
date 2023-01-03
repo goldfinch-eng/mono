@@ -93,7 +93,6 @@ gql`
         limit
         maxLimit
         id
-        lastFullPaymentTime
         isLate @client
         termInDays
         paymentPeriodInDays
