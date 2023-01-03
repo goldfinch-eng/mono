@@ -31,6 +31,7 @@ gql`
             id
             balance
             interestAprDecimal
+            interestApr
             interestAccruedAsOf
             interestOwed
             nextDueTime
@@ -207,7 +208,7 @@ export default function BorrowPage({
             const currentInterestOwed = calculateInterestOwed({
               isLate: creditLine.isLate,
               interestOwed: creditLine.interestOwed,
-              interestAprDecimal: creditLine.interestAprDecimal,
+              interestApr: creditLine.interestApr,
               nextDueTime: creditLine.nextDueTime,
               interestAccruedAsOf: creditLine.interestAccruedAsOf,
               balance: creditLine.balance,

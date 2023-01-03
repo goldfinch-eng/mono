@@ -1,6 +1,6 @@
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber } from "ethers";
 
-import { roundUpPenny } from "@/lib/format";
+import { roundUpToPrecision } from "@/lib/format";
 
 /**
  * Calculates the current interest owed on the credit line.
@@ -12,14 +12,14 @@ import { roundUpPenny } from "@/lib/format";
 export function calculateInterestOwed({
   isLate,
   interestOwed,
-  interestAprDecimal,
+  interestApr,
   nextDueTime,
   interestAccruedAsOf,
   balance,
 }: {
   isLate: boolean;
   interestOwed: BigNumber;
-  interestAprDecimal: FixedNumber;
+  interestApr: BigNumber;
   nextDueTime: BigNumber;
   interestAccruedAsOf: BigNumber;
   balance: BigNumber;
@@ -28,15 +28,12 @@ export function calculateInterestOwed({
     return interestOwed;
   }
 
-  const annualRate = interestAprDecimal;
   const expectedElapsedSeconds = nextDueTime.sub(interestAccruedAsOf);
   const secondsPerYear = BigNumber.from(60 * 60 * 24 * 365);
-  const interestAccrualRate = annualRate.divUnsafe(
-    FixedNumber.from(secondsPerYear)
-  );
-  const expectedAdditionalInterest = FixedNumber.from(balance)
-    .mulUnsafe(interestAccrualRate)
-    .mulUnsafe(FixedNumber.from(expectedElapsedSeconds));
+  const interestAccrualRate = interestApr.div(secondsPerYear);
+  const expectedAdditionalInterest = balance
+    .mul(interestAccrualRate)
+    .mul(expectedElapsedSeconds);
 
   const currentInterestOwed = interestOwed
     .add(BigNumber.from(expectedAdditionalInterest))
@@ -78,7 +75,7 @@ export function calculateRemainingPeriodDueAmount({
 
   // We need to round up here to ensure the creditline is always fully paid,
   // this does mean the borrower may overpay by a penny max each time.
-  return roundUpPenny(remainingPeriodDueAmount);
+  return roundUpToPrecision(remainingPeriodDueAmount);
 }
 
 /**
@@ -103,5 +100,5 @@ export function calculateRemainingTotalDueAmount({
 
   // We need to round up here to ensure the creditline is always fully paid,
   // this does mean the borrower may overpay by a penny max each time.
-  return roundUpPenny(remainingTotalDueAmount);
+  return roundUpToPrecision(remainingTotalDueAmount);
 }

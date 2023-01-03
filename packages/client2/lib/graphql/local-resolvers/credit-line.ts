@@ -16,16 +16,16 @@ export const creditLineResolvers: Resolvers[string] = {
       useSigner: false,
     });
 
-    let isLate = false;
     try {
-      isLate = await creditLineContract.isLate();
+      return await creditLineContract.isLate();
     } catch (e) {
       // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
-      const currentBlock = await provider.getBlock("latest");
-      const lastFullPaymentTime =
-        await creditLineContract.lastFullPaymentTime();
-      const paymentPeriodInDays =
-        await creditLineContract.paymentPeriodInDays();
+      const [currentBlock, lastFullPaymentTime, paymentPeriodInDays] =
+        await Promise.all([
+          provider.getBlock("latest"),
+          creditLineContract.lastFullPaymentTime(),
+          creditLineContract.paymentPeriodInDays(),
+        ]);
 
       if (lastFullPaymentTime.isZero()) {
         // Brand new creditline
@@ -37,12 +37,11 @@ export const creditLineResolvers: Resolvers[string] = {
 
       const secondsPerDay = 60 * 60 * 24;
 
-      isLate =
+      return (
         secondsSinceLastFullPayment >
-        paymentPeriodInDays.toNumber() * secondsPerDay;
+        paymentPeriodInDays.toNumber() * secondsPerDay
+      );
     }
-
-    return isLate;
   },
   async collectedPaymentBalance(creditLine: CreditLine): Promise<BigNumber> {
     const provider = await getProvider();
