@@ -180,7 +180,7 @@ export default function BorrowPage({
         </div>
       ) : (
         <div className="mb-3 ">
-          <div className="mb-3 grid grid-cols-12 px-6 text-sand-500">
+          <div className="mb-3 grid grid-cols-12 gap-6 px-6 text-sand-500">
             <div className="col-span-6 block md:col-span-5">Pool</div>
             <div className="col-span-3 hidden justify-self-end md:block">
               Credit Line
