@@ -24,7 +24,6 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
       termEndTime
       nextDueTime
       maxLimit
-      lastFullPaymentTime
     }
   }
 `;

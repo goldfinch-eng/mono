@@ -1,14 +1,25 @@
 import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
+import { BigNumber } from "ethers";
+import { GetStaticProps, InferGetStaticPropsType } from "next";
 
 import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { CreditLine } from "@/lib/graphql/generated";
-import { useBorrowPageQuery } from "@/lib/graphql/generated";
+import { apolloClient } from "@/lib/graphql/apollo";
+import {
+  BorrowPageCmsQuery,
+  useBorrowPageQuery,
+} from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
+import { TRANCHED_POOL_CARD_DEAL_FIELDS } from "../earn/pool-card";
 import { CreditLineCard } from "./credit-line-card";
+import {
+  calculateInterestOwed,
+  calculateRemainingPeriodDueAmount,
+  calculateRemainingTotalDueAmount,
+} from "./helpers";
 
 gql`
   query BorrowPage($userId: ID!) {
@@ -34,8 +45,7 @@ gql`
             termEndTime
             lastFullPaymentTime
             isLate @client
-            remainingPeriodDueAmount @client
-            remainingTotalDueAmount @client
+            collectedPaymentBalance @client
           }
         }
       }
@@ -43,44 +53,66 @@ gql`
   }
 `;
 
-enum CreditLineStatus {
+const borrowCmsQuery = gql`
+  ${TRANCHED_POOL_CARD_DEAL_FIELDS}
+  query BorrowPageCMS @api(name: cms) {
+    Deals(limit: 100, where: { hidden: { not_equals: true } }) {
+      docs {
+        ...TranchedPoolCardDealFields
+      }
+    }
+  }
+`;
+
+export enum CreditLineStatus {
   PaymentLate,
   PaymentDue,
-  Active,
+  PeriodPaid,
   InActive,
 }
 
-const getCreditLineStatus = (creditLine: CreditLine) => {
+const getCreditLineStatus = ({
+  isLate,
+  remainingPeriodDueAmount,
+  limit,
+  remainingTotalDueAmount,
+}: {
+  isLate: boolean;
+  remainingPeriodDueAmount: BigNumber;
+  limit: BigNumber;
+  remainingTotalDueAmount: BigNumber;
+}) => {
   // Is Late
-  if (creditLine.isLate) {
+  if (isLate) {
     return CreditLineStatus.PaymentLate;
   }
 
   // Payment is due - but not late
-  if (creditLine.remainingPeriodDueAmount.gt(0)) {
+  if (remainingPeriodDueAmount.gt(0)) {
     return CreditLineStatus.PaymentDue;
   }
 
   // Credit line is active & paid
-  if (creditLine.limit.gt(0) && creditLine.remainingTotalDueAmount.gt(0)) {
-    return CreditLineStatus.Active;
+  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
+    return CreditLineStatus.PeriodPaid;
   }
 
   return CreditLineStatus.InActive;
 };
 
-const getDueDateLabel = (creditLine: CreditLine) => {
-  const status = getCreditLineStatus(creditLine);
-
-  switch (status) {
+const getDueDateLabel = ({
+  creditLineStatus,
+  nextDueTime,
+}: {
+  creditLineStatus: CreditLineStatus;
+  nextDueTime: BigNumber;
+}) => {
+  switch (creditLineStatus) {
     case CreditLineStatus.PaymentLate:
       return "Due Now";
     case CreditLineStatus.PaymentDue:
-      return formatDate(
-        new Date(creditLine.nextDueTime.toNumber() * 1000),
-        "MMM d"
-      );
-    case CreditLineStatus.Active:
+      return formatDate(nextDueTime.toNumber() * 1000, "MMM d");
+    case CreditLineStatus.PeriodPaid:
       return (
         <div className="align-left flex flex-row items-center">
           <Icon name="CheckmarkCircle" className="mr-1" />
@@ -92,7 +124,9 @@ const getDueDateLabel = (creditLine: CreditLine) => {
   }
 };
 
-export default function PoolPage() {
+export default function BorrowPage({
+  dealMetadata,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const { account, isActivating } = useWallet();
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
@@ -137,28 +171,31 @@ export default function PoolPage() {
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
       ) : !tranchedPools || tranchedPools.length === 0 ? (
-        <div
-          className={
-            "max-w-[750px] rounded-xl border border-tidepool-200 bg-tidepool-100 p-5"
-          }
-        >
+        <div className="max-w-[750px] rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
           <div className="text-xl">
             You do not have any credit lines. To borrow funds from the pool, you
             need a Goldfinch credit line.
           </div>
         </div>
       ) : (
-        <div className="mb-3 lg:w-3/5">
+        <div className="mb-3 ">
           <div className="mb-3 grid grid-cols-12 px-6 text-sand-500">
-            <div className="col-span-6 block">Credit Lines</div>
+            <div className="col-span-6 block md:col-span-5">Pool</div>
             <div className="col-span-3 hidden justify-self-end md:block">
+              Credit Line
+            </div>
+            <div className="col-span-2 hidden justify-self-end md:block">
               Next Payment
             </div>
-            <div className="col-span-6 block justify-self-end md:col-span-3">
+            <div className="col-span-1 hidden justify-self-end md:block">
+              Status
+            </div>
+            <div className="col-span-6 block justify-self-end md:col-span-1">
               Due Date
             </div>
           </div>
-          {tranchedPools.map(({ creditLine }) => {
+          {tranchedPools.map((tranchedPool) => {
+            const { creditLine } = tranchedPool;
             const id = creditLine.id;
 
             const creditLineLimit = formatCrypto({
@@ -166,20 +203,57 @@ export default function PoolPage() {
               amount: creditLine.maxLimit,
             });
 
-            const interestRate = formatPercent(creditLine.interestAprDecimal);
+            const currentInterestOwed = calculateInterestOwed({
+              isLate: creditLine.isLate,
+              interestOwed: creditLine.interestOwed,
+              interestAprDecimal: creditLine.interestAprDecimal,
+              nextDueTime: creditLine.nextDueTime,
+              interestAccruedAsOf: creditLine.interestAccruedAsOf,
+              balance: creditLine.balance,
+            });
+
+            const remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
+              collectedPaymentBalance: creditLine.collectedPaymentBalance,
+              nextDueTime: creditLine.nextDueTime,
+              termEndTime: creditLine.termEndTime,
+              balance: creditLine.balance,
+              currentInterestOwed,
+            });
+
+            const remainingTotalDueAmount = calculateRemainingTotalDueAmount({
+              collectedPaymentBalance: creditLine.collectedPaymentBalance,
+              balance: creditLine.balance,
+              currentInterestOwed,
+            });
+
+            const creditLineStatus = getCreditLineStatus({
+              isLate: creditLine.isLate,
+              remainingPeriodDueAmount,
+              limit: creditLine.limit,
+              remainingTotalDueAmount,
+            });
+
+            const dueDateLabel = getDueDateLabel({
+              creditLineStatus,
+              nextDueTime: creditLine.nextDueTime,
+            });
 
             const nextPayment = formatCrypto({
               token: "USDC",
-              amount: creditLine.remainingPeriodDueAmount,
+              amount: remainingPeriodDueAmount,
             });
 
-            const dueDateLabel = getDueDateLabel(creditLine as CreditLine);
+            const formattedInterestRate = formatPercent(
+              creditLine.interestAprDecimal
+            );
 
             return (
               <div key={id}>
                 <CreditLineCard
-                  className="mb-3"
-                  description={`${creditLineLimit} at ${interestRate}`}
+                  className="mb-4"
+                  dealMetaData={dealMetadata[tranchedPool.id]}
+                  description={`${creditLineLimit} at ${formattedInterestRate}`}
+                  status={creditLineStatus}
                   nextPayment={nextPayment}
                   dueDateLabel={dueDateLabel}
                 />
@@ -191,3 +265,33 @@ export default function PoolPage() {
     </div>
   );
 }
+
+export const getStaticProps: GetStaticProps = async () => {
+  const res = await apolloClient.query<BorrowPageCmsQuery>({
+    query: borrowCmsQuery,
+    fetchPolicy: "network-only",
+  });
+
+  const deals = res.data.Deals?.docs;
+  if (!deals) {
+    throw new Error("No metadata found for any deals");
+  }
+
+  const dealMetadata: Record<
+    string,
+    NonNullable<
+      NonNullable<NonNullable<BorrowPageCmsQuery["Deals"]>["docs"]>[number]
+    >
+  > = {};
+  deals.forEach((d) => {
+    if (d && d.id) {
+      dealMetadata[d.id] = d;
+    }
+  });
+
+  return {
+    props: {
+      dealMetadata,
+    },
+  };
+};

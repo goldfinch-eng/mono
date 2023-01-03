@@ -20,8 +20,6 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
       name @client
       creditLine {
         id
-        lastFullPaymentTime
-        paymentPeriodInDays
         isLate @client
       }
       isPaused
