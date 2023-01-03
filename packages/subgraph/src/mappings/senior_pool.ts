@@ -62,13 +62,13 @@ export function handleInterestCollected(event: InterestCollected): void {
 }
 
 export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
+  updatePoolInvestments(event.params.tranchedPool)
   updatePoolStatus(event.address)
-  updatePoolInvestments(event.address, event.params.tranchedPool)
 }
 
 export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): void {
+  updatePoolInvestments(event.params.tranchedPool)
   updatePoolStatus(event.address)
-  updatePoolInvestments(event.address, event.params.tranchedPool)
 }
 
 export function handlePrincipalCollected(event: PrincipalCollected): void {

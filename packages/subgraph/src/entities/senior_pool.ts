@@ -109,19 +109,20 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   seniorPool.save()
 }
 
-export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let investments = seniorPool.investmentsMade
-  investments.push(tranchedPoolAddress.toHexString())
-  seniorPool.investmentsMade = investments
-  seniorPool.save()
+export function updatePoolInvestments(tranchedPoolAddress: Address): void {
+  const poolStatus = assert(SeniorPoolStatus.load("1"))
+  const addressAsString = tranchedPoolAddress.toHexString()
+  if (!poolStatus.tranchedPools.includes(addressAsString)) {
+    poolStatus.tranchedPools = poolStatus.tranchedPools.concat([addressAsString])
+    poolStatus.save()
+  }
 }
 
 export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   let estimatedTotalInterest = BigDecimal.zero()
   for (let i = 0; i < poolStatus.tranchedPools.length; i++) {
     const tranchedPoolId = poolStatus.tranchedPools[i]
-    if (!tranchedPoolId || tranchedPoolId == "0x538473c3a69da2b305cf11a40cf2f3904de8db5f") {
+    if (!tranchedPoolId) {
       continue
     }
     estimatedTotalInterest = estimatedTotalInterest.plus(calculateEstimatedInterestForTranchedPool(tranchedPoolId))
