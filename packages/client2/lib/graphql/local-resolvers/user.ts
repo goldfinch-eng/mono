@@ -14,7 +14,7 @@ export const userResolvers: Resolvers[string] = {
       return null;
     }
     try {
-      return batchProvider.lookupAddress(user.id);
+      return await batchProvider.lookupAddress(user.id);
     } catch (e) {
       // Error is thrown above if the network does not support ENS (happens on localhost)
       return null;
