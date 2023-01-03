@@ -8,7 +8,7 @@ console.log("Starting prepare-metadata.ts for pool metadata...");
 const nextEnv = require("@next/env");
 const env = nextEnv.loadEnvConfig(".");
 
-const metadataNetwork = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME;
+const metadataNetwork = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME || "mainnet";
 const metadataIndexRelativePath = "../constants/metadata/index.ts";
 const metadataFilePath = path.resolve(__dirname, metadataIndexRelativePath);
 

@@ -38,7 +38,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public onlyAllowListed(user) {
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(user, validUid, 1, "");
+    uniqueIdentity._mintForTest(user, validUid, 1, "");
     requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
     addAmount = bound(addAmount, usdcVal(1), usdcVal(10_000_000));
     uint256 depositAmount = requestAmount + addAmount;
@@ -62,8 +62,8 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 invalidUid
   ) public onlyAllowListed(user) {
     invalidUid = bound(invalidUid, 5, type(uint256).max);
-    mintUid(user, 1, 1, "");
-    mintUid(user, invalidUid, 1, "");
+    uniqueIdentity._mintForTest(user, 1, 1, "");
+    uniqueIdentity._mintForTest(user, invalidUid, 1, "");
     requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
     addAmount = bound(addAmount, usdcVal(1), usdcVal(10_000_000));
     uint256 depositAmount = requestAmount + addAmount;
@@ -382,90 +382,88 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     addToWithdrawalRequestFrom(user, addAmountShares, tokenId);
   }
 
-  // TODO - Uncomment these tests when the Go changes are merged - https://github.com/warbler-labs/mono/pull/800
+  function testAddToWithdrawalRequestRevertsWhenOriginHasValidUidAndCallerHasNothing(
+    uint256 requestAmount,
+    uint256 addAmount,
+    uint256 validUid
+  ) public {
+    requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
+    addAmount = bound(addAmount, usdcVal(1), requestAmount);
+    validUid = bound(validUid, 1, 4);
+    vm.assume(validUid != 2);
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
+    approveTokensMaxAmount(address(this));
+    uint256 depositAmount = requestAmount + addAmount;
+    fundAddress(address(this), depositAmount);
+    depositToSpFrom(address(this), depositAmount);
 
-  // function testAddToWithdrawalRequestRevertsWhenOriginHasValidUidAndCallerHasNothing(
-  //   uint256 requestAmount,
-  //   uint256 addAmount,
-  //   uint256 validUid
-  // ) public {
-  //   requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
-  //   addAmount = bound(addAmount, usdcVal(1), requestAmount);
-  //   validUid = bound(validUid, 1, 4);
-  //   vm.assume(validUid != 2);
-  //   mintUid(address(this), validUid, 1, "");
-  //   approveTokensMaxAmount(address(this));
-  //   uint256 depositAmount = requestAmount + addAmount;
-  //   fundAddress(address(this), depositAmount);
-  //   depositToSpFrom(address(this), depositAmount);
+    TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
+    approveForAll(address(this), address(caller), true);
+    uint256 depositShares = sp.getNumShares(depositAmount);
+    fidu.transfer(address(caller), depositShares);
 
-  //   TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
-  //   approveForAll(address(this), address(caller), true);
-  //   uint256 depositShares = sp.getNumShares(depositAmount);
-  //   fidu.transfer(address(caller), depositShares);
+    _startImpersonation(address(this), address(this));
+    uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
+    approveForAll(address(this), address(caller), false);
+    uint256 addAmountShares = sp.getNumShares(addAmount);
+    vm.expectRevert(bytes("NA"));
+    caller.addToWithdrawalRequest(addAmountShares, tokenId);
+    _stopImpersonation();
+  }
 
-  //   _startImpersonation(address(this), address(this));
-  //   uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
-  //   approveForAll(address(this), address(caller), false);
-  //   uint256 addAmountShares = sp.getNumShares(addAmount);
-  //   vm.expectRevert(bytes("NA"));
-  //   caller.addToWithdrawalRequest(addAmountShares, tokenId);
-  //   _stopImpersonation();
-  // }
+  function testAddToWithdrawalRequestWorksWhenOriginHasValidUidAndCallerIsErc1155Approved(
+    uint256 requestAmount,
+    uint256 addAmount,
+    uint256 validUid
+  ) public {
+    requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
+    addAmount = bound(addAmount, usdcVal(1), requestAmount);
+    validUid = bound(validUid, 1, 4);
+    vm.assume(validUid != 2);
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
+    approveTokensMaxAmount(address(this));
+    uint256 depositAmount = requestAmount + addAmount;
+    fundAddress(address(this), depositAmount);
+    depositToSpFrom(address(this), depositAmount);
 
-  // function testAddToWithdrawalRequestWorksWhenOriginHasValidUidAndCallerIsErc1155Approved(
-  //   uint256 requestAmount,
-  //   uint256 addAmount,
-  //   uint256 validUid
-  // ) public {
-  //   requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
-  //   addAmount = bound(addAmount, usdcVal(1), requestAmount);
-  //   validUid = bound(validUid, 1, 4);
-  //   vm.assume(validUid != 2);
-  //   mintUid(address(this), validUid, 1, "");
-  //   approveTokensMaxAmount(address(this));
-  //   uint256 depositAmount = requestAmount + addAmount;
-  //   fundAddress(address(this), depositAmount);
-  //   depositToSpFrom(address(this), depositAmount);
+    TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
+    approveForAll(address(this), address(caller), true);
+    uint256 depositShares = sp.getNumShares(depositAmount);
+    fidu.transfer(address(caller), depositShares);
 
-  //   TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
-  //   approveForAll(address(this), address(caller), true);
-  //   uint256 depositShares = sp.getNumShares(depositAmount);
-  //   fidu.transfer(address(caller), depositShares);
+    _startImpersonation(address(this), address(this));
+    uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
+    caller.addToWithdrawalRequest(sp.getNumShares(addAmount), tokenId);
+    _stopImpersonation();
 
-  //   _startImpersonation(address(this), address(this));
-  //   uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
-  //   caller.addToWithdrawalRequest(sp.getNumShares(addAmount), tokenId);
-  //   _stopImpersonation();
+    assertEq(sp.withdrawalRequest(tokenId).fiduRequested, depositShares);
+  }
 
-  //   assertEq(sp.withdrawalRequest(tokenId).fiduRequested, depositShares);
-  // }
+  function testAddToWithdrawalRevertsWhenOriginHasInvalidUidAndCallerIsErc1155Approved(
+    uint256 requestAmount,
+    uint256 addAmount,
+    uint256 invalidUid
+  ) public {
+    requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
+    addAmount = bound(addAmount, usdcVal(1), requestAmount);
+    invalidUid = bound(invalidUid, 5, type(uint256).max);
+    uniqueIdentity._mintForTest(address(this), invalidUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), 1, 1, "");
+    approveTokensMaxAmount(address(this));
+    uint256 depositAmount = requestAmount + addAmount;
+    fundAddress(address(this), depositAmount);
+    depositToSpFrom(address(this), depositAmount);
 
-  // function testAddToWithdrawalRevertsWhenOriginHasInvalidUidAndCallerIsErc1155Approved(
-  //   uint256 requestAmount,
-  //   uint256 addAmount,
-  //   uint256 invalidUid
-  // ) public {
-  //   requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
-  //   addAmount = bound(addAmount, usdcVal(1), requestAmount);
-  //   invalidUid = bound(invalidUid, 5, type(uint256).max);
-  //   mintUid(address(this), invalidUid, 1, "");
-  //   mintUid(address(this), 1, 1, "");
-  //   approveTokensMaxAmount(address(this));
-  //   uint256 depositAmount = requestAmount + addAmount;
-  //   fundAddress(address(this), depositAmount);
-  //   depositToSpFrom(address(this), depositAmount);
+    TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
+    approveForAll(address(this), address(caller), true);
+    uint256 depositShares = sp.getNumShares(depositAmount);
+    fidu.transfer(address(caller), depositShares);
 
-  //   TestSeniorPoolCaller caller = new TestSeniorPoolCaller(sp, address(usdc), address(fidu));
-  //   approveForAll(address(this), address(caller), true);
-  //   uint256 depositShares = sp.getNumShares(depositAmount);
-  //   fidu.transfer(address(caller), depositShares);
-
-  //   _startImpersonation(address(this), address(this));
-  //   uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
-  //   burnUid(address(this), 1);
-  //   uint256 addAmountShares = sp.getNumShares(addAmount);
-  //   vm.expectRevert(bytes("NA"));
-  //   caller.addToWithdrawalRequest(addAmountShares, tokenId);
-  // }
+    _startImpersonation(address(this), address(this));
+    uint256 tokenId = caller.requestWithdrawal(sp.getNumShares(requestAmount));
+    burnUid(address(this), 1);
+    uint256 addAmountShares = sp.getNumShares(addAmount);
+    vm.expectRevert(bytes("NA"));
+    caller.addToWithdrawalRequest(addAmountShares, tokenId);
+  }
 }

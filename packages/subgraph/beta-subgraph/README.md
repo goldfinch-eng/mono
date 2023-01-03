@@ -60,7 +60,7 @@ NOTE: Taking down a cluster does NOT automatically destroy its volumes (cf. http
 
 1. Ensure that `all_dev.json` in `packages/protocol/deployments` corresponds to the chain the subgraph will be indexing. For example, if the subgraph is going to index the Murmuration chain, then this `all_dev.json` file should be extracted from the Murmuration instance. The `murmuration/README.md` provides commands for doing this.
 2. `cd packages/subgraph`
-3. `npx ts-node ./scripts/setup-subgraph-manifest-local.ts`
-4. `npx graph create --node $LOAD_BALANCER_URL:8020 goldfinch-subgraph` where `$LOAD_BALANCER_URL` is the url of the load balancer created by the ECS cluster.
-5. `npx graph codegen`
-6. `npx graph deploy --node $LOAD_BALANCER_URL:8020 --ipfs $LOAD_BALANCER_URL:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml`
+3. `yarn ts-node ./scripts/setup-subgraph-manifest-local.ts`
+4. `yarn graph create --node $LOAD_BALANCER_URL:8020 goldfinch-subgraph` where `$LOAD_BALANCER_URL` is the url of the load balancer created by the ECS cluster.
+5. `yarn graph codegen`
+6. `yarn graph deploy --node $LOAD_BALANCER_URL:8020 --ipfs $LOAD_BALANCER_URL:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml`

@@ -1,5 +1,6 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
+import {BaseProvider} from "@ethersproject/providers"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
@@ -58,8 +59,9 @@ describe("kycStatus", async () => {
           timestamp,
         }
       },
-    })
-    mockGetBlockchain(mock as any)
+    } as BaseProvider)
+
+    mockGetBlockchain(mock)
   })
 
   beforeEach(() => {

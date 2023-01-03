@@ -5,7 +5,8 @@
     "module": "esnext",
     "target": "es5",
     "jsx": "react-jsx",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": ["src"]
 }

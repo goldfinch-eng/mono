@@ -10,6 +10,7 @@ import {FuzzingHelper} from "../helpers/FuzzingHelper.t.sol";
 import {IProtocolHelper} from "./IProtocolHelper.sol";
 
 abstract contract BaseTest is Test {
+  address internal constant PROTOCOL_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
   address internal constant GF_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2; // random address
 
   address internal constant TREASURY = 0xE57D6a0996813AA066ab8F1328DaCaff761db5D7; // random address

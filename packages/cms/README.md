@@ -25,7 +25,7 @@ The local development environment will initalize a local instance of MongoDB and
 3. Start your local environment:
 
 ```
-npm run start:dev
+yarn start:dev
 ```
 
 4. Open [http://localhost:3010](http://localhost:3010) to see the CMS in action

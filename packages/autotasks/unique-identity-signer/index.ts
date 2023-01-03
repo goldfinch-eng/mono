@@ -1,6 +1,6 @@
 import _ from "lodash"
-import * as Sentry from "@sentry/node"
 import {ethers, Signer} from "ethers"
+import * as Sentry from "@sentry/node"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
@@ -166,14 +166,13 @@ export async function main({
   const userAddress = auth["x-goldfinch-address"]
   const signInSignature = auth["x-goldfinch-signature"]
   const signInSignatureBlockNum = auth["x-goldfinch-signature-block-num"]
-
   auth = asAuth(auth)
 
   assertNonNullable(signer.provider)
   if (!ethers.utils.isAddress(userAddress)) {
     throw new Error(`Invalid user address: ${userAddress}`)
   }
-  if (mintToAddress !== undefined && !ethers.utils.isAddress(mintToAddress)) {
+  if (mintToAddress && !ethers.utils.isAddress(mintToAddress)) {
     throw new Error(`Invalid address to mint to: ${mintToAddress}`)
   }
 

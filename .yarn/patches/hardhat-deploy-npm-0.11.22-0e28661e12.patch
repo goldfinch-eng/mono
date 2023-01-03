@@ -1,0 +1,14 @@
+diff --git a/dist/src/index.js b/dist/src/index.js
+index c0cf73efa0b11a61f6d15ee1ae738e4bc6f5330c..5c05afd7a680194585d4a1f979a40f2c677024c8 100644
+--- a/dist/src/index.js
++++ b/dist/src/index.js
+@@ -569,7 +569,8 @@ config_1.subtask(task_names_1.TASK_NODE_GET_PROVIDER).setAction(async (args, hre
+     if (networkName !== hre.network.name) {
+         console.log(`copying ${networkName}'s deployment to localhost...`);
+         // copy existing deployment from specified netwotk into localhost deployment folder
+-        fs_extra_1.default.copy(path_1.default.join(hre.config.paths.deployments, networkName), path_1.default.join(hre.config.paths.deployments, 'localhost'));
++        // PATCH: We (Warbler) added the `await` here. See https://github.com/wighawag/hardhat-deploy/pull/398
++        await fs_extra_1.default.copy(path_1.default.join(hre.config.paths.deployments, networkName), path_1.default.join(hre.config.paths.deployments, 'localhost'));
+     }
+     nodeTaskArgs.log = !nodeTaskArgs.silent;
+     delete nodeTaskArgs.silent;

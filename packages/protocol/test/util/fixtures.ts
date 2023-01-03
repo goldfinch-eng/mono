@@ -1,5 +1,4 @@
 import {
-  getProtocolOwner,
   getTruffleContract,
   interestAprAsBN,
   MAX_UINT,
@@ -14,7 +13,7 @@ import {
   TestAccountantInstance,
   TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import hre, {deployments, getNamedAccounts} from "hardhat"
+import {deployments, getNamedAccounts} from "hardhat"
 import {FixtureFunc} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {asNonNullable, assertNonNullable} from "packages/utils/src/type"

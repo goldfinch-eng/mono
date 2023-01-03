@@ -15,7 +15,6 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
   fragment TranchedPoolStatGridFields on TranchedPool {
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    principalAmountRepaid
     creditLine {
       id
       isLate @client
@@ -23,7 +22,8 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
       paymentPeriodInDays
       termEndTime
       nextDueTime
-      maxLimit
+      limit
+      balance
     }
   }
 `;
@@ -100,9 +100,7 @@ export function StatusSection({
       label="Principal outstanding"
       value={formatCrypto({
         token: "USDC",
-        amount: tranchedPool.creditLine.maxLimit.sub(
-          tranchedPool.principalAmountRepaid
-        ),
+        amount: tranchedPool.creditLine.balance,
       })}
       tooltip="The total amount of principal remaining for the Borrower to repay to this Pool over its payment term."
     />
@@ -147,7 +145,7 @@ export function StatusSection({
       label="Pool limit"
       value={formatCrypto({
         token: "USDC",
-        amount: tranchedPool.creditLine.maxLimit,
+        amount: tranchedPool.creditLine.limit,
       })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."
     />

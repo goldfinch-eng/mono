@@ -1,0 +1,2 @@
+# Either all_dev.json already exists, or we create it with mocked json
+[ -e "packages/protocol/deployments/all_dev.json" ] || echo '{ "31337": [{ "contracts": {} }] }' > packages/protocol/deployments/all_dev.json

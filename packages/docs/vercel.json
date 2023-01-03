@@ -1,4 +1,5 @@
 {
-  "buildCommand": "CI= && npx lerna bootstrap --ci && npx lerna run build --scope @goldfinch-eng/docs ",
-  "installCommand": "cd ../.. && npm install && cd packages/docs"
+  "buildCommand": "yarn workspaces foreach -Rpt run build",
+  "installCommand": "yarn workspaces focus @goldfinch-eng/docs",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./ && git diff --quiet HEAD^ HEAD ../../yarn.lock"
 }

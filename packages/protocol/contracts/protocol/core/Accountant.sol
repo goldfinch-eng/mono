@@ -179,25 +179,23 @@ library Accountant {
   ) public view returns (uint256 interestOwed) {
     uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-    if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
+    uint256 normalInterestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+
+    // Interest accrued in the current period isn't owed until nextDueTime. After that the borrower
+    // has a grace period before late fee interest starts to accrue. This grace period applies for
+    // every due time (termEndTime is not a special case).
+    uint256 lateFeeInterestOwed = 0;
+    uint256 lateFeeStartsAt = Math.max(
+      startTime,
+      cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY))
+    );
+    if (lateFeeStartsAt < endTime) {
+      uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(
-        SECONDS_PER_YEAR
-      );
-      interestOwed = interestOwed.add(additionalLateFeeInterest);
+      lateFeeInterestOwed = lateFeeInterestPerYear.mul(lateSecondsElapsed).div(SECONDS_PER_YEAR);
     }
 
-    return interestOwed;
-  }
-
-  function lateFeeApplicable(
-    ICreditLine cl,
-    uint256 timestamp,
-    uint256 gracePeriodInDays
-  ) public view returns (bool) {
-    uint256 secondsLate = timestamp.sub(cl.lastFullPaymentTime());
-    return cl.lateFeeApr() > 0 && secondsLate > gracePeriodInDays.mul(SECONDS_PER_DAY);
+    return normalInterestOwed.add(lateFeeInterestOwed);
   }
 
   function allocatePayment(

@@ -1,11 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/hardhat-deploy/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts" />
+/// <reference path="../../../../node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
+/// <reference path="../../../../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../node_modules/@nomiclabs/hardhat-truffle5/dist/src/type-extensions.d.ts" />
+/// <reference path="../../../../node_modules/@nomiclabs/hardhat-truffle5/dist/src/type-extensions.d.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../typechain/truffle/types.d.ts" />
 
@@ -17,7 +17,7 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import BN from "bn.js"
-import {BaseContract, Contract, Signer} from "ethers"
+import {BaseContract, Contract, PopulatedTransaction, Signer} from "ethers"
 import hre, {artifacts, ethers, getChainId, getNamedAccounts, web3} from "hardhat"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {GoldfinchConfig} from "../../typechain/ethers"
@@ -421,6 +421,13 @@ function fixProvider(providerGiven: any): any {
   return providerGiven
 }
 
+const populateTxAndLog = (tx: Promise<PopulatedTransaction>, log: string): Promise<PopulatedTransaction> => {
+  return tx.then((tx) => {
+    console.log(log)
+    return tx
+  })
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -461,4 +468,5 @@ export {
   ContractDeployer,
   ContractUpgrader,
   fixProvider,
+  populateTxAndLog,
 }
