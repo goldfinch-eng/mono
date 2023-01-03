@@ -30,7 +30,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 1,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -57,7 +57,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       // WRONG CHAIN ID
@@ -75,6 +75,37 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uid.mint{value: 1 ether}(0, expiresAt, sig);
   }
 
+  function testInvalidRecipientReverts(
+    uint256 signerKey,
+    address sigRecipient,
+    address invalidRecipient
+  )
+    public
+    validPrivateKey(signerKey)
+    onlyAllowListed(sigRecipient)
+    onlyAllowListed(invalidRecipient)
+  {
+    vm.assume(sigRecipient != invalidRecipient);
+    grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
+
+    uint256 expiresAt = block.timestamp + 1 days;
+    bytes memory sig = signForMint({
+      uidType: 0,
+      expiresAt: expiresAt,
+      chainId: block.chainid,
+      nonce: 0,
+      recipient: sigRecipient,
+      uid: address(uid),
+      signerPrivateKey: signerKey
+    });
+
+    // Fund address so it can mint
+    vm.deal(invalidRecipient, 1 ether);
+    _startImpersonation(invalidRecipient);
+    vm.expectRevert("Invalid signer");
+    uid.mint{value: 1 ether}(0, expiresAt, sig);
+  }
+
   function testSigWithWrongUidAddressReverts(
     uint256 signerKey,
     address recipient,
@@ -84,7 +115,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -111,7 +142,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 uidType = 0;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -141,7 +172,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
   ) public validPrivateKey(signerKey) onlyAllowListed(recipient) {
     address signer = vm.addr(signerKey);
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -165,7 +196,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -186,7 +217,6 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     // Now try again
     vm.expectRevert("Invalid signer");
     uid.mint{value: mintCost}(0, expiresAt, sig);
-    _stopImpersonation();
   }
 
   function testMintsForSignerWithSignerRole(
@@ -196,7 +226,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -210,7 +240,6 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     vm.deal(recipient, 1 ether);
     _startImpersonation(recipient);
     uid.mint{value: uid.MINT_COST_PER_TOKEN()}(0, expiresAt, sig);
-    _stopImpersonation();
 
     assertEq(uid.balanceOf(recipient, 0), 1);
   }
@@ -224,7 +253,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -251,7 +280,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -265,7 +294,6 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     vm.deal(recipient, 1 ether);
     _startImpersonation(recipient);
     uid.mint{value: uid.MINT_COST_PER_TOKEN()}(uidType, expiresAt, sig);
-    _stopImpersonation();
 
     assertEq(uid.balanceOf(recipient, uidType), 1);
   }
@@ -279,7 +307,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -293,7 +321,6 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     vm.deal(recipient, payment);
     _startImpersonation(recipient);
     uid.mint{value: payment}(0, expiresAt, sig);
-    _stopImpersonation();
 
     assertEq(uid.balanceOf(recipient, 0), 1);
   }
@@ -307,7 +334,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -324,7 +351,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     uid.mint{value: payment}(0, expiresAt, sig);
   }
 
-  function testRejectsMintForAddressWithExistingBalance(
+  function testRevertsForAddressWithExistingBalance(
     uint256 signerKey,
     address recipient,
     uint256 uidType
@@ -334,7 +361,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -352,7 +379,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     assertEq(uid.balanceOf(recipient, uidType), 1);
 
     // Try minting again
-    sig = uidSign({
+    sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -375,7 +402,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -391,7 +418,6 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     vm.deal(recipient, 1 ether);
     _startImpersonation(recipient);
     uid.mint{value: uid.MINT_COST_PER_TOKEN()}(uidType, expiresAt, sig);
-    _stopImpersonation();
 
     assertEq(uid.balanceOf(recipient, uidType), 1);
   }
@@ -408,7 +434,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
     assertTrue(uid.paused());
 
     uint256 expiresAt = block.timestamp + 1 days;
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,

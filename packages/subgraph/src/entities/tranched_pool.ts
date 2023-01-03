@@ -234,13 +234,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.initialInterestOwed = calculateInitialInterestOwed(creditLine)
   tranchedPool.save()
 
-  if (isCreating) {
-    const seniorPoolStatus = getOrInitSeniorPoolStatus()
-    const tpl = seniorPoolStatus.tranchedPools
-    tpl.push(tranchedPool.id)
-    seniorPoolStatus.tranchedPools = tpl
-    seniorPoolStatus.save()
-  }
   calculateApyFromGfiForAllPools(timestamp)
 
   return tranchedPool

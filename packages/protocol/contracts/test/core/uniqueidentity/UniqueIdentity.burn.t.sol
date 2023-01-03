@@ -24,7 +24,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -49,7 +49,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -71,7 +71,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -96,7 +96,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: invalidChainId,
@@ -115,7 +115,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     address uidHolder
   ) public validPrivateKey(signerKey) onlyAllowListed(uidHolder) {
     uid._mintForTest(uidHolder, 0, 1, "");
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -141,7 +141,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: expiresAt,
       chainId: block.chainid,
@@ -168,7 +168,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -190,7 +190,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -224,7 +224,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -239,7 +239,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
   function testFromZeroAddressReverts(uint256 signerKey) public validPrivateKey(signerKey) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -258,7 +258,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     address notUidHolder
   ) public onlyAllowListed(notUidHolder) validPrivateKey(signerKey) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -284,7 +284,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
 
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -304,7 +304,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
   ) public onlyAllowListed(uidHolder) validPrivateKey(signerKey) {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -339,7 +339,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     // mintable but were somehow minted; (2) in case we have deprecated the ability to mint
     // tokens of that id.
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -369,7 +369,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     grantRole(address(uid), TestConstants.SIGNER_ROLE, vm.addr(signerKey));
     uid._mintForTest(uidHolder, 0, mintAmount, "");
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -397,7 +397,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     vm.expectEmit(true, true, true, true);
     emit TransferSingle(address(this), uidHolder, address(0), uidType, 1);
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: uidType,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
@@ -422,7 +422,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
     uid.grantRole(TestConstants.SIGNER_ROLE, signer);
     _stopImpersonation();
 
-    bytes memory sig = uidSign({
+    bytes memory sig = signForMint({
       uidType: 0,
       expiresAt: block.timestamp + 1 days,
       chainId: block.chainid,
