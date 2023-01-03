@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
 
-import { TranchedPoolCardDealFieldsFragment } from "../../lib/graphql/generated";
+import { TranchedPoolBorrowCardFieldsFragment } from "../../lib/graphql/generated";
 import { CreditLineStatus } from "./index.page";
 
 interface CreditLineCardProps {
   className?: string;
-  dealMetaData: TranchedPoolCardDealFieldsFragment;
+  dealMetaData: TranchedPoolBorrowCardFieldsFragment;
   description: ReactNode;
   nextPayment: ReactNode;
   status: CreditLineStatus;
@@ -23,7 +23,7 @@ export function CreditLineCard({
   return (
     <div className={className}>
       <div className="relative rounded-xl bg-sand-100 p-5 hover:bg-sand-200">
-        <div className="grid grid-cols-12 items-center">
+        <div className="grid grid-cols-12 items-center gap-6">
           <div className="col-span-6 block flex flex-col break-words text-sand-700 md:col-span-5">
             <div className="text-lg font-medium text-sand-700">
               {dealMetaData.name}

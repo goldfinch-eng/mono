@@ -13,7 +13,6 @@ import {
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
-import { TRANCHED_POOL_CARD_DEAL_FIELDS } from "../earn/pool-card";
 import { CreditLineCard } from "./credit-line-card";
 import {
   calculateInterestOwed,
@@ -31,19 +30,13 @@ gql`
           creditLine {
             id
             balance
-            interestApr
             interestAprDecimal
             interestAccruedAsOf
             interestOwed
-            paymentPeriodInDays
-            termInDays
             nextDueTime
             limit
             maxLimit
-            version
-            termStartTime
             termEndTime
-            lastFullPaymentTime
             isLate @client
             collectedPaymentBalance @client
           }
@@ -53,12 +46,20 @@ gql`
   }
 `;
 
+export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
+  fragment TranchedPoolBorrowCardFields on Deal {
+    id
+    name
+    category
+  }
+`;
+
 const borrowCmsQuery = gql`
-  ${TRANCHED_POOL_CARD_DEAL_FIELDS}
+  ${TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS}
   query BorrowPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...TranchedPoolCardDealFields
+        ...TranchedPoolBorrowCardFields
       }
     }
   }
