@@ -25,7 +25,7 @@ export const userResolvers: Resolvers[string] = {
       return null;
     }
     try {
-      return batchProvider.getAvatar(user.id);
+      return await batchProvider.getAvatar(user.id);
     } catch (e) {
       // Error is thrown above if the network does not support ENS (happens on localhost)
       return null;
