@@ -261,9 +261,10 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     lock(tp);
     drawdownTp(usdcVal(100), tp);
 
-    // Two payment periods ahead
-    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
-    tp.assess();
+    // What's wrong with these tests?
+    log("next due time is");
+    log_uint(cl.nextDueTime());
+    vm.warp(cl.nextDueTime());
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
     uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
