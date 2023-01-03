@@ -1,7 +1,5 @@
-import {SECONDS_PER_DAY, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {SeniorPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
-import {BN} from "bn.js"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../configKeys"
 import {MINTER_ROLE, ContractDeployer, isTestEnv, getProtocolOwner, updateConfig} from "../deployHelpers"
 import {DeployOpts} from "../types"

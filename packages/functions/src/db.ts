@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin"
+import * as FirebaseFunctions from "firebase-functions"
 import {isPlainObject, isString, isStringOrUndefined} from "@goldfinch-eng/utils"
 import firestore = admin.firestore
 
@@ -115,7 +116,7 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  * @param {any} functions The firebase functions library (ignored in test)
  * @return {FirebaseConfig} The config object
  */
-function getConfig(functions: any): FirebaseConfig {
+function getConfig(functions: typeof FirebaseFunctions): FirebaseConfig {
   // When running using the Firebase emulator (e.g. as `yarn ci_test` does via `yarn firebase emulators:exec`),
   // we observed a transient / bootstrapping phase in which this function is called (because it is invoked at
   // the root level of `index.ts`, which is a consequence of following the Sentry docs about how to configure

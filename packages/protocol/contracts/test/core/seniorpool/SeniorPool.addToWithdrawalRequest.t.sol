@@ -38,7 +38,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public onlyAllowListed(user) {
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(user, validUid, 1, "");
+    uniqueIdentity._mintForTest(user, validUid, 1, "");
     requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
     addAmount = bound(addAmount, usdcVal(1), usdcVal(10_000_000));
     uint256 depositAmount = requestAmount + addAmount;
@@ -62,8 +62,8 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 invalidUid
   ) public onlyAllowListed(user) {
     invalidUid = bound(invalidUid, 5, type(uint256).max);
-    mintUid(user, 1, 1, "");
-    mintUid(user, invalidUid, 1, "");
+    uniqueIdentity._mintForTest(user, 1, 1, "");
+    uniqueIdentity._mintForTest(user, invalidUid, 1, "");
     requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
     addAmount = bound(addAmount, usdcVal(1), usdcVal(10_000_000));
     uint256 depositAmount = requestAmount + addAmount;
@@ -391,7 +391,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     addAmount = bound(addAmount, usdcVal(1), requestAmount);
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     approveTokensMaxAmount(address(this));
     uint256 depositAmount = requestAmount + addAmount;
     fundAddress(address(this), depositAmount);
@@ -420,7 +420,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     addAmount = bound(addAmount, usdcVal(1), requestAmount);
     validUid = bound(validUid, 1, 4);
     vm.assume(validUid != 2);
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     approveTokensMaxAmount(address(this));
     uint256 depositAmount = requestAmount + addAmount;
     fundAddress(address(this), depositAmount);
@@ -447,8 +447,8 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     requestAmount = bound(requestAmount, usdcVal(1), usdcVal(10_000_000));
     addAmount = bound(addAmount, usdcVal(1), requestAmount);
     invalidUid = bound(invalidUid, 5, type(uint256).max);
-    mintUid(address(this), invalidUid, 1, "");
-    mintUid(address(this), 1, 1, "");
+    uniqueIdentity._mintForTest(address(this), invalidUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), 1, 1, "");
     approveTokensMaxAmount(address(this));
     uint256 depositAmount = requestAmount + addAmount;
     fundAddress(address(this), depositAmount);

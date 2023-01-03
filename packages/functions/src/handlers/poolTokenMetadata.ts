@@ -49,7 +49,7 @@ Object.keys(POOL_METADATA).forEach((addr) => {
   if (addr === "default") {
     return
   }
-  const metadata: TranchedPoolMetadata = (POOL_METADATA as any)[addr]
+  const metadata: TranchedPoolMetadata = POOL_METADATA[addr as keyof typeof POOL_METADATA]
   metadataStore[addr.toLowerCase()] = metadata
 })
 
@@ -340,16 +340,27 @@ export const poolTokenImage = genRequestHandler({
       "TOTAL_AMOUNT_REPAID",
       "LAST_UPDATED_AT",
     ]
-    const attributeTypeToValue: {[traitType: string]: any} = {}
+    const attributeTypeToValue: Partial<Record<AttributeType, string>> = {}
     attributes.forEach(({type, value}) => {
       attributeTypeToValue[type] = value
     })
 
     const formattedAttributes = formatForImageUri(
-      attributesToDisplay.map((type) => ({
-        type: type,
-        value: attributeTypeToValue[type],
-      })),
+      attributesToDisplay
+        .filter((type) => {
+          const valueExists = !!attributeTypeToValue[type]
+
+          // If you're seeing this error, then `getTokenAttributes` is missing a value that
+          // `attributesToDisplay` expects to display
+          if (!valueExists) console.error(`Pool token image is missing a value for type ${type}`)
+
+          return valueExists
+        })
+        .map((type) => ({
+          type: type,
+          // Typescript can't infer that `attributeTypeToValue[type]` is valid, so we have to `|| ""`
+          value: attributeTypeToValue[type] || "",
+        })),
     )
 
     nested

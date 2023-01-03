@@ -182,7 +182,6 @@ xdescribe("v2.4", async function () {
         grant: {amount},
       } = grant
 
-      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
       const recipientBalanceBefore = await gfi.balanceOf(recipient)
 
       await impersonateAccount(hre, recipient)
@@ -261,9 +260,8 @@ xdescribe("v2.4", async function () {
     for (const grant of sampledGrants) {
       const {
         index,
-        proof,
         account: recipient,
-        grant: {amount, vestingLength, cliffLength, vestingInterval},
+        grant: {amount},
       } = grant
 
       const rewardsAvailableBefore = await communityRewards.rewardsAvailable()

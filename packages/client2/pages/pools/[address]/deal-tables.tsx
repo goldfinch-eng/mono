@@ -28,7 +28,7 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
     fundableAt
     creditLine {
       interestAprDecimal
-      maxLimit
+      limit
       paymentPeriodInDays
       termInDays
       borrower
@@ -131,7 +131,7 @@ export function DealTermsTable({
               "The total funds that the Borrower can drawdown from this Pool.",
               formatCrypto({
                 token: "USDC",
-                amount: tranchedPool.creditLine.maxLimit,
+                amount: tranchedPool.creditLine.limit,
               }),
             ],
             [

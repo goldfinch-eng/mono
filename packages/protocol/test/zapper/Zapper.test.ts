@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import BN from "bn.js"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"

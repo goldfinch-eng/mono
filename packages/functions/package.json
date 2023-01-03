@@ -11,7 +11,7 @@
     "start:local": "CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes yarn serve",
     "start:murmuration": "MURMURATION=yes yarn start",
     "logs": "firebase functions:log",
-    "test": "yarn build && NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test yarn firebase emulators:exec --project=dev \"NODE_ENV=test yarn hardhat test --show-stack-traces\"",
+    "test": "yarn build && NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test yarn firebase emulators:exec --project=dev \"NODE_ENV=test npx hardhat test --show-stack-traces\"",
     "ci_test": "COMMIT_ID_FOR_TEST=$GITHUB_SHA yarn test",
     "ci_functions_config_set": "yarn firebase functions:config:set sentry.release=$GITHUB_SHA",
     "ci_functions_config_set_dev": "yarn ci_functions_config_set --project=dev",
