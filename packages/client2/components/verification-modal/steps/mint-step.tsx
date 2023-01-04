@@ -125,10 +125,7 @@ export function MintStep() {
         )
       }
     >
-      <div
-        className="flex h-full flex-col items-center justify-between"
-        data-id="verfication.step.mint"
-      >
+      <div className="flex h-full flex-col items-center justify-between">
         <div>
           {errorMessage ? (
             <div className="text-clay-500">{errorMessage}</div>
