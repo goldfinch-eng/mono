@@ -168,6 +168,12 @@ type TranchedPool @entity {
   initialInterestOwed: BigInt!
 }
 
+# Internal use entity that just allows us to collect a list of all tranched pools
+type TranchedPoolRoster @entity {
+  id: ID! # Hardcoded to "1" because this is a singleton
+  tranchedPools: [TranchedPool!]!
+}
+
 type TranchedPoolToken @entity {
   id: ID! # Set to tokenId
   mintedAt: BigInt!
