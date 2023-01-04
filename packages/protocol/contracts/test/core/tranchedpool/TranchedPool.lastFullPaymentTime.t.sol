@@ -27,7 +27,6 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
   }
 
   function testLastFullPaymentTimeIsSetToLastDueTimeAfterFullInterestIsPaid(
-    uint256 interestPayment,
     uint256 periodsToAdvance
   ) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
@@ -36,18 +35,13 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     seniorDepositAndInvest(pool, usdcVal(400));
     lockSeniorTranche(pool);
     drawdown(pool, usdcVal(500));
-    periodsToAdvance = bound(periodsToAdvance, 1, 12);
+    periodsToAdvance = bound(periodsToAdvance, 1, 11);
     for (uint256 i = 0; i < periodsToAdvance; ++i) {
       vm.warp(cl.nextDueTime());
     }
-    uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
-    interestPayment = bound(interestPayment, cl.interestOwed(), cl.balance() + cl.interestOwed());
-    pay(pool, interestPayment);
-    uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
-    assertEq(
-      lastFullPaymentTimeBefore + periodInSeconds(pool) * periodsToAdvance,
-      lastFullPaymentTimeAfter
-    );
+    uint256 expectedLastFullPaymentTime = block.timestamp;
+    pay(pool, cl.interestOwed());
+    assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
   }
 
   function testLastFullPaymentTimeNotSetWhenIPayInterestButNotPrincipalPastTermEndTime(
@@ -81,7 +75,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
     pay(pool, cl.interestOwed() + cl.principalOwed());
-    assertEq(cl.lastFullPaymentTime(), cl.termEndTime());
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
   function testLastFullPaymentTimeNotSetWhenSeparateInterestPaymentIsLessThanInterestOwed(
@@ -111,18 +105,13 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     seniorDepositAndInvest(pool, usdcVal(400));
     lockSeniorTranche(pool);
     drawdown(pool, usdcVal(500));
-    periodsToAdvance = bound(periodsToAdvance, 1, 12);
+    periodsToAdvance = bound(periodsToAdvance, 1, 11);
     for (uint256 i = 0; i < periodsToAdvance; ++i) {
       vm.warp(cl.nextDueTime());
     }
-    uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
     interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
     pay(pool, 0, interestPayment);
-    uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
-    assertEq(
-      lastFullPaymentTimeBefore + periodInSeconds(pool) * periodsToAdvance,
-      lastFullPaymentTimeAfter
-    );
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
   function testLastFullPaymentTimeNotSetWhenPayingSeparateInterestButNotPrincipalPastTermEndTime(
@@ -158,6 +147,6 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
     pay(pool, cl.principalOwed(), cl.interestOwed());
-    assertEq(cl.lastFullPaymentTime(), cl.termEndTime());
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 }
