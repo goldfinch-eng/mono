@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
@@ -87,11 +86,6 @@ library Accountant {
 
     FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxDaysLate);
     FixedPoint.Unsigned memory writedownPercent;
-    console.log("days since payment %s", (timestamp - cl.lastFullPaymentTime()) / (1 days));
-    console.log("principal is       %s", principal);
-    console.log("gracePeriodInDays  %s", gracePeriodInDays);
-    console.log("maxDaysLate is     %s", maxLate.rawValue);
-    console.log("daysLate is        %s", daysLate.rawValue);
     if (daysLate.isLessThanOrEqual(fpGracePeriod)) {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
@@ -112,11 +106,13 @@ library Accountant {
 
   function calculateAmountOwedForOneDay(
     ICreditLine cl
-  ) public view returns (FixedPoint.Unsigned memory interestOwed) {
+  ) public view returns (FixedPoint.Unsigned memory) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
-    return interestOwed;
+    FixedPoint.Unsigned memory interestOwedForOneDay = FixedPoint
+      .fromUnscaledUint(totalInterestPerYear)
+      .div(365);
+    return interestOwedForOneDay.add(cl.principalOwed());
   }
 
   /// @notice Allocate a payment for V1 Tranched Pools
