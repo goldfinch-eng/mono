@@ -2,6 +2,7 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button } from "@/components/design-system";
+import { useAnalyticsEvent } from "@/lib/analytics";
 
 import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
@@ -9,6 +10,8 @@ import uidLogo from "./uid-logo.png";
 
 export function IntroStep() {
   const { nextStep } = useWizard();
+
+  useAnalyticsEvent("UID_FLOW_INITIATED");
 
   return (
     <StepTemplate
