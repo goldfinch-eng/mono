@@ -363,6 +363,7 @@ contract TranchedPoolBaseTest is BaseTest {
     return interest;
   }
 
+  // TODO - remove this function because it doesn't make sense with a monthly schedule
   function periodInSeconds(TranchedPool pool) internal returns (uint256) {
     // return pool.creditLine().nextDueTime().sub(pool.creditLine().previousDueTime());
     return 30 days;

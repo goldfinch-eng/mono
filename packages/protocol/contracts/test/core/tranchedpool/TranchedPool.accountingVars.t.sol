@@ -3,12 +3,18 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
+import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TestCreditLine} from "../../TestCreditLine.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
 contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
+  using ConfigHelper for GoldfinchConfig;
+
   function testGetAccountingVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
     (, CreditLine cl) = defaultTranchedPool();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
@@ -60,23 +66,24 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
 
   function testAccountingVarsCrossingOneOrMorePaymentPeriods(uint256 timestamp) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime(), cl.termEndTime() - 1);
 
     // Principal owed shouldn't change before termEndTime
     uint256 expectedPrincipalOwed = cl.principalOwed();
     // Interest owed should be up to the most recently past next due time
-    uint256 periodsElapsed = (timestamp - block.timestamp) / periodInSeconds(pool);
-    uint256 nextDueTime = block.timestamp + periodsElapsed * periodInSeconds(pool);
+    (ISchedule schedule, uint64 startTime) = cl.schedule();
+    uint256 previousDueTime = schedule.previousInterestDueTimeAt(startTime, timestamp);
     uint256 expectedInterestOwed = getInterestAccrued(
       block.timestamp,
-      nextDueTime,
+      previousDueTime,
       cl.balance(),
       cl.interestApr()
     );
     // Interest accrued should be from due time to the current time
     uint256 expectedInterestAccrued = getInterestAccrued(
-      nextDueTime,
+      previousDueTime,
       timestamp,
       cl.balance(),
       cl.interestApr()
@@ -93,7 +100,9 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
     assertEq(cl.principalOwedAt(timestamp), expectedPrincipalOwed);
     assertEq(cl.totalInterestAccruedAt(timestamp), expectedTotalInterestAccrued);
     assertEq(cl.totalInterestOwedAt(timestamp), expectedInterestOwed);
+
     vm.warp(timestamp);
+
     assertEq(cl.interestOwed(), expectedInterestOwed);
     assertApproxEqAbs(cl.interestAccrued(), expectedInterestAccrued, HALF_CENT);
     assertEq(cl.principalOwed(), expectedPrincipalOwed);
