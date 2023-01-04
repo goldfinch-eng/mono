@@ -142,7 +142,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public override returns (uint256 tokenId) {
+  ) public override whenNotPaused returns (uint256 tokenId) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
     return deposit(tranche, amount);
   }
