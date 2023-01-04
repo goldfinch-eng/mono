@@ -18,6 +18,9 @@ export function dataLayerPush(
       };
     }
   ).dataLayer;
+  if (!dataLayer) {
+    return;
+  }
   dataLayer.push({ event: eventName, ...attributes });
 }
 
