@@ -285,6 +285,7 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
   if (backerRewards.totalRewards == BigInt.zero() || backerRewards.maxInterestDollarsEligible == BigInt.zero()) {
     return
   }
+  // TODO this should exclude closed pools (like Cauris #3) but there's no on-chain indicator that can determine this.
   const tranchedPoolList = getListOfAllTranchedPoolAddresses()
   let repaymentSchedules: Repayment[] = []
   for (let i = 0; i < tranchedPoolList.length; i++) {
