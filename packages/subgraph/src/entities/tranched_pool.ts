@@ -13,7 +13,6 @@ import {
 } from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
-import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
   getTotalDeposited,
   isV1StyleDeal,
@@ -21,6 +20,7 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
+  getListOfAllTranchedPoolAddresses,
 } from "./helpers"
 import {
   bigDecimalToBigInt,
@@ -285,8 +285,7 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
   if (backerRewards.totalRewards == BigInt.zero() || backerRewards.maxInterestDollarsEligible == BigInt.zero()) {
     return
   }
-  const seniorPoolStatus = getOrInitSeniorPoolStatus()
-  const tranchedPoolList = seniorPoolStatus.tranchedPools
+  const tranchedPoolList = getListOfAllTranchedPoolAddresses()
   let repaymentSchedules: Repayment[] = []
   for (let i = 0; i < tranchedPoolList.length; i++) {
     const tranchedPool = TranchedPool.load(tranchedPoolList[i])
