@@ -15,7 +15,7 @@ import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   using ConfigHelper for GoldfinchConfig;
 
-  function testGetAccountingVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
+  function testGetInterestVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
     (, CreditLine cl) = defaultTranchedPool();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
@@ -24,9 +24,6 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
 
     vm.expectRevert(bytes("IT"));
     cl.interestAccruedAt(timestamp);
-
-    vm.expectRevert(bytes("IT"));
-    cl.principalOwedAt(timestamp);
 
     vm.expectRevert(bytes("IT"));
     cl.totalInterestOwedAt(timestamp);
