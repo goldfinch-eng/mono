@@ -59,7 +59,6 @@ import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-  WITHDRAWAL_PANEL_ZAP_FIELDS,
 } from "./withdrawal-panel";
 
 gql`
@@ -67,7 +66,6 @@ gql`
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
-  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -130,9 +128,6 @@ gql`
       ...SupplyPanelUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
-      }
-      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
-        ...WithdrawalPanelZapFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         id
@@ -422,7 +417,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   seniorPoolApyFromGfiRaw={
                     seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
                   }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                   agreement={dealDetails.agreement}
                   isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />
@@ -430,7 +424,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
               {data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0 ||
                 data?.user.vaultedPoolTokens.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
@@ -438,7 +431,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   vaultedPoolTokens={data.user.vaultedPoolTokens.map(
                     (v) => v.poolToken
                   )}
-                  zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
                     BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
