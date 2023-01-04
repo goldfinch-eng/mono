@@ -70,8 +70,8 @@ contract Go is IGo, BaseUpgradeablePausable {
    * Go-listed is defined as: whether `balanceOf(account, id)` on the UniqueIdentity
    * contract is non-zero (where `id` is a supported token id on UniqueIdentity), falling back to the
    * account's status on the legacy go-list maintained on GoldfinchConfig.
-   * NOTE: If tx.origin is 0x0 (e.g. in blockchain explorers such as Etherscan) this function will throw an error
-   *       if the account is not go listed.
+   * @dev If tx.origin is 0x0 (e.g. in blockchain explorers such as Etherscan) this function will
+   *      throw an error if the account is not go listed.
    * @param account The account whose go status to obtain
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
@@ -101,11 +101,14 @@ contract Go is IGo, BaseUpgradeablePausable {
         return true;
       }
 
-      // Check if tx.origin has the UID, and has delegated that to `account`
-      // tx.origin should only ever be used for access control - it should never be used to determine
-      // the target address for any economic actions
-      // e.g. tx.origin should never be used as the source of truth for the target address to
-      // credit/debit/mint/burn any tokens to/from
+      /** 
+       * Check if tx.origin has the UID, and has delegated that to `account`
+       * tx.origin should only ever be used for access control - it should never be used to determine
+       * the target address for any economic actions
+       * e.g. tx.origin should never be used as the source of truth for the target address to
+       * credit/debit/mint/burn any tokens to/from
+       * WARNING: If tx.origin is 0x0 (e.g. in blockchain explorers such as Etherscan) this function will
+       * throw an error if the account is not go listed.
       /* solhint-disable avoid-tx-origin */
       uint256 txOriginIdBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(tx.origin, idType);
       if (txOriginIdBalance > 0) {
