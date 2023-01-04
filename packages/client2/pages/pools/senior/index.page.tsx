@@ -62,7 +62,6 @@ gql`
       latestPoolStatus {
         id
         sharePrice
-        usdcBalance
         cancellationFee
         epochEndsAt @client
       }
@@ -195,7 +194,6 @@ export default function SeniorPoolPage() {
                 vaultedStakedPositions={data.vaultedStakedPositions.map(
                   (s) => s.seniorPoolStakedPosition
                 )}
-                seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
                 existingWithdrawalRequest={data.seniorPoolWithdrawalRequests[0]}
               />
             )}

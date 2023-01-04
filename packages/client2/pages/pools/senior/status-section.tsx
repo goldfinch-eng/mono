@@ -8,7 +8,7 @@ export const SENIOR_POOL_STATUS_FIELDS = gql`
   fragment SeniorPoolStatusFields on SeniorPool {
     latestPoolStatus {
       id
-      totalPoolAssetsUsdc
+      assets
       totalLoansOutstanding
     }
   }
@@ -31,7 +31,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           seniorPool
             ? formatCrypto({
                 token: "USDC",
-                amount: seniorPool.latestPoolStatus.totalPoolAssetsUsdc,
+                amount: seniorPool.latestPoolStatus.assets,
               })
             : null
         }
