@@ -202,51 +202,119 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
     assertEq(cl.interestOwed(), expectedInterestOwed);
   }
 
-  function testAccountingVarsForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
+  function testTotalIntAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
     (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
-    uint256 drawdownTime = block.timestamp;
-    timestamp = bound(timestamp, cl.nextDueTime() + periodInSeconds(pool), cl.termEndTime() - 1);
 
-    uint256 expectedTotalInterestAccrued = getInterestAccrued(
-      drawdownTime,
+    // Skip to the payment period after the next one
+    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+
+    (ISchedule s, uint64 startTime) = cl.schedule();
+
+    uint256 totalRegIntAccrued = getInterestAccrued(
+      startTime,
       timestamp,
       cl.balance(),
       cl.interestApr()
-    ) + getInterestAccrued(cl.nextDueTime() + 5 days, timestamp, cl.balance(), 10 * 1e16);
-
-    // All accrued interest has late fee
-    uint256 periodsElapsed = (timestamp - drawdownTime) / periodInSeconds(pool);
-    uint256 newNextDueTime = drawdownTime + periodsElapsed * periodInSeconds(pool);
-    uint256 expectedInterestAccrued = getInterestAccrued(
-      newNextDueTime,
-      timestamp,
-      cl.balance(),
-      cl.interestApr() + 10 * 1e16
     );
-
-    uint256 expectedInterestOwed = getInterestAccrued(
-      drawdownTime,
-      newNextDueTime,
+    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime()) +
+      gfConfig.getLatenessGracePeriodInDays() *
+      (1 days);
+    uint256 totalLateIntAccrued = getInterestAccrued(
+      lateFeesStartAt,
+      timestamp,
       cl.balance(),
-      cl.interestApr()
-    ) + getInterestAccrued(cl.nextDueTime() + 5 days, newNextDueTime, cl.balance(), 10 * 1e16);
+      cl.lateFeeApr()
+    );
 
     assertApproxEqAbs(
       cl.totalInterestAccruedAt(timestamp),
-      expectedTotalInterestAccrued,
+      totalRegIntAccrued + totalLateIntAccrued,
       HALF_CENT
     );
-    assertApproxEqAbs(cl.interestAccruedAt(timestamp), expectedInterestAccrued, HALF_CENT);
-    assertApproxEqAbs(cl.interestOwedAt(timestamp), expectedInterestOwed, HALF_CENT);
-
     vm.warp(timestamp);
+    assertApproxEqAbs(
+      cl.totalInterestAccrued(),
+      totalRegIntAccrued + totalLateIntAccrued,
+      HALF_CENT
+    );
+  }
 
-    assertApproxEqAbs(cl.totalInterestAccrued(), expectedTotalInterestAccrued, HALF_CENT);
-    assertApproxEqAbs(cl.interestAccrued(), expectedInterestAccrued, HALF_CENT);
-    assertApproxEqAbs(cl.interestOwed(), expectedInterestOwed, HALF_CENT);
+  function testInterestAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
+    uint256 timestamp
+  ) public {
+    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+
+    // Skip to the payment period after the next one
+    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+
+    (ISchedule s, uint64 startTime) = cl.schedule();
+
+    // Calculate regular interest that has accrued in the current period (from last due time
+    // until timestamp)
+    uint256 regIntAccrued = getInterestAccrued(
+      s.previousInterestDueTimeAt(startTime, timestamp),
+      timestamp,
+      cl.balance(),
+      cl.interestApr()
+    );
+    // Calculate late fee interest in the current period
+    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime());
+    if (lateFeesStartAt < s.previousInterestDueTimeAt(startTime, timestamp)) {
+      lateFeesStartAt = s.previousInterestDueTimeAt(startTime, timestamp);
+    }
+    uint256 lateIntAccrued;
+    if (lateFeesStartAt < timestamp) {
+      lateIntAccrued = getInterestAccrued(
+        lateFeesStartAt,
+        timestamp,
+        cl.balance(),
+        cl.lateFeeApr()
+      );
+    }
+
+    assertApproxEqAbs(cl.interestAccruedAt(timestamp), regIntAccrued + lateIntAccrued, HALF_CENT);
+    vm.warp(timestamp);
+    assertApproxEqAbs(cl.interestAccrued(), regIntAccrued + lateIntAccrued, HALF_CENT);
+  }
+
+  function testInterestOwedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
+    uint256 timestamp
+  ) public {
+    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+
+    // Skip to the payment period after the next one
+    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+
+    (ISchedule s, uint64 startTime) = cl.schedule();
+
+    uint256 regIntOwed = getInterestAccrued(
+      startTime,
+      s.previousInterestDueTimeAt(startTime, timestamp),
+      cl.balance(),
+      cl.interestApr()
+    );
+
+    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime()) +
+      gfConfig.getLatenessGracePeriodInDays() *
+      (1 days);
+    uint256 lateIntOwed;
+    if (lateFeesStartAt < s.previousInterestDueTimeAt(startTime, timestamp)) {
+      lateIntOwed = getInterestAccrued(
+        lateFeesStartAt,
+        s.previousInterestDueTimeAt(startTime, timestamp),
+        cl.balance(),
+        cl.lateFeeApr()
+      );
+    }
+
+    assertApproxEqAbs(cl.interestOwedAt(timestamp), regIntOwed + lateIntOwed, HALF_CENT);
+    vm.warp(timestamp);
+    assertApproxEqAbs(cl.interestOwed(), regIntOwed + lateIntOwed, HALF_CENT);
   }
 
   function testAccountingVarsCrossingTermEndTime(uint256 timestamp) public {
