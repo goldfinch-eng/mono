@@ -693,11 +693,7 @@ async function getEstimatedTotalSeniorPoolInterest(
     const creditLineAddress = await pool.readOnly.methods.creditLine().call(undefined, currentBlock.number)
     const creditLine = await buildCreditLineReadOnly(creditLineAddress)
 
-    const termEndTime = new BigNumber(await creditLine.methods.termEndTime().call(undefined, currentBlock.number))
-    const termInDays = new BigNumber(await creditLine.methods.termInDays().call(undefined, currentBlock.number))
-    const termStartTime = termEndTime.gt(0)
-      ? termEndTime.minus(termInDays.multipliedBy(SECONDS_PER_DAY))
-      : new BigNumber(0)
+    const termStartTime = new BigNumber(await creditLine.methods.termStartTime().call(undefined, currentBlock.number))
     const isMultipleSlicesCompatible = getIsMultipleSlicesCompatible(termStartTime)
 
     const isV1Pool = poolMetadata[address]?.v1StyleDeal === true
