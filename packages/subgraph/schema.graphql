@@ -35,14 +35,9 @@ type SeniorPoolStatus @entity {
   id: ID!
   rawBalance: BigInt!
   balance: BigInt!
-  """
-  The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
-  """
-  usdcBalance: BigInt!
   sharePrice: BigInt!
   totalShares: BigInt!
-  totalPoolAssets: BigInt!
-  totalPoolAssetsUsdc: BigInt!
+  assets: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
   tranchedPools: [TranchedPool!]!
@@ -183,6 +178,12 @@ type TranchedPool @entity {
   initialInterestOwed: BigInt!
 
   borrowerContract: BorrowerContract!
+}
+
+# Internal use entity that just allows us to collect a list of all tranched pools
+type TranchedPoolRoster @entity {
+  id: ID! # Hardcoded to "1" because this is a singleton
+  tranchedPools: [TranchedPool!]!
 }
 
 type TranchedPoolToken @entity {

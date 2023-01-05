@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
+import { dataLayerPush } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
@@ -241,6 +242,12 @@ export default function SupplyPanel({
         pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
       });
     }
+
+    dataLayerPush("DEPOSITED_IN_TRANCHED_POOL", {
+      tranchedPoolAddress,
+      usdAmount: parseFloat(data.supply),
+    });
+
     await apolloClient.refetchQueries({
       include: "active",
       updateCache(cache) {

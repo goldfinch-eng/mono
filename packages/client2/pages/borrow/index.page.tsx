@@ -13,7 +13,10 @@ import {
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
-import { CreditLineCard } from "./credit-line-card";
+import {
+  CreditLineCard,
+  TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS,
+} from "./credit-line-card";
 import {
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
@@ -46,14 +49,6 @@ gql`
         }
       }
     }
-  }
-`;
-
-export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
-  fragment TranchedPoolBorrowCardFields on Deal {
-    id
-    name
-    category
   }
 `;
 
@@ -139,7 +134,7 @@ export default function BorrowPage({
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
       ) : !tranchedPools || tranchedPools.length === 0 ? (
-        <div className="max-w-[750px] rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
+        <div className="w-fit rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
           <div className="text-xl">
             You do not have any credit lines. To borrow funds from the pool, you
             need a Goldfinch credit line.

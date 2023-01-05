@@ -56,7 +56,6 @@ interface SeniorPoolWithdrawalPanelProps {
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
-  seniorPoolLiquidity: BigNumber;
   epochEndsAt: number;
   cancellationFee: FixedNumber;
   existingWithdrawalRequest?: SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment;

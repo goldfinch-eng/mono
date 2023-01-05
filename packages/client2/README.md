@@ -38,8 +38,10 @@ Running the app against a local chain is possible as well, but you need to set u
 To bring up the machines:
 
 1. In the monorepo root, run `yarn start:local`. This will start up the local chain, the old client, and all of the other related processes. This will include the local GFI airdrops.
-2. In `packages/subgraph`, run `yarn start-local`. This will bring up a subgraph in Docker. When Docker is up, run `yarn create-local` then `yarn deploy-local`
-3. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `yarn dev`. This will start client2 on port 3001 so it doesn't conflict with the old client on port 3000.
+2. In `packages/subgraph`, run `yarn start-local`. This will bring up a subgraph in Docker. The yarn command should complete immediately, but the subgraph node may take a few minutes to complete setup in the background.
+3. When Docker is up, run `yarn create-local` then `yarn deploy-local`
+4. In `packages/cms`, run `yarn start:dev` in order to spin up a docker container hosting the cms server.
+5. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `yarn dev`. This will start client2 on port 3001 so it doesn't conflict with the old client on port 3000.
 
 ## Guidelines and Conventions
 

@@ -1,6 +1,10 @@
 import { PoolMetadata } from "./types";
 
 export const mainnetMetadata: Record<string, PoolMetadata> = {
+  "0x538473c3a69da2b305cf11a40cf2f3904de8db5f": {
+    borrower: "cauris",
+    name: "Cauris Fund #4: Africa Innovation Pool",
+  },
   "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
     borrower: "cauris",
     name: "Cauris Fund #3: Africa Innovation Pool",

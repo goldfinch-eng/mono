@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import { Button, Heading, Icon } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
+import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
@@ -21,7 +22,6 @@ import {
   CreditLineStatus,
   getCreditLineStatus,
 } from "@/pages/borrow/helpers";
-import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/index.page";
 
 gql`
   query PoolCreditLinePage($tranchedPoolId: ID!) {
@@ -38,6 +38,8 @@ gql`
         limit
         maxLimit
         termEndTime
+        termInDays
+        paymentPeriodInDays
         isLate @client
         collectedPaymentBalance @client
       }
@@ -109,6 +111,7 @@ export default function PoolCreditLinePage({
   const creditLine = tranchedPool?.creditLine;
 
   let nextPaymentLabel;
+  let creditLineStatus;
   if (tranchedPool && creditLine) {
     const currentInterestOwed = calculateInterestOwed({
       isLate: creditLine.isLate,
@@ -133,7 +136,7 @@ export default function PoolCreditLinePage({
       currentInterestOwed,
     });
 
-    const creditLineStatus = getCreditLineStatus({
+    creditLineStatus = getCreditLineStatus({
       isLate: creditLine.isLate,
       remainingPeriodDueAmount,
       limit: creditLine.limit,
@@ -201,6 +204,7 @@ export default function PoolCreditLinePage({
                 iconSize="lg"
                 iconLeft="ArrowUp"
                 colorScheme="eggplant"
+                disabled={creditLineStatus === CreditLineStatus.InActive}
               >
                 Pay
               </Button>
@@ -246,19 +250,30 @@ export default function PoolCreditLinePage({
             <div className="p-8">
               <div className="grid grid-cols-3 gap-y-8">
                 <div>
-                  <div className="mb-0.5 text-2xl">$10,000.00</div>
+                  <div className="mb-0.5 text-2xl">
+                    {formatCrypto({
+                      token: "USDC",
+                      amount: creditLine.maxLimit,
+                    })}
+                  </div>
                   <div className="text-sand-500">Limit</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">5.00%</div>
+                  <div className="mb-0.5 text-2xl">
+                    {formatPercent(creditLine.interestAprDecimal)}
+                  </div>
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">30 days</div>
+                  <div className="mb-0.5 text-2xl">
+                    {creditLine.paymentPeriodInDays.toString()}
+                  </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">360 days</div>
+                  <div className="mb-0.5 text-2xl">
+                    {creditLine.termInDays.toString()}
+                  </div>
                   <div className="text-sand-500">Payback term</div>
                 </div>
               </div>
