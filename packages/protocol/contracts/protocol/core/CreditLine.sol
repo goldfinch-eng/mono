@@ -302,6 +302,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return schedule.nextDueTimeAt(block.timestamp);
   }
 
+  function nextDueTimeAt(uint256 timestamp) external view returns (uint256) {
+    return schedule.nextDueTimeAt(timestamp);
+  }
+
   /// @inheritdoc ICreditLine
   function termStartTime() public view override returns (uint256) {
     return schedule.termStartTime();

@@ -5,14 +5,14 @@ pragma experimental ABIEncoderV2;
 
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
 contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
-  function testRevertsBeforeFirstDrawdown() public {
+  function testIsZeroBeforeFirstDrawdown() public {
     (, CreditLine cl) = defaultTranchedPool();
-    vm.expectRevert("Uninitialized");
-    cl.termStartTime();
+    assertZero(cl.termStartTime());
   }
 
   function testIsSetToTimeOfFirstDrawdown() public {
@@ -23,7 +23,8 @@ contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
     deposit(pool, 2, usdcVal(1_000_000), DEPOSITOR);
     lockAndDrawdown(pool, usdcVal(100));
 
-    assertEq(cl.termStartTime(), block.timestamp);
+    (ISchedule s, uint64 startTime) = cl.schedule();
+    assertEq(cl.termStartTime(), s.termStartTime(startTime));
   }
 
   function testDoesntResetOnSubsequentZeroBalanceDrawdowns() public {
@@ -37,7 +38,7 @@ contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
     uint256 termStartTime = cl.termStartTime();
 
     // Advance to next payment period, fully pay back the loan, and drawdown again
-    vm.warp(block.timestamp + periodInSeconds(pool));
+    vm.warp(cl.nextDueTime());
     pay(pool, cl.interestOwed() + cl.principalOwed() + cl.balance());
 
     assertZero(cl.interestOwed() + cl.principalOwed() + cl.balance());
@@ -45,7 +46,7 @@ contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
     _startImpersonation(cl.borrower());
     pool.drawdown(usdcVal(100));
 
-    // termStartTime should not have changed
+    // termStartTime should be the same
     assertEq(cl.termStartTime(), termStartTime);
   }
 }
