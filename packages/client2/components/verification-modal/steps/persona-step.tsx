@@ -87,10 +87,7 @@ export function PersonaStep() {
         </>
       }
     >
-      <div
-        className="flex flex-col items-center"
-        data-id="verfication.step.persona"
-      >
+      <div className="flex flex-col items-center">
         <Image
           src={personaLogo}
           width={110}

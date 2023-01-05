@@ -13,5 +13,7 @@ interface ITestUniqueIdentity0612 {
 
   function setApprovalForAll(address _operator, bool _approved) external;
 
+  function isApprovedForAll(address account, address operator) external view returns (bool);
+
   function balanceOf(address account, uint256 id) external view returns (uint256);
 }

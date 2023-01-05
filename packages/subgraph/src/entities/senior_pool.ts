@@ -3,7 +3,6 @@ import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {Fidu as FiduContract} from "../../generated/SeniorPool/Fidu"
-import {USDC as UsdcContract} from "../../generated/SeniorPool/USDC"
 import {CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
@@ -32,8 +31,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.balance = new BigInt(0)
     poolStatus.totalShares = new BigInt(0)
     poolStatus.sharePrice = new BigInt(0)
-    poolStatus.totalPoolAssets = new BigInt(0)
-    poolStatus.totalPoolAssetsUsdc = new BigInt(0)
+    poolStatus.assets = BigInt.zero()
     poolStatus.totalLoansOutstanding = new BigInt(0)
     poolStatus.cumulativeWritedowns = new BigInt(0)
     poolStatus.cumulativeDrawdowns = new BigInt(0)
@@ -42,7 +40,6 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.estimatedApyFromGfiRaw = BigDecimal.zero()
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.tranchedPools = []
-    poolStatus.usdcBalance = BigInt.zero()
     poolStatus.cancellationFee = BigDecimal.zero()
     poolStatus.save()
   }
@@ -70,36 +67,35 @@ const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
 const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 
 export function updatePoolStatus(seniorPoolAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
+  const seniorPool = getOrInitSeniorPool(seniorPoolAddress)
 
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   const goldfinchConfigContract = GoldfinchConfigContract.bind(seniorPoolContract.config())
   const fidu_contract = FiduContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.Fidu))
-  const usdc_contract = UsdcContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.USDC))
 
-  let sharePrice = seniorPoolContract.sharePrice()
-  let totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
-  let totalSupply = fidu_contract.totalSupply()
-  let totalPoolAssets = totalSupply.times(sharePrice)
-  let totalPoolAssetsUsdc = totalPoolAssets.times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
-  let balance = seniorPoolContract
+  const sharePrice = seniorPoolContract.sharePrice()
+  const totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
+  const totalSupply = fidu_contract.totalSupply()
+  const assets = seniorPoolContract.try_assets()
+  const balance = seniorPoolContract
     .assets()
     .minus(seniorPoolContract.totalLoansOutstanding())
     .plus(seniorPoolContract.totalWritedowns())
-  let rawBalance = balance
-  let cancellationFee = goldfinchConfigContract.getNumber(
+  const rawBalance = balance
+  const cancellationFee = goldfinchConfigContract.getNumber(
     BigInt.fromI32(CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeInBps)
   )
 
-  let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
+  const poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
   poolStatus.totalLoansOutstanding = totalLoansOutstanding
   poolStatus.totalShares = totalSupply
   poolStatus.balance = balance
   poolStatus.sharePrice = sharePrice
   poolStatus.rawBalance = rawBalance
-  poolStatus.usdcBalance = usdc_contract.balanceOf(seniorPoolAddress)
-  poolStatus.totalPoolAssets = totalPoolAssets
-  poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
+  poolStatus.assets = !assets.reverted
+    ? assets.value
+    : // total supply is in FIDU (1e18) and sharePrice is also 1e18, so we need to multiply by USDC_DECIMALS and then divide out FIDU_DECIMALS twice get back to 1e6
+      totalSupply.times(sharePrice).times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
   poolStatus.cancellationFee = new BigDecimal(cancellationFee).div(BigDecimal.fromString("10000"))
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
@@ -109,34 +105,28 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   seniorPool.save()
 }
 
-export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let investments = seniorPool.investmentsMade
-  investments.push(tranchedPoolAddress.toHexString())
-  seniorPool.investmentsMade = investments
-  seniorPool.save()
+export function updatePoolInvestments(tranchedPoolAddress: Address): void {
+  const poolStatus = assert(SeniorPoolStatus.load("1"))
+  const addressAsString = tranchedPoolAddress.toHexString()
+  if (!poolStatus.tranchedPools.includes(addressAsString)) {
+    poolStatus.tranchedPools = poolStatus.tranchedPools.concat([addressAsString])
+    poolStatus.save()
+  }
 }
 
 export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   let estimatedTotalInterest = BigDecimal.zero()
   for (let i = 0; i < poolStatus.tranchedPools.length; i++) {
     const tranchedPoolId = poolStatus.tranchedPools[i]
-    if (!tranchedPoolId || tranchedPoolId == "0x538473c3a69da2b305cf11a40cf2f3904de8db5f") {
+    if (!tranchedPoolId) {
       continue
     }
     estimatedTotalInterest = estimatedTotalInterest.plus(calculateEstimatedInterestForTranchedPool(tranchedPoolId))
   }
   poolStatus.estimatedTotalInterest = estimatedTotalInterest
 
-  if (poolStatus.totalPoolAssets.notEqual(BigInt.zero())) {
-    // The goofy-looking math here is required to get things in the right units for arithmetic
-    const totalPoolAssetsInDollars = poolStatus.totalPoolAssets
-      .toBigDecimal()
-      .div(FIDU_DECIMALS.toBigDecimal())
-      .div(FIDU_DECIMALS.toBigDecimal())
-      .times(USDC_DECIMALS.toBigDecimal())
-    let estimatedApy = estimatedTotalInterest.div(totalPoolAssetsInDollars)
-    poolStatus.estimatedApy = estimatedApy
+  if (poolStatus.assets.notEqual(BigInt.zero())) {
+    poolStatus.estimatedApy = estimatedTotalInterest.div(poolStatus.assets.toBigDecimal())
   }
 
   poolStatus.save()

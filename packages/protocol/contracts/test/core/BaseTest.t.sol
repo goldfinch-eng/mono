@@ -39,6 +39,7 @@ abstract contract BaseTest is Test {
   }
 
   function excludeAddresses() private {
+    fuzzHelper.exclude(address(this));
     fuzzHelper.exclude(address(fuzzHelper));
     fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(address(protocol));
