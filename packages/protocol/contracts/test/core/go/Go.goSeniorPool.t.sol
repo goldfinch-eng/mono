@@ -41,9 +41,9 @@ contract GoGoSeniorPoolTest is GoBaseTest {
   ) public onlyAllowListed(user) impersonating(GF_OWNER) {
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
       uint256 uidType = seniorPoolIdTypes[i];
-      uniqueIdentity._mintForTest(user, uidType, 1, bytes(""));
+      uid._mintForTest(user, uidType, 1, bytes(""));
       assertTrue(go.goSeniorPool(user));
-      uniqueIdentity._burnForTest(user, uidType);
+      uid._burnForTest(user, uidType);
     }
   }
 
