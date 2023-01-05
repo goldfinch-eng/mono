@@ -116,7 +116,7 @@ contract TranchedPoolPaySeparateTest is TranchedPoolBaseTest {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
-    interestAmount = bound(interestAmount, 1, cl.interestOwed() + cl.interestAccrued());
+    interestAmount = bound(interestAmount, 1, cl.interestOwed() + cl.interestAccrued() - 1);
     principalAmount = bound(principalAmount, 1, cl.balance());
 
     fundAddress(address(this), interestAmount + principalAmount);

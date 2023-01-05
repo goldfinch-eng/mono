@@ -33,10 +33,7 @@ contract TranchedPoolPayTest is TranchedPoolBaseTest {
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 
-    uint256 totalOwed = cl.interestOwed() +
-      cl.interestAccrued() +
-      cl.principalOwed() +
-      cl.balance();
+    uint256 totalOwed = cl.interestOwed() + cl.interestAccrued() + cl.balance();
     amount = bound(amount, totalOwed, totalOwed * 10);
 
     fundAddress(address(this), amount);
