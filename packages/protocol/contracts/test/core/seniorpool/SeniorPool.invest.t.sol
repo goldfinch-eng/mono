@@ -122,7 +122,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   function testInvestLiquidatesEpochIfOneOrMoreEpochsHaveEnded(
     address user,
     uint256 epochsElapsed
-  ) public tokenApproved(user) {
+  ) public onlyAllowListed(user) tokenApproved(user) {
     (TestTranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     addToGoList(user);
