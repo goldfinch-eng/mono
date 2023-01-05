@@ -112,6 +112,9 @@ export function Home() {
             <ButtonLink to="/withdrawal-mechanics" colorScheme="twilight">
               Withdrawal Mechanics
             </ButtonLink>
+            <ButtonLink to="/borrow" colorScheme="sky">
+              Borrow
+            </ButtonLink>
           </div>
         </Section>
       </div>
