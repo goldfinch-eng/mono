@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
@@ -25,7 +26,10 @@ contract TranchedPoolNextDueTimeTest is TranchedPoolBaseTest {
   function testNextDueTimeSetByDrawdown() public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     fundAndDrawdown(pool, usdcVal(1), GF_OWNER);
-    assertEq(cl.nextDueTime(), block.timestamp + periodInSeconds(pool));
+
+    (ISchedule s, uint64 startTime) = cl.schedule();
+
+    assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
 
   function testNextDueTimeShouldNotUpdateAsTheResultOfAPayment(
@@ -64,15 +68,14 @@ contract TranchedPoolNextDueTimeTest is TranchedPoolBaseTest {
     fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
     uint256 oldNextDueTime = cl.nextDueTime();
-    uint256 timestampBefore = block.timestamp;
+
+    (ISchedule s, uint64 startTime) = cl.schedule();
+    uint256 newNextDueTime = s.nextDueTimeAt(startTime, timestamp);
+
     vm.warp(timestamp);
-    uint256 periodsElapsed = (block.timestamp - timestampBefore) / periodInSeconds(pool);
-    uint256 expectedNextDueTime = Math.min(
-      oldNextDueTime + periodsElapsed * periodInSeconds(pool),
-      cl.termEndTime()
-    );
+
     assertGt(cl.nextDueTime(), oldNextDueTime);
-    assertEq(cl.nextDueTime(), expectedNextDueTime);
+    assertEq(cl.nextDueTime(), newNextDueTime);
   }
 
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
@@ -81,19 +84,12 @@ contract TranchedPoolNextDueTimeTest is TranchedPoolBaseTest {
     pay(pool, cl.balance() + cl.interestOwed() + cl.interestAccrued());
     assertZero(cl.balance(), "balance not zero");
 
-    uint256 oldNextDueTime = cl.nextDueTime();
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
-    uint256 timestampBefore = block.timestamp;
 
     vm.warp(timestamp);
 
-    uint256 periodsElapsed = (block.timestamp - timestampBefore) / periodInSeconds(pool);
-    uint256 expectedNextDueTime = Math.min(
-      oldNextDueTime + periodsElapsed * periodInSeconds(pool),
-      cl.termEndTime()
-    );
-
-    assertEq(cl.nextDueTime(), expectedNextDueTime, "next due time wrong");
+    (ISchedule s, uint64 startTime) = cl.schedule();
+    assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
 
   function testNextDueTimeUnchangedWhenIDrawdownOnZeroBalanceInSamePeriod(
