@@ -322,38 +322,41 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
     // pay interest first, then principal
     uint256 interestAmount = Math.min(
-      amount,
+      amountToPay,
       creditLine.interestOwed().add(creditLine.interestAccrued())
     );
-    uint256 principalAmount = amount.saturatingSub(interestAmount);
+    uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
 
     PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
 
+    // Payment remaining should always be 0 because we don't take excess usdc
     assert(pa.paymentRemaining == 0);
     return pa;
   }
 
   /// @inheritdoc ITranchedPool
   /// @dev ZA: zero amount
-  /// @dev PO: principal overpayment
   function pay(
     uint256 principalAmount,
     uint256 interestAmount
   ) external override nonReentrant whenNotPaused returns (PaymentAllocation memory) {
     uint256 totalPayment = principalAmount.add(interestAmount);
     require(totalPayment > 0, "ZA");
-    require(principalAmount <= creditLine.balance(), "PO");
+
+    // If there is an excess principal payment then only take what we actually need
+    uint256 principalToPay = Math.min(principalAmount, creditLine.balance());
 
     // If there is an excess interest payment then only take what we actually need
     uint256 maxPayableInterest = creditLine.interestAccrued().add(creditLine.interestOwed());
-    uint256 interestToPay = Math.min(maxPayableInterest, interestAmount);
+    uint256 interestToPay = Math.min(interestAmount, maxPayableInterest);
     config.getUSDC().safeERC20TransferFrom(
       msg.sender,
       address(this),
-      principalAmount.add(interestToPay)
+      principalToPay.add(interestToPay)
     );
-    PaymentAllocation memory pa = _pay(principalAmount, interestToPay);
+    PaymentAllocation memory pa = _pay(principalToPay, interestToPay);
 
+    // Payment remaining should always be 0 because we don't take excess usdc
     assert(pa.paymentRemaining == 0);
     return pa;
   }
