@@ -9,9 +9,7 @@ import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
 contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
-  function testLastFullPaymentTimeNotSetWhenInterestPaymentIsLessThanInterestOwed(
-    uint256 interestPayment
-  ) public {
+  function testNotSetIfInterestPaymentLtInterestOwed(uint256 interestPayment) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
@@ -26,9 +24,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter, "lastFullPaymentTime unchanged");
   }
 
-  function testLastFullPaymentTimeIsSetToLastDueTimeAfterFullInterestIsPaid(
-    uint256 periodsToAdvance
-  ) public {
+  function testSetToLastDueTimeIfFullInterestIsPaid(uint256 periodsToAdvance) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
@@ -44,9 +40,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
   }
 
-  function testLastFullPaymentTimeNotSetWhenIPayInterestButNotPrincipalPastTermEndTime(
-    uint256 payment
-  ) public {
+  function testNotSetWhenIfInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
@@ -61,9 +55,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter);
   }
 
-  function testLastFullPaymentTimeSetWhenIPayInterestAndPrincipalPastTermEndTime(
-    uint256 secondsPastTermEndTime
-  ) public {
+  function testSetIfInterestAndPrincipalPaidPastTermEndTime(uint256 secondsPastTermEndTime) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
@@ -78,9 +70,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
-  function testLastFullPaymentTimeNotSetWhenSeparateInterestPaymentIsLessThanInterestOwed(
-    uint256 interestPayment
-  ) public {
+  function testNotSetIfSeparateInterestPaymentLtInterestOwed(uint256 interestPayment) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);
@@ -95,7 +85,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter, "lastFullPaymentTime unchanged");
   }
 
-  function testLastFullPaymentTimeIsSetToLastDueTimeAfterlInterestOwedIsPaidSeparate(
+  function testSetToBlockTimeInterestOwedIsPaidSeparate(
     uint256 interestPayment,
     uint256 periodsToAdvance
   ) public {
@@ -114,7 +104,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
-  function testLastFullPaymentTimeNotSetWhenPayingSeparateInterestButNotPrincipalPastTermEndTime(
+  function testNotSetIfSeparateInterestButNotPrincipalPaidPastTermEndTime(
     uint256 interestPayment,
     uint256 principalPayment
   ) public {
@@ -133,7 +123,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter);
   }
 
-  function testLastFullPaymentTimeSetWhenIPaySeparateInterestAndPrincipalPastTermEndTime(
+  function testIfSeparateInterestAndPrincipalPaidPastTermEndTime(
     uint256 secondsPastTermEndTime
   ) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
@@ -147,6 +137,58 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
     pay(pool, cl.principalOwed(), cl.interestOwed());
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
+  }
+
+  function testSetToBlockTimeOnFirstDrawdown() public {
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    deposit(pool, 2, usdcVal(100), GF_OWNER);
+    lockJuniorTranche(pool);
+    seniorDepositAndInvest(pool, usdcVal(400));
+    lockSeniorTranche(pool);
+    drawdown(pool, usdcVal(500));
+
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
+  }
+
+  function testNotSetOnSecondDrawdownIfBalanceGt0(
+    uint256 drawdownAmount,
+    uint256 timestamp
+  ) public {
+    // Drawdown some amount less than the total available
+    drawdownAmount = bound(drawdownAmount, usdcVal(1), usdcVal(499));
+
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    deposit(pool, 2, usdcVal(100), GF_OWNER);
+    lockJuniorTranche(pool);
+    seniorDepositAndInvest(pool, usdcVal(400));
+    lockSeniorTranche(pool);
+    drawdown(pool, drawdownAmount);
+
+    uint256 expectedLastFullPaymentTime = cl.lastFullPaymentTime();
+
+    // Advance to a future time where the borrower is still current on payments
+    timestamp = bound(timestamp, block.timestamp, cl.nextDueTime());
+
+    drawdown(pool, usdcVal(500) - drawdownAmount - 1);
+    assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
+  }
+
+  function testSetToBlockTimeOnSecondDrawdownIfBalanceEq0(uint256 timestamp) public {
+    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    deposit(pool, 2, usdcVal(100), GF_OWNER);
+    lockJuniorTranche(pool);
+    seniorDepositAndInvest(pool, usdcVal(400));
+    lockSeniorTranche(pool);
+    drawdown(pool, usdcVal(500));
+
+    pay(pool, cl.interestOwed() + cl.principalOwed() + cl.balance());
+    assertEq(cl.lastFullPaymentTime(), block.timestamp);
+
+    timestamp = bound(timestamp, block.timestamp, cl.termEndTime() - 1);
+    vm.warp(timestamp);
+
+    drawdown(pool, usdcVal(500));
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 }

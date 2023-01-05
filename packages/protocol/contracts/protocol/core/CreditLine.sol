@@ -157,10 +157,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(amount > 0, "Invalid drawdown amount");
 
     if (balance == 0) {
+      lastFullPaymentTime = block.timestamp;
       if (!schedule.isActive()) {
         schedule.startAt(block.timestamp);
       }
-      lastFullPaymentTime = termStartTime();
     }
 
     // The balance is about to change.. checkpoint amounts owed!
