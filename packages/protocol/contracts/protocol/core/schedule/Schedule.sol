@@ -223,7 +223,7 @@ contract Schedule is ISchedule {
   ) internal view returns (uint256) {
     uint256 nextPrincipalPeriod = Math.min(
       totalPrincipalPeriods(),
-      principalPeriodAt(startTime, timestamp).add(gracePrincipalPeriods).add(1)
+      principalPeriodAt(startTime, timestamp).add(1)
     );
     return _startOfPrincipalPeriod(startTime, nextPrincipalPeriod);
   }

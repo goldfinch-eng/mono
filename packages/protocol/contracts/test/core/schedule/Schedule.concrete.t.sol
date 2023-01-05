@@ -204,51 +204,56 @@ contract ConcreteScheduleTest is Test {
     assertEq(s.termEndTime(startTime), 2421964800);
   }
 
-  // TODO - failing test
-  // function testConcreteScheduleBehavesCorrectly() public {
-  //   for (uint256 period = 0; period < expectations.length - 1; period++) {
-  //     PeriodExpectation memory expectation = expectations[period];
-  //     PeriodExpectation memory nextExpectation = expectations[period + 1];
-  //     uint256 periodStartTime = expectation.startTime;
-  //     uint256 periodEndTime = nextExpectation.startTime - 1;
-  //     uint256 periodDuration = periodEndTime - periodStartTime;
-  //     uint256 periodMidPoint = periodStartTime + periodDuration / 2;
-  //     console2.log("P", period);
-  //     console2.log("C", expectation.startTime);
-  //     console2.log("N", nextExpectation.startTime);
+  function testConcreteScheduleBehavesCorrectly() public {
+    for (uint256 period = 0; period < expectations.length - 1; period++) {
+      PeriodExpectation memory expectation = expectations[period];
+      PeriodExpectation memory nextExpectation = expectations[period + 1];
+      uint256 periodStartTime = expectation.startTime;
+      uint256 periodEndTime = nextExpectation.startTime - 1;
+      uint256 periodDuration = periodEndTime - periodStartTime;
+      uint256 periodMidPoint = periodStartTime + periodDuration / 2;
+      console2.log("P", period);
+      console2.log("C", expectation.startTime);
+      console2.log("N", nextExpectation.startTime);
 
-  //     assertEq(s.periodAt(startTime, periodStartTime), expectation.period, "SP");
-  //     assertEq(s.periodAt(startTime, periodMidPoint), expectation.period, "MP");
-  //     assertEq(s.periodAt(startTime, periodEndTime), expectation.period, "EP");
+      assertEq(s.periodAt(startTime, periodStartTime), expectation.period, "SP");
+      assertEq(s.periodAt(startTime, periodMidPoint), expectation.period, "MP");
+      assertEq(s.periodAt(startTime, periodEndTime), expectation.period, "EP");
 
-  //     assertEq(s.interestPeriodAt(startTime, periodStartTime), expectation.interestPeriod, "SI");
-  //     assertEq(s.interestPeriodAt(startTime, periodMidPoint), expectation.interestPeriod, "MI");
-  //     assertEq(s.interestPeriodAt(startTime, periodEndTime), expectation.interestPeriod, "EI");
+      assertEq(s.interestPeriodAt(startTime, periodStartTime), expectation.interestPeriod, "SI");
+      assertEq(s.interestPeriodAt(startTime, periodMidPoint), expectation.interestPeriod, "MI");
+      assertEq(s.interestPeriodAt(startTime, periodEndTime), expectation.interestPeriod, "EI");
 
-  //     assertEq(s.principalPeriodAt(startTime, periodStartTime), expectation.principalPeriod, "SPr");
-  //     assertEq(s.principalPeriodAt(startTime, periodMidPoint), expectation.principalPeriod, "MPr");
-  //     assertEq(s.principalPeriodAt(startTime, periodEndTime), expectation.principalPeriod, "EPr");
+      assertEq(s.principalPeriodAt(startTime, periodStartTime), expectation.principalPeriod, "SPr");
+      assertEq(s.principalPeriodAt(startTime, periodMidPoint), expectation.principalPeriod, "MPr");
+      assertEq(s.principalPeriodAt(startTime, periodEndTime), expectation.principalPeriod, "EPr");
 
-  //     assertEq(s.nextDueTimeAt(startTime, periodStartTime), expectation.nextDueTime, "SD");
-  //     assertEq(s.nextDueTimeAt(startTime, periodMidPoint), expectation.nextDueTime, "MD");
-  //     assertEq(s.nextDueTimeAt(startTime, periodEndTime), expectation.nextDueTime, "ED");
+      assertEq(s.nextDueTimeAt(startTime, periodStartTime), expectation.nextDueTime, "SD");
+      assertEq(s.nextDueTimeAt(startTime, periodMidPoint), expectation.nextDueTime, "MD");
+      assertEq(s.nextDueTimeAt(startTime, periodEndTime), expectation.nextDueTime, "ED");
 
-  //     assertEq(
-  //       s.previousDueTimeAt(startTime, periodStartTime),
-  //       expectation.previousDueTime,
-  //       "SPre"
-  //     );
-  //     assertEq(s.previousDueTimeAt(startTime, periodMidPoint), expectation.previousDueTime, "MPre");
-  //     assertEq(s.previousDueTimeAt(startTime, periodEndTime), expectation.previousDueTime, "EPre");
+      assertEq(
+        s.previousDueTimeAt(startTime, periodStartTime),
+        expectation.previousDueTime,
+        "SPre"
+      );
+      assertEq(s.previousDueTimeAt(startTime, periodMidPoint), expectation.previousDueTime, "MPre");
+      assertEq(s.previousDueTimeAt(startTime, periodEndTime), expectation.previousDueTime, "EPre");
 
-  //     assertEq(
-  //       s.withinPrincipalGracePeriodAt(startTime, periodStartTime),
-  //       expectation.withinGracePeriod
-  //     );
-  //     // assertEq(s.withinPrincipalGracePeriodAt(startTime, periodMidPoint), expectation.withinGracePeriod);
-  //     // assertEq(s.withinPrincipalGracePeriodAt(startTime, periodEndTime), expectation.withinGracePeriod);
-  //   }
-  // }
+      assertEq(
+        s.withinPrincipalGracePeriodAt(startTime, periodStartTime),
+        expectation.withinGracePeriod
+      );
+      assertEq(
+        s.withinPrincipalGracePeriodAt(startTime, periodMidPoint),
+        expectation.withinGracePeriod
+      );
+      assertEq(
+        s.withinPrincipalGracePeriodAt(startTime, periodEndTime),
+        expectation.withinGracePeriod
+      );
+    }
+  }
 }
 
 struct PeriodExpectation {
