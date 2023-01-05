@@ -49,7 +49,7 @@ contract TranchedPoolBaseTest is BaseTest {
   PoolTokens internal poolTokens;
   Go internal go;
 
-  function setUp() public override {
+  function setUp() public virtual override {
     super.setUp();
 
     _startImpersonation(GF_OWNER);
