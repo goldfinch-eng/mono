@@ -342,6 +342,8 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
   }
 
   function testWithdrawEmitsAnEvent(address user) public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
@@ -349,7 +351,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     uint256 token = deposit(pool, 2, usdcVal(1000), user);
     lockAndDrawdown(pool, usdcVal(1000));
     vm.warp(cl.termEndTime());
-    pay(pool, usdcVal(1050));
+    pay(pool, cl.interestOwed() + cl.principalOwed());
 
     // Total amount owed to junior:
     //   principal = 1000
@@ -357,8 +359,10 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     //   protocol_fee = interest_accrued * 0.1 = 5
     //   principal + interest_accrued - protocol_fee = 1045
     vm.expectEmit(true, true, true, true);
-    emit WithdrawalMade(user, 2, token, usdcVal(45), usdcVal(1000));
-    withdraw(pool, token, usdcVal(1045), user);
+    // Interest amount is slightly more than $45 due to the stub period
+    emit WithdrawalMade(user, 2, token, 45000081, usdcVal(1000));
+    // Total redeemable is slightly more than $1045 due to the stub period
+    withdraw(pool, token, 1045000081, user);
   }
 
   function testWithdrawMultipleRevertsIfAnyTokenNotOwnedByCaller(
@@ -545,6 +549,8 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
   }
 
   function testWithdrawMaxEmitsEvent(address user) public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
@@ -552,9 +558,10 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     lockAndDrawdown(pool, usdcVal(1000));
     vm.warp(cl.termEndTime());
     // Pay back
-    pay(pool, usdcVal(1050));
+    pay(pool, cl.interestOwed() + cl.principalOwed());
     vm.expectEmit(true, true, true, true);
-    emit WithdrawalMade(user, 2, token, usdcVal(45), usdcVal(1000));
+    // Interest is slightly more than $45 due to the stub period
+    emit WithdrawalMade(user, 2, token, 45000081, usdcVal(1000));
     withdrawMax(pool, token, user);
   }
 
