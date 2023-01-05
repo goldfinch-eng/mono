@@ -102,3 +102,39 @@ export function calculateRemainingTotalDueAmount({
   // this does mean the borrower may overpay by a penny max each time.
   return roundUpToPrecision(remainingTotalDueAmount);
 }
+
+export enum CreditLineStatus {
+  PaymentLate,
+  PaymentDue,
+  PeriodPaid,
+  InActive,
+}
+
+export const getCreditLineStatus = ({
+  isLate,
+  remainingPeriodDueAmount,
+  limit,
+  remainingTotalDueAmount,
+}: {
+  isLate: boolean;
+  remainingPeriodDueAmount: BigNumber;
+  limit: BigNumber;
+  remainingTotalDueAmount: BigNumber;
+}) => {
+  // Is Late
+  if (isLate) {
+    return CreditLineStatus.PaymentLate;
+  }
+
+  // Payment is due - but not late
+  if (remainingPeriodDueAmount.gt(0)) {
+    return CreditLineStatus.PaymentDue;
+  }
+
+  // Credit line is active & paid
+  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
+    return CreditLineStatus.PeriodPaid;
+  }
+
+  return CreditLineStatus.InActive;
+};

@@ -13,11 +13,16 @@ import {
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
-import { CreditLineCard } from "./credit-line-card";
+import {
+  CreditLineCard,
+  TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS,
+} from "./credit-line-card";
 import {
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
   calculateRemainingTotalDueAmount,
+  CreditLineStatus,
+  getCreditLineStatus,
 } from "./helpers";
 
 gql`
@@ -47,14 +52,6 @@ gql`
   }
 `;
 
-export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
-  fragment TranchedPoolBorrowCardFields on Deal {
-    id
-    name
-    category
-  }
-`;
-
 const borrowCmsQuery = gql`
   ${TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS}
   query BorrowPageCMS @api(name: cms) {
@@ -65,42 +62,6 @@ const borrowCmsQuery = gql`
     }
   }
 `;
-
-export enum CreditLineStatus {
-  PaymentLate,
-  PaymentDue,
-  PeriodPaid,
-  InActive,
-}
-
-const getCreditLineStatus = ({
-  isLate,
-  remainingPeriodDueAmount,
-  limit,
-  remainingTotalDueAmount,
-}: {
-  isLate: boolean;
-  remainingPeriodDueAmount: BigNumber;
-  limit: BigNumber;
-  remainingTotalDueAmount: BigNumber;
-}) => {
-  // Is Late
-  if (isLate) {
-    return CreditLineStatus.PaymentLate;
-  }
-
-  // Payment is due - but not late
-  if (remainingPeriodDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentDue;
-  }
-
-  // Credit line is active & paid
-  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
-    return CreditLineStatus.PeriodPaid;
-  }
-
-  return CreditLineStatus.InActive;
-};
 
 const getDueDateLabel = ({
   creditLineStatus,
@@ -173,7 +134,7 @@ export default function BorrowPage({
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
       ) : !tranchedPools || tranchedPools.length === 0 ? (
-        <div className="max-w-[750px] rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
+        <div className="w-fit rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
           <div className="text-xl">
             You do not have any credit lines. To borrow funds from the pool, you
             need a Goldfinch credit line.
