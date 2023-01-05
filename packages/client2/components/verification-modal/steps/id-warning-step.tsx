@@ -33,10 +33,7 @@ export function IdWarningStep() {
         </>
       }
     >
-      <div
-        className="flex h-full flex-col items-center"
-        data-id="verfication.step.id-warning"
-      >
+      <div className="flex h-full flex-col items-center">
         <div className="mx-auto mb-5">
           <Image src={warningImg} height={110} width={110} alt="Warning" />
         </div>
