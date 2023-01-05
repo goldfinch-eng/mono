@@ -488,12 +488,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     if (interestPayment > 0 || principalPayment > 0) {
       uint256 reserveAmount = _collectInterestAndPrincipal(interestPayment, principalPayment);
 
+      uint256 principalPaymentsToSlices = 0;
       for (uint256 i = 0; i < numSlices; i++) {
         _poolSlices[i].principalDeployed = _poolSlices[i].principalDeployed.sub(
           principalPaymentsPerSlice[i]
         );
-        totalDeployed = totalDeployed.sub(principalPaymentsPerSlice[i]);
+        principalPaymentsToSlices = principalPaymentsToSlices.add(principalPaymentsPerSlice[i]);
       }
+
+      totalDeployed = totalDeployed.sub(principalPaymentsToSlices);
 
       config.getBackerRewards().allocateRewards(interestPayment);
 
