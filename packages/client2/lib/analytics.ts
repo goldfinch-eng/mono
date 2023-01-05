@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+type Event = {
+  UID_FLOW_INITIATED: never;
+  INVESTOR_TYPE_SELECTED: { type: "institutional" | "retail" };
+  UID_MINTED: never;
+  DEPOSITED_IN_SENIOR_POOL: { usdAmount: number };
+  DEPOSITED_IN_TRANCHED_POOL: {
+    tranchedPoolAddress: string;
+    usdAmount: number;
+  };
+};
 
-type EventName =
-  | "UID_FLOW_INITIATED"
-  | "INVESTOR_TYPE_SELECTED"
-  | "UID_MINTED"
-  | "DEPOSITED_IN_SENIOR_POOL"
-  | "DEPOSITED_IN_TRANCHED_POOL";
-
-export function dataLayerPush(
-  eventName: EventName,
-  attributes?: Record<string, string | number>
+export function dataLayerPush<T extends keyof Event>(
+  ...[event, attributes]: Event[T] extends never
+    ? [event: T]
+    : [event: T, attributes: Event[T]]
 ): void {
   const dataLayer = (
     window as unknown as {
@@ -21,18 +24,5 @@ export function dataLayerPush(
   if (!dataLayer) {
     return;
   }
-  dataLayer.push({ event: eventName, ...attributes });
-}
-
-/**
- * Pushes a data layer event when this component mounts.
- */
-export function useAnalyticsEvent(
-  eventName: EventName,
-  attributes?: Record<string, string | number>
-) {
-  useEffect(() => {
-    dataLayerPush(eventName, attributes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  dataLayer.push({ event, ...attributes });
 }
