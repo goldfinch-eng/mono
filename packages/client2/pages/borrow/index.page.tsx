@@ -253,6 +253,7 @@ export default function BorrowPage({
               <div key={id}>
                 <CreditLineCard
                   className="mb-4"
+                  href={`/borrow/${tranchedPool.id}`}
                   dealMetaData={dealMetadata[tranchedPool.id]}
                   description={`${creditLineLimit} at ${formattedInterestRate}`}
                   status={creditLineStatus}
