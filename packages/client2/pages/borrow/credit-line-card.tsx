@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 
+import { CreditLineStatus } from "@/pages/borrow/helpers";
+
 import { TranchedPoolBorrowCardFieldsFragment } from "../../lib/graphql/generated";
-import { CreditLineStatus } from "./index.page";
 
 interface CreditLineCardProps {
   className?: string;

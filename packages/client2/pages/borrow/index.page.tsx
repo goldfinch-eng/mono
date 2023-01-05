@@ -18,6 +18,8 @@ import {
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
   calculateRemainingTotalDueAmount,
+  CreditLineStatus,
+  getCreditLineStatus,
 } from "./helpers";
 
 gql`
@@ -66,42 +68,6 @@ const borrowCmsQuery = gql`
   }
 `;
 
-export enum CreditLineStatus {
-  PaymentLate,
-  PaymentDue,
-  PeriodPaid,
-  InActive,
-}
-
-const getCreditLineStatus = ({
-  isLate,
-  remainingPeriodDueAmount,
-  limit,
-  remainingTotalDueAmount,
-}: {
-  isLate: boolean;
-  remainingPeriodDueAmount: BigNumber;
-  limit: BigNumber;
-  remainingTotalDueAmount: BigNumber;
-}) => {
-  // Is Late
-  if (isLate) {
-    return CreditLineStatus.PaymentLate;
-  }
-
-  // Payment is due - but not late
-  if (remainingPeriodDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentDue;
-  }
-
-  // Credit line is active & paid
-  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
-    return CreditLineStatus.PeriodPaid;
-  }
-
-  return CreditLineStatus.InActive;
-};
-
 const getDueDateLabel = ({
   creditLineStatus,
   nextDueTime,
@@ -117,7 +83,7 @@ const getDueDateLabel = ({
     case CreditLineStatus.PeriodPaid:
       return (
         <div className="align-left flex flex-row items-center">
-          <Icon name="CheckmarkCircle" className="mr-1" />
+          <Icon name="CheckmarkCircle" size="md" className="mr-1" />
           <div>Paid</div>
         </div>
       );
