@@ -118,7 +118,6 @@ import {
   BorrowerCreated,
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
-import {config} from "dotenv"
 import {deploySchedule} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deploySchedule"
 import {getDeploymentFor} from "../util/fixtures"
 
@@ -635,11 +634,14 @@ describe("mainnet forking tests", async function () {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
+      console.log("Created borrower con")
       ;({tranchedPool} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
         usdc,
       }))
+      console.log("Created tranched pool")
       await initializeTranchedPool(tranchedPool, bwrCon)
+      console.log("Initialized tranched pool")
     })
 
     it("should let you drawdown to tether", async function () {

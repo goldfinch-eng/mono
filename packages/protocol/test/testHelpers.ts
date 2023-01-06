@@ -543,15 +543,21 @@ const createPoolWithCreditLine = async ({
     ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
     : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
 
+  console.log("fetched config")
+
   const creditLineContractName = getClContractName()
   const creditLineDeployment = await deployments.get(creditLineContractName)
+  console.log("setting credit line impl to " + creditLineContractName)
   await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
   const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+  console.log("got schedule")
 
   let result: $TSFixMe
   if (isMainnetForking()) {
+    console.log("IN MAINET FORK!")
     const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
+    console.log("creating pool")
     result = await goldfinchFactory.createPool(
       thisBorrower,
       juniorFeePercent,
@@ -563,6 +569,7 @@ const createPoolWithCreditLine = async ({
       allowedUIDTypes,
       {from: thisOwner}
     )
+    console.log("created pool")
   } else {
     const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
     const scheudle = await getDeploymentFor<ScheduleInstance>("Schedule")

@@ -3,6 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "hardhat/console.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -81,6 +82,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
   ) external onlyAdminOrBorrower returns (ITranchedPool pool) {
+    console.log("gfFactory createPool");
     // need to enclose in a scope to avoid overflowing stack
     {
       ImplementationRepository repo = config.getTranchedPoolImplementationRepository();
