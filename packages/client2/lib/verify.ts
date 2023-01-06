@@ -2,6 +2,8 @@ import type { Web3Provider } from "@ethersproject/providers";
 
 import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 
+import { User } from "./graphql/generated";
+
 interface IKYCStatus {
   status: "unknown" | "approved" | "failed";
   countryCode: string;
@@ -81,7 +83,7 @@ export enum UIDType {
  * @param type The UID type of the wallet
  * @returns The label to describe the user's UID type
  */
-export function getUIDLabelFromType(type: UIDType): string {
+export function getUIDLabelFromType(type: UIDType) {
   switch (type) {
     case UIDType.NonUSIndividual:
       return "Non-U.S. Individual";
@@ -93,6 +95,38 @@ export function getUIDLabelFromType(type: UIDType): string {
       return "U.S. Entity";
     case UIDType.NonUSEntity:
       return "Non-U.S. Entity";
+  }
+}
+
+/**
+ * Export the UID title for the user's UID Type
+ * @param type The UID type of the wallet
+ * @returns The label to describe the user's UID type
+ */
+export function getUIDLabelFromGql(
+  user: Pick<
+    User,
+    | "isUsEntity"
+    | "isNonUsEntity"
+    | "isUsAccreditedIndividual"
+    | "isUsNonAccreditedIndividual"
+    | "isNonUsIndividual"
+  >
+): string | undefined {
+  if (user.isUsEntity) {
+    return "U.S. Entity";
+  }
+  if (user.isNonUsEntity) {
+    return "Non-U.S. Entity";
+  }
+  if (user.isUsAccreditedIndividual) {
+    return "U.S. Accredited Individual";
+  }
+  if (user.isUsNonAccreditedIndividual) {
+    return "U.S. Non-Accredited Individual";
+  }
+  if (user.isNonUsIndividual) {
+    return "Non-U.S. Individual";
   }
 }
 
