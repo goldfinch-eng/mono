@@ -23,6 +23,8 @@ import {
   getCreditLineStatus,
 } from "@/pages/borrow/helpers";
 
+import { CreditLineProgressBar } from "./credit-status-progress-bar";
+
 gql`
   query PoolCreditLinePage($tranchedPoolId: ID!) {
     tranchedPool(id: $tranchedPoolId) {
@@ -112,6 +114,19 @@ export default function PoolCreditLinePage({
 
   let nextPaymentLabel;
   let creditLineStatus;
+
+  // TODO remove
+  const balanceWithInterest = {
+    token: "USDC",
+    amount: BigNumber.from("0"),
+    // amount: BigNumber.from("5020550000"),
+  } as const;
+  const availableToDrawdown = {
+    token: "USDC",
+    amount: BigNumber.from("0"),
+    // amount: BigNumber.from("5000000000"),
+  } as const;
+
   if (tranchedPool && creditLine) {
     const currentInterestOwed = calculateInterestOwed({
       isLate: creditLine.isLate,
@@ -152,7 +167,7 @@ export default function PoolCreditLinePage({
 
   return (
     <div>
-      <Heading level={1} className="mb-12">
+      <Heading level={1} className="mb-12 break-words">
         {dealDetails.name}
       </Heading>
 
@@ -178,7 +193,7 @@ export default function PoolCreditLinePage({
       ) : error || !tranchedPool || !creditLine ? (
         <div className="text-2xl">Unable to load credit line</div>
       ) : (
-        <div className="flex max-w-5xl flex-col">
+        <div className="flex flex-col">
           <div className="mb-10 grid grid-cols-2 rounded-xl bg-sand-100">
             <div className="border-r-2 border-sand-200 p-8">
               <div className="mb-1 text-lg">Available to borrow</div>
@@ -189,7 +204,7 @@ export default function PoolCreditLinePage({
                 size="xl"
                 iconSize="lg"
                 iconLeft="ArrowDown"
-                colorScheme="twilight"
+                colorScheme="mustard"
               >
                 Borrow
               </Button>
@@ -220,13 +235,14 @@ export default function PoolCreditLinePage({
               </div>
 
               {/* Progress Bar */}
-              <div className="mb-3 grid h-3.5 w-full grid-cols-2">
-                <div className="h-3.5 rounded-tl rounded-bl bg-eggplant-700"></div>
-                <div className="h-3.5 rounded-tr rounded-br bg-twilight-700"></div>
-              </div>
+              <CreditLineProgressBar
+                className="h-3.5"
+                balanceWithInterest={balanceWithInterest}
+                availableToDrawDown={availableToDrawdown}
+              />
 
               {/* $ Available & $ Drawdown */}
-              <div className="mb-8 grid grid-cols-2">
+              <div className="mt-3 grid grid-cols-2">
                 <div>
                   <div className="text-2xl">$5,000.00</div>
                   <div className="text-lg">Available to borrow</div>
@@ -238,12 +254,17 @@ export default function PoolCreditLinePage({
               </div>
 
               {/* Full Balance repayment due: */}
-              <div className="flex items-center">
-                <Icon name="Clock" className="mr-2" />
-                <div className="text-lg">
-                  Full balance repayment due Mar 3, 2024
+              {creditLineStatus !== CreditLineStatus.InActive && (
+                <div className="mt-8 flex items-center">
+                  <Icon name="Clock" className="mr-2" />
+                  <div className="text-lg">
+                    {`Full balance repayment due ${formatDate(
+                      creditLine.termEndTime.toNumber() * 1000,
+                      "MMM d, yyyy"
+                    )}`}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Part 2 */}
