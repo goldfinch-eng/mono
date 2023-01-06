@@ -7,6 +7,7 @@ type Event = {
     tranchedPoolAddress: string;
     usdAmount: number;
   };
+  WALLET_CONNECTED: { account: string };
 };
 
 export function dataLayerPush<T extends keyof Event>(

@@ -4,6 +4,7 @@ import { MetaMask } from "@web3-react/metamask";
 import { WalletConnect } from "@web3-react/walletconnect";
 import { useEffect } from "react";
 
+import { dataLayerPush } from "@/lib/analytics";
 import { useWallet, connectEagerly } from "@/lib/wallet";
 
 /**
@@ -19,6 +20,7 @@ export function AppLevelSideEffects() {
   useEffect(() => {
     if (account) {
       Sentry.setUser({ id: account });
+      dataLayerPush("WALLET_CONNECTED", { account });
     }
   }, [account]);
 
