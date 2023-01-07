@@ -32,6 +32,7 @@ import {TranchedPoolBuilder} from "../helpers/TranchedPoolBuilder.t.sol";
 import {TranchedPoolImplementationRepository} from "../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
 import {WithdrawalRequestToken} from "../../protocol/core/WithdrawalRequestToken.sol";
+import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 contract SeniorPoolBaseTest is BaseTest {
   using ConfigHelper for GoldfinchConfig;
@@ -99,7 +100,16 @@ contract SeniorPoolBaseTest is BaseTest {
 
     CreditLine clImpl = new CreditLine();
 
-    tpBuilder = new TranchedPoolBuilder(gfFactory, sp);
+    // MonthlyScheduleRepository setup
+    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(monthlyScheduleRepo)
+    );
+    fuzzHelper.exclude(address(monthlyScheduleRepo));
+    fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
+
+    tpBuilder = new TranchedPoolBuilder(gfFactory, sp, monthlyScheduleRepo);
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
 
     // PoolTokens setup
@@ -179,7 +189,6 @@ contract SeniorPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(tp.creditLine()));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    fuzzHelper.exclude(address(Schedule(address(schedule)).periodMapper()));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));
     return (tp, cl);
   }

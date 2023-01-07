@@ -11,7 +11,6 @@ import {
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
-  ContractDeployer,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_GOVERNANCE_MULTISIG,
@@ -118,8 +117,6 @@ import {
   BorrowerCreated,
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
-import {deploySchedule} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deploySchedule"
-import {getDeploymentFor} from "../util/fixtures"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -214,11 +211,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
-  // TODO(dalton) deploy this in a migration script
-  const deployer = new ContractDeployer(console.log, hre)
-  await deploySchedule(deployer)
-  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
-
   return {
     poolTokens,
     seniorPool,
@@ -242,7 +234,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     ethersUniqueIdentity,
     signer,
     network,
-    schedule,
   }
 })
 
@@ -331,7 +322,6 @@ describe("mainnet forking tests", async function () {
       uniqueIdentity,
       poolTokens,
       requestTokens,
-      schedule,
     } = await setupTest())
     reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
@@ -639,9 +629,7 @@ describe("mainnet forking tests", async function () {
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
         usdc,
       }))
-      console.log("Created tranched pool")
       await initializeTranchedPool(tranchedPool, bwrCon)
-      console.log("Initialized tranched pool")
     })
 
     it("should let you drawdown to tether", async function () {

@@ -22,6 +22,7 @@ import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
@@ -103,11 +104,6 @@ contract TranchedPoolBaseTest is BaseTest {
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
     fuzzHelper.exclude(address(uid));
 
-    poolBuilder = new TranchedPoolBuilder(gfFactory, seniorPool);
-    fuzzHelper.exclude(address(poolBuilder));
-    // Allow the builder to create pools
-    gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
-
     // PoolTokens setup
     poolTokens = new PoolTokens();
     poolTokens.__initialize__(GF_OWNER, gfConfig);
@@ -145,6 +141,20 @@ contract TranchedPoolBaseTest is BaseTest {
     );
     fuzzHelper.exclude(address(creditLineImpl));
 
+    // MonthlyScheduleRepository setup
+    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(monthlyScheduleRepo)
+    );
+    fuzzHelper.exclude(address(monthlyScheduleRepo));
+    fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
+
+    poolBuilder = new TranchedPoolBuilder(gfFactory, seniorPool, monthlyScheduleRepo);
+    fuzzHelper.exclude(address(poolBuilder));
+    // Allow the builder to create pools
+    gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
+
     // Other config numbers
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 0.1%
     gfConfig.setNumber(
@@ -179,7 +189,6 @@ contract TranchedPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(cl));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    fuzzHelper.exclude(address(Schedule(address(schedule)).periodMapper()));
     pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
     return (pool, cl);
   }

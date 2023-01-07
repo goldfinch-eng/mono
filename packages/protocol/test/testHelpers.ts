@@ -47,8 +47,9 @@ import {
   TestGoldfinchConfigInstance,
   ScheduleInstance,
   TestTranchedPoolInstance,
+  MonthlyScheduleRepoInstance,
 } from "../typechain/truffle"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
@@ -65,6 +66,7 @@ import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/Tes
 import {getTranchedPoolImplName} from "../blockchain_scripts/baseDeploy/deployTranchedPool"
 import {getClContractName} from "../blockchain_scripts/baseDeploy/deployClImplementation"
 import {getDeploymentFor} from "./util/fixtures"
+import {CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -504,6 +506,17 @@ export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddres
   return {tranchedPool, creditLine}
 }
 
+const getDefaultMonthlySchedule = async (goldfinchConfig: GoldfinchConfigInstance) => {
+  const scheduleRepoAddress = await goldfinchConfig.getAddress(CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo)
+  const scheduleRepo = await getTruffleContractAtAddress<MonthlyScheduleRepoInstance>(
+    "MonthlyScheduleRepo",
+    scheduleRepoAddress
+  )
+  // Create a 1 year bullet loan
+  await scheduleRepo.createSchedule("12", "12", "1", "0")
+  return await scheduleRepo.getSchedule("12", "12", "1", "0")
+}
+
 const createPoolWithCreditLine = async ({
   people,
   usdc,
@@ -525,7 +538,6 @@ const createPoolWithCreditLine = async ({
   principalGracePeriodInDays?: Numberish
   fundableAt?: Numberish
   allowedUIDTypes?: Numberish[]
-  version?: string
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -538,40 +550,30 @@ const createPoolWithCreditLine = async ({
     throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
   }
 
-  // Set the credit line implementation to point to the correct version
   const goldfinchConfig = isMainnetForking()
     ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
     : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
 
-  console.log("fetched config")
-
   const creditLineContractName = getClContractName()
   const creditLineDeployment = await deployments.get(creditLineContractName)
-  console.log("setting credit line impl to " + creditLineContractName)
   await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
-  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
-  console.log("got schedule")
+  const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
 
   let result: $TSFixMe
   if (isMainnetForking()) {
-    console.log("IN MAINET FORK!")
-    const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
-    console.log("creating pool")
     result = await goldfinchFactory.createPool(
       thisBorrower,
       juniorFeePercent,
       limit,
       interestApr,
-      schedule.address,
+      await getDefaultMonthlySchedule(goldfinchConfig),
       lateFeeApr,
       fundableAt,
       allowedUIDTypes,
       {from: thisOwner}
     )
-    console.log("created pool")
   } else {
-    const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
     const scheudle = await getDeploymentFor<ScheduleInstance>("Schedule")
     result = await goldfinchFactory.createPool(
       thisBorrower,

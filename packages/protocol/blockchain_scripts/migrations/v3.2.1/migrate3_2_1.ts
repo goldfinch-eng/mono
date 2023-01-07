@@ -1,6 +1,6 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import hre, {ethers} from "hardhat"
+import hre from "hardhat"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import {
   ContractDeployer,
@@ -10,8 +10,6 @@ import {
   populateTxAndLog,
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
-
-const CONTRACTS_TO_UPGRADE = ["GoldfinchConfig"]
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -24,9 +22,6 @@ export async function main() {
   const protocolOwner = await getProtocolOwner()
   const {gf_deployer} = await deployer.getNamedAccounts()
   assertNonNullable(gf_deployer)
-  const provider = ethers.getDefaultProvider()
-  const gasPrice = await provider.getGasPrice()
-  const gasPriceToUse = gasPrice.mul("12").div("10")
 
   const gfConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
 
@@ -38,7 +33,6 @@ export async function main() {
   // Deploy CreditLine and set CreditLine impl in the config
   const creditLine = await deployer.deploy("CreditLine", {
     from: gf_deployer,
-    gasPrice: gasPriceToUse,
     libraries: {
       Accountant: accountant.address,
     },
@@ -61,7 +55,6 @@ export async function main() {
   // going forward the impl will be stored in TranchedPoolImplementation repository
   const tranchedPool = await deployer.deploy("TranchedPool", {
     from: gf_deployer,
-    gasPrice: gasPriceToUse,
     libraries: {
       TranchingLogic: tranchingLogic.address,
     },
@@ -78,7 +71,6 @@ export async function main() {
   // Deploy the tranched pool implementation repository and add it to the config
   const tranchedPoolImplRepo = await deployer.deploy("TranchedPoolImplementationRepository", {
     from: gf_deployer,
-    gasPrice: gasPriceToUse,
     proxy: {
       owner: protocolOwner,
       execute: {
@@ -101,24 +93,24 @@ export async function main() {
     ],
   })
 
-  // Deploy the monthly period mapper
-  const monthlyPeriodMapper = await deployer.deploy("MonthlyPeriodMapper", {
+  // Deploy the Monthly Schedule repo
+  const monthlyScheduleRepo = await deployer.deploy("MonthlyScheduleRepo", {
     from: gf_deployer,
   })
   await deployEffects.add({
     deferred: [
       await populateTxAndLog(
         gfConfig.populateTransaction.setAddress(
-          CONFIG_KEYS_BY_TYPE.addresses.MonthlyPeriodMapper,
-          monthlyPeriodMapper.address
+          CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo,
+          monthlyScheduleRepo.address
         ),
-        `Populated tx to set the MonthlyPeriodMapper address to ${monthlyPeriodMapper.address}`
+        `Populated tx to set the MonthlyScheduleRepo address to ${monthlyScheduleRepo.address}`
       ),
     ],
   })
 
   const upgrader = new ContractUpgrader(deployer)
-  const upgradedContracts = await upgrader.upgrade({contracts: CONTRACTS_TO_UPGRADE})
+  const upgradedContracts = await upgrader.upgrade({contracts: ["GoldfinchConfig", "GoldfinchFactory"]})
 
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 

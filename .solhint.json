@@ -40,6 +40,9 @@
           "removeFromGoList": ["onlyGoListerRole"],
           "bulkRemoveFromGoList": ["onlyGoListerRole"]
         },
+        "**/MonthlyScheduleRepo.sol:MonthlyScheduleRepo": {
+          "createSchedule": []
+        },
         "**/GoldfinchFactory.sol:GoldfinchFactory": {
           "createCreditLine": [],
           "createBorrower": [],

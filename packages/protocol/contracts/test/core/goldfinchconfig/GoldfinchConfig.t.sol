@@ -127,7 +127,7 @@ contract GoldfinchConfigTest is GoldfinchConfigBaseTest {
       0x000000000000000000000000000000000000000A
     );
     assertEq(
-      gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyPeriodMapper)),
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo)),
       0x000000000000000000000000000000000000000b
     );
   }
@@ -184,7 +184,7 @@ contract GoldfinchConfigTest is GoldfinchConfigBaseTest {
       address(9)
     );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.WithdrawalRequestToken), address(10));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.MonthlyPeriodMapper), address(11));
+    gfConfig.setAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo), address(11));
     gfConfig.setTreasuryReserve(0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5);
   }
 }

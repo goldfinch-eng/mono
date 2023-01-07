@@ -39,7 +39,7 @@ const CONFIG_KEYS_BY_TYPE = {
     FiduUSDCCurveLP: 22,
     TranchedPoolImplementationRepository: 23,
     WithdrawalRequestToken: 24,
-    MonthlyPeriodMapper: 25,
+    MonthlyScheduleRepo: 25,
   },
 }
 

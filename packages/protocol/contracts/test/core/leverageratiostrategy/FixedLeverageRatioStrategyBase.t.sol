@@ -21,6 +21,7 @@ import {Go} from "../../../protocol/core/Go.sol";
 import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {BackerRewards} from "../../../rewards/BackerRewards.sol";
+import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 contract FixedLeverageRatioStrategyBaseTest is BaseTest {
   GoldfinchConfig internal gfConfig;
@@ -60,7 +61,16 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
 
     CreditLine clImpl = new CreditLine();
 
-    tpBuilder = new TranchedPoolBuilder(gfFactory, sp);
+    // MonthlyScheduleRepository setup
+    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(monthlyScheduleRepo)
+    );
+    fuzzHelper.exclude(address(monthlyScheduleRepo));
+    fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
+
+    tpBuilder = new TranchedPoolBuilder(gfFactory, sp, monthlyScheduleRepo);
     // Allows the builder to create pools
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder));
 

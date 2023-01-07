@@ -7,8 +7,7 @@ import {CreditLine} from "../../protocol/core/CreditLine.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {MonthlyPeriodMapper} from "../../protocol/core/schedule/MonthlyPeriodMapper.sol";
-import {Schedule} from "../../protocol/core/schedule/Schedule.sol";
+import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
 import {TestTranchedPool} from "../TestTranchedPool.sol";
@@ -21,6 +20,7 @@ contract TranchedPoolBuilder {
 
   GoldfinchFactory private gfFactory;
   SeniorPool private seniorPool;
+  MonthlyScheduleRepo private monthlyScheduleRepo;
   uint256 private juniorFeePercent;
   uint256 private maxLimit;
   uint256 private apr;
@@ -28,9 +28,14 @@ contract TranchedPoolBuilder {
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
-  constructor(GoldfinchFactory _gfFactory, SeniorPool _seniorPool) public {
+  constructor(
+    GoldfinchFactory _gfFactory,
+    SeniorPool _seniorPool,
+    MonthlyScheduleRepo _monthlyScheduleRepo
+  ) public {
     gfFactory = _gfFactory;
     seniorPool = _seniorPool;
+    monthlyScheduleRepo = _monthlyScheduleRepo;
     juniorFeePercent = DEFAULT_JUNIOR_FEE_PERCENT;
     maxLimit = DEFAULT_MAX_LIMIT;
     apr = DEFAULT_APR;
@@ -40,27 +45,11 @@ contract TranchedPoolBuilder {
 
   function defaultSchedule() public returns (ISchedule) {
     return
-      createMonthlySchedule({
+      monthlyScheduleRepo.createSchedule({
         periodsInTerm: 12,
         periodsPerInterestPeriod: 1,
         periodsPerPrincipalPeriod: 12,
         gracePrincipalPeriods: 0
-      });
-  }
-
-  function createMonthlySchedule(
-    uint periodsInTerm,
-    uint periodsPerPrincipalPeriod,
-    uint periodsPerInterestPeriod,
-    uint gracePrincipalPeriods
-  ) public returns (ISchedule) {
-    return
-      new Schedule({
-        _periodMapper: new MonthlyPeriodMapper(),
-        _periodsInTerm: periodsInTerm,
-        _periodsPerInterestPeriod: periodsPerInterestPeriod,
-        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
-        _gracePrincipalPeriods: gracePrincipalPeriods
       });
   }
 

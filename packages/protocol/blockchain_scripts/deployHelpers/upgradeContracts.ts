@@ -87,7 +87,7 @@ export async function upgradeContracts({
     assertNonNullable(contract)
 
     let contractToDeploy = contractName
-    if (isTestEnv() && ["GoldfinchConfig"].includes(contractName)) {
+    if (!isMainnetForking() && isTestEnv() && ["GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
     }
 

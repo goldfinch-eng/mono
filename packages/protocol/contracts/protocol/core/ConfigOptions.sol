@@ -57,7 +57,6 @@ library ConfigOptions {
     FiduUSDCCurveLP,
     TranchedPoolImplementationRepository,
     WithdrawalRequestToken,
-    // A mapper that maps payment periods to calendar months
-    MonthlyPeriodMapper
+    MonthlyScheduleRepo
   }
 }
