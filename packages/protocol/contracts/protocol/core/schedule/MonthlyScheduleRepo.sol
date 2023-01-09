@@ -80,6 +80,7 @@ contract MonthlyScheduleRepo {
     uint256 periodsPerInterestPeriod,
     uint256 gracePrincipalPeriods
   ) private pure returns (bytes32) {
+    // Right pad with 0 params so we have the option to add new parameters in the future
     // Use encode instead of encodePacked because non-padded concatenation can lead to
     // non-unique ids
     bytes memory concattedParams = abi.encode(
