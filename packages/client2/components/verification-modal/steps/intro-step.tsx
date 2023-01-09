@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useWizard } from "react-use-wizard";
 
 import { Button } from "@/components/design-system";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 
 import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
@@ -13,7 +13,7 @@ export function IntroStep() {
   const { nextStep } = useWizard();
 
   useEffect(() => {
-    dataLayerPush("UID_FLOW_INITIATED");
+    dataLayerPushEvent("UID_FLOW_INITIATED");
   }, []);
 
   return (

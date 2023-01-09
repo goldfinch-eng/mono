@@ -7,22 +7,31 @@ type Event = {
     tranchedPoolAddress: string;
     usdAmount: number;
   };
+  WALLET_CONNECTED: { account: string };
 };
 
-export function dataLayerPush<T extends keyof Event>(
+function getDataLayer() {
+  return (
+    (
+      window as unknown as {
+        dataLayer: Array<unknown>;
+      }
+    ).dataLayer ?? []
+  );
+}
+
+export function dataLayerPushEvent<T extends keyof Event>(
   ...[event, attributes]: Event[T] extends never
     ? [event: T]
     : [event: T, attributes: Event[T]]
 ): void {
-  const dataLayer = (
-    window as unknown as {
-      dataLayer: {
-        push: (attributes: Record<string, string | number>) => void;
-      };
-    }
-  ).dataLayer;
-  if (!dataLayer) {
-    return;
-  }
+  const dataLayer = getDataLayer();
   dataLayer.push({ event, ...attributes });
+}
+
+export function dataLayerPushAttributes(
+  attributes: Record<string, string | number>
+) {
+  const dataLayer = getDataLayer();
+  dataLayer.push(attributes);
 }
