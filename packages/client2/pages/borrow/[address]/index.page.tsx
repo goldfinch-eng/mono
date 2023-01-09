@@ -266,10 +266,7 @@ export default function PoolCreditLinePage({
                 disabled={
                   tranchedPool.isPaused ||
                   tranchedPool.drawdownsPaused ||
-                  // !isPoolLocked({
-                  //   lockedUntil: juniorTranche?.lockedUntil,
-                  //   currentBlockTimestamp: data.currentBlock.timestamp,
-                  // }) ||
+                  juniorTranche?.lockedUntil.isZero() ||
                   availableForDrawdown.lte(BigNumber.from(0))
                 }
               >
