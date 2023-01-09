@@ -5,7 +5,7 @@ import { MetaMask } from "@web3-react/metamask";
 import { WalletConnect } from "@web3-react/walletconnect";
 import { useEffect } from "react";
 
-import { dataLayerPushEvent, dataLayerPushAttributes } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { useUserUidForAnalyticsQuery } from "@/lib/graphql/generated";
 import { getUIDLabelFromGql } from "@/lib/verify";
 import { useWallet, connectEagerly } from "@/lib/wallet";
@@ -51,7 +51,7 @@ export function AppLevelSideEffects() {
       if (!uidLabel) {
         return;
       }
-      dataLayerPushAttributes({ userUid: uidLabel });
+      dataLayerPushEvent("UID_LOADED", { uidType: uidLabel });
     }
   }, [data]);
 
