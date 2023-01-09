@@ -26,6 +26,18 @@ export async function main() {
 
   const gfConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
 
+  const borrowerImpl = await deployer.deploy("Borrower", {
+    from: gf_deployer,
+  })
+  await deployEffects.add({
+    deferred: [
+      await populateTxAndLog(
+        gfConfig.populateTransaction.setBorrowerImplementation(borrowerImpl.address),
+        `Populated tx to set CreditLine impl to ${borrowerImpl.address}`
+      ),
+    ],
+  })
+
   // Deploy Accountant
   const accountant = await deployer.deployLibrary("Accountant", {
     from: gf_deployer,

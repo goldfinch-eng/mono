@@ -624,7 +624,6 @@ describe("mainnet forking tests", async function () {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
-      console.log("Created borrower con")
       ;({tranchedPool} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
         usdc,
@@ -754,7 +753,7 @@ describe("mainnet forking tests", async function () {
 
   describe("paying back via another currency", async function () {
     let bwrCon, cl, oneSplit
-    const amount = usdcVal(100)
+    const amount = usdcVal(1)
     beforeEach(async function () {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
@@ -769,38 +768,35 @@ describe("mainnet forking tests", async function () {
     })
 
     it("should allow you to pay with another currency", async () => {
-      // USDT has the same decimals as USDC, so USDC val is fine here.
-      const rawAmount = 10
-      const usdtAmount = usdcVal(rawAmount)
-      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, usdtAmount, 10, 0, {
+      await advanceAndMineBlock({toSecond: await cl.nextDueTime()})
+      const interestOwed = await cl.interestOwed()
+      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, interestOwed, 10, 0, {
         from: bwr,
       })
+
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
           tranchedPool.address,
-          usdtAmount,
+          interestOwed,
           usdt.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
         )
       }).toChange([
-        [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
-        [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
-      ])
-      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => tranchedPool.assess()).toChange([
-        [async () => await cl.balance(), {decrease: true}],
-        [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
+        [async () => await getBalance(bwr, usdt), {by: interestOwed.neg()}],
+        [async () => await cl.interestOwed(), {toCloseTo: ZERO, threshold: HALF_CENT}],
       ])
     }).timeout(TEST_TIMEOUT)
 
     it("Works with BUSD", async () => {
-      const rawAmount = 10
+      const rawAmount = 1
       const busdAmount = bigVal(rawAmount)
       const expectedReturn = await oneSplit.getExpectedReturn(busd.address, usdc.address, busdAmount, 10, 0, {
         from: bwr,
       })
+      await advanceAndMineBlock({toSecond: await cl.nextDueTime()})
+      const interestOwed = await cl.interestOwed()
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
           tranchedPool.address,
@@ -812,18 +808,16 @@ describe("mainnet forking tests", async function () {
         )
       }).toChange([
         [async () => await getBalance(bwr, busd), {by: busdAmount.neg()}],
-        [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
-      ])
-      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
-        [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
+        // It was an excess payment so we expect the interest to be fully cleared
+        // (or decreased by the total interestOwed)
+        [async () => await cl.interestOwed(), {byCloseTo: interestOwed.neg()}],
       ])
     }).timeout(TEST_TIMEOUT)
 
     describe("payMultipleWithSwapOnOneInch", async () => {
       let tranchedPool2, cl2
-      const amount2 = usdcVal(50)
+      const amount2 = usdcVal(2)
 
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
@@ -840,16 +834,12 @@ describe("mainnet forking tests", async function () {
       })
 
       it("should pay back multiple loans", async () => {
-        const padding = usdcVal(50)
+        await advanceAndMineBlock({toSecond: (await cl.nextDueTime()).add(new BN(1))})
+        const padding = usdcVal(1)
         const originAmount = amount.add(amount2).add(padding)
         const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, originAmount, 10, 0, {
           from: bwr,
         })
-        const totalMinAmount = amount.add(amount2)
-        const expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
-
-        await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-        await tranchedPool.assess()
 
         await expectAction(() =>
           bwrCon.payMultipleWithSwapOnOneInch(
@@ -862,14 +852,15 @@ describe("mainnet forking tests", async function () {
           )
         ).toChange([
           // CreditLine should be paid down by `amount`
-          [async () => (await cl.balance()).add(await cl.interestOwed()), {by: amount.neg()}],
+          [async () => await cl.interestOwed(), {to: ZERO}],
+          [async () => await cl2.interestOwed(), {to: ZERO}],
           // Excess USDC from swap should be added to the first CreditLine's contract balance
           // rather than applied as payment
-          [() => getBalance(cl.address, usdc), {byCloseTo: expectedExtra}],
-          [() => getBalance(cl2.address, usdc), {by: amount2}],
           [() => getBalance(bwr, usdt), {by: originAmount.neg()}],
+          // Borrower con's usdc balance should increase because the excess usdt payment was converted
+          // to an excess usdc payment and the usdc sits in the borrower contract.
+          [() => getBalance(bwrCon.address, usdc), {increase: true}],
         ])
-        expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
         expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
       }).timeout(TEST_TIMEOUT)
     })
