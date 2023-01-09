@@ -56,6 +56,7 @@ import {
   protocolFee,
   usdcFromShares,
   getCurrentTimestamp,
+  getDefaultMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -74,7 +75,6 @@ import {
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
   PoolTokensInstance,
-  ScheduleInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
   TranchedPoolInstance,
@@ -268,8 +268,7 @@ describe("mainnet forking tests", async function () {
     ethersUniqueIdentity: UniqueIdentity,
     signer: Signer,
     network,
-    poolTokens: PoolTokensInstance,
-    schedule: ScheduleInstance
+    poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -865,7 +864,7 @@ describe("mainnet forking tests", async function () {
         "20",
         limit.toString(),
         "100000000000000000",
-        schedule.address,
+        await getDefaultMonthlySchedule(goldfinchConfig),
         "0",
         "0",
         ["0"],

@@ -29,4 +29,6 @@ export async function deployMonthlyScheduleRepo(
       ),
     ],
   })
+
+  return monthlyScheduleRepo
 }
