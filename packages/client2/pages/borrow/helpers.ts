@@ -1,5 +1,6 @@
 import { BigNumber } from "ethers";
 
+import { FIDU_DECIMALS } from "@/constants";
 import { roundUpToPrecision } from "@/lib/format";
 
 /**
@@ -43,6 +44,30 @@ export function calculateInterestOwed({
 }
 
 /**
+ * Calculates the amount owed for the current period
+ *
+ */
+export function calculateNextDueAmount({
+  currentInterestOwed,
+  nextDueTime,
+  termEndTime,
+  balance,
+}: {
+  currentInterestOwed: BigNumber;
+  nextDueTime: BigNumber;
+  termEndTime: BigNumber;
+  balance: BigNumber;
+}): BigNumber {
+  // If we are on our last period of the term, then it's interestOwed + principal
+  // This is a bullet loan, so full principal is paid only at the end of the credit line term
+  if (nextDueTime.gte(termEndTime)) {
+    return currentInterestOwed.add(balance);
+  } else {
+    return currentInterestOwed;
+  }
+}
+
+/**
  * Calculates the remaining amount owed for the period on the credit line, considering payments made so far.
  *
  */
@@ -59,16 +84,15 @@ export function calculateRemainingPeriodDueAmount({
   balance: BigNumber;
   currentInterestOwed: BigNumber;
 }): BigNumber {
-  // If we are on our last period of the term, then it's interestOwed + principal
-  // This is a bullet loan, so full principal is paid only at the end of the credit line term
-  if (nextDueTime.gte(termEndTime)) {
-    currentInterestOwed = currentInterestOwed.add(balance);
-  }
+  const nextDueAmount = calculateNextDueAmount({
+    currentInterestOwed,
+    nextDueTime,
+    termEndTime,
+    balance,
+  });
 
   // collectedPaymentBalance is the amount that's been paid so far for the period
-  const remainingPeriodDueAmount = currentInterestOwed.sub(
-    collectedPaymentBalance
-  );
+  const remainingPeriodDueAmount = nextDueAmount.sub(collectedPaymentBalance);
   if (remainingPeriodDueAmount.lte(0)) {
     return BigNumber.from(0);
   }
@@ -79,7 +103,7 @@ export function calculateRemainingPeriodDueAmount({
 }
 
 /**
- * Calculates the total remaining amount owed for the term on credit line
+ * Calculates the total remaining amount owed for the term on credit line, considering payments made so far.
  *
  */
 export function calculateRemainingTotalDueAmount({
@@ -110,7 +134,7 @@ export enum CreditLineStatus {
   InActive,
 }
 
-export const getCreditLineStatus = ({
+export function getCreditLineStatus({
   isLate,
   remainingPeriodDueAmount,
   limit,
@@ -120,7 +144,7 @@ export const getCreditLineStatus = ({
   remainingPeriodDueAmount: BigNumber;
   limit: BigNumber;
   remainingTotalDueAmount: BigNumber;
-}) => {
+}) {
   // Is Late
   if (isLate) {
     return CreditLineStatus.PaymentLate;
@@ -137,4 +161,56 @@ export const getCreditLineStatus = ({
   }
 
   return CreditLineStatus.InActive;
-};
+}
+
+/**
+ * Calculates the available credit available for drawdown on a credit line
+ *
+ */
+export function calculateAvailableCredit({
+  collectedPaymentBalance,
+  currentInterestOwed,
+  nextDueTime,
+  termEndTime,
+  limit,
+  balance,
+}: {
+  collectedPaymentBalance: BigNumber;
+  currentInterestOwed: BigNumber;
+  nextDueTime: BigNumber;
+  termEndTime: BigNumber;
+  limit: BigNumber;
+  balance: BigNumber;
+}): BigNumber {
+  const periodDueAmount = calculateNextDueAmount({
+    currentInterestOwed,
+    nextDueTime,
+    termEndTime,
+    balance,
+  });
+
+  // The amount collected for principal is any amount contributed that exceeds the current period due amount
+  let collectedForPrincipal = collectedPaymentBalance.sub(periodDueAmount);
+  if (collectedForPrincipal.lt(BigNumber.from(0))) {
+    collectedForPrincipal = BigNumber.from(0);
+  }
+
+  // Available credit is the lesser of the two:
+  //  - The limit of the credit line (nothing borrowed yet or fully paid off)
+  //  - The limit minus the outstanding principal balance, plus any amount collected for principal
+  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
+  if (availableCredit.lt(limit)) {
+    return availableCredit;
+  }
+  return limit;
+}
+
+// TODO Zadra reuse an existing fn for this?
+export function trancheSharesToUsdc(
+  numShares: BigNumber,
+  sharePrice: BigNumber
+): BigNumber {
+  const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
+
+  return numShares.mul(sharePrice).div(fiduMantissa);
+}

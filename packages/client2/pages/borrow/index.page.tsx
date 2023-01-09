@@ -117,7 +117,7 @@ export default function BorrowPage({
         level={4}
         className="mb-10 !font-serif !text-[2.5rem] !font-bold"
       >
-        Credit Line
+        Credit Lines
       </Heading>
 
       {!account && !isActivating ? (

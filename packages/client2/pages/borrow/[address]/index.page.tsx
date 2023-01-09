@@ -12,15 +12,18 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
+import { isPoolLocked } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
+  calculateAvailableCredit,
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
   calculateRemainingTotalDueAmount,
   CreditLineStatus,
   getCreditLineStatus,
+  trancheSharesToUsdc,
 } from "@/pages/borrow/helpers";
 
 import { CreditLineProgressBar } from "./credit-status-progress-bar";
@@ -29,6 +32,8 @@ gql`
   query PoolCreditLinePage($tranchedPoolId: ID!) {
     tranchedPool(id: $tranchedPoolId) {
       id
+      isPaused
+      drawdownsPaused
       creditLine {
         id
         balance
@@ -45,6 +50,20 @@ gql`
         isLate @client
         collectedPaymentBalance @client
       }
+      juniorTranches {
+        id
+        principalSharePrice
+        principalDeposited
+        lockedUntil
+      }
+      seniorTranches {
+        id
+        principalSharePrice
+        principalDeposited
+      }
+    }
+    currentBlock @client {
+      timestamp
     }
   }
 `;
@@ -111,23 +130,14 @@ export default function PoolCreditLinePage({
 
   const tranchedPool = data?.tranchedPool;
   const creditLine = tranchedPool?.creditLine;
+  const juniorTranche = tranchedPool?.juniorTranches?.[0];
+  const seniorTranche = tranchedPool?.seniorTranches?.[0];
 
   let nextPaymentLabel;
   let creditLineStatus;
-
-  // TODO remove
-  const balanceWithInterest = {
-    token: "USDC",
-    amount: BigNumber.from("0"),
-    // amount: BigNumber.from("5020550000"),
-  } as const;
-  const availableToDrawdown = {
-    token: "USDC",
-    amount: BigNumber.from("0"),
-    // amount: BigNumber.from("5000000000"),
-  } as const;
-
-  if (tranchedPool && creditLine) {
+  let remainingTotalDueAmount = BigNumber.from(0);
+  let availableForDrawdown = BigNumber.from(0);
+  if (tranchedPool && creditLine && juniorTranche && seniorTranche) {
     const currentInterestOwed = calculateInterestOwed({
       isLate: creditLine.isLate,
       interestOwed: creditLine.interestOwed,
@@ -145,7 +155,7 @@ export default function PoolCreditLinePage({
       currentInterestOwed,
     });
 
-    const remainingTotalDueAmount = calculateRemainingTotalDueAmount({
+    remainingTotalDueAmount = calculateRemainingTotalDueAmount({
       collectedPaymentBalance: creditLine.collectedPaymentBalance,
       balance: creditLine.balance,
       currentInterestOwed,
@@ -163,6 +173,45 @@ export default function PoolCreditLinePage({
       remainingPeriodDueAmount,
       nextDueTime: creditLine.nextDueTime,
     });
+
+    const juniorTrancheAmount = trancheSharesToUsdc(
+      juniorTranche.principalDeposited,
+      juniorTranche.principalSharePrice
+    );
+    const seniorTrancheAmount = trancheSharesToUsdc(
+      seniorTranche.principalDeposited,
+      seniorTranche.principalSharePrice
+    );
+    const poolAmountAvailableForDrawdown =
+      juniorTrancheAmount.add(seniorTrancheAmount);
+
+    const creditLineAmountAvailableForDrawdown = calculateAvailableCredit({
+      collectedPaymentBalance: creditLine.collectedPaymentBalance,
+      currentInterestOwed,
+      nextDueTime: creditLine.nextDueTime,
+      termEndTime: creditLine.termEndTime,
+      limit: creditLine.limit,
+      balance: creditLine.balance,
+    });
+
+    // TODO Zadra JSDocs
+    // The borrower is limited by the amount of funds that is actually available right now in the TranchedPool
+    // contract that could be additionally drawndown.
+    // How could that amount differ from `creditLine.availableCredit`?
+    // Consider the state where the Senior Pool
+    // has not yet invested in the senior tranche: (assuming a typical case) the amount of funds in the
+    // pool is going to be much less than what the limit is meant to accommodate, namely the impending additional
+    // investment by the Senior Pool according to the leverage ratio into the senior tranche.
+    //
+    // So the amount we feature in the UI as what the borrower could borrow right now is
+    // going to be the lesser of these two things.
+    if (
+      creditLineAmountAvailableForDrawdown.lt(poolAmountAvailableForDrawdown)
+    ) {
+      availableForDrawdown = creditLineAmountAvailableForDrawdown;
+    } else {
+      availableForDrawdown = poolAmountAvailableForDrawdown;
+    }
   }
 
   return (
@@ -176,7 +225,7 @@ export default function PoolCreditLinePage({
         level={4}
         className="mb-10 !font-serif !text-[2.5rem] !font-bold"
       >
-        {dealDetails.category}
+        Credit Line
       </Heading>
 
       {!account && !isActivating ? (
@@ -197,7 +246,12 @@ export default function PoolCreditLinePage({
           <div className="mb-10 grid grid-cols-2 rounded-xl bg-sand-100">
             <div className="border-r-2 border-sand-200 p-8">
               <div className="mb-1 text-lg">Available to borrow</div>
-              <div className="mb-5 text-2xl">$5,000.00</div>
+              <div className="mb-5 text-2xl">
+                {formatCrypto({
+                  amount: availableForDrawdown,
+                  token: "USDC",
+                })}
+              </div>
               <Button
                 as="button"
                 className="w-full text-xl"
@@ -205,6 +259,15 @@ export default function PoolCreditLinePage({
                 iconSize="lg"
                 iconLeft="ArrowDown"
                 colorScheme="mustard"
+                disabled={
+                  tranchedPool.isPaused ||
+                  tranchedPool.drawdownsPaused ||
+                  isPoolLocked({
+                    lockedUntil: juniorTranche?.lockedUntil,
+                    currentBlockTimestamp: data.currentBlock.timestamp,
+                  }) ||
+                  availableForDrawdown.lte(BigNumber.from(0))
+                }
               >
                 Borrow
               </Button>
@@ -227,33 +290,52 @@ export default function PoolCreditLinePage({
           </div>
 
           <div className="rounded-xl bg-sand-100">
-            {/* Part 1 */}
             <div className="border-b-2 border-sand-200 p-8">
-              {/* Credit Status */}
-              <div className="grid grid-cols-2">
-                <div className="mb-5 text-2xl">Credit Status</div>
+              <div className="mb-5 grid grid-cols-2">
+                <div className="text-2xl">Credit Status</div>
+                <Button
+                  colorScheme="secondary"
+                  iconRight="ArrowTopRight"
+                  as="a"
+                  href={`https://etherscan.io/address/${tranchedPool.id}`}
+                  target="_blank"
+                  rel="noopener"
+                  size="sm"
+                  className="w-fit justify-self-end"
+                ></Button>
               </div>
 
-              {/* Progress Bar */}
               <CreditLineProgressBar
                 className="h-3.5"
-                balanceWithInterest={balanceWithInterest}
-                availableToDrawDown={availableToDrawdown}
+                balanceWithInterest={remainingTotalDueAmount}
+                availableToDrawDown={availableForDrawdown}
               />
 
-              {/* $ Available & $ Drawdown */}
               <div className="mt-3 grid grid-cols-2">
                 <div>
-                  <div className="text-2xl">$5,000.00</div>
-                  <div className="text-lg">Available to borrow</div>
+                  <div className="text-2xl text-eggplant-700">
+                    {formatCrypto({
+                      amount: remainingTotalDueAmount,
+                      token: "USDC",
+                    })}
+                  </div>
+                  <div className="text-lg text-eggplant-600">
+                    Balance plus interest
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl">$5,000.00</div>
-                  <div className="text-lg">Available to drawdown</div>
+                  <div className="text-2xl text-mustard-700">
+                    {formatCrypto({
+                      amount: availableForDrawdown,
+                      token: "USDC",
+                    })}
+                  </div>
+                  <div className="text-lg text-mustard-600">
+                    Available to drawdown
+                  </div>
                 </div>
               </div>
 
-              {/* Full Balance repayment due: */}
               {creditLineStatus !== CreditLineStatus.InActive && (
                 <div className="mt-8 flex items-center">
                   <Icon name="Clock" className="mr-2" />
@@ -267,7 +349,6 @@ export default function PoolCreditLinePage({
               )}
             </div>
 
-            {/* Part 2 */}
             <div className="p-8">
               <div className="grid grid-cols-3 gap-y-8">
                 <div>

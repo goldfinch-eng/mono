@@ -1,11 +1,12 @@
 import clsx from "clsx";
+import { BigNumber } from "ethers";
 
 import { cryptoToFloat } from "@/lib/format";
 
 interface CreditLineProgressBarProps {
   className?: string;
-  balanceWithInterest: CryptoAmount;
-  availableToDrawDown: CryptoAmount;
+  balanceWithInterest: BigNumber;
+  availableToDrawDown: BigNumber;
 }
 
 export function CreditLineProgressBar({
@@ -13,14 +14,22 @@ export function CreditLineProgressBar({
   balanceWithInterest,
   availableToDrawDown,
 }: CreditLineProgressBarProps) {
-  const balanceWithInterestFloat = cryptoToFloat(balanceWithInterest);
-  const availableToDrawdownFloat = cryptoToFloat(availableToDrawDown);
+  const balanceWithInterestFloat = cryptoToFloat({
+    amount: balanceWithInterest,
+    token: "USDC",
+  });
+  const availableToDrawdownFloat = cryptoToFloat({
+    amount: availableToDrawDown,
+    token: "USDC",
+  });
+  const progressBarSum = cryptoToFloat({
+    amount: balanceWithInterest.add(availableToDrawDown),
+    token: "USDC",
+  });
 
   if (balanceWithInterestFloat <= 0 && availableToDrawdownFloat <= 0) {
     return null;
   }
-
-  const progressBarSum = balanceWithInterestFloat + availableToDrawdownFloat;
 
   let balanceWithInterestBarStyle = "";
   let availableToDrawdownStyle = "";

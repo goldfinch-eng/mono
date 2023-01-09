@@ -2,15 +2,19 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
-import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { API_BASE_URL } from "@/constants";
 import {
-  TranchedPoolStatusFieldsFragment,
-  UserEligibilityFieldsFragment,
-  UidType,
-  TransactionCategory,
-  StakedPositionType,
+  API_BASE_URL,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+} from "@/constants";
+import {
   SeniorPoolStakedPosition,
+  StakedPositionType,
+  TranchedPoolStatusFieldsFragment,
+  TransactionCategory,
+  UidType,
+  UserEligibilityFieldsFragment,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
@@ -71,6 +75,21 @@ export function getTranchedPoolStatus(
   } else {
     return PoolStatus.Open;
   }
+}
+
+// TODO Zadra JSDocs
+export function isPoolLocked({
+  lockedUntil,
+  currentBlockTimestamp,
+}: {
+  lockedUntil: BigNumber | undefined;
+  currentBlockTimestamp: number;
+}): boolean {
+  return (
+    !!lockedUntil &&
+    !lockedUntil.isZero() &&
+    BigNumber.from(currentBlockTimestamp ?? 0).gt(lockedUntil)
+  );
 }
 
 export function computeApyFromGfiInFiat(
