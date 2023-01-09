@@ -45,7 +45,6 @@ import {
   MembershipCollectorInstance,
   ERC20SplitterInstance,
   TestGoldfinchConfigInstance,
-  ScheduleInstance,
   TestTranchedPoolInstance,
   MonthlyScheduleRepoInstance,
 } from "../typechain/truffle"
@@ -331,7 +330,6 @@ async function deployAllContracts(
   withdrawalRequestToken: WithdrawalRequestTokenInstance
   reserveSplitter: ERC20SplitterInstance
   membershipCollector: MembershipCollectorInstance
-  schedule: ScheduleInstance
 }> {
   await deployments.fixture("baseDeploy")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
@@ -401,8 +399,6 @@ async function deployAllContracts(
 
   const withdrawalRequestToken = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
 
-  const schedule = await getTruffleContract<ScheduleInstance>("Schedule")
-
   return {
     seniorPool,
     seniorPoolCaller,
@@ -426,7 +422,6 @@ async function deployAllContracts(
     reserveSplitter,
     membershipCollector,
     withdrawalRequestToken,
-    schedule,
   }
 }
 
@@ -559,6 +554,7 @@ const createPoolWithCreditLine = async ({
   await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
   const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
+  const scheduleAddress = await getDefaultMonthlySchedule(goldfinchConfig)
 
   let result: $TSFixMe
   if (isMainnetForking()) {
@@ -567,20 +563,19 @@ const createPoolWithCreditLine = async ({
       juniorFeePercent,
       limit,
       interestApr,
-      await getDefaultMonthlySchedule(goldfinchConfig),
+      scheduleAddress,
       lateFeeApr,
       fundableAt,
       allowedUIDTypes,
       {from: thisOwner}
     )
   } else {
-    const scheudle = await getDeploymentFor<ScheduleInstance>("Schedule")
     result = await goldfinchFactory.createPool(
       thisBorrower,
       juniorFeePercent,
       limit,
       interestApr,
-      scheudle.address,
+      scheduleAddress,
       lateFeeApr,
       fundableAt,
       allowedUIDTypes,
@@ -834,4 +829,5 @@ export {
   toEthers,
   fundWithEthFromLocalWhale,
   setupBackerRewards,
+  getDefaultMonthlySchedule,
 }

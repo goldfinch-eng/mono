@@ -26,6 +26,7 @@ import {
   deployAllContracts,
   DeployAllContractsOptions,
   erc20Approve,
+  getDefaultMonthlySchedule,
   getDeployedAsTruffleContract,
   Numberish,
   usdcVal,
@@ -182,8 +183,6 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
       const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
         at: goldfinchFactoryDeployment.address,
       })
-      const scheduleDeployment = await deployments.get("Schedule")
-      const schedule = await getTruffleContract<ScheduleInstance>("Schedule", {at: scheduleDeployment.address})
 
       // Set the credit line implementation to point to the correct version
       const goldfinchConfig = await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
@@ -196,7 +195,7 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
         juniorFeePercent,
         limit,
         interestApr,
-        schedule.address,
+        await getDefaultMonthlySchedule(goldfinchConfig),
         lateFeeApr,
         fundableAt,
         allowedUIDTypes,

@@ -26,7 +26,7 @@ import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveL
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
 import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
-import {deploySchedule} from "./baseDeploy/deploySchedule"
+import {deployMonthlyScheduleRepo} from "./baseDeploy/deployMonthlyScheduleRepo"
 
 const logger: Logger = console.log
 
@@ -105,7 +105,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   console.log("Set legacy go list")
 
-  await deploySchedule(deployer)
+  await deployMonthlyScheduleRepo(deployer, deployEffects, config)
 
   await deployEffects.executeDeferred()
 }
