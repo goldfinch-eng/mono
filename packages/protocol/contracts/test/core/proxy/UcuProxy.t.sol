@@ -282,6 +282,7 @@ contract TestImplementationRepository is Test {
     address caller,
     address newOwner
   ) public impersonating(caller) {
+    vm.assume(caller != proxy.owner());
     vm.expectRevert(bytes("NA"));
     proxy.transferOwnership(newOwner);
   }
