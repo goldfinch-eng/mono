@@ -4,7 +4,6 @@ import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import { Button, Heading, Icon } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -13,7 +12,6 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
@@ -174,27 +172,7 @@ export default function PoolCreditLinePage({
       nextDueTime: creditLine.nextDueTime,
     });
 
-    const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
-    const juniorPrincipalDepositedAtomic = juniorTranche.principalDeposited
-      .mul(BigNumber.from(String(1e18)))
-      .div(usdcMantissa);
-    const seniorPrincipalDepositedAtomic = seniorTranche.principalDeposited
-      .mul(BigNumber.from(String(1e18)))
-      .div(usdcMantissa);
-
-    const juniorTrancheAmount = sharesToUsdc(
-      juniorPrincipalDepositedAtomic,
-      juniorTranche.principalSharePrice
-    ).amount;
-    const seniorTrancheAmount = sharesToUsdc(
-      seniorPrincipalDepositedAtomic,
-      seniorTranche.principalSharePrice
-    ).amount;
-
-    const poolAmountAvailableForDrawdown =
-      juniorTrancheAmount.add(seniorTrancheAmount);
-
-    const creditLineAmountAvailableForDrawdown = calculateAvailableCredit({
+    availableForDrawdown = calculateAvailableCredit({
       collectedPaymentBalance: creditLine.collectedPaymentBalance,
       currentInterestOwed,
       nextDueTime: creditLine.nextDueTime,
@@ -202,20 +180,6 @@ export default function PoolCreditLinePage({
       limit: creditLine.limit,
       balance: creditLine.balance,
     });
-
-    /**
-     * When the Senior Pool has not yet invested in the senior tranche, the amount of funds actually available
-     * for drawdown will be less than what the Credit Line limit is meant to accommodate.
-     *
-     * Otherwise we can use the calculated available credit from the Credit Line for the amount avail to drawdown.
-     */
-    if (
-      poolAmountAvailableForDrawdown.lt(creditLineAmountAvailableForDrawdown)
-    ) {
-      availableForDrawdown = poolAmountAvailableForDrawdown;
-    } else {
-      availableForDrawdown = creditLineAmountAvailableForDrawdown;
-    }
   }
 
   return (
