@@ -985,17 +985,24 @@ describe("mainnet forking tests", async function () {
       return (await tranchedPool["pay(uint256)"](interestOwed.toString())).wait()
     }
 
-    async function fullyRepayTranchedPool(tranchedPool: TranchedPool): Promise<ContractReceipt> {
+    async function fullyRepayTranchedPool(tranchedPool: TranchedPool, at?: BigNumber): Promise<ContractReceipt> {
       await (await tranchedPool.assess()).wait()
       const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
-      const principalOwed = await creditLine.principalOwed()
-      const interestOwed = await creditLine.interestOwed()
-      const paymentTx = await (await tranchedPool["pay(uint256)"](principalOwed.add(interestOwed).toString())).wait()
+
+      const principalOwed = await creditLine.principalOwedAt(`${(await getCurrentTimestamp()).add(new BN(1))}`)
+      const interestOwed = await creditLine.interestOwedAt(`${(await getCurrentTimestamp()).add(new BN(1))}`)
+      const totalOwed = principalOwed.add(interestOwed)
+
+      console.log("ts")
+      console.log(`totalOwed at ${await getCurrentTimestamp()} is ${totalOwed}`)
+      const paymentTx = await tranchedPool["pay(uint256)"](totalOwed)
+
       const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
       const interestOwedAfterFinalRepayment = await creditLine.interestOwed()
       expect(String(principalOwedAfterFinalRepayment)).to.bignumber.eq("0")
       expect(String(interestOwedAfterFinalRepayment)).to.bignumber.eq("0")
-      return paymentTx
+
+      return paymentTx.wait()
     }
 
     it("backers only earn rewards for full payments", async () => {
@@ -1026,26 +1033,26 @@ describe("mainnet forking tests", async function () {
         this.timeout()
       )
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
-      const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
-      for (let i = 0; i < numberOfPaymentIntervals; i++) {
-        await advanceTime({days: paymentPeriodInDays.toFixed()})
+      for (let i = 0; new BN(`${await getCurrentTimestamp()}`).lt(new BN(`${await creditLine.termEndTime()}`)); i++) {
+        await advanceTime({toSecond: (await creditLine.nextDueTime()).toString()})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         await expectRewardsAreEqualForTokens(stakingRewardsTokenId, backerStakingTokenId, payTx.blockNumber)
       }
 
-      const termEndTime = await creditLine.termEndTime()
-      await advanceTime({toSecond: termEndTime.toString()})
-      await mineBlock()
       const blockNumAtTermEnd = await ethers.provider.getBlockNumber()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId, blockNumAtTermEnd)
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
+      const termEndTime = await creditLine.termEndTime()
       const thirtyDaysAfterTermEndTime = termEndTime.add("2592000") // 30 days in seconds
-      await advanceTime({toSecond: thirtyDaysAfterTermEndTime.toString()})
+      await advanceAndMineBlock({toSecond: thirtyDaysAfterTermEndTime.toString()})
+      // Going to fully repay tranched pool
+      console.log("")
+      console.log("PAY AFTER TERM END TIME")
       const paymentTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
 
       const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerStakingRewardsForToken(
@@ -1059,8 +1066,7 @@ describe("mainnet forking tests", async function () {
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      await advanceTime({days: "365"})
-      await mineBlock()
+      await advanceAndMineBlock({days: "365"})
       const muchLaterBlockNumber = await ethers.provider.getBlockNumber()
       const backerStakingRewardsEarnedMuchLater = await getBackerStakingRewardsForToken(
         backerStakingTokenId,
@@ -1090,8 +1096,6 @@ describe("mainnet forking tests", async function () {
       expect(String(firstDrawdownAmount)).to.bignumber.lt(new BN(await (await creditLine.limit()).toString()))
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(initialStakeTx as ContractReceipt)
 
-      const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
-
       let backerStakingRewardsEarned = await getBackerStakingRewardsForToken(
         backerStakingTokenId,
         initialStakeTx?.blockNumber
@@ -1102,8 +1106,8 @@ describe("mainnet forking tests", async function () {
       expect(stakingRewardsEarned).to.bignumber.eq("0")
 
       // Run through the first half of payments normally
-      for (let i = 0; i < numberOfPaymentIntervals / 2; i++) {
-        await advanceTime({days: paymentPeriodInDays.toFixed()})
+      for (let i = 0; i < 6; i++) {
+        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)
@@ -1132,12 +1136,12 @@ describe("mainnet forking tests", async function () {
         secondStakeTx?.blockNumber
       )
 
-      // check that the backer doesnt earned rewards on a drawdown
+      // check that the backer doesnt earn rewards on a drawdown
       expect(backerStakingRewardsEarnedAfterSecondDrawdown).to.bignumber.eq(backerStakingRewardsEarned)
 
       // second half of the payments
-      for (let i = numberOfPaymentIntervals / 2; i < numberOfPaymentIntervals; i++) {
-        await advanceTime({days: paymentPeriodInDays.toFixed()})
+      for (let i = 0; i < 6; i++) {
+        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw to make sure that the backer originally backer wont have less rewards
         // when their unutilized capital is removed from the pool
@@ -1152,17 +1156,17 @@ describe("mainnet forking tests", async function () {
         )
       }
 
-      const termEndTime = await creditLine.termEndTime()
-      await advanceTime({toSecond: termEndTime.toString()})
-      await mineBlock()
+      // await advanceTime({toSecond: termEndTime.toString()})
+      // await mineBlock()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId)
       const secondStakingRewardsAtTermEnd = await getStakingRewardsForToken(secondStakingTokenId)
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
+      const termEndTime = await creditLine.termEndTime()
       const thirtyDaysAfterTermEnd = termEndTime.add("2592000") // < 30 days in seconds
-      await advanceTime({toSecond: thirtyDaysAfterTermEnd.toString()})
+      await advanceAndMineBlock({toSecond: thirtyDaysAfterTermEnd.toString()})
       const payTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
       const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerStakingRewardsForToken(
         backerStakingTokenId,
@@ -1176,12 +1180,12 @@ describe("mainnet forking tests", async function () {
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      await advanceTime({days: "365"})
-      await mineBlock()
+      await advanceAndMineBlock({days: "365"})
       const backerStakingRewardsEarnedMuchLater = await getBackerStakingRewardsForToken(backerStakingTokenId)
       expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
     }).timeout(TEST_TIMEOUT)
 
+    // FAILING WITH THE GP Error
     it("behaves correctly, 2 slices, full drawdown", async () => {
       const [, stakingTx] = await mineInSameBlock(
         [
@@ -1194,10 +1198,9 @@ describe("mainnet forking tests", async function () {
         this.timeout()
       )
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
-      const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
-      for (let i = 0; i < numberOfPaymentIntervals / 2; i++) {
-        await advanceTime({days: paymentPeriodInDays.toFixed()})
+      for (let i = 0; i < 6; i++) {
+        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         expect((await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)).gt(new BN(0)))
@@ -1255,8 +1258,8 @@ describe("mainnet forking tests", async function () {
         await backerRewards.stakingRewardsEarnedSinceLastWithdraw(secondSliceDepositTokenId.toString())
       ).to.bignumber.eq("0")
 
-      for (let i = numberOfPaymentIntervals / 2; i < numberOfPaymentIntervals; i++) {
-        await advanceTime({days: paymentPeriodInDays.toFixed()})
+      for (let i = 0; i < 6; i++) {
+        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw, as a way of establishing that a backer who removed their unutilized capital
         // would not receive less rewards as a consequence
@@ -1278,8 +1281,6 @@ describe("mainnet forking tests", async function () {
       }
 
       const termEndTime = await creditLine.termEndTime()
-      await advanceTime({toSecond: termEndTime.toString()})
-      await mineBlock()
       const blockNumAtTermEnd = await ethers.provider.getBlockNumber()
       const firstSliceStakingRewardsAtTermEnd = await getStakingRewardsForToken(
         stakingRewardsTokenId,
@@ -1317,8 +1318,7 @@ describe("mainnet forking tests", async function () {
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      await advanceTime({days: "365"})
-      await mineBlock()
+      await advanceAndMineBlock({days: "365"})
       const muchLaterBlockNumber = await ethers.provider.getBlockNumber()
       const firstSliceStakingRewardsEarnedMuchLater = await getBackerStakingRewardsForToken(
         backerStakingTokenId,
