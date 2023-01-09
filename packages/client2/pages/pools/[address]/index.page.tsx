@@ -29,7 +29,7 @@ import {
 } from "@/lib/graphql/generated";
 import {
   getTranchedPoolStatus,
-  isPoolLocked,
+  isJuniorTrancheLocked,
   PoolStatus,
   TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
@@ -443,7 +443,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     (v) => v.poolToken
                   )}
                   zaps={data.user.zaps}
-                  isPoolLocked={isPoolLocked({
+                  isPoolLocked={isJuniorTrancheLocked({
                     lockedUntil: tranchedPool.juniorTranches[0].lockedUntil,
                     currentBlockTimestamp: data.currentBlock.timestamp,
                   })}

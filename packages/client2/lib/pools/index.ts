@@ -77,8 +77,10 @@ export function getTranchedPoolStatus(
   }
 }
 
-// TODO Zadra JSDocs
-export function isPoolLocked({
+/**
+ * Determines if a junior tranche is locked or not
+ */
+export function isJuniorTrancheLocked({
   lockedUntil,
   currentBlockTimestamp,
 }: {

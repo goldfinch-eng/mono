@@ -1,6 +1,5 @@
 import { BigNumber } from "ethers";
 
-import { FIDU_DECIMALS } from "@/constants";
 import { roundUpToPrecision } from "@/lib/format";
 
 /**
@@ -203,14 +202,4 @@ export function calculateAvailableCredit({
     return availableCredit;
   }
   return limit;
-}
-
-// TODO Zadra reuse an existing fn for this?
-export function trancheSharesToUsdc(
-  numShares: BigNumber,
-  sharePrice: BigNumber
-): BigNumber {
-  const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
-
-  return numShares.mul(sharePrice).div(fiduMantissa);
 }
