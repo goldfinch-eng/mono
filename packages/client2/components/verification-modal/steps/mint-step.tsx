@@ -93,7 +93,9 @@ export function MintStep() {
       });
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
-      dataLayerPushEvent("UID_MINTED");
+      dataLayerPushEvent("UID_MINTED", {
+        uidType: getUIDLabelFromType(mintingParameters.id),
+      });
     } catch (e) {
       setErrorMessage("Error while minting");
     } finally {
