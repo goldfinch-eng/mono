@@ -1,13 +1,28 @@
-"""
-Notes
-- address are mapped as IDs
-- We are using reverse lookups to create virtual fields:
-  https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
-"""
 type SeniorPool @entity {
   id: ID!
   latestPoolStatus: SeniorPoolStatus!
   investmentsMade: [TranchedPool!]!
+}
+
+type SeniorPool2 @entity {
+  id: ID! # Hardcoded to "1", the Senior Pool is a singleton
+  address: Bytes!
+  sharePrice: BigInt!
+  totalShares: BigInt!
+  assets: BigInt!
+  totalLoansOutstanding: BigInt!
+  tranchedPools: [TranchedPool!]!
+  """
+  This is the fee for cancelling a withdrawal request
+  """
+  cancellationFee: BigDecimal!
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal!
+
+  cumulativeDrawdowns: BigInt!
+  cumulativeWritedowns: BigInt!
+  defaultRate: BigDecimal!
 }
 
 enum StakedPositionType {

@@ -29,6 +29,11 @@ import {handleDeposit, getOrInitUser} from "../entities/user"
 import {getAddressFromConfig} from "../utils"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../entities/withdrawal_roster"
 
+import {
+  handleDepositMade as handleDepositMade2,
+  handleInterestCollected as handleInterestCollected2,
+} from "./senior_pool2/senior_pool"
+
 // Helper function to extract the StakingRewards address from the config on Senior Pool
 function getStakingRewardsAddressFromSeniorPoolAddress(seniorPoolAddress: Address): Address {
   const seniorPoolContract = SeniorPool.bind(seniorPoolAddress)
@@ -55,10 +60,13 @@ export function handleDepositMade(event: DepositMade): void {
 
     transaction.save()
   }
+
+  handleDepositMade2(event)
 }
 
 export function handleInterestCollected(event: InterestCollected): void {
   updatePoolStatus(event.address)
+  handleInterestCollected2(event)
 }
 
 export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
