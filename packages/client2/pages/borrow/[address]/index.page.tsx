@@ -13,7 +13,7 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
-import { isJuniorTrancheLocked, sharesToUsdc } from "@/lib/pools";
+import { sharesToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
@@ -266,10 +266,10 @@ export default function PoolCreditLinePage({
                 disabled={
                   tranchedPool.isPaused ||
                   tranchedPool.drawdownsPaused ||
-                  isJuniorTrancheLocked({
-                    lockedUntil: juniorTranche?.lockedUntil,
-                    currentBlockTimestamp: data.currentBlock.timestamp,
-                  }) ||
+                  // !isPoolLocked({
+                  //   lockedUntil: juniorTranche?.lockedUntil,
+                  //   currentBlockTimestamp: data.currentBlock.timestamp,
+                  // }) ||
                   availableForDrawdown.lte(BigNumber.from(0))
                 }
               >

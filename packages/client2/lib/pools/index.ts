@@ -77,23 +77,6 @@ export function getTranchedPoolStatus(
   }
 }
 
-/**
- * Determines if a junior tranche is locked or not
- */
-export function isJuniorTrancheLocked({
-  lockedUntil,
-  currentBlockTimestamp,
-}: {
-  lockedUntil: BigNumber | undefined;
-  currentBlockTimestamp: number;
-}): boolean {
-  return (
-    !!lockedUntil &&
-    !lockedUntil.isZero() &&
-    BigNumber.from(currentBlockTimestamp ?? 0).gt(lockedUntil)
-  );
-}
-
 export function computeApyFromGfiInFiat(
   apyFromGfiRaw: FixedNumber,
   fiatPerGfi: number

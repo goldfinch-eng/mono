@@ -1,53 +1,52 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { FixedNumber, utils } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
-  Banner,
   Breadcrumb,
   Button,
-  Heading,
-  HelperText,
-  Marquee,
-  ShimmerLines,
   TabButton,
   TabContent,
   TabGroup,
   TabList,
   TabPanels,
+  Heading,
+  ShimmerLines,
+  HelperText,
+  Marquee,
+  Banner,
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
-  AllDealsQuery,
-  SingleDealQuery,
-  SingleDealQueryVariables,
   useSingleTranchedPoolDataQuery,
+  SingleDealQuery,
+  AllDealsQuery,
+  SingleDealQueryVariables,
 } from "@/lib/graphql/generated";
 import {
-  getTranchedPoolStatus,
-  isJuniorTrancheLocked,
   PoolStatus,
+  getTranchedPoolStatus,
   TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
   BorrowerProfile,
-  BORROWER_OTHER_POOL_FIELDS,
   BORROWER_PROFILE_FIELDS,
+  BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import DealSummary from "./deal-summary";
 import {
+  SECURITIES_RECOURSE_TABLE_FIELDS,
   BORROWER_FINANCIALS_TABLE_FIELDS,
   BORROWER_PERFORMANCE_TABLE_FIELDS,
-  SECURITIES_RECOURSE_TABLE_FIELDS,
 } from "./deal-tables";
 import { DOCUMENT_FIELDS } from "./documents-list";
 import FundingBar from "./funding-bar";
@@ -84,7 +83,6 @@ gql`
       estimatedLeverageRatio
       fundableAt
       isPaused
-      drawdownsPaused
       numBackers
       juniorTranches {
         lockedUntil
@@ -443,10 +441,12 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     (v) => v.poolToken
                   )}
                   zaps={data.user.zaps}
-                  isPoolLocked={isJuniorTrancheLocked({
-                    lockedUntil: tranchedPool.juniorTranches[0].lockedUntil,
-                    currentBlockTimestamp: data.currentBlock.timestamp,
-                  })}
+                  isPoolLocked={
+                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
+                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
+                      tranchedPool.juniorTranches[0].lockedUntil
+                    )
+                  }
                 />
               ) : null}
 
