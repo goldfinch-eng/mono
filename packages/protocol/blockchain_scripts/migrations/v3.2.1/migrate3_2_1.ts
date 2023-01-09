@@ -1,6 +1,7 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
+import {deployMonthlyScheduleRepo} from "../../baseDeploy/deployMonthlyScheduleRepo"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import {
   ContractDeployer,
@@ -93,21 +94,7 @@ export async function main() {
     ],
   })
 
-  // Deploy the Monthly Schedule repo
-  const monthlyScheduleRepo = await deployer.deploy("MonthlyScheduleRepo", {
-    from: gf_deployer,
-  })
-  await deployEffects.add({
-    deferred: [
-      await populateTxAndLog(
-        gfConfig.populateTransaction.setAddress(
-          CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo,
-          monthlyScheduleRepo.address
-        ),
-        `Populated tx to set the MonthlyScheduleRepo address to ${monthlyScheduleRepo.address}`
-      ),
-    ],
-  })
+  await deployMonthlyScheduleRepo(deployer, deployEffects, gfConfig)
 
   const upgrader = new ContractUpgrader(deployer)
   const upgradedContracts = await upgrader.upgrade({contracts: ["GoldfinchConfig", "GoldfinchFactory"]})
