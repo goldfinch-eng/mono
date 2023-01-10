@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import NextLink from "next/link";
 import { ReactNode } from "react";
 
 import { TranchedPoolBorrowCardFieldsFragment } from "@/lib/graphql/generated";
@@ -6,6 +7,7 @@ import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface CreditLineCardProps {
   className?: string;
+  href: string;
   dealMetaData: TranchedPoolBorrowCardFieldsFragment;
   description: ReactNode;
   nextPayment: ReactNode;
@@ -23,6 +25,7 @@ export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
 
 export function CreditLineCard({
   className,
+  href,
   dealMetaData,
   description,
   nextPayment,
@@ -34,9 +37,11 @@ export function CreditLineCard({
       <div className="relative rounded-xl bg-sand-100 p-5 hover:bg-sand-200">
         <div className="grid grid-cols-12 items-center gap-6">
           <div className="col-span-6 flex flex-col break-words text-sand-700 md:col-span-5">
-            <div className="text-lg font-medium text-sand-700">
-              {dealMetaData.name}
-            </div>
+            <NextLink href={href} passHref>
+              <a className="text-lg font-medium text-sand-700 before:absolute before:inset-0">
+                {dealMetaData.name}
+              </a>
+            </NextLink>
             <div className="text-sand-700">{dealMetaData.category}</div>
           </div>
           <div className="col-span-3 hidden justify-self-end text-lg text-sand-700 md:block">

@@ -78,7 +78,7 @@ const getDueDateLabel = ({
     case CreditLineStatus.PeriodPaid:
       return (
         <div className="align-left flex flex-row items-center">
-          <Icon name="CheckmarkCircle" className="mr-1" />
+          <Icon name="CheckmarkCircle" size="md" className="mr-1" />
           <div>Paid</div>
         </div>
       );
@@ -117,7 +117,7 @@ export default function BorrowPage({
         level={4}
         className="mb-10 !font-serif !text-[2.5rem] !font-bold"
       >
-        Credit Line
+        Credit Lines
       </Heading>
 
       {!account && !isActivating ? (
@@ -214,6 +214,7 @@ export default function BorrowPage({
               <div key={id}>
                 <CreditLineCard
                   className="mb-4"
+                  href={`/borrow/${tranchedPool.id}`}
                   dealMetaData={dealMetadata[tranchedPool.id]}
                   description={`${creditLineLimit} at ${formattedInterestRate}`}
                   status={creditLineStatus}

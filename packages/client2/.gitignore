@@ -57,3 +57,6 @@ constants/contract-addresses/index.ts
 
 # JSON files containing dev GFI grants
 gfi-grants/*.dev.json
+
+# VS Code user workspace settings
+.vscode/settings.json
