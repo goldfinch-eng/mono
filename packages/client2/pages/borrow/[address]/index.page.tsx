@@ -79,12 +79,12 @@ interface PoolCreditLinePageProps {
   dealDetails: NonNullable<PoolCreditLinePageCmsQuery["Deal"]>;
 }
 
-const getNextPaymentLabel = ({
+const NextPaymentLabel = ({
   creditLineStatus,
   nextDueTime,
   remainingPeriodDueAmount,
 }: {
-  creditLineStatus: CreditLineStatus;
+  creditLineStatus: CreditLineStatus | undefined;
   nextDueTime: BigNumber;
   remainingPeriodDueAmount: BigNumber;
 }) => {
@@ -100,9 +100,11 @@ const getNextPaymentLabel = ({
 
   switch (creditLineStatus) {
     case CreditLineStatus.PaymentLate:
-      return `${formattedRemainingPeriodDueAmount} due now`;
+      return <div>{`${formattedRemainingPeriodDueAmount} due now`}</div>;
     case CreditLineStatus.PaymentDue:
-      return `${formattedRemainingPeriodDueAmount} due ${formattedNextDueTime}`;
+      return (
+        <div>{`${formattedRemainingPeriodDueAmount} due ${formattedNextDueTime}`}</div>
+      );
     case CreditLineStatus.PeriodPaid:
       return (
         <div className="align-left flex flex-row items-center">
@@ -111,7 +113,9 @@ const getNextPaymentLabel = ({
         </div>
       );
     case CreditLineStatus.InActive:
-      return "No payment due";
+      return <div>No payment due</div>;
+    default:
+      return null;
   }
 };
 
@@ -122,7 +126,7 @@ export default function PoolCreditLinePage({
 
   const { data, error, loading } = usePoolCreditLinePageQuery({
     variables: {
-      tranchedPoolId: dealDetails?.id as string,
+      tranchedPoolId: dealDetails?.id,
     },
   });
 
@@ -131,9 +135,9 @@ export default function PoolCreditLinePage({
   const juniorTranche = tranchedPool?.juniorTranches?.[0];
   const seniorTranche = tranchedPool?.seniorTranches?.[0];
 
-  let nextPaymentLabel;
   let creditLineStatus;
   let remainingTotalDueAmount = BigNumber.from(0);
+  let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
   if (tranchedPool && creditLine && juniorTranche && seniorTranche) {
     const currentInterestOwed = calculateInterestOwed({
@@ -145,7 +149,7 @@ export default function PoolCreditLinePage({
       balance: creditLine.balance,
     });
 
-    const remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
+    remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
       collectedPaymentBalance: creditLine.collectedPaymentBalance,
       nextDueTime: creditLine.nextDueTime,
       termEndTime: creditLine.termEndTime,
@@ -164,12 +168,6 @@ export default function PoolCreditLinePage({
       remainingPeriodDueAmount,
       limit: creditLine.limit,
       remainingTotalDueAmount,
-    });
-
-    nextPaymentLabel = getNextPaymentLabel({
-      creditLineStatus,
-      remainingPeriodDueAmount,
-      nextDueTime: creditLine.nextDueTime,
     });
 
     availableForDrawdown = calculateAvailableCredit({
@@ -239,7 +237,13 @@ export default function PoolCreditLinePage({
             </div>
             <div className="p-8">
               <div className="mb-1 text-lg">Next Payment</div>
-              <div className="mb-5 text-2xl">{nextPaymentLabel}</div>
+              <div className="mb-5 text-2xl">
+                <NextPaymentLabel
+                  creditLineStatus={creditLineStatus}
+                  remainingPeriodDueAmount={remainingPeriodDueAmount}
+                  nextDueTime={creditLine.nextDueTime}
+                />
+              </div>
               <Button
                 as="button"
                 className="w-full text-xl"
@@ -267,7 +271,7 @@ export default function PoolCreditLinePage({
                   rel="noopener"
                   size="sm"
                   className="w-fit justify-self-end"
-                ></Button>
+                />
               </div>
 
               <CreditLineProgressBar

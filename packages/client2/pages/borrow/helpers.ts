@@ -57,13 +57,12 @@ export function calculateNextDueAmount({
   termEndTime: BigNumber;
   balance: BigNumber;
 }): BigNumber {
-  // If we are on our last period of the term, then it's interestOwed + principal
-  // This is a bullet loan, so full principal is paid only at the end of the credit line term
+  // If we are on our last period of the term, then it's interestOwed + balance (balance is outstanding principal)
+  // This is a bullet loan, so full balance is paid only at the end of the credit line term
   if (nextDueTime.gte(termEndTime)) {
     return currentInterestOwed.add(balance);
-  } else {
-    return currentInterestOwed;
   }
+  return currentInterestOwed;
 }
 
 /**

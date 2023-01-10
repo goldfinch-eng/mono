@@ -14,6 +14,10 @@ export function CreditLineProgressBar({
   balanceWithInterest,
   availableToDrawDown,
 }: CreditLineProgressBarProps) {
+  if (balanceWithInterest.lte(0) && availableToDrawDown.lte(0)) {
+    return null;
+  }
+
   const balanceWithInterestFloat = cryptoToFloat({
     amount: balanceWithInterest,
     token: "USDC",
@@ -27,18 +31,13 @@ export function CreditLineProgressBar({
     token: "USDC",
   });
 
-  if (balanceWithInterestFloat <= 0 && availableToDrawdownFloat <= 0) {
-    return null;
-  }
-
-  let balanceWithInterestBarStyle = "";
-  let availableToDrawdownStyle = "";
-  if (availableToDrawdownFloat > 0 && balanceWithInterestFloat > 0) {
-    balanceWithInterestBarStyle = "rounded-tl-lg rounded-bl-lg";
-    availableToDrawdownStyle = "rounded-tr-lg rounded-br-lg";
-  } else if (availableToDrawdownFloat <= 0 && balanceWithInterestFloat > 0) {
+  let balanceWithInterestBarStyle = "rounded-tl-lg rounded-bl-lg";
+  let availableToDrawdownStyle = "rounded-tr-lg rounded-br-lg";
+  if (availableToDrawdownFloat <= 0) {
     balanceWithInterestBarStyle = "rounded-lg";
-  } else if (balanceWithInterestFloat <= 0 && availableToDrawdownFloat > 0) {
+    availableToDrawdownStyle = "";
+  } else if (balanceWithInterestFloat <= 0) {
+    balanceWithInterestBarStyle = "";
     availableToDrawdownStyle = "rounded-lg";
   }
 
