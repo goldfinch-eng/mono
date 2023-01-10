@@ -222,7 +222,6 @@ export default function PoolCreditLinePage({
                 as="button"
                 className="w-full text-xl"
                 size="xl"
-                iconSize="lg"
                 iconLeft="ArrowDown"
                 colorScheme="mustard"
                 disabled={
@@ -248,9 +247,7 @@ export default function PoolCreditLinePage({
                 as="button"
                 className="w-full text-xl"
                 size="xl"
-                iconSize="lg"
                 iconLeft="ArrowUp"
-                colorScheme="eggplant"
                 disabled={creditLineStatus === CreditLineStatus.InActive}
               >
                 Pay
@@ -282,13 +279,13 @@ export default function PoolCreditLinePage({
 
               <div className="mt-3 grid grid-cols-2">
                 <div>
-                  <div className="text-2xl text-eggplant-700">
+                  <div className="text-2xl text-sand-700">
                     {formatCrypto({
                       amount: remainingTotalDueAmount,
                       token: "USDC",
                     })}
                   </div>
-                  <div className="text-lg text-eggplant-600">
+                  <div className="text-lg text-sand-600">
                     Balance plus interest
                   </div>
                 </div>

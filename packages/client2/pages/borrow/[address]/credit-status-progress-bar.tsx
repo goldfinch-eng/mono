@@ -44,7 +44,7 @@ export function CreditLineProgressBar({
   return (
     <div className={clsx("flex", className)}>
       <div
-        className={clsx("h-3.5 bg-eggplant-700", balanceWithInterestBarStyle)}
+        className={clsx("h-3.5 bg-sand-700", balanceWithInterestBarStyle)}
         style={{
           width: `${(balanceWithInterestFloat / progressBarSum) * 100}%`,
         }}

@@ -1,9 +1,9 @@
 import clsx from "clsx";
-import {
-  AnchorHTMLAttributes,
-  ButtonHTMLAttributes,
+import React, {
   forwardRef,
+  ButtonHTMLAttributes,
   ReactNode,
+  AnchorHTMLAttributes,
 } from "react";
 import { useFormContext } from "react-hook-form";
 
@@ -38,7 +38,6 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
-    iconSize?: IconProps["size"];
     isLoading?: boolean;
     /**
      * The underlying tag to use when rendering this button. By default it is `button`, but can be set to `a` if you need a link that visually looks like a button.
@@ -57,7 +56,6 @@ export const Button = forwardRef<
     colorScheme = "primary",
     iconLeft,
     iconRight,
-    iconSize = "sm",
     disabled,
     type,
     isLoading = false,
@@ -131,27 +129,21 @@ export const Button = forwardRef<
       {...rest}
     >
       {spinnerOnLeft ? (
-        <Spinner
-          size={iconSize}
-          className={clsx(children ? "-my-2 -ml-1" : null)}
-        />
+        <Spinner size="sm" className={clsx(children ? "-my-2 -ml-1" : null)} />
       ) : iconLeft ? (
         <Icon
           name={iconLeft}
-          size={iconSize}
+          size="sm"
           className={clsx(children ? "-my-2 -ml-1" : null)}
         />
       ) : null}
       {children}
       {spinnerOnRight ? (
-        <Spinner
-          size={iconSize}
-          className={clsx(children ? "-my-2 -mr-1" : null)}
-        />
+        <Spinner size="sm" className={clsx(children ? "-my-2 -mr-1" : null)} />
       ) : iconRight ? (
         <Icon
           name={iconRight}
-          size={iconSize}
+          size="sm"
           className={clsx(children ? "-my-2 -mr-1" : null)}
         />
       ) : null}
