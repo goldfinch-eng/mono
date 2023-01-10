@@ -1,10 +1,27 @@
+import { gql } from "@apollo/client";
 import * as Sentry from "@sentry/nextjs";
 import { CoinbaseWallet } from "@web3-react/coinbase-wallet";
 import { MetaMask } from "@web3-react/metamask";
 import { WalletConnect } from "@web3-react/walletconnect";
 import { useEffect } from "react";
 
+import { dataLayerPushEvent } from "@/lib/analytics";
+import { useUserUidForAnalyticsQuery } from "@/lib/graphql/generated";
+import { getUIDLabelFromGql } from "@/lib/verify";
 import { useWallet, connectEagerly } from "@/lib/wallet";
+
+gql`
+  query UserUidForAnalytics($account: ID!) {
+    user(id: $account) {
+      id
+      isUsEntity
+      isNonUsEntity
+      isUsAccreditedIndividual
+      isUsNonAccreditedIndividual
+      isNonUsIndividual
+    }
+  }
+`;
 
 /**
  * Rather contrived React component that just exists to be placed inside the providers above so it gains access to their context (like useWallet()).
@@ -19,8 +36,24 @@ export function AppLevelSideEffects() {
   useEffect(() => {
     if (account) {
       Sentry.setUser({ id: account });
+      dataLayerPushEvent("WALLET_CONNECTED", { account });
     }
   }, [account]);
+
+  const { data } = useUserUidForAnalyticsQuery({
+    variables: { account: account?.toLowerCase() ?? "" },
+    skip: !account,
+  });
+
+  useEffect(() => {
+    if (data?.user) {
+      const uidLabel = getUIDLabelFromGql(data.user);
+      if (!uidLabel) {
+        return;
+      }
+      dataLayerPushEvent("UID_LOADED", { uidType: uidLabel });
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!connector) {

@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { usePoller } from "@/lib/utils";
@@ -93,7 +93,9 @@ export function MintStep() {
       });
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
-      dataLayerPush("UID_MINTED");
+      dataLayerPushEvent("UID_MINTED", {
+        uidType: getUIDLabelFromType(mintingParameters.id),
+      });
     } catch (e) {
       setErrorMessage("Error while minting");
     } finally {

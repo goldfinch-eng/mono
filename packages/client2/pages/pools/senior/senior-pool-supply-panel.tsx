@@ -13,7 +13,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
@@ -177,7 +177,7 @@ export function SeniorPoolSupplyPanel({
       }
     }
 
-    dataLayerPush("DEPOSITED_IN_SENIOR_POOL", {
+    dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
       usdAmount: parseFloat(data.supply),
     });
 

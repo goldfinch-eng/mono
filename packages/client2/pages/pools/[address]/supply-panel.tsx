@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
@@ -243,7 +243,7 @@ export default function SupplyPanel({
       });
     }
 
-    dataLayerPush("DEPOSITED_IN_TRANCHED_POOL", {
+    dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
       tranchedPoolAddress,
       usdAmount: parseFloat(data.supply),
     });
