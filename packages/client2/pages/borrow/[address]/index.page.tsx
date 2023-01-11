@@ -35,6 +35,9 @@ gql`
       id
       isPaused
       drawdownsPaused
+      borrowerContract {
+        id
+      }
       creditLine {
         id
         balance
@@ -219,7 +222,9 @@ export default function PoolCreditLinePage({
             {showDrawdownForm ? (
               <DrawdownForm
                 availableForDrawdown={availableForDrawdown}
-                creditLineId={creditLine.id}
+                borrowerContractId={tranchedPool.borrowerContract.id}
+                tranchedPoolId={tranchedPool.id}
+                isLate={creditLine.isLate}
                 onClose={() => setShowDrawdown(false)}
               />
             ) : showPaymentForm ? (
@@ -228,7 +233,7 @@ export default function PoolCreditLinePage({
                 remainingTotalDueAmount={remainingTotalDueAmount}
                 nextDueTime={creditLine.nextDueTime}
                 isLate={creditLine.isLate}
-                creditLineId={creditLine.id}
+                borrowerContractId={tranchedPool.borrowerContract.id}
                 onClose={() => setShowPaymentForm(false)}
               />
             ) : (

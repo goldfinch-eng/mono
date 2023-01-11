@@ -1,3 +1,4 @@
+import { useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -10,16 +11,21 @@ import { useWallet } from "@/lib/wallet";
 
 interface DrawdownProps {
   availableForDrawdown: BigNumber;
-  creditLineId: string;
+  tranchedPoolId: string;
+  isLate: boolean;
+  borrowerContractId: string;
   onClose: () => void;
 }
 
 export function DrawdownForm({
   availableForDrawdown,
-  creditLineId,
+  tranchedPoolId,
+  isLate,
+  borrowerContractId,
   onClose,
 }: DrawdownProps) {
   const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };
   const rhfMethods = useForm<FormFields>({ shouldFocusError: false });
@@ -32,14 +38,19 @@ export function DrawdownForm({
 
     const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
     const borrowerContract = await getContract({
-      name: "CreditLine",
-      address: creditLineId,
+      name: "Borrower",
+      address: borrowerContractId,
       provider,
     });
     await toastTransaction({
-      transaction: borrowerContract.drawdown(usdc.amount),
+      transaction: borrowerContract.drawdown(
+        tranchedPoolId,
+        usdc.amount,
+        account
+      ),
       pendingPrompt: "Credit Line drawdown submitted.",
     });
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   const validateDrawdownAmount = (value: string) => {
@@ -54,7 +65,7 @@ export function DrawdownForm({
 
   return (
     <div>
-      <div className="grid grid-cols-2 rounded-t-xl bg-mustard-200 p-8">
+      <div className="grid grid-cols-2 rounded-t-xl bg-mustard-300 p-8">
         <div className="text-lg text-sand-900">
           {`Available to borrow: ${formatCrypto({
             amount: availableForDrawdown,
@@ -75,6 +86,11 @@ export function DrawdownForm({
 
       <div className="p-8">
         <div className="mb-4 text-2xl font-medium">Borrow</div>
+        {isLate && (
+          <div className="mb-4 text-lg ">
+            Cannot drawdown when payment is past due
+          </div>
+        )}
         <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <div className="flex flex-row gap-8">
             <DollarInput
@@ -89,6 +105,7 @@ export function DrawdownForm({
               }}
               textSize="xl"
               maxValue={availableForDrawdown}
+              disabled={isLate}
             />
             <Button
               type="submit"
@@ -96,6 +113,7 @@ export function DrawdownForm({
               as="button"
               colorScheme="mustard"
               className="px-12"
+              disabled={isLate}
             >
               Submit
             </Button>
