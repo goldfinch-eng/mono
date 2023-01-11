@@ -16,7 +16,7 @@ export interface SelectProps extends UseControllerProps<any> {
   /**
    * Label text that will appear above the input
    */
-  label: string;
+  label: ReactNode;
   /**
    * Visually hide the label. Screen readers will still read it.
    */
