@@ -3,7 +3,8 @@ import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {CreditLine, SeniorPool2, TranchedPool} from "../../../generated/schema"
 import {GoldfinchConfig} from "../../../generated/SeniorPool/GoldfinchConfig"
 import {GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS} from "../../address-manifest"
-import {CONFIG_KEYS_NUMBERS} from "../../constants"
+import {CONFIG_KEYS_NUMBERS, FIDU_DECIMALS, GFI_DECIMALS} from "../../constants"
+import {getStakingRewards} from "../../entities/staking_rewards"
 
 export function getOrInitSeniorPool(): SeniorPool2 {
   let seniorPool = SeniorPool2.load("1")
@@ -88,4 +89,29 @@ export function calculateSeniorPoolAPY(seniorPool: SeniorPool2): SeniorPoolApyCa
 
   const estimatedApy = estimatedTotalInterest.div(seniorPool.assets.toBigDecimal())
   return new SeniorPoolApyCalcResult(estimatedApy, estimatedTotalInterest)
+}
+
+export function calculateEstimatedApyFromGfiRaw(sharePrice: BigInt, currentEarnRatePerToken: BigInt): BigDecimal {
+  if (sharePrice.isZero() || currentEarnRatePerToken.isZero()) {
+    return BigDecimal.zero()
+  }
+  const SECONDS_PER_YEAR = BigInt.fromString("31536000")
+  const estimatedApyFromGfiRaw = currentEarnRatePerToken
+    .times(SECONDS_PER_YEAR)
+    .toBigDecimal()
+    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
+    .div(sharePrice.toBigDecimal())
+    .div(GFI_DECIMALS.toBigDecimal())
+  return estimatedApyFromGfiRaw
+}
+
+/**
+ * Just a convenience function that will set seniorPool.estimatedApyFromGfiRaw. Used to save some repetitive code in the senior pool mappings
+ */
+export function updateEstimatedApyFromGfiRaw(seniorPool: SeniorPool2): void {
+  const stakingRewards = getStakingRewards()
+  seniorPool.estimatedApyFromGfiRaw = calculateEstimatedApyFromGfiRaw(
+    seniorPool.sharePrice,
+    stakingRewards.currentEarnRatePerToken
+  )
 }

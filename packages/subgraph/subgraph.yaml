@@ -165,6 +165,8 @@ dataSources:
       abis:
         - name: StakingRewards
           file: ./abis/StakingRewards.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded

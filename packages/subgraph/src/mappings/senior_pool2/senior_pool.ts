@@ -28,7 +28,7 @@ import {createTransactionFromEvent, usdcWithFiduPrecision} from "../../entities/
 import {getOrInitUser} from "../../entities/user"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../../entities/withdrawal_roster"
 import {getAddressFromConfig} from "../../utils"
-import {calculateSeniorPoolAPY, getOrInitSeniorPool} from "./helpers"
+import {calculateSeniorPoolAPY, getOrInitSeniorPool, updateEstimatedApyFromGfiRaw} from "./helpers"
 
 export function handleDepositMade(event: DepositMade): void {
   getOrInitUser(event.params.capitalProvider)
@@ -62,6 +62,7 @@ export function handleInterestCollected(event: InterestCollected): void {
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
   seniorPool.sharePrice = seniorPoolContract.sharePrice()
+  updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.save()
 }
 
@@ -101,6 +102,7 @@ export function handlePrincipalCollected(event: PrincipalCollected): void {
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
   seniorPool.sharePrice = seniorPoolContract.sharePrice()
+  updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
   seniorPool.assets = seniorPoolContract.assets() // assets are updated when totalLoansOutstanding changes
   seniorPool.save()
@@ -110,6 +112,7 @@ export function handlePrincipalWrittenDown(event: PrincipalWrittenDown): void {
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
   seniorPool.sharePrice = seniorPoolContract.sharePrice()
+  updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.assets = seniorPoolContract.assets()
   seniorPool.save()
 }
@@ -130,6 +133,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
     const seniorPoolContract = SeniorPoolContract.bind(event.address)
     const sharePrice = seniorPoolContract.sharePrice()
+    updateEstimatedApyFromGfiRaw(seniorPool)
 
     transaction.sentAmount = event.params.userAmount
       .plus(event.params.reserveAmount)
