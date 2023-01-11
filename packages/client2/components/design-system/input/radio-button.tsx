@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 interface RadioButtonProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label: ReactNode;
   labelClassName?: string;
   labelDecoration?: ReactNode;
   hideLabel?: boolean;
