@@ -1,15 +1,15 @@
 import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 
-import {CreditLine, SeniorPool2, TranchedPool} from "../../../generated/schema"
+import {CreditLine, SeniorPool, TranchedPool} from "../../../generated/schema"
 import {GoldfinchConfig} from "../../../generated/SeniorPool/GoldfinchConfig"
 import {GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS} from "../../address-manifest"
 import {CONFIG_KEYS_NUMBERS, FIDU_DECIMALS, GFI_DECIMALS} from "../../constants"
 import {getStakingRewards} from "../../entities/staking_rewards"
 
-export function getOrInitSeniorPool(): SeniorPool2 {
-  let seniorPool = SeniorPool2.load("1")
+export function getOrInitSeniorPool(): SeniorPool {
+  let seniorPool = SeniorPool.load("1")
   if (!seniorPool) {
-    seniorPool = new SeniorPool2("1")
+    seniorPool = new SeniorPool("1")
     seniorPool.address = Address.fromString(SENIOR_POOL_ADDRESS)
     seniorPool.sharePrice = BigInt.zero()
     seniorPool.totalShares = BigInt.zero()
@@ -77,7 +77,7 @@ class SeniorPoolApyCalcResult {
  * @param seniorPool SeniorPool
  * @returns { estimatedApy: BigDecimal, estimatedTotalInterest: BigDecimal }
  */
-export function calculateSeniorPoolAPY(seniorPool: SeniorPool2): SeniorPoolApyCalcResult {
+export function calculateSeniorPoolAPY(seniorPool: SeniorPool): SeniorPoolApyCalcResult {
   if (seniorPool.assets.isZero() || seniorPool.tranchedPools.length == 0) {
     return new SeniorPoolApyCalcResult(BigDecimal.zero(), BigDecimal.zero())
   }
@@ -108,7 +108,7 @@ export function calculateEstimatedApyFromGfiRaw(sharePrice: BigInt, currentEarnR
 /**
  * Just a convenience function that will set seniorPool.estimatedApyFromGfiRaw. Used to save some repetitive code in the senior pool mappings
  */
-export function updateEstimatedApyFromGfiRaw(seniorPool: SeniorPool2): void {
+export function updateEstimatedApyFromGfiRaw(seniorPool: SeniorPool): void {
   const stakingRewards = getStakingRewards()
   seniorPool.estimatedApyFromGfiRaw = calculateEstimatedApyFromGfiRaw(
     seniorPool.sharePrice,

@@ -26,7 +26,7 @@ import {
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 import {getAddressFromConfig} from "../utils"
-import {calculateSeniorPoolAPY, getOrInitSeniorPool} from "./senior_pool2/helpers"
+import {calculateSeniorPoolAPY, getOrInitSeniorPool} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)

@@ -16,7 +16,7 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file: ./src/mappings/senior_pool2/senior_pool.ts
+      file: ./src/mappings/senior_pool/senior_pool.ts
       entities:
         - SeniorPool
         - User

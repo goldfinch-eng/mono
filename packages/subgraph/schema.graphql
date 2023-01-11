@@ -1,10 +1,4 @@
 type SeniorPool @entity {
-  id: ID!
-  latestPoolStatus: SeniorPoolStatus!
-  investmentsMade: [TranchedPool!]!
-}
-
-type SeniorPool2 @entity {
   id: ID! # Hardcoded to "1", the Senior Pool is a singleton
   address: Bytes!
   sharePrice: BigInt!
@@ -41,28 +35,6 @@ type SeniorPoolStakedPosition @entity {
   """
   startTime: BigInt!
   totalRewardsClaimed: BigInt!
-}
-
-type SeniorPoolStatus @entity {
-  """
-  This entity is a singleton, so the id is always "1"
-  """
-  id: ID!
-  rawBalance: BigInt!
-  balance: BigInt!
-  sharePrice: BigInt!
-  totalShares: BigInt!
-  assets: BigInt!
-  totalLoansOutstanding: BigInt!
-  cumulativeWritedowns: BigInt!
-  tranchedPools: [TranchedPool!]!
-  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
-  estimatedTotalInterest: BigDecimal!
-  estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal!
-  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
-  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
-  cancellationFee: BigDecimal!
 }
 
 type User @entity {

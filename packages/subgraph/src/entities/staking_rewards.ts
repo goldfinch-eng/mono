@@ -2,7 +2,7 @@ import {Address, BigInt} from "@graphprotocol/graph-ts"
 
 import {StakingRewardsData} from "../../generated/schema"
 import {StakingRewards as StakingRewardsContract} from "../../generated/StakingRewards/StakingRewards"
-import {getOrInitSeniorPool, calculateEstimatedApyFromGfiRaw} from "../mappings/senior_pool2/helpers"
+import {getOrInitSeniorPool, calculateEstimatedApyFromGfiRaw} from "../mappings/senior_pool/helpers"
 
 const STAKING_REWARDS_ID = "1"
 
