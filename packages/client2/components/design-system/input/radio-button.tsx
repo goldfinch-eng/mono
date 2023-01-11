@@ -23,13 +23,13 @@ export const RadioButton = forwardRef<HTMLInputElement, RadioButtonProps>(
       id,
       inputSize = "sm",
       className,
-      value,
+      name,
       colorScheme = "light",
       ...rest
     }: RadioButtonProps,
     ref
   ) {
-    const _id = id ?? value;
+    const _id = id ?? name;
     return (
       <div
         className={clsx(
@@ -46,6 +46,7 @@ export const RadioButton = forwardRef<HTMLInputElement, RadioButtonProps>(
           <input
             ref={ref}
             id={_id}
+            name={name}
             type="radio"
             className={clsx(
               "peer appearance-none rounded-full disabled:opacity-50",

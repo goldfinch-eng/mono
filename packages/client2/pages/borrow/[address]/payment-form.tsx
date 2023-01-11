@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 
 import {
   Button,
-  Checkbox,
   DollarInput,
   Form,
+  RadioButton,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
@@ -58,7 +58,6 @@ export function PaymentForm({
 
   type FormFields = { usdcAmount: string; paymentOption: PaymentOption };
   const rhfMethods = useForm<FormFields>({
-    shouldFocusError: false,
     defaultValues: {
       paymentOption: showPayMinimumDueOption
         ? PaymentOption.PayMinimumDue
@@ -68,7 +67,6 @@ export function PaymentForm({
         useMaximumPrecision: true,
       }),
     },
-    mode: "onChange",
   });
   const { control, register, setValue } = rhfMethods;
 
@@ -134,7 +132,7 @@ export function PaymentForm({
         <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <div className="flex flex-col gap-1">
             {showPayMinimumDueOption && (
-              <Checkbox
+              <RadioButton
                 id="payMinDue"
                 labelClassName="text-lg"
                 label={
@@ -159,7 +157,7 @@ export function PaymentForm({
                 }}
               />
             )}
-            <Checkbox
+            <RadioButton
               id="payFullBalancePlusInterest"
               labelClassName="text-lg"
               label={
@@ -171,7 +169,6 @@ export function PaymentForm({
                 </div>
               }
               value={PaymentOption.PayFullBalancePlusInterest}
-              type="radio"
               {...register("paymentOption")}
               onChange={() => {
                 setValue(
@@ -183,12 +180,11 @@ export function PaymentForm({
                 );
               }}
             />
-            <Checkbox
+            <RadioButton
               id="payOtherAmount"
               labelClassName="text-lg"
               label="Pay other amount"
               value={PaymentOption.PayOtherAmount}
-              type="radio"
               {...register("paymentOption")}
             />
             <div className="mt-4 flex flex-row gap-8">
