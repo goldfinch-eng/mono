@@ -1,3 +1,4 @@
+import { useApolloClient } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
@@ -11,6 +12,7 @@ import {
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
+import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -18,7 +20,8 @@ interface PaymentFormProps {
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   nextDueTime: BigNumber;
-  creditLineId: string;
+  borrowerContractId: string;
+  tranchedPoolId: string;
   isLate: boolean;
   onClose: () => void;
 }
@@ -33,11 +36,13 @@ export function PaymentForm({
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
   nextDueTime,
-  creditLineId,
+  borrowerContractId,
+  tranchedPoolId,
   isLate,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
 
   const remainingPeriodDueAmountCrypto = {
     amount: remainingPeriodDueAmount,
@@ -67,21 +72,34 @@ export function PaymentForm({
   });
   const { control, register, setValue } = rhfMethods;
 
-  const onSubmit = async (data: FormFields) => {
+  const onSubmit = async ({ usdcAmount, paymentOption }: FormFields) => {
     if (!account || !provider) {
       return;
     }
+    const usdc = stringToCryptoAmount(usdcAmount, "USDC");
 
-    const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
     const borrowerContract = await getContract({
-      name: "CreditLine",
-      address: creditLineId,
+      name: "Borrower",
+      address: borrowerContractId,
       provider,
     });
+    const usdcContract = await getContract({ name: "USDC", provider });
+
+    await approveErc20IfRequired({
+      account,
+      spender: borrowerContract.address,
+      erc20Contract: usdcContract,
+      amount: usdc.amount,
+    });
     await toastTransaction({
-      transaction: borrowerContract.drawdown(usdc.amount),
+      transaction:
+        paymentOption === PaymentOption.PayFullBalancePlusInterest
+          ? borrowerContract.payInFull(tranchedPoolId, usdc.amount)
+          : borrowerContract.pay(tranchedPoolId, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
+    await apolloClient.refetchQueries({ include: "active" });
+    onClose();
   };
 
   const validatePaymentAmount = (value: string) => {

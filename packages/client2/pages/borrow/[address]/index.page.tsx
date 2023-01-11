@@ -234,6 +234,7 @@ export default function PoolCreditLinePage({
                 nextDueTime={creditLine.nextDueTime}
                 isLate={creditLine.isLate}
                 borrowerContractId={tranchedPool.borrowerContract.id}
+                tranchedPoolId={tranchedPool.id}
                 onClose={() => setShowPaymentForm(false)}
               />
             ) : (

@@ -51,6 +51,7 @@ export function DrawdownForm({
       pendingPrompt: "Credit Line drawdown submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });
+    onClose();
   };
 
   const validateDrawdownAmount = (value: string) => {
