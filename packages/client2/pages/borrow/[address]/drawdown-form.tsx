@@ -65,7 +65,7 @@ export function DrawdownForm({
           colorScheme="secondary"
           iconRight="X"
           as="button"
-          size="sm"
+          size="md"
           className="w-fit justify-self-end"
           onClick={onClose}
         >
@@ -74,7 +74,7 @@ export function DrawdownForm({
       </div>
 
       <div className="p-8">
-        <div className="mb-4 text-xl font-medium">Borrow</div>
+        <div className="mb-4 text-2xl font-medium">Borrow</div>
         <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <div className="flex flex-row gap-8">
             <DollarInput

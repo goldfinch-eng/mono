@@ -227,6 +227,7 @@ export default function PoolCreditLinePage({
                 remainingPeriodDueAmount={remainingPeriodDueAmount}
                 remainingTotalDueAmount={remainingTotalDueAmount}
                 nextDueTime={creditLine.nextDueTime}
+                isLate={creditLine.isLate}
                 creditLineId={creditLine.id}
                 onClose={() => setShowPaymentForm(false)}
               />

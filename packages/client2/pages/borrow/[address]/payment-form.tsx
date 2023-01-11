@@ -19,13 +19,14 @@ interface PaymentFormProps {
   remainingTotalDueAmount: BigNumber;
   nextDueTime: BigNumber;
   creditLineId: string;
+  isLate: boolean;
   onClose: () => void;
 }
 
 enum PaymentOption {
-  PayMinimumDue = 0,
-  PayFullBalancePlusInterest = 1,
-  PayOtherAmount = 2,
+  PayMinimumDue = "PayMinimumDue",
+  PayFullBalancePlusInterest = "PayFullBalancePlusInterest",
+  PayOtherAmount = "PayOtherAmount",
 }
 
 export function PaymentForm({
@@ -33,12 +34,37 @@ export function PaymentForm({
   remainingTotalDueAmount,
   nextDueTime,
   creditLineId,
+  isLate,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
 
+  const remainingPeriodDueAmountCrypto = {
+    amount: remainingPeriodDueAmount,
+    token: "USDC",
+  } as const;
+
+  const remainingTotalDueAmountCrypto = {
+    amount: remainingTotalDueAmount,
+    token: "USDC",
+  } as const;
+
+  const showPayMinimumDueOption = remainingPeriodDueAmount.gt(0);
+
   type FormFields = { usdcAmount: string; paymentOption: PaymentOption };
-  const rhfMethods = useForm<FormFields>({ shouldFocusError: false });
+  const rhfMethods = useForm<FormFields>({
+    shouldFocusError: false,
+    defaultValues: {
+      paymentOption: showPayMinimumDueOption
+        ? PaymentOption.PayMinimumDue
+        : undefined,
+      usdcAmount: formatCrypto(remainingPeriodDueAmountCrypto, {
+        includeSymbol: false,
+        useMaximumPrecision: true,
+      }),
+    },
+    mode: "onChange",
+  });
   const { control, register, setValue } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
@@ -59,38 +85,28 @@ export function PaymentForm({
   };
 
   const validatePaymentAmount = (value: string) => {
-    const usdcToWithdraw = utils.parseUnits(value, USDC_DECIMALS);
-    if (usdcToWithdraw.gt(remainingPeriodDueAmount)) {
-      return "Amount exceeds available for drawdown";
+    const usdcToPay = utils.parseUnits(value, USDC_DECIMALS);
+    if (usdcToPay.gt(remainingTotalDueAmount)) {
+      return "This is over the total balance of the credit line";
     }
-    if (usdcToWithdraw.lte(BigNumber.from(0))) {
+    if (usdcToPay.lte(BigNumber.from(0))) {
       return "Must be more than 0";
     }
   };
-
-  const remainingPeriodDueAmountCrypto = {
-    amount: remainingPeriodDueAmount,
-    token: "USDC",
-  } as const;
-
-  const remainingTotalDueAmountCrypto = {
-    amount: remainingTotalDueAmount,
-    token: "USDC",
-  } as const;
 
   return (
     <div>
       <div className="grid grid-cols-2 rounded-t-xl bg-sand-700 p-8">
         <div className="text-lg text-white">
-          {`Next payment: ${formatCrypto(
-            remainingPeriodDueAmountCrypto
-          )} due due ${formatDate(nextDueTime.toNumber() * 1000, "MMM d")}`}
+          {`Next payment: ${formatCrypto(remainingPeriodDueAmountCrypto)} due ${
+            isLate ? "now" : formatDate(nextDueTime.toNumber() * 1000, "MMM d")
+          }`}
         </div>
         <Button
           colorScheme="secondary"
           iconRight="X"
           as="button"
-          size="sm"
+          size="md"
           className="w-fit justify-self-end"
           onClick={onClose}
         >
@@ -99,34 +115,46 @@ export function PaymentForm({
       </div>
 
       <div className="p-8">
-        <div className="mb-4 text-xl font-medium">Pay</div>
+        <div className="mb-4 text-2xl font-medium">Pay</div>
         <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <div className="flex flex-col gap-1">
-            <Checkbox
-              id="payMinDue"
-              labelClassName="text-lg"
-              label={`Pay minimum due: ${formatCrypto(
-                remainingPeriodDueAmountCrypto
-              )}`}
-              value={PaymentOption.PayMinimumDue}
-              type="radio"
-              {...register("paymentOption")}
-              onChange={() => {
-                setValue(
-                  "usdcAmount",
-                  formatCrypto(remainingPeriodDueAmountCrypto, {
-                    includeSymbol: false,
-                    useMaximumPrecision: true,
-                  })
-                );
-              }}
-            />
+            {showPayMinimumDueOption && (
+              <Checkbox
+                id="payMinDue"
+                labelClassName="text-lg"
+                label={
+                  <div>
+                    Pay minimum due:
+                    <span className="font-semibold">
+                      {` ${formatCrypto(remainingPeriodDueAmountCrypto)}`}
+                    </span>
+                  </div>
+                }
+                value={PaymentOption.PayMinimumDue}
+                type="radio"
+                {...register("paymentOption")}
+                onChange={() => {
+                  setValue(
+                    "usdcAmount",
+                    formatCrypto(remainingPeriodDueAmountCrypto, {
+                      includeSymbol: false,
+                      useMaximumPrecision: true,
+                    })
+                  );
+                }}
+              />
+            )}
             <Checkbox
               id="payFullBalancePlusInterest"
               labelClassName="text-lg"
-              label={`Pay full balance plus interest: ${formatCrypto(
-                remainingTotalDueAmountCrypto
-              )}`}
+              label={
+                <div>
+                  Pay full balance plus interest:
+                  <span className="font-semibold">
+                    {` ${formatCrypto(remainingTotalDueAmountCrypto)}`}
+                  </span>
+                </div>
+              }
               value={PaymentOption.PayFullBalancePlusInterest}
               type="radio"
               {...register("paymentOption")}
@@ -160,7 +188,9 @@ export function PaymentForm({
                   validate: validatePaymentAmount,
                 }}
                 textSize="xl"
-                maxValue={remainingPeriodDueAmount}
+                onFocus={() =>
+                  setValue("paymentOption", PaymentOption.PayOtherAmount)
+                }
               />
               <Button type="submit" size="xl" as="button" className="px-12">
                 Submit
