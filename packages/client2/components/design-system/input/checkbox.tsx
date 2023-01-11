@@ -24,6 +24,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
       colorScheme = "light",
       className,
       inputSize = "sm",
+      type = "checkbox",
       ...rest
     },
     ref
@@ -46,7 +47,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             {...rest}
             id={_id}
             name={name}
-            type="checkbox"
+            type={type}
             ref={ref}
             className={clsx(
               "peer appearance-none rounded disabled:opacity-50",

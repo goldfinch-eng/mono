@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
+import { useState } from "react";
 
 import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -25,6 +26,8 @@ import {
 } from "@/pages/borrow/helpers";
 
 import { CreditLineProgressBar } from "./credit-status-progress-bar";
+import { DrawdownForm } from "./drawdown-form";
+import { PaymentForm } from "./payment-form";
 
 gql`
   query PoolCreditLinePage($tranchedPoolId: ID!) {
@@ -180,6 +183,9 @@ export default function PoolCreditLinePage({
     });
   }
 
+  const [showDrawdownForm, setShowDrawdown] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+
   return (
     <div>
       <Heading level={1} className="mb-12 break-words">
@@ -209,50 +215,70 @@ export default function PoolCreditLinePage({
         <div className="text-2xl">Unable to load credit line</div>
       ) : (
         <div className="flex flex-col">
-          <div className="mb-10 grid grid-cols-2 rounded-xl bg-sand-100">
-            <div className="border-r-2 border-sand-200 p-8">
-              <div className="mb-1 text-lg">Available to borrow</div>
-              <div className="mb-5 text-2xl">
-                {formatCrypto({
-                  amount: availableForDrawdown,
-                  token: "USDC",
-                })}
+          <div className="mb-10 rounded-xl bg-sand-100">
+            {showDrawdownForm ? (
+              <DrawdownForm
+                availableForDrawdown={availableForDrawdown}
+                creditLineId={creditLine.id}
+                onClose={() => setShowDrawdown(false)}
+              />
+            ) : showPaymentForm ? (
+              <PaymentForm
+                remainingPeriodDueAmount={remainingPeriodDueAmount}
+                remainingTotalDueAmount={remainingTotalDueAmount}
+                nextDueTime={creditLine.nextDueTime}
+                creditLineId={creditLine.id}
+                onClose={() => setShowPaymentForm(false)}
+              />
+            ) : (
+              <div className="grid grid-cols-2">
+                <div className="border-r-2 border-sand-200 p-8">
+                  <div className="mb-1 text-lg">Available to borrow</div>
+                  <div className="mb-5 text-2xl">
+                    {formatCrypto({
+                      amount: availableForDrawdown,
+                      token: "USDC",
+                    })}
+                  </div>
+                  <Button
+                    as="button"
+                    className="w-full text-xl"
+                    size="xl"
+                    iconLeft="ArrowDown"
+                    colorScheme="mustard"
+                    onClick={() => setShowDrawdown(true)}
+                    disabled={
+                      tranchedPool.isPaused ||
+                      tranchedPool.drawdownsPaused ||
+                      juniorTranche?.lockedUntil.isZero() ||
+                      availableForDrawdown.lte(BigNumber.from(0))
+                    }
+                  >
+                    Borrow
+                  </Button>
+                </div>
+                <div className="p-8">
+                  <div className="mb-1 text-lg">Next Payment</div>
+                  <div className="mb-5 text-2xl">
+                    <NextPaymentLabel
+                      creditLineStatus={creditLineStatus}
+                      remainingPeriodDueAmount={remainingPeriodDueAmount}
+                      nextDueTime={creditLine.nextDueTime}
+                    />
+                  </div>
+                  <Button
+                    as="button"
+                    className="w-full text-xl"
+                    size="xl"
+                    iconLeft="ArrowUp"
+                    onClick={() => setShowPaymentForm(true)}
+                    disabled={creditLineStatus === CreditLineStatus.InActive}
+                  >
+                    Pay
+                  </Button>
+                </div>
               </div>
-              <Button
-                as="button"
-                className="w-full text-xl"
-                size="xl"
-                iconLeft="ArrowDown"
-                colorScheme="mustard"
-                disabled={
-                  tranchedPool.isPaused ||
-                  tranchedPool.drawdownsPaused ||
-                  juniorTranche?.lockedUntil.isZero() ||
-                  availableForDrawdown.lte(BigNumber.from(0))
-                }
-              >
-                Borrow
-              </Button>
-            </div>
-            <div className="p-8">
-              <div className="mb-1 text-lg">Next Payment</div>
-              <div className="mb-5 text-2xl">
-                <NextPaymentLabel
-                  creditLineStatus={creditLineStatus}
-                  remainingPeriodDueAmount={remainingPeriodDueAmount}
-                  nextDueTime={creditLine.nextDueTime}
-                />
-              </div>
-              <Button
-                as="button"
-                className="w-full text-xl"
-                size="xl"
-                iconLeft="ArrowUp"
-                disabled={creditLineStatus === CreditLineStatus.InActive}
-              >
-                Pay
-              </Button>
-            </div>
+            )}
           </div>
 
           <div className="rounded-xl bg-sand-100">
