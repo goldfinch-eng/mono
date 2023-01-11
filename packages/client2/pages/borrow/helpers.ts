@@ -1,7 +1,5 @@
 import { BigNumber } from "ethers";
 
-import { roundUpToPrecision } from "@/lib/format";
-
 /**
  * Calculates the current interest owed on the credit line.
  *
@@ -95,9 +93,7 @@ export function calculateRemainingPeriodDueAmount({
     return BigNumber.from(0);
   }
 
-  // We need to round up here to ensure the creditline is always fully paid,
-  // this does mean the borrower may overpay by a penny max each time.
-  return roundUpToPrecision(remainingPeriodDueAmount);
+  return remainingPeriodDueAmount;
 }
 
 /**
@@ -120,9 +116,7 @@ export function calculateRemainingTotalDueAmount({
     return BigNumber.from(0);
   }
 
-  // We need to round up here to ensure the creditline is always fully paid,
-  // this does mean the borrower may overpay by a penny max each time.
-  return roundUpToPrecision(remainingTotalDueAmount);
+  return remainingTotalDueAmount;
 }
 
 export enum CreditLineStatus {

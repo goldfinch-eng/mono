@@ -72,7 +72,7 @@ export function PaymentForm({
   });
   const { control, register, setValue } = rhfMethods;
 
-  const onSubmit = async ({ usdcAmount, paymentOption }: FormFields) => {
+  const onSubmit = async ({ usdcAmount }: FormFields) => {
     if (!account || !provider) {
       return;
     }
@@ -92,10 +92,7 @@ export function PaymentForm({
       amount: usdc.amount,
     });
     await toastTransaction({
-      transaction:
-        paymentOption === PaymentOption.PayFullBalancePlusInterest
-          ? borrowerContract.payInFull(tranchedPoolId, usdc.amount)
-          : borrowerContract.pay(tranchedPoolId, usdc.amount),
+      transaction: borrowerContract.pay(tranchedPoolId, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });
