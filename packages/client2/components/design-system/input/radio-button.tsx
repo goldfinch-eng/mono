@@ -21,7 +21,7 @@ export const RadioButton = forwardRef<HTMLInputElement, RadioButtonProps>(
       labelDecoration,
       hideLabel = false,
       id,
-      inputSize,
+      inputSize = "sm",
       className,
       value,
       colorScheme = "light",
