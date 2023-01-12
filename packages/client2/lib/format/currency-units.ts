@@ -1,10 +1,10 @@
-import { BigNumber, utils } from "ethers";
+import { utils } from "ethers";
 
 import {
-  USDC_DECIMALS,
-  GFI_DECIMALS,
-  FIDU_DECIMALS,
   CURVE_LP_DECIMALS,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
 } from "@/constants";
 
 import { FiatAmount, SupportedCrypto } from "../graphql/generated";
@@ -100,12 +100,4 @@ export function stringToCryptoAmount(
     cryptoPrecision[token]
   );
   return { token, amount };
-}
-
-/**
- * Rounds up a BigNumber to the nearest multiple of a provided precision
- */
-export function roundUpToPrecision(amount: BigNumber, precision = 10000) {
-  const incremented = amount.add(precision - 1);
-  return incremented.sub(incremented.mod(precision));
 }

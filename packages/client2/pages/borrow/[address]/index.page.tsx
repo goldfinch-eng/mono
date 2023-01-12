@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
@@ -89,23 +90,13 @@ interface PoolCreditLinePageProps {
 
 const NextPaymentLabel = ({
   creditLineStatus,
-  nextDueTime,
-  remainingPeriodDueAmount,
+  formattedNextDueTime,
+  formattedRemainingPeriodDueAmount,
 }: {
   creditLineStatus: CreditLineStatus | undefined;
-  nextDueTime: BigNumber;
-  remainingPeriodDueAmount: BigNumber;
+  formattedNextDueTime: string;
+  formattedRemainingPeriodDueAmount: string;
 }) => {
-  const formattedRemainingPeriodDueAmount = formatCrypto({
-    token: "USDC",
-    amount: remainingPeriodDueAmount,
-  });
-
-  const formattedNextDueTime = formatDate(
-    nextDueTime.toNumber() * 1000,
-    "MMM d"
-  );
-
   switch (creditLineStatus) {
     case CreditLineStatus.PaymentLate:
       return <div>{`${formattedRemainingPeriodDueAmount} due now`}</div>;
@@ -232,6 +223,20 @@ export default function PoolCreditLinePage({
   const [showDrawdownForm, setShowDrawdown] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
+  const formattedAvailableForDrawdown = formatCrypto({
+    amount: availableForDrawdown,
+    token: "USDC",
+  });
+
+  const formattedRemainingPeriodDueAmount = formatCrypto({
+    amount: remainingPeriodDueAmount,
+    token: "USDC",
+  });
+
+  const formattedNextDueTime = creditLine
+    ? formatDate(creditLine.nextDueTime.toNumber() * 1000, "MMM d")
+    : "0";
+
   return (
     <div>
       <Heading level={1} className="mb-12 break-words">
@@ -262,33 +267,70 @@ export default function PoolCreditLinePage({
       ) : (
         <div className="flex flex-col">
           <div className="mb-10 rounded-xl bg-sand-100">
-            {showDrawdownForm ? (
-              <DrawdownForm
-                availableForDrawdown={availableForDrawdown}
-                borrowerContractId={tranchedPool.borrowerContract.id}
-                tranchedPoolId={tranchedPool.id}
-                isLate={creditLine.isLate}
-                onClose={() => setShowDrawdown(false)}
-              />
-            ) : showPaymentForm ? (
-              <PaymentForm
-                remainingPeriodDueAmount={remainingPeriodDueAmount}
-                remainingTotalDueAmount={remainingTotalDueAmount}
-                nextDueTime={creditLine.nextDueTime}
-                isLate={creditLine.isLate}
-                borrowerContractId={tranchedPool.borrowerContract.id}
-                tranchedPoolId={tranchedPool.id}
-                onClose={() => setShowPaymentForm(false)}
-              />
+            {showDrawdownForm || showPaymentForm ? (
+              <>
+                <div
+                  className={clsx(
+                    "grid grid-cols-2 rounded-t-xl p-8",
+                    showDrawdownForm ? "bg-mustard-300" : "bg-sand-700"
+                  )}
+                >
+                  <div
+                    className={clsx(
+                      "text-lg",
+                      showDrawdownForm ? "text-sand-900" : "text-white"
+                    )}
+                  >
+                    {showDrawdownForm
+                      ? `Available to borrow: ${formattedAvailableForDrawdown}`
+                      : `Next payment: ${formattedRemainingPeriodDueAmount} due ${
+                          creditLine.isLate ? "now" : formattedNextDueTime
+                        }`}
+                  </div>
+                  <Button
+                    colorScheme="secondary"
+                    iconRight="X"
+                    as="button"
+                    size="md"
+                    className="w-fit justify-self-end"
+                    onClick={() =>
+                      showDrawdownForm
+                        ? setShowDrawdown(false)
+                        : setShowPaymentForm(false)
+                    }
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <div className="p-8">
+                  <div className="mb-4 text-2xl font-medium">
+                    {showDrawdownForm ? "Borrow" : "Pay"}
+                  </div>
+                  {showDrawdownForm ? (
+                    <DrawdownForm
+                      availableForDrawdown={availableForDrawdown}
+                      borrowerContractId={tranchedPool.borrowerContract.id}
+                      tranchedPoolId={tranchedPool.id}
+                      isLate={creditLine.isLate}
+                      onClose={() => setShowDrawdown(false)}
+                    />
+                  ) : (
+                    <PaymentForm
+                      remainingPeriodDueAmount={remainingPeriodDueAmount}
+                      remainingTotalDueAmount={remainingTotalDueAmount}
+                      borrowerContractId={tranchedPool.borrowerContract.id}
+                      tranchedPoolId={tranchedPool.id}
+                      onClose={() => setShowPaymentForm(false)}
+                    />
+                  )}
+                </div>
+              </>
             ) : (
               <div className="grid grid-cols-2">
                 <div className="border-r-2 border-sand-200 p-8">
                   <div className="mb-1 text-lg">Available to borrow</div>
                   <div className="mb-5 text-2xl">
-                    {formatCrypto({
-                      amount: availableForDrawdown,
-                      token: "USDC",
-                    })}
+                    {formattedAvailableForDrawdown}
                   </div>
                   <Button
                     as="button"
@@ -312,8 +354,10 @@ export default function PoolCreditLinePage({
                   <div className="mb-5 text-2xl">
                     <NextPaymentLabel
                       creditLineStatus={creditLineStatus}
-                      remainingPeriodDueAmount={remainingPeriodDueAmount}
-                      nextDueTime={creditLine.nextDueTime}
+                      formattedRemainingPeriodDueAmount={
+                        formattedRemainingPeriodDueAmount
+                      }
+                      formattedNextDueTime={formattedNextDueTime}
                     />
                   </div>
                   <Button
@@ -367,10 +411,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div className="text-right">
                   <div className="text-2xl text-mustard-700">
-                    {formatCrypto({
-                      amount: availableForDrawdown,
-                      token: "USDC",
-                    })}
+                    {formattedAvailableForDrawdown}
                   </div>
                   <div className="text-lg text-mustard-600">
                     Available to drawdown

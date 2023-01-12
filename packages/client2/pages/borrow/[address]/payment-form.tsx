@@ -1,5 +1,4 @@
 import { useApolloClient } from "@apollo/client";
-import { format as formatDate } from "date-fns";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -19,13 +18,12 @@ import { useWallet } from "@/lib/wallet";
 interface PaymentFormProps {
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
-  nextDueTime: BigNumber;
   borrowerContractId: string;
   tranchedPoolId: string;
-  isLate: boolean;
   onClose: () => void;
 }
 
+// Using string enums b/c RHF incorrectly casts numeric enums on defaultValues set
 enum PaymentOption {
   PayMinimumDue = "PayMinimumDue",
   PayFullBalancePlusInterest = "PayFullBalancePlusInterest",
@@ -35,10 +33,8 @@ enum PaymentOption {
 export function PaymentForm({
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
-  nextDueTime,
   borrowerContractId,
   tranchedPoolId,
-  isLate,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
@@ -97,8 +93,8 @@ export function PaymentForm({
     onClose();
   };
 
-  const validatePaymentAmount = (value: string) => {
-    const usdcToPay = utils.parseUnits(value, USDC_DECIMALS);
+  const validatePaymentAmount = (usdcAmount: string) => {
+    const usdcToPay = utils.parseUnits(usdcAmount, USDC_DECIMALS);
     if (usdcToPay.gt(remainingTotalDueAmount)) {
       return "This is over the total balance of the credit line";
     }
@@ -108,108 +104,85 @@ export function PaymentForm({
   };
 
   return (
-    <div>
-      <div className="grid grid-cols-2 rounded-t-xl bg-sand-700 p-8">
-        <div className="text-lg text-white">
-          {`Next payment: ${formatCrypto(remainingPeriodDueAmountCrypto)} due ${
-            isLate ? "now" : formatDate(nextDueTime.toNumber() * 1000, "MMM d")
-          }`}
-        </div>
-        <Button
-          colorScheme="secondary"
-          iconRight="X"
-          as="button"
-          size="md"
-          className="w-fit justify-self-end"
-          onClick={onClose}
-        >
-          Cancel
-        </Button>
-      </div>
-
-      <div className="p-8">
-        <div className="mb-4 text-2xl font-medium">Pay</div>
-        <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-          <div className="flex flex-col gap-1">
-            {showPayMinimumDueOption && (
-              <RadioButton
-                id="payMinDue"
-                labelClassName="text-lg"
-                label={
-                  <div>
-                    Pay minimum due:
-                    <span className="font-semibold">
-                      {` ${formatCrypto(remainingPeriodDueAmountCrypto)}`}
-                    </span>
-                  </div>
-                }
-                value={PaymentOption.PayMinimumDue}
-                type="radio"
-                {...register("paymentOption")}
-                onChange={() => {
-                  setValue(
-                    "usdcAmount",
-                    formatCrypto(remainingPeriodDueAmountCrypto, {
-                      includeSymbol: false,
-                      useMaximumPrecision: true,
-                    })
-                  );
-                }}
-              />
-            )}
-            <RadioButton
-              id="payFullBalancePlusInterest"
-              labelClassName="text-lg"
-              label={
-                <div>
-                  Pay full balance plus interest:
-                  <span className="font-semibold">
-                    {` ${formatCrypto(remainingTotalDueAmountCrypto)}`}
-                  </span>
-                </div>
-              }
-              value={PaymentOption.PayFullBalancePlusInterest}
-              {...register("paymentOption")}
-              onChange={() => {
-                setValue(
-                  "usdcAmount",
-                  formatCrypto(remainingTotalDueAmountCrypto, {
-                    includeSymbol: false,
-                    useMaximumPrecision: true,
-                  })
-                );
-              }}
-            />
-            <RadioButton
-              id="payOtherAmount"
-              labelClassName="text-lg"
-              label="Pay other amount"
-              value={PaymentOption.PayOtherAmount}
-              {...register("paymentOption")}
-            />
-            <div className="mt-4 flex flex-row gap-8">
-              <DollarInput
-                control={control}
-                name="usdcAmount"
-                label="USDC amount"
-                hideLabel
-                unit="USDC"
-                rules={{
-                  required: "Required",
-                  validate: validatePaymentAmount,
-                }}
-                textSize="xl"
-                onFocus={() =>
-                  setValue("paymentOption", PaymentOption.PayOtherAmount)
-                }
-              />
-              <Button type="submit" size="xl" as="button" className="px-12">
-                Submit
-              </Button>
+    <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
+      <div className="flex flex-col gap-1">
+        {showPayMinimumDueOption && (
+          <RadioButton
+            id="payMinDue"
+            labelClassName="text-lg"
+            label={
+              <div>
+                Pay minimum due:
+                <span className="font-semibold">
+                  {` ${formatCrypto(remainingPeriodDueAmountCrypto)}`}
+                </span>
+              </div>
+            }
+            value={PaymentOption.PayMinimumDue}
+            type="radio"
+            onSelect={() =>
+              setValue(
+                "usdcAmount",
+                formatCrypto(remainingPeriodDueAmountCrypto, {
+                  includeSymbol: false,
+                  useMaximumPrecision: true,
+                })
+              )
+            }
+            {...register("paymentOption")}
+          />
+        )}
+        <RadioButton
+          id="payFullBalancePlusInterest"
+          labelClassName="text-lg"
+          label={
+            <div>
+              Pay full balance plus interest:
+              <span className="font-semibold">
+                {` ${formatCrypto(remainingTotalDueAmountCrypto)}`}
+              </span>
             </div>
-          </div>
-        </Form>
+          }
+          value={PaymentOption.PayFullBalancePlusInterest}
+          onSelect={() =>
+            setValue(
+              "usdcAmount",
+              formatCrypto(remainingTotalDueAmountCrypto, {
+                includeSymbol: false,
+                useMaximumPrecision: true,
+              })
+            )
+          }
+          {...register("paymentOption")}
+        />
+        <RadioButton
+          id="payOtherAmount"
+          labelClassName="text-lg"
+          label="Pay other amount"
+          value={PaymentOption.PayOtherAmount}
+          {...register("paymentOption")}
+        />
+        <div className="mt-4 flex flex-row gap-8">
+          <DollarInput
+            control={control}
+            name="usdcAmount"
+            label="USDC amount"
+            hideLabel
+            unit="USDC"
+            rules={{
+              required: "Required",
+              validate: validatePaymentAmount,
+            }}
+            textSize="xl"
+            onFocus={() =>
+              setValue("paymentOption", PaymentOption.PayOtherAmount)
+            }
+          />
+          <Button type="submit" size="xl" as="button" className="px-12">
+            Submit
+          </Button>
+        </div>
       </div>
-    </div>
+    </Form>
   );
 }
