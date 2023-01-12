@@ -28,7 +28,7 @@ import {createTransactionFromEvent, usdcWithFiduPrecision} from "../../entities/
 import {getOrInitUser} from "../../entities/user"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../../entities/withdrawal_roster"
 import {getAddressFromConfig} from "../../utils"
-import {calculateSeniorPoolAPY, getOrInitSeniorPool, updateEstimatedApyFromGfiRaw} from "./helpers"
+import {getOrInitSeniorPool, updateEstimatedApyFromGfiRaw, updateEstimatedSeniorPoolApy} from "./helpers"
 
 export function handleDepositMade(event: DepositMade): void {
   getOrInitUser(event.params.capitalProvider)
@@ -38,6 +38,7 @@ export function handleDepositMade(event: DepositMade): void {
   const fiduContract = FiduContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.Fidu))
   seniorPool.totalShares = fiduContract.totalSupply()
   seniorPool.assets = seniorPoolContract.assets()
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.save()
 
   const stakingRewardsAddress = Address.fromString(STAKING_REWARDS_ADDRESS)
@@ -76,9 +77,7 @@ export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): voi
   const tranchedPoolAddress = event.params.tranchedPool.toHexString()
   if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
     seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
-    const apyCalcResult = calculateSeniorPoolAPY(seniorPool)
-    seniorPool.estimatedApy = apyCalcResult.estimatedApy
-    seniorPool.estimatedTotalInterest = apyCalcResult.estimatedTotalInterest
+    updateEstimatedSeniorPoolApy(seniorPool)
   }
   seniorPool.save()
 }
@@ -91,9 +90,7 @@ export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): voi
   const tranchedPoolAddress = event.params.tranchedPool.toHexString()
   if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
     seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
-    const apyCalcResult = calculateSeniorPoolAPY(seniorPool)
-    seniorPool.estimatedApy = apyCalcResult.estimatedApy
-    seniorPool.estimatedTotalInterest = apyCalcResult.estimatedTotalInterest
+    updateEstimatedSeniorPoolApy(seniorPool)
   }
   seniorPool.save()
 }

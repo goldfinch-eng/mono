@@ -77,7 +77,7 @@ class SeniorPoolApyCalcResult {
  * @param seniorPool SeniorPool
  * @returns { estimatedApy: BigDecimal, estimatedTotalInterest: BigDecimal }
  */
-export function calculateSeniorPoolAPY(seniorPool: SeniorPool): SeniorPoolApyCalcResult {
+export function calculateSeniorPoolApy(seniorPool: SeniorPool): SeniorPoolApyCalcResult {
   if (seniorPool.assets.isZero() || seniorPool.tranchedPools.length == 0) {
     return new SeniorPoolApyCalcResult(BigDecimal.zero(), BigDecimal.zero())
   }
@@ -89,6 +89,16 @@ export function calculateSeniorPoolAPY(seniorPool: SeniorPool): SeniorPoolApyCal
 
   const estimatedApy = estimatedTotalInterest.div(seniorPool.assets.toBigDecimal())
   return new SeniorPoolApyCalcResult(estimatedApy, estimatedTotalInterest)
+}
+
+/**
+ * Just a convenience function that will compute and set seniorPool.estimatedApy and seniorPool.estimatedTotalInterest
+ * YOU STILL HAVE TO CALL seniorPool.save() AFTER CALLING THIS FUNCTION
+ */
+export function updateEstimatedSeniorPoolApy(seniorPool: SeniorPool): void {
+  const apyCalcResult = calculateSeniorPoolApy(seniorPool)
+  seniorPool.estimatedApy = apyCalcResult.estimatedApy
+  seniorPool.estimatedTotalInterest = apyCalcResult.estimatedTotalInterest
 }
 
 export function calculateEstimatedApyFromGfiRaw(sharePrice: BigInt, currentEarnRatePerToken: BigInt): BigDecimal {
@@ -106,7 +116,8 @@ export function calculateEstimatedApyFromGfiRaw(sharePrice: BigInt, currentEarnR
 }
 
 /**
- * Just a convenience function that will set seniorPool.estimatedApyFromGfiRaw. Used to save some repetitive code in the senior pool mappings
+ * Just a convenience function that will set seniorPool.estimatedApyFromGfiRaw. Used to reduce some repetitive code in the senior pool mappings
+ * YOU STILL HAVE TO CALL seniorPool.save() AFTER CALLING THIS FUNCTION
  */
 export function updateEstimatedApyFromGfiRaw(seniorPool: SeniorPool): void {
   const stakingRewards = getStakingRewards()

@@ -26,7 +26,7 @@ import {
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 import {getAddressFromConfig} from "../utils"
-import {calculateSeniorPoolAPY, getOrInitSeniorPool} from "./senior_pool/helpers"
+import {getOrInitSeniorPool, updateEstimatedSeniorPoolApy} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -114,9 +114,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
 
   // This seems odd, but the APY calculation is affected by the credit line balance, so this needs to be recomputed after a drawdown
   const seniorPool = getOrInitSeniorPool()
-  const apyCalcResult = calculateSeniorPoolAPY(seniorPool)
-  seniorPool.estimatedApy = apyCalcResult.estimatedApy
-  seniorPool.estimatedTotalInterest = apyCalcResult.estimatedTotalInterest
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.save()
 }
 
@@ -141,8 +139,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
 
   // This seems odd, but the APY calculation is affected by the credit line balance, so this needs to be recomputed after a drawdown
   const seniorPool = getOrInitSeniorPool()
-  const apyCalcResult = calculateSeniorPoolAPY(seniorPool)
-  seniorPool.estimatedApy = apyCalcResult.estimatedApy
-  seniorPool.estimatedTotalInterest = apyCalcResult.estimatedTotalInterest
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.save()
 }
