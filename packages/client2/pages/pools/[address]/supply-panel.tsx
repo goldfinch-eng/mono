@@ -164,6 +164,8 @@ export default function SupplyPanel({
       value = availableBalance;
     }
 
+    let submittedTransaction;
+
     if (data.source === "wallet") {
       const usdcContract = await getContract({ name: "USDC", provider });
       const tranchedPoolContract = await getContract({
@@ -181,7 +183,7 @@ export default function SupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
           pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
         });
@@ -205,7 +207,7 @@ export default function SupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
         });
@@ -237,13 +239,14 @@ export default function SupplyPanel({
         tranche,
         value
       );
-      await toastTransaction({
+      submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
       });
     }
 
     dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
+      transactionHash: submittedTransaction.transactionHash,
       tranchedPoolAddress,
       usdAmount: parseFloat(data.supply),
     });
