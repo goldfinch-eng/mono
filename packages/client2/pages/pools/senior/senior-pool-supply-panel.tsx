@@ -88,6 +88,7 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    let submittedTransaction;
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
     if (await isSmartContract(account, provider)) {
@@ -102,7 +103,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: stakingRewardsContract.depositAndStake(value),
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
@@ -117,7 +118,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: seniorPoolContract.deposit(value),
           pendingPrompt: "Deposit into senior pool submitted",
         });
@@ -146,7 +147,7 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit and stake submitted for senior pool.`,
         });
@@ -170,7 +171,7 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit submitted for senior pool.`,
         });
@@ -178,6 +179,7 @@ export function SeniorPoolSupplyPanel({
     }
 
     dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
+      transactionHash: submittedTransaction.hash,
       usdAmount: parseFloat(data.supply),
     });
 
