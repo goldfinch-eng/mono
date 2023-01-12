@@ -246,7 +246,7 @@ export default function SupplyPanel({
     }
 
     dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
-      transactionHash: submittedTransaction.hash,
+      transactionHash: submittedTransaction.transactionHash,
       tranchedPoolAddress,
       usdAmount: parseFloat(data.supply),
     });

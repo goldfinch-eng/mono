@@ -179,7 +179,7 @@ export function SeniorPoolSupplyPanel({
     }
 
     dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
-      transactionHash: submittedTransaction.hash,
+      transactionHash: submittedTransaction.transactionHash,
       usdAmount: parseFloat(data.supply),
     });
 
