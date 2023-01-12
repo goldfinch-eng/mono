@@ -63,10 +63,7 @@ gql`
   query MembershipPage($userId: String!) {
     seniorPools {
       id
-      latestPoolStatus {
-        id
-        sharePrice
-      }
+      sharePrice
     }
     viewer @client(always: true) {
       gfiBalance
@@ -181,8 +178,7 @@ export default function MembershipPage() {
   );
 
   const vaultableCapitalAssets: Asset[] = [];
-  const sharePrice =
-    data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
+  const sharePrice = data?.seniorPools[0].sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
       vaultableCapitalAssets.push(

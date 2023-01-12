@@ -6,11 +6,8 @@ import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
 export const SENIOR_POOL_STATUS_FIELDS = gql`
   fragment SeniorPoolStatusFields on SeniorPool {
-    latestPoolStatus {
-      id
-      assets
-      totalLoansOutstanding
-    }
+    assets
+    totalLoansOutstanding
   }
 `;
 
@@ -31,7 +28,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           seniorPool
             ? formatCrypto({
                 token: "USDC",
-                amount: seniorPool.latestPoolStatus.assets,
+                amount: seniorPool.assets,
               })
             : null
         }
@@ -43,7 +40,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           seniorPool
             ? formatCrypto({
                 token: "USDC",
-                amount: seniorPool.latestPoolStatus.totalLoansOutstanding,
+                amount: seniorPool.totalLoansOutstanding,
               })
             : null
         }
