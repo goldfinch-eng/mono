@@ -102,6 +102,7 @@ export function handlePrincipalCollected(event: PrincipalCollected): void {
   updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
   seniorPool.assets = seniorPoolContract.assets() // assets are updated when totalLoansOutstanding changes
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.save()
 }
 
@@ -111,6 +112,7 @@ export function handlePrincipalWrittenDown(event: PrincipalWrittenDown): void {
   seniorPool.sharePrice = seniorPoolContract.sharePrice()
   updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.assets = seniorPoolContract.assets()
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.save()
 }
 
@@ -119,6 +121,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
   const fiduContract = FiduContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.Fidu))
   seniorPool.assets = seniorPoolContract.assets()
+  updateEstimatedSeniorPoolApy(seniorPool)
   seniorPool.totalShares = fiduContract.totalSupply()
   seniorPool.save()
 
