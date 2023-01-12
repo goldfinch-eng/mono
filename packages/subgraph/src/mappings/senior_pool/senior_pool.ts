@@ -28,7 +28,12 @@ import {createTransactionFromEvent, usdcWithFiduPrecision} from "../../entities/
 import {getOrInitUser} from "../../entities/user"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../../entities/withdrawal_roster"
 import {getAddressFromConfig} from "../../utils"
-import {getOrInitSeniorPool, updateEstimatedApyFromGfiRaw, updateEstimatedSeniorPoolApy} from "./helpers"
+import {
+  getOrInitSeniorPool,
+  updateDefaultRate,
+  updateEstimatedApyFromGfiRaw,
+  updateEstimatedSeniorPoolApy,
+} from "./helpers"
 
 export function handleDepositMade(event: DepositMade): void {
   getOrInitUser(event.params.capitalProvider)
@@ -68,7 +73,7 @@ export function handleInterestCollected(event: InterestCollected): void {
 }
 
 // Same logic as senior
-// idk why this exists at all
+// idk why this exists at all. Assuming it was historically emitted before the separate junior/senior tranches existed
 export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
@@ -78,6 +83,7 @@ export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): voi
   if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
     seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
     updateEstimatedSeniorPoolApy(seniorPool)
+    seniorPool.totalInvested = seniorPool.totalInvested.plus(event.params.amount)
   }
   seniorPool.save()
 }
@@ -91,6 +97,7 @@ export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): voi
   if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
     seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
     updateEstimatedSeniorPoolApy(seniorPool)
+    seniorPool.totalInvested = seniorPool.totalInvested.plus(event.params.amount)
   }
   seniorPool.save()
 }
@@ -113,6 +120,8 @@ export function handlePrincipalWrittenDown(event: PrincipalWrittenDown): void {
   updateEstimatedApyFromGfiRaw(seniorPool)
   seniorPool.assets = seniorPoolContract.assets()
   updateEstimatedSeniorPoolApy(seniorPool)
+  seniorPool.totalWrittenDown = seniorPool.totalWrittenDown.plus(event.params.amount)
+  updateDefaultRate(seniorPool)
   seniorPool.save()
 }
 

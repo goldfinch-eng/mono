@@ -30,8 +30,8 @@ export function getOrInitSeniorPool(): SeniorPool {
     seniorPool.estimatedTotalInterest = BigDecimal.zero()
     seniorPool.estimatedApy = BigDecimal.zero()
     seniorPool.estimatedApyFromGfiRaw = BigDecimal.zero()
-    seniorPool.cumulativeDrawdowns = BigInt.zero()
-    seniorPool.cumulativeWritedowns = BigInt.zero()
+    seniorPool.totalInvested = BigInt.zero()
+    seniorPool.totalWrittenDown = BigInt.zero()
     seniorPool.defaultRate = BigDecimal.zero()
 
     seniorPool.save()
@@ -125,4 +125,18 @@ export function updateEstimatedApyFromGfiRaw(seniorPool: SeniorPool): void {
     seniorPool.sharePrice,
     stakingRewards.currentEarnRatePerToken
   )
+}
+
+export function calculateDefaultRate(totalWrittenDown: BigInt, totalInvested: BigInt): BigDecimal {
+  if (totalWrittenDown.isZero() || totalInvested.isZero()) {
+    return BigDecimal.zero()
+  }
+  return totalWrittenDown.toBigDecimal().div(totalInvested.toBigDecimal())
+}
+
+/**
+ * Convenience function for setting seniorPool.defaultRate. Remember that you still must call seniorPool.save() after this.
+ */
+export function updateDefaultRate(seniorPool: SeniorPool): void {
+  seniorPool.defaultRate = calculateDefaultRate(seniorPool.totalWrittenDown, seniorPool.totalInvested)
 }

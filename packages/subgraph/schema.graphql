@@ -14,8 +14,8 @@ type SeniorPool @entity {
   estimatedApy: BigDecimal!
   estimatedApyFromGfiRaw: BigDecimal!
 
-  cumulativeDrawdowns: BigInt!
-  cumulativeWritedowns: BigInt!
+  totalInvested: BigInt!
+  totalWrittenDown: BigInt!
   defaultRate: BigDecimal!
 }
 
