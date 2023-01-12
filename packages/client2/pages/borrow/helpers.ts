@@ -1,5 +1,8 @@
 import { BigNumber } from "ethers";
 
+import { USDC_DECIMALS } from "@/constants";
+import { sharesToUsdc } from "@/lib/pools";
+
 /**
  * Calculates the current interest owed on the credit line.
  *
@@ -158,41 +161,54 @@ export function getCreditLineStatus({
 /**
  * Calculates the available credit available for drawdown on a credit line
  *
+ *
  */
-export function calculateAvailableCredit({
-  collectedPaymentBalance,
-  currentInterestOwed,
-  nextDueTime,
-  termEndTime,
-  limit,
-  balance,
+export function calculateAvailableForDrawdown({
+  juniorTranchePrincipalDeposited,
+  juniorTranchePrincipalSharePrice,
+  seniorPrincipalDeposited,
+  seniorTranchePrincipalSharePrice,
 }: {
-  collectedPaymentBalance: BigNumber;
-  currentInterestOwed: BigNumber;
-  nextDueTime: BigNumber;
-  termEndTime: BigNumber;
-  limit: BigNumber;
-  balance: BigNumber;
+  juniorTranchePrincipalDeposited: BigNumber;
+  juniorTranchePrincipalSharePrice: BigNumber;
+  seniorPrincipalDeposited: BigNumber;
+  seniorTranchePrincipalSharePrice: BigNumber;
 }): BigNumber {
-  const periodDueAmount = calculateNextDueAmount({
-    currentInterestOwed,
-    nextDueTime,
-    termEndTime,
-    balance,
-  });
+  /**
+   * In the scenario a borrower pays off principal interest during the current period we can't rely on
+   * CreditLine.balance() to determine the amount actually available for drawdown from the pool if an additional
+   * drawdown is attempted during the same period.
+   *
+   * This is is b/c payments do not trigger a balance update on the Credit Line contract & CreditLine.assess()
+   * only runs accounting updates once the current peroiod has passed.
+   *
+   * Payments do update the tranche share price(s), which can be used to calc avaible funds to drawdown from
+   * the pool and represent the actual amount avaiable.
+   *
+   * i.e:
+   * 1. Borrow full limit
+   * 2. See borrow variable has been updated
+   * 3. Pay off full interest + principal
+   * 4. See borrow variable does not update to 0 (even when manually calling assess() b/c still in current period)
+   */
+  const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
+  const juniorPrincipalDepositedAtomic = juniorTranchePrincipalDeposited
+    .mul(BigNumber.from(String(1e18)))
+    .div(usdcMantissa);
+  const seniorPrincipalDepositedAtomic = seniorPrincipalDeposited
+    .mul(BigNumber.from(String(1e18)))
+    .div(usdcMantissa);
 
-  // The amount collected for principal is any amount contributed that exceeds the current period due amount
-  let collectedForPrincipal = collectedPaymentBalance.sub(periodDueAmount);
-  if (collectedForPrincipal.lt(BigNumber.from(0))) {
-    collectedForPrincipal = BigNumber.from(0);
-  }
+  const juniorTrancheAmount = sharesToUsdc(
+    juniorPrincipalDepositedAtomic,
+    juniorTranchePrincipalSharePrice
+  ).amount;
+  const seniorTrancheAmount = sharesToUsdc(
+    seniorPrincipalDepositedAtomic,
+    seniorTranchePrincipalSharePrice
+  ).amount;
 
-  // Available credit is the lesser of the two:
-  //  - The limit of the credit line (nothing borrowed yet or fully paid off)
-  //  - The limit minus the outstanding principal balance, plus any amount collected for principal
-  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
-  if (availableCredit.lt(limit)) {
-    return availableCredit;
-  }
-  return limit;
+  const availableForDrawdown = juniorTrancheAmount.add(seniorTrancheAmount);
+
+  return availableForDrawdown;
 }

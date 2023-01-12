@@ -6,7 +6,6 @@ import { GetStaticPaths, GetStaticProps } from "next";
 import { useState } from "react";
 
 import { Button, Heading, Icon } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -15,12 +14,11 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
-  calculateAvailableCredit,
+  calculateAvailableForDrawdown,
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
   calculateRemainingTotalDueAmount,
@@ -169,55 +167,12 @@ export default function PoolCreditLinePage({
       remainingTotalDueAmount,
     });
 
-    const creditLineAmountAvailableForDrawdown = calculateAvailableCredit({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      currentInterestOwed,
-      nextDueTime: creditLine.nextDueTime,
-      termEndTime: creditLine.termEndTime,
-      limit: creditLine.limit,
-      balance: creditLine.balance,
+    availableForDrawdown = calculateAvailableForDrawdown({
+      juniorTranchePrincipalDeposited: juniorTranche.principalDeposited,
+      juniorTranchePrincipalSharePrice: juniorTranche.principalSharePrice,
+      seniorPrincipalDeposited: seniorTranche.principalDeposited,
+      seniorTranchePrincipalSharePrice: seniorTranche.principalSharePrice,
     });
-
-    const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
-    const juniorPrincipalDepositedAtomic = juniorTranche.principalDeposited
-      .mul(BigNumber.from(String(1e18)))
-      .div(usdcMantissa);
-    const seniorPrincipalDepositedAtomic = seniorTranche.principalDeposited
-      .mul(BigNumber.from(String(1e18)))
-      .div(usdcMantissa);
-
-    const juniorTrancheAmount = sharesToUsdc(
-      juniorPrincipalDepositedAtomic,
-      juniorTranche.principalSharePrice
-    ).amount;
-    const seniorTrancheAmount = sharesToUsdc(
-      seniorPrincipalDepositedAtomic,
-      seniorTranche.principalSharePrice
-    ).amount;
-
-    const poolAmountAvailableForDrawdown =
-      juniorTrancheAmount.add(seniorTrancheAmount);
-
-    // TODO finish comment
-    /**
-     *
-     * 1. Borrow half the limit
-     * 2. See borrow variable has been deducted
-     * 3. Pay off full interest + principal
-     * 4. See borrow variable does not update to 0 (even when manually calling assess() b/c assess
-     *    only runs Credit Line accounting updates once the current peroiod has passed)
-     *
-     * CreditLine.assess() does not update its accounting for payments until the current period has passed,
-     * which means in the event of a principal interest payment made
-     *
-     * Thus we end up in a scenario where if we pay off principal + interest, we cannot rely on CreditLine.balance
-     * to be an accurate representation of how much we can actually borrow from the pool during the current period
-     */
-    availableForDrawdown = poolAmountAvailableForDrawdown.lt(
-      creditLineAmountAvailableForDrawdown
-    )
-      ? poolAmountAvailableForDrawdown
-      : creditLineAmountAvailableForDrawdown;
   }
 
   const [showDrawdownForm, setShowDrawdown] = useState(false);

@@ -1,5 +1,6 @@
 import { useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -50,18 +51,25 @@ export function PaymentForm({
     token: "USDC",
   } as const;
 
-  const showPayMinimumDueOption = remainingPeriodDueAmount.gt(0);
+  const showPayMinimumDueOption =
+    remainingPeriodDueAmount.gt(0) &&
+    !remainingPeriodDueAmount.eq(remainingTotalDueAmount);
 
   type FormFields = { usdcAmount: string; paymentOption: PaymentOption };
   const rhfMethods = useForm<FormFields>({
     defaultValues: {
       paymentOption: showPayMinimumDueOption
         ? PaymentOption.PayMinimumDue
-        : undefined,
-      usdcAmount: formatCrypto(remainingPeriodDueAmountCrypto, {
-        includeSymbol: false,
-        useMaximumPrecision: true,
-      }),
+        : PaymentOption.PayFullBalancePlusInterest,
+      usdcAmount: showPayMinimumDueOption
+        ? formatCrypto(remainingPeriodDueAmountCrypto, {
+            includeSymbol: false,
+            useMaximumPrecision: true,
+          })
+        : formatCrypto(remainingTotalDueAmountCrypto, {
+            includeSymbol: false,
+            useMaximumPrecision: true,
+          }),
     },
   });
   const { control, register, setValue } = rhfMethods;
@@ -103,6 +111,44 @@ export function PaymentForm({
     }
   };
 
+  const registerPaymentOption = register("paymentOption");
+
+  const onPaymentOptionChange = (e: ChangeEvent<HTMLInputElement>) => {
+    registerPaymentOption.onChange(e);
+    switch (e.target.value as PaymentOption) {
+      case PaymentOption.PayMinimumDue:
+        setValue(
+          "usdcAmount",
+          formatCrypto(remainingPeriodDueAmountCrypto, {
+            includeSymbol: false,
+            useMaximumPrecision: true,
+          })
+        );
+        return;
+      case PaymentOption.PayFullBalancePlusInterest:
+        setValue(
+          "usdcAmount",
+          formatCrypto(remainingTotalDueAmountCrypto, {
+            includeSymbol: false,
+            useMaximumPrecision: true,
+          })
+        );
+        return;
+      case PaymentOption.PayOtherAmount:
+        setValue(
+          "usdcAmount",
+          formatCrypto(
+            { amount: BigNumber.from(0), token: "USDC" },
+            {
+              includeSymbol: false,
+              useMaximumPrecision: true,
+            }
+          )
+        );
+        return;
+    }
+  };
+
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <div className="flex flex-col gap-1">
@@ -120,16 +166,8 @@ export function PaymentForm({
             }
             value={PaymentOption.PayMinimumDue}
             type="radio"
-            onSelect={() =>
-              setValue(
-                "usdcAmount",
-                formatCrypto(remainingPeriodDueAmountCrypto, {
-                  includeSymbol: false,
-                  useMaximumPrecision: true,
-                })
-              )
-            }
-            {...register("paymentOption")}
+            {...registerPaymentOption}
+            onChange={onPaymentOptionChange}
           />
         )}
         <RadioButton
@@ -144,23 +182,16 @@ export function PaymentForm({
             </div>
           }
           value={PaymentOption.PayFullBalancePlusInterest}
-          onSelect={() =>
-            setValue(
-              "usdcAmount",
-              formatCrypto(remainingTotalDueAmountCrypto, {
-                includeSymbol: false,
-                useMaximumPrecision: true,
-              })
-            )
-          }
-          {...register("paymentOption")}
+          {...registerPaymentOption}
+          onChange={onPaymentOptionChange}
         />
         <RadioButton
           id="payOtherAmount"
           labelClassName="text-lg"
           label="Pay other amount"
           value={PaymentOption.PayOtherAmount}
-          {...register("paymentOption")}
+          {...registerPaymentOption}
+          onChange={onPaymentOptionChange}
         />
         <div className="mt-4 flex flex-row gap-8">
           <DollarInput
