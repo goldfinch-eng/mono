@@ -13,6 +13,7 @@ interface DrawdownProps {
   availableForDrawdown: BigNumber;
   tranchedPoolId: string;
   isLate: boolean;
+  isAfterTermEndTime: boolean;
   borrowerContractId: string;
   onClose: () => void;
 }
@@ -21,6 +22,7 @@ export function DrawdownForm({
   availableForDrawdown,
   tranchedPoolId,
   isLate,
+  isAfterTermEndTime,
   borrowerContractId,
   onClose,
 }: DrawdownProps) {
@@ -66,11 +68,13 @@ export function DrawdownForm({
 
   return (
     <>
-      {isLate && (
+      {isLate ? (
         <div className="mb-4 text-lg ">
           Cannot drawdown when payment is past due
         </div>
-      )}
+      ) : isAfterTermEndTime ? (
+        <div className="mb-4 text-lg ">Cannot drawdown after term end time</div>
+      ) : null}
       <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
         <div className="flex flex-row gap-8">
           <DollarInput
@@ -85,7 +89,7 @@ export function DrawdownForm({
             }}
             textSize="xl"
             maxValue={availableForDrawdown}
-            disabled={isLate}
+            disabled={isLate || isAfterTermEndTime}
           />
           <Button
             type="submit"
@@ -93,7 +97,7 @@ export function DrawdownForm({
             as="button"
             colorScheme="mustard"
             className="px-12"
-            disabled={isLate}
+            disabled={isLate || isAfterTermEndTime}
           >
             Submit
           </Button>

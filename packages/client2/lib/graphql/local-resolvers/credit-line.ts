@@ -50,4 +50,23 @@ export const creditLineResolvers: Resolvers[string] = {
 
     return collectedPaymentBalance;
   },
+  async isAfterTermEndTime(creditLine: CreditLine): Promise<boolean> {
+    const provider = await getProvider();
+    const creditLineContract = await getContract({
+      name: "CreditLine",
+      address: creditLine.id,
+      provider,
+      useSigner: false,
+    });
+
+    const [currentBlock, termEndTime] = await Promise.all([
+      provider.getBlock("latest"),
+      creditLineContract.termEndTime(),
+    ]);
+
+    if (termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber()) {
+      return true;
+    }
+    return false;
+  },
 };

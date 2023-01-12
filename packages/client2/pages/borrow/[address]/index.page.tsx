@@ -54,6 +54,7 @@ gql`
         paymentPeriodInDays
         isLate @client
         collectedPaymentBalance @client
+        isAfterTermEndTime @client
       }
       juniorTranches {
         id
@@ -267,6 +268,7 @@ export default function PoolCreditLinePage({
                       borrowerContractId={tranchedPool.borrowerContract.id}
                       tranchedPoolId={tranchedPool.id}
                       isLate={creditLine.isLate}
+                      isAfterTermEndTime={creditLine.isAfterTermEndTime}
                       onClose={() => setShowDrawdown(false)}
                     />
                   ) : (
