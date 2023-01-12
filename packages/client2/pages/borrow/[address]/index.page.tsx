@@ -240,7 +240,9 @@ export default function PoolCreditLinePage({
                     {showDrawdownForm
                       ? `Available to borrow: ${formattedAvailableForDrawdown}`
                       : `Next payment: ${formattedRemainingPeriodDueAmount} due ${
-                          creditLine.isLate ? "now" : formattedNextDueTime
+                          creditLineStatus === CreditLineStatus.PaymentLate
+                            ? "now"
+                            : formattedNextDueTime
                         }`}
                   </div>
                   <Button
@@ -267,7 +269,7 @@ export default function PoolCreditLinePage({
                       availableForDrawdown={availableForDrawdown}
                       borrowerContractId={tranchedPool.borrowerContract.id}
                       tranchedPoolId={tranchedPool.id}
-                      isLate={creditLine.isLate}
+                      creditLineStatus={creditLineStatus}
                       isAfterTermEndTime={creditLine.isAfterTermEndTime}
                       onClose={() => setShowDrawdown(false)}
                     />

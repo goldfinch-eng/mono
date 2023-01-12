@@ -8,11 +8,12 @@ import { getContract } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
+import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface DrawdownProps {
   availableForDrawdown: BigNumber;
   tranchedPoolId: string;
-  isLate: boolean;
+  creditLineStatus: CreditLineStatus | undefined;
   isAfterTermEndTime: boolean;
   borrowerContractId: string;
   onClose: () => void;
@@ -21,7 +22,7 @@ interface DrawdownProps {
 export function DrawdownForm({
   availableForDrawdown,
   tranchedPoolId,
-  isLate,
+  creditLineStatus,
   isAfterTermEndTime,
   borrowerContractId,
   onClose,
@@ -68,7 +69,7 @@ export function DrawdownForm({
 
   return (
     <>
-      {isLate ? (
+      {creditLineStatus === CreditLineStatus.PaymentLate ? (
         <div className="mb-4 text-lg ">
           Cannot drawdown when payment is past due
         </div>
@@ -89,7 +90,10 @@ export function DrawdownForm({
             }}
             textSize="xl"
             maxValue={availableForDrawdown}
-            disabled={isLate || isAfterTermEndTime}
+            disabled={
+              creditLineStatus === CreditLineStatus.PaymentLate ||
+              isAfterTermEndTime
+            }
           />
           <Button
             type="submit"
@@ -97,7 +101,10 @@ export function DrawdownForm({
             as="button"
             colorScheme="mustard"
             className="px-12"
-            disabled={isLate || isAfterTermEndTime}
+            disabled={
+              creditLineStatus === CreditLineStatus.PaymentLate ||
+              isAfterTermEndTime
+            }
           >
             Submit
           </Button>

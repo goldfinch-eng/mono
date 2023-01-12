@@ -140,8 +140,8 @@ export function getCreditLineStatus({
   limit: BigNumber;
   remainingTotalDueAmount: BigNumber;
 }) {
-  // Is Late
-  if (isLate) {
+  // Is Late - unless the credit line is fully paid off, then is inactive
+  if (isLate && remainingTotalDueAmount.gt(0)) {
     return CreditLineStatus.PaymentLate;
   }
 
