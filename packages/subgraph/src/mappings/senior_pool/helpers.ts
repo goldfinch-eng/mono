@@ -140,3 +140,12 @@ export function calculateDefaultRate(totalWrittenDown: BigInt, totalInvested: Bi
 export function updateDefaultRate(seniorPool: SeniorPool): void {
   seniorPool.defaultRate = calculateDefaultRate(seniorPool.totalWrittenDown, seniorPool.totalInvested)
 }
+
+/**
+ * The senior pool APY implicitly depends on the balance of credit lines. This convenience function has been provided to be called in TranchedPool mappings
+ */
+export function handleCreditLineBalanceChanged(): void {
+  const seniorPool = getOrInitSeniorPool()
+  updateEstimatedSeniorPoolApy(seniorPool)
+  seniorPool.save()
+}
