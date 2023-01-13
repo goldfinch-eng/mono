@@ -24,11 +24,10 @@ export function updateCurrentEarnRate(contractAddress: Address): void {
     stakingRewards.save()
 
     const seniorPool = getOrInitSeniorPool()
-    const estimatedApyFromGfiRaw = calculateEstimatedApyFromGfiRaw(
+    seniorPool.estimatedApyFromGfiRaw = calculateEstimatedApyFromGfiRaw(
       seniorPool.sharePrice,
       stakingRewards.currentEarnRatePerToken
     )
-    seniorPool.estimatedApyFromGfiRaw = estimatedApyFromGfiRaw
     seniorPool.save()
   }
 }
