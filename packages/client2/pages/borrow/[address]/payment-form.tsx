@@ -1,6 +1,6 @@
 import { useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -72,7 +72,7 @@ export function PaymentForm({
           }),
     },
   });
-  const { control, register, setValue } = rhfMethods;
+  const { control, register, setValue, watch } = rhfMethods;
 
   const onSubmit = async ({ usdcAmount }: FormFields) => {
     if (!account || !provider) {
@@ -112,6 +112,7 @@ export function PaymentForm({
   };
 
   const registerPaymentOption = register("paymentOption");
+  const usdcAmount = watch("usdcAmount");
 
   const onPaymentOptionChange = (e: ChangeEvent<HTMLInputElement>) => {
     registerPaymentOption.onChange(e);
@@ -148,6 +149,33 @@ export function PaymentForm({
         return;
     }
   };
+
+  // Set the correct radio payment option based on the usdc amount inputted
+  useEffect(() => {
+    const usdcAmountCrypto = stringToCryptoAmount(
+      // In some instances the usdcAmount form value emitted includes commas i.e "5,020.000000"
+      // which causes utils.parseUnits to throw an error
+      usdcAmount.replaceAll(",", ""),
+      "USDC"
+    );
+    if (
+      usdcAmountCrypto.amount.eq(remainingPeriodDueAmount) &&
+      showPayMinimumDueOption
+    ) {
+      showPayMinimumDueOption &&
+        setValue("paymentOption", PaymentOption.PayMinimumDue);
+    } else if (usdcAmountCrypto.amount.eq(remainingTotalDueAmount)) {
+      setValue("paymentOption", PaymentOption.PayFullBalancePlusInterest);
+    } else {
+      setValue("paymentOption", PaymentOption.PayOtherAmount);
+    }
+  }, [
+    usdcAmount,
+    remainingPeriodDueAmount,
+    remainingTotalDueAmount,
+    showPayMinimumDueOption,
+    setValue,
+  ]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -205,9 +233,6 @@ export function PaymentForm({
               validate: validatePaymentAmount,
             }}
             textSize="xl"
-            onFocus={() =>
-              setValue("paymentOption", PaymentOption.PayOtherAmount)
-            }
           />
           <Button type="submit" size="xl" as="button" className="px-12">
             Submit
