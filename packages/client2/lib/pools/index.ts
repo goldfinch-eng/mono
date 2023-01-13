@@ -2,15 +2,20 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
-import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { API_BASE_URL } from "@/constants";
 import {
-  TranchedPoolStatusFieldsFragment,
-  UserEligibilityFieldsFragment,
-  UidType,
-  TransactionCategory,
-  StakedPositionType,
+  API_BASE_URL,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+  USDC_MANTISSA,
+} from "@/constants";
+import {
   SeniorPoolStakedPosition,
+  StakedPositionType,
+  TranchedPoolStatusFieldsFragment,
+  TransactionCategory,
+  UidType,
+  UserEligibilityFieldsFragment,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
@@ -80,7 +85,6 @@ export function computeApyFromGfiInFiat(
   return apyFromGfiRaw.mulUnsafe(FixedNumber.fromString(fiatPerGfi.toString()));
 }
 
-const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
 const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
 const sharePriceMantissa = fiduMantissa;
 
@@ -97,7 +101,7 @@ export function sharesToUsdc(
   const amount = numShares
     .mul(sharePrice)
     .div(fiduMantissa)
-    .div(sharePriceMantissa.div(usdcMantissa));
+    .div(sharePriceMantissa.div(USDC_MANTISSA));
 
   return { token: "USDC", amount };
 }
@@ -114,7 +118,7 @@ export function usdcToShares(
 ): CryptoAmount<"FIDU"> {
   const numShares = usdcAmount
     .mul(fiduMantissa)
-    .div(usdcMantissa)
+    .div(USDC_MANTISSA)
     .mul(sharePriceMantissa)
     .div(sharePrice);
   return { token: "FIDU", amount: numShares };

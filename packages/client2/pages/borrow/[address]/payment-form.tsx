@@ -19,8 +19,8 @@ import { useWallet } from "@/lib/wallet";
 interface PaymentFormProps {
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
-  borrowerContractId: string;
-  tranchedPoolId: string;
+  borrowerContractAddress: string;
+  tranchedPoolAddress: string;
   onClose: () => void;
 }
 
@@ -34,8 +34,8 @@ enum PaymentOption {
 export function PaymentForm({
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
-  borrowerContractId,
-  tranchedPoolId,
+  borrowerContractAddress,
+  tranchedPoolAddress,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
@@ -82,7 +82,7 @@ export function PaymentForm({
 
     const borrowerContract = await getContract({
       name: "Borrower",
-      address: borrowerContractId,
+      address: borrowerContractAddress,
       provider,
     });
     const usdcContract = await getContract({ name: "USDC", provider });
@@ -94,7 +94,7 @@ export function PaymentForm({
       amount: usdc.amount,
     });
     await toastTransaction({
-      transaction: borrowerContract.pay(tranchedPoolId, usdc.amount),
+      transaction: borrowerContract.pay(tranchedPoolAddress, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });

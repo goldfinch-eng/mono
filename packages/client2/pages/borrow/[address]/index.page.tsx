@@ -168,11 +168,19 @@ export default function PoolCreditLinePage({
       remainingTotalDueAmount,
     });
 
+    const juniorTrancheShareInfo = {
+      principalDeposited: juniorTranche.principalDeposited,
+      sharePrice: juniorTranche.principalSharePrice,
+    };
+
+    const seniorTrancheShareInfo = {
+      principalDeposited: seniorTranche.principalDeposited,
+      sharePrice: seniorTranche.principalSharePrice,
+    };
+
     availableForDrawdown = calculateAvailableForDrawdown({
-      juniorTranchePrincipalDeposited: juniorTranche.principalDeposited,
-      juniorTranchePrincipalSharePrice: juniorTranche.principalSharePrice,
-      seniorPrincipalDeposited: seniorTranche.principalDeposited,
-      seniorTranchePrincipalSharePrice: seniorTranche.principalSharePrice,
+      juniorTrancheShareInfo,
+      seniorTrancheShareInfo,
     });
   }
 
@@ -267,8 +275,8 @@ export default function PoolCreditLinePage({
                   {showDrawdownForm ? (
                     <DrawdownForm
                       availableForDrawdown={availableForDrawdown}
-                      borrowerContractId={tranchedPool.borrowerContract.id}
-                      tranchedPoolId={tranchedPool.id}
+                      borrowerContractAddress={tranchedPool.borrowerContract.id}
+                      tranchedPoolAddress={tranchedPool.id}
                       creditLineStatus={creditLineStatus}
                       isAfterTermEndTime={creditLine.isAfterTermEndTime}
                       onClose={() => setShowDrawdown(false)}
@@ -277,8 +285,8 @@ export default function PoolCreditLinePage({
                     <PaymentForm
                       remainingPeriodDueAmount={remainingPeriodDueAmount}
                       remainingTotalDueAmount={remainingTotalDueAmount}
-                      borrowerContractId={tranchedPool.borrowerContract.id}
-                      tranchedPoolId={tranchedPool.id}
+                      borrowerContractAddress={tranchedPool.borrowerContract.id}
+                      tranchedPoolAddress={tranchedPool.id}
                       onClose={() => setShowPaymentForm(false)}
                     />
                   )}

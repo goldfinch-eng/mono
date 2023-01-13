@@ -12,19 +12,19 @@ import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface DrawdownProps {
   availableForDrawdown: BigNumber;
-  tranchedPoolId: string;
+  tranchedPoolAddress: string;
   creditLineStatus: CreditLineStatus | undefined;
   isAfterTermEndTime: boolean;
-  borrowerContractId: string;
+  borrowerContractAddress: string;
   onClose: () => void;
 }
 
 export function DrawdownForm({
   availableForDrawdown,
-  tranchedPoolId,
+  tranchedPoolAddress,
   creditLineStatus,
   isAfterTermEndTime,
-  borrowerContractId,
+  borrowerContractAddress,
   onClose,
 }: DrawdownProps) {
   const { account, provider } = useWallet();
@@ -42,12 +42,12 @@ export function DrawdownForm({
     const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
     const borrowerContract = await getContract({
       name: "Borrower",
-      address: borrowerContractId,
+      address: borrowerContractAddress,
       provider,
     });
     await toastTransaction({
       transaction: borrowerContract.drawdown(
-        tranchedPoolId,
+        tranchedPoolAddress,
         usdc.amount,
         account
       ),
@@ -70,7 +70,7 @@ export function DrawdownForm({
   return (
     <>
       {creditLineStatus === CreditLineStatus.PaymentLate ? (
-        <div className="mb-4 text-lg ">
+        <div className="mb-4 text-lg">
           Cannot drawdown when payment is past due
         </div>
       ) : isAfterTermEndTime ? (

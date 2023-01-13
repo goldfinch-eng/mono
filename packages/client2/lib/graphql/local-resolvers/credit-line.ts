@@ -64,9 +64,6 @@ export const creditLineResolvers: Resolvers[string] = {
       creditLineContract.termEndTime(),
     ]);
 
-    if (termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber()) {
-      return true;
-    }
-    return false;
+    return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
 };

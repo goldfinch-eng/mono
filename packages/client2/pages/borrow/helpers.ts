@@ -1,8 +1,5 @@
 import { BigNumber } from "ethers";
 
-import { USDC_DECIMALS } from "@/constants";
-import { sharesToUsdc } from "@/lib/pools";
-
 /**
  * Calculates the current interest owed on the credit line.
  *
@@ -159,22 +156,38 @@ export function getCreditLineStatus({
 }
 
 /**
- * Calculates the available credit available for drawdown on a credit line
+ * A utility function for converting tranche shares from a tranched pool to a USDC amount
+ */
+const trancheSharesToUsdc = (
+  principalDeposited: BigNumber, // USDC amount
+  sharePrice: BigNumber
+): BigNumber => {
+  const sharePriceMantissa = BigNumber.from(10).pow(18);
+  return principalDeposited.mul(sharePrice).div(sharePriceMantissa);
+};
+
+/**
+ * Calculates the USDC amount available for drawdown on a credit line
  *
  *
  */
+interface TrancheShareInfo {
+  principalDeposited: BigNumber;
+  sharePrice: BigNumber;
+}
 export function calculateAvailableForDrawdown({
-  juniorTranchePrincipalDeposited,
-  juniorTranchePrincipalSharePrice,
-  seniorPrincipalDeposited,
-  seniorTranchePrincipalSharePrice,
+  juniorTrancheShareInfo,
+  seniorTrancheShareInfo,
 }: {
-  juniorTranchePrincipalDeposited: BigNumber;
-  juniorTranchePrincipalSharePrice: BigNumber;
-  seniorPrincipalDeposited: BigNumber;
-  seniorTranchePrincipalSharePrice: BigNumber;
+  juniorTrancheShareInfo: TrancheShareInfo;
+  seniorTrancheShareInfo: TrancheShareInfo;
 }): BigNumber {
   /**
+   * Calculates the amount available for drawdown from a tranched pool by converting the
+   * total junior & senior shares to USDC.
+   *
+   * Why not use the CreditLine contract to calculate this?
+   *
    * In the scenario a borrower pays off principal interest during the current period we can't rely on
    * CreditLine.balance() to determine the amount actually available for drawdown from the pool if an additional
    * drawdown is attempted during the same period.
@@ -191,24 +204,14 @@ export function calculateAvailableForDrawdown({
    * 3. Pay off full interest + principal
    * 4. See borrow variable does not update to 0 (even when manually calling assess() b/c still in current period)
    */
-  const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
-  const juniorPrincipalDepositedAtomic = juniorTranchePrincipalDeposited
-    .mul(BigNumber.from(String(1e18)))
-    .div(usdcMantissa);
-  const seniorPrincipalDepositedAtomic = seniorPrincipalDeposited
-    .mul(BigNumber.from(String(1e18)))
-    .div(usdcMantissa);
+  const juniorTrancheAmount = trancheSharesToUsdc(
+    juniorTrancheShareInfo.principalDeposited,
+    juniorTrancheShareInfo.sharePrice
+  );
+  const seniorTrancheAmount = trancheSharesToUsdc(
+    seniorTrancheShareInfo.principalDeposited,
+    seniorTrancheShareInfo.sharePrice
+  );
 
-  const juniorTrancheAmount = sharesToUsdc(
-    juniorPrincipalDepositedAtomic,
-    juniorTranchePrincipalSharePrice
-  ).amount;
-  const seniorTrancheAmount = sharesToUsdc(
-    seniorPrincipalDepositedAtomic,
-    seniorTranchePrincipalSharePrice
-  ).amount;
-
-  const availableForDrawdown = juniorTrancheAmount.add(seniorTrancheAmount);
-
-  return availableForDrawdown;
+  return juniorTrancheAmount.add(seniorTrancheAmount);
 }
