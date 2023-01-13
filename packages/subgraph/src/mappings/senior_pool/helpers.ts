@@ -22,9 +22,9 @@ export function getOrInitSeniorPool(): SeniorPool {
       BigInt.fromI32(CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeInBps)
     )
     if (!getNumberCallResult.reverted) {
-      seniorPool.cancellationFee = getNumberCallResult.value.divDecimal(BigDecimal.fromString("10000"))
+      seniorPool.withdrawalCancellationFee = getNumberCallResult.value.divDecimal(BigDecimal.fromString("10000"))
     } else {
-      seniorPool.cancellationFee = BigDecimal.zero()
+      seniorPool.withdrawalCancellationFee = BigDecimal.zero()
     }
 
     seniorPool.estimatedTotalInterest = BigDecimal.zero()

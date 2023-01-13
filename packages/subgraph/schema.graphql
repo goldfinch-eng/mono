@@ -6,10 +6,7 @@ type SeniorPool @entity {
   assets: BigInt!
   totalLoansOutstanding: BigInt!
   tranchedPools: [TranchedPool!]!
-  """
-  This is the fee for cancelling a withdrawal request
-  """
-  cancellationFee: BigDecimal!
+  withdrawalCancellationFee: BigDecimal!
   estimatedTotalInterest: BigDecimal!
   estimatedApy: BigDecimal!
   estimatedApyFromGfiRaw: BigDecimal!

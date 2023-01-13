@@ -61,7 +61,7 @@ gql`
       id
       address
       sharePrice
-      cancellationFee
+      withdrawalCancellationFee
       epochEndsAt @client
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -184,7 +184,7 @@ export default function SeniorPoolPage() {
                 canUserParticipate={
                   user ? canUserParticipateInSeniorPool(user) : false
                 }
-                cancellationFee={seniorPool.cancellationFee}
+                cancellationFee={seniorPool.withdrawalCancellationFee}
                 epochEndsAt={seniorPool.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.sharePrice}
