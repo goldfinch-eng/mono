@@ -162,8 +162,7 @@ export function PaymentForm({
       usdcAmountCrypto.amount.eq(remainingPeriodDueAmount) &&
       showPayMinimumDueOption
     ) {
-      showPayMinimumDueOption &&
-        setValue("paymentOption", PaymentOption.PayMinimumDue);
+      setValue("paymentOption", PaymentOption.PayMinimumDue);
     } else if (usdcAmountCrypto.amount.eq(remainingTotalDueAmount)) {
       setValue("paymentOption", PaymentOption.PayFullBalancePlusInterest);
     } else {
