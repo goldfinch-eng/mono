@@ -31,7 +31,7 @@ export function DrawdownForm({
   const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };
-  const rhfMethods = useForm<FormFields>({ shouldFocusError: false });
+  const rhfMethods = useForm<FormFields>();
   const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {

@@ -3,19 +3,19 @@ import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
 import {
-  API_BASE_URL,
   FIDU_DECIMALS,
   GFI_DECIMALS,
   USDC_DECIMALS,
   USDC_MANTISSA,
 } from "@/constants";
+import { API_BASE_URL } from "@/constants";
 import {
-  SeniorPoolStakedPosition,
-  StakedPositionType,
   TranchedPoolStatusFieldsFragment,
-  TransactionCategory,
-  UidType,
   UserEligibilityFieldsFragment,
+  UidType,
+  TransactionCategory,
+  StakedPositionType,
+  SeniorPoolStakedPosition,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 

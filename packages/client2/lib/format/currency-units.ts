@@ -1,10 +1,10 @@
 import { utils } from "ethers";
 
 import {
-  CURVE_LP_DECIMALS,
-  FIDU_DECIMALS,
-  GFI_DECIMALS,
   USDC_DECIMALS,
+  GFI_DECIMALS,
+  FIDU_DECIMALS,
+  CURVE_LP_DECIMALS,
 } from "@/constants";
 
 import { FiatAmount, SupportedCrypto } from "../graphql/generated";
