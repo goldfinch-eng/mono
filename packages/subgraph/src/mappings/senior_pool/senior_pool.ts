@@ -72,34 +72,32 @@ export function handleInterestCollected(event: InterestCollected): void {
   seniorPool.save()
 }
 
-// Same logic as senior
-// idk why this exists at all. Assuming it was historically emitted before the separate junior/senior tranches existed
-export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
+function handleInvestmentMadeInTranchedPool(
+  seniorPoolAddress: Address,
+  tranchedPoolAddress: Address,
+  investedAmount: BigInt
+): void {
   const seniorPool = getOrInitSeniorPool()
-  const seniorPoolContract = SeniorPoolContract.bind(event.address)
+  const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   seniorPool.totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
   seniorPool.assets = seniorPoolContract.assets()
-  const tranchedPoolAddress = event.params.tranchedPool.toHexString()
-  if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
-    seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
+  const tranchedPoolAddressString = tranchedPoolAddress.toHexString()
+  if (!seniorPool.tranchedPools.includes(tranchedPoolAddressString)) {
+    seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddressString])
     updateEstimatedSeniorPoolApy(seniorPool)
-    seniorPool.totalInvested = seniorPool.totalInvested.plus(event.params.amount)
+    seniorPool.totalInvested = seniorPool.totalInvested.plus(investedAmount)
   }
   seniorPool.save()
 }
 
+// Handling this event seems confusing because InvestmentMadeInJunior is no longer emitted in our current codebase. But in the old pools (before tranched existed), the Senior Pool actually made junior investments.
+// seniorPool.tranchedPools would not be complete if this event was not processed.
+export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
+  handleInvestmentMadeInTranchedPool(event.address, event.params.tranchedPool, event.params.amount)
+}
+
 export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): void {
-  const seniorPool = getOrInitSeniorPool()
-  const seniorPoolContract = SeniorPoolContract.bind(event.address)
-  seniorPool.totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
-  seniorPool.assets = seniorPoolContract.assets()
-  const tranchedPoolAddress = event.params.tranchedPool.toHexString()
-  if (!seniorPool.tranchedPools.includes(tranchedPoolAddress)) {
-    seniorPool.tranchedPools = seniorPool.tranchedPools.concat([tranchedPoolAddress])
-    updateEstimatedSeniorPoolApy(seniorPool)
-    seniorPool.totalInvested = seniorPool.totalInvested.plus(event.params.amount)
-  }
-  seniorPool.save()
+  handleInvestmentMadeInTranchedPool(event.address, event.params.tranchedPool, event.params.amount)
 }
 
 export function handlePrincipalCollected(event: PrincipalCollected): void {
