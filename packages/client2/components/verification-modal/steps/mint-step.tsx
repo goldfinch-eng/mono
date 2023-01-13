@@ -86,7 +86,7 @@ export function MintStep() {
           gasPrice: gasPrice,
         }
       );
-      await toastTransaction({
+      const submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: "UID mint submitted.",
         successPrompt: "UID mint succeeded.",
@@ -94,6 +94,7 @@ export function MintStep() {
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
       dataLayerPushEvent("UID_MINTED", {
+        transactionHash: submittedTransaction.transactionHash,
         uidType: getUIDLabelFromType(mintingParameters.id),
       });
     } catch (e) {

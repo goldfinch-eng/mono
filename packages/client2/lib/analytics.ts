@@ -1,9 +1,10 @@
 type Event = {
   UID_FLOW_INITIATED: never;
   INVESTOR_TYPE_SELECTED: { type: "institutional" | "retail" };
-  UID_MINTED: { uidType: string };
-  DEPOSITED_IN_SENIOR_POOL: { usdAmount: number };
+  UID_MINTED: { transactionHash: string; uidType: string };
+  DEPOSITED_IN_SENIOR_POOL: { transactionHash: string; usdAmount: number };
   DEPOSITED_IN_TRANCHED_POOL: {
+    transactionHash: string;
     tranchedPoolAddress: string;
     usdAmount: number;
   };
