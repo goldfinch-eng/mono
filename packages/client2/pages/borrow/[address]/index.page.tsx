@@ -184,8 +184,9 @@ export default function PoolCreditLinePage({
     });
   }
 
-  const [showDrawdownForm, setShowDrawdown] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [shownForm, setShownForm] = useState<"drawdown" | "payment" | null>(
+    null
+  );
 
   const formattedAvailableForDrawdown = formatCrypto({
     amount: availableForDrawdown,
@@ -231,21 +232,21 @@ export default function PoolCreditLinePage({
       ) : (
         <div className="flex flex-col">
           <div className="mb-10 rounded-xl bg-sand-100">
-            {showDrawdownForm || showPaymentForm ? (
+            {shownForm !== null ? (
               <>
                 <div
                   className={clsx(
                     "grid grid-cols-2 rounded-t-xl p-8",
-                    showDrawdownForm ? "bg-mustard-300" : "bg-sand-700"
+                    shownForm === "drawdown" ? "bg-mustard-300" : "bg-sand-700"
                   )}
                 >
                   <div
                     className={clsx(
                       "text-lg",
-                      showDrawdownForm ? "text-sand-900" : "text-white"
+                      shownForm === "drawdown" ? "text-sand-900" : "text-white"
                     )}
                   >
-                    {showDrawdownForm
+                    {shownForm === "drawdown"
                       ? `Available to borrow: ${formattedAvailableForDrawdown}`
                       : `Next payment: ${formattedRemainingPeriodDueAmount} due ${
                           creditLineStatus === CreditLineStatus.PaymentLate
@@ -259,27 +260,23 @@ export default function PoolCreditLinePage({
                     as="button"
                     size="md"
                     className="w-fit justify-self-end"
-                    onClick={() =>
-                      showDrawdownForm
-                        ? setShowDrawdown(false)
-                        : setShowPaymentForm(false)
-                    }
+                    onClick={() => setShownForm(null)}
                   >
                     Cancel
                   </Button>
                 </div>
                 <div className="p-8">
                   <div className="mb-4 text-2xl font-medium">
-                    {showDrawdownForm ? "Borrow" : "Pay"}
+                    {shownForm === "drawdown" ? "Borrow" : "Pay"}
                   </div>
-                  {showDrawdownForm ? (
+                  {shownForm === "drawdown" ? (
                     <DrawdownForm
                       availableForDrawdown={availableForDrawdown}
                       borrowerContractAddress={tranchedPool.borrowerContract.id}
                       tranchedPoolAddress={tranchedPool.id}
                       creditLineStatus={creditLineStatus}
                       isAfterTermEndTime={creditLine.isAfterTermEndTime}
-                      onClose={() => setShowDrawdown(false)}
+                      onClose={() => setShownForm(null)}
                     />
                   ) : (
                     <PaymentForm
@@ -287,7 +284,7 @@ export default function PoolCreditLinePage({
                       remainingTotalDueAmount={remainingTotalDueAmount}
                       borrowerContractAddress={tranchedPool.borrowerContract.id}
                       tranchedPoolAddress={tranchedPool.id}
-                      onClose={() => setShowPaymentForm(false)}
+                      onClose={() => setShownForm(null)}
                     />
                   )}
                 </div>
@@ -305,7 +302,7 @@ export default function PoolCreditLinePage({
                     size="xl"
                     iconLeft="ArrowDown"
                     colorScheme="mustard"
-                    onClick={() => setShowDrawdown(true)}
+                    onClick={() => setShownForm("drawdown")}
                     disabled={
                       tranchedPool.isPaused ||
                       tranchedPool.drawdownsPaused ||
@@ -332,7 +329,7 @@ export default function PoolCreditLinePage({
                     className="w-full text-xl"
                     size="xl"
                     iconLeft="ArrowUp"
-                    onClick={() => setShowPaymentForm(true)}
+                    onClick={() => setShownForm("payment")}
                     disabled={creditLineStatus === CreditLineStatus.InActive}
                   >
                     Pay
