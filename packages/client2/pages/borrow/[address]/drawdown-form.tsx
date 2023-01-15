@@ -76,7 +76,7 @@ export function DrawdownForm({
         <div className="mb-4 text-lg ">Cannot drawdown after term end time</div>
       ) : null}
       <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-        <div className="flex flex-row gap-8">
+        <div className="flex items-start gap-8">
           <DollarInput
             control={control}
             name="usdcAmount"
@@ -99,7 +99,7 @@ export function DrawdownForm({
             size="xl"
             as="button"
             colorScheme="mustard"
-            className="px-12"
+            className="border border-transparent !px-12 !py-5"
             disabled={
               creditLineStatus === CreditLineStatus.PaymentLate ||
               isAfterTermEndTime

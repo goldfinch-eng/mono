@@ -219,7 +219,7 @@ export function PaymentForm({
           {...registerPaymentOption}
           onChange={onPaymentOptionChange}
         />
-        <div className="mt-4 flex flex-row gap-8">
+        <div className="mt-4 flex items-start gap-8">
           <DollarInput
             control={control}
             name="usdcAmount"
@@ -232,7 +232,12 @@ export function PaymentForm({
             }}
             textSize="xl"
           />
-          <Button type="submit" size="xl" as="button" className="px-12">
+          <Button
+            type="submit"
+            size="xl"
+            as="button"
+            className="border border-transparent !px-12 !py-5"
+          >
             Submit
           </Button>
         </div>
