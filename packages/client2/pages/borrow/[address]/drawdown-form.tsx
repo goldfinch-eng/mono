@@ -1,9 +1,8 @@
 import { useApolloClient } from "@apollo/client";
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { toastTransaction } from "@/lib/toast";
@@ -58,11 +57,11 @@ export function DrawdownForm({
   };
 
   const validateDrawdownAmount = (value: string) => {
-    const usdcToWithdraw = utils.parseUnits(value, USDC_DECIMALS);
-    if (usdcToWithdraw.gt(availableForDrawdown)) {
+    const usdcToWithdraw = stringToCryptoAmount(value, "USDC");
+    if (usdcToWithdraw.amount.gt(availableForDrawdown)) {
       return "Amount exceeds available for drawdown";
     }
-    if (usdcToWithdraw.lte(BigNumber.from(0))) {
+    if (usdcToWithdraw.amount.lte(BigNumber.from(0))) {
       return "Must be more than 0";
     }
   };

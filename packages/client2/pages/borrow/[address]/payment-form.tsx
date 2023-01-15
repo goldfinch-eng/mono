@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 import { ChangeEvent, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -9,7 +9,6 @@ import {
   Form,
   RadioButton,
 } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
@@ -102,11 +101,11 @@ export function PaymentForm({
   };
 
   const validatePaymentAmount = (usdcAmount: string) => {
-    const usdcToPay = utils.parseUnits(usdcAmount, USDC_DECIMALS);
-    if (usdcToPay.gt(remainingTotalDueAmount)) {
+    const usdcToPay = stringToCryptoAmount(usdcAmount, "USDC");
+    if (usdcToPay.amount.gt(remainingTotalDueAmount)) {
       return "This is over the total balance of the credit line";
     }
-    if (usdcToPay.lte(BigNumber.from(0))) {
+    if (usdcToPay.amount.lte(BigNumber.from(0))) {
       return "Must be more than 0";
     }
   };
