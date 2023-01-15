@@ -291,7 +291,7 @@ export default function PoolCreditLinePage({
               </>
             ) : (
               <div className="grid grid-cols-2">
-                <div className="border-r-2 border-sand-200 p-8">
+                <div className="border-r border-sand-200 p-8">
                   <div className="mb-1 text-lg">Available to borrow</div>
                   <div className="mb-5 text-2xl">
                     {formattedAvailableForDrawdown}
@@ -340,7 +340,7 @@ export default function PoolCreditLinePage({
           </div>
 
           <div className="rounded-xl bg-sand-100">
-            <div className="border-b-2 border-sand-200 p-8">
+            <div className="border-b border-sand-200 p-8">
               <div className="mb-5 grid grid-cols-2">
                 <div className="text-2xl">Credit Status</div>
                 <Button
