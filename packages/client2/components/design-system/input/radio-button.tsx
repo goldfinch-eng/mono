@@ -60,6 +60,7 @@ export const RadioButton = forwardRef<HTMLInputElement, RadioButtonProps>(
                 ? "h-6 w-6"
                 : "h-4 w-4"
             )}
+            value={value}
             {...rest}
           />
           <div

@@ -61,6 +61,7 @@ const addresses = {
   Fidu: contracts.Fidu.address,
   UniqueIdentity: contracts.UniqueIdentity.address,
   Go: contracts.Go.address,
+  Borrower: contracts.Borrower.address,
   StakingRewards: contracts.StakingRewards.address,
   Zapper: contracts.Zapper.address,
   CommunityRewards: contracts.CommunityRewards.address,
