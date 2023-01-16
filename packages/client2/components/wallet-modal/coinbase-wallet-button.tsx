@@ -21,7 +21,6 @@ export function CoinbaseWalletButton() {
     <ProviderButton
       onClick={handleConnectCoinbaseWallet}
       errorMessage={error?.message}
-      data-id="connect-wallet.coinbase-wallet"
     >
       {`Coinbase Wallet${isActive ? " (Connected)" : ""}`}
       {isActivating ? (

@@ -13,6 +13,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
@@ -30,11 +31,8 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
-    latestPoolStatus {
-      id
-      estimatedApy
-      estimatedApyFromGfiRaw
-    }
+    estimatedApy
+    estimatedApyFromGfiRaw
   }
 `;
 
@@ -66,9 +64,9 @@ export function SeniorPoolSupplyPanel({
   user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
-  const seniorPoolApyUsdc = seniorPool.latestPoolStatus.estimatedApy;
+  const seniorPoolApyUsdc = seniorPool.estimatedApy;
   const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
-    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+    seniorPool.estimatedApyFromGfiRaw,
     fiatPerGfi
   );
 
@@ -87,6 +85,7 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    let submittedTransaction;
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
     if (await isSmartContract(account, provider)) {
@@ -101,7 +100,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: stakingRewardsContract.depositAndStake(value),
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
@@ -116,7 +115,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: seniorPoolContract.deposit(value),
           pendingPrompt: "Deposit into senior pool submitted",
         });
@@ -145,7 +144,7 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit and stake submitted for senior pool.`,
         });
@@ -169,12 +168,17 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit submitted for senior pool.`,
         });
       }
     }
+
+    dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
+      transactionHash: submittedTransaction.transactionHash,
+      usdAmount: parseFloat(data.supply),
+    });
 
     await apolloClient.refetchQueries({
       include: "active",

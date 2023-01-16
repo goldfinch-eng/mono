@@ -1,4 +1,27 @@
 {
+  "0x538473c3a69da2b305cf11a40cf2f3904de8db5f": {
+    "name": "Cauris Fund #4: Africa Innovation Pool",
+    "category": "Africa multi-sector loans",
+    "icon": "%PUBLIC_URL%/icons/cauris.png",
+    "dataroom": "https://docsend.com/view/s/pthhfseqzqmzbstw",
+    "agreement": "https://docsend.com/view/pthhfseqzqmzbstw/d/643xmp639iv9cx5m",
+    "launchTime": 1669910400,
+    "poolDescription": "Proceeds will be used to provide additional backing to African Fintechs in their quest to provide access to financial services to millions of traditionally underbanked small businesses and consumers. Our investments will include senior secured loans with covenants for additional downside protection. All loans will be secured by all-asset debentures, including our borrowers’ lending receivables.",
+    "poolHighlights": [
+      "Cauris uses data-driven approaches to underwriting and portfolio management efforts and a combination of strong asset-level underwriting, structural and legal protections and advanced analytics to secure our debt investments in all fintech partners.",
+      "Cauris only invests in Fintechs characterized by management teams with deep, relevant experience in their companies’ sectors; well-performing loan books to use as collateral; and support by marquee VC, PE and strategic investors.",
+      "Pool investments will target companies providing consumer and SME lending products as well as trade and equipment financing."
+    ],
+    "borrowerName": "Cauris",
+    "borrowerDescription": "Cauris is a mission-driven investment firm that delivers growth capital to best-in-class Fintechs and high risk-adjusted returns to investors. We aim to facilitate the extension of financial services to 100 million people, accelerating the rise of the global middle class and enabling economic growth in emerging markets. Cauris's debt financing enables its partners to scale efforts that deliver financial services to small businesses and consumers--many of which are traditionally underserved--that are the economic engines of every economy. Leveraging cutting edge technology and highly structured underwriting, Cauris delivers both consistent financial returns and compelling social impact.",
+    "borrowerHighlights": [
+      "Founded by a team of former fintech entrepreneurs, operators, investment professionals and bankers with expertise in credit and structured finance, direct experience working with Fintechs in the Global South and deep industry experience in financial inclusion",
+      "Growing portfolio of fintech investments are supported by disciplined and robust underwriting while enabling our fintechs partners to continue innovating and growing",
+      "Cauris has high-quality portfolio companies in Africa, Asia and Latin America; borrowers are backed by marquee equity investors like A16Z, Tiger Global and the World Bank",
+      "Strong performance track record with $15M borrowed on Goldfinch to date, generating healthy risk-adjusted yields for investors with zero delays or defaults in borrower repayments"
+    ],
+    "allowedUIDTypes": [0, 1, 3, 4]
+  },
   "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
     "name": "Africa Innovation & Enterprise Pool via Cauris",
     "category": "Africa multi-sector loans",

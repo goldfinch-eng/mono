@@ -17,6 +17,7 @@ import {
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
 import {hardhat} from "@goldfinch-eng/protocol"
+import {BaseProvider} from "@ethersproject/providers"
 import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
@@ -24,7 +25,6 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import {setEnvForTest, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import _ from "lodash"
 import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
@@ -38,7 +38,7 @@ const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
   assertNonNullable(otherUserAddress)
   assertNonNullable(mintToAddress)
 
-  const UniqueIdentity = (await ethers.getContractFactory("TestUniqueIdentity")) as any
+  const UniqueIdentity = await ethers.getContractFactory("TestUniqueIdentity")
   const uniqueIdentity = await upgrades.deployProxy(UniqueIdentity, [
     uidContractOwnerAddress,
     "https://app.goldfinch.finance",
@@ -75,9 +75,9 @@ describe("linkUserToUid", () => {
   let mintToAddress: string
   let uidContractOwnerAddress: string
   let chainId: string
-  let signer: any
+  let signer: Wallet
   let testLinkKycToUid: HttpsFunction
-  let uniqueIdentity: any
+  let uniqueIdentity: {address: string}
   let testFirestore: Firestore
   let testApp: admin.app.App
   let users: firestore.CollectionReference<firestore.DocumentData>
@@ -193,8 +193,8 @@ describe("linkUserToUid", () => {
 
     chainId = await hardhat.getChainId()
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})
-    const mock = fake.returns(ethers.provider)
-    mockGetBlockchain(mock as any)
+    const mock = fake.returns(ethers.provider as BaseProvider)
+    mockGetBlockchain(mock)
     expiresAt = currentBlockTimestamp + uniqueIdentitySignatureExpiryTime
     validMintPresigMessage = presignedMintMessage(
       mainUserAddress,
@@ -380,9 +380,9 @@ describe("linkUserToUid", () => {
   context(
     "when the user is on the parallel markets isApprovedNonUSEntity, isApprovedUSAccreditedEntity, or isApprovedUSAccreditedIndividual list",
     () => {
-      const nonUSEntityUserAddress = (NonUSEntitiesList[0] as any).toLowerCase()
-      const usAccreditedEntityUserAddress = (USAccreditedEntitiesList[0] as any).toLowerCase()
-      const usAccreditedIndividualUserAddress = (USAccreditedIndividualsList[0] as any).toLowerCase()
+      const nonUSEntityUserAddress = NonUSEntitiesList[0].toLowerCase()
+      const usAccreditedEntityUserAddress = USAccreditedEntitiesList[0].toLowerCase()
+      const usAccreditedIndividualUserAddress = USAccreditedIndividualsList[0].toLowerCase()
 
       const nonUsEntityMintToAddress = "0x0000000000000000000000000000000000000004"
       const usAccreditedEntityMintToAddress = "0x0000000000000000000000000000000000000005"

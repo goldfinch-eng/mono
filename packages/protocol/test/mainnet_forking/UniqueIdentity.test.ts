@@ -1,8 +1,7 @@
 import hre, {ethers} from "hardhat"
 import {UniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {expect, BN, getDeployedAsTruffleContract, toEthers} from "../testHelpers"
-import {getProtocolOwner, getSignerForAddress, OWNER_ROLE, SIGNER_ROLE} from "../../blockchain_scripts/deployHelpers"
-import {FetchKYCFunction, KYC} from "@goldfinch-eng/utils"
+import {getSignerForAddress, OWNER_ROLE, SIGNER_ROLE} from "../../blockchain_scripts/deployHelpers"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
 import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@goldfinch-eng/utils"
@@ -52,13 +51,7 @@ describe("UID", () => {
   let nonUSIdType, usAccreditedIdType, usNonAccreditedIdType, usEntityIdType, nonUsEntityIdType
   let validExpiryTimestamp
   let latestBlockNum
-  let fetchKYCFunction: FetchKYCFunction, uniqueIdentity: UniqueIdentityInstance, signer: Signer, network
-
-  function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
-    return async (_) => {
-      return Promise.resolve(kyc)
-    }
-  }
+  let uniqueIdentity: UniqueIdentityInstance, signer: Signer, network
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -88,14 +81,6 @@ describe("UID", () => {
 
   describe("KYC is eligible", () => {
     describe("non accredited investor", () => {
-      beforeEach(() => {
-        fetchKYCFunction = fetchStubbedKycStatus({
-          status: "approved",
-          countryCode: "US",
-          residency: "us",
-        })
-      })
-
       it("returns a signature that can be used to mint", async () => {
         await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
 
@@ -142,14 +127,6 @@ describe("UID", () => {
     })
 
     describe("non US investor", () => {
-      beforeEach(() => {
-        fetchKYCFunction = fetchStubbedKycStatus({
-          status: "approved",
-          countryCode: "CA",
-          residency: "non-us",
-        })
-      })
-
       it("returns a signature that can be used to mint", async () => {
         await uniqueIdentity.setSupportedUIDTypes([nonUSIdType], [true])
 
@@ -195,14 +172,6 @@ describe("UID", () => {
     })
 
     describe("US accredited investor", () => {
-      beforeEach(() => {
-        fetchKYCFunction = fetchStubbedKycStatus({
-          status: "approved",
-          countryCode: "US",
-          residency: "us",
-        })
-      })
-
       it("returns a signature that can be used to mint", async () => {
         await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
 
@@ -248,14 +217,6 @@ describe("UID", () => {
     })
 
     describe("US entity", () => {
-      beforeEach(() => {
-        fetchKYCFunction = fetchStubbedKycStatus({
-          status: "approved",
-          countryCode: "CA",
-          residency: "non-us",
-        })
-      })
-
       it("returns a signature that can be used to mint", async () => {
         await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
 
@@ -301,14 +262,6 @@ describe("UID", () => {
     })
 
     describe("non US entity", () => {
-      beforeEach(() => {
-        fetchKYCFunction = fetchStubbedKycStatus({
-          status: "approved",
-          countryCode: "CA",
-          residency: "non-us",
-        })
-      })
-
       it("returns a signature that can be used to mint", async () => {
         await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])
 

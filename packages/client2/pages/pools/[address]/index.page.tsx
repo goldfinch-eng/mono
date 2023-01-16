@@ -113,11 +113,8 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -335,15 +332,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </BannerPortal>
       ) : null}
 
-      {poolStatus !== null && poolStatus !== undefined && (
-        <SubnavPortal>
+      <SubnavPortal>
+        {poolStatus && tranchedPool ? (
           <Marquee colorScheme={getMarqueeColor(poolStatus)}>
             {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
           </Marquee>
-          {/* gives the illusion of rounded corners on the top of the page */}
-          <div className="-mt-3 h-3 rounded-t-xl bg-white" />
-        </SubnavPortal>
-      )}
+        ) : (
+          <Marquee className="invisible">LOADING (placeholder)</Marquee>
+        )}
+        {/* gives the illusion of rounded corners on the top of the page */}
+        <div className="-mt-3 h-3 rounded-t-xl bg-white" />
+      </SubnavPortal>
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
@@ -401,9 +400,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               className="mt-12"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-              }
+              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
               fiatPerGfi={fiatPerGfi}
             />
           ) : null}
@@ -417,10 +414,8 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   tranchedPool={tranchedPool}
                   user={user}
                   fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
+                  seniorPoolSharePrice={seniorPool.sharePrice}
                   agreement={dealDetails.agreement}
                   isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />

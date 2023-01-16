@@ -32,7 +32,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
 
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
-    mintUid(user, uidType, 1, "");
+    uniqueIdentity._mintForTest(user, uidType, 1, "");
     assertEq(uniqueIdentity.balanceOf(user, uidType), 1);
     fundAddress(user, amount);
 
@@ -50,13 +50,13 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     invalidUidType = bound(invalidUidType, 5, type(uint256).max);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
-    mintUid(user, 1, 1, "");
+    uniqueIdentity._mintForTest(user, 1, 1, "");
     fundAddress(user, amount);
 
     depositToSpFrom(user, amount);
 
     burnUid(user, 1);
-    mintUid(user, invalidUidType, 1, "");
+    uniqueIdentity._mintForTest(user, invalidUidType, 1, "");
 
     uint256 withdrawAmount = sp.getNumShares(amount);
     vm.expectRevert(bytes("NA"));
@@ -69,7 +69,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
   ) public onlyAllowListed(user) {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(user);
-    mintUid(user, 1, 1, "");
+    uniqueIdentity._mintForTest(user, 1, 1, "");
     fundAddress(user, amount);
     depositToSpFrom(user, amount);
 
@@ -85,7 +85,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
   ) public {
     invalidUid = bound(invalidUid, 5, type(uint256).max);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
-    mintUid(address(this), 1, 1, "");
+    uniqueIdentity._mintForTest(address(this), 1, 1, "");
     fundAddress(address(this), amount);
     approveTokensMaxAmount(address(this));
     depositToSpFrom(address(this), amount);
@@ -98,7 +98,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     transferFidu(address(this), address(caller), shares);
 
     burnUid(address(this), 1);
-    mintUid(address(this), invalidUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), invalidUid, 1, "");
 
     _startImpersonation(address(this), address(this));
     vm.expectRevert(bytes("NA"));
@@ -113,7 +113,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     vm.assume(validUid != 2);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(address(this));
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     fundAddress(address(this), amount);
     depositToSpFrom(address(this), amount);
 
@@ -266,7 +266,7 @@ contract SeniorPoolRequestWithdrawalTest is SeniorPoolBaseTest {
     vm.assume(validUid != 2);
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     approveTokensMaxAmount(address(this));
-    mintUid(address(this), validUid, 1, "");
+    uniqueIdentity._mintForTest(address(this), validUid, 1, "");
     fundAddress(address(this), amount);
     depositToSpFrom(address(this), amount);
 

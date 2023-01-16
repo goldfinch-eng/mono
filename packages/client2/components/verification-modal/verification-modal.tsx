@@ -35,7 +35,6 @@ function VerificationModalWithoutContext({
           display: "flex",
           flexDirection: "column",
         }}
-        data-id="verification.modal"
       >
         <Flow />
       </div>

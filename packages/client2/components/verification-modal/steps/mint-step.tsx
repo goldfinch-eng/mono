@@ -5,6 +5,7 @@ import { useWizard } from "react-use-wizard";
 
 import { Button, InfoIconTooltip, Link } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import {
@@ -80,13 +81,17 @@ export function MintStep() {
           }
         );
       }
-      await toastTransaction({
+      const submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: "UID mint submitted.",
         successPrompt: "UID mint succeeded.",
       });
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
+      dataLayerPushEvent("UID_MINTED", {
+        transactionHash: submittedTransaction.transactionHash,
+        uidType: getUIDLabelFromType(signer.idVersion),
+      });
     } catch (e) {
       console.error(e);
       setErrorMessage("Error while minting");
@@ -140,10 +145,7 @@ export function MintStep() {
         )
       }
     >
-      <div
-        className="flex h-full flex-col items-center justify-between"
-        data-id="verfication.step.mint"
-      >
+      <div className="flex h-full flex-col items-center justify-between">
         <div>
           {errorMessage ? (
             <div className="mb-8 text-xl text-clay-500">{errorMessage}</div>

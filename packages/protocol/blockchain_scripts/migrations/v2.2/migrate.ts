@@ -1,6 +1,5 @@
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 import {deploy} from "./deploy"
-import path from "path"
 import {getTempMultisig} from "../../deployHelpers"
 
 export async function main() {

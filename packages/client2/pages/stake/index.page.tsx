@@ -53,12 +53,9 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApy
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApy
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -194,7 +191,7 @@ export default function StakePage() {
                 headingLabel="Token to stake"
                 slot1={`${formatPercent(
                   computeApyFromGfiInFiat(
-                    data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
+                    data.seniorPools[0].estimatedApyFromGfiRaw,
                     data.gfiPrice.price.amount
                   )
                 )} GFI`}
@@ -235,9 +232,7 @@ export default function StakePage() {
                       <MigrateForm
                         usdcBalance={usdcBalance}
                         positions={fiduPositions}
-                        sharePrice={
-                          data.seniorPools[0].latestPoolStatus.sharePrice
-                        }
+                        sharePrice={data.seniorPools[0].sharePrice}
                         onComplete={refetch}
                         showVaultWarning={vaultedFiduPositions.length > 0}
                       />

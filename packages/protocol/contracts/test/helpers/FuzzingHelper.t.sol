@@ -19,12 +19,4 @@ contract FuzzingHelper {
   function isAllowed(address _address) public view returns (bool) {
     return !addressDenyList[_address];
   }
-
-  function isNotContract(address _address) public view returns (bool) {
-    uint32 ucs;
-    assembly {
-      ucs := extcodesize(_address)
-    }
-    return ucs == 0;
-  }
 }

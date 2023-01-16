@@ -59,13 +59,10 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        sharePrice
-        usdcBalance
-        cancellationFee
-        epochEndsAt @client
-      }
+      address
+      sharePrice
+      withdrawalCancellationFee
+      epochEndsAt @client
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
     }
@@ -98,7 +95,7 @@ export default function SeniorPoolPage() {
   const fiatPerGfi = data?.gfiPrice?.price.amount;
   const shouldShowWithdrawal =
     account &&
-    seniorPool?.latestPoolStatus.sharePrice &&
+    seniorPool?.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
       data?.vaultedStakedPositions.length !== 0 ||
@@ -160,7 +157,7 @@ export default function SeniorPoolPage() {
                 colorScheme="secondary"
                 iconRight="ArrowTopRight"
                 as="a"
-                href={`https://etherscan.io/address/${seniorPool.id}`}
+                href={`https://etherscan.io/address/${seniorPool.address}`}
                 target="_blank"
                 rel="noopener"
               >
@@ -187,15 +184,14 @@ export default function SeniorPoolPage() {
                 canUserParticipate={
                   user ? canUserParticipateInSeniorPool(user) : false
                 }
-                cancellationFee={seniorPool.latestPoolStatus.cancellationFee}
-                epochEndsAt={seniorPool.latestPoolStatus.epochEndsAt}
+                cancellationFee={seniorPool.withdrawalCancellationFee}
+                epochEndsAt={seniorPool.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
-                seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                seniorPoolSharePrice={seniorPool.sharePrice}
                 stakedPositions={data.seniorPoolStakedPositions}
                 vaultedStakedPositions={data.vaultedStakedPositions.map(
                   (s) => s.seniorPoolStakedPosition
                 )}
-                seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
                 existingWithdrawalRequest={data.seniorPoolWithdrawalRequests[0]}
               />
             )}
@@ -205,10 +201,8 @@ export default function SeniorPoolPage() {
             fiatPerGfi ? (
               <UnstakedFiduBanner
                 fiduBalance={data.viewer.fiduBalance}
-                sharePrice={seniorPool?.latestPoolStatus.sharePrice}
-                estimatedApyFromGfiRaw={
-                  seniorPool?.latestPoolStatus.estimatedApyFromGfiRaw
-                }
+                sharePrice={seniorPool.sharePrice}
+                estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}
@@ -306,7 +300,7 @@ export default function SeniorPoolPage() {
             </Button>
             <Button
               as="a"
-              href={`https://etherscan.io/address/${seniorPool?.id}`}
+              href={`https://etherscan.io/address/${seniorPool?.address}`}
               colorScheme="secondary"
               iconRight="ArrowTopRight"
               variant="rounded"

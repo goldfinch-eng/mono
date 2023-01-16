@@ -2,9 +2,7 @@ import { ComponentMeta, ComponentStory } from "@storybook/react";
 import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
-import { Input, DollarInput } from ".";
-import { Checkbox } from "./checkbox";
-import { Select } from "./select";
+import { Input, DollarInput, RadioButton, Checkbox, Select } from ".";
 
 export default {
   component: Input,
@@ -121,4 +119,18 @@ export const CheckboxStory: ComponentStory<typeof Checkbox> = (args) => {
 CheckboxStory.args = {
   name: "pug",
   label: "I like pugs",
+};
+
+export const RadioButtonStory: ComponentStory<typeof RadioButton> = (args) => {
+  const { register, handleSubmit } = useForm<{ animal: string }>();
+  return (
+    <form
+      onSubmit={handleSubmit((data) => alert(JSON.stringify(data)))}
+      className={args.colorScheme === "dark" ? "bg-black p-5" : "p-5"}
+    >
+      <RadioButton {...args} {...register("animal")} value="dog" label="Dog" />
+      <RadioButton {...args} {...register("animal")} value="cat" label="Cat" />
+      <button type="submit">submit</button>
+    </form>
+  );
 };

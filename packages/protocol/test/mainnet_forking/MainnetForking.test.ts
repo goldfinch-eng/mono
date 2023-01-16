@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
@@ -9,7 +11,6 @@ import {
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
-  interestAprAsBN,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_GOVERNANCE_MULTISIG,
@@ -33,8 +34,6 @@ import {
   advanceTime,
   BN,
   ZERO_ADDRESS,
-  decimals,
-  USDC_DECIMALS,
   createPoolWithCreditLine,
   decodeLogs,
   getDeployedAsTruffleContract,
@@ -46,9 +45,7 @@ import {
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
-  SECONDS_PER_DAY,
   advanceAndMineBlock,
-  fiduToUSDC,
   getNumShares,
   HALF_CENT,
   ZERO,
@@ -113,13 +110,12 @@ import {
   UniqueIdentity,
   Borrower as EthersBorrower,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {ContractReceipt, Signer, Wallet} from "ethers"
+import {ContractReceipt, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
 import {
   BorrowerCreated,
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
-import {config} from "dotenv"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -250,7 +246,7 @@ and contracts.
 describe("mainnet forking tests", async function () {
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
-  let goldfinchFactory: GoldfinchFactoryInstance, busd, usdt, cUSDC
+  let goldfinchFactory: GoldfinchFactoryInstance, busd, usdt
   let reserveAddress,
     tranchedPool: TranchedPoolInstance,
     borrower,
@@ -268,9 +264,6 @@ describe("mainnet forking tests", async function () {
     merkleDirectDistributor: MerkleDirectDistributorInstance,
     legacyGoldfinchConfig: GoldfinchConfigInstance,
     uniqueIdentity: UniqueIdentityInstance,
-    ethersUniqueIdentity: UniqueIdentity,
-    signer: Signer,
-    network,
     poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
@@ -312,7 +305,6 @@ describe("mainnet forking tests", async function () {
       seniorPoolStrategy,
       fidu,
       goldfinchConfig,
-      cUSDC,
       go,
       stakingRewards,
       backerRewards,
@@ -323,9 +315,6 @@ describe("mainnet forking tests", async function () {
       merkleDirectDistributor,
       legacyGoldfinchConfig,
       uniqueIdentity,
-      signer,
-      network,
-      ethersUniqueIdentity,
       poolTokens,
       requestTokens,
     } = await setupTest())

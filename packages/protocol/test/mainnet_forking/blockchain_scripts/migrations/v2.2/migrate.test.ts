@@ -16,7 +16,7 @@ import {
   StakingRewardsInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
-import hre, {deployments, getChainId, getNamedAccounts} from "hardhat"
+import {deployments, getChainId, getNamedAccounts} from "hardhat"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 
 const v231PerformMigration = deployments.createFixture(async () => {

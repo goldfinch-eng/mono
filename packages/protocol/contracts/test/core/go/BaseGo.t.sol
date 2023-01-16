@@ -11,7 +11,7 @@ import {BaseTest} from "../BaseTest.t.sol";
 contract GoBaseTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   Go internal go;
-  ITestUniqueIdentity0612 internal uniqueIdentity;
+  ITestUniqueIdentity0612 internal uid;
 
   function setUp() public virtual override {
     super.setUp();
@@ -19,22 +19,23 @@ contract GoBaseTest is BaseTest {
 
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
 
-    uniqueIdentity = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
-    uniqueIdentity.initialize(GF_OWNER, "UNIQUE-IDENTITY");
+    uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
+    uid.initialize(GF_OWNER, "UNIQUE-IDENTITY");
     uint256[] memory supportedUids = new uint256[](5);
     bool[] memory supportedUidValues = new bool[](5);
     for (uint256 i = 0; i < 5; ++i) {
       supportedUids[i] = i;
       supportedUidValues[i] = true;
     }
-    uniqueIdentity.setSupportedUIDTypes(supportedUids, supportedUidValues);
+    uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
 
     go = new Go();
-    go.initialize(GF_OWNER, gfConfig, address(uniqueIdentity));
+    go.initialize(GF_OWNER, gfConfig, address(uid));
 
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(go));
-    fuzzHelper.exclude(address(uniqueIdentity));
+    fuzzHelper.exclude(address(uid));
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
 
     _stopImpersonation();
   }

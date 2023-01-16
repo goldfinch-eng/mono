@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import hre, {getNamedAccounts} from "hardhat"
 import {
   ERC20Instance,

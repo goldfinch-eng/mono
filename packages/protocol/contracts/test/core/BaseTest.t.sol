@@ -39,6 +39,7 @@ abstract contract BaseTest is Test {
   }
 
   function excludeAddresses() private {
+    fuzzHelper.exclude(address(this));
     fuzzHelper.exclude(address(fuzzHelper));
     fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(address(protocol));
@@ -138,17 +139,6 @@ abstract contract BaseTest is Test {
   modifier onlyAllowListed(address _address) {
     vm.assume(fuzzHelper.isAllowed(_address));
     _;
-  }
-
-  modifier isNotContract(address _address) {
-    vm.assume(fuzzHelper.isNotContract(_address));
-    _;
-  }
-
-  modifier withMsgSender(address sender) {
-    vm.startPrank(sender);
-    _;
-    vm.stopPrank();
   }
 
   modifier assume(bool stmt) {
