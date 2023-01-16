@@ -1,13 +1,19 @@
-"""
-Notes
-- address are mapped as IDs
-- We are using reverse lookups to create virtual fields:
-  https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
-"""
 type SeniorPool @entity {
-  id: ID!
-  latestPoolStatus: SeniorPoolStatus!
-  investmentsMade: [TranchedPool!]!
+  id: ID! # Hardcoded to "1", the Senior Pool is a singleton
+  address: Bytes!
+  sharePrice: BigInt!
+  totalShares: BigInt!
+  assets: BigInt!
+  totalLoansOutstanding: BigInt!
+  tranchedPools: [TranchedPool!]!
+  withdrawalCancellationFee: BigDecimal!
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal!
+
+  totalInvested: BigInt!
+  totalWrittenDown: BigInt!
+  defaultRate: BigDecimal!
 }
 
 enum StakedPositionType {
@@ -26,28 +32,6 @@ type SeniorPoolStakedPosition @entity {
   """
   startTime: BigInt!
   totalRewardsClaimed: BigInt!
-}
-
-type SeniorPoolStatus @entity {
-  """
-  This entity is a singleton, so the id is always "1"
-  """
-  id: ID!
-  rawBalance: BigInt!
-  balance: BigInt!
-  sharePrice: BigInt!
-  totalShares: BigInt!
-  assets: BigInt!
-  totalLoansOutstanding: BigInt!
-  cumulativeWritedowns: BigInt!
-  tranchedPools: [TranchedPool!]!
-  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
-  estimatedTotalInterest: BigDecimal!
-  estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal!
-  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
-  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
-  cancellationFee: BigDecimal!
 }
 
 type User @entity {

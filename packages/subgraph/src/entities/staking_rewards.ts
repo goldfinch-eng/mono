@@ -2,8 +2,7 @@ import {Address, BigInt} from "@graphprotocol/graph-ts"
 
 import {StakingRewardsData} from "../../generated/schema"
 import {StakingRewards as StakingRewardsContract} from "../../generated/StakingRewards/StakingRewards"
-
-import {updateEstimatedApyFromGfiRaw} from "./senior_pool"
+import {getOrInitSeniorPool, calculateEstimatedApyFromGfiRaw} from "../mappings/senior_pool/helpers"
 
 const STAKING_REWARDS_ID = "1"
 
@@ -22,8 +21,13 @@ export function updateCurrentEarnRate(contractAddress: Address): void {
   if (!callResult.reverted) {
     const stakingRewards = getStakingRewards()
     stakingRewards.currentEarnRatePerToken = callResult.value
-
     stakingRewards.save()
-    updateEstimatedApyFromGfiRaw()
+
+    const seniorPool = getOrInitSeniorPool()
+    seniorPool.estimatedApyFromGfiRaw = calculateEstimatedApyFromGfiRaw(
+      seniorPool.sharePrice,
+      stakingRewards.currentEarnRatePerToken
+    )
+    seniorPool.save()
   }
 }

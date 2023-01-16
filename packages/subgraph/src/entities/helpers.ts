@@ -103,28 +103,6 @@ export function getCreatedAtOverride(address: Address): BigInt | null {
   return null
 }
 
-export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string): BigDecimal {
-  const tranchedPool = TranchedPool.load(tranchedPoolId)
-  if (!tranchedPool) {
-    return BigDecimal.fromString("0")
-  }
-  const creditLine = CreditLine.load(tranchedPool.creditLine)
-  if (!creditLine) {
-    return BigDecimal.fromString("0")
-  }
-
-  const protocolFee = BigDecimal.fromString("0.1")
-  const leverageRatio = tranchedPool.estimatedLeverageRatio
-  const seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
-  const seniorBalance = creditLine.balance.toBigDecimal().times(seniorFraction)
-  const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
-  const isV1Pool = tranchedPool.isV1StyleDeal
-  const seniorPoolPercentageOfInterest = isV1Pool
-    ? BigDecimal.fromString("1").minus(protocolFee)
-    : BigDecimal.fromString("1").minus(juniorFeePercentage).minus(protocolFee)
-  return seniorBalance.times(creditLine.interestAprDecimal).times(seniorPoolPercentageOfInterest)
-}
-
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   if (!tranchedPool) {
     return BigDecimal.fromString("0")
