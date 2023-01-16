@@ -1,5 +1,6 @@
 import { useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 import { ChangeEvent, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -9,6 +10,7 @@ import {
   Form,
   RadioButton,
 } from "@/components/design-system";
+import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
@@ -41,16 +43,6 @@ export function PaymentForm({
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
-  const remainingPeriodDueAmountCrypto = {
-    amount: remainingPeriodDueAmount,
-    token: "USDC",
-  } as const;
-
-  const remainingTotalDueAmountCrypto = {
-    amount: remainingTotalDueAmount,
-    token: "USDC",
-  } as const;
-
   const showPayMinimumDueOption =
     remainingPeriodDueAmount.gt(0) &&
     !remainingPeriodDueAmount.eq(remainingTotalDueAmount);
@@ -62,14 +54,8 @@ export function PaymentForm({
         ? PaymentOption.PayMinimumDue
         : PaymentOption.PayFullBalancePlusInterest,
       usdcAmount: showPayMinimumDueOption
-        ? formatCrypto(remainingPeriodDueAmountCrypto, {
-            includeSymbol: false,
-            useMaximumPrecision: true,
-          })
-        : formatCrypto(remainingTotalDueAmountCrypto, {
-            includeSymbol: false,
-            useMaximumPrecision: true,
-          }),
+        ? formatUnits(remainingPeriodDueAmount, USDC_DECIMALS)
+        : formatUnits(remainingTotalDueAmount, USDC_DECIMALS),
     },
   });
   const { control, register, setValue, watch } = rhfMethods;
@@ -122,32 +108,17 @@ export function PaymentForm({
       case PaymentOption.PayMinimumDue:
         setValue(
           "usdcAmount",
-          formatCrypto(remainingPeriodDueAmountCrypto, {
-            includeSymbol: false,
-            useMaximumPrecision: true,
-          })
+          formatUnits(remainingPeriodDueAmount, USDC_DECIMALS)
         );
         return;
       case PaymentOption.PayFullBalancePlusInterest:
         setValue(
           "usdcAmount",
-          formatCrypto(remainingTotalDueAmountCrypto, {
-            includeSymbol: false,
-            useMaximumPrecision: true,
-          })
+          formatUnits(remainingTotalDueAmount, USDC_DECIMALS)
         );
         return;
       case PaymentOption.PayOtherAmount:
-        setValue(
-          "usdcAmount",
-          formatCrypto(
-            { amount: BigNumber.from(0), token: "USDC" },
-            {
-              includeSymbol: false,
-              useMaximumPrecision: true,
-            }
-          )
-        );
+        setValue("usdcAmount", "");
         return;
       default:
         assertUnreachable(e.target.value as never);
@@ -156,12 +127,7 @@ export function PaymentForm({
 
   // Set the correct radio payment option based on the usdc amount inputted
   useEffect(() => {
-    const usdcAmountCrypto = stringToCryptoAmount(
-      // In some instances the usdcAmount form value emitted includes commas i.e "5,020.000000"
-      // which causes utils.parseUnits to throw an error
-      usdcAmount.replaceAll(",", ""),
-      "USDC"
-    );
+    const usdcAmountCrypto = stringToCryptoAmount(usdcAmount, "USDC");
     if (
       usdcAmountCrypto.amount.eq(remainingPeriodDueAmount) &&
       showPayMinimumDueOption
@@ -191,7 +157,10 @@ export function PaymentForm({
               <div>
                 Pay minimum due:
                 <span className="font-semibold">
-                  {` ${formatCrypto(remainingPeriodDueAmountCrypto)}`}
+                  {` ${formatCrypto({
+                    amount: remainingPeriodDueAmount,
+                    token: "USDC",
+                  })}`}
                 </span>
               </div>
             }
@@ -208,7 +177,10 @@ export function PaymentForm({
             <div>
               Pay full balance plus interest:
               <span className="font-semibold">
-                {` ${formatCrypto(remainingTotalDueAmountCrypto)}`}
+                {` ${formatCrypto({
+                  amount: remainingTotalDueAmount,
+                  token: "USDC",
+                })}`}
               </span>
             </div>
           }
