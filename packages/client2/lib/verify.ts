@@ -144,7 +144,13 @@ export async function fetchUniqueIdentitySigner(
     method: "POST",
   });
   if (!res.ok) {
-    throw new Error("Unique indentity signer responded with an error");
+    const message = (await res.json()).message as string;
+    const actualMessage = message?.match(/\"message\"\:\"(.+)\"/);
+    if (actualMessage) {
+      throw new Error(actualMessage[1]);
+    } else {
+      throw new Error("Unique indentity signer responded with an error");
+    }
   }
   const response = await res.json();
   const parsedBody: {
