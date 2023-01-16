@@ -2,7 +2,12 @@ import { ethers } from "ethers";
 import { useForm } from "react-hook-form";
 import { useWizard } from "react-use-wizard";
 
-import { Button, InfoIconTooltip, Input } from "@/components/design-system";
+import {
+  Button,
+  InfoIconTooltip,
+  Input,
+  useModalContext,
+} from "@/components/design-system";
 
 import { useVerificationFlowContext } from "../verification-flow-context";
 import { StepTemplate } from "./step-template";
@@ -12,6 +17,9 @@ interface MintToAddressForm {
 }
 
 export function MintToAddressEntryStep() {
+  const { useModalTitle } = useModalContext();
+  useModalTitle("Enter smart contract wallet address");
+
   const { setMintToAddress, setTriggerMintTo } = useVerificationFlowContext();
 
   const { previousStep } = useWizard();

@@ -3,7 +3,12 @@ import Image from "next/future/image";
 import { useEffect, useState } from "react";
 import { useWizard } from "react-use-wizard";
 
-import { Button, InfoIconTooltip, Link } from "@/components/design-system";
+import {
+  Button,
+  InfoIconTooltip,
+  Link,
+  useModalContext,
+} from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
@@ -22,6 +27,8 @@ import { StepTemplate } from "./step-template";
 import uidLogo2 from "./uid-logo2.png";
 
 export function MintStep() {
+  const { useModalTitle } = useModalContext();
+  useModalTitle("Mint your UID");
   const {
     signature,
     mintToAddress,
