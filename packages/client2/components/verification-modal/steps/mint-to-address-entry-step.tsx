@@ -4,7 +4,7 @@ import { useWizard } from "react-use-wizard";
 
 import {
   Button,
-  InfoIconTooltip,
+  Form,
   Input,
   useModalContext,
 } from "@/components/design-system";
@@ -24,61 +24,53 @@ export function MintToAddressEntryStep() {
 
   const { previousStep } = useWizard();
 
-  const formMethods = useForm<MintToAddressForm>();
-  const { watch, register } = formMethods;
-  const watchedAddress = watch("address");
-  const isValidAddress = ethers.utils.isAddress(watchedAddress);
-
-  const setAddressAndGoBack = () => {
-    if (!isValidAddress) {
-      console.error("Unexpected state, attempting to mint to empty address");
-      return;
-    }
+  const rhfMethods = useForm<MintToAddressForm>();
+  const { register } = rhfMethods;
+  const onSubmit = (data: MintToAddressForm) => {
     setTriggerMintTo(true);
-    setMintToAddress(watchedAddress);
+    setMintToAddress(data.address);
     previousStep();
   };
 
+  const validate = (address: string) => {
+    if (!ethers.utils.isAddress(address)) {
+      return "Not a valid address";
+    }
+  };
+
   return (
-    <StepTemplate
-      includePrivacyStatement={false}
-      footer={
-        <div className="flex w-full flex-row items-center justify-between">
-          <Button size="lg" onClick={previousStep} className="mr-1 w-full">
-            Back
-          </Button>
-          <Button
-            size="lg"
-            disabled={!isValidAddress}
-            onClick={setAddressAndGoBack}
-            iconRight="ArrowSmRight"
-            className="ml-1 w-full"
-          >
-            Mint UID
-          </Button>
-        </div>
-      }
+    <Form
+      rhfMethods={rhfMethods}
+      onSubmit={onSubmit}
+      className="flex h-full grow flex-col justify-between"
     >
-      <div
-        className="flex h-full flex-col items-center justify-between"
-        data-id="verfication.step.mint-to"
+      <StepTemplate
+        includePrivacyStatement={false}
+        footer={
+          <div className="flex w-full flex-row items-center justify-between gap-2">
+            <Button size="lg" onClick={previousStep} className="w-full">
+              Back
+            </Button>
+            <Button
+              size="lg"
+              type="submit"
+              iconRight="ArrowSmRight"
+              className="w-full"
+            >
+              Mint UID
+            </Button>
+          </div>
+        }
       >
         <Input
-          required={true}
-          {...register("address", { required: "Required" })}
+          {...register("address", { required: "Required", validate })}
           label="Smart contract wallet address"
-          labelDecoration={
-            <InfoIconTooltip
-              size="sm"
-              placement="top"
-              content="Your full name as it appears on your government-issued identification. This should be the same as your full legal name used to register your UID."
-            />
-          }
           placeholder="0x...1234"
           textSize="sm"
           className="mb-3 w-full"
           labelClassName="!text-sm !mb-3"
-        />{" "}
+        />
+
         <div className="mt-8 text-xs text-sand-500">
           Please note this wallet will be able to interact with the Goldfinch
           protocol on behalf of you or the organization that went through
@@ -88,7 +80,7 @@ export function MintToAddressEntryStep() {
           control over this UID, and it can be revoked from this smart contract
           by contacting Warbler Labs.
         </div>
-      </div>
-    </StepTemplate>
+      </StepTemplate>
+    </Form>
   );
 }
