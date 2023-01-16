@@ -16,7 +16,7 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file: ./src/mappings/senior_pool.ts
+      file: ./src/mappings/senior_pool/senior_pool.ts
       entities:
         - SeniorPool
         - User
@@ -45,8 +45,6 @@ dataSources:
           handler: handlePrincipalCollected
         - event: PrincipalWrittenDown(indexed address,int256)
           handler: handlePrincipalWrittenDown
-        - event: ReserveFundsCollected(indexed address,uint256)
-          handler: handleReserveFundsCollected
         - event: WithdrawalMade(indexed address,uint256,uint256)
           handler: handleWithdrawalMade
         - event: "WithdrawalRequested(indexed uint256,indexed uint256,indexed address,uint256)"
@@ -167,6 +165,8 @@ dataSources:
       abis:
         - name: StakingRewards
           file: ./abis/StakingRewards.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
