@@ -7,6 +7,7 @@ import { IdIssuerStep } from "./steps/id-issuer-step";
 import { IdWarningStep } from "./steps/id-warning-step";
 import { IneligibleStep } from "./steps/ineligible-step";
 import { IntroStep } from "./steps/intro-step";
+import { MintFinishedStep } from "./steps/mint-finished-step";
 import { MintStep } from "./steps/mint-step";
 import { MintToAddressEntryStep } from "./steps/mint-to-address-entry-step";
 import { ParallelMarketsStep } from "./steps/parallel-markets-step";
@@ -32,6 +33,7 @@ export function Flow() {
         <PendingStep />
         <MintStep />
         <MintToAddressEntryStep />
+        <MintFinishedStep />
         <IneligibleStep />
         <AlreadyMintedStep />
       </Wizard>

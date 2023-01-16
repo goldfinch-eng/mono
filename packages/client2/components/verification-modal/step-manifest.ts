@@ -11,6 +11,7 @@ export enum VerificationFlowSteps {
   Pending,
   Mint,
   MintToAddressEntry,
+  MintFinished,
   Ineligible,
   AlreadyMinted,
 }

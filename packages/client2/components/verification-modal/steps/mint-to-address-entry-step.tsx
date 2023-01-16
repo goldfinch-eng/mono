@@ -1,3 +1,4 @@
+import { useApolloClient } from "@apollo/client";
 import { ethers } from "ethers";
 import { useForm } from "react-hook-form";
 import { useWizard } from "react-use-wizard";
@@ -8,7 +9,14 @@ import {
   Input,
   useModalContext,
 } from "@/components/design-system";
+import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
+import { dataLayerPushEvent } from "@/lib/analytics";
+import { getContract } from "@/lib/contracts";
+import { toastTransaction } from "@/lib/toast";
+import { fetchUniqueIdentitySigner, getUIDLabelFromType } from "@/lib/verify";
+import { useWallet } from "@/lib/wallet";
 
+import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import { StepTemplate } from "./step-template";
 
@@ -20,21 +28,70 @@ export function MintToAddressEntryStep() {
   const { useModalTitle } = useModalContext();
   useModalTitle("Enter smart contract wallet address");
 
-  const { setMintToAddress, setTriggerMintTo } = useVerificationFlowContext();
-
-  const { previousStep } = useWizard();
+  const { signature } = useVerificationFlowContext();
+  const { account, provider } = useWallet();
+  const apolloClient = useApolloClient();
+  const { previousStep, goToStep } = useWizard();
 
   const rhfMethods = useForm<MintToAddressForm>();
   const { register } = rhfMethods;
-  const onSubmit = (data: MintToAddressForm) => {
-    setTriggerMintTo(true);
-    setMintToAddress(data.address);
-    previousStep();
-  };
 
   const validate = (address: string) => {
     if (!ethers.utils.isAddress(address)) {
       return "Not a valid address";
+    }
+  };
+
+  const onSubmit = async (data: MintToAddressForm) => {
+    const mintToAddress = data.address;
+    if (!account || !signature || !provider) {
+      throw new Error("Unable to verify eligibility to mint.");
+    }
+    const signer = await fetchUniqueIdentitySigner(
+      account,
+      signature.signature,
+      signature.signatureBlockNum,
+      mintToAddress
+    );
+
+    const uidContract = await getContract({
+      name: "UniqueIdentity",
+      provider,
+    });
+
+    const gasPrice = await provider.getGasPrice();
+
+    try {
+      const transaction = uidContract.mintTo(
+        mintToAddress,
+        signer.idVersion,
+        signer.expiresAt,
+        signer.signature,
+        {
+          value: UNIQUE_IDENTITY_MINT_PRICE,
+          gasPrice: gasPrice,
+        }
+      );
+
+      const submittedTransaction = await toastTransaction({
+        transaction,
+        pendingPrompt: "UID mint submitted.",
+        successPrompt: "UID mint succeeded.",
+      });
+
+      await apolloClient.refetchQueries({ include: "active" });
+      dataLayerPushEvent("UID_MINTED", {
+        transactionHash: submittedTransaction.transactionHash,
+        uidType: getUIDLabelFromType(signer.idVersion),
+      });
+      goToStep(VerificationFlowSteps.MintFinished);
+    } catch (e) {
+      const reason = (e as { reason: string }).reason;
+      const actualReason = reason.match(/reverted with reason string \'(.+)\'/);
+      if (actualReason) {
+        throw new Error(actualReason[1]);
+      }
+      throw e;
     }
   };
 
