@@ -113,6 +113,8 @@ export function PaymentForm({
   const registerPaymentOption = register("paymentOption");
   const usdcAmount = watch("usdcAmount");
 
+  // The reason why useEffect() isn't used to capture this behaviour is because we only want this to trigger when the user directly interacts with the radio buttons
+  // Indirectly changing the paymentOption (via setValue should not cause these side effects
   const onPaymentOptionChange = (e: ChangeEvent<HTMLInputElement>) => {
     registerPaymentOption.onChange(e);
     switch (e.target.value as PaymentOption) {
