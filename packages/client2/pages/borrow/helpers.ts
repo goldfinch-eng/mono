@@ -1,7 +1,5 @@
 import { BigNumber } from "ethers";
 
-import { roundUpToPrecision } from "@/lib/format";
-
 /**
  * Calculates the current interest owed on the credit line.
  *
@@ -95,9 +93,7 @@ export function calculateRemainingPeriodDueAmount({
     return BigNumber.from(0);
   }
 
-  // We need to round up here to ensure the creditline is always fully paid,
-  // this does mean the borrower may overpay by a penny max each time.
-  return roundUpToPrecision(remainingPeriodDueAmount);
+  return remainingPeriodDueAmount;
 }
 
 /**
@@ -120,9 +116,7 @@ export function calculateRemainingTotalDueAmount({
     return BigNumber.from(0);
   }
 
-  // We need to round up here to ensure the creditline is always fully paid,
-  // this does mean the borrower may overpay by a penny max each time.
-  return roundUpToPrecision(remainingTotalDueAmount);
+  return remainingTotalDueAmount;
 }
 
 export enum CreditLineStatus {
@@ -143,8 +137,8 @@ export function getCreditLineStatus({
   limit: BigNumber;
   remainingTotalDueAmount: BigNumber;
 }) {
-  // Is Late
-  if (isLate) {
+  // Is Late - unless the credit line is fully paid off, then is inactive
+  if (isLate && remainingTotalDueAmount.gt(0)) {
     return CreditLineStatus.PaymentLate;
   }
 
@@ -162,43 +156,62 @@ export function getCreditLineStatus({
 }
 
 /**
- * Calculates the available credit available for drawdown on a credit line
+ * A utility function for converting tranche shares from a tranched pool to a USDC amount
+ */
+const trancheSharesToUsdc = (
+  principalDeposited: BigNumber, // USDC amount
+  sharePrice: BigNumber
+): BigNumber => {
+  const sharePriceMantissa = BigNumber.from(10).pow(18);
+  return principalDeposited.mul(sharePrice).div(sharePriceMantissa);
+};
+
+/**
+ * Calculates the USDC amount available for drawdown on a credit line
+ *
  *
  */
-export function calculateAvailableCredit({
-  collectedPaymentBalance,
-  currentInterestOwed,
-  nextDueTime,
-  termEndTime,
-  limit,
-  balance,
+interface TrancheShareInfo {
+  principalDeposited: BigNumber;
+  sharePrice: BigNumber;
+}
+export function calculateAvailableForDrawdown({
+  juniorTrancheShareInfo,
+  seniorTrancheShareInfo,
 }: {
-  collectedPaymentBalance: BigNumber;
-  currentInterestOwed: BigNumber;
-  nextDueTime: BigNumber;
-  termEndTime: BigNumber;
-  limit: BigNumber;
-  balance: BigNumber;
+  juniorTrancheShareInfo: TrancheShareInfo;
+  seniorTrancheShareInfo: TrancheShareInfo;
 }): BigNumber {
-  const periodDueAmount = calculateNextDueAmount({
-    currentInterestOwed,
-    nextDueTime,
-    termEndTime,
-    balance,
-  });
+  /**
+   * Calculates the amount available for drawdown from a tranched pool by converting the
+   * total junior & senior shares to USDC.
+   *
+   * Why not use the CreditLine contract to calculate this?
+   *
+   * In the scenario a borrower pays off principal interest during the current period we can't rely on
+   * CreditLine.balance() to determine the amount actually available for drawdown from the pool if an additional
+   * drawdown is attempted during the same period.
+   *
+   * This is is b/c payments do not trigger a balance update on the Credit Line contract & CreditLine.assess()
+   * only runs accounting updates once the current peroiod has passed.
+   *
+   * Payments do update the tranche share price(s), which can be used to calc avaible funds to drawdown from
+   * the pool and represent the actual amount avaiable.
+   *
+   * i.e:
+   * 1. Borrow full limit
+   * 2. See borrow variable has been updated
+   * 3. Pay off full interest + principal
+   * 4. See borrow variable does not update to 0 (even when manually calling assess() b/c still in current period)
+   */
+  const juniorTrancheAmount = trancheSharesToUsdc(
+    juniorTrancheShareInfo.principalDeposited,
+    juniorTrancheShareInfo.sharePrice
+  );
+  const seniorTrancheAmount = trancheSharesToUsdc(
+    seniorTrancheShareInfo.principalDeposited,
+    seniorTrancheShareInfo.sharePrice
+  );
 
-  // The amount collected for principal is any amount contributed that exceeds the current period due amount
-  let collectedForPrincipal = collectedPaymentBalance.sub(periodDueAmount);
-  if (collectedForPrincipal.lt(BigNumber.from(0))) {
-    collectedForPrincipal = BigNumber.from(0);
-  }
-
-  // Available credit is the lesser of the two:
-  //  - The limit of the credit line (nothing borrowed yet or fully paid off)
-  //  - The limit minus the outstanding principal balance, plus any amount collected for principal
-  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
-  if (availableCredit.lt(limit)) {
-    return availableCredit;
-  }
-  return limit;
+  return juniorTrancheAmount.add(seniorTrancheAmount);
 }

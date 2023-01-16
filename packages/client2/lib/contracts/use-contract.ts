@@ -91,6 +91,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20Splitter__factory").then(
       (module) => module.Erc20Splitter__factory.connect
     ),
+  Borrower: () =>
+    import("@/types/ethers-contracts/factories/Borrower__factory").then(
+      (module) => module.Borrower__factory.connect
+    ),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;
