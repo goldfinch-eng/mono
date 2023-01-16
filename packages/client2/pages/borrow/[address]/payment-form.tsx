@@ -13,6 +13,7 @@ import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface PaymentFormProps {
@@ -148,6 +149,8 @@ export function PaymentForm({
           )
         );
         return;
+      default:
+        assertUnreachable(e.target.value as never);
     }
   };
 
