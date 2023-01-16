@@ -9,7 +9,7 @@ import { IneligibleStep } from "./steps/ineligible-step";
 import { IntroStep } from "./steps/intro-step";
 import { MintFinishedStep } from "./steps/mint-finished-step";
 import { MintStep } from "./steps/mint-step";
-import { MintToAddressEntryStep } from "./steps/mint-to-address-entry-step";
+import { MintToAddressStep } from "./steps/mint-to-address-step";
 import { ParallelMarketsStep } from "./steps/parallel-markets-step";
 import { PendingStep } from "./steps/pending-step";
 import { PersonaStep } from "./steps/persona-step";
@@ -32,7 +32,7 @@ export function Flow() {
         <ParallelMarketsStep />
         <PendingStep />
         <MintStep />
-        <MintToAddressEntryStep />
+        <MintToAddressStep />
         <MintFinishedStep />
         <IneligibleStep />
         <AlreadyMintedStep />

@@ -109,7 +109,7 @@ export function MintStep() {
           </Form>
           <button
             className="m-auto block pt-3 text-center text-sand-500 underline hover:no-underline"
-            onClick={() => goToStep(VerificationFlowSteps.MintToAddressEntry)}
+            onClick={() => goToStep(VerificationFlowSteps.MintToAddress)}
           >
             Mint to a smart contract wallet instead
           </button>

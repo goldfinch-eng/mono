@@ -24,7 +24,7 @@ interface MintToAddressForm {
   address: string;
 }
 
-export function MintToAddressEntryStep() {
+export function MintToAddressStep() {
   const { useModalTitle } = useModalContext();
   useModalTitle("Enter smart contract wallet address");
 
@@ -105,12 +105,17 @@ export function MintToAddressEntryStep() {
         includePrivacyStatement={false}
         footer={
           <div className="flex w-full flex-row items-center justify-between gap-2">
-            <Button size="lg" onClick={previousStep} className="w-full">
+            <Button
+              type="button"
+              size="lg"
+              onClick={previousStep}
+              className="w-full"
+            >
               Back
             </Button>
             <Button
-              size="lg"
               type="submit"
+              size="lg"
               iconRight="ArrowSmRight"
               className="w-full"
             >
