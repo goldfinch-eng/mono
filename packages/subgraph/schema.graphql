@@ -34,28 +34,6 @@ type SeniorPoolStakedPosition @entity {
   totalRewardsClaimed: BigInt!
 }
 
-type SeniorPoolStatus @entity {
-  """
-  This entity is a singleton, so the id is always "1"
-  """
-  id: ID!
-  rawBalance: BigInt!
-  balance: BigInt!
-  sharePrice: BigInt!
-  totalShares: BigInt!
-  assets: BigInt!
-  totalLoansOutstanding: BigInt!
-  cumulativeWritedowns: BigInt!
-  tranchedPools: [TranchedPool!]!
-  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
-  estimatedTotalInterest: BigDecimal!
-  estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal!
-  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
-  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
-  cancellationFee: BigDecimal!
-}
-
 type BorrowerContract @entity {
   id: ID!
   createdAt: BigInt!
