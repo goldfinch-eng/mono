@@ -284,6 +284,7 @@ export default function PoolCreditLinePage({
                       remainingTotalDueAmount={remainingTotalDueAmount}
                       borrowerContractAddress={tranchedPool.borrowerContract.id}
                       tranchedPoolAddress={tranchedPool.id}
+                      creditLineStatus={creditLineStatus}
                       onClose={() => setShownForm(null)}
                     />
                   )}
