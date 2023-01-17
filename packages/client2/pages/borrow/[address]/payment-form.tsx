@@ -149,36 +149,6 @@ export function PaymentForm({
     setValue,
   ]);
 
-  const MinimumPaymentOptionLabel = ({
-    creditLineStatus,
-  }: {
-    creditLineStatus: CreditLineStatus | undefined;
-  }) => (
-    <div>
-      {creditLineStatus === CreditLineStatus.PaymentLate
-        ? "Pay amount due: "
-        : "Pre-pay accrued interest: "}
-      <span className="font-semibold">
-        {`${formatCrypto({
-          amount: remainingPeriodDueAmount,
-          token: "USDC",
-        })}`}
-      </span>
-    </div>
-  );
-
-  const FullPaymentOptionLabel = () => (
-    <div>
-      {"Pay full balance plus interest: "}
-      <span className="font-semibold">
-        {`${formatCrypto({
-          amount: remainingTotalDueAmount,
-          token: "USDC",
-        })}`}
-      </span>
-    </div>
-  );
-
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <div className="flex flex-col gap-1">
@@ -187,7 +157,17 @@ export function PaymentForm({
             id="payMinDue"
             labelClassName="text-lg"
             label={
-              <MinimumPaymentOptionLabel creditLineStatus={creditLineStatus} />
+              <div>
+                {creditLineStatus === CreditLineStatus.PaymentLate
+                  ? "Pay amount due: "
+                  : "Pre-pay accrued interest: "}
+                <span className="font-semibold">
+                  {`${formatCrypto({
+                    amount: remainingPeriodDueAmount,
+                    token: "USDC",
+                  })}`}
+                </span>
+              </div>
             }
             value={PaymentOption.PayMinimumDue}
             type="radio"
@@ -198,7 +178,17 @@ export function PaymentForm({
         <RadioButton
           id="payFullBalancePlusInterest"
           labelClassName="text-lg"
-          label={<FullPaymentOptionLabel />}
+          label={
+            <div>
+              Pay full balance plus interest:
+              <span className="font-semibold">
+                {` ${formatCrypto({
+                  amount: remainingTotalDueAmount,
+                  token: "USDC",
+                })}`}
+              </span>
+            </div>
+          }
           value={PaymentOption.PayFullBalancePlusInterest}
           {...registerPaymentOption}
           onChange={onPaymentOptionChange}
