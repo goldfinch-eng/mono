@@ -26,6 +26,7 @@ import {setEnvForTest, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
+import _ from "lodash"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
