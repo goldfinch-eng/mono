@@ -130,6 +130,7 @@ export const RadioButtonStory: ComponentStory<typeof RadioButton> = (args) => {
     >
       <RadioButton {...args} {...register("animal")} value="dog" label="Dog" />
       <RadioButton {...args} {...register("animal")} value="cat" label="Cat" />
+      <button type="submit">submit</button>
     </form>
   );
 };

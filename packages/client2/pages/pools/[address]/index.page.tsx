@@ -115,11 +115,8 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -405,9 +402,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               className="mt-12"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-              }
+              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
               fiatPerGfi={fiatPerGfi}
             />
           ) : null}
@@ -421,10 +416,8 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   tranchedPool={tranchedPool}
                   user={user}
                   fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
+                  seniorPoolSharePrice={seniorPool.sharePrice}
                   agreement={dealDetails.agreement}
                   isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />

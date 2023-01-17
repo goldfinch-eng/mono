@@ -58,10 +58,7 @@ gql`
   query DashboardPage($userId: String!) {
     seniorPools {
       id
-      latestPoolStatus {
-        id
-        sharePrice
-      }
+      sharePrice
     }
     viewer @client {
       fiduBalance
@@ -161,7 +158,7 @@ export default function DashboardPage() {
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
-  const sharePrice = data?.seniorPools[0].latestPoolStatus.sharePrice;
+  const sharePrice = data?.seniorPools[0].sharePrice;
 
   const gfiRewardsTotal = useMemo(() => {
     if (!data) {

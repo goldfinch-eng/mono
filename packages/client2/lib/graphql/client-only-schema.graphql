@@ -7,6 +7,7 @@ extend type SeniorPool {
   name: String!
   category: String!
   icon: String!
+  epochEndsAt: Int!
 }
 
 extend type TranchedPool {
@@ -150,8 +151,4 @@ extend type SeniorPoolWithdrawalRequest {
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """
   previewFiduRequested: BigInt!
-}
-
-extend type SeniorPoolStatus {
-  epochEndsAt: Int!
 }

@@ -31,11 +31,8 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
-    latestPoolStatus {
-      id
-      estimatedApy
-      estimatedApyFromGfiRaw
-    }
+    estimatedApy
+    estimatedApyFromGfiRaw
   }
 `;
 
@@ -67,9 +64,9 @@ export function SeniorPoolSupplyPanel({
   user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
-  const seniorPoolApyUsdc = seniorPool.latestPoolStatus.estimatedApy;
+  const seniorPoolApyUsdc = seniorPool.estimatedApy;
   const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
-    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+    seniorPool.estimatedApyFromGfiRaw,
     fiatPerGfi
   );
 
