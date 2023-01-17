@@ -8,7 +8,6 @@ The Goldfinch Protocol and the Goldfinch Interface are thoroughly tested.
 
 The test suites can be viewed in the open-source repo:
 - [Goldfinch Protocol](https://github.com/goldfinch-eng/mono/tree/main/packages/protocol/test)
-- [Goldfinch Interface](https://github.com/goldfinch-eng/mono/tree/main/packages/client/src/__tests__)
 
 The test suites do not currently produce a code coverage report.
 

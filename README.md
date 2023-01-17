@@ -39,7 +39,6 @@ For certain packages, you may also need to:
 
 * [`packages/`](./packages): Contains all typescript packages and contracts.
   * [`protocol/`](./packages/protocol) (`@goldfinch-eng/protocol`): Solidity smart contracts and tests.
-  * [`client/`](./packages/client) (`@goldfinch-eng/client`): Legacy web3 frontend using React.
   * [`client2/`](./packages/client2) (`@goldfinch-eng/client2`): Web3 frontend using React.
   * [`subgraph/`](./packages/subgraph) (`@goldfinch-eng/subgraph`): Subgraph powering the frontend.
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
