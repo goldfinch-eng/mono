@@ -1,5 +1,4 @@
 import { gql, useApolloClient } from "@apollo/client";
-import { getIDType } from "@goldfinch-eng/utils";
 import { useEffect, useState } from "react";
 import { useWizard } from "react-use-wizard";
 
@@ -69,7 +68,8 @@ export function StatusCheckStep() {
           signature.signature,
           signature.signatureBlockNum
         );
-        const idVersion = getIDType({
+        const goldfinchUtils = await import("@goldfinch-eng/utils");
+        const idVersion = goldfinchUtils.getIDType({
           address: account,
           kycStatus,
         });
