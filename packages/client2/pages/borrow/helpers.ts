@@ -29,15 +29,14 @@ export function calculateInterestOwed({
   const expectedElapsedSeconds = nextDueTime.sub(interestAccruedAsOf);
   const secondsPerYear = BigNumber.from(60 * 60 * 24 * 365);
   const interestAccrualRate = interestApr.div(secondsPerYear);
+
+  const interestAprMantissa = BigNumber.from(10).pow(18);
   const expectedAdditionalInterest = balance
     .mul(interestAccrualRate)
-    .mul(expectedElapsedSeconds);
+    .mul(expectedElapsedSeconds)
+    .div(interestAprMantissa);
 
-  const currentInterestOwed = interestOwed
-    .add(BigNumber.from(expectedAdditionalInterest))
-    .div(BigNumber.from(String(1e18)));
-
-  return currentInterestOwed;
+  return expectedAdditionalInterest.add(interestOwed);
 }
 
 /**
