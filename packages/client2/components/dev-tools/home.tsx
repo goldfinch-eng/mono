@@ -97,7 +97,7 @@ export function Home() {
               disabled={!account}
               tooltip="This will cause you to gain USDC, become go-listed, and also become the borrower on some new tranched pools. You will not gain GFI."
             >
-              Legacy setupForTesting
+              Setup for Borrower
             </AsyncButton>
           </div>
         </Section>
