@@ -17,12 +17,14 @@ import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
+import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   borrowerContractAddress: string;
   tranchedPoolAddress: string;
+  creditLineStatus: CreditLineStatus | undefined;
   onClose: () => void;
 }
 
@@ -38,6 +40,7 @@ export function PaymentForm({
   remainingTotalDueAmount,
   borrowerContractAddress,
   tranchedPoolAddress,
+  creditLineStatus,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
@@ -146,6 +149,36 @@ export function PaymentForm({
     setValue,
   ]);
 
+  const MinimumPaymentOptionLabel = ({
+    creditLineStatus,
+  }: {
+    creditLineStatus: CreditLineStatus | undefined;
+  }) => (
+    <div>
+      {creditLineStatus === CreditLineStatus.PaymentLate
+        ? "Pay amount due: "
+        : "Pre-pay accrued interest: "}
+      <span className="font-semibold">
+        {`${formatCrypto({
+          amount: remainingPeriodDueAmount,
+          token: "USDC",
+        })}`}
+      </span>
+    </div>
+  );
+
+  const FullPaymentOptionLabel = () => (
+    <div>
+      {"Pay full balance plus interest: "}
+      <span className="font-semibold">
+        {`${formatCrypto({
+          amount: remainingTotalDueAmount,
+          token: "USDC",
+        })}`}
+      </span>
+    </div>
+  );
+
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <div className="flex flex-col gap-1">
@@ -154,15 +187,7 @@ export function PaymentForm({
             id="payMinDue"
             labelClassName="text-lg"
             label={
-              <div>
-                Pay minimum due:
-                <span className="font-semibold">
-                  {` ${formatCrypto({
-                    amount: remainingPeriodDueAmount,
-                    token: "USDC",
-                  })}`}
-                </span>
-              </div>
+              <MinimumPaymentOptionLabel creditLineStatus={creditLineStatus} />
             }
             value={PaymentOption.PayMinimumDue}
             type="radio"
@@ -173,17 +198,7 @@ export function PaymentForm({
         <RadioButton
           id="payFullBalancePlusInterest"
           labelClassName="text-lg"
-          label={
-            <div>
-              Pay full balance plus interest:
-              <span className="font-semibold">
-                {` ${formatCrypto({
-                  amount: remainingTotalDueAmount,
-                  token: "USDC",
-                })}`}
-              </span>
-            </div>
-          }
+          label={<FullPaymentOptionLabel />}
           value={PaymentOption.PayFullBalancePlusInterest}
           {...registerPaymentOption}
           onChange={onPaymentOptionChange}
