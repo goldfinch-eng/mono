@@ -17,12 +17,14 @@ import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
+import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   borrowerContractAddress: string;
   tranchedPoolAddress: string;
+  creditLineStatus: CreditLineStatus | undefined;
   onClose: () => void;
 }
 
@@ -38,6 +40,7 @@ export function PaymentForm({
   remainingTotalDueAmount,
   borrowerContractAddress,
   tranchedPoolAddress,
+  creditLineStatus,
   onClose,
 }: PaymentFormProps) {
   const { account, provider } = useWallet();
@@ -155,9 +158,11 @@ export function PaymentForm({
             labelClassName="text-lg"
             label={
               <div>
-                Pay minimum due:
+                {creditLineStatus === CreditLineStatus.PaymentLate
+                  ? "Pay amount due: "
+                  : "Pre-pay accrued interest: "}
                 <span className="font-semibold">
-                  {` ${formatCrypto({
+                  {`${formatCrypto({
                     amount: remainingPeriodDueAmount,
                     token: "USDC",
                   })}`}
