@@ -119,39 +119,44 @@ export function calculateRemainingTotalDueAmount({
 }
 
 export enum CreditLineStatus {
+  Open,
   PaymentLate,
   PaymentDue,
   PeriodPaid,
-  InActive,
+  Repaid,
 }
 
 export function getCreditLineStatus({
   isLate,
   remainingPeriodDueAmount,
-  limit,
+  termEndTime,
   remainingTotalDueAmount,
 }: {
   isLate: boolean;
   remainingPeriodDueAmount: BigNumber;
-  limit: BigNumber;
+  termEndTime: BigNumber;
   remainingTotalDueAmount: BigNumber;
 }) {
-  // Is Late - unless the credit line is fully paid off, then is inactive
-  if (isLate && remainingTotalDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentLate;
+  // The credit line has not been drawndown yet
+  if (termEndTime.eq(0)) {
+    return CreditLineStatus.Open;
   }
 
-  // Payment is due - but not late
-  if (remainingPeriodDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentDue;
-  }
+  // Funds have been drawndown for the credit line
+  if (remainingTotalDueAmount.gt(0)) {
+    if (isLate) {
+      return CreditLineStatus.PaymentLate;
+    }
 
-  // Credit line is active & paid
-  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
+    if (remainingPeriodDueAmount.gt(0)) {
+      return CreditLineStatus.PaymentDue;
+    }
+
     return CreditLineStatus.PeriodPaid;
   }
 
-  return CreditLineStatus.InActive;
+  // The credit line's principal + interest has been fully repaid
+  return CreditLineStatus.Repaid;
 }
 
 /**

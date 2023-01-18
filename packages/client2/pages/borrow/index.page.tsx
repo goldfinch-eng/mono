@@ -82,7 +82,7 @@ const getDueDateLabel = ({
           <div>Paid</div>
         </div>
       );
-    case CreditLineStatus.InActive:
+    default:
       return "N/A";
   }
 };
@@ -163,7 +163,9 @@ export default function BorrowPage({
 
             const creditLineLimit = formatCrypto({
               token: "USDC",
-              amount: creditLine.maxLimit,
+              amount: creditLine.limit.gt(0)
+                ? creditLine.limit
+                : creditLine.maxLimit,
             });
 
             const currentInterestOwed = calculateInterestOwed({
@@ -192,7 +194,7 @@ export default function BorrowPage({
             const creditLineStatus = getCreditLineStatus({
               isLate: creditLine.isLate,
               remainingPeriodDueAmount,
-              limit: creditLine.limit,
+              termEndTime: creditLine.termEndTime,
               remainingTotalDueAmount,
             });
 

@@ -110,10 +110,8 @@ const NextPaymentLabel = ({
           <div>{`Paid through ${formattedNextDueTime}`}</div>
         </div>
       );
-    case CreditLineStatus.InActive:
-      return <div>No payment due</div>;
     default:
-      return null;
+      return <div>No payment due</div>;
   }
 };
 
@@ -164,7 +162,7 @@ export default function PoolCreditLinePage({
     creditLineStatus = getCreditLineStatus({
       isLate: creditLine.isLate,
       remainingPeriodDueAmount,
-      limit: creditLine.limit,
+      termEndTime: creditLine.termEndTime,
       remainingTotalDueAmount,
     });
 
@@ -331,7 +329,10 @@ export default function PoolCreditLinePage({
                     size="xl"
                     iconLeft="ArrowUp"
                     onClick={() => setShownForm("payment")}
-                    disabled={creditLineStatus === CreditLineStatus.InActive}
+                    disabled={
+                      creditLineStatus === CreditLineStatus.Repaid ||
+                      creditLineStatus === CreditLineStatus.Open
+                    }
                   >
                     Pay
                   </Button>
@@ -384,17 +385,18 @@ export default function PoolCreditLinePage({
                 </div>
               </div>
 
-              {creditLineStatus !== CreditLineStatus.InActive && (
-                <div className="mt-8 flex items-center">
-                  <Icon name="Clock" className="mr-2" />
-                  <div className="text-lg">
-                    {`Full balance repayment due ${formatDate(
-                      creditLine.termEndTime.toNumber() * 1000,
-                      "MMM d, yyyy"
-                    )}`}
+              {creditLineStatus !== CreditLineStatus.Open &&
+                creditLineStatus !== CreditLineStatus.Repaid && (
+                  <div className="mt-8 flex items-center">
+                    <Icon name="Clock" className="mr-2" />
+                    <div className="text-lg">
+                      {`Full balance repayment due ${formatDate(
+                        creditLine.termEndTime.toNumber() * 1000,
+                        "MMM d, yyyy"
+                      )}`}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="p-8">
@@ -403,7 +405,9 @@ export default function PoolCreditLinePage({
                   <div className="mb-0.5 text-2xl">
                     {formatCrypto({
                       token: "USDC",
-                      amount: creditLine.maxLimit,
+                      amount: creditLine.limit.gt(0)
+                        ? creditLine.limit
+                        : creditLine.maxLimit,
                     })}
                   </div>
                   <div className="text-sand-500">Limit</div>
