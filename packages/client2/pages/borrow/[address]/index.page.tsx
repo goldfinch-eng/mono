@@ -18,7 +18,8 @@ import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
-  calculateAvailableForDrawdown,
+  calculateCreditLineMaxDrawdownAmount,
+  calculatePoolFundsAvailable,
   calculateInterestOwed,
   calculateRemainingPeriodDueAmount,
   calculateRemainingTotalDueAmount,
@@ -135,6 +136,7 @@ export default function PoolCreditLinePage({
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
+  let creditLineLimit = BigNumber.from(0);
   if (tranchedPool && creditLine && juniorTranche && seniorTranche) {
     const currentInterestOwed = calculateInterestOwed({
       isLate: creditLine.isLate,
@@ -166,6 +168,10 @@ export default function PoolCreditLinePage({
       remainingTotalDueAmount,
     });
 
+    creditLineLimit = creditLine.limit.gt(0)
+      ? creditLine.limit
+      : creditLine.maxLimit;
+
     const juniorTrancheShareInfo = {
       principalDeposited: juniorTranche.principalDeposited,
       sharePrice: juniorTranche.principalSharePrice,
@@ -176,10 +182,27 @@ export default function PoolCreditLinePage({
       sharePrice: seniorTranche.principalSharePrice,
     };
 
-    availableForDrawdown = calculateAvailableForDrawdown({
+    const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
+      collectedPaymentBalance: creditLine.collectedPaymentBalance,
+      currentInterestOwed,
+      nextDueTime: creditLine.nextDueTime,
+      termEndTime: creditLine.termEndTime,
+      limit: creditLineLimit,
+      balance: creditLine.balance,
+    });
+
+    const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
       juniorTrancheShareInfo,
       seniorTrancheShareInfo,
     });
+
+    // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
+    // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
+    // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
+    availableForDrawdown = poolFundsAvailableForDrawdown;
+    if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
+      availableForDrawdown = creditLineMaxDrawdownAmount;
+    }
   }
 
   const [shownForm, setShownForm] = useState<"drawdown" | "payment" | null>(

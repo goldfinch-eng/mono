@@ -171,15 +171,14 @@ const trancheSharesToUsdc = (
 };
 
 /**
- * Calculates the USDC amount available for drawdown on a credit line
- *
+ * Calculates the USDC funds deposited in a tranched pool
  *
  */
 interface TrancheShareInfo {
   principalDeposited: BigNumber;
   sharePrice: BigNumber;
 }
-export function calculateAvailableForDrawdown({
+export function calculatePoolFundsAvailable({
   juniorTrancheShareInfo,
   seniorTrancheShareInfo,
 }: {
@@ -187,10 +186,10 @@ export function calculateAvailableForDrawdown({
   seniorTrancheShareInfo: TrancheShareInfo;
 }): BigNumber {
   /**
-   * Calculates the amount available for drawdown from a tranched pool by converting the
+   * Calculates the funds deposited in a tranched pool that could be drawdown by converting the
    * total junior & senior shares to USDC.
    *
-   * Why not use the CreditLine contract to calculate this?
+   * Why not just use the CreditLine contract to calculate this?
    *
    * In the scenario a borrower pays off principal interest during the current period we can't rely on
    * CreditLine.balance() to determine the amount actually available for drawdown from the pool if an additional
@@ -218,4 +217,46 @@ export function calculateAvailableForDrawdown({
   );
 
   return juniorTrancheAmount.add(seniorTrancheAmount);
+}
+
+/**
+ * Calculates the max USDC amount that can be drawndown from a pool based on the state of the Credit Line
+ *
+ */
+export function calculateCreditLineMaxDrawdownAmount({
+  collectedPaymentBalance,
+  currentInterestOwed,
+  nextDueTime,
+  termEndTime,
+  limit,
+  balance,
+}: {
+  collectedPaymentBalance: BigNumber;
+  currentInterestOwed: BigNumber;
+  nextDueTime: BigNumber;
+  termEndTime: BigNumber;
+  limit: BigNumber;
+  balance: BigNumber;
+}): BigNumber {
+  const periodDueAmount = calculateNextDueAmount({
+    currentInterestOwed,
+    nextDueTime,
+    termEndTime,
+    balance,
+  });
+
+  let collectedForPrincipal = collectedPaymentBalance.sub(periodDueAmount);
+  if (collectedForPrincipal.lt(BigNumber.from(0))) {
+    collectedForPrincipal = BigNumber.from(0);
+  }
+
+  // Available credit is the lesser of the two:
+  //  - The limit of the credit line (nothing borrowed yet or fully paid off)
+  //  - The limit minus the outstanding principal balance, plus any amount collected for principal
+  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
+  if (availableCredit.lt(limit)) {
+    return availableCredit;
+  }
+
+  return limit;
 }
