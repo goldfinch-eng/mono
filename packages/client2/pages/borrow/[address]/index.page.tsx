@@ -405,7 +405,9 @@ export default function PoolCreditLinePage({
                   <div className="mb-0.5 text-2xl">
                     {formatCrypto({
                       token: "USDC",
-                      amount: creditLine.maxLimit,
+                      amount: creditLine.limit.gt(0)
+                        ? creditLine.limit
+                        : creditLine.maxLimit,
                     })}
                   </div>
                   <div className="text-sand-500">Limit</div>

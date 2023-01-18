@@ -163,7 +163,9 @@ export default function BorrowPage({
 
             const creditLineLimit = formatCrypto({
               token: "USDC",
-              amount: creditLine.maxLimit,
+              amount: creditLine.limit.gt(0)
+                ? creditLine.limit
+                : creditLine.maxLimit,
             });
 
             const currentInterestOwed = calculateInterestOwed({

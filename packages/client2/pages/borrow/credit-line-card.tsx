@@ -34,21 +34,19 @@ const CreditLineStatusWithTooltip = ({
   switch (status) {
     case CreditLineStatus.Open:
       label = "Open";
-      tooltipContent =
-        "The credit line's tranched pool is locked & raising funds / has raised funds & is no longer locked";
+      tooltipContent = "TODO: 'Open' status tooltip content.";
       break;
     case CreditLineStatus.Repaid:
       label = "Repaid";
-      tooltipContent = "This credit line has been fully repaid.";
+      tooltipContent = "TODO: 'Repaid' status tooltip content.";
       break;
     case CreditLineStatus.PaymentLate:
       label = "Late";
-      tooltipContent = "An interest amount is due.";
+      tooltipContent = "TODO: 'Late' status tooltip content.";
       break;
     default:
       label = "Current";
-      tooltipContent =
-        "Funds have been drawndown for the credit line and no payment is due.";
+      tooltipContent = "TODO: 'Current' status tooltip content.";
       break;
   }
 
