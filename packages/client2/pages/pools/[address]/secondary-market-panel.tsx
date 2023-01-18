@@ -176,7 +176,7 @@ export default function SecondaryMarketPanel({
       buttonText: "View positions",
       buttonHref: larkUrl(poolAddress),
       footer:
-        "Note: Lark Market is not available to people or companies who are residents of, or are located, incorporated or have a registered agent in, the United States or a restricted territory.",
+        "Note: Lark Market is unavailable in the United States, and U.S. Persons are expressly prohibited from accessing Lark Market through the use of IP proxy services, VPN services, or by any other means.",
     },
     [PanelState.SELL_POSITIONS]: {
       title: "Need liquidity? Sell your position on Lark.",
