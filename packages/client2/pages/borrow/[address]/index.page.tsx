@@ -10,6 +10,7 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
+  Deal,
   PoolCreditLinePageCmsQuery,
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
@@ -392,9 +393,7 @@ export default function PoolCreditLinePage({
                   <div className="mb-0.5 text-2xl">
                     {formatCrypto({
                       token: "USDC",
-                      amount: creditLine.limit.gt(0)
-                        ? creditLine.limit
-                        : creditLine.maxLimit,
+                      amount: creditLineLimit,
                     })}
                   </div>
                   <div className="text-sand-500">Limit</div>
@@ -441,12 +440,14 @@ export const getStaticPaths: GetStaticPaths<{ address: string }> = async () => {
     query: allDealsQuery,
   });
 
-  const paths =
-    res.data.Deals?.docs?.map((pool) => ({
-      params: {
-        address: pool?.id || "",
-      },
-    })) || [];
+  const pools = (res.data.Deals?.docs?.filter((pool) => pool && pool.id) ||
+    []) as Deal[];
+
+  const paths = pools.map((pool) => ({
+    params: {
+      address: pool.id,
+    },
+  }));
 
   return {
     paths,
