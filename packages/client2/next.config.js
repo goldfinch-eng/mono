@@ -79,7 +79,6 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "storage.googleapis.com",
-        port: "",
         pathname: "/goldfinch_cms/**",
       },
       ...(process.env.NODE_ENV === "development"
