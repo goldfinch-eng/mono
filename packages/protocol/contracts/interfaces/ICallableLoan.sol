@@ -20,4 +20,11 @@ interface ICallableLoan is ILoan {
   /// @param amountToCall The amount of the pool token that should be called.
   /// @param poolTokenId The id of the pool token that should be called.
   function call(uint256 amountToCall, uint256 poolTokenId) external;
+
+  event CallRequestSubmitted(
+    uint256 indexed originalTokenId,
+    uint256 indexed remainingTokenId,
+    uint256 indexed callRequestedTokenId,
+    uint256 callRequestedAmount
+  );
 }
