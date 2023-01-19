@@ -75,8 +75,17 @@ const nextConfig = {
     "page.md",
   ],
   images: {
-    domains: ["localhost", "34.133.55.171"],
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        port: "",
+        pathname: "/goldfinch_cms/**",
+      },
+      ...(process.env.NODE_ENV === "development"
+        ? [{ hostname: "localhost" }]
+        : []),
+    ],
   },
   async redirects() {
     return [
