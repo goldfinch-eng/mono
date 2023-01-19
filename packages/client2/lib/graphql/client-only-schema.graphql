@@ -17,7 +17,7 @@ extend type TranchedPool {
 }
 
 extend type CreditLine {
-  isLate: Boolean
+  isLate: Boolean!
 }
 
 extend type SeniorPoolStakedPosition {
