@@ -1,6 +1,13 @@
 import { Dialog, Transition } from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode, Fragment } from "react";
+import {
+  ReactNode,
+  Fragment,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 import { Icon } from "../icon";
 
@@ -50,12 +57,19 @@ export function Modal({
   onClose,
   children,
   size = "md",
-  title,
+  title: titleFromProps,
   description,
   divider = true,
   footer,
   layout = "classic",
 }: ModalProps) {
+  const [title, setTitle] = useState(titleFromProps);
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(titleFromProps);
+    }
+  }, [titleFromProps, isOpen]);
+
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog
@@ -116,26 +130,65 @@ export function Modal({
               </button>
             </div>
 
-            {layout === "classic" ? (
-              <>
-                <div className="max-h-[75vh] overflow-auto">
-                  <div className="px-6 pt-4 pb-1">{children}</div>
-                </div>
-                {footer ? (
-                  <>
-                    {divider ? (
-                      <hr className="border-t border-sand-200" />
-                    ) : null}
-                    <div className="px-6 pt-4">{footer}</div>
-                  </>
-                ) : null}
-              </>
-            ) : (
-              children
-            )}
+            <ModalContext title={title} setTitle={setTitle}>
+              {layout === "classic" ? (
+                <>
+                  <div className="max-h-[75vh] overflow-auto">
+                    <div className="px-6 pt-4 pb-1">{children}</div>
+                  </div>
+                  {footer ? (
+                    <>
+                      {divider ? (
+                        <hr className="border-t border-sand-200" />
+                      ) : null}
+                      <div className="px-6 pt-4">{footer}</div>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                children
+              )}
+            </ModalContext>
           </div>
         </Transition.Child>
       </Dialog>
     </Transition>
+  );
+}
+
+interface ModalContextInterface {
+  /**
+   * A hook that, when called, performs a side effect that changes the modal's title. When the calling component is unmounted, the title is reverted.
+   */
+  useModalTitle: (title: ReactNode) => void;
+}
+
+const Context = createContext<ModalContextInterface>({
+  useModalTitle: () => undefined,
+});
+
+export function useModalContext() {
+  return useContext(Context);
+}
+
+function ModalContext({
+  title,
+  setTitle,
+  children,
+}: {
+  title: ReactNode;
+  setTitle: (title: ReactNode) => void;
+  children: ReactNode;
+}) {
+  const useModalTitle = (t: ReactNode) => {
+    useEffect(() => {
+      const oldTitle = title;
+      setTitle(t);
+      return () => setTitle(oldTitle);
+    }, [t]);
+  };
+
+  return (
+    <Context.Provider value={{ useModalTitle }}>{children}</Context.Provider>
   );
 }

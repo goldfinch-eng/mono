@@ -29,7 +29,7 @@ const statusCheckStepQuery = gql`
 export function StatusCheckStep() {
   const { goToStep } = useWizard();
   const apolloClient = useApolloClient();
-  const { setSignature } = useVerificationFlowContext();
+  const { setSignature, setUidVersion } = useVerificationFlowContext();
   const { account, provider } = useWallet();
   const [error, setError] = useState<string>();
 
@@ -68,6 +68,12 @@ export function StatusCheckStep() {
           signature.signature,
           signature.signatureBlockNum
         );
+        const goldfinchUtils = await import("@goldfinch-eng/utils");
+        const idVersion = goldfinchUtils.getIDType({
+          address: account,
+          kycStatus,
+        });
+        setUidVersion(idVersion);
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);
         } else if (kycStatus.status === "approved") {
@@ -80,7 +86,7 @@ export function StatusCheckStep() {
       }
     };
     asyncEffect();
-  }, [account, provider, setSignature, goToStep, apolloClient]);
+  }, [account, provider, setSignature, goToStep, apolloClient, setUidVersion]);
 
   return (
     <div className="flex h-full w-full grow items-center justify-center text-center">
