@@ -95,7 +95,7 @@ describe("linkUserToUid", () => {
 
   let mainUser: Record<string, unknown>
 
-  // Should not be dependent upon actual constant - should use actual value represented in signature.
+  // Arbitrary signature expiry time chosen for the tests. Any signature expiry time we choose should be respected.
   const uniqueIdentitySignatureExpiryTime = 640
 
   const expectSuccessfulMintLink = async (fromAddress: string, customExpiresAt: number) => {

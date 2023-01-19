@@ -58,7 +58,8 @@ if (process.env.NODE_ENV == "test") {
 
 /**
  * Link the provided user's address to their intended UID recipient address.
- * Assumes that we will immediately provide the user with a presigned message which they will be able to immediately use to mint a new UID.
+ * The returned presigned message can be used immediately mint a new UID of the specified type.
+ * We want to prevent individual, KYC'ed users from minting multiple UID's of the same type.
  * For this reason, we must prevents users with existing UID's or unexpired UID presigned messages from being linked to new UID's.
  * @param { { address: string, abi: any }? } injectedUidDeployment The specified UniqueIdentity contract deployment, try to determine automatically from the chain ID otherwise.
  * @return {HttpsFunction} Https function that handles the request
