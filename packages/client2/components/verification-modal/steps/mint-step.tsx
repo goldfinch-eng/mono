@@ -104,7 +104,7 @@ export function MintStep() {
               iconRight="ArrowSmRight"
               className="w-full"
             >
-              Claim my UID
+              Mint UID
             </Button>
           </Form>
           <button
