@@ -13,6 +13,7 @@ import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
+import { ApolloClientError, handleApolloClientError } from "@/lib/utils";
 import { fetchUniqueIdentitySigner, getUIDLabelFromType } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
@@ -86,12 +87,7 @@ export function MintToAddressStep() {
       });
       goToStep(VerificationFlowSteps.MintFinished);
     } catch (e) {
-      const reason = (e as { reason: string }).reason;
-      const actualReason = reason.match(/reverted with reason string \'(.+)\'/);
-      if (actualReason) {
-        throw new Error(actualReason[1]);
-      }
-      throw e;
+      handleApolloClientError(e as ApolloClientError);
     }
   };
 
