@@ -20,18 +20,17 @@ import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-lin
 import {
   calculateCreditLineMaxDrawdownAmount,
   calculatePoolFundsAvailable,
-  calculateInterestOwed,
-  calculateRemainingPeriodDueAmount,
-  calculateRemainingTotalDueAmount,
   CreditLineStatus,
-  getCreditLineStatus,
+  CREDIT_LINE_ACCOUNTING_FIELDS,
+  getCreditLineAccountingAnalyisValues,
 } from "@/pages/borrow/helpers";
 
-import { CreditLineProgressBar } from "./credit-status-progress-bar";
+import { CreditStatusProgressBar } from "./credit-status-progress-bar";
 import { DrawdownForm } from "./drawdown-form";
 import { PaymentForm } from "./payment-form";
 
 gql`
+  ${CREDIT_LINE_ACCOUNTING_FIELDS}
   query PoolCreditLinePage($tranchedPoolId: ID!) {
     tranchedPool(id: $tranchedPoolId) {
       id
@@ -42,20 +41,11 @@ gql`
       }
       creditLine {
         id
-        balance
         interestAprDecimal
-        interestApr
-        interestAccruedAsOf
-        interestOwed
-        nextDueTime
-        limit
-        maxLimit
-        termEndTime
         termInDays
         paymentPeriodInDays
-        isLate @client
-        collectedPaymentBalance @client
         isAfterTermEndTime @client
+        ...CreditLineAccountingFields
       }
       juniorTranches {
         id
@@ -93,7 +83,7 @@ const NextPaymentLabel = ({
   formattedNextDueTime,
   formattedRemainingPeriodDueAmount,
 }: {
-  creditLineStatus: CreditLineStatus | undefined;
+  creditLineStatus?: CreditLineStatus;
   formattedNextDueTime: string;
   formattedRemainingPeriodDueAmount: string;
 }) => {
@@ -133,44 +123,20 @@ export default function PoolCreditLinePage({
   const seniorTranche = tranchedPool?.seniorTranches?.[0];
 
   let creditLineStatus;
+  let creditLineLimit = BigNumber.from(0);
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
-  let creditLineLimit = BigNumber.from(0);
-  if (tranchedPool && creditLine && juniorTranche && seniorTranche) {
-    const currentInterestOwed = calculateInterestOwed({
-      isLate: creditLine.isLate,
-      interestOwed: creditLine.interestOwed,
-      interestApr: creditLine.interestApr,
-      nextDueTime: creditLine.nextDueTime,
-      interestAccruedAsOf: creditLine.interestAccruedAsOf,
-      balance: creditLine.balance,
-    });
+  if (creditLine && juniorTranche && seniorTranche) {
+    const creditLineAccountingAnalysisValues =
+      getCreditLineAccountingAnalyisValues(creditLine);
 
-    remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      nextDueTime: creditLine.nextDueTime,
-      termEndTime: creditLine.termEndTime,
-      balance: creditLine.balance,
-      currentInterestOwed,
-    });
-
-    remainingTotalDueAmount = calculateRemainingTotalDueAmount({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      balance: creditLine.balance,
-      currentInterestOwed,
-    });
-
-    creditLineStatus = getCreditLineStatus({
-      isLate: creditLine.isLate,
-      remainingPeriodDueAmount,
-      termEndTime: creditLine.termEndTime,
-      remainingTotalDueAmount,
-    });
-
-    creditLineLimit = creditLine.limit.gt(0)
-      ? creditLine.limit
-      : creditLine.maxLimit;
+    creditLineStatus = creditLineAccountingAnalysisValues.creditLineStatus;
+    creditLineLimit = creditLineAccountingAnalysisValues.creditLineLimit;
+    remainingTotalDueAmount =
+      creditLineAccountingAnalysisValues.remainingTotalDueAmount;
+    remainingPeriodDueAmount =
+      creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
     const juniorTrancheShareInfo = {
       principalDeposited: juniorTranche.principalDeposited,
@@ -183,12 +149,10 @@ export default function PoolCreditLinePage({
     };
 
     const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      currentInterestOwed,
-      nextDueTime: creditLine.nextDueTime,
-      termEndTime: creditLine.termEndTime,
+      ...creditLine,
+      currentInterestOwed:
+        creditLineAccountingAnalysisValues.currentInterestOwed,
       limit: creditLineLimit,
-      balance: creditLine.balance,
     });
 
     const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
@@ -248,7 +212,7 @@ export default function PoolCreditLinePage({
         </div>
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
-      ) : error || !tranchedPool || !creditLine ? (
+      ) : error || !creditLine ? (
         <div className="text-2xl">Unable to load credit line</div>
       ) : (
         <div className="flex flex-col">
@@ -380,7 +344,7 @@ export default function PoolCreditLinePage({
                 />
               </div>
 
-              <CreditLineProgressBar
+              <CreditStatusProgressBar
                 className="h-3.5"
                 balanceWithInterest={remainingTotalDueAmount}
                 availableToDrawDown={availableForDrawdown}
@@ -443,7 +407,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {creditLine.paymentPeriodInDays.toString()}
+                    {`${creditLine.paymentPeriodInDays.toString()} days`}
                   </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>

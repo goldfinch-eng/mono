@@ -12,7 +12,7 @@ import { CreditLineStatus } from "@/pages/borrow/helpers";
 interface DrawdownProps {
   availableForDrawdown: BigNumber;
   tranchedPoolAddress: string;
-  creditLineStatus: CreditLineStatus | undefined;
+  creditLineStatus?: CreditLineStatus;
   isAfterTermEndTime: boolean;
   borrowerContractAddress: string;
   onClose: () => void;

@@ -18,14 +18,13 @@ import {
   TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS,
 } from "./credit-line-card";
 import {
-  calculateInterestOwed,
-  calculateRemainingPeriodDueAmount,
-  calculateRemainingTotalDueAmount,
   CreditLineStatus,
-  getCreditLineStatus,
+  CREDIT_LINE_ACCOUNTING_FIELDS,
+  getCreditLineAccountingAnalyisValues,
 } from "./helpers";
 
 gql`
+  ${CREDIT_LINE_ACCOUNTING_FIELDS}
   query BorrowPage($userId: ID!) {
     user(id: $userId) {
       borrowerContracts(orderBy: createdAt, orderDirection: desc) {
@@ -34,17 +33,8 @@ gql`
           id
           creditLine {
             id
-            balance
             interestAprDecimal
-            interestApr
-            interestAccruedAsOf
-            interestOwed
-            nextDueTime
-            limit
-            maxLimit
-            termEndTime
-            isLate @client
-            collectedPaymentBalance @client
+            ...CreditLineAccountingFields
           }
         }
       }
@@ -100,11 +90,11 @@ export default function BorrowPage({
 
   const borrowerContracts = data?.user?.borrowerContracts;
 
-  // Get the most recently created borrower contract - older events have no associated pools
+  // Get the most recently created borrower contract - older borrower contracts have no associated pools
   const tranchedPools =
     borrowerContracts && borrowerContracts.length > 0
       ? borrowerContracts[0].tranchedPools
-      : null;
+      : [];
 
   return (
     <div>
@@ -159,44 +149,12 @@ export default function BorrowPage({
           </div>
           {tranchedPools.map((tranchedPool) => {
             const { creditLine } = tranchedPool;
-            const id = creditLine.id;
 
-            const creditLineLimit = formatCrypto({
-              token: "USDC",
-              amount: creditLine.limit.gt(0)
-                ? creditLine.limit
-                : creditLine.maxLimit,
-            });
-
-            const currentInterestOwed = calculateInterestOwed({
-              isLate: creditLine.isLate,
-              interestOwed: creditLine.interestOwed,
-              interestApr: creditLine.interestApr,
-              nextDueTime: creditLine.nextDueTime,
-              interestAccruedAsOf: creditLine.interestAccruedAsOf,
-              balance: creditLine.balance,
-            });
-
-            const remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
-              collectedPaymentBalance: creditLine.collectedPaymentBalance,
-              nextDueTime: creditLine.nextDueTime,
-              termEndTime: creditLine.termEndTime,
-              balance: creditLine.balance,
-              currentInterestOwed,
-            });
-
-            const remainingTotalDueAmount = calculateRemainingTotalDueAmount({
-              collectedPaymentBalance: creditLine.collectedPaymentBalance,
-              balance: creditLine.balance,
-              currentInterestOwed,
-            });
-
-            const creditLineStatus = getCreditLineStatus({
-              isLate: creditLine.isLate,
+            const {
+              creditLineLimit,
               remainingPeriodDueAmount,
-              termEndTime: creditLine.termEndTime,
-              remainingTotalDueAmount,
-            });
+              creditLineStatus,
+            } = getCreditLineAccountingAnalyisValues(creditLine);
 
             const dueDateLabel = getDueDateLabel({
               creditLineStatus,
@@ -208,17 +166,16 @@ export default function BorrowPage({
               amount: remainingPeriodDueAmount,
             });
 
-            const formattedInterestRate = formatPercent(
-              creditLine.interestAprDecimal
-            );
-
             return (
-              <div key={id}>
+              <div key={creditLine.id}>
                 <CreditLineCard
                   className="mb-4"
                   href={`/borrow/${tranchedPool.id}`}
                   dealMetaData={dealMetadata[tranchedPool.id]}
-                  description={`${creditLineLimit} at ${formattedInterestRate}`}
+                  description={`${formatCrypto({
+                    amount: creditLineLimit,
+                    token: "USDC",
+                  })} at ${formatPercent(creditLine.interestAprDecimal)}`}
                   status={creditLineStatus}
                   nextPayment={nextPayment}
                   dueDateLabel={dueDateLabel}

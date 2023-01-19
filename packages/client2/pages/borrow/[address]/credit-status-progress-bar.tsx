@@ -3,17 +3,17 @@ import { BigNumber } from "ethers";
 
 import { cryptoToFloat } from "@/lib/format";
 
-interface CreditLineProgressBarProps {
+interface CreditStatusProgressBarProps {
   className?: string;
   balanceWithInterest: BigNumber;
   availableToDrawDown: BigNumber;
 }
 
-export function CreditLineProgressBar({
+export function CreditStatusProgressBar({
   className,
   balanceWithInterest,
   availableToDrawDown,
-}: CreditLineProgressBarProps) {
+}: CreditStatusProgressBarProps) {
   if (balanceWithInterest.lte(0) && availableToDrawDown.lte(0)) {
     return null;
   }
@@ -33,10 +33,10 @@ export function CreditLineProgressBar({
 
   let balanceWithInterestBarStyle = "rounded-tl-lg rounded-bl-lg";
   let availableToDrawdownStyle = "rounded-tr-lg rounded-br-lg";
-  if (availableToDrawdownFloat <= 0) {
+  if (availableToDrawdownFloat === 0) {
     balanceWithInterestBarStyle = "rounded-lg";
     availableToDrawdownStyle = "";
-  } else if (balanceWithInterestFloat <= 0) {
+  } else if (balanceWithInterestFloat === 0) {
     balanceWithInterestBarStyle = "";
     availableToDrawdownStyle = "rounded-lg";
   }
@@ -48,13 +48,13 @@ export function CreditLineProgressBar({
         style={{
           width: `${(balanceWithInterestFloat / progressBarSum) * 100}%`,
         }}
-      ></div>
+      />
       <div
         className={clsx("h-3.5 bg-mustard-400", availableToDrawdownStyle)}
         style={{
           width: `${(availableToDrawdownFloat / progressBarSum) * 100}%`,
         }}
-      ></div>
+      />
     </div>
   );
 }
