@@ -25,7 +25,6 @@ contract UniqueIdentityBaseTest is BaseTest {
     _stopImpersonation();
 
     fuzzHelper.exclude(address(uid));
-    fuzzHelper.exclude(address(this));
     fuzzHelper.exclude(address(protocol.stakingRewards()));
   }
 

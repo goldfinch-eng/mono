@@ -14,6 +14,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
@@ -148,6 +149,8 @@ export default function SupplyPanel({
       value = availableBalance;
     }
 
+    let submittedTransaction;
+
     const usdcContract = await getContract({ name: "USDC", provider });
     const tranchedPoolContract = await getContract({
       name: "TranchedPool",
@@ -164,7 +167,7 @@ export default function SupplyPanel({
         amount: value,
         erc20Contract: usdcContract,
       });
-      await toastTransaction({
+      submittedTransaction = await toastTransaction({
         transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
         pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
       });
@@ -188,11 +191,18 @@ export default function SupplyPanel({
         signature.r,
         signature.s
       );
-      await toastTransaction({
+      submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
       });
     }
+
+    dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
+      transactionHash: submittedTransaction.transactionHash,
+      tranchedPoolAddress,
+      usdAmount: parseFloat(data.supply),
+    });
+
     await apolloClient.refetchQueries({
       include: "active",
       updateCache(cache) {

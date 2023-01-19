@@ -48,11 +48,11 @@ contract GoInitializeTest is GoBaseTest {
 
   function testSetsTheConfigAndUidInState() public {
     assertEq(address(go.config()), address(gfConfig));
-    assertEq(address(go.uniqueIdentity()), address(uniqueIdentity));
+    assertEq(address(go.uniqueIdentity()), address(uid));
   }
 
   function testCannotBeCalledTwice() public {
     vm.expectRevert("Contract instance has already been initialized");
-    go.initialize(GF_OWNER, gfConfig, address(uniqueIdentity));
+    go.initialize(GF_OWNER, gfConfig, address(uid));
   }
 }

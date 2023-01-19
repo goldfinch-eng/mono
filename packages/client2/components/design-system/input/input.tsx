@@ -8,7 +8,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /**
    * Label text that will appear above the input
    */
-  label: string;
+  label: ReactNode;
   /**
    * Visually hide the label. Screen readers will still read it.
    */

@@ -7,6 +7,7 @@ extend type SeniorPool {
   name: String!
   category: String!
   icon: String!
+  epochEndsAt: Int!
 }
 
 extend type TranchedPool {
@@ -16,7 +17,7 @@ extend type TranchedPool {
 }
 
 extend type CreditLine {
-  isLate: Boolean
+  isLate: Boolean!
 }
 
 extend type SeniorPoolStakedPosition {
@@ -130,12 +131,25 @@ type CurvePool {
   usdcPerLpToken: BigDecimal!
 }
 
+type BackerSecondaryMarketStat {
+  id: ID!
+  tokenCount: Int!
+  onSaleCount: Int!
+}
+
+type BackerSecondaryMarket {
+  id: ID!
+  collectionStats: BackerSecondaryMarketStat!
+  poolStats(poolAddress: String!): BackerSecondaryMarketStat!
+}
+
 extend type Query {
   viewer: Viewer!
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo!
+  backerSecondaryMarket: BackerSecondaryMarket!
   curvePool: CurvePool!
 }
 
@@ -148,8 +162,4 @@ extend type SeniorPoolWithdrawalRequest {
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """
   previewFiduRequested: BigInt!
-}
-
-extend type SeniorPoolStatus {
-  epochEndsAt: Int!
 }
