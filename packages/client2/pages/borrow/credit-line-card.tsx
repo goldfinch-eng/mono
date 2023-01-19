@@ -34,19 +34,23 @@ const CreditLineStatusWithTooltip = ({
   switch (status) {
     case CreditLineStatus.Open:
       label = "Open";
-      tooltipContent = "TODO: 'Open' status tooltip content.";
+      tooltipContent =
+        "Pool is either about to be, or currently open to receiving funds.";
       break;
     case CreditLineStatus.Repaid:
       label = "Repaid";
-      tooltipContent = "TODO: 'Repaid' status tooltip content.";
+      tooltipContent =
+        "100% of principal and accrued interest has been fully repaid.";
       break;
     case CreditLineStatus.PaymentLate:
       label = "Late";
-      tooltipContent = "TODO: 'Late' status tooltip content.";
+      tooltipContent =
+        "Pool is past due on principal and or interest obligations.";
       break;
     default:
       label = "Current";
-      tooltipContent = "TODO: 'Current' status tooltip content.";
+      tooltipContent =
+        "Pool is up to date on principal and or interest obligations.";
       break;
   }
 
