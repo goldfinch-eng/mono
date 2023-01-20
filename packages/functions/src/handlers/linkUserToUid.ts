@@ -6,6 +6,7 @@ import {genRequestHandler, getBlockchain, extractHeaderValue} from "../helpers"
 import {ethers, BigNumber} from "ethers"
 import {
   assertNonNullable,
+  assertNumber,
   isApprovedNonUSEntity,
   isApprovedUSAccreditedEntity,
   isApprovedUSAccreditedIndividual,
@@ -57,7 +58,9 @@ if (process.env.NODE_ENV == "test") {
 
 /**
  * Link the provided user's address to their intended UID recipient address.
- * Prevents users with existing UID's (owned on chain or linked in Firestore) from being linked to new UID's.
+ * The returned presigned message can be used immediately mint a new UID of the specified type.
+ * We want to prevent individual, KYC'ed users from minting multiple UID's of the same type.
+ * For this reason, we must prevents users with existing UID's or unexpired UID presigned messages from being linked to new UID's.
  * @param { { address: string, abi: any }? } injectedUidDeployment The specified UniqueIdentity contract deployment, try to determine automatically from the chain ID otherwise.
  * @return {HttpsFunction} Https function that handles the request
  */
@@ -87,9 +90,12 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {
       assertNonNullable(uidType)
       assertNonNullable(expiresAt)
       assertNonNullable(nonce)
+      assertNumber(expiresAt)
       validateUidType(uidType.toNumber())
 
-      if (expiresAt < (await blockchain.getBlock("latest")).timestamp) {
+      const currentBlockchainTime = (await blockchain.getBlock("latest")).timestamp
+
+      if (expiresAt < currentBlockchainTime) {
         return res.status(400).send({status: "error", message: "Signature has expired"})
       }
 
@@ -179,9 +185,16 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {
           }
 
           const existingUidRecipientAddress = user.data()?.uidRecipientAuthorizations?.[uidTypeId]?.toLowerCase()
-          if (existingUidRecipientAddress && existingUidRecipientAddress !== uidRecipientAddress) {
+          const lastUidSignatureExpiry = user.data()?.lastUidSignatureExpiresAt
+          const lastUidSignatureExpired = !lastUidSignatureExpiry || lastUidSignatureExpiry < currentBlockchainTime
+
+          if (
+            existingUidRecipientAddress &&
+            existingUidRecipientAddress !== uidRecipientAddress &&
+            !lastUidSignatureExpired
+          ) {
             throw new ExistingUidRecipientAddressError(
-              `Address ${msgSender} has already been linked to a different UID recipient address ${existingUidRecipientAddress}`,
+              `Address ${msgSender} has already been linked to a different UID recipient address ${existingUidRecipientAddress}. Can link a different UID recipient address when the original signature expires.`,
             )
           }
 
@@ -189,6 +202,7 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {
             uidRecipientAuthorizations: {
               [uidTypeId]: uidRecipientAddress.toLowerCase(),
             },
+            lastUidSignatureExpiresAt: expiresAt,
             updatedAt: Date.now(),
           })
         })

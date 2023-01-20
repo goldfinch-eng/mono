@@ -2,14 +2,7 @@ import { Resolvers } from "@apollo/client";
 
 import { getProvider } from "@/lib/wallet";
 
-import {
-  BackerSecondaryMarket,
-  BlockInfo,
-  GfiPrice,
-  SupportedFiat,
-  Viewer,
-} from "../generated";
-import { fetchBackerSecondaryMarketStat } from "./backer-secondary-market";
+import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
 
 async function fetchWithTimeout(url: string, timeout = 3000) {
   const controller = new AbortController();
@@ -103,21 +96,6 @@ export const rootQueryResolvers: Resolvers[string] = {
   async curvePool() {
     return {
       __typename: "CurvePool",
-    };
-  },
-  async backerSecondaryMarket(): Promise<
-    Omit<BackerSecondaryMarket, "poolStats">
-  > {
-    const { tokenCount, onSaleCount } = await fetchBackerSecondaryMarketStat();
-    return {
-      __typename: "BackerSecondaryMarket",
-      id: "bsm",
-      collectionStats: {
-        __typename: "BackerSecondaryMarketStat",
-        id: "collection",
-        tokenCount,
-        onSaleCount,
-      },
     };
   },
 };

@@ -11,6 +11,7 @@ import {
   ModalStepper,
   FormStep,
   useStepperContext,
+  useModalContext,
 } from "./index";
 
 export default {
@@ -134,6 +135,9 @@ function StepOne() {
   const onSubmit = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
+
+  const { useModalTitle } = useModalContext();
+  useModalTitle("Step One");
   return (
     <FormStep rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <div>Step One</div>
@@ -168,6 +172,8 @@ function StepTwo() {
 function StepThree() {
   const rhfMethods = useForm();
   const { data } = useStepperContext();
+  const { useModalTitle } = useModalContext();
+  useModalTitle("Step Three");
   return (
     <FormStep
       rhfMethods={rhfMethods}
