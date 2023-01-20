@@ -1,14 +1,13 @@
-import {GoListed, NoListed} from "../../generated/GoldfinchConfig/GoldfinchConfig"
-import {getOrInitUser} from "../entities/user"
+import {BigDecimal} from "@graphprotocol/graph-ts"
 
-export function handleGoListed(event: GoListed): void {
-  const user = getOrInitUser(event.params.member)
-  user.isGoListed = true
-  user.save()
-}
+import {NumberUpdated} from "../../generated/GoldfinchConfig/GoldfinchConfig"
+import {CONFIG_KEYS_NUMBERS} from "../constants"
+import {getOrInitSeniorPool} from "./senior_pool/helpers"
 
-export function handleNoListed(event: NoListed): void {
-  const user = getOrInitUser(event.params.member)
-  user.isGoListed = false
-  user.save()
+export function handleNumberUpdated(event: NumberUpdated): void {
+  if (event.params.index.toI32() == CONFIG_KEYS_NUMBERS.SeniorPoolWithdrawalCancelationFeeInBps) {
+    const seniorPool = getOrInitSeniorPool()
+    seniorPool.withdrawalCancellationFee = event.params.newValue.divDecimal(BigDecimal.fromString("10000"))
+    seniorPool.save()
+  }
 }
