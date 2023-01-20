@@ -1,6 +1,5 @@
 import type { Resolvers } from "@apollo/client";
 
-import { backerSecondaryMarketResolvers } from "./backer-secondary-market";
 import { creditLineResolvers } from "./credit-line";
 import { curvePoolResolvers } from "./curve-pool";
 import {
@@ -18,7 +17,6 @@ import { viewerResolvers } from "./viewer";
 export const resolvers: Resolvers = {
   Query: rootQueryResolvers,
   Viewer: viewerResolvers,
-  BackerSecondaryMarket: backerSecondaryMarketResolvers,
   CreditLine: creditLineResolvers,
   IndirectGfiGrant: indirectGfiGrantResolvers,
   DirectGfiGrant: directGfiGrantResolvers,
