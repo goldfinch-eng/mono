@@ -1,4 +1,7 @@
+import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
+
+import { CreditLineAccountingFieldsFragment } from "@/lib/graphql/generated";
 
 /**
  * Calculates the current interest owed on the credit line.
@@ -7,7 +10,7 @@ import { BigNumber } from "ethers";
  *
  * After crossing the nextDueTime any interest that accrued during that payment period becomes interest owed and interestOwed becomes non-zero on the SC.
  */
-export function calculateInterestOwed({
+function calculateInterestOwed({
   isLate,
   interestOwed,
   interestApr,
@@ -43,7 +46,7 @@ export function calculateInterestOwed({
  * Calculates the amount owed for the current period
  *
  */
-export function calculateNextDueAmount({
+function calculateNextDueAmount({
   currentInterestOwed,
   nextDueTime,
   termEndTime,
@@ -66,7 +69,7 @@ export function calculateNextDueAmount({
  * Calculates the remaining amount owed for the period on the credit line, considering payments made so far.
  *
  */
-export function calculateRemainingPeriodDueAmount({
+function calculateRemainingPeriodDueAmount({
   collectedPaymentBalance,
   nextDueTime,
   termEndTime,
@@ -99,7 +102,7 @@ export function calculateRemainingPeriodDueAmount({
  * Calculates the total remaining amount owed for the term on credit line, considering payments made so far.
  *
  */
-export function calculateRemainingTotalDueAmount({
+function calculateRemainingTotalDueAmount({
   collectedPaymentBalance,
   balance,
   currentInterestOwed,
@@ -119,39 +122,44 @@ export function calculateRemainingTotalDueAmount({
 }
 
 export enum CreditLineStatus {
+  Open,
   PaymentLate,
   PaymentDue,
   PeriodPaid,
-  InActive,
+  Repaid,
 }
 
-export function getCreditLineStatus({
+function getCreditLineStatus({
   isLate,
   remainingPeriodDueAmount,
-  limit,
+  termEndTime,
   remainingTotalDueAmount,
 }: {
   isLate: boolean;
   remainingPeriodDueAmount: BigNumber;
-  limit: BigNumber;
+  termEndTime: BigNumber;
   remainingTotalDueAmount: BigNumber;
 }) {
-  // Is Late - unless the credit line is fully paid off, then is inactive
-  if (isLate && remainingTotalDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentLate;
+  // The credit line has not been drawndown yet
+  if (termEndTime.eq(0)) {
+    return CreditLineStatus.Open;
   }
 
-  // Payment is due - but not late
-  if (remainingPeriodDueAmount.gt(0)) {
-    return CreditLineStatus.PaymentDue;
-  }
+  // Funds have been drawndown for the credit line
+  if (remainingTotalDueAmount.gt(0)) {
+    if (isLate) {
+      return CreditLineStatus.PaymentLate;
+    }
 
-  // Credit line is active & paid
-  if (limit.gt(0) && remainingTotalDueAmount.gt(0)) {
+    if (remainingPeriodDueAmount.gt(0)) {
+      return CreditLineStatus.PaymentDue;
+    }
+
     return CreditLineStatus.PeriodPaid;
   }
 
-  return CreditLineStatus.InActive;
+  // The credit line's principal + interest has been fully repaid
+  return CreditLineStatus.Repaid;
 }
 
 /**
@@ -166,15 +174,14 @@ const trancheSharesToUsdc = (
 };
 
 /**
- * Calculates the USDC amount available for drawdown on a credit line
- *
+ * Calculates the USDC funds deposited in a tranched pool
  *
  */
 interface TrancheShareInfo {
   principalDeposited: BigNumber;
   sharePrice: BigNumber;
 }
-export function calculateAvailableForDrawdown({
+export function calculatePoolFundsAvailable({
   juniorTrancheShareInfo,
   seniorTrancheShareInfo,
 }: {
@@ -182,26 +189,26 @@ export function calculateAvailableForDrawdown({
   seniorTrancheShareInfo: TrancheShareInfo;
 }): BigNumber {
   /**
-   * Calculates the amount available for drawdown from a tranched pool by converting the
+   * Calculates the funds deposited in a tranched pool that could be drawdown by converting the
    * total junior & senior shares to USDC.
    *
-   * Why not use the CreditLine contract to calculate this?
+   * Why not just use the CreditLine contract to calculate this?
    *
-   * In the scenario a borrower pays off principal interest during the current period we can't rely on
+   * In the scenario a borrower pays off principal during the current period we can't rely on
    * CreditLine.balance() to determine the amount actually available for drawdown from the pool if an additional
    * drawdown is attempted during the same period.
    *
    * This is is b/c payments do not trigger a balance update on the Credit Line contract & CreditLine.assess()
    * only runs accounting updates once the current peroiod has passed.
    *
-   * Payments do update the tranche share price(s), which can be used to calc avaible funds to drawdown from
+   * Payments do update the tranche share price(s), which can be used to calc avaiable funds to drawdown from
    * the pool and represent the actual amount avaiable.
    *
    * i.e:
    * 1. Borrow full limit
-   * 2. See borrow variable has been updated
+   * 2. See balance variable has been updated
    * 3. Pay off full interest + principal
-   * 4. See borrow variable does not update to 0 (even when manually calling assess() b/c still in current period)
+   * 4. See balance variable does not update to 0 (even when manually calling assess() b/c still in current period)
    */
   const juniorTrancheAmount = trancheSharesToUsdc(
     juniorTrancheShareInfo.principalDeposited,
@@ -213,4 +220,130 @@ export function calculateAvailableForDrawdown({
   );
 
   return juniorTrancheAmount.add(seniorTrancheAmount);
+}
+
+/**
+ * Calculates the max USDC amount that can be drawndown from a pool based on the state of the Credit Line
+ *
+ */
+export function calculateCreditLineMaxDrawdownAmount({
+  collectedPaymentBalance,
+  currentInterestOwed,
+  nextDueTime,
+  termEndTime,
+  limit,
+  balance,
+}: {
+  collectedPaymentBalance: BigNumber;
+  currentInterestOwed: BigNumber;
+  nextDueTime: BigNumber;
+  termEndTime: BigNumber;
+  limit: BigNumber;
+  balance: BigNumber;
+}): BigNumber {
+  const periodDueAmount = calculateNextDueAmount({
+    currentInterestOwed,
+    nextDueTime,
+    termEndTime,
+    balance,
+  });
+
+  let collectedForPrincipal = collectedPaymentBalance.sub(periodDueAmount);
+  if (collectedForPrincipal.lt(BigNumber.from(0))) {
+    collectedForPrincipal = BigNumber.from(0);
+  }
+
+  // Available credit is the lesser of the two:
+  //  - The limit of the credit line (nothing borrowed yet or fully paid off)
+  //  - The limit minus the outstanding principal balance, plus any amount collected for principal
+  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
+  if (availableCredit.lt(limit)) {
+    return availableCredit;
+  }
+
+  return limit;
+}
+
+export const CREDIT_LINE_ACCOUNTING_FIELDS = gql`
+  fragment CreditLineAccountingFields on CreditLine {
+    limit
+    maxLimit
+    interestOwed
+    interestApr
+    nextDueTime
+    interestAccruedAsOf
+    balance
+    termEndTime
+    isLate @client
+    collectedPaymentBalance @client
+  }
+`;
+
+/**
+ * Analyses a Credit Line's Accounting fields to derive variables required for the borrower views
+ *
+ * @returns {Object} - an object containing the following fields:
+ * @returns {BigNumber} [creditLineLimit] - the credit line's limit (could be current limit or max limit)
+ * @returns {BigNumber} [currentInterestOwed] - the current interest owed on the Credit Line
+ * @returns {BigNumber} [remainingPeriodDueAmount] - the remaining period due amount considering payments made so far
+ * @returns {BigNumber} [remainingTotalDueAmount] - the remaining total due amount considering payments made so far
+ * @returns {CreditLineStatus} [creditLineStatus] - the status of credit line
+ */
+export function getCreditLineAccountingAnalyisValues({
+  limit,
+  maxLimit,
+  isLate,
+  interestOwed,
+  interestApr,
+  nextDueTime,
+  interestAccruedAsOf,
+  balance,
+  collectedPaymentBalance,
+  termEndTime,
+}: CreditLineAccountingFieldsFragment): {
+  creditLineLimit: BigNumber;
+  currentInterestOwed: BigNumber;
+  remainingPeriodDueAmount: BigNumber;
+  remainingTotalDueAmount: BigNumber;
+  creditLineStatus: CreditLineStatus;
+} {
+  const creditLineLimit = limit.gt(0) ? limit : maxLimit;
+
+  const currentInterestOwed = calculateInterestOwed({
+    isLate,
+    interestOwed,
+    interestApr,
+    nextDueTime,
+    interestAccruedAsOf,
+    balance,
+  });
+
+  const remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
+    collectedPaymentBalance,
+    nextDueTime,
+    termEndTime,
+    balance,
+    currentInterestOwed,
+  });
+
+  const remainingTotalDueAmount = calculateRemainingTotalDueAmount({
+    collectedPaymentBalance,
+    balance,
+    currentInterestOwed,
+  });
+
+  const creditLineStatus = getCreditLineStatus({
+    isLate,
+    remainingPeriodDueAmount,
+    termEndTime,
+    remainingTotalDueAmount,
+  });
+
+  return {
+    creditLineLimit,
+    currentInterestOwed,
+    remainingPeriodDueAmount,
+    remainingTotalDueAmount,
+    creditLineStatus,
+  };
 }

@@ -23,12 +23,9 @@ gql`
       name @client
       category @client
       icon @client
-      latestPoolStatus {
-        id
-        estimatedApy
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApy
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
@@ -63,7 +60,7 @@ export default function EarnPage({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
-  const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.estimatedApy
+  const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
   // Only display tranched pools for which we have deal metadata
@@ -107,10 +104,10 @@ export default function EarnPage({
             title={seniorPool.name}
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
-            apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyWithGfi={seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
+            apy={seniorPool.estimatedApy}
+            apyWithGfi={seniorPool.estimatedApy.addUnsafe(
               computeApyFromGfiInFiat(
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+                seniorPool.estimatedApyFromGfiRaw,
                 fiatPerGfi
               )
             )}
@@ -123,16 +120,14 @@ export default function EarnPage({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <div>Senior Pool APY</div>
-                    <div>
-                      {formatPercent(seniorPool.latestPoolStatus.estimatedApy)}
-                    </div>
+                    <div>{formatPercent(seniorPool.estimatedApy)}</div>
                   </div>
                   <div className="flex justify-between">
                     <div>GFI Distribution APY</div>
                     <div>
                       {formatPercent(
                         computeApyFromGfiInFiat(
-                          seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+                          seniorPool.estimatedApyFromGfiRaw,
                           fiatPerGfi
                         )
                       )}
@@ -143,9 +138,9 @@ export default function EarnPage({
                     <div>Total Est. APY</div>
                     <div>
                       {formatPercent(
-                        seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
+                        seniorPool.estimatedApy.addUnsafe(
                           computeApyFromGfiInFiat(
-                            seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+                            seniorPool.estimatedApyFromGfiRaw,
                             fiatPerGfi
                           )
                         )
@@ -176,9 +171,7 @@ export default function EarnPage({
                 tranchedPool={tranchedPool}
                 href={`/pools/${tranchedPool.id}`}
                 fiatPerGfi={fiatPerGfi}
-                seniorPoolApyFromGfiRaw={
-                  seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                }
+                seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
               />
             ))
           : !tranchedPools

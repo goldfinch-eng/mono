@@ -15,6 +15,9 @@ export const US_UID_TYPES = [
 ]
 export const NON_US_UID_TYPES = [NON_US_INDIVIDUAL_ID_TYPE_0, NON_US_ENTITY_ID_TYPE_4]
 
+/** Expiry time for presigned messages should be 30 minutes from the time the message is signed */
+export const UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME = 1800
+
 export function caseInsensitiveIncludes(list: string[], element: string): boolean {
   const regexp = new RegExp(element, "i")
   return list.some((x) => x.match(regexp))

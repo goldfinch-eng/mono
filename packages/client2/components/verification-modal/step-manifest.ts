@@ -10,6 +10,8 @@ export enum VerificationFlowSteps {
   ParallelMarkets,
   Pending,
   Mint,
+  MintToAddress,
+  MintFinished,
   Ineligible,
   AlreadyMinted,
 }

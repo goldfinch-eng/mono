@@ -26,6 +26,7 @@ import {setEnvForTest, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
+import _ from "lodash"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
@@ -81,7 +82,7 @@ describe("linkUserToUid", () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
   let users: firestore.CollectionReference<firestore.DocumentData>
-  let expiresAt: BigNumber
+  let expiresAt: number
   let validMintPresigMessage: BytesLike
   let validMintSignature: string
   let validMintToPresigMessage: BytesLike
@@ -94,19 +95,22 @@ describe("linkUserToUid", () => {
 
   let mainUser: Record<string, unknown>
 
-  const expectSuccessfulMint = async (fromAddress: string) => {
+  // Arbitrary signature expiry time chosen for the tests. Any signature expiry time we choose should be respected.
+  const uniqueIdentitySignatureExpiryTime = 640
+
+  const expectSuccessfulMintLink = async (fromAddress: string, customExpiresAt: number) => {
     const startedAt = Date.now()
     const presigMintMessage = presignedMintMessage(
       fromAddress,
       uidType,
-      expiresAt,
+      customExpiresAt,
       uniqueIdentity.address,
       BigNumber.from(0),
       parseInt(chainId),
     )
     const mintSig = await signer.signMessage(presigMintMessage)
     const mintRequest = {
-      body: {msgSender: fromAddress, uidType, expiresAt, nonce},
+      body: {msgSender: fromAddress, uidType, expiresAt: customExpiresAt, nonce},
       headers: {
         "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
         "x-goldfinch-signature": mintSig,
@@ -134,20 +138,21 @@ describe("linkUserToUid", () => {
     expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
   }
 
-  const expectSuccessfulMintTo = async (fromAddress: string, recipientAddress: string) => {
+  const expectSuccessfulMintToLink = async (fromAddress: string, recipientAddress: string, customExpiresAt: number) => {
     const startedAt = Date.now()
+    console.log(`customExpiresAt: ${customExpiresAt}`)
     const presigMintToMessage = presignedMintToMessage(
       fromAddress,
       recipientAddress,
       uidType,
-      expiresAt,
+      customExpiresAt,
       uniqueIdentity.address,
       BigNumber.from(0),
       parseInt(chainId),
     )
     const mintToSig = await signer.signMessage(presigMintToMessage)
     const mintToRequest = {
-      body: {msgSender: fromAddress, mintToAddress: recipientAddress, uidType, expiresAt, nonce},
+      body: {msgSender: fromAddress, mintToAddress: recipientAddress, uidType, expiresAt: customExpiresAt, nonce},
       headers: {
         "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
         "x-goldfinch-signature": mintToSig,
@@ -191,7 +196,7 @@ describe("linkUserToUid", () => {
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})
     const mock = fake.returns(ethers.provider as BaseProvider)
     mockGetBlockchain(mock)
-    expiresAt = BigNumber.from(currentBlockTimestamp + 3600)
+    expiresAt = currentBlockTimestamp + uniqueIdentitySignatureExpiryTime
     validMintPresigMessage = presignedMintMessage(
       mainUserAddress,
       uidType,
@@ -247,28 +252,50 @@ describe("linkUserToUid", () => {
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
-      await expectSuccessfulMintTo(mainUserAddress, mintToAddress)
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress, expiresAt)
     })
 
     it("links a user to a UID recipient address for a valid mint operation", async () => {
-      await expectSuccessfulMint(mainUserAddress)
+      await expectSuccessfulMintLink(mainUserAddress, expiresAt)
     })
 
-    it("throws a 400 error when the msgSender already has a UID of tokenId linked to a different UID recipient", async () => {
-      await users.doc(mainUserAddress).set({
-        ...mainUser,
-        uidRecipientAuthorizations: {[uidType.toString()]: otherUserAddress},
-      })
+    it("links a user to a UID recipient address for a valid mintTo operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintLink(mainUserAddress, expiresAt)
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime + 1,
+      ])
+      await ethers.provider.send("evm_mine", [])
+      await expectSuccessfulMintToLink(
+        mainUserAddress,
+        mintToAddress,
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime,
+      )
+    })
+
+    it("links a user to a UID recipient address for a valid mint operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress, expiresAt)
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime + 1,
+      ])
+      await ethers.provider.send("evm_mine", [])
+      await expectSuccessfulMintLink(
+        mainUserAddress,
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime,
+      )
+    })
+
+    it("throws a 400 error when the user already received a signature to mint a UID of tokenId linked to a different UID recipient", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, otherUserAddress, expiresAt)
       await testLinkKycToUid(
         mintToRequest,
         expectResponse(400, {
           status: "error",
-          message: `Address ${mainUserAddress} has already been linked to a different UID recipient address ${otherUserAddress}`,
+          message: `Address ${mainUserAddress} has already been linked to a different UID recipient address ${otherUserAddress}. Can link a different UID recipient address when the original signature expires.`,
         }),
       )
       const userDoc = await users.doc(mainUserAddress).get()
       expect(userDoc.exists).to.be.true
-      expect(userDoc.data()).to.containSubset(mainUser)
+      expect(userDoc.data()).to.containSubset(_.omit(mainUser, "updatedAt"))
       const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
       expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(otherUserAddress)
       expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
@@ -364,17 +391,21 @@ describe("linkUserToUid", () => {
 
       context("mint", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mint request", async () => {
-          await expectSuccessfulMint(nonUSEntityUserAddress)
-          await expectSuccessfulMint(usAccreditedEntityUserAddress)
-          await expectSuccessfulMint(usAccreditedIndividualUserAddress)
+          await expectSuccessfulMintLink(nonUSEntityUserAddress, expiresAt)
+          await expectSuccessfulMintLink(usAccreditedEntityUserAddress, expiresAt)
+          await expectSuccessfulMintLink(usAccreditedIndividualUserAddress, expiresAt)
         })
       })
 
       context("mintTo", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mintTo request", async () => {
-          await expectSuccessfulMintTo(nonUSEntityUserAddress, nonUsEntityMintToAddress)
-          await expectSuccessfulMintTo(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress)
-          await expectSuccessfulMintTo(usAccreditedIndividualUserAddress, usAccreditedIndividualMintToAddress)
+          await expectSuccessfulMintToLink(nonUSEntityUserAddress, nonUsEntityMintToAddress, expiresAt)
+          await expectSuccessfulMintToLink(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress, expiresAt)
+          await expectSuccessfulMintToLink(
+            usAccreditedIndividualUserAddress,
+            usAccreditedIndividualMintToAddress,
+            expiresAt,
+          )
         })
       })
     },

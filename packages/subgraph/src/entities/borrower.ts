@@ -11,5 +11,5 @@ export function getOrInitBorrower(borrowerAddress: Address, owner: Address, time
     borrower.createdAt = timestamp
     borrower.save()
   }
-  return borrower as Borrower
+  return borrower
 }

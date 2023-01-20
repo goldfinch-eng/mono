@@ -24,7 +24,7 @@ interface PaymentFormProps {
   remainingTotalDueAmount: BigNumber;
   borrowerContractAddress: string;
   tranchedPoolAddress: string;
-  creditLineStatus: CreditLineStatus | undefined;
+  creditLineStatus?: CreditLineStatus;
   onClose: () => void;
 }
 
@@ -48,6 +48,7 @@ export function PaymentForm({
 
   const showPayMinimumDueOption =
     remainingPeriodDueAmount.gt(0) &&
+    // When both are equal we're on last period of loan
     !remainingPeriodDueAmount.eq(remainingTotalDueAmount);
 
   type FormFields = { usdcAmount: string; paymentOption: PaymentOption };
@@ -104,7 +105,7 @@ export function PaymentForm({
   const usdcAmount = watch("usdcAmount");
 
   // The reason why useEffect() isn't used to capture this behaviour is because we only want this to trigger when the user directly interacts with the radio buttons
-  // Indirectly changing the paymentOption (via setValue should not cause these side effects
+  // Indirectly changing the paymentOption via setValue should not cause these side effects
   const onPaymentOptionChange = (e: ChangeEvent<HTMLInputElement>) => {
     registerPaymentOption.onChange(e);
     switch (e.target.value as PaymentOption) {

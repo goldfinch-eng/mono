@@ -10,6 +10,7 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
+  Deal,
   PoolCreditLinePageCmsQuery,
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
@@ -18,19 +19,19 @@ import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
-  calculateAvailableForDrawdown,
-  calculateInterestOwed,
-  calculateRemainingPeriodDueAmount,
-  calculateRemainingTotalDueAmount,
+  calculateCreditLineMaxDrawdownAmount,
+  calculatePoolFundsAvailable,
   CreditLineStatus,
-  getCreditLineStatus,
+  CREDIT_LINE_ACCOUNTING_FIELDS,
+  getCreditLineAccountingAnalyisValues,
 } from "@/pages/borrow/helpers";
 
-import { CreditLineProgressBar } from "./credit-status-progress-bar";
+import { CreditStatusProgressBar } from "./credit-status-progress-bar";
 import { DrawdownForm } from "./drawdown-form";
 import { PaymentForm } from "./payment-form";
 
 gql`
+  ${CREDIT_LINE_ACCOUNTING_FIELDS}
   query PoolCreditLinePage($tranchedPoolId: ID!) {
     tranchedPool(id: $tranchedPoolId) {
       id
@@ -41,20 +42,11 @@ gql`
       }
       creditLine {
         id
-        balance
         interestAprDecimal
-        interestApr
-        interestAccruedAsOf
-        interestOwed
-        nextDueTime
-        limit
-        maxLimit
-        termEndTime
         termInDays
         paymentPeriodInDays
-        isLate @client
-        collectedPaymentBalance @client
         isAfterTermEndTime @client
+        ...CreditLineAccountingFields
       }
       juniorTranches {
         id
@@ -92,7 +84,7 @@ const NextPaymentLabel = ({
   formattedNextDueTime,
   formattedRemainingPeriodDueAmount,
 }: {
-  creditLineStatus: CreditLineStatus | undefined;
+  creditLineStatus?: CreditLineStatus;
   formattedNextDueTime: string;
   formattedRemainingPeriodDueAmount: string;
 }) => {
@@ -110,10 +102,8 @@ const NextPaymentLabel = ({
           <div>{`Paid through ${formattedNextDueTime}`}</div>
         </div>
       );
-    case CreditLineStatus.InActive:
-      return <div>No payment due</div>;
     default:
-      return null;
+      return <div>No payment due</div>;
   }
 };
 
@@ -134,39 +124,20 @@ export default function PoolCreditLinePage({
   const seniorTranche = tranchedPool?.seniorTranches?.[0];
 
   let creditLineStatus;
+  let creditLineLimit = BigNumber.from(0);
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
-  if (tranchedPool && creditLine && juniorTranche && seniorTranche) {
-    const currentInterestOwed = calculateInterestOwed({
-      isLate: creditLine.isLate,
-      interestOwed: creditLine.interestOwed,
-      interestApr: creditLine.interestApr,
-      nextDueTime: creditLine.nextDueTime,
-      interestAccruedAsOf: creditLine.interestAccruedAsOf,
-      balance: creditLine.balance,
-    });
+  if (creditLine && juniorTranche && seniorTranche) {
+    const creditLineAccountingAnalysisValues =
+      getCreditLineAccountingAnalyisValues(creditLine);
 
-    remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      nextDueTime: creditLine.nextDueTime,
-      termEndTime: creditLine.termEndTime,
-      balance: creditLine.balance,
-      currentInterestOwed,
-    });
-
-    remainingTotalDueAmount = calculateRemainingTotalDueAmount({
-      collectedPaymentBalance: creditLine.collectedPaymentBalance,
-      balance: creditLine.balance,
-      currentInterestOwed,
-    });
-
-    creditLineStatus = getCreditLineStatus({
-      isLate: creditLine.isLate,
-      remainingPeriodDueAmount,
-      limit: creditLine.limit,
-      remainingTotalDueAmount,
-    });
+    creditLineStatus = creditLineAccountingAnalysisValues.creditLineStatus;
+    creditLineLimit = creditLineAccountingAnalysisValues.creditLineLimit;
+    remainingTotalDueAmount =
+      creditLineAccountingAnalysisValues.remainingTotalDueAmount;
+    remainingPeriodDueAmount =
+      creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
     const juniorTrancheShareInfo = {
       principalDeposited: juniorTranche.principalDeposited,
@@ -178,10 +149,25 @@ export default function PoolCreditLinePage({
       sharePrice: seniorTranche.principalSharePrice,
     };
 
-    availableForDrawdown = calculateAvailableForDrawdown({
+    const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
+      ...creditLine,
+      currentInterestOwed:
+        creditLineAccountingAnalysisValues.currentInterestOwed,
+      limit: creditLineLimit,
+    });
+
+    const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
       juniorTrancheShareInfo,
       seniorTrancheShareInfo,
     });
+
+    // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
+    // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
+    // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
+    availableForDrawdown = poolFundsAvailableForDrawdown;
+    if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
+      availableForDrawdown = creditLineMaxDrawdownAmount;
+    }
   }
 
   const [shownForm, setShownForm] = useState<"drawdown" | "payment" | null>(
@@ -227,7 +213,7 @@ export default function PoolCreditLinePage({
         </div>
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
-      ) : error || !tranchedPool || !creditLine ? (
+      ) : error || !creditLine ? (
         <div className="text-2xl">Unable to load credit line</div>
       ) : (
         <div className="flex flex-col">
@@ -331,7 +317,10 @@ export default function PoolCreditLinePage({
                     size="xl"
                     iconLeft="ArrowUp"
                     onClick={() => setShownForm("payment")}
-                    disabled={creditLineStatus === CreditLineStatus.InActive}
+                    disabled={
+                      creditLineStatus === CreditLineStatus.Repaid ||
+                      creditLineStatus === CreditLineStatus.Open
+                    }
                   >
                     Pay
                   </Button>
@@ -356,7 +345,7 @@ export default function PoolCreditLinePage({
                 />
               </div>
 
-              <CreditLineProgressBar
+              <CreditStatusProgressBar
                 className="h-3.5"
                 balanceWithInterest={remainingTotalDueAmount}
                 availableToDrawDown={availableForDrawdown}
@@ -384,17 +373,18 @@ export default function PoolCreditLinePage({
                 </div>
               </div>
 
-              {creditLineStatus !== CreditLineStatus.InActive && (
-                <div className="mt-8 flex items-center">
-                  <Icon name="Clock" className="mr-2" />
-                  <div className="text-lg">
-                    {`Full balance repayment due ${formatDate(
-                      creditLine.termEndTime.toNumber() * 1000,
-                      "MMM d, yyyy"
-                    )}`}
+              {creditLineStatus !== CreditLineStatus.Open &&
+                creditLineStatus !== CreditLineStatus.Repaid && (
+                  <div className="mt-8 flex items-center">
+                    <Icon name="Clock" className="mr-2" />
+                    <div className="text-lg">
+                      {`Full balance repayment due ${formatDate(
+                        creditLine.termEndTime.toNumber() * 1000,
+                        "MMM d, yyyy"
+                      )}`}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="p-8">
@@ -403,7 +393,7 @@ export default function PoolCreditLinePage({
                   <div className="mb-0.5 text-2xl">
                     {formatCrypto({
                       token: "USDC",
-                      amount: creditLine.maxLimit,
+                      amount: creditLineLimit,
                     })}
                   </div>
                   <div className="text-sand-500">Limit</div>
@@ -416,7 +406,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {creditLine.paymentPeriodInDays.toString()}
+                    {`${creditLine.paymentPeriodInDays.toString()} days`}
                   </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
@@ -450,12 +440,14 @@ export const getStaticPaths: GetStaticPaths<{ address: string }> = async () => {
     query: allDealsQuery,
   });
 
-  const paths =
-    res.data.Deals?.docs?.map((pool) => ({
-      params: {
-        address: pool?.id || "",
-      },
-    })) || [];
+  const pools = (res.data.Deals?.docs?.filter((pool) => pool && pool.id) ||
+    []) as Deal[];
+
+  const paths = pools.map((pool) => ({
+    params: {
+      address: pool.id,
+    },
+  }));
 
   return {
     paths,

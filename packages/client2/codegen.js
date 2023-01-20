@@ -46,6 +46,7 @@ module.exports = {
   ],
   documents: [
     "./pages/**/*.tsx",
+    "./pages/**/*.ts",
     "./components/**/*.tsx",
     "./lib/pools/**/*.ts",
   ],
