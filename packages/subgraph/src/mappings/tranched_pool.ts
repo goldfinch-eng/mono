@@ -12,6 +12,7 @@ import {
   EmergencyShutdown,
   DrawdownMade,
   PaymentApplied,
+  TranchedPoolAssessed,
 } from "../../generated/templates/TranchedPool/TranchedPool"
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
@@ -95,6 +96,11 @@ export function handleSliceCreated(event: SliceCreated): void {
 }
 
 export function handleEmergencyShutdown(event: EmergencyShutdown): void {
+  initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  updatePoolCreditLine(event.address, event.block.timestamp)
+}
+
+export function handleTranchedPoolAssessed(event: TranchedPoolAssessed): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 }

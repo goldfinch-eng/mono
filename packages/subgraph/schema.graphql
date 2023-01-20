@@ -34,6 +34,14 @@ type SeniorPoolStakedPosition @entity {
   totalRewardsClaimed: BigInt!
 }
 
+type BorrowerContract @entity {
+  id: ID!
+  createdAt: BigInt!
+  user: User!
+  tranchedPools: [TranchedPool!]! @derivedFrom(field: "borrowerContract")
+  creditLines: [CreditLine!]! @derivedFrom(field: "borrowerContract")
+}
+
 type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
@@ -51,6 +59,8 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
+
+  borrowerContracts: [BorrowerContract!]! @derivedFrom(field: "user")
 
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
@@ -77,7 +87,7 @@ type JuniorTrancheInfo @entity {
 
 type CreditLine @entity {
   id: ID!
-  borrower: Bytes!
+  borrowerContract: BorrowerContract!
   tranchedPool: TranchedPool! @derivedFrom(field: "creditLine")
   limit: BigInt!
   maxLimit: BigInt!
@@ -119,6 +129,7 @@ type TranchedPool @entity {
   remainingCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
+  drawdownsPaused: Boolean!
   """
   Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
   """
@@ -150,6 +161,8 @@ type TranchedPool @entity {
   The amount of interest determined to be owed to this pool, calculated at the very beginning
   """
   initialInterestOwed: BigInt!
+
+  borrowerContract: BorrowerContract!
 }
 
 # Internal use entity that just allows us to collect a list of all tranched pools

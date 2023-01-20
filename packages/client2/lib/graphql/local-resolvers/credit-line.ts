@@ -1,9 +1,9 @@
 import { Resolvers } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import { getContract } from "@/lib/contracts";
+import { CreditLine } from "@/lib/graphql/generated";
 import { getProvider } from "@/lib/wallet";
-
-import { CreditLine } from "../generated";
 
 export const creditLineResolvers: Resolvers[string] = {
   async isLate(creditLine: CreditLine): Promise<boolean> {
@@ -42,5 +42,28 @@ export const creditLineResolvers: Resolvers[string] = {
         paymentPeriodInDays.toNumber() * secondsPerDay
       );
     }
+  },
+  async collectedPaymentBalance(creditLine: CreditLine): Promise<BigNumber> {
+    const provider = await getProvider();
+    const usdcContract = await getContract({ name: "USDC", provider });
+    const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
+
+    return collectedPaymentBalance;
+  },
+  async isAfterTermEndTime(creditLine: CreditLine): Promise<boolean> {
+    const provider = await getProvider();
+    const creditLineContract = await getContract({
+      name: "CreditLine",
+      address: creditLine.id,
+      provider,
+      useSigner: false,
+    });
+
+    const [currentBlock, termEndTime] = await Promise.all([
+      provider.getBlock("latest"),
+      creditLineContract.termEndTime(),
+    ]);
+
+    return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
 };
