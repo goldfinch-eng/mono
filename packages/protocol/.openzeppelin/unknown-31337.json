@@ -1790,7 +1790,11 @@
           },
           "t_enum(LockupPeriod)29907": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)29916_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
@@ -4294,7 +4298,11 @@
           },
           "t_enum(LockupPeriod)29907": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)29916_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
@@ -7061,7 +7069,11 @@
           },
           "t_enum(LockupPeriod)32571": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)32589_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
@@ -7130,7 +7142,10 @@
           },
           "t_enum(StakedPositionType)32574": {
             "label": "enum StakingRewards.StakedPositionType",
-            "members": ["Fidu", "CurveLP"]
+            "members": [
+              "Fidu",
+              "CurveLP"
+            ]
           },
           "t_mapping(t_enum(StakedPositionType)32574,t_uint256)": {
             "label": "mapping(enum StakingRewards.StakedPositionType => uint256)"
@@ -8232,7 +8247,11 @@
           },
           "t_enum(LockupPeriod)31763": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)31781_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
@@ -8301,7 +8320,10 @@
           },
           "t_enum(StakedPositionType)31766": {
             "label": "enum StakingRewards.StakedPositionType",
-            "members": ["Fidu", "CurveLP"]
+            "members": [
+              "Fidu",
+              "CurveLP"
+            ]
           },
           "t_mapping(t_enum(StakedPositionType)31766,t_uint256)": {
             "label": "mapping(enum StakingRewards.StakedPositionType => uint256)"
@@ -9330,12 +9352,19 @@
           },
           "t_enum(LockupPeriod)28950": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"],
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ],
             "numberOfBytes": "1"
           },
           "t_enum(StakedPositionType)10321": {
             "label": "enum StakedPositionType",
-            "members": ["Fidu", "CurveLP"],
+            "members": [
+              "Fidu",
+              "CurveLP"
+            ],
             "numberOfBytes": "1"
           },
           "t_mapping(t_address,t_bool)": {
@@ -11016,12 +11045,19 @@
           },
           "t_enum(LockupPeriod)29093": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"],
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ],
             "numberOfBytes": "1"
           },
           "t_enum(StakedPositionType)10347": {
             "label": "enum StakedPositionType",
-            "members": ["Fidu", "CurveLP"],
+            "members": [
+              "Fidu",
+              "CurveLP"
+            ],
             "numberOfBytes": "1"
           },
           "t_mapping(t_address,t_bool)": {
