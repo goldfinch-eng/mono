@@ -18,6 +18,7 @@ import {
   presignedMintMessage,
   presignedMintToMessage,
   verifySignature,
+  UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME,
 } from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
@@ -26,8 +27,6 @@ export const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C1076279
 import baseHandler from "../core/handler"
 
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
-
-const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
 const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
@@ -206,7 +205,7 @@ export async function main({
   }
 
   const currentBlock = await signer.provider.getBlock("latest")
-  const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
+  const expiresAt = currentBlock.timestamp + UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME
   const nonce = await uniqueIdentity.nonces(userAddress)
   const idVersion = getIDType({
     address: userAddress,
