@@ -3,21 +3,20 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
-// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
-contract TranchedPoolSetLimitAndMaxLimitTest is TranchedPoolBaseTest {
+contract CallableLoanSetLimitAndMaxLimitTest is CallableLoanBaseTest {
   function testSetLimitRevertsForNonAdmin(
     address notAdmin,
     uint256 limit
   ) public impersonating(notAdmin) {
     vm.assume(notAdmin != GF_OWNER);
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectRevert("Must have admin role to perform this action");
-    pool.setLimit(limit);
+    callableLoan.setLimit(limit);
   }
 
   function testSetLimitUpdatesLimitUpToMaxLimit(
@@ -25,17 +24,17 @@ contract TranchedPoolSetLimitAndMaxLimitTest is TranchedPoolBaseTest {
     uint256 limit
   ) public impersonating(GF_OWNER) {
     limit = bound(limit, 0, maxLimit);
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    pool.setMaxLimit(maxLimit);
-    pool.setLimit(limit);
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    callableLoan.setMaxLimit(maxLimit);
+    callableLoan.setLimit(limit);
     assertEq(cl.limit(), limit);
   }
 
   function testSetLimitRevertsIfLimitGtMaxLimit(uint256 limit) public impersonating(GF_OWNER) {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     limit = bound(limit, cl.maxLimit() + 1, type(uint256).max);
     vm.expectRevert("Cannot be more than the max limit");
-    pool.setLimit(limit);
+    callableLoan.setLimit(limit);
   }
 
   function testSetMaxLimitRevertsForNonAdmin(
@@ -43,14 +42,14 @@ contract TranchedPoolSetLimitAndMaxLimitTest is TranchedPoolBaseTest {
     uint256 maxLimit
   ) public impersonating(notAdmin) {
     vm.assume(notAdmin != GF_OWNER);
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectRevert("Must have admin role to perform this action");
-    pool.setMaxLimit(maxLimit);
+    callableLoan.setMaxLimit(maxLimit);
   }
 
   function testSetMaxLimitUpdatesMaxLimit(uint256 maxLimit) public impersonating(GF_OWNER) {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    pool.setMaxLimit(maxLimit);
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    callableLoan.setMaxLimit(maxLimit);
     assertEq(maxLimit, cl.maxLimit());
   }
 }

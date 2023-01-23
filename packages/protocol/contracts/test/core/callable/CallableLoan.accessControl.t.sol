@@ -9,7 +9,7 @@ import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 
-contract TranchedPoolAccessControlTest is CallableLoanBaseTest {
+contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   function testAccessControlOwnerIsGovernance() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.OWNER_ROLE(), GF_OWNER));

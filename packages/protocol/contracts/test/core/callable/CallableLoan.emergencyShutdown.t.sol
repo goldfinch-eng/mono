@@ -3,28 +3,27 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
-// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
-contract TranchedPoolEmergencyShutdownTest is TranchedPoolBaseTest {
+contract CallableLoanEmergencyShutdownTest is CallableLoanBaseTest {
   function testPausesAndSweepsFunds() public impersonating(GF_OWNER) {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    usdc.transfer(address(pool), usdcVal(5));
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    usdc.transfer(address(callableLoan), usdcVal(5));
     usdc.transfer(address(cl), usdcVal(3));
-    pool.emergencyShutdown();
-    assertZero(usdc.balanceOf(address(pool)));
-    assertZero(usdc.balanceOf(address(pool.creditLine())));
+    callableLoan.emergencyShutdown();
+    assertZero(usdc.balanceOf(address(callableLoan)));
+    assertZero(usdc.balanceOf(address(callableLoan.creditLine())));
     assertEq(usdc.balanceOf(TREASURY), usdcVal(8));
-    assertTrue(pool.paused());
+    assertTrue(callableLoan.paused());
   }
 
   function testRevertsForNonAdmin(address notAdmin) public impersonating(notAdmin) {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(notAdmin != GF_OWNER);
     vm.expectRevert("Must have admin role to perform this action");
-    pool.emergencyShutdown();
+    callableLoan.emergencyShutdown();
   }
 }

@@ -9,22 +9,20 @@ import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
-import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
-// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
-
-contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
+contract CallableLoanInitializationTest is CallableLoanBaseTest {
   function testInitializationSetsCorrectTrancheDefaults() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
 
-    ITranchedPool.TrancheInfo memory junior = pool.getTranche(2);
+    ITranchedPool.TrancheInfo memory junior = callableLoan.getTranche(2);
     assertEq(junior.principalSharePrice, UNIT_SHARE_PRICE);
     assertZero(junior.interestSharePrice);
     assertZero(junior.principalDeposited);
     assertZero(junior.lockedUntil);
 
-    ITranchedPool.TrancheInfo memory senior = pool.getTranche(1);
+    ITranchedPool.TrancheInfo memory senior = callableLoan.getTranche(1);
     assertEq(senior.principalSharePrice, UNIT_SHARE_PRICE);
     assertZero(senior.interestSharePrice);
     assertZero(senior.principalDeposited);
@@ -32,22 +30,22 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
   }
 
   function testInitializationGrantsProperRoles() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    assertTrue(pool.hasRole(pool.SENIOR_ROLE(), address(seniorPool)));
-    assertTrue(pool.hasRole(pool.LOCKER_ROLE(), GF_OWNER));
-    assertTrue(pool.hasRole(pool.LOCKER_ROLE(), BORROWER));
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    assertTrue(callableLoan.hasRole(callableLoan.SENIOR_ROLE(), address(seniorPool)));
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), BORROWER));
   }
 
   function testInitializationCantHappenTwice() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     uint256[] memory uidTypes = new uint256[](1);
     ISchedule s = defaultSchedule();
     vm.expectRevert("Contract instance has already been initialized");
-    pool.initialize(address(gfConfig), BORROWER, 0, 0, 0, s, 0, block.timestamp, uidTypes);
+    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, 0, s, 0, block.timestamp, uidTypes);
   }
 
   function testCreditLineCannotBeReinitialized() public {
-    (, CreditLine cl) = defaultTranchedPool();
+    (, CreditLine cl) = defaultCallableLoan();
 
     ISchedule s = defaultSchedule();
     vm.expectRevert("Contract instance has already been initialized");
@@ -55,9 +53,9 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
   }
 
   function testGetAmountsOwedFailedForUninitializedCreditLine() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectRevert(bytes("LI"));
-    pool.getAmountsOwed(block.timestamp);
+    callableLoan.getAmountsOwed(block.timestamp);
   }
 
   function defaultSchedule() public returns (ISchedule) {

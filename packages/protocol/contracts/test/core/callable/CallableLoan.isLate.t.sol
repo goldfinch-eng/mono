@@ -3,13 +3,12 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
-// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
-contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
+contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function setUp() public override {
     super.setUp();
 
@@ -19,20 +18,20 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testNotLateIfNoBalance() public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     assertFalse(cl.isLate());
 
     uint256 limit = usdcVal(100);
 
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
 
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
 
-    drawdown(pool, limit);
+    drawdown(callableLoan, limit);
 
-    pay(pool, cl.interestOwed() + cl.principalOwed() + cl.balance());
+    pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());
 
     vm.warp(cl.termEndTime());
 
@@ -40,13 +39,13 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testNotLateIfNotPastDueTime(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, block.timestamp, cl.nextDueTime() - 1);
 
@@ -56,13 +55,13 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testNotLateIfPastDueTimeButWithinGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + (10 days));
 
@@ -72,13 +71,13 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testLateIfPastDueTimeAndPastGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime() + (10 days) + 1, cl.termEndTime());
 
@@ -88,18 +87,18 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testIsNotLateIfCurrentAtTermEndTimeAndInGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
-      pay(pool, cl.interestOwed());
+      pay(callableLoan, cl.interestOwed());
     }
 
     assertEq(cl.nextDueTime(), cl.termEndTime());
@@ -111,18 +110,18 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   }
 
   function testIsLateIfCurrentAtTermEndTimeAndAfterGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
+    deposit(callableLoan, 2, limit, GF_OWNER);
+    lockJuniorTranche(callableLoan);
+    seniorDepositAndInvest(callableLoan, limit * 4);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
-      pay(pool, cl.interestOwed());
+      pay(callableLoan, cl.interestOwed());
     }
 
     assertEq(cl.nextDueTime(), cl.termEndTime());
