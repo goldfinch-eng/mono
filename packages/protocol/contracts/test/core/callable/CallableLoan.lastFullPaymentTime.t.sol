@@ -6,9 +6,10 @@ pragma experimental ABIEncoderV2;
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolLastFullPaymentTimeTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
   function testNotSetIfInterestPaymentLtInterestOwed(uint256 interestPayment) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);

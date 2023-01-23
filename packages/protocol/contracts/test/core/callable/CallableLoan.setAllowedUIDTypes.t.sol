@@ -7,9 +7,10 @@ import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolSetAllowedUIDTypesTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolSetAllowedUIDTypesTest is TranchedPoolBaseTest {
   function testSetAllowedUidTypesRevertsForNonLocker(address user) public impersonating(user) {
     (TranchedPool pool, ) = defaultTranchedPool();
     vm.assume(fuzzHelper.isAllowed(user));

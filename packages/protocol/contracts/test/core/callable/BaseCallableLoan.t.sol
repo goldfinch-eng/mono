@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {TranchingLogic} from "../../../protocol/core/TranchingLogic.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
@@ -20,11 +20,12 @@ import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {BackerRewards} from "../../../rewards/BackerRewards.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
-import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
+// solhint-disable-next-line max-line-length
+import {CallableLoanImplementationRepository} from "../../../protocol/core/callable/CallableLoanImplementationRepository.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
-import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
+import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
 import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
@@ -46,7 +47,7 @@ contract CallableLoanBaseTest is BaseTest {
   LeverageRatioStrategy internal strat;
   WithdrawalRequestToken internal requestTokens;
   ITestUniqueIdentity0612 internal uid;
-  TranchedPoolBuilder internal poolBuilder;
+  CallableLoanBuilder internal callableLoanBuilder;
   PoolTokens internal poolTokens;
   Go internal go;
 
@@ -122,16 +123,16 @@ contract CallableLoanBaseTest is BaseTest {
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
     fuzzHelper.exclude(address(go));
 
-    // TranchedPool setup
-    TranchedPool tranchedPoolImpl = new TranchedPool();
-    TranchedPoolImplementationRepository tranchedPoolRepo = new TranchedPoolImplementationRepository();
-    tranchedPoolRepo.initialize(GF_OWNER, address(tranchedPoolImpl));
+    // CallableLoan setup
+    CallableLoan callableLoanImpl = new CallableLoan();
+    CallableLoanImplementationRepository callableLoanRepo = new CallableLoanImplementationRepository();
+    callableLoanRepo.initialize(GF_OWNER, address(callableLoanImpl));
     gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
-      address(tranchedPoolRepo)
+      uint256(ConfigOptions.Addresses.CallableLoanImplementationRepository),
+      address(callableLoanRepo)
     );
-    fuzzHelper.exclude(address(tranchedPoolImpl));
-    fuzzHelper.exclude(address(tranchedPoolRepo));
+    fuzzHelper.exclude(address(callableLoanImpl));
+    fuzzHelper.exclude(address(callableLoanRepo));
 
     // CreditLine setup
     CreditLine creditLineImpl = new CreditLine();
@@ -150,10 +151,10 @@ contract CallableLoanBaseTest is BaseTest {
     fuzzHelper.exclude(address(monthlyScheduleRepo));
     fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
 
-    poolBuilder = new TranchedPoolBuilder(gfFactory, seniorPool, monthlyScheduleRepo);
-    fuzzHelper.exclude(address(poolBuilder));
+    callableLoanBuilder = new CallableLoanBuilder(gfFactory, seniorPool, monthlyScheduleRepo);
+    fuzzHelper.exclude(address(callableLoanBuilder));
     // Allow the builder to create pools
-    gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
+    gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(callableLoanBuilder));
 
     // Other config numbers
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 0.1%
@@ -179,33 +180,35 @@ contract CallableLoanBaseTest is BaseTest {
     _stopImpersonation();
   }
 
-  function defaultTranchedPool()
+  function defaultCallableLoan()
     internal
     impersonating(GF_OWNER)
-    returns (TranchedPool, CreditLine)
+    returns (CallableLoan, CreditLine)
   {
-    (TranchedPool pool, CreditLine cl) = poolBuilder.build(BORROWER);
-    fuzzHelper.exclude(address(pool));
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanBuilder.build(BORROWER);
+    fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
-    return (pool, cl);
+    callableLoan.grantRole(callableLoan.SENIOR_ROLE(), address(seniorPool));
+    return (callableLoan, cl);
   }
 
-  function tranchedPoolWithLateFees(
+  function callableLoanWithLateFees(
     uint256 lateFeeApr,
     uint256 lateFeeGracePeriodInDays
-  ) public impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
-    (TranchedPool pool, CreditLine cl) = poolBuilder.withLateFeeApr(lateFeeApr).build(BORROWER);
-    fuzzHelper.exclude(address(pool));
+  ) public impersonating(GF_OWNER) returns (CallableLoan, CreditLine) {
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanBuilder
+      .withLateFeeApr(lateFeeApr)
+      .build(BORROWER);
+    fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
-    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
+    callableLoan.grantRole(callableLoan.SENIOR_ROLE(), address(seniorPool));
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays),
       lateFeeGracePeriodInDays
     );
-    return (pool, cl);
+    return (callableLoan, cl);
   }
 
   function approveTokensMaxAmount(address user) internal impersonating(user) {
@@ -214,15 +217,15 @@ contract CallableLoanBaseTest is BaseTest {
   }
 
   function seniorDepositAndInvest(
-    TranchedPool pool,
+    CallableLoan loan,
     uint256 amount
   ) internal impersonating(GF_OWNER) returns (uint256) {
     seniorPool.deposit(amount);
-    return seniorPool.invest(ITranchedPool(address(pool)));
+    return seniorPool.invest(ITranchedPool(address(loan)));
   }
 
   function deposit(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 tranche,
     uint256 depositAmount,
     address depositor
@@ -231,108 +234,111 @@ contract CallableLoanBaseTest is BaseTest {
     if (balance < depositAmount) {
       fundAddress(depositor, depositAmount - balance);
     }
-    usdc.approve(address(pool), depositAmount);
-    return pool.deposit(tranche, depositAmount);
+    usdc.approve(address(callableLoan), depositAmount);
+    return callableLoan.deposit(tranche, depositAmount);
   }
 
   function lockJuniorTranche(
-    TranchedPool pool
-  ) internal impersonating(pool.creditLine().borrower()) {
-    pool.lockJuniorCapital();
+    CallableLoan callableLoan
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    callableLoan.lockJuniorCapital();
   }
 
   function lockSeniorTranche(
-    TranchedPool pool
-  ) internal impersonating(pool.creditLine().borrower()) {
-    pool.lockPool();
+    CallableLoan callableLoan
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    callableLoan.lockPool();
   }
 
   function lockAndDrawdown(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 amount
-  ) internal impersonating(pool.creditLine().borrower()) {
-    pool.lockJuniorCapital();
-    pool.lockPool();
-    pool.drawdown(amount);
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    callableLoan.lockJuniorCapital();
+    callableLoan.lockPool();
+    callableLoan.drawdown(amount);
   }
 
   function pay(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 amount
-  ) internal impersonating(pool.creditLine().borrower()) {
-    usdc.approve(address(pool), amount);
-    uint256 balance = usdc.balanceOf(pool.creditLine().borrower());
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    usdc.approve(address(callableLoan), amount);
+    uint256 balance = usdc.balanceOf(callableLoan.creditLine().borrower());
     if (balance < amount) {
-      fundAddress(pool.creditLine().borrower(), amount - balance);
+      fundAddress(callableLoan.creditLine().borrower(), amount - balance);
     }
-    pool.pay(amount);
+    callableLoan.pay(amount);
   }
 
   function pay(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 principal,
     uint256 interest
-  ) internal impersonating(pool.creditLine().borrower()) {
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
     uint256 amount = interest + principal;
-    usdc.approve(address(pool), amount);
-    uint256 balance = usdc.balanceOf(pool.creditLine().borrower());
+    usdc.approve(address(callableLoan), amount);
+    uint256 balance = usdc.balanceOf(callableLoan.creditLine().borrower());
     if (balance < amount) {
-      fundAddress(pool.creditLine().borrower(), amount - balance);
+      fundAddress(callableLoan.creditLine().borrower(), amount - balance);
     }
-    pool.pay(principal, interest);
+    callableLoan.pay(principal, interest);
   }
 
   function withdraw(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 token,
     uint256 amount,
     address withdrawer
   ) internal impersonating(withdrawer) returns (uint256, uint256) {
-    return pool.withdraw(token, amount);
+    return callableLoan.withdraw(token, amount);
   }
 
   function withdrawMax(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 token,
     address withdrawer
   ) internal impersonating(withdrawer) returns (uint256, uint256) {
-    return pool.withdrawMax(token);
+    return callableLoan.withdrawMax(token);
   }
 
   function withdrawMultiple(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256[] memory tokens,
     uint256[] memory amounts,
     address withdrawer
   ) internal impersonating(withdrawer) {
-    pool.withdrawMultiple(tokens, amounts);
+    callableLoan.withdrawMultiple(tokens, amounts);
   }
 
   function drawdown(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 amount
-  ) internal impersonating(pool.creditLine().borrower()) {
-    pool.drawdown(amount);
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    callableLoan.drawdown(amount);
   }
 
-  function setLimit(TranchedPool pool, uint256 limit) internal impersonating(GF_OWNER) {
-    pool.setLimit(limit);
+  function setLimit(CallableLoan callableLoan, uint256 limit) internal impersonating(GF_OWNER) {
+    callableLoan.setLimit(limit);
   }
 
-  function setMaxLimit(TranchedPool pool, uint256 maxLimit) internal impersonating(GF_OWNER) {
-    pool.setMaxLimit(maxLimit);
+  function setMaxLimit(
+    CallableLoan callableLoan,
+    uint256 maxLimit
+  ) internal impersonating(GF_OWNER) {
+    callableLoan.setMaxLimit(maxLimit);
   }
 
-  function pause(TranchedPool pool) internal impersonating(GF_OWNER) {
-    pool.pause();
+  function pause(CallableLoan callableLoan) internal impersonating(GF_OWNER) {
+    callableLoan.pause();
   }
 
-  function unpause(TranchedPool pool) internal impersonating(GF_OWNER) {
-    pool.unpause();
+  function unpause(CallableLoan callableLoan) internal impersonating(GF_OWNER) {
+    callableLoan.unpause();
   }
 
   function depositWithPermit(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 tranche,
     uint256 amount,
     uint256 deadline,
@@ -345,19 +351,19 @@ contract CallableLoanBaseTest is BaseTest {
     if (balance < amount) {
       fundAddress(user, amount - balance);
     }
-    return pool.depositWithPermit(tranche, amount, deadline, v, r, s);
+    return callableLoan.depositWithPermit(tranche, amount, deadline, v, r, s);
   }
 
   function fundAndDrawdown(
-    TranchedPool pool,
+    CallableLoan callableLoan,
     uint256 juniorAmount,
     address juniorInvestor
-  ) internal impersonating(pool.creditLine().borrower()) {
-    deposit(pool, 2, juniorAmount, juniorInvestor);
-    pool.lockJuniorCapital();
-    seniorDepositAndInvest(pool, juniorAmount * 4);
-    pool.lockPool();
-    pool.drawdown(juniorAmount * 5);
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    deposit(callableLoan, 2, juniorAmount, juniorInvestor);
+    callableLoan.lockJuniorCapital();
+    seniorDepositAndInvest(callableLoan, juniorAmount * 4);
+    callableLoan.lockPool();
+    callableLoan.drawdown(juniorAmount * 5);
   }
 
   function getInterestAccrued(
@@ -373,8 +379,8 @@ contract CallableLoanBaseTest is BaseTest {
   }
 
   // TODO - remove this function because it doesn't make sense with a monthly schedule
-  function periodInSeconds(TranchedPool pool) internal returns (uint256) {
-    // return pool.creditLine().nextDueTime().sub(pool.creditLine().previousDueTime());
+  function periodInSeconds(CallableLoan callableLoan) internal returns (uint256) {
+    // return callableLoan.creditLine().nextDueTime().sub(callableLoan.creditLine().previousDueTime());
     return 30 days;
   }
 

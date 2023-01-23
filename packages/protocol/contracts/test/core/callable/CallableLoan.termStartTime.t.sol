@@ -7,9 +7,10 @@ import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolTermStartTimeTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolTermStartTimeTest is TranchedPoolBaseTest {
   function testIsZeroBeforeFirstDrawdown() public {
     (, CreditLine cl) = defaultTranchedPool();
     assertZero(cl.termStartTime());

@@ -6,9 +6,10 @@ pragma experimental ABIEncoderV2;
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolTermEndTimeTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
   function testTermEndTimeIsSetOnFirstDrawdown(uint256 amount) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));

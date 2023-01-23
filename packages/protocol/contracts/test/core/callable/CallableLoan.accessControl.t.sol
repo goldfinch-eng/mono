@@ -3,7 +3,7 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
@@ -11,83 +11,83 @@ import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t
 
 contract TranchedPoolAccessControlTest is CallableLoanBaseTest {
   function testAccessControlOwnerIsGovernance() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    assertTrue(pool.hasRole(pool.OWNER_ROLE(), GF_OWNER));
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    assertTrue(callableLoan.hasRole(callableLoan.OWNER_ROLE(), GF_OWNER));
   }
 
   function testAccessControlPauseIsGovernance() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    assertTrue(pool.hasRole(pool.PAUSER_ROLE(), GF_OWNER));
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    assertTrue(callableLoan.hasRole(callableLoan.PAUSER_ROLE(), GF_OWNER));
   }
 
   function testAccessControlLockerIsBorrowerAndGovernance() public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    assertTrue(pool.hasRole(pool.LOCKER_ROLE(), GF_OWNER));
-    assertTrue(pool.hasRole(pool.LOCKER_ROLE(), cl.borrower()));
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), cl.borrower()));
   }
 
   function testOwnerCanGrantRoles(address user) public impersonating(GF_OWNER) {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
 
-    assertFalse(pool.hasRole(pool.OWNER_ROLE(), user));
-    pool.grantRole(pool.OWNER_ROLE(), user);
-    assertTrue(pool.hasRole(pool.OWNER_ROLE(), user));
+    assertFalse(callableLoan.hasRole(callableLoan.OWNER_ROLE(), user));
+    callableLoan.grantRole(callableLoan.OWNER_ROLE(), user);
+    assertTrue(callableLoan.hasRole(callableLoan.OWNER_ROLE(), user));
 
-    assertFalse(pool.hasRole(pool.PAUSER_ROLE(), user));
-    pool.grantRole(pool.PAUSER_ROLE(), user);
-    assertTrue(pool.hasRole(pool.PAUSER_ROLE(), user));
+    assertFalse(callableLoan.hasRole(callableLoan.PAUSER_ROLE(), user));
+    callableLoan.grantRole(callableLoan.PAUSER_ROLE(), user);
+    assertTrue(callableLoan.hasRole(callableLoan.PAUSER_ROLE(), user));
   }
 
   function testNonOwnerCannotGrantRoles(address user) public impersonating(user) {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
 
-    bytes32 ownerRole = pool.OWNER_ROLE();
+    bytes32 ownerRole = callableLoan.OWNER_ROLE();
     vm.expectRevert("AccessControl: sender must be an admin to grant");
-    pool.grantRole(ownerRole, user);
+    callableLoan.grantRole(ownerRole, user);
   }
 
   function testPausingPausesFunctions() public {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    pause(pool);
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    pause(callableLoan);
 
     vm.expectRevert("Pausable: paused");
-    pool.deposit(2, usdcVal(1));
+    callableLoan.deposit(2, usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    pool.depositWithPermit(2, usdcVal(1), 0, 0, 0, 0);
+    callableLoan.depositWithPermit(2, usdcVal(1), 0, 0, 0, 0);
 
     vm.expectRevert("Pausable: paused");
-    pool.withdraw(1, usdcVal(1));
+    callableLoan.withdraw(1, usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    pool.withdrawMax(1);
+    callableLoan.withdrawMax(1);
 
     uint256[] memory tokens = new uint256[](1);
     uint256[] memory amounts = new uint256[](1);
     vm.expectRevert("Pausable: paused");
-    pool.withdrawMultiple(tokens, amounts);
+    callableLoan.withdrawMultiple(tokens, amounts);
 
     _startImpersonation(BORROWER);
     vm.expectRevert("Pausable: paused");
-    pool.drawdown(usdcVal(1));
+    callableLoan.drawdown(usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    pool.lockJuniorCapital();
+    callableLoan.lockJuniorCapital();
 
     vm.expectRevert("Pausable: paused");
-    pool.lockPool();
+    callableLoan.lockPool();
 
     vm.expectRevert("Pausable: paused");
-    pool.initializeNextSlice(block.timestamp);
+    callableLoan.initializeNextSlice(block.timestamp);
     _stopImpersonation();
 
     vm.expectRevert("Pausable: paused");
-    pool.pay(usdcVal(1));
+    callableLoan.pay(usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    pool.pay(usdcVal(1), usdcVal(1));
+    callableLoan.pay(usdcVal(1), usdcVal(1));
   }
 
   function testUnpauseUnpausesFunctions(uint256 userPrivateKey) public {
@@ -100,92 +100,107 @@ contract TranchedPoolAccessControlTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, 1, "");
     fundAddress(user, usdcVal(200));
 
-    (TranchedPool pool, ) = defaultTranchedPool();
-    pause(pool);
-    unpause(pool);
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    pause(callableLoan);
+    unpause(callableLoan);
 
     // None of these calls should revert
-    deposit(pool, 2, usdcVal(100), user);
+    deposit(callableLoan, 2, usdcVal(100), user);
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
       usdc,
       user,
-      address(pool),
+      address(callableLoan),
       usdcVal(100),
       usdc.nonces(user),
       block.timestamp + 1
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
-    depositWithPermit(pool, 2, usdcVal(100), block.timestamp + 1, v, r, s, user);
+    depositWithPermit(callableLoan, 2, usdcVal(100), block.timestamp + 1, v, r, s, user);
 
-    withdraw(pool, 1, usdcVal(1), user);
-    withdrawMax(pool, 2, user);
-    lockJuniorTranche(pool);
-    lockSeniorTranche(pool);
-    drawdown(pool, usdcVal(99));
-    pay(pool, usdcVal(99));
+    withdraw(callableLoan, 1, usdcVal(1), user);
+    withdrawMax(callableLoan, 2, user);
+    lockJuniorTranche(callableLoan);
+    lockSeniorTranche(callableLoan);
+    drawdown(callableLoan, usdcVal(99));
+    pay(callableLoan, usdcVal(99));
   }
 
   function testOwnerCanPause() public impersonating(GF_OWNER) {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    pool.pause();
-    assertTrue(pool.paused());
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    callableLoan.pause();
+    assertTrue(callableLoan.paused());
   }
 
   function testNonOwnerCannotPause(address user) public impersonating(user) {
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     vm.expectRevert(bytes("NA"));
-    pool.pause();
+    callableLoan.pause();
   }
 
   function testBorrowerCanLockTranches(uint256 juniorDepositAmount) public impersonating(BORROWER) {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
     juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(1000));
-    deposit(pool, 2, juniorDepositAmount, GF_OWNER);
+    deposit(callableLoan, 2, juniorDepositAmount, GF_OWNER);
 
-    pool.lockJuniorCapital();
-    assertEq(pool.getTranche(2).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-    assertEq(pool.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
+    callableLoan.lockJuniorCapital();
+    assertEq(
+      callableLoan.getTranche(2).lockedUntil,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
+    assertEq(callableLoan.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
 
-    seniorDepositAndInvest(pool, juniorDepositAmount * 4);
-    pool.lockPool();
-    assertEq(pool.getTranche(1).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-    assertEq(pool.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
+    seniorDepositAndInvest(callableLoan, juniorDepositAmount * 4);
+    callableLoan.lockPool();
+    assertEq(
+      callableLoan.getTranche(1).lockedUntil,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
+    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
     // Limit should be the sum of junior and senior deposits
     assertEq(cl.limit(), juniorDepositAmount * 5);
   }
 
   function testOwnerCanLockTranches(uint256 juniorDepositAmount) public impersonating(GF_OWNER) {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
     juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(10_000));
-    deposit(pool, 2, juniorDepositAmount, GF_OWNER);
+    deposit(callableLoan, 2, juniorDepositAmount, GF_OWNER);
 
-    pool.lockJuniorCapital();
-    assertEq(pool.getTranche(2).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-    assertEq(pool.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
+    callableLoan.lockJuniorCapital();
+    assertEq(
+      callableLoan.getTranche(2).lockedUntil,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
+    assertEq(callableLoan.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
 
-    seniorDepositAndInvest(pool, juniorDepositAmount * 4);
-    pool.lockPool();
-    assertEq(pool.getTranche(1).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-    assertEq(pool.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
+    seniorDepositAndInvest(callableLoan, juniorDepositAmount * 4);
+    callableLoan.lockPool();
+    assertEq(
+      callableLoan.getTranche(1).lockedUntil,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
+    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
     // Limit should be the sum of junior and senior deposits
     assertEq(cl.limit(), juniorDepositAmount * 5);
   }
 
   function testCannotLockTrancheTwice() public impersonating(BORROWER) {
-    (TranchedPool pool, ) = defaultTranchedPool();
-    pool.lockJuniorCapital();
-    assertEq(pool.getTranche(2).lockedUntil, block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    callableLoan.lockJuniorCapital();
+    assertEq(
+      callableLoan.getTranche(2).lockedUntil,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
 
     vm.expectRevert(bytes("TL"));
-    pool.lockJuniorCapital();
+    callableLoan.lockJuniorCapital();
 
-    pool.lockPool();
+    callableLoan.lockPool();
 
     vm.expectRevert(bytes("TL"));
-    pool.lockPool();
+    callableLoan.lockPool();
   }
 
   function testNonBorrowerNonOwnerCannotLockTranches(
@@ -193,15 +208,15 @@ contract TranchedPoolAccessControlTest is CallableLoanBaseTest {
   ) public impersonating(nonBorrowerNonOwner) {
     vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
 
-    (TranchedPool pool, ) = defaultTranchedPool();
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectRevert(bytes("NA"));
-    pool.lockJuniorCapital();
+    callableLoan.lockJuniorCapital();
 
     _startImpersonation(BORROWER);
-    pool.lockJuniorCapital();
+    callableLoan.lockJuniorCapital();
     _stopImpersonation();
 
     vm.expectRevert(bytes("NA"));
-    pool.lockPool();
+    callableLoan.lockPool();
   }
 }

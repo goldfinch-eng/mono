@@ -9,10 +9,12 @@ import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
-contract TranchedPoolInitializationTest is CallableLoanBaseTest {
+contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
   function testInitializationSetsCorrectTrancheDefaults() public {
     (TranchedPool pool, ) = defaultTranchedPool();
 

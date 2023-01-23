@@ -8,9 +8,10 @@ import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolPaySeparateTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolPaySeparateTest is TranchedPoolBaseTest {
   function testRevertsIfPaymentEq0() public {
     (TranchedPool pool, ) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);

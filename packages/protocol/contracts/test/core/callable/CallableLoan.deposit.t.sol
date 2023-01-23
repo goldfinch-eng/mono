@@ -8,10 +8,12 @@ import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 
-contract TranchedPoolDepositTest is CallableLoanBaseTest {
+contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   event DepositMade(
     address indexed owner,
     uint256 indexed tranche,

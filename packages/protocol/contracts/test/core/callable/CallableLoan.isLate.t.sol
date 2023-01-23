@@ -3,12 +3,13 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
-contract TranchedPoolIsLateTest is CallableLoanBaseTest {
+contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
   function setUp() public override {
     super.setUp();
 

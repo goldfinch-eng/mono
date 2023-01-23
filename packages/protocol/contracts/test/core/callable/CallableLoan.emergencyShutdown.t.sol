@@ -6,9 +6,10 @@ pragma experimental ABIEncoderV2;
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolEmergencyShutdownTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+contract TranchedPoolEmergencyShutdownTest is TranchedPoolBaseTest {
   function testPausesAndSweepsFunds() public impersonating(GF_OWNER) {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     usdc.transfer(address(pool), usdcVal(5));

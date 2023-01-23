@@ -46,7 +46,8 @@
         "**/GoldfinchFactory.sol:GoldfinchFactory": {
           "createCreditLine": [],
           "createBorrower": [],
-          "createPool": [],
+          "createPool": ["onlyAdminOrBorrower"],
+          "createCallableLoan": ["onlyAdminOrBorrower"],
           "validPool": [],
           "createMigratedPool": []
         },

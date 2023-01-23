@@ -10,9 +10,11 @@ import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TestCreditLine} from "../../TestCreditLine.sol";
 
-import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
 
-contract TranchedPoolAccountingVarsTest is CallableLoanBaseTest {
+// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+
+contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   using ConfigHelper for GoldfinchConfig;
 
   function testGetInterestVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
