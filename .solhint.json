@@ -97,6 +97,21 @@
           "upgradeToCurrentImplementation": ["onlyOwner"],
           "transferOwnership": ["onlyOwner"]
         },
+        "**/CallableLoan.sol:CallableLoan": {
+          "setAllowedUIDTypes": ["onlyLocker"],
+          "deposit": ["whenNotPaused"],
+          "depositWithPermit": [],
+          "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
+          "lockPool": ["whenNotPaused", "onlyLocker"],
+          "setFundableAt": ["onlyLocker"],
+          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
+          "withdraw": ["whenNotPaused"],
+          "withdrawMax": ["whenNotPaused"],
+          "withdrawMultiple": [],
+          "drawdown": ["whenNotPaused"],
+          "assess": ["whenNotPaused"],
+          "pay": ["whenNotPaused"]
+        },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],
           "deposit": ["whenNotPaused"],

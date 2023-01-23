@@ -11,7 +11,7 @@ import {ConfigHelper} from "../core/ConfigHelper.sol";
 import {GoldfinchConfig} from "../core/GoldfinchConfig.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
 import {ContextUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
@@ -187,7 +187,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
       principalPayment + interestPayment
     );
 
-    ITranchedPool.PaymentAllocation memory pa = _payV2Separate(
+    ILoan.PaymentAllocation memory pa = _payV2Separate(
       poolAddress,
       principalPayment,
       interestPayment
@@ -258,7 +258,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     address poolAddress,
     uint256 principalAmount,
     uint256 interestAmount
-  ) internal returns (ITranchedPool.PaymentAllocation memory) {
+  ) internal returns (ILoan.PaymentAllocation memory) {
     ITranchedPool pool = ITranchedPool(poolAddress);
     config.getUSDC().safeERC20Approve(poolAddress, principalAmount + interestAmount);
     return pool.pay(principalAmount, interestAmount);

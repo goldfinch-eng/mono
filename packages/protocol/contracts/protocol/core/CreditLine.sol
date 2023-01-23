@@ -11,6 +11,7 @@ import {ConfigHelper} from "./ConfigHelper.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {Accountant} from "./Accountant.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
@@ -102,7 +103,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function pay(
     uint256 principalPayment,
     uint256 interestPayment
-  ) public override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
+  ) public override onlyAdmin returns (ILoan.PaymentAllocation memory) {
     // The balance might change here.. Checkpoint amounts owed!
     _checkpoint();
 
@@ -138,7 +139,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     }
 
     return
-      ITranchedPool.PaymentAllocation(
+      ILoan.PaymentAllocation(
         ipa.owedInterestPayment,
         ipa.accruedInterestPayment,
         ppa.principalPayment,

@@ -123,12 +123,6 @@ interface ILoan {
   /// @param amounts amounts to withdraw from positions such that amounts[i] is withdrawn from position tokenIds[i]
   function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
-  function assess() external;
-
-  /// @notice Get the current number of slices for this pool
-  /// @return numSlices total current slice count
-  function numSlices() external view returns (uint256);
-
   /// @notice Result of applying a payment to a v2 pool
   /// @param owedInterestPayment payment portion of interest owed
   /// @param accruedInterestPayment payment portion of accrued (but not yet owed) interest

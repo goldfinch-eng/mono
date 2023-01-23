@@ -6,25 +6,25 @@ pragma experimental ABIEncoderV2;
 import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ILoan} from "../../interfaces/ITranchedPool.sol";
-import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
-import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
-import {ICreditLine} from "../../interfaces/ICreditLine.sol";
-import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
-import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
-import {IVersioned} from "../../interfaces/IVersioned.sol";
-import {ISchedule} from "../../interfaces/ISchedule.sol";
-import {GoldfinchConfig} from "./GoldfinchConfig.sol";
-import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
-import {ConfigHelper} from "./ConfigHelper.sol";
-import {SafeERC20Transfer} from "../../library/SafeERC20Transfer.sol";
-import {TranchingLogic} from "./TranchingLogic.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../../interfaces/ITranchedPool.sol";
+import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
+import {IERC20withDec} from "../../../interfaces/IERC20withDec.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
+import {IVersioned} from "../../../interfaces/IVersioned.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {GoldfinchConfig} from "../GoldfinchConfig.sol";
+import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "../ConfigHelper.sol";
+import {SafeERC20Transfer} from "../../../library/SafeERC20Transfer.sol";
+import {TranchingLogic} from "../TranchingLogic.sol";
 
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
 /// @author Warbler Labs
-contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, IVersioned {
+contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, IVersioned {
   GoldfinchConfig public config;
 
   using ConfigHelper for GoldfinchConfig;

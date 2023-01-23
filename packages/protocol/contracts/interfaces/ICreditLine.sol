@@ -4,6 +4,8 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "./ITranchedPool.sol";
+import {ILoan} from "./ILoan.sol";
+
 import {ICreditLine} from "./ICreditLine.sol";
 import {ISchedule} from "./ISchedule.sol";
 
@@ -114,7 +116,7 @@ interface ICreditLine {
   function pay(
     uint256 principalPayment,
     uint256 interestPayment
-  ) external returns (ITranchedPool.PaymentAllocation memory);
+  ) external returns (ILoan.PaymentAllocation memory);
 
   /// @notice Drawdown on the line
   /// @param amount amount to drawdown. Cannot exceed the line's limit
