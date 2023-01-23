@@ -55,6 +55,7 @@ library ConfigOptions {
     BackerRewards,
     StakingRewards,
     FiduUSDCCurveLP,
+    CallableLoanImplementationRepository,
     TranchedPoolImplementationRepository,
     WithdrawalRequestToken,
     MonthlyScheduleRepo

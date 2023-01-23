@@ -103,6 +103,43 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     config.getPoolTokens().onPoolCreated(address(pool));
   }
 
+  /**
+   * @notice Allows anyone to create a new TranchedPool for a single borrower
+   * Requirements:
+   *  You are the admin
+   */
+  function createCallableLoan(
+    address _borrower,
+    uint256 _juniorFeePercent,
+    uint256 _limit,
+    uint256 _interestApr,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external onlyAdminOrBorrower returns (ITranchedPool pool) {
+    // need to enclose in a scope to avoid overflowing stack
+    {
+      ImplementationRepository repo = config.getCallableLoanImplementationRepository();
+      UcuProxy callableLoanProxy = new UcuProxy(repo, _borrower, repo.currentLineageId());
+      pool = ITranchedPool(address(callableLoanProxy));
+    }
+
+    pool.initialize(
+      address(config),
+      _borrower,
+      _juniorFeePercent,
+      _limit,
+      _interestApr,
+      _schedule,
+      _lateFeeApr,
+      _fundableAt,
+      _allowedUIDTypes
+    );
+    emit PoolCreated(pool, _borrower);
+    config.getPoolTokens().onPoolCreated(address(pool));
+  }
+
   // Stolen from:
   // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/master/packages/lib/contracts/upgradeability/ProxyFactory.sol
   function _deployMinimal(address _logic) internal returns (address proxy) {
