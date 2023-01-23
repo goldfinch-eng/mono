@@ -4,21 +4,19 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TestCreditLine} from "../../TestCreditLine.sol";
 
-import {TranchedPoolBaseTest} from "../tranchedpool/BaseTranchedPool.t.sol";
+import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
-// import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
-
-contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
+contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   using ConfigHelper for GoldfinchConfig;
 
   function testGetInterestVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
-    (, CreditLine cl) = defaultTranchedPool();
+    (, CreditLine cl) = defaultCallableLoan();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
     vm.expectRevert(bytes("IT"));
@@ -35,8 +33,8 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   }
 
   function testAccountingVarsWithinSamePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, block.timestamp + 1, cl.nextDueTime() - 1);
 
     // Interest and principal owed doesn't change within a period
@@ -64,9 +62,9 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   }
 
   function testAccountingVarsCrossingOneOrMorePaymentPeriods(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime(), cl.termEndTime() - 1);
 
     // Principal owed shouldn't change before termEndTime
@@ -110,9 +108,9 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   }
 
   function testAccountingVarsForLatePaymentWithinGracePeriod(uint256 timestamp) public {
-    // Pool with 10% late fee
-    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    // Callable Loan with 10% late fee
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + 5 days);
 
@@ -155,14 +153,14 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   function testAccountingVarsForLatePaymentAfterGracePeriodBeforeNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    // Pool with 10% late fee
-    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    // Loan with 10% late fee
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(
       timestamp,
       cl.nextDueTime() + 5 days,
-      cl.nextDueTime() + periodInSeconds(pool) - 1
+      cl.nextDueTime() + periodInSeconds(callableLoan) - 1
     );
 
     // total interest accrued should include late fees
@@ -204,8 +202,8 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   function testTotalIntAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -244,8 +242,8 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   function testInterestAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -283,8 +281,8 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   function testInterestOwedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (TranchedPool pool, CreditLine cl) = tranchedPoolWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -317,8 +315,8 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
   }
 
   function testAccountingVarsCrossingTermEndTime(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + 1000 days);
 
     uint256 expectedTotalInterestAccrued = getInterestAccrued(
@@ -348,13 +346,13 @@ contract TranchedPoolAccountingVarsTest is TranchedPoolBaseTest {
     uint256 firstJump,
     uint256 secondJump
   ) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    fundAndDrawdown(pool, usdcVal(1000), GF_OWNER);
+    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Advance to random time during the loan and pay back everything
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
-    pay(pool, cl.interestOwed() + cl.interestAccrued() + cl.balance());
+    pay(callableLoan, cl.interestOwed() + cl.interestAccrued() + cl.balance());
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
