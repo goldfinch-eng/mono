@@ -40,6 +40,7 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
+import { ClaimPanel, CLAIM_PANEL_POOL_TOKEN_FIELDS } from "./claim-panel";
 import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import DealSummary from "./deal-summary";
@@ -66,6 +67,7 @@ gql`
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -127,11 +129,13 @@ gql`
       ...SupplyPanelUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
+        ...ClaimPanelPoolTokenFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         id
         poolToken {
           ...WithdrawalPanelPoolTokenFields
+          ...ClaimPanelPoolTokenFields
         }
       }
     }
@@ -417,9 +421,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 />
               ) : null}
 
-              {data?.user &&
-              (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.vaultedPoolTokens.length > 0) ? (
+              {(poolStatus === PoolStatus.Open ||
+                poolStatus === PoolStatus.Closed) &&
+              data?.user &&
+              data?.user.tranchedPoolTokens.length > 0 ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
@@ -432,6 +437,22 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                       tranchedPool.juniorTranches[0].lockedUntil
                     )
                   }
+                />
+              ) : null}
+
+              {!(
+                poolStatus === PoolStatus.Open ||
+                poolStatus === PoolStatus.Closed
+              ) &&
+              data?.user &&
+              (data?.user.tranchedPoolTokens.length > 0 ||
+                data?.user.vaultedPoolTokens.length > 0) ? (
+                <ClaimPanel
+                  poolTokens={data.user.tranchedPoolTokens}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
+                    (v) => v.poolToken
+                  )}
+                  fiatPerGfi={fiatPerGfi}
                 />
               ) : null}
 
