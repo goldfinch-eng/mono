@@ -95,7 +95,7 @@ export function Home() {
                 devserverRequest("setupForTesting", { address: account })
               }
               disabled={!account}
-              tooltip="This will cause you to gain USDC, become go-listed, and also become the borrower on some new tranched pools enabling borrower page testing. You will not gain GFI."
+              tooltip="This will cause you to gain USDC, become go-listed, and also become the borrower on some new tranched pools. You will not gain GFI."
             >
               Legacy setupForTesting
             </AsyncButton>
