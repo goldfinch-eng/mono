@@ -4855,7 +4855,7 @@ __metadata:
     react-use-wizard: ^2.2.0
     recharts: ^2.1.16
     styled-components: ^5.3.5
-    tailwindcss: ^3.0.23
+    tailwindcss: ^3.2.4
     ts-node: ^10.9.1
     typechain: ^8.1.1
     typescript: ^4.9.3
@@ -45624,7 +45624,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tailwindcss@npm:^3.0.23":
+"tailwindcss@npm:^3.2.4":
   version: 3.2.4
   resolution: "tailwindcss@npm:3.2.4"
   dependencies:
