@@ -69,14 +69,26 @@ export function ClaimPanel({
   return (
     <div className="rounded-xl bg-midnight-01 p-5 text-white">
       <div className="mb-6">
-        <div className="mb-1">Your current position value</div>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <div>Your current position value</div>
+          <InfoIconTooltip
+            className="text-white opacity-60"
+            content="The remaining principal on this position plus any accrued interest."
+          />
+        </div>
         <div className="text-5xl font-medium">
           {formatCrypto(positionValue)}
         </div>
       </div>
-      <div className="mb-2">
-        <div className="mb-1">Available to claim</div>
-        <div className="text-3xl font-medium">
+      <div className="mb-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div>Available to claim</div>
+          <InfoIconTooltip
+            className="text-white opacity-60"
+            content="The combined dollar value of claimable principal, interest, and GFI rewards on this position."
+          />
+        </div>
+        <div className="text-3xl">
           {formatCrypto({
             token: "USDC",
             amount: claimableUsdc.amount.add(claimableGfiAsUsdc.amount),
@@ -90,7 +102,7 @@ export function ClaimPanel({
               <div className="flex items-center justify-between gap-2">
                 USDC
                 <InfoIconTooltip
-                  size="sm"
+                  size="xs"
                   className="text-white opacity-60"
                   content="This includes your claimable principal and interest."
                 />
@@ -114,6 +126,7 @@ export function ClaimPanel({
               <div className="flex items-center justify-between gap-2">
                 GFI
                 <InfoIconTooltip
+                  size="xs"
                   className="text-white opacity-60"
                   content="Your GFI rewards for backing this pool."
                 />
