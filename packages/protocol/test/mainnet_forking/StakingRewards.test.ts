@@ -188,9 +188,8 @@ describe("StakingRewards", () => {
         // Establish totalUnvested before unstaking, cover slashing case
         await stakingRewards.getReward(tokenId, {from: account})
         const {totalUnvested, endTime} = (await stakingRewards.positions(new BN(tokenId)))[1]
-        const expectedChange = new BN(totalUnvested)
-          .mul(new BN(30).mul(SECONDS_PER_DAY))
-          .div(new BN(endTime).sub(await time.latest()))
+        const secondsToAdvance = BN.min(new BN(30).mul(SECONDS_PER_DAY), new BN(endTime).sub(await time.latest()))
+        const expectedChange = new BN(totalUnvested).mul(secondsToAdvance).div(new BN(endTime).sub(await time.latest()))
 
         await stakingRewards.unstake(tokenId, amount, {from: account})
         await stakingRewards.getReward(tokenId, {from: account})

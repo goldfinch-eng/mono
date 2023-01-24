@@ -388,7 +388,7 @@ describe("mainnet forking tests", async function () {
 
       // Each staked fidu holder is going to unstake and request to withdraw
       const currentEpoch = await seniorPool.currentEpoch()
-      const latestMainnetWithdrawalRequestIndex = (await requestTokens.totalSupply()).toNumber()
+      const latestMainnetWithdrawalRequestIndex = (await requestTokens._tokenIdTracker()).toNumber()
 
       fiduRequestedByEpoch.push(new BN(currentEpoch.fiduRequested))
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
@@ -413,7 +413,7 @@ describe("mainnet forking tests", async function () {
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         withdrawalRequestsByEpoch[0].push(
-          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 2)
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
         )
       }
 
@@ -430,7 +430,7 @@ describe("mainnet forking tests", async function () {
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         withdrawalRequestsByEpoch[1].push(
-          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 2)
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
         )
       }
 
@@ -456,7 +456,7 @@ describe("mainnet forking tests", async function () {
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         withdrawalRequestsByEpoch[2].push(
-          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 2)
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
         )
       }
 
@@ -474,7 +474,7 @@ describe("mainnet forking tests", async function () {
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         withdrawalRequestsByEpoch[3].push(
-          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 2)
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
         )
       }
 
@@ -524,7 +524,7 @@ describe("mainnet forking tests", async function () {
         const reserveUsdc = protocolFee(new BN(request.usdcWithdrawable))
 
         await expectAction(() =>
-          seniorPool.claimWithdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 2, {
+          seniorPool.claimWithdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1, {
             from: stakedFiduHolders[requestId]!.address,
           })
         ).toChange([
@@ -539,7 +539,7 @@ describe("mainnet forking tests", async function () {
         expect(
           (await requestTokens.balanceOf(stakedFiduHolders[requestId]!.address)).eq(new BN("0")) ||
             (
-              await seniorPool.withdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 2)
+              await seniorPool.withdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1)
             ).usdcWithdrawable.eq(new BN("0"))
         ).to.be.true
       }
@@ -558,11 +558,9 @@ describe("mainnet forking tests", async function () {
 
       const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
 
-      const totalSupply = await requestTokens.totalSupply()
+      const totalSupply = await requestTokens._tokenIdTracker()
 
-      await expectAction(() =>
-        seniorPool.cancelWithdrawalRequest(totalSupply.add(new BN(1)), {from: fiduHolder.address})
-      ).toChange([
+      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: fiduHolder.address})).toChange([
         [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
         [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
@@ -1262,7 +1260,11 @@ describe("mainnet forking tests", async function () {
       const secondSliceDepositTokenId = depositMadeEvent.args.tokenId
 
       await (await tranchedPoolWithBorrowerConnected.lockJuniorCapital()).wait()
-      await fundWithWhales(["USDC"], [seniorPool.address])
+      // Deposit more funds into the senior pool. Cannot fund with whales because the senior
+      // pool now tracks its usdcBalance with a separate varaible
+      await usdc.approve(seniorPool.address, usdcVal(20_000_000), {from: circleEoa})
+      await seniorPool.deposit(usdcVal(20_000_000), {from: circleEoa})
+
       await seniorPool.invest(tranchedPoolWithBorrowerConnected.address, {from: bwr.address})
 
       const [, secondSliceStakingTx] = await mineInSameBlock(
