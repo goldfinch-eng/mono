@@ -1,12 +1,19 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers/lib/ethers";
 import { ReactNode } from "react";
+import { useForm } from "react-hook-form";
 
-import { Button, InfoIconTooltip } from "@/components/design-system";
+import { Button, Form, InfoIconTooltip } from "@/components/design-system";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import { ClaimPanelPoolTokenFieldsFragment } from "@/lib/graphql/generated";
+import {
+  ClaimPanelPoolTokenFieldsFragment,
+  ClaimPanelVaultedPoolTokenFieldsFragment,
+} from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
+import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment ClaimPanelPoolTokenFields on TranchedPoolToken {
@@ -22,10 +29,21 @@ export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
+export const CLAIM_PANEL_VAULTED_POOL_TOKEN_FIELDS = gql`
+  ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
+  fragment ClaimPanelVaultedPoolTokenFields on VaultedPoolToken {
+    id
+    poolToken {
+      ...ClaimPanelPoolTokenFields
+    }
+  }
+`;
+
 interface ClaimPanelProps {
   poolTokens: ClaimPanelPoolTokenFieldsFragment[];
-  vaultedPoolTokens: ClaimPanelPoolTokenFieldsFragment[];
+  vaultedPoolTokens: ClaimPanelVaultedPoolTokenFieldsFragment[];
   fiatPerGfi: number;
+  tranchedPoolAddress: string;
 }
 
 /**
@@ -36,8 +54,11 @@ export function ClaimPanel({
   poolTokens,
   vaultedPoolTokens,
   fiatPerGfi,
+  tranchedPoolAddress,
 }: ClaimPanelProps) {
-  const combinedTokens = poolTokens.concat(vaultedPoolTokens);
+  const combinedTokens = poolTokens.concat(
+    vaultedPoolTokens.map((vpt) => vpt.poolToken)
+  );
 
   const positionValue = {
     token: "USDC",
@@ -65,6 +86,63 @@ export function ClaimPanel({
     ),
   } as const;
   const claimableGfiAsUsdc = gfiToUsdc(claimableGfi, fiatPerGfi);
+
+  const rhfMethods = useForm();
+  const { provider } = useWallet();
+  const apolloClient = useApolloClient();
+
+  const claim = async () => {
+    if (!provider) {
+      throw new Error("Wallet not properly connected");
+    }
+
+    if (poolTokens.length > 0) {
+      const tranchedPool = await getContract({
+        name: "TranchedPool",
+        address: tranchedPoolAddress,
+        provider,
+      });
+      const usdcTransaction = tranchedPool.withdrawMultiple(
+        poolTokens.map((pt) => pt.id),
+        poolTokens.map((pt) =>
+          pt.principalRedeemable.add(pt.interestRedeemable)
+        )
+      );
+      await toastTransaction({
+        transaction: usdcTransaction,
+        pendingPrompt: "Claiming USDC from your pool token",
+      });
+
+      const backerRewardsContract = await getContract({
+        name: "BackerRewards",
+        provider,
+      });
+      const gfiTransaction = backerRewardsContract.withdrawMultiple(
+        poolTokens.map((pt) => pt.id)
+      );
+      await toastTransaction({
+        transaction: gfiTransaction,
+        pendingPrompt: "Claiming GFI rewards from your pool tokens",
+      });
+    }
+
+    if (vaultedPoolTokens.length > 0) {
+      const membershipOrchestrator = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const transaction = membershipOrchestrator.harvest(
+        vaultedPoolTokens.map((vpt) => vpt.id)
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt:
+          "Claiming USDC and GFI rewards from your vaulted pool tokens",
+      });
+    }
+
+    await apolloClient.refetchQueries({ include: "active" });
+  };
 
   return (
     <div className="rounded-xl bg-midnight-01 p-5 text-white">
@@ -147,9 +225,16 @@ export function ClaimPanel({
           </tr>
         </tbody>
       </MiniTable>
-      <Button className="w-full" size="xl" colorScheme="secondary">
-        Claim
-      </Button>
+      <Form rhfMethods={rhfMethods} onSubmit={claim}>
+        <Button
+          type="submit"
+          className="w-full"
+          size="xl"
+          colorScheme="secondary"
+        >
+          Claim
+        </Button>
+      </Form>
     </div>
   );
 }

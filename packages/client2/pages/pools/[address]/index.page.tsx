@@ -449,10 +449,9 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 data?.user.vaultedPoolTokens.length > 0) ? (
                 <ClaimPanel
                   poolTokens={data.user.tranchedPoolTokens}
-                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
-                    (v) => v.poolToken
-                  )}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens}
                   fiatPerGfi={fiatPerGfi}
+                  tranchedPoolAddress={tranchedPool.id}
                 />
               ) : null}
 
