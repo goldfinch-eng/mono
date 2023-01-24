@@ -85,31 +85,32 @@ export function ClaimPanel({
       </div>
       <MiniTable className="mb-4">
         <tbody>
-          <tr>
-            <MiniTableCell noTopBorder fadingBg>
+          <tr className="first-row group">
+            <MiniTableCell fadingBg>
               <div className="flex items-center justify-between gap-2">
                 USDC
                 <InfoIconTooltip
+                  size="sm"
                   className="text-white opacity-60"
                   content="This includes your claimable principal and interest."
                 />
               </div>
             </MiniTableCell>
-            <MiniTableCell noTopBorder alignRight fadingText>
+            <MiniTableCell alignRight fadingText>
               {formatCrypto(claimableUsdc, {
                 includeSymbol: false,
                 includeToken: true,
               })}
             </MiniTableCell>
-            <MiniTableCell noTopBorder alignRight>
+            <MiniTableCell alignRight>
               {formatCrypto(claimableUsdc, {
                 includeSymbol: true,
                 includeToken: false,
               })}
             </MiniTableCell>
           </tr>
-          <tr>
-            <MiniTableCell noBottomBorder fadingBg>
+          <tr className="last-row group">
+            <MiniTableCell fadingBg>
               <div className="flex items-center justify-between gap-2">
                 GFI
                 <InfoIconTooltip
@@ -118,13 +119,13 @@ export function ClaimPanel({
                 />
               </div>
             </MiniTableCell>
-            <MiniTableCell noBottomBorder alignRight fadingText>
+            <MiniTableCell alignRight fadingText>
               {formatCrypto(claimableGfi, {
                 includeSymbol: false,
                 includeToken: true,
               })}
             </MiniTableCell>
-            <MiniTableCell noBottomBorder alignRight>
+            <MiniTableCell alignRight>
               {formatCrypto(claimableGfiAsUsdc, {
                 includeSymbol: true,
                 includeToken: false,
@@ -161,16 +162,12 @@ function MiniTable({
 
 function MiniTableCell({
   children,
-  noTopBorder = false,
-  noBottomBorder = false,
   fadingBg = false,
   fadingText = false,
   alignRight = false,
 }: {
   className?: string;
   children: ReactNode;
-  noTopBorder?: boolean;
-  noBottomBorder?: boolean;
   fadingBg?: boolean;
   fadingText?: boolean;
   alignRight?: boolean;
@@ -178,9 +175,7 @@ function MiniTableCell({
   return (
     <td
       className={clsx(
-        "border border-white border-opacity-25 py-2 px-3 first:border-l-0 last:border-r-0",
-        noTopBorder ? "border-t-0" : null,
-        noBottomBorder ? "border-b-0" : null,
+        "border border-white border-opacity-25 py-2 px-3 first:border-l-0 last:border-r-0 group-[.first-row]:border-t-0 group-[.last-row]:border-b-0",
         fadingBg ? "bg-white bg-opacity-5" : null,
         fadingText ? "text-white text-opacity-60" : null,
         alignRight ? "text-right" : null
