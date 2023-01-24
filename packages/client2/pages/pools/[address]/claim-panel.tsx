@@ -15,7 +15,6 @@ export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
     principalRedeemable
     principalRedeemed
     interestRedeemable
-    interestRedeemed
     rewardsClaimable
     rewardsClaimed
     stakingRewardsClaimable
