@@ -110,7 +110,6 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    */
   function createCallableLoan(
     address _borrower,
-    uint256 _juniorFeePercent,
     uint256 _limit,
     uint256 _interestApr,
     ISchedule _schedule,
@@ -128,7 +127,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     pool.initialize(
       address(config),
       _borrower,
-      _juniorFeePercent,
+      0,
       _limit,
       _interestApr,
       _schedule,

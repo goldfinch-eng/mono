@@ -2,7 +2,6 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 import {ISchedule} from "./ISchedule.sol";
-import {ITranchedPool} from "./ITranchedPool.sol";
 import {ILoan} from "./ILoan.sol";
 import {ICreditLine} from "./ICreditLine.sol";
 
@@ -25,6 +24,29 @@ interface ITranchedPool is ILoan {
     Senior,
     Junior
   }
+
+  /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
+  ///   contract creation to avoid initialization front-running
+  /// @param _config address of GoldfinchConfig
+  /// @param _borrower address of borrower, a non-transferrable role for performing privileged actions like
+  ///   drawdown
+  /// @param _juniorFeePercent percent (whole number) of senior interest that gets re-allocated to the junior tranche
+  /// @param _limit the max USDC amount that can be drawn down across all pool slices
+  /// @param _interestApr interest rate for the loan
+  /// @param _lateFeeApr late fee interest rate for the loan, which kicks in `LatenessGracePeriodInDays` days after a
+  ///   payment becomes late
+  /// @param _fundableAt earliest time at which the first slice can be funded
+  function initialize(
+    address _config,
+    address _borrower,
+    uint256 _juniorFeePercent,
+    uint256 _limit,
+    uint256 _interestApr,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external;
 
   /// @notice TrancheInfo for tranche with id `trancheId`. The senior tranche of slice i has id 2*(i-1)+1. The
   ///   junior tranche of slice i has id 2*i. Slice indices start at 1.

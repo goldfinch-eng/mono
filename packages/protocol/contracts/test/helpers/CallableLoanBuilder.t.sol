@@ -13,7 +13,6 @@ import {TestConstants} from "../core/TestConstants.t.sol";
 import {TestCallableLoan} from "../TestCallableLoan.sol";
 
 contract CallableLoanBuilder {
-  uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;
   uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_APR = 0;
@@ -21,7 +20,6 @@ contract CallableLoanBuilder {
   GoldfinchFactory private gfFactory;
   SeniorPool private seniorPool;
   MonthlyScheduleRepo private monthlyScheduleRepo;
-  uint256 private juniorFeePercent;
   uint256 private maxLimit;
   uint256 private apr;
   uint256 private lateFeeApr;
@@ -36,7 +34,6 @@ contract CallableLoanBuilder {
     gfFactory = _gfFactory;
     seniorPool = _seniorPool;
     monthlyScheduleRepo = _monthlyScheduleRepo;
-    juniorFeePercent = DEFAULT_JUNIOR_FEE_PERCENT;
     maxLimit = DEFAULT_MAX_LIMIT;
     apr = DEFAULT_APR;
     lateFeeApr = DEFAULT_LATE_APR;
@@ -56,7 +53,6 @@ contract CallableLoanBuilder {
   function build(address borrower) external returns (TestCallableLoan, CreditLine) {
     ITranchedPool created = gfFactory.createCallableLoan(
       borrower,
-      juniorFeePercent,
       maxLimit,
       apr,
       defaultSchedule(),
@@ -66,11 +62,6 @@ contract CallableLoanBuilder {
     );
     TestCallableLoan callableLoan = TestCallableLoan(address(created));
     return (callableLoan, CreditLine(address(callableLoan.creditLine())));
-  }
-
-  function withJuniorFeePercent(uint256 _juniorFeePercent) external returns (CallableLoanBuilder) {
-    juniorFeePercent = _juniorFeePercent;
-    return this;
   }
 
   function withMaxLimit(uint256 _maxLimit) external returns (CallableLoanBuilder) {

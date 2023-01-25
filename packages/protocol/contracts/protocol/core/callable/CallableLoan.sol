@@ -6,8 +6,9 @@ pragma experimental ABIEncoderV2;
 import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
 import {ILoan} from "../../../interfaces/ITranchedPool.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -24,7 +25,14 @@ import {TranchingLogic} from "../TranchingLogic.sol";
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
 /// @author Warbler Labs
-contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, IVersioned {
+contract CallableLoan is
+  BaseUpgradeablePausable,
+  ITranchedPool,
+  ICallableLoan,
+  // TODO: Should remove ITranchedPool once we have moved all casts from ITranchedPool to ILoan.
+  IRequiresUID,
+  IVersioned
+{
   GoldfinchConfig public config;
 
   using ConfigHelper for GoldfinchConfig;
@@ -40,7 +48,6 @@ contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
   ICreditLine public override creditLine;
   uint256 public override createdAt;
-  uint256 public juniorFeePercent;
   bool public drawdownsPaused;
   uint256[] public allowedUIDTypes;
   uint256 public totalDeployed;
@@ -51,10 +58,11 @@ contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   /// @inheritdoc ITranchedPool
   uint256 public override numSlices;
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ITranchedPool
   function initialize(
     address _config,
     address _borrower,
+    // TODO: Remove once ITranchedPool conformance is removed
     uint256 _juniorFeePercent,
     uint256 _limit,
     uint256 _interestApr,
@@ -72,7 +80,6 @@ contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     _createAndSetCreditLine(_borrower, _limit, _interestApr, _schedule, _lateFeeApr);
 
     createdAt = block.timestamp;
-    juniorFeePercent = _juniorFeePercent;
     if (_allowedUIDTypes.length == 0) {
       uint256[1] memory defaultAllowedUIDTypes = [config.getGo().ID_TYPE_0()];
       allowedUIDTypes = defaultAllowedUIDTypes;
@@ -87,6 +94,16 @@ contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
     // Give the senior pool the ability to deposit into the senior pool
     _setupRole(SENIOR_ROLE, address(config.getSeniorPool()));
+  }
+
+  function call(uint256 amountToCall, uint256 poolTokenId) external override {
+    require(
+      config.getPoolTokens().isApprovedOrOwner(msg.sender, poolTokenId) &&
+        hasAllowedUID(msg.sender),
+      "NA"
+    );
+    // TODO: Actually submit call request
+    require(false, "Not implemented");
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
@@ -526,7 +543,7 @@ contract CallableLoan is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       uint256(100).div(config.getReserveDenominator()), // Convert the denominator to percent
       totalDeployed,
       creditLine,
-      juniorFeePercent
+      0
     );
 
     config.getUSDC().safeERC20Transfer(config.reserveAddress(), totalReserveAmount);

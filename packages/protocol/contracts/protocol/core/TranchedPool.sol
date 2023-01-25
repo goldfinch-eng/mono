@@ -51,7 +51,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   /// @inheritdoc ITranchedPool
   uint256 public override numSlices;
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ITranchedPool
   function initialize(
     address _config,
     address _borrower,
