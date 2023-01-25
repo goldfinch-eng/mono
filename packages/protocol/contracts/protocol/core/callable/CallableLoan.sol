@@ -102,6 +102,7 @@ contract CallableLoan is
         hasAllowedUID(msg.sender),
       "NA"
     );
+    require(amountToCall == 0);
     // TODO: Actually submit call request
     require(false, "Not implemented");
   }
@@ -278,7 +279,7 @@ contract CallableLoan is
 
   /// @inheritdoc ITranchedPool
   function lockJuniorCapital() external override onlyLocker whenNotPaused {
-    _lockJuniorCapital(numSlices.sub(1));
+    revert("TODO: Remove lockJuniorCapital once we migrate away from ITranchedPool");
   }
 
   /// @inheritdoc ILoan
@@ -626,12 +627,6 @@ contract CallableLoan is
     return (interestToRedeem, principalToRedeem);
   }
 
-  /// @dev TL: tranch locked or has been locked before
-  function _lockJuniorCapital(uint256 sliceId) internal {
-    require(!_locked() && _poolSlices[sliceId].juniorTranche.lockedUntil == 0, "TL");
-    TranchingLogic.lockTranche(_poolSlices[sliceId].juniorTranche, config);
-  }
-
   /// @dev NL: Not locked
   /// @dev TL: tranche locked. The senior pool has already been locked.
   function _lockPool() internal {
@@ -648,7 +643,6 @@ contract CallableLoan is
     creditLine.setLimit(Math.min(creditLine.limit().add(currentTotal), creditLine.maxLimit()));
 
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
-    TranchingLogic.lockTranche(slice.juniorTranche, config);
     TranchingLogic.lockTranche(slice.seniorTranche, config);
   }
 

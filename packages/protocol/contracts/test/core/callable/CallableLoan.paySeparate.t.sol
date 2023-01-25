@@ -13,11 +13,8 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
   function testRevertsIfPaymentEq0() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     vm.expectRevert(bytes("ZA"));
     callableLoan.pay(0, 0);
@@ -28,11 +25,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -55,11 +49,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -81,20 +72,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     assertEq(usdc.balanceOf(address(this)), balanceBefore - totalOwed);
   }
 
-  function testRevertsIfPoolJuniorTrancheIsUnlocked() public {
+  function testRevertsIfPoolIsUnlocked() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-
-    fundAddress(address(this), usdcVal(1));
-    usdc.approve(address(callableLoan), usdcVal(1));
-    vm.expectRevert(bytes("NL"));
-    callableLoan.pay(0, usdcVal(1));
-  }
-
-  function testRevertsIfPoolSeniorTrancheIsUnlocked() public {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
 
     fundAddress(address(this), usdcVal(1));
     usdc.approve(address(callableLoan), usdcVal(1));
@@ -108,11 +87,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -132,11 +108,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -160,11 +133,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    deposit(callableLoan, 2, usdcVal(100), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, usdcVal(400));
-    lockSeniorTranche(callableLoan);
-    drawdown(callableLoan, usdcVal(500));
+    seniordepositAndDrawdown(callableLoan, usdcVal(400));
+    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);

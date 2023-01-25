@@ -50,4 +50,5 @@ interface ICallableLoan {
     uint256 indexed callRequestedTokenId,
     uint256 callRequestedAmount
   );
+  event PoolLocked(address indexed pool, uint256 lockedUntil);
 }

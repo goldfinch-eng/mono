@@ -74,9 +74,6 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.drawdown(usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.lockJuniorCapital();
-
-    vm.expectRevert("Pausable: paused");
     callableLoan.lockPool();
 
     vm.expectRevert("Pausable: paused");
@@ -105,7 +102,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     unpause(callableLoan);
 
     // None of these calls should revert
-    deposit(callableLoan, 2, usdcVal(100), user);
+    deposit(callableLoan, 1, usdcVal(100), user);
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
       usdc,
       user,
@@ -115,12 +112,11 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
       block.timestamp + 1
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
-    depositWithPermit(callableLoan, 2, usdcVal(100), block.timestamp + 1, v, r, s, user);
+    depositWithPermit(callableLoan, 1, usdcVal(100), block.timestamp + 1, v, r, s, user);
 
     withdraw(callableLoan, 1, usdcVal(1), user);
     withdrawMax(callableLoan, 2, user);
-    lockJuniorTranche(callableLoan);
-    lockSeniorTranche(callableLoan);
+    callableLoan.lockPool();
     drawdown(callableLoan, usdcVal(99));
     pay(callableLoan, usdcVal(99));
   }
@@ -138,20 +134,12 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.pause();
   }
 
-  function testBorrowerCanLockTranches(uint256 juniorDepositAmount) public impersonating(BORROWER) {
+  function testBorrowerCanLockPool(uint256 depositAmount) public impersonating(BORROWER) {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(1000));
-    deposit(callableLoan, 2, juniorDepositAmount, GF_OWNER);
+    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
 
-    callableLoan.lockJuniorCapital();
-    assertEq(
-      callableLoan.getTranche(2).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-    assertEq(callableLoan.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
-
-    seniorDepositAndInvest(callableLoan, juniorDepositAmount * 4);
+    depositAndDrawdown(callableLoan, depositAmount);
     callableLoan.lockPool();
     assertEq(
       callableLoan.getTranche(1).lockedUntil,
@@ -159,23 +147,15 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     );
     assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
     // Limit should be the sum of junior and senior deposits
-    assertEq(cl.limit(), juniorDepositAmount * 5);
+    assertEq(cl.limit(), depositAmount);
   }
 
-  function testOwnerCanLockTranches(uint256 juniorDepositAmount) public impersonating(GF_OWNER) {
+  function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    juniorDepositAmount = bound(juniorDepositAmount, usdcVal(1), usdcVal(10_000));
-    deposit(callableLoan, 2, juniorDepositAmount, GF_OWNER);
+    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000));
+    deposit(callableLoan, 2, depositAmount, GF_OWNER);
 
-    callableLoan.lockJuniorCapital();
-    assertEq(
-      callableLoan.getTranche(2).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-    assertEq(callableLoan.getTranche(2).principalSharePrice, UNIT_SHARE_PRICE);
-
-    seniorDepositAndInvest(callableLoan, juniorDepositAmount * 4);
     callableLoan.lockPool();
     assertEq(
       callableLoan.getTranche(1).lockedUntil,
@@ -183,19 +163,11 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     );
     assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
     // Limit should be the sum of junior and senior deposits
-    assertEq(cl.limit(), juniorDepositAmount * 5);
+    assertEq(cl.limit(), depositAmount);
   }
 
-  function testCannotLockTrancheTwice() public impersonating(BORROWER) {
+  function testCannotLockPoolTwice() public impersonating(BORROWER) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    callableLoan.lockJuniorCapital();
-    assertEq(
-      callableLoan.getTranche(2).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-
-    vm.expectRevert(bytes("TL"));
-    callableLoan.lockJuniorCapital();
 
     callableLoan.lockPool();
 
@@ -203,18 +175,12 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.lockPool();
   }
 
-  function testNonBorrowerNonOwnerCannotLockTranches(
+  function testNonBorrowerNonOwnerCannotLockPool(
     address nonBorrowerNonOwner
   ) public impersonating(nonBorrowerNonOwner) {
     vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
 
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    vm.expectRevert(bytes("NA"));
-    callableLoan.lockJuniorCapital();
-
-    _startImpersonation(BORROWER);
-    callableLoan.lockJuniorCapital();
-    _stopImpersonation();
 
     vm.expectRevert(bytes("NA"));
     callableLoan.lockPool();

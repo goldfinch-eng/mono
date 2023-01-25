@@ -8,7 +8,6 @@ import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
-import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
 import {TestCallableLoan} from "../TestCallableLoan.sol";
 
@@ -18,7 +17,6 @@ contract CallableLoanBuilder {
   uint256 public constant DEFAULT_LATE_APR = 0;
 
   GoldfinchFactory private gfFactory;
-  SeniorPool private seniorPool;
   MonthlyScheduleRepo private monthlyScheduleRepo;
   uint256 private maxLimit;
   uint256 private apr;
@@ -26,13 +24,8 @@ contract CallableLoanBuilder {
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
-  constructor(
-    GoldfinchFactory _gfFactory,
-    SeniorPool _seniorPool,
-    MonthlyScheduleRepo _monthlyScheduleRepo
-  ) public {
+  constructor(GoldfinchFactory _gfFactory, MonthlyScheduleRepo _monthlyScheduleRepo) public {
     gfFactory = _gfFactory;
-    seniorPool = _seniorPool;
     monthlyScheduleRepo = _monthlyScheduleRepo;
     maxLimit = DEFAULT_MAX_LIMIT;
     apr = DEFAULT_APR;

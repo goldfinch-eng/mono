@@ -233,7 +233,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 juniorToken = deposit(callableLoan, 2, depositAmount, user);
     lockJuniorTranche(callableLoan);
 
-    uint256 seniorToken = seniorDepositAndInvest(callableLoan, 4 * depositAmount);
+    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, 4 * depositAmount);
 
     lockSeniorTranche(callableLoan);
 
@@ -260,7 +260,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 juniorToken = deposit(callableLoan, 2, depositAmount, user);
     lockJuniorTranche(callableLoan);
 
-    uint256 seniorToken = seniorDepositAndInvest(callableLoan, 4 * depositAmount);
+    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, 4 * depositAmount);
 
     lockSeniorTranche(callableLoan);
 
@@ -576,7 +576,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     lockJuniorTranche(callableLoan);
 
     // Total deposits will be 5x the limit
-    uint256 seniorToken = seniorDepositAndInvest(callableLoan, limit * 4);
+    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, limit * 4);
     lockSeniorTranche(callableLoan);
 
     drawdown(callableLoan, limit);

@@ -34,7 +34,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
   function testAccountingVarsWithinSamePeriod(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, block.timestamp + 1, cl.nextDueTime() - 1);
 
     // Interest and principal owed doesn't change within a period
@@ -64,7 +64,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   function testAccountingVarsCrossingOneOrMorePaymentPeriods(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime(), cl.termEndTime() - 1);
 
     // Principal owed shouldn't change before termEndTime
@@ -110,7 +110,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   function testAccountingVarsForLatePaymentWithinGracePeriod(uint256 timestamp) public {
     // Callable Loan with 10% late fee
     (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + 5 days);
 
@@ -155,7 +155,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   ) public {
     // Loan with 10% late fee
     (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(
       timestamp,
@@ -203,7 +203,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -243,7 +243,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -282,7 +282,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
     timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
@@ -316,7 +316,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
   function testAccountingVarsCrossingTermEndTime(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + 1000 days);
 
     uint256 expectedTotalInterestAccrued = getInterestAccrued(
@@ -347,7 +347,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 secondJump
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Advance to random time during the loan and pay back everything
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());

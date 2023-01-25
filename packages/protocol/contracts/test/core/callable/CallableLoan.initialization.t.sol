@@ -31,7 +31,6 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
 
   function testInitializationGrantsProperRoles() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    assertTrue(callableLoan.hasRole(callableLoan.SENIOR_ROLE(), address(seniorPool)));
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), BORROWER));
   }

@@ -23,11 +23,8 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     uint256 limit = usdcVal(100);
 
-    deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
 
     drawdown(callableLoan, limit);
 
@@ -41,10 +38,8 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function testNotLateIfNotPastDueTime(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
     drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, block.timestamp, cl.nextDueTime() - 1);
@@ -57,10 +52,9 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function testNotLateIfPastDueTimeButWithinGracePeriod(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
     drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + (10 days));
@@ -74,9 +68,8 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
     drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime() + (10 days) + 1, cl.termEndTime());
@@ -90,9 +83,8 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
     drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes
@@ -113,9 +105,8 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     deposit(callableLoan, 2, limit, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, limit);
+    callableLoan.lockPool();
     drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes

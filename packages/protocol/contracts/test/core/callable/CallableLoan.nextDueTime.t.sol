@@ -15,17 +15,13 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   function testNextDueTimeIsZeroBeforeDrawdown() public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     assertZero(cl.nextDueTime());
-    deposit(callableLoan, 2, usdcVal(1), GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    assertZero(cl.nextDueTime());
-    seniorDepositAndInvest(callableLoan, usdcVal(4));
-    lockSeniorTranche(callableLoan);
+    depositAndDrawdown(callableLoan, usdcVal(4));
     assertZero(cl.nextDueTime());
   }
 
   function testNextDueTimeSetByDrawdown() public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1), GF_OWNER);
 
     (ISchedule s, uint64 startTime) = cl.schedule();
 
@@ -37,7 +33,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     uint256 paymentAmount
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     paymentTime = bound(
       paymentTime,
       cl.nextDueTime(),
@@ -56,7 +52,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
 
   function testNextDueTimeIsCappedAtTermEndTime(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() * 1000);
     vm.warp(timestamp);
     assertGt(cl.nextDueTime(), 0);
@@ -65,7 +61,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
 
   function testNextDueTimeChangesWhenCrossingPeriods(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
     uint256 oldNextDueTime = cl.nextDueTime();
 
@@ -80,7 +76,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
 
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     pay(callableLoan, cl.balance() + cl.interestOwed() + cl.interestAccrued());
     assertZero(cl.balance(), "balance not zero");
 
@@ -96,7 +92,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    fundAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 oldNextDueTime = cl.nextDueTime();
     pay(callableLoan, cl.balance() + cl.interestAccrued() + cl.interestOwed());
     timestamp = bound(timestamp, block.timestamp + 1, cl.nextDueTime() - 1);

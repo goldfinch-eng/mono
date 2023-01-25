@@ -11,7 +11,6 @@ import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
-import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
 import {Fidu} from "../../../protocol/core/Fidu.sol";
 import {LeverageRatioStrategy} from "../../../protocol/core/LeverageRatioStrategy.sol";
 import {FixedLeverageRatioStrategy} from "../../../protocol/core/FixedLeverageRatioStrategy.sol";
@@ -43,7 +42,6 @@ contract CallableLoanBaseTest is BaseTest {
   GoldfinchFactory internal gfFactory;
   TestERC20 internal usdc;
   Fidu internal fidu;
-  SeniorPool internal seniorPool;
   LeverageRatioStrategy internal strat;
   WithdrawalRequestToken internal requestTokens;
   ITestUniqueIdentity0612 internal uid;
@@ -65,24 +63,10 @@ contract CallableLoanBaseTest is BaseTest {
     // USDC setup
     usdc = TestERC20(address(protocol.usdc()));
 
-    // FIDU setup
-    fidu = Fidu(address(protocol.fidu()));
-
-    // SeniorPool setup
-    seniorPool = new SeniorPool();
-    seniorPool.initialize(GF_OWNER, gfConfig);
-    seniorPool.initializeEpochs();
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(seniorPool));
-    fuzzHelper.exclude(address(seniorPool));
-
-    fidu.grantRole(TestConstants.MINTER_ROLE, address(seniorPool));
     FixedLeverageRatioStrategy _strat = new FixedLeverageRatioStrategy();
     _strat.initialize(GF_OWNER, gfConfig);
     strat = _strat;
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
     fuzzHelper.exclude(address(strat));
-
-    approveTokensMaxAmount(GF_OWNER);
 
     // WithdrawalRequestToken setup
     requestTokens = new WithdrawalRequestToken();
@@ -151,7 +135,7 @@ contract CallableLoanBaseTest is BaseTest {
     fuzzHelper.exclude(address(monthlyScheduleRepo));
     fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
 
-    callableLoanBuilder = new CallableLoanBuilder(gfFactory, seniorPool, monthlyScheduleRepo);
+    callableLoanBuilder = new CallableLoanBuilder(gfFactory, monthlyScheduleRepo);
     fuzzHelper.exclude(address(callableLoanBuilder));
     // Allow the builder to create pools
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(callableLoanBuilder));
@@ -166,7 +150,6 @@ contract CallableLoanBaseTest is BaseTest {
 
     // Other stuff
     addToGoList(GF_OWNER);
-    addToGoList(address(seniorPool));
 
     fuzzHelper.exclude(BORROWER);
     fuzzHelper.exclude(DEPOSITOR);
@@ -190,7 +173,6 @@ contract CallableLoanBaseTest is BaseTest {
     fuzzHelper.exclude(address(cl));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    callableLoan.grantRole(callableLoan.SENIOR_ROLE(), address(seniorPool));
     return (callableLoan, cl);
   }
 
@@ -203,25 +185,11 @@ contract CallableLoanBaseTest is BaseTest {
       .build(BORROWER);
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
-    callableLoan.grantRole(callableLoan.SENIOR_ROLE(), address(seniorPool));
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays),
       lateFeeGracePeriodInDays
     );
     return (callableLoan, cl);
-  }
-
-  function approveTokensMaxAmount(address user) internal impersonating(user) {
-    usdc.approve(address(seniorPool), type(uint256).max);
-    fidu.approve(address(seniorPool), type(uint256).max);
-  }
-
-  function seniorDepositAndInvest(
-    CallableLoan loan,
-    uint256 amount
-  ) internal impersonating(GF_OWNER) returns (uint256) {
-    seniorPool.deposit(amount);
-    return seniorPool.invest(ITranchedPool(address(loan)));
   }
 
   function deposit(
@@ -238,23 +206,10 @@ contract CallableLoanBaseTest is BaseTest {
     return callableLoan.deposit(tranche, depositAmount);
   }
 
-  function lockJuniorTranche(
-    CallableLoan callableLoan
-  ) internal impersonating(callableLoan.creditLine().borrower()) {
-    callableLoan.lockJuniorCapital();
-  }
-
-  function lockSeniorTranche(
-    CallableLoan callableLoan
-  ) internal impersonating(callableLoan.creditLine().borrower()) {
-    callableLoan.lockPool();
-  }
-
   function lockAndDrawdown(
     CallableLoan callableLoan,
     uint256 amount
   ) internal impersonating(callableLoan.creditLine().borrower()) {
-    callableLoan.lockJuniorCapital();
     callableLoan.lockPool();
     callableLoan.drawdown(amount);
   }
@@ -354,16 +309,14 @@ contract CallableLoanBaseTest is BaseTest {
     return callableLoan.depositWithPermit(tranche, amount, deadline, v, r, s);
   }
 
-  function fundAndDrawdown(
+  function depositAndDrawdown(
     CallableLoan callableLoan,
-    uint256 juniorAmount,
-    address juniorInvestor
+    uint256 depositAmount,
+    address investor
   ) internal impersonating(callableLoan.creditLine().borrower()) {
-    deposit(callableLoan, 2, juniorAmount, juniorInvestor);
-    callableLoan.lockJuniorCapital();
-    seniorDepositAndInvest(callableLoan, juniorAmount * 4);
+    deposit(callableLoan, 1, depositAmount, investor);
     callableLoan.lockPool();
-    callableLoan.drawdown(juniorAmount * 5);
+    callableLoan.drawdown(depositAmount);
   }
 
   function getInterestAccrued(

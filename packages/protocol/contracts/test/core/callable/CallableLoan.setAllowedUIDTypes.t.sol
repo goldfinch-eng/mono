@@ -35,7 +35,7 @@ contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
     callableLoan.lockJuniorCapital();
 
     // Cannot set uids if there is junior + senior capital
-    seniorDepositAndInvest(callableLoan, usdcVal(4));
+    seniordepositAndDrawdown(callableLoan, usdcVal(4));
     vm.expectRevert("has balance");
     callableLoan.setAllowedUIDTypes(newIds);
   }

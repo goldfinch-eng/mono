@@ -15,7 +15,7 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
     setMaxLimit(callableLoan, amount * 5);
 
     assertZero(cl.termEndTime());
-    fundAndDrawdown(callableLoan, amount, GF_OWNER);
+    depositAndDrawdown(callableLoan, amount, GF_OWNER);
     // This is >= because of the creation of the stub period
     assertGe(cl.termEndTime(), block.timestamp + termInSeconds(cl));
   }
@@ -28,7 +28,7 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
 
     deposit(callableLoan, 2, amount, GF_OWNER);
     lockJuniorTranche(callableLoan);
-    seniorDepositAndInvest(callableLoan, amount * 4);
+    seniordepositAndDrawdown(callableLoan, amount * 4);
     lockSeniorTranche(callableLoan);
 
     drawdown(callableLoan, amount);
