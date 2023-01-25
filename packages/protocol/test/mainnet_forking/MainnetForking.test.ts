@@ -350,7 +350,11 @@ describe("mainnet forking tests", async function () {
 
       await pool.assess()
 
-      await advanceTime({toSecond: await cl.nextDueTime()})
+      // Advance time to the end of the epoch or next due time, whichever is later
+      // We do this because we need to ensure that the epoch has passed
+      const fourteenDaysInSeconds = new BN(14 * 24 * 60 * 60)
+      const timeToAdvance = BN.max(await cl.nextDueTime(), new BN(await time.latest()).add(fourteenDaysInSeconds))
+      await advanceTime({toSecond: timeToAdvance})
       await pool.assess()
 
       const interestOwed = await cl.interestOwed()
