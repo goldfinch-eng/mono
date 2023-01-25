@@ -1,7 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
@@ -421,8 +421,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 />
               ) : null}
 
-              {(poolStatus === PoolStatus.Open ||
-                poolStatus === PoolStatus.Closed) &&
+              {poolStatus === PoolStatus.Open &&
               data?.user &&
               data?.user.tranchedPoolTokens.length > 0 ? (
                 <WithdrawalPanel
@@ -431,19 +430,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   vaultedPoolTokens={data.user.vaultedPoolTokens.map(
                     (v) => v.poolToken
                   )}
-                  isPoolLocked={
-                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
-                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
-                      tranchedPool.juniorTranches[0].lockedUntil
-                    )
-                  }
                 />
               ) : null}
 
-              {!(
-                poolStatus === PoolStatus.Open ||
-                poolStatus === PoolStatus.Closed
-              ) &&
+              {poolStatus !== PoolStatus.Open &&
               data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
                 data?.user.vaultedPoolTokens.length > 0) ? (
