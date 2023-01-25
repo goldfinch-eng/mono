@@ -441,7 +441,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   poolTokens={data.user.tranchedPoolTokens}
                   vaultedPoolTokens={data.user.vaultedPoolTokens}
                   fiatPerGfi={fiatPerGfi}
-                  tranchedPoolAddress={tranchedPool.id}
+                  tranchedPool={tranchedPool}
                 />
               ) : null}
 

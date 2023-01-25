@@ -4,11 +4,18 @@ import { BigNumber } from "ethers/lib/ethers";
 import { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
-import { Button, Form, InfoIconTooltip } from "@/components/design-system";
+import {
+  Alert,
+  Button,
+  Form,
+  InfoIconTooltip,
+  Link,
+} from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   ClaimPanelPoolTokenFieldsFragment,
+  ClaimPanelTranchedPoolFieldsFragment,
   ClaimPanelVaultedPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
@@ -39,11 +46,20 @@ export const CLAIM_PANEL_VAULTED_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
+export const CLAIM_PANEL_TRANCHED_POOL_FIELDS = gql`
+  fragment ClaimPanelTranchedPoolFields on TranchedPool {
+    id
+    creditLine {
+      isLate @client
+    }
+  }
+`;
+
 interface ClaimPanelProps {
   poolTokens: ClaimPanelPoolTokenFieldsFragment[];
   vaultedPoolTokens: ClaimPanelVaultedPoolTokenFieldsFragment[];
   fiatPerGfi: number;
-  tranchedPoolAddress: string;
+  tranchedPool: ClaimPanelTranchedPoolFieldsFragment;
 }
 
 /**
@@ -54,7 +70,7 @@ export function ClaimPanel({
   poolTokens,
   vaultedPoolTokens,
   fiatPerGfi,
-  tranchedPoolAddress,
+  tranchedPool,
 }: ClaimPanelProps) {
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
@@ -97,12 +113,12 @@ export function ClaimPanel({
     }
 
     if (poolTokens.length > 0) {
-      const tranchedPool = await getContract({
+      const tranchedPoolContract = await getContract({
         name: "TranchedPool",
-        address: tranchedPoolAddress,
+        address: tranchedPool.id,
         provider,
       });
-      const usdcTransaction = tranchedPool.withdrawMultiple(
+      const usdcTransaction = tranchedPoolContract.withdrawMultiple(
         poolTokens.map((pt) => pt.id),
         poolTokens.map((pt) =>
           pt.principalRedeemable.add(pt.interestRedeemable)
@@ -113,17 +129,19 @@ export function ClaimPanel({
         pendingPrompt: "Claiming USDC from your pool token",
       });
 
-      const backerRewardsContract = await getContract({
-        name: "BackerRewards",
-        provider,
-      });
-      const gfiTransaction = backerRewardsContract.withdrawMultiple(
-        poolTokens.map((pt) => pt.id)
-      );
-      await toastTransaction({
-        transaction: gfiTransaction,
-        pendingPrompt: "Claiming GFI rewards from your pool tokens",
-      });
+      if (!tranchedPool.creditLine.isLate) {
+        const backerRewardsContract = await getContract({
+          name: "BackerRewards",
+          provider,
+        });
+        const gfiTransaction = backerRewardsContract.withdrawMultiple(
+          poolTokens.map((pt) => pt.id)
+        );
+        await toastTransaction({
+          transaction: gfiTransaction,
+          pendingPrompt: "Claiming GFI rewards from your pool tokens",
+        });
+      }
     }
 
     if (vaultedPoolTokens.length > 0) {
@@ -143,6 +161,9 @@ export function ClaimPanel({
 
     await apolloClient.refetchQueries({ include: "active" });
   };
+
+  const claimDisabled =
+    tranchedPool.creditLine.isLate && vaultedPoolTokens.length > 0;
 
   return (
     <div className="rounded-xl bg-midnight-01 p-5 text-white">
@@ -231,10 +252,25 @@ export function ClaimPanel({
           className="w-full"
           size="xl"
           colorScheme="secondary"
+          disabled={claimDisabled}
         >
           Claim
         </Button>
       </Form>
+      {claimDisabled ? (
+        <Alert type="warning" className="mt-4">
+          <div>
+            <div>
+              Claiming is disabled because your pool token is vaulted and this
+              pool is late on repayment. If you wish to claim the USDC from this
+              late pool, you must first unvault your token.
+            </div>
+            <Link href="/membership" iconRight="ArrowSmRight">
+              Go to vault
+            </Link>
+          </div>
+        </Alert>
+      ) : null}
     </div>
   );
 }
