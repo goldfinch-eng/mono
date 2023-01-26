@@ -66,4 +66,15 @@ export const creditLineResolvers: Resolvers[string] = {
 
     return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
+  async interestOwed(creditLine: CreditLine): Promise<BigNumber> {
+    const provider = await getProvider();
+    const creditLineContract = await getContract({
+      name: "CreditLine",
+      address: creditLine.id,
+      provider,
+      useSigner: false,
+    });
+
+    return creditLineContract.interestOwed();
+  },
 };
