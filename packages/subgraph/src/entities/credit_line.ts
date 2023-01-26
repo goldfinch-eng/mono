@@ -19,7 +19,7 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   if (!creditLine) {
     creditLine = new CreditLine(address.toHexString())
   }
-  let contract = CreditLineContract.bind(address)
+  const contract = CreditLineContract.bind(address)
 
   creditLine.borrowerContract = contract.borrower().toHexString()
   creditLine.balance = contract.balance()
@@ -29,7 +29,6 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   creditLine.termInDays = contract.termInDays()
   creditLine.nextDueTime = contract.nextDueTime()
   creditLine.limit = contract.limit()
-  creditLine.interestOwed = contract.interestOwed()
   creditLine.termEndTime = contract.termEndTime()
   creditLine.termStartTime = creditLine.termEndTime == BigInt.zero() ? BigInt.zero() : contract.termStartTime()
   creditLine.lastFullPaymentTime = contract.lastFullPaymentTime()

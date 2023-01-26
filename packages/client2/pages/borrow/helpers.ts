@@ -268,7 +268,7 @@ export const CREDIT_LINE_ACCOUNTING_FIELDS = gql`
   fragment CreditLineAccountingFields on CreditLine {
     limit
     maxLimit
-    interestOwed
+    interestOwed @client
     interestApr
     nextDueTime
     interestAccruedAsOf

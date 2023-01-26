@@ -97,7 +97,6 @@ type CreditLine @entity {
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
   nextDueTime: BigInt!
-  interestOwed: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
