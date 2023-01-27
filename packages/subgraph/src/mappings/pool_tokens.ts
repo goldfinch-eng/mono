@@ -27,7 +27,7 @@ export function handleTokenMinted(event: TokenMinted): void {
     token.mintedAt = event.block.timestamp
     token.user = user.id
     token.tranchedPool = tranchedPool.id
-    token.tranche = event.params.tranche
+    token.tranche = `${event.params.pool.toHexString()}-${event.params.tranche.toString()}`
     token.principalAmount = event.params.amount
     token.principalRedeemed = BigInt.zero()
     token.principalRedeemable = token.principalAmount
