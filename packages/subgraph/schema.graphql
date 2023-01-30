@@ -32,6 +32,8 @@ type SeniorPoolStakedPosition @entity {
   """
   startTime: BigInt!
   totalRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedStakedPosition
 }
 
 type BorrowerContract @entity {
@@ -203,6 +205,8 @@ type TranchedPoolToken @entity {
   Refers to the rewards that are received from LP rewards matching
   """
   stakingRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedPoolToken
 }
 
 type StakingRewardsData @entity {
