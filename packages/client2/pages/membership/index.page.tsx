@@ -384,15 +384,13 @@ export default function MembershipPage() {
                               }
                             />
                           ) : null}
-                          {data?.ineligiblePoolTokens.length > 0
-                            ? data.ineligiblePoolTokens.map((pt) => (
-                                <AssetBox
-                                  key={pt.id}
-                                  asset={convertPoolTokenToAsset(pt)}
-                                  notice="You cannot vault this pool token because the borrower has not yet drawn down from this pool."
-                                />
-                              ))
-                            : null}
+                          {data.ineligiblePoolTokens.map((pt) => (
+                            <AssetBox
+                              key={pt.id}
+                              asset={convertPoolTokenToAsset(pt)}
+                              notice="You cannot vault this pool token because the borrower has not yet drawn down from this pool."
+                            />
+                          ))}
                         </div>
                       </div>
                       <AssetGroupButton
