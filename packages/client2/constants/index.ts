@@ -16,6 +16,7 @@ export const USDC_MANTISSA = BigNumber.from(10).pow(USDC_DECIMALS);
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
+export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
 export const TRANCHES = {
   Senior: 1,
