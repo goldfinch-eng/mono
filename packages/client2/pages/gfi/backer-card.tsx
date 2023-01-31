@@ -63,11 +63,11 @@ export function BackerCard({
       return;
     }
     if (vaulted) {
-      const membershipOrchestratorContact = await getContract({
+      const membershipOrchestratorContract = await getContract({
         name: "MembershipOrchestrator",
         provider,
       });
-      const transaction = membershipOrchestratorContact.harvest([
+      const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
       ]);
       await toastTransaction({ transaction });
