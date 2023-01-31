@@ -19,25 +19,6 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 principalWithdrawn
   );
 
-  function testAvailableToWithdrawIsZeroWhenJuniorTrancheIsLocked(uint256 amount) public {
-    vm.assume(0 < amount && amount <= usdc.balanceOf(GF_OWNER));
-
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    _startImpersonation(GF_OWNER);
-    usdc.approve(address(callableLoan), type(uint256).max);
-    uint256 poolTokenId = callableLoan.deposit(2, amount);
-    _stopImpersonation();
-
-    lockJuniorTranche(callableLoan);
-
-    (uint256 interestRedeemable, uint256 principalRedeemable) = callableLoan.availableToWithdraw(
-      poolTokenId
-    );
-    assertZero(interestRedeemable);
-    assertZero(principalRedeemable);
-  }
-
   function testAvailableToWithdrawReturnsInterestAndPrincipalRedeemable(
     uint256 amount1,
     uint256 amount2,
@@ -52,11 +33,11 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    uint256 token1 = deposit(callableLoan, 2, amount1, DEPOSITOR);
-    uint256 token2 = deposit(callableLoan, 2, amount2, otherDepositor);
+    uint256 token1 = deposit(callableLoan, 1, amount1, DEPOSITOR);
+    uint256 token2 = deposit(callableLoan, 1, amount2, otherDepositor);
 
+    lockPoolAsBorrower(callableLoan);
     // Amounts available to withdraw should be 0 when the pool is locked
-    lockJuniorTranche(callableLoan);
     {
       (uint256 interestRedeemable1, uint256 principalRedeemable1) = callableLoan
         .availableToWithdraw(token1);
@@ -68,10 +49,12 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       assertZero(principalRedeemable2);
     }
 
-    lockSeniorTranche(callableLoan);
+    console.log("Before locking pool second time setting limit");
     setMaxLimit(callableLoan, amount1 + amount2);
     setLimit(callableLoan, amount1 + amount2);
+    console.log("After setting limit");
     drawdown(callableLoan, amount1 + amount2);
+    console.log("After drawdown.");
     vm.warp(cl.termEndTime());
 
     uint256 interestOwed = callableLoan.creditLine().interestOwed();
@@ -119,7 +102,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     callableLoan.setAllowedUIDTypes(uids);
     _stopImpersonation();
 
-    uint256 token = deposit(callableLoan, 2, amount, GF_OWNER);
+    uint256 token = deposit(callableLoan, 1, amount, GF_OWNER);
 
     _startImpersonation(GF_OWNER);
     gfConfig.removeFromGoList(GF_OWNER);
@@ -133,7 +116,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, amount, user);
+    uint256 token = deposit(callableLoan, 1, amount, user);
     assertEq(token, 1);
   }
 
@@ -151,7 +134,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(owner, 1, 1, "");
     uid._mintForTest(withdrawer, 1, 1, "");
 
-    uint256 token = deposit(callableLoan, 2, amount, owner);
+    uint256 token = deposit(callableLoan, 1, amount, owner);
     vm.expectRevert(bytes("NA"));
     withdraw(callableLoan, token, amount, withdrawer);
   }
@@ -170,8 +153,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
 
-    uint256 token1 = deposit(callableLoan1, 2, amount1, user);
-    uint256 token2 = deposit(callableLoan2, 2, amount2, user);
+    uint256 token1 = deposit(callableLoan1, 1, amount1, user);
+    uint256 token2 = deposit(callableLoan2, 1, amount2, user);
 
     // User can't use token2 to withdraw from callableLoan1
     vm.expectRevert("Invalid sender");
@@ -187,7 +170,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, amount, user);
+    uint256 token = deposit(callableLoan, 1, amount, user);
     withdraw(callableLoan, token, amount, user);
     vm.expectRevert(bytes("IA"));
     withdraw(callableLoan, token, usdcVal(1), user);
@@ -198,12 +181,12 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, amount, user);
+    uint256 token = deposit(callableLoan, 1, amount, user);
     vm.expectRevert(bytes("ZA"));
     withdraw(callableLoan, token, 0, user);
   }
 
-  function testWithdrawBeforePoolLockedAllowsWithdrawlUpToMax(
+  function testWithdrawBeforePoolLockedAllowsWithdrawalUpToMax(
     address user,
     uint256 depositAmount,
     uint256 withdrawAmount
@@ -213,7 +196,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_000));
     withdrawAmount = bound(withdrawAmount, usdcVal(1), depositAmount);
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, depositAmount, user);
+    uint256 token = deposit(callableLoan, 1, depositAmount, user);
     withdraw(callableLoan, token, withdrawAmount, user);
     PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
     assertEq(tokenInfo.principalAmount, depositAmount - withdrawAmount);
@@ -230,20 +213,13 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     secondsElapsed = bound(secondsElapsed, 0, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 juniorToken = deposit(callableLoan, 2, depositAmount, user);
-    lockJuniorTranche(callableLoan);
-
-    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, 4 * depositAmount);
-
-    lockSeniorTranche(callableLoan);
+    uint256 token = deposit(callableLoan, 1, depositAmount, user);
 
     vm.warp(block.timestamp + secondsElapsed);
 
+    lockPoolAsBorrower(callableLoan);
     vm.expectRevert(bytes("TL"));
-    withdraw(callableLoan, juniorToken, depositAmount, user);
-
-    vm.expectRevert(bytes("TL"));
-    seniorPool.redeem(seniorToken);
+    withdraw(callableLoan, token, depositAmount, user);
   }
 
   function testLetsYouWithdrawAfterLockupEnds(
@@ -257,12 +233,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     secondsElapsed = bound(secondsElapsed, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS + 1, 1000 days);
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 juniorToken = deposit(callableLoan, 2, depositAmount, user);
-    lockJuniorTranche(callableLoan);
-
-    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, 4 * depositAmount);
-
-    lockSeniorTranche(callableLoan);
+    uint256 juniorToken = deposit(callableLoan, 1, depositAmount, user);
+    lockPoolAsBorrower(callableLoan);
 
     vm.warp(block.timestamp + secondsElapsed);
 
@@ -270,11 +242,6 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     PoolTokens.TokenInfo memory juniorTokenInfo = poolTokens.getTokenInfo(juniorToken);
     assertEq(juniorTokenInfo.principalAmount, depositAmount);
     assertEq(juniorTokenInfo.principalRedeemed, depositAmount);
-
-    seniorPool.redeem(seniorToken);
-    PoolTokens.TokenInfo memory seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
-    assertEq(seniorTokenInfo.principalAmount, 4 * depositAmount);
-    assertEq(seniorTokenInfo.principalRedeemed, 4 * depositAmount);
   }
 
   function testWithdrawProRataPaymentShare(
@@ -292,8 +259,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(user1, 1, 1, "");
     uid._mintForTest(user2, 1, 1, "");
 
-    uint256 token1 = deposit(callableLoan, 2, amount1, user1);
-    uint256 token2 = deposit(callableLoan, 2, amount2, user2);
+    uint256 token1 = deposit(callableLoan, 1, amount1, user1);
+    uint256 token2 = deposit(callableLoan, 1, amount2, user2);
 
     setMaxLimit(callableLoan, amount1 + amount2);
     setLimit(callableLoan, amount1 + amount2);
@@ -344,7 +311,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
 
-    uint256 token = deposit(callableLoan, 2, usdcVal(1000), user);
+    uint256 token = deposit(callableLoan, 1, usdcVal(1000), user);
     lockAndDrawdown(callableLoan, usdcVal(1000));
     vm.warp(cl.termEndTime());
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
@@ -356,7 +323,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     //   principal + interest_accrued - protocol_fee = 1045
     vm.expectEmit(true, true, true, true);
     // Interest amount is slightly more than $45 due to the stub period
-    emit WithdrawalMade(user, 2, token, 45000081, usdcVal(1000));
+    emit WithdrawalMade(user, 1, token, 45000081, usdcVal(1000));
     // Total redeemable is slightly more than $1045 due to the stub period
     withdraw(callableLoan, token, 1045000081, user);
   }
@@ -378,8 +345,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(user2, 1, 1, "");
 
     uint256[] memory tokens = new uint256[](2);
-    tokens[0] = deposit(callableLoan, 2, amount1, user1);
-    tokens[1] = deposit(callableLoan, 2, amount2, user2);
+    tokens[0] = deposit(callableLoan, 1, amount1, user1);
+    tokens[1] = deposit(callableLoan, 1, amount2, user2);
 
     uint256[] memory amounts = new uint256[](2);
     amounts[0] = amount1;
@@ -399,8 +366,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     amount2 = bound(amount2, usdcVal(1), usdcVal(100_000_000));
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uint256[] memory tokens = new uint256[](2);
-    tokens[0] = deposit(callableLoan, 2, amount1, GF_OWNER);
-    tokens[1] = deposit(callableLoan, 2, amount2, GF_OWNER);
+    tokens[0] = deposit(callableLoan, 1, amount1, GF_OWNER);
+    tokens[1] = deposit(callableLoan, 1, amount2, GF_OWNER);
     uint256[] memory amounts = new uint256[](2);
     amounts[0] = amount1 + 1; // Exceeds max withdrawable
     amounts[1] = amount2;
@@ -426,8 +393,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, 1, "");
 
     uint256[] memory tokens = new uint256[](2);
-    tokens[0] = deposit(callableLoan, 2, amount1, user);
-    tokens[1] = deposit(callableLoan, 2, amount2, user);
+    tokens[0] = deposit(callableLoan, 1, amount1, user);
+    tokens[1] = deposit(callableLoan, 1, amount2, user);
     uint256[] memory amounts = new uint256[](2);
     amounts[0] = amount1;
     amounts[1] = amount2;
@@ -455,7 +422,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(owner, 1, 1, "");
     uid._mintForTest(withdrawer, 1, 1, "");
 
-    uint256 token = deposit(callableLoan, 2, amount, owner);
+    uint256 token = deposit(callableLoan, 1, amount, owner);
     vm.expectRevert(bytes("NA"));
     withdrawMax(callableLoan, token, withdrawer);
   }
@@ -468,8 +435,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
 
-    uint256 token1 = deposit(callableLoan1, 2, amount, user);
-    uint256 token2 = deposit(callableLoan2, 2, amount, user);
+    uint256 token1 = deposit(callableLoan1, 1, amount, user);
+    uint256 token2 = deposit(callableLoan2, 1, amount, user);
 
     // User can't use token2 to withdraw from callableLoan1
     vm.expectRevert("Invalid sender");
@@ -485,7 +452,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, amount, user);
+    uint256 token = deposit(callableLoan, 1, amount, user);
     withdrawMax(callableLoan, token, user);
     vm.expectRevert(bytes("IA"));
     withdraw(callableLoan, token, usdcVal(1), user);
@@ -496,7 +463,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, amount, user);
+    uint256 token = deposit(callableLoan, 1, amount, user);
     withdrawMax(callableLoan, token, user);
     PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
     assertZero(tokenInfo.principalAmount);
@@ -513,9 +480,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     secondsElapsed = bound(secondsElapsed, 0, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 juniorToken = deposit(callableLoan, 2, amount, user);
-    lockJuniorTranche(callableLoan);
-
+    uint256 juniorToken = deposit(callableLoan, 1, amount, user);
+    lockPoolAsBorrower(callableLoan);
     vm.warp(block.timestamp + secondsElapsed);
 
     vm.expectRevert(bytes("TL"));
@@ -533,9 +499,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     secondsElapsed = bound(secondsElapsed, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS + 1, 1000 days);
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 juniorToken = deposit(callableLoan, 2, amount, user);
-    lockJuniorTranche(callableLoan);
-    lockSeniorTranche(callableLoan);
+    uint256 juniorToken = deposit(callableLoan, 1, amount, user);
+    lockPoolAsBorrower(callableLoan);
 
     vm.warp(block.timestamp + secondsElapsed);
 
@@ -550,14 +515,14 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 2, usdcVal(1000), user);
+    uint256 token = deposit(callableLoan, 1, usdcVal(1000), user);
     lockAndDrawdown(callableLoan, usdcVal(1000));
     vm.warp(cl.termEndTime());
     // Pay back
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
     vm.expectEmit(true, true, true, true);
     // Interest is slightly more than $45 due to the stub period
-    emit WithdrawalMade(user, 2, token, 45000081, usdcVal(1000));
+    emit WithdrawalMade(user, 1, token, 45000081, usdcVal(1000));
     withdrawMax(callableLoan, token, user);
   }
 
@@ -571,38 +536,20 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     setMaxLimit(callableLoan, limit);
     setLimit(callableLoan, limit);
     uid._mintForTest(user, 1, 1, "");
-
-    uint256 juniorToken = deposit(callableLoan, 2, limit, user);
-    lockJuniorTranche(callableLoan);
-
-    // Total deposits will be 5x the limit
-    uint256 seniorToken = seniordepositAndDrawdown(callableLoan, limit * 4);
-    lockSeniorTranche(callableLoan);
-
+    uint256 overLimitDepositAmount = limit * 4;
+    uint256 token = deposit(callableLoan, 1, overLimitDepositAmount, user);
     drawdown(callableLoan, limit);
     vm.warp(cl.termEndTime());
 
-    // Depositors should be able to withdraw 80% of their capital since only 20% of capital was drawn down
-    (uint256 interestRedeemed, uint256 principalRedeemed) = withdrawMax(
-      callableLoan,
-      juniorToken,
-      user
-    );
+    // Depositors should be able to withdraw capital which was not drawn down.
+    (uint256 interestRedeemed, uint256 principalRedeemed) = withdrawMax(callableLoan, token, user);
     assertZero(interestRedeemed);
-    assertEq(principalRedeemed, (limit * 8) / 10);
-
-    seniorPool.redeem(seniorToken);
-    PoolTokens.TokenInfo memory seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
-    assertEq(seniorTokenInfo.principalRedeemed, (limit * 4 * 8) / 10);
+    assertEq(principalRedeemed, overLimitDepositAmount - limit);
 
     // fully pay off the loan
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
     // remaining 20% of principal should be withdrawn
-    (, principalRedeemed) = withdrawMax(callableLoan, juniorToken, user);
-    assertEq(principalRedeemed, (limit * 2) / 10);
-
-    seniorPool.redeem(seniorToken);
-    seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
-    assertApproxEqAbs(seniorTokenInfo.principalRedeemed, limit * 4, HALF_CENT); // All principal redeemed
+    (, principalRedeemed) = withdrawMax(callableLoan, token, user);
+    assertEq(principalRedeemed, limit);
   }
 }

@@ -29,6 +29,8 @@ import {BaseTest} from "../BaseTest.t.sol";
 import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
+import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanBaseTest is BaseTest {
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
@@ -48,6 +50,7 @@ contract CallableLoanBaseTest is BaseTest {
   CallableLoanBuilder internal callableLoanBuilder;
   PoolTokens internal poolTokens;
   Go internal go;
+  SeniorPool internal seniorPool;
 
   function setUp() public virtual override {
     super.setUp();
@@ -63,9 +66,21 @@ contract CallableLoanBaseTest is BaseTest {
     // USDC setup
     usdc = TestERC20(address(protocol.usdc()));
 
+    // FIDU setup
+    fidu = Fidu(address(protocol.fidu()));
+
+    // SeniorPool setup
+    seniorPool = new SeniorPool();
+    seniorPool.initialize(GF_OWNER, gfConfig);
+    seniorPool.initializeEpochs();
+    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(seniorPool));
+    fuzzHelper.exclude(address(seniorPool));
+
+    fidu.grantRole(TestConstants.MINTER_ROLE, address(seniorPool));
     FixedLeverageRatioStrategy _strat = new FixedLeverageRatioStrategy();
     _strat.initialize(GF_OWNER, gfConfig);
     strat = _strat;
+    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
     fuzzHelper.exclude(address(strat));
 
     // WithdrawalRequestToken setup
@@ -87,6 +102,7 @@ contract CallableLoanBaseTest is BaseTest {
       supportedUidValues[i] = true;
     }
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
     fuzzHelper.exclude(address(uid));
 
     // PoolTokens setup
@@ -206,6 +222,21 @@ contract CallableLoanBaseTest is BaseTest {
     return callableLoan.deposit(tranche, depositAmount);
   }
 
+  function deposit(
+    CallableLoan callableLoan,
+    uint256 depositAmount,
+    address depositor
+  ) internal returns (uint256) {
+    return deposit(callableLoan, 1, depositAmount, depositor);
+  }
+
+  function lockPoolAsBorrower(
+    CallableLoan callableLoan
+  ) internal impersonating(callableLoan.creditLine().borrower()) {
+    console.log("Locking pool");
+    callableLoan.lockPool();
+  }
+
   function lockAndDrawdown(
     CallableLoan callableLoan,
     uint256 amount
@@ -311,11 +342,17 @@ contract CallableLoanBaseTest is BaseTest {
 
   function depositAndDrawdown(
     CallableLoan callableLoan,
+    uint256 depositAmount
+  ) internal returns (uint256 tokenId) {
+    return depositAndDrawdown(callableLoan, depositAmount, DEPOSITOR);
+  }
+
+  function depositAndDrawdown(
+    CallableLoan callableLoan,
     uint256 depositAmount,
     address investor
-  ) internal impersonating(callableLoan.creditLine().borrower()) {
-    deposit(callableLoan, 1, depositAmount, investor);
-    callableLoan.lockPool();
+  ) internal impersonating(callableLoan.creditLine().borrower()) returns (uint256 tokenId) {
+    tokenId = deposit(callableLoan, 1, depositAmount, investor);
     callableLoan.drawdown(depositAmount);
   }
 

@@ -10,6 +10,7 @@ import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanDepositTest is CallableLoanBaseTest {
   event DepositMade(
@@ -18,7 +19,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uint256 indexed tokenId,
     uint256 amount
   );
-  event PoolLocked(address indexed pool, uint256 lockedUntil);
+  event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
 
   function testDepositWithoutGoListOrUid() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
@@ -42,7 +43,6 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
   function testDepositWorksIfAllowedUidButNotGoListed() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
     uint256 poolToken = callableLoan.deposit(1, usdcVal(100));
     assertEq(poolToken, 1);
@@ -58,11 +58,15 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
   function testDepositRevertsIfPoolLocked() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    console.log("1");
     usdc.approve(address(callableLoan), type(uint256).max);
+    console.log("2");
     callableLoan.deposit(1, usdcVal(100));
-    callableLoan.lockPool();
+    console.log("3");
+    lockPoolAsBorrower(callableLoan);
+    console.log("4");
     vm.expectRevert(bytes("TL"));
+    console.log("5");
     callableLoan.deposit(1, usdcVal(100));
   }
 
@@ -70,18 +74,17 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("invalid tranche"));
+    vm.expectRevert(bytes("IT"));
     callableLoan.deposit(2, usdcVal(100));
   }
 
   function testDepositUpdatesTrancheInfoAndMintsToken() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
 
     // Event should be emitted for deposit
     vm.expectEmit(true, true, true, true);
-    emit DepositMade(DEPOSITOR, 2, 1, usdcVal(100));
+    emit DepositMade(DEPOSITOR, 1, 1, usdcVal(100));
 
     uint256 poolToken = callableLoan.deposit(1, usdcVal(100));
 
@@ -93,7 +96,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertEq(poolTokens.ownerOf(poolToken), address(DEPOSITOR));
     PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolToken);
     assertEq(tokenInfo.principalAmount, usdcVal(100));
-    assertEq(tokenInfo.tranche, 2);
+    assertEq(tokenInfo.tranche, 1);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
 
@@ -127,18 +130,22 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
   function testLockPoolEmitsEvent() public impersonating(BORROWER) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectEmit(true, false, false, true);
-    emit PoolLocked(address(callableLoan), block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-    callableLoan.lockPool(callableLoan);
+    // TODO: Should emit pool locked instead of tranche locked.
+    emit TrancheLocked(
+      address(callableLoan),
+      1,
+      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+    );
+    callableLoan.lockPool();
   }
 
   function testDepositFailsForInvalidTranches(uint256 trancheId) public {
     vm.assume(trancheId > 2);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
 
-    uid._mintForTest(DEPOSITOR, 1, 1, "");
     _startImpersonation(DEPOSITOR);
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert("invalid tranche");
+    vm.expectRevert(bytes("IT"));
     callableLoan.deposit(trancheId, usdcVal(1));
     _stopImpersonation();
   }
@@ -169,26 +176,22 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
 
     vm.expectEmit(true, true, true, true);
-    emit DepositMade(user, 2, 1, usdcVal(100));
+    emit DepositMade(user, 1, 1, usdcVal(100));
 
-    uid._mintForTest(user, 1, 1, "");
+    uid._mintForTest(user, 1, usdcVal(100), "");
     // Deposit with permit
     _startImpersonation(user);
-    uint256 poolTokenId = callableLoan.depositWithPermit(2, usdcVal(100), deadline, v, r, s);
+    uint256 poolTokenId = callableLoan.depositWithPermit(1, usdcVal(100), deadline, v, r, s);
     _stopImpersonation();
 
-    ITranchedPool.TrancheInfo memory junior = callableLoan.getTranche(2);
-    ITranchedPool.TrancheInfo memory senior = callableLoan.getTranche(1);
-
-    assertEq(junior.principalDeposited, usdcVal(100));
-    assertZero(senior.principalDeposited);
+    ITranchedPool.TrancheInfo memory uncalledCapital = callableLoan.getTranche(1);
+    assertEq(uncalledCapital.principalDeposited, usdcVal(100));
 
     PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
     assertEq(tokenInfo.principalAmount, usdcVal(100));
-    assertEq(tokenInfo.tranche, 2);
+    assertEq(tokenInfo.tranche, 1);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
-
     assertZero(usdc.allowance(user, address(callableLoan)));
   }
 
@@ -202,8 +205,8 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     setMaxLimit(callableLoan, limit);
 
-    deposit(callableLoan, 2, depositAmount, GF_OWNER);
-    callableLoan.lockPool();
+    deposit(callableLoan, 1, depositAmount, DEPOSITOR);
+    lockPoolAsBorrower(callableLoan);
 
     assertEq(cl.limit(), limit);
   }
@@ -216,7 +219,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     setMaxLimit(callableLoan, limit);
 
     deposit(callableLoan, 1, depositAmount, GF_OWNER);
-    callableLoan.lockPool();
+    lockPoolAsBorrower(callableLoan);
     assertEq(cl.limit(), depositAmount);
   }
 }

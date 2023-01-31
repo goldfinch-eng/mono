@@ -24,9 +24,6 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     uint256 limit = usdcVal(100);
 
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-
-    drawdown(callableLoan, limit);
 
     pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());
 
@@ -39,8 +36,6 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, block.timestamp, cl.nextDueTime() - 1);
 
@@ -54,8 +49,6 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     uint256 limit = usdcVal(100);
 
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + (10 days));
 
@@ -67,10 +60,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function testLateIfPastDueTimeAndPastGracePeriod(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(callableLoan, 2, limit, GF_OWNER);
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-    drawdown(callableLoan, limit);
 
     timestamp = bound(timestamp, cl.nextDueTime() + (10 days) + 1, cl.termEndTime());
 
@@ -82,10 +72,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function testIsNotLateIfCurrentAtTermEndTimeAndInGracePeriod(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(callableLoan, 2, limit, GF_OWNER);
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-    drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
@@ -104,10 +91,9 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function testIsLateIfCurrentAtTermEndTimeAndAfterGracePeriod(uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
-    deposit(callableLoan, 2, limit, GF_OWNER);
+
+    uid._mintForTest(GF_OWNER, 1, 1, "");
     depositAndDrawdown(callableLoan, limit);
-    callableLoan.lockPool();
-    drawdown(callableLoan, limit);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {

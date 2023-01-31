@@ -217,6 +217,7 @@
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
           "onTranchedPoolDrawdown": ["onlyPool", "nonReentrant"],
+          "onCallableLoanDrawdown": ["onlyPool", "nonReentrant"],
           "forceIntializeStakingRewardsPoolInfo": ["onlyAdmin"],
           "withdraw": ["nonReentrant"],
           "withdrawMultiple": []

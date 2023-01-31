@@ -14,7 +14,6 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   function testRevertsIfPaymentEq0() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
 
     vm.expectRevert(bytes("ZA"));
     callableLoan.pay(0);
@@ -23,7 +22,6 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   function testOnlyTakesWhatsNeededForExcessPayment(uint256 amount, uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
@@ -61,8 +59,6 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   function testAcceptsPayment(uint256 amount, uint256 timestamp) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
-
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 

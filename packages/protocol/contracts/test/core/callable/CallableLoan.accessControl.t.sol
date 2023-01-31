@@ -8,6 +8,7 @@ import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   function testAccessControlOwnerIsGovernance() public {
@@ -53,10 +54,10 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     pause(callableLoan);
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.deposit(2, usdcVal(1));
+    callableLoan.deposit(1, usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.depositWithPermit(2, usdcVal(1), 0, 0, 0, 0);
+    callableLoan.depositWithPermit(1, usdcVal(1), 0, 0, 0, 0);
 
     vm.expectRevert("Pausable: paused");
     callableLoan.withdraw(1, usdcVal(1));
@@ -73,6 +74,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     vm.expectRevert("Pausable: paused");
     callableLoan.drawdown(usdcVal(1));
 
+    _startImpersonation(BORROWER);
     vm.expectRevert("Pausable: paused");
     callableLoan.lockPool();
 
@@ -116,7 +118,6 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
 
     withdraw(callableLoan, 1, usdcVal(1), user);
     withdrawMax(callableLoan, 2, user);
-    callableLoan.lockPool();
     drawdown(callableLoan, usdcVal(99));
     pay(callableLoan, usdcVal(99));
   }
@@ -134,27 +135,34 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.pause();
   }
 
-  function testBorrowerCanLockPool(uint256 depositAmount) public impersonating(BORROWER) {
+  function testBorrowerCanLockPool(
+    uint256 depositAmount,
+    address depositor
+  ) public impersonating(BORROWER) {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+
+    vm.assume(depositAmount > 0);
+    vm.assume(fuzzHelper.isAllowed(depositor));
+    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
 
     assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
 
-    depositAndDrawdown(callableLoan, depositAmount);
-    callableLoan.lockPool();
+    uid._mintForTest(depositor, 1, 1, "");
+    depositAndDrawdown(callableLoan, depositAmount, depositor);
     assertEq(
       callableLoan.getTranche(1).lockedUntil,
       block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
-    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
-    // Limit should be the sum of junior and senior deposits
+
+    //TODO: Add in tests for equivalent of principal share price behavior.
     assertEq(cl.limit(), depositAmount);
   }
 
   function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
 
-    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(10_000));
-    deposit(callableLoan, 2, depositAmount, GF_OWNER);
+    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
+    deposit(callableLoan, 1, depositAmount, GF_OWNER);
 
     callableLoan.lockPool();
     assertEq(

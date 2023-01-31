@@ -26,16 +26,14 @@ contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
-    deposit(callableLoan, 2, usdcVal(1), user);
+    deposit(callableLoan, 1, usdcVal(1), user);
 
     uint256[] memory newIds = new uint256[](0);
     vm.expectRevert("has balance");
     callableLoan.setAllowedUIDTypes(newIds);
 
-    callableLoan.lockJuniorCapital();
-
     // Cannot set uids if there is junior + senior capital
-    seniordepositAndDrawdown(callableLoan, usdcVal(4));
+    depositAndDrawdown(callableLoan, usdcVal(4));
     vm.expectRevert("has balance");
     callableLoan.setAllowedUIDTypes(newIds);
   }

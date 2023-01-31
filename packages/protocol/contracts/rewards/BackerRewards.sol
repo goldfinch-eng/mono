@@ -13,6 +13,8 @@ import {ICreditLine} from "../interfaces/ICreditLine.sol";
 import {IPoolTokens} from "../interfaces/IPoolTokens.sol";
 import {IStakingRewards} from "../interfaces/IStakingRewards.sol";
 import {ITranchedPool} from "../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../interfaces/ICallableLoan.sol";
+
 import {IBackerRewards} from "../interfaces/IBackerRewards.sol";
 import {ISeniorPool} from "../interfaces/ISeniorPool.sol";
 import {IEvents} from "../interfaces/IEvents.sol";
@@ -266,14 +268,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
       ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
       uint256 principalDeployedAtDrawdown = _getPrincipalDeployedForTranche(juniorTranche);
       uint256 fiduSharePriceAtDrawdown = seniorPool.sharePrice();
-
       // initialize new slice params
       StakingRewardsSliceInfo memory sliceInfo = _initializeStakingRewardsSliceInfo(
         fiduSharePriceAtDrawdown,
         principalDeployedAtDrawdown,
         newRewardsAccumulator
       );
-
       poolStakingRewards[pool].slicesInfo.push(sliceInfo);
     } else {
       // otherwise, its nth drawdown of the slice
@@ -285,6 +285,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
 
     _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
   }
+
+  /// @notice callback for Callable loans when they drawdown
+  /// @dev initializes rewards info for the calling callable loan.
+  /// TODO: DO we need to lock this down to only callable loans?
+  //        Fill in
+  function onCallableLoanDrawdown() external onlyPool nonReentrant {}
 
   /**
    * @notice Calculate the gross available gfi rewards for a PoolToken

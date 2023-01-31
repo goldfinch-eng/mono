@@ -13,8 +13,7 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
   function testRevertsIfPaymentEq0() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     vm.expectRevert(bytes("ZA"));
     callableLoan.pay(0, 0);
@@ -25,8 +24,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -49,8 +47,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -87,8 +84,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -108,8 +104,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -133,8 +128,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    seniordepositAndDrawdown(callableLoan, usdcVal(400));
-    drawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);

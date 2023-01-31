@@ -21,6 +21,7 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "../ConfigHelper.sol";
 import {SafeERC20Transfer} from "../../../library/SafeERC20Transfer.sol";
 import {TranchingLogic} from "../TranchingLogic.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
@@ -127,20 +128,19 @@ contract CallableLoan is
   /// @inheritdoc ILoan
   /// @dev TL: tranche locked
   /// @dev IA: invalid amount
+  /// @dev IT: invalid tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
   function deposit(
     uint256 tranche,
     uint256 amount
   ) public override nonReentrant whenNotPaused returns (uint256) {
+    // Currently only valid to deposit into the uncalled capital tranche.
+    require(tranche == 1, "IT");
     ITranchedPool.TrancheInfo storage trancheInfo = _getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "TL");
     require(amount > 0, "IA");
     require(hasAllowedUID(msg.sender), "NA");
     require(block.timestamp >= fundableAt, "Not open");
-    // senior tranche ids are always odd numbered
-    if (TranchingLogic.isSeniorTrancheId(trancheInfo.id)) {
-      require(hasRole(SENIOR_ROLE, _msgSender()), "NA");
-    }
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     uint256 tokenId = config.getPoolTokens().mint(
@@ -216,7 +216,7 @@ contract CallableLoan is
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
     require(!drawdownsPaused, "DP");
     if (!_locked()) {
-      // Assumes the senior pool has invested already (saves the borrower a separate transaction to lock the pool)
+      // Assumes investments have been made already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
     }
     // Drawdown only draws down from the current slice for simplicity. It's harder to account for how much
@@ -284,6 +284,7 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   function lockPool() external override onlyLocker whenNotPaused {
+    console.log("Locking pool");
     _lockPool();
   }
 
@@ -345,9 +346,12 @@ contract CallableLoan is
     );
     uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
 
+    console.log("_pay");
     PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
 
     // Payment remaining should always be 0 because we don't take excess usdc
+    console.log("pa.paymentRemaining");
+    console.log(pa.paymentRemaining);
     assert(pa.paymentRemaining == 0);
     return pa;
   }
@@ -519,7 +523,8 @@ contract CallableLoan is
 
       totalDeployed = totalDeployed.sub(principalPaymentsToSlices);
 
-      config.getBackerRewards().allocateRewards(interestPayment);
+      // TODO - Need to update reward allocation - too coupled to junior tranche atm.
+      // config.getBackerRewards().allocateRewards(interestPayment);
 
       emit PaymentApplied(
         creditLine.borrower(),
@@ -630,18 +635,12 @@ contract CallableLoan is
   /// @dev NL: Not locked
   /// @dev TL: tranche locked. The senior pool has already been locked.
   function _lockPool() internal {
+    require(!_locked(), "TL");
     ITranchedPool.PoolSlice storage slice = _poolSlices[numSlices.sub(1)];
-    require(slice.juniorTranche.lockedUntil > 0, "NL");
-    // Allow locking the pool only once; do not allow extending the lock of an
-    // already-locked pool. Otherwise the locker could keep the pool locked
-    // indefinitely, preventing withdrawals.
-    require(slice.seniorTranche.lockedUntil == 0, "TL");
-
     uint256 currentTotal = slice.juniorTranche.principalDeposited.add(
       slice.seniorTranche.principalDeposited
     );
     creditLine.setLimit(Math.min(creditLine.limit().add(currentTotal), creditLine.maxLimit()));
-
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
     TranchingLogic.lockTranche(slice.seniorTranche, config);
   }

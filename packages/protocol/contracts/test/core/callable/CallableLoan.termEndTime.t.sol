@@ -21,19 +21,17 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   }
 
   // TODO - bug when you drawdown multiple times!
-  function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 amount) public {
+  function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 drawdownAmount) public {
     (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-    amount = bound(amount, usdcVal(2), usdcVal(10_000_000));
-    setMaxLimit(callableLoan, amount * 5);
+    drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
+    setMaxLimit(callableLoan, drawdownAmount * 2);
 
-    deposit(callableLoan, 2, amount, GF_OWNER);
-    lockJuniorTranche(callableLoan);
-    seniordepositAndDrawdown(callableLoan, amount * 4);
-    lockSeniorTranche(callableLoan);
+    deposit(callableLoan, 1, drawdownAmount * 2, DEPOSITOR);
+    lockPoolAsBorrower(callableLoan);
 
-    drawdown(callableLoan, amount);
+    drawdown(callableLoan, drawdownAmount);
     uint256 termEndTimeBefore = cl.termEndTime();
-    drawdown(callableLoan, amount);
+    drawdown(callableLoan, drawdownAmount);
     assertEq(cl.termEndTime(), termEndTimeBefore);
   }
 
