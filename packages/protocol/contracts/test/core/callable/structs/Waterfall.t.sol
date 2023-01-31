@@ -4,18 +4,15 @@ pragma solidity 0.8.13;
 pragma experimental ABIEncoderV2;
 
 
-// TODO: import test file
-
 import "forge-std/Test.sol";
-import {Waterfall, WaterfallLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
+import {Waterfall, WaterfallLogic, Tranche, TrancheLib} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 
 using WaterfallLogic for Waterfall;
+using TrancheLib for Tranche;
 
 contract TestWaterfall is Test {
   
   Waterfall internal w;
-  
-  
   
   function setUp() external {
     w.initialize(4);
@@ -26,7 +23,6 @@ contract TestWaterfall is Test {
   ) external {
     uint trancheId;
     trancheId = bound(trancheId, 0, w.numTranches());
-
     Tranche storage trancheBefore = w.getTranche(trancheId);
     assertTrue(trancheBefore.principalDeposited() == 0);
     assertTrue(trancheBefore.principalPaid() == 0);
@@ -34,13 +30,14 @@ contract TestWaterfall is Test {
 
     w.deposit(trancheId, amount);
   
-    Tranche storage trancheAfter = w.getTranche(trancheId);
-    assertTrue(trancheBefore.principalDeposited() == amount);
-    assertTrue(trancheBefore.interestPaid() == 0);
-    assertTrue(trancheBefore.principalPaid() == 0);
-  
-
-    // for each tranche thats not tranche, assert nothing changed
+    for (uint i = 0; i < w.numTranches(); i++) {
+      Tranche storage sampled = w.getTranche(i);
+      // if its the tranche that we deposited into
+      bool isTrancheWeDepositedInto = i == trancheId;
+      assertEq(sampled.principalDeposited(), isTrancheWeDepositedInto ? amount : 0);
+      assertEq(sampled.interestPaid(), 0);
+      assertEq(sampled.principalPaid(), 0);
+    }
   }
 
   /*

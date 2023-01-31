@@ -3,6 +3,9 @@
 pragma solidity 0.8.13;
 pragma experimental ABIEncoderV2;
 
+import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+
+using MathUpgradeable for uint256;
 
 struct Waterfall {
   Tranche[] _tranches;
@@ -10,12 +13,13 @@ struct Waterfall {
 
 library WaterfallLogic {
   using WaterfallLogic for Waterfall;  
+  using TrancheLogic for Tranche;
 
   function initialize(
     Waterfall storage w,
     uint nTranches
   ) external returns (Waterfall storage) {
-    w._tranches[] = new Tranches[](nTranches);
+    w._tranches = new Tranche[](nTranches);
   }
 
   function getTranche(
@@ -45,7 +49,7 @@ library WaterfallLogic {
     for (uint i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
       uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) / totalPrincipalOutstanding;
-      uint principalPayment = Math.min(tranche.principalOutstanding(), principalAmount);
+      uint principalPayment = tranche.principalOutstanding().min(principalAmount);
     
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
@@ -54,14 +58,22 @@ library WaterfallLogic {
     }
   }
 
+  function drawdown(Waterfall storage w, uint principalAmount) external {
+    // drawdown pro rata
+    uint totalPrincipal = w.totalPrincipal();
+    for (uint i = 0; i < w.numTranches(); i++) {
+      Tranche storage tranche = w.getTranche(i);
+      uint perTranchePrincipalAmount = principalAmount * tranche.principalAmount() / totalPrincipal;
+      tranche.drawdown(perTranchePrincipalAmount);
+    }
+  }
+
   /**
    * @notice Move principal and paid interest from one tranche to another
    */
   function move(Waterfall storage w, uint principalAmount, uint fromTrancheId, uint toTrancheId) external {
-    Tranche storage fromTranche = _tranches[fromTrancheId];
-    Tranche storage toTranche = _tranches[toTrancheId];
-    (uint principalTaken, uint interestTaken) = fromTranche.take(principalAmount);
-    toTranche.addToBalances(principal, interest);(principalTaken, interestTaken); 
+    (uint principalTaken, uint interestTaken) = w.getTranche(fromTrancheId).take(principalAmount);
+    return w.getTranche(toTrancheId).addToBalances(principalTaken, interestTaken);
   }
 
   /**
@@ -102,8 +114,8 @@ struct Tranche {
   uint[50] __padding;
 }
 
-
-library Tranche {
+library TrancheLib {
+  using TrancheLib for Tranche;
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) external {
     assert(t._principalPaid + principalAmount <= t.principalAmount);
 
@@ -127,12 +139,12 @@ library Tranche {
   /**
    * @notice remove `principal` from the Tranche and its corresponding interest
    */
-  function take(Tranche storage t, uint principal) external returns (uint interestTaken) {
-    // remove principal
-    // remove interest
-    //    removable interest = interestPaid * (principal / totalPrincipal)
+  function take(Tranche storage t, uint principal) external returns (uint principalTaken, uint interestTaken) {
     uint interestTaken = t._interestPaid * principal / t._principalDeposited;
     t._interestPaid -= interestTaken;
+    t._principalDeposited -= principal;
+    // Take pro rata portion of paid principal
+    t._principalPaid -= t._principalPaid * principal / t._principalDeposited;
     return interestTaken;
   }
 
@@ -141,11 +153,19 @@ library Tranche {
     // SAFETY but gas cost
     assert(t._interestPaid == 0);
     t._principal += principal;
+    // NOTE: this is so that principalOutstanding = 0 before drawdown
+    t._principalPaid += principal;
   }
 
-  function addToBalances(Tranche storage t, uint principal, uint interest) external {
-    t._principalDeposited += principal;
-    t._interestPaid += interest;
+  function addToBalances(
+    Tranche storage t,
+    uint principalDeposited,
+    uint interestPaid,
+    uint principalPaid
+  ) external {
+    t._principalDeposited += principalDeposited;
+    t._interestPaid += interestPaid;
+    t._principalPaid += principalPaid;
   }
 
   function principalDeposited(Tranche storage t) external view returns (uint) {
@@ -170,5 +190,9 @@ library Tranche {
 
   function cumulativeInterestWithdrawable(Tranche storage t, uint256 principalAmount) external view returns (uint) {
     return t.interestPaid() * principalAmount / t.principalDeposited();
+  }
+
+  function drawdown(Tranche storage t, uint principalAmount) external {
+    t.principalPaid -= principalAmount;
   }
 }
