@@ -131,16 +131,16 @@ contract TestImplementationRepository is Test {
       abi.encodeWithSelector(failingImpl.fn.selector, "")
     );
 
-    // if the proxy were delegat calling on creation it would fail here because
+    // if the proxy were delegate calling on creation it would fail here because
     // the data we passed to delegate call unconditionally reverts
-    UcuProxy proxy = new UcuProxy(repo, proxyOwner);
+    new UcuProxy(repo, proxyOwner);
   }
 
   function testProxyUpgradeRevertsWhenUpgradeDataDelegateCallFails()
     public
     impersonating(repoOwner)
   {
-    UcuProxy proxy = new UcuProxy(repo, proxyOwner);
+    UcuProxy newProxy = new UcuProxy(repo, proxyOwner);
 
     repo.append(address(failingImpl));
     repo.setUpgradeDataFor(
@@ -151,7 +151,7 @@ contract TestImplementationRepository is Test {
     vm.stopPrank();
     vm.startPrank(proxyOwner);
     vm.expectRevert("failed in proxied call");
-    proxy.upgradeImplementation();
+    newProxy.upgradeImplementation();
   }
 
   function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(repoOwner) {

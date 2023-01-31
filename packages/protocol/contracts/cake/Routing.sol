@@ -21,8 +21,6 @@ import {IERC20Splitter} from "../interfaces/IERC20Splitter.sol";
 import {Context as ContextContract} from "./Context.sol";
 import {IAccessControl} from "../interfaces/IAccessControl.sol";
 
-import {Router} from "./Router.sol";
-
 /// @title Routing.Keys
 /// @notice This library is used to define routing keys used by `Router`.
 /// @dev We use uints instead of enums for several reasons. First, keys can be re-ordered

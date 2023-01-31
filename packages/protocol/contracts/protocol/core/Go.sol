@@ -101,7 +101,7 @@ contract Go is IGo, BaseUpgradeablePausable {
         return true;
       }
 
-      /** 
+      /* 
        * Check if tx.origin has the UID, and has delegated that to `account`
        * tx.origin should only ever be used for access control - it should never be used to determine
        * the target address for any economic actions

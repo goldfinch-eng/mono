@@ -708,7 +708,7 @@ contract MembershipOrchestratorTest is Test {
     orchestrator.finalizeEpochs();
 
     uint256 gfi_user1_id1 = depositGFI(user1, 5e18);
-    uint256 captialERC721_user1_id1 = depositStakedFidu(user1, 6e18);
+    depositStakedFidu(user1, 6e18);
 
     usdc.transfer(reserveSplitter, 10e6);
 
@@ -737,7 +737,7 @@ contract MembershipOrchestratorTest is Test {
     skip(Epochs.EPOCH_SECONDS);
     orchestrator.finalizeEpochs();
 
-    uint256 captialERC721_user2_id1 = depositStakedFidu(user2, 6e18);
+    depositStakedFidu(user2, 6e18);
 
     usdc.transfer(reserveSplitter, 30e6);
 
@@ -911,8 +911,6 @@ contract MembershipOrchestratorTest is Test {
   function test_scenario_nonExistantPositionAfterLongNonInteraction() public {
     // Ensure there is no/minimal gas cost for no interactions over many epochs
 
-    address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
-
     skip(Epochs.EPOCH_SECONDS * 5);
 
     depositGFI(address(1), 5e18);
@@ -950,35 +948,37 @@ contract MembershipOrchestratorTest is Test {
       cake.router().setContract(Routing.Keys.ReserveSplitter, address(reserveSplitter));
     }
 
-    address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
-    MembershipCollector collector = MembershipCollector(
-      cake.contractFor(Routing.Keys.MembershipCollector)
-    );
+    {
+      address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
+      MembershipCollector collector = MembershipCollector(
+        cake.contractFor(Routing.Keys.MembershipCollector)
+      );
 
-    usdc.transfer(reserveSplitter, 10e6);
+      usdc.transfer(reserveSplitter, 10e6);
 
-    depositGFI(address(1), 5e18);
-    depositStakedFidu(address(1), 6e18);
+      depositGFI(address(1), 5e18);
+      depositStakedFidu(address(1), 6e18);
 
-    usdc.transfer(reserveSplitter, 14e6);
+      usdc.transfer(reserveSplitter, 14e6);
 
-    skip(Epochs.EPOCH_SECONDS);
-    orchestrator.finalizeEpochs();
+      skip(Epochs.EPOCH_SECONDS);
+      orchestrator.finalizeEpochs();
 
-    vm.prank(address(1));
-    assertEq(orchestrator.collectRewards(), 0);
+      vm.prank(address(1));
+      assertEq(orchestrator.collectRewards(), 0);
 
-    assertEq(collector.rewardsForEpoch(Epochs.current() - 2), 0);
-    assertEq(collector.rewardsForEpoch(Epochs.current() - 1), 0);
-    assertEq(collector.rewardsForEpoch(Epochs.current()), 12e18);
-    assertEq(collector.rewardsForEpoch(Epochs.current() + 1), 0);
-    assertEq(collector.rewardsForEpoch(Epochs.current() + 2), 0);
+      assertEq(collector.rewardsForEpoch(Epochs.current() - 2), 0);
+      assertEq(collector.rewardsForEpoch(Epochs.current() - 1), 0);
+      assertEq(collector.rewardsForEpoch(Epochs.current()), 12e18);
+      assertEq(collector.rewardsForEpoch(Epochs.current() + 1), 0);
+      assertEq(collector.rewardsForEpoch(Epochs.current() + 2), 0);
 
-    skip(Epochs.EPOCH_SECONDS);
-    orchestrator.finalizeEpochs();
+      skip(Epochs.EPOCH_SECONDS);
+      orchestrator.finalizeEpochs();
 
-    vm.prank(address(1));
-    assertEq(orchestrator.collectRewards(), 12e18);
+      vm.prank(address(1));
+      assertEq(orchestrator.collectRewards(), 12e18);
+    }
   }
 
   function test_finalizeEpochs_paused() public {
@@ -1231,7 +1231,7 @@ contract MembershipOrchestratorTest is Test {
 }
 
 contract MockERC20 is ERC20Upgradeable {
-  constructor(uint256 initialSupply) public {
+  constructor(uint256 initialSupply) {
     _mint(msg.sender, initialSupply);
   }
 }

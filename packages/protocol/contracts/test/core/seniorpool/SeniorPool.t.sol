@@ -98,7 +98,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     assertZero(sp.currentEpoch().usdcAllocated);
 
     uint256 shares = depositToSpFrom(GF_OWNER, usdcVal(100));
-    uint256 token = requestWithdrawalFrom(GF_OWNER, shares / 2);
+    requestWithdrawalFrom(GF_OWNER, shares / 2);
 
     assertEq(sp.currentEpoch().fiduRequested, shares / 2, "1");
     assertZero(sp.currentEpoch().fiduLiquidated, "2");

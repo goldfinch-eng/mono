@@ -29,7 +29,7 @@ contract AccountantTestHelpers {
     TestCreditLine cl,
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
-  ) internal returns (FixedPoint.Unsigned memory) {
+  ) internal view returns (FixedPoint.Unsigned memory) {
     FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriodInDays);
     FixedPoint.Unsigned memory fpMaxDaysLate = FixedPoint.fromUnscaledUint(maxDaysLate);
 

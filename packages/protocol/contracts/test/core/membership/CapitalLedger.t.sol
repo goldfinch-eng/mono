@@ -297,7 +297,7 @@ contract CapitalLedgerTest is Test {
   function boundFiduParameters(
     uint256 fiduAmount,
     uint256 fiduSharePrice
-  ) private returns (uint256 boundedFiduAmount, uint256 boundedFiduSharePrice) {
+  ) private view returns (uint256 boundedFiduAmount, uint256 boundedFiduSharePrice) {
     boundedFiduSharePrice = bound(fiduSharePrice, 1, FIDU_SHARE_PRICE_UPPER_BOUND);
     boundedFiduAmount = bound(fiduAmount, FiduConversions.USDC_MANTISSA, FIDU_AMOUNT_UPPER_BOUND);
     vm.assume((MAX_UINT256 / boundedFiduAmount) / boundedFiduSharePrice > 0);
