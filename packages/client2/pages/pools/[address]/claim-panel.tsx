@@ -72,6 +72,8 @@ export function ClaimPanel({
   fiatPerGfi,
   tranchedPool,
 }: ClaimPanelProps) {
+  const canClaimGfi = !tranchedPool.creditLine.isLate;
+
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
   );
@@ -129,7 +131,7 @@ export function ClaimPanel({
         pendingPrompt: "Claiming USDC from your pool token",
       });
 
-      if (!tranchedPool.creditLine.isLate) {
+      if (canClaimGfi) {
         const backerRewardsContract = await getContract({
           name: "BackerRewards",
           provider,
@@ -144,7 +146,7 @@ export function ClaimPanel({
       }
     }
 
-    if (vaultedPoolTokens.length > 0) {
+    if (vaultedPoolTokens.length > 0 && canClaimGfi) {
       const membershipOrchestrator = await getContract({
         name: "MembershipOrchestrator",
         provider,
@@ -163,7 +165,9 @@ export function ClaimPanel({
   };
 
   const claimDisabled =
-    tranchedPool.creditLine.isLate && vaultedPoolTokens.length > 0;
+    (claimableUsdc.amount.isZero() && claimableGfi.amount.isZero()) ||
+    (claimableUsdc.amount.isZero() && !canClaimGfi) ||
+    (vaultedPoolTokens.length > 0 && !canClaimGfi);
 
   return (
     <div className="rounded-xl bg-midnight-01 p-5 text-white">
@@ -257,7 +261,7 @@ export function ClaimPanel({
           Claim
         </Button>
       </Form>
-      {claimDisabled ? (
+      {vaultedPoolTokens.length > 0 && !canClaimGfi ? (
         <Alert type="warning" className="mt-4">
           <div>
             <div>
@@ -269,6 +273,11 @@ export function ClaimPanel({
               Go to vault
             </Link>
           </div>
+        </Alert>
+      ) : !canClaimGfi ? (
+        <Alert type="warning" className="mt-4">
+          You cannot claim GFI rewards from this pool because it is late on
+          repayment.
         </Alert>
       ) : null}
     </div>
