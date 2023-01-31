@@ -9,7 +9,7 @@ import { getProvider } from "@/lib/wallet";
 const oneYearSeconds = BigNumber.from(60 * 60 * 24 * 365);
 const apyDecimals = BigNumber.from("1000000000000000000"); // 1e18
 
-async function getUsdcPerLpToken() {
+async function getUsdPerLpToken() {
   // Using this helpful article to calculate the fiat value of Curve LP tokens: https://medium.com/coinmonks/the-joys-of-valuing-curve-lp-tokens-4e4a148eaeb9
   // This calculation also assumes that 1 USDC = 1 USD
 
@@ -83,13 +83,13 @@ export const curvePoolResolvers: Resolvers[string] = {
       .mul(curveLPTokenMultiplier)
       .div(apyDecimals);
 
-    const usdCostPerLpToken = await getUsdcPerLpToken();
+    const usdCostPerLpToken = await getUsdPerLpToken();
 
     return FixedNumber.from(currentEarnRatePerYearPerCurveToken)
       .divUnsafe(FixedNumber.from(apyDecimals))
       .divUnsafe(usdCostPerLpToken);
   },
-  async usdcPerLpToken(): Promise<FixedNumber> {
-    return getUsdcPerLpToken();
+  async usdPerLpToken(): Promise<FixedNumber> {
+    return getUsdPerLpToken();
   },
 };

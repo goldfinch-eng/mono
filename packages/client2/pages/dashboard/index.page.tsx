@@ -90,7 +90,7 @@ gql`
       amount
     }
     curvePool @client {
-      usdcPerLpToken
+      usdPerLpToken
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -235,7 +235,7 @@ export default function DashboardPage() {
           ? data.viewer.curveLpBalance.amount
           : BigNumber.from(0)
       ),
-      data.curvePool.usdcPerLpToken
+      data.curvePool.usdPerLpToken
     );
 
     const totalUsdc = {
@@ -589,14 +589,14 @@ export default function DashboardPage() {
                                 percentage: computePercentage(
                                   curveLpTokensToUsdc(
                                     stakedPosition.amount,
-                                    data.curvePool.usdcPerLpToken
+                                    data.curvePool.usdPerLpToken
                                   ).amount,
                                   totalUsdc.amount
                                 ),
                                 quantity: stakedPosition.amount,
                                 usdcValue: curveLpTokensToUsdc(
                                   stakedPosition.amount,
-                                  data.curvePool.usdcPerLpToken
+                                  data.curvePool.usdPerLpToken
                                 ),
                                 url: "/stake",
                               })
@@ -609,14 +609,14 @@ export default function DashboardPage() {
                                     percentage: computePercentage(
                                       curveLpTokensToUsdc(
                                         data.viewer.curveLpBalance.amount,
-                                        data.curvePool.usdcPerLpToken
+                                        data.curvePool.usdPerLpToken
                                       ).amount,
                                       totalUsdc.amount
                                     ),
                                     quantity: data.viewer.curveLpBalance.amount,
                                     usdcValue: curveLpTokensToUsdc(
                                       data.viewer.curveLpBalance.amount,
-                                      data.curvePool.usdcPerLpToken
+                                      data.curvePool.usdPerLpToken
                                     ),
                                     url: "/stake",
                                   },
