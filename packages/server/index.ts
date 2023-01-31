@@ -5,9 +5,6 @@ Dedicated node service for handling custom backend routes that also has access t
 Hardhat: In ../server/package.json and ../autotasks/package.json we using the "--network localhost" arguments to start a Hardhat Network, and expose it as a JSON-RPC and WebSocket server
 https://hardhat.org/hardhat-network/#running-stand-alone-in-order-to-support-wallets-and-other-software
 
-New routes: be sure to update the webpack proxy
-packages/client/config-overrides.js
-
 */
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"

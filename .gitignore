@@ -82,8 +82,6 @@ artifacts/
 
 notes.txt
 
-**/*/client/config/protocol-local.json
-**/*/client/config/pool-metadata/localhost.json
 **/*/deployments/localhost_31337
 **/*/deployments/localhost_5777
 **/*/deployments/localhost
