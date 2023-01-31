@@ -21,7 +21,6 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "../ConfigHelper.sol";
 import {SafeERC20Transfer} from "../../../library/SafeERC20Transfer.sol";
 import {TranchingLogic} from "../TranchingLogic.sol";
-import {console2 as console} from "forge-std/console2.sol";
 
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
@@ -284,7 +283,6 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   function lockPool() external override onlyLocker whenNotPaused {
-    console.log("Locking pool");
     _lockPool();
   }
 
@@ -346,12 +344,9 @@ contract CallableLoan is
     );
     uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
 
-    console.log("_pay");
     PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
 
     // Payment remaining should always be 0 because we don't take excess usdc
-    console.log("pa.paymentRemaining");
-    console.log(pa.paymentRemaining);
     assert(pa.paymentRemaining == 0);
     return pa;
   }
