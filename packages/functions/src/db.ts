@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin"
+import * as FirebaseFunctions from "firebase-functions"
 import {isPlainObject, isString, isStringOrUndefined} from "@goldfinch-eng/utils"
 import firestore = admin.firestore
 
@@ -115,8 +116,8 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  * @param {any} functions The firebase functions library (ignored in test)
  * @return {FirebaseConfig} The config object
  */
-function getConfig(functions: any): FirebaseConfig {
-  // When running using the Firebase emulator (e.g. as `npm run ci_test` does via `npx firebase emulators:exec`),
+function getConfig(functions: typeof FirebaseFunctions): FirebaseConfig {
+  // When running using the Firebase emulator (e.g. as `yarn ci_test` does via `yarn firebase emulators:exec`),
   // we observed a transient / bootstrapping phase in which this function is called (because it is invoked at
   // the root level of `index.ts`, which is a consequence of following the Sentry docs about how to configure
   // Sentry for use with Google Cloud functions and of using the Firebase config to provide the necessary values)
@@ -125,7 +126,7 @@ function getConfig(functions: any): FirebaseConfig {
   // test the behavior that the Firebase config controls. As a workaround for this issue, we can detect
   // whether we're in this bootstrapping phase, and use the test config for it as well as for when
   // `process.env.NODE_ENV === "test"`. `process.env.NODE_ENV` becomes `"test"` immediately after this
-  // bootstrapping phase, via the `npm test` command passed as an argument to `npx firebase emulators:exec`.
+  // bootstrapping phase, via the `yarn test` command passed as an argument to `yarn firebase emulators:exec`.
   const isBootstrappingEmulator =
     process.env.FUNCTIONS_EMULATOR === "true" && // Cf. https://stackoverflow.com/a/60963496
     process.env.NODE_ENV === undefined &&

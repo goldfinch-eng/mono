@@ -12,6 +12,7 @@ import {
   EmergencyShutdown,
   DrawdownMade,
   PaymentApplied,
+  TranchedPoolAssessed,
 } from "../../generated/templates/TranchedPool/TranchedPool"
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
@@ -26,6 +27,7 @@ import {
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 import {getAddressFromConfig} from "../utils"
+import {handleCreditLineBalanceChanged} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -98,6 +100,11 @@ export function handleEmergencyShutdown(event: EmergencyShutdown): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
 }
 
+export function handleTranchedPoolAssessed(event: TranchedPoolAssessed): void {
+  initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  updatePoolCreditLine(event.address, event.block.timestamp)
+}
+
 export function handleDrawdownMade(event: DrawdownMade): void {
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
   getOrInitUser(event.params.borrower) // ensures that a wallet making a drawdown is correctly considered a user
@@ -110,6 +117,8 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "USDC"
   transaction.save()
+
+  handleCreditLineBalanceChanged()
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
@@ -130,4 +139,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.sentToken = "USDC"
   transaction.save()
+
+  handleCreditLineBalanceChanged()
 }

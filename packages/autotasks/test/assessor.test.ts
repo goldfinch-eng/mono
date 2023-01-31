@@ -25,6 +25,7 @@ describe("assessor", () => {
     const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(
       deployments
     )
+
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower])
     await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])

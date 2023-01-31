@@ -3,11 +3,11 @@
 // Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/contracts/MerkleDistributor.sol.
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
-import "../interfaces/IERC20withDec.sol";
-import "../interfaces/IMerkleDirectDistributor.sol";
-import "../protocol/core/BaseUpgradeablePausable.sol";
+import {MerkleProof} from "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
+import {IMerkleDirectDistributor} from "../interfaces/IMerkleDirectDistributor.sol";
+import {BaseUpgradeablePausable} from "../protocol/core/BaseUpgradeablePausable.sol";
 
 contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePausable {
   using SafeERC20 for IERC20withDec;
@@ -18,11 +18,7 @@ contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePau
   // @dev This is a packed array of booleans.
   mapping(uint256 => uint256) private acceptedBitMap;
 
-  function initialize(
-    address owner,
-    address _gfi,
-    bytes32 _merkleRoot
-  ) public initializer {
+  function initialize(address owner, address _gfi, bytes32 _merkleRoot) public initializer {
     require(owner != address(0), "Owner address cannot be empty");
     require(_gfi != address(0), "GFI address cannot be empty");
     require(_merkleRoot != 0, "Invalid Merkle root");

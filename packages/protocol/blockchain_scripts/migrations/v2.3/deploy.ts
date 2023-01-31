@@ -1,7 +1,7 @@
 import {ContractDeployer, ContractUpgrader, getEthersContract, getProtocolOwner} from "../../deployHelpers"
 import hre, {deployments} from "hardhat"
 import {changeImplementations, DeployEffects} from "../deployEffects"
-import {Go, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
+import {Go, GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {deployBackerRewards} from "../../baseDeploy"
 import {deployClImplementation} from "../../baseDeploy/deployClImplementation"
 import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"

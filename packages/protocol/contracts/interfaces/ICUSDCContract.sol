@@ -26,15 +26,9 @@ interface ICUSDCContract is IERC20withDec {
     address cTokenCollateral
   ) external returns (uint256);
 
-  function getAccountSnapshot(address account)
-    external
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
-    );
+  function getAccountSnapshot(
+    address account
+  ) external view returns (uint256, uint256, uint256, uint256);
 
   function balanceOfUnderlying(address owner) external returns (uint256);
 

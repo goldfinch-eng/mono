@@ -3,13 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "./LeverageRatioStrategy.sol";
-import "../../interfaces/ISeniorPoolStrategy.sol";
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {LeverageRatioStrategy} from "./LeverageRatioStrategy.sol";
+import {ISeniorPoolStrategy} from "../../interfaces/ISeniorPoolStrategy.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 
 contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   bytes32 public constant LEVERAGE_RATIO_SETTER_ROLE = keccak256("LEVERAGE_RATIO_SETTER_ROLE");
@@ -41,8 +40,12 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
     LeverageRatioInfo memory ratioInfo = ratios[address(pool)];
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Junior)
+    );
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Senior)
+    );
 
     require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio has not been set yet.");
     if (seniorTranche.lockedUntil > 0) {
@@ -88,8 +91,12 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     uint256 juniorTrancheLockedUntil,
     bytes32 version
   ) public onlySetterRole {
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Junior)
+    );
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(
+      uint256(ITranchedPool.Tranches.Senior)
+    );
 
     // NOTE: We allow a `leverageRatio` of 0.
     require(
@@ -97,9 +104,18 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
       "Leverage ratio must not exceed 10 (adjusted for decimals)."
     );
 
-    require(juniorTranche.lockedUntil > 0, "Cannot set leverage ratio if junior tranche is not locked.");
-    require(seniorTranche.lockedUntil == 0, "Cannot set leverage ratio if senior tranche is locked.");
-    require(juniorTrancheLockedUntil == juniorTranche.lockedUntil, "Invalid `juniorTrancheLockedUntil` timestamp.");
+    require(
+      juniorTranche.lockedUntil > 0,
+      "Cannot set leverage ratio if junior tranche is not locked."
+    );
+    require(
+      seniorTranche.lockedUntil == 0,
+      "Cannot set leverage ratio if senior tranche is locked."
+    );
+    require(
+      juniorTrancheLockedUntil == juniorTranche.lockedUntil,
+      "Invalid `juniorTrancheLockedUntil` timestamp."
+    );
 
     ratios[address(pool)] = LeverageRatioInfo({
       leverageRatio: leverageRatio,

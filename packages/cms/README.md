@@ -25,7 +25,7 @@ The local development environment will initalize a local instance of MongoDB and
 3. Start your local environment:
 
 ```
-npm run start:dev
+yarn start:dev
 ```
 
 4. Open [http://localhost:3010](http://localhost:3010) to see the CMS in action
@@ -70,7 +70,9 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 3. Once authenticated, build the image and tag it:
 
 ```
-docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG>
+#  "--platform x86-64" is an optional parameter if you are using a x64 machine - only required for arm64 machines due to npm module "sharp" failing to install. See https://github.com/lovell/sharp/issues/2482
+
+docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG> --platform x86-64
 ```
 
 4. Deploy the tagged image to the Artifact Registry

@@ -119,7 +119,7 @@ export const destroyUser = genRequestHandler({
         const destroyedUser = await destroyedUserRef.get()
         if (destroyedUser.exists) {
           console.log("destroyedUser ref exists... appending to document")
-          const deletions = [...destroyedUser.data()?.deletions, newDeletion]
+          const deletions = [...(destroyedUser.data()?.deletions || []), newDeletion]
           const updatedDocument = {
             address: addressToDestroy,
             deletions,

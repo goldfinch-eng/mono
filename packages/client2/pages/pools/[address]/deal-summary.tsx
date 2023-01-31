@@ -61,7 +61,10 @@ export default function DealSummary({
         <div className="mb-20">
           <h3 className="mb-8 text-lg font-semibold">Transaction Structure</h3>
           <FileItem
-            filename={dealData.transactionStructure.filename as string}
+            filename={
+              (dealData.transactionStructure?.fileNameOverride as string) ||
+              (dealData.transactionStructure.filename as string)
+            }
             description={dealData.transactionStructure.alt}
             url={dealData.transactionStructure.url as string}
             mimeType={dealData.transactionStructure.mimeType as string}

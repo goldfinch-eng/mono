@@ -5,7 +5,6 @@ import {
   StakingRewards,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {deployments} from "hardhat"
-import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "../../baseDeploy"
 import {getEthersContract} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 

@@ -71,6 +71,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
+  WithdrawalRequestToken: () =>
+    import(
+      "@/types/ethers-contracts/factories/WithdrawalRequestToken__factory"
+    ).then((module) => module.WithdrawalRequestToken__factory.connect),
   PoolTokens: () =>
     import("@/types/ethers-contracts/factories/PoolTokens__factory").then(
       (module) => module.PoolTokens__factory.connect
@@ -86,6 +90,10 @@ const supportedContracts = {
   ERC20Splitter: () =>
     import("@/types/ethers-contracts/factories/Erc20Splitter__factory").then(
       (module) => module.Erc20Splitter__factory.connect
+    ),
+  Borrower: () =>
+    import("@/types/ethers-contracts/factories/Borrower__factory").then(
+      (module) => module.Borrower__factory.connect
     ),
 };
 

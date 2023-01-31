@@ -7,10 +7,7 @@ import { FixedNumber } from "ethers";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SupportedCrypto,
-  TranchedPoolStatGridFieldsFragment,
-} from "@/lib/graphql/generated";
+import { TranchedPoolStatGridFieldsFragment } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
 
 // The fragments here are just used for the purpose of typechecking. They don't get sent to the top-level query because of the fragment overlap bug
@@ -18,7 +15,6 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
   fragment TranchedPoolStatGridFields on TranchedPool {
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    principalAmountRepaid
     creditLine {
       id
       isLate @client
@@ -26,7 +22,8 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
       paymentPeriodInDays
       termEndTime
       nextDueTime
-      maxLimit
+      limit
+      balance
     }
   }
 `;
@@ -102,10 +99,8 @@ export function StatusSection({
       key="principalOutstandingStat"
       label="Principal outstanding"
       value={formatCrypto({
-        token: SupportedCrypto.Usdc,
-        amount: tranchedPool.creditLine.maxLimit.sub(
-          tranchedPool.principalAmountRepaid
-        ),
+        token: "USDC",
+        amount: tranchedPool.creditLine.balance,
       })}
       tooltip="The total amount of principal remaining for the Borrower to repay to this Pool over its payment term."
     />
@@ -149,8 +144,8 @@ export function StatusSection({
       key="limitStat"
       label="Pool limit"
       value={formatCrypto({
-        token: SupportedCrypto.Usdc,
-        amount: tranchedPool.creditLine.maxLimit,
+        token: "USDC",
+        amount: tranchedPool.creditLine.limit,
       })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."
     />

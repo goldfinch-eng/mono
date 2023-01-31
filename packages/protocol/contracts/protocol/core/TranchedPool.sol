@@ -93,7 +93,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
     require(
-      _poolSlices[0].juniorTranche.principalDeposited == 0 && _poolSlices[0].seniorTranche.principalDeposited == 0,
+      _poolSlices[0].juniorTranche.principalDeposited == 0 &&
+        _poolSlices[0].seniorTranche.principalDeposited == 0,
       "has balance"
     );
     allowedUIDTypes = ids;
@@ -109,7 +110,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
    * @param amount The USDC amount to tranfer from the caller to the pool
    * @return tokenId The tokenId of the NFT
    */
-  function deposit(uint256 tranche, uint256 amount) public override nonReentrant whenNotPaused returns (uint256) {
+  function deposit(
+    uint256 tranche,
+    uint256 amount
+  ) public override nonReentrant whenNotPaused returns (uint256) {
     TrancheInfo storage trancheInfo = _getTrancheInfo(tranche);
     /// @dev TL: tranche locked
     require(trancheInfo.lockedUntil == 0, "TL");
@@ -117,7 +121,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     require(amount > 0, "IA");
     /// @dev NA: not authorized. Must have correct UID or be go listed
     require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp > fundableAt, "Not open");
+    require(block.timestamp >= fundableAt, "Not open");
     // senior tranche ids are always odd numbered
     if (TranchingLogic.isSeniorTrancheId(trancheInfo.id)) {
       require(hasRole(SENIOR_ROLE, _msgSender()), "NA");
@@ -153,13 +157,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
    * @return interestWithdrawn The interest amount that was withdrawn
    * @return principalWithdrawn The principal amount that was withdrawn
    */
-  function withdraw(uint256 tokenId, uint256 amount)
-    public
-    override
-    nonReentrant
-    whenNotPaused
-    returns (uint256, uint256)
-  {
+  function withdraw(
+    uint256 tokenId,
+    uint256 amount
+  ) public override nonReentrant whenNotPaused returns (uint256, uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
@@ -171,7 +172,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
    * @param tokenIds An array of tokens ids representing the position
    * @param amounts An array of amounts to withdraw from the corresponding tokenIds
    */
-  function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) public override {
+  function withdrawMultiple(
+    uint256[] calldata tokenIds,
+    uint256[] calldata amounts
+  ) public override {
     require(tokenIds.length == amounts.length, "LEN");
 
     for (uint256 i = 0; i < amounts.length; i++) {
@@ -185,7 +189,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
    * @return interestWithdrawn The interest amount that was withdrawn
    * @return principalWithdrawn The principal amount that was withdrawn
    */
-  function withdrawMax(uint256 tokenId)
+  function withdrawMax(
+    uint256 tokenId
+  )
     external
     override
     nonReentrant
@@ -195,10 +201,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
-    (uint256 interestRedeemable, uint256 principalRedeemable) = TranchingLogic.redeemableInterestAndPrincipal(
-      trancheInfo,
-      tokenInfo
-    );
+    (uint256 interestRedeemable, uint256 principalRedeemable) = TranchingLogic
+      .redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
 
     uint256 amount = interestRedeemable.add(principalRedeemable);
 
@@ -239,14 +243,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 amountRemaining = amountAvailable.sub(amount);
     uint256 oldJuniorPrincipalSharePrice = currentSlice.juniorTranche.principalSharePrice;
     uint256 oldSeniorPrincipalSharePrice = currentSlice.seniorTranche.principalSharePrice;
-    currentSlice.juniorTranche.principalSharePrice = currentSlice.juniorTranche.calculateExpectedSharePrice(
-      amountRemaining,
-      currentSlice
-    );
-    currentSlice.seniorTranche.principalSharePrice = currentSlice.seniorTranche.calculateExpectedSharePrice(
-      amountRemaining,
-      currentSlice
-    );
+    currentSlice.juniorTranche.principalSharePrice = currentSlice
+      .juniorTranche
+      .calculateExpectedSharePrice(amountRemaining, currentSlice);
+    currentSlice.seniorTranche.principalSharePrice = currentSlice
+      .seniorTranche
+      .calculateExpectedSharePrice(amountRemaining, currentSlice);
     currentSlice.principalDeployed = currentSlice.principalDeployed.add(amount);
     totalDeployed = totalDeployed.add(amount);
 
@@ -484,7 +486,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     );
 
     config.getUSDC().safeERC20TransferFrom(from, address(this), principal.add(interest));
-    config.getUSDC().safeERC20TransferFrom(address(this), config.reserveAddress(), totalReserveAmount);
+    config.getUSDC().safeERC20TransferFrom(
+      address(this),
+      config.reserveAddress(),
+      totalReserveAmount
+    );
 
     emit ReserveFundsCollected(address(this), totalReserveAmount);
 
@@ -523,13 +529,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 amount
   ) internal returns (uint256, uint256) {
     /// @dev NA: not authorized
-    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
+    require(
+      config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender),
+      "NA"
+    );
     /// @dev IA: invalid amount. Cannot withdraw 0
     require(amount > 0, "IA");
-    (uint256 interestRedeemable, uint256 principalRedeemable) = TranchingLogic.redeemableInterestAndPrincipal(
-      trancheInfo,
-      tokenInfo
-    );
+    (uint256 interestRedeemable, uint256 principalRedeemable) = TranchingLogic
+      .redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
 
     /// @dev IA: invalid amount. User does not have enough available to redeem
@@ -554,9 +561,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     }
 
-    config.getUSDC().safeERC20TransferFrom(address(this), msg.sender, principalToRedeem.add(interestToRedeem));
+    config.getUSDC().safeERC20TransferFrom(
+      address(this),
+      msg.sender,
+      principalToRedeem.add(interestToRedeem)
+    );
 
-    emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
+    emit WithdrawalMade(
+      msg.sender,
+      tokenInfo.tranche,
+      tokenId,
+      interestToRedeem,
+      principalToRedeem
+    );
 
     return (interestToRedeem, principalToRedeem);
   }
@@ -578,7 +595,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     /// @dev TL: tranche locked. The senior pool has already been locked.
     require(slice.seniorTranche.lockedUntil == 0, "TL");
 
-    uint256 currentTotal = slice.juniorTranche.principalDeposited.add(slice.seniorTranche.principalDeposited);
+    uint256 currentTotal = slice.juniorTranche.principalDeposited.add(
+      slice.seniorTranche.principalDeposited
+    );
     creditLine.setLimit(Math.min(creditLine.limit().add(currentTotal), creditLine.maxLimit()));
 
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
@@ -601,7 +620,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   }
 
   function _getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
-    require(trancheId > 0 && trancheId <= numSlices.mul(TranchingLogic.NUM_TRANCHES_PER_SLICE), "invalid tranche");
+    require(
+      trancheId > 0 && trancheId <= numSlices.mul(TranchingLogic.NUM_TRANCHES_PER_SLICE),
+      "invalid tranche"
+    );
     uint256 sliceId = TranchingLogic.trancheIdToSliceIndex(trancheId);
     PoolSlice storage slice = _poolSlices[sliceId];
     TrancheInfo storage trancheInfo = TranchingLogic.isSeniorTrancheId(trancheId)
@@ -618,7 +640,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     require(_locked(), "NL");
 
     uint256 interestAccrued = creditLine.totalInterestAccrued();
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine
+      .assess();
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
 
     // Split the interest accrued proportionally across slices so we know how much interest goes to each slice
@@ -636,7 +659,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
         _poolSlices[i].principalDeployed,
         totalDeployed
       );
-      _poolSlices[i].totalInterestAccrued = _poolSlices[i].totalInterestAccrued.add(interestForSlice);
+      _poolSlices[i].totalInterestAccrued = _poolSlices[i].totalInterestAccrued.add(
+        interestForSlice
+      );
     }
 
     if (interestPayment > 0 || principalPayment > 0) {
@@ -647,7 +672,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       );
 
       for (uint256 i = 0; i < numSlices; i++) {
-        _poolSlices[i].principalDeployed = _poolSlices[i].principalDeployed.sub(principalPaymentsPerSlice[i]);
+        _poolSlices[i].principalDeployed = _poolSlices[i].principalDeployed.sub(
+          principalPaymentsPerSlice[i]
+        );
         totalDeployed = totalDeployed.sub(principalPaymentsPerSlice[i]);
       }
 
@@ -667,7 +694,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
   // // Events ////////////////////////////////////////////////////////////////////
 
-  event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
+  event DepositMade(
+    address indexed owner,
+    uint256 indexed tranche,
+    uint256 indexed tokenId,
+    uint256 amount
+  );
   event WithdrawalMade(
     address indexed owner,
     uint256 indexed tranche,
@@ -696,7 +728,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     int256 interestDelta
   );
   event ReserveFundsCollected(address indexed from, uint256 amount);
-  event CreditLineMigrated(IV2CreditLine indexed oldCreditLine, IV2CreditLine indexed newCreditLine);
+  event CreditLineMigrated(
+    IV2CreditLine indexed oldCreditLine,
+    IV2CreditLine indexed newCreditLine
+  );
   event DrawdownMade(address indexed borrower, uint256 amount);
   event DrawdownsPaused(address indexed pool);
   event DrawdownsUnpaused(address indexed pool);

@@ -1,13 +1,30 @@
+import { useEffect, useState } from "react";
+
 import { Button, Popover } from "@/components/design-system";
 import { DESIRED_CHAIN_ID } from "@/constants";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
+import { abbreviateAddress, useWallet } from "@/lib/wallet";
 
 import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, error, connector } = useWallet();
+  const { account, error, connector, provider, ENSName } = useWallet();
+  const [ENSAvatar, setENSAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!provider || !account) {
+      return;
+    }
+    const asyncEffect = async () => {
+      try {
+        const avatar = await provider.getAvatar(account);
+        setENSAvatar(avatar);
+      } catch (e) {
+        // do nothing. an error would occur if the current network doesn't support ENS (this is true on localhost)
+      }
+    };
+    asyncEffect();
+  }, [provider, account]);
 
   return error ? (
     <Button
@@ -34,11 +51,23 @@ export function WalletButton() {
         className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
         variant="rounded"
         colorScheme="secondary"
+        data-id="nav.wallet-connected"
       >
         <span className="hidden md:block">
-          {account.substring(0, 6)}...{account.substring(account.length - 4)}
+          {ENSName ? ENSName : abbreviateAddress(account)}
         </span>
-        <Identicon account={account} scale={3} />
+        {ENSAvatar ? (
+          // Not using next/image because we can't know the origin of this image ahead of time
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt="Your avatar"
+            aria-hidden="true"
+            src={ENSAvatar}
+            className="h-6 w-6 rounded-full object-cover"
+          />
+        ) : (
+          <Identicon account={account} scale={3} />
+        )}
       </Button>
     </Popover>
   ) : (
@@ -47,6 +76,7 @@ export function WalletButton() {
       variant="rounded"
       colorScheme="primary"
       onClick={openWalletModal}
+      data-id="nav.connect-wallet"
     >
       Connect Wallet
     </Button>

@@ -7,7 +7,7 @@ const nextEnv = require("@next/env");
 const prettier = require("prettier");
 
 const env = nextEnv.loadEnvConfig(".");
-const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME as string;
+const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME || "mainnet";
 console.log(`Gathering contract addresses for network ${networkName}`);
 let contracts: Record<string, { address: string }>;
 if (networkName === "mainnet") {
@@ -18,7 +18,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = mainnetDeployments["1"].mainnet.contracts;
+  contracts = mainnetDeployments["1"].find(
+    (i: { name: string }) => i.name === "mainnet"
+  ).contracts;
 } else if (networkName === "localhost") {
   const localDeployments = JSON.parse(
     fs
@@ -27,7 +29,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = localDeployments["31337"].localhost.contracts;
+  contracts = localDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else if (networkName === "murmuration") {
   const murmurationDeployments = JSON.parse(
     fs
@@ -39,7 +43,9 @@ if (networkName === "mainnet") {
       )
       .toString()
   );
-  contracts = murmurationDeployments["31337"].localhost.contracts;
+  contracts = murmurationDeployments["31337"].find(
+    (i: { name: string }) => i.name === "localhost"
+  ).contracts;
 } else {
   throw new Error(`Unrecognized network name ${networkName}`);
 }
@@ -55,6 +61,7 @@ const addresses = {
   Fidu: contracts.Fidu.address,
   UniqueIdentity: contracts.UniqueIdentity.address,
   Go: contracts.Go.address,
+  Borrower: contracts.Borrower.address,
   StakingRewards: contracts.StakingRewards.address,
   Zapper: contracts.Zapper.address,
   CommunityRewards: contracts.CommunityRewards.address,
@@ -64,6 +71,7 @@ const addresses = {
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
   BackerRewards: contracts.BackerRewards.address,
+  WithdrawalRequestToken: contracts.WithdrawalRequestToken.address,
   CurvePool:
     contracts.TestFiduUSDCCurveLP?.address ??
     "0x80aa1a80a30055daa084e599836532f3e58c95e2", // This entry refers to the contract for the Fidu/USDC Curve pool itself, not the LP token

@@ -2,24 +2,21 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import { Button, Heading, Link } from "@/components/design-system";
+import {
+  Button,
+  Heading,
+  Link,
+  AssetBox,
+  Asset,
+  AssetBoxPlaceholder,
+} from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
-import {
-  SupportedCrypto,
-  useMembershipPageQuery,
-} from "@/lib/graphql/generated";
+import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import {
-  AssetBox,
-  Asset,
-  AssetBoxPlaceholder,
-  POOL_TOKEN_FIELDS_FOR_ASSETS,
-  convertPoolTokenToAsset,
-} from "./asset-box";
 import {
   AssetGroup,
   AssetGroupSubheading,
@@ -27,6 +24,10 @@ import {
 } from "./asset-group";
 import { BuyGfiCta, LpInSeniorPoolCta, BalancedIsBest } from "./ctas";
 import { Explainer } from "./explainer";
+import {
+  convertPoolTokenToAsset,
+  convertStakedPositionToAsset,
+} from "./helpers";
 import { IntroVideoSection } from "./intro-video-section";
 import {
   RemoveFromVault,
@@ -46,32 +47,29 @@ gql`
   ${VAULTED_STAKED_POSITION_FIELDS}
   ${VAULTED_POOL_TOKEN_FIELDS}
   ${CHART_DISBURSEMENT_FIELDS}
-  ${POOL_TOKEN_FIELDS_FOR_ASSETS}
+  fragment StakedPositionFieldsForAssets on SeniorPoolStakedPosition {
+    id
+    amount
+  }
+  fragment PoolTokenFieldsForAssets on TranchedPoolToken {
+    id
+    principalAmount
+    principalRedeemed
+    tranchedPool {
+      id
+      name @client
+    }
+  }
   query MembershipPage($userId: String!) {
     seniorPools {
       id
-      latestPoolStatus {
-        id
-        sharePrice
-      }
+      sharePrice
     }
     viewer @client(always: true) {
-      gfiBalance {
-        token
-        amount
-      }
-      fiduBalance {
-        token
-        amount
-      }
-      claimableMembershipRewards {
-        token
-        amount
-      }
-      accruedMembershipRewardsThisEpoch {
-        token
-        amount
-      }
+      gfiBalance
+      fiduBalance
+      claimableMembershipRewards
+      accruedMembershipRewardsThisEpoch
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -84,8 +82,7 @@ gql`
       orderBy: startTime
       orderDirection: desc
     ) {
-      id
-      amount
+      ...StakedPositionFieldsForAssets
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -181,19 +178,12 @@ export default function MembershipPage() {
   );
 
   const vaultableCapitalAssets: Asset[] = [];
-  const sharePrice =
-    data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
+  const sharePrice = data?.seniorPools[0].sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      vaultableCapitalAssets.push({
-        name: "Staked FIDU",
-        description: "Goldfinch Senior Pool Position",
-        usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
-        nativeAmount: {
-          token: SupportedCrypto.Fidu,
-          amount: seniorPoolStakedPosition.amount,
-        },
-      });
+      vaultableCapitalAssets.push(
+        convertStakedPositionToAsset(seniorPoolStakedPosition, sharePrice)
+      );
     });
   }
 
@@ -210,7 +200,7 @@ export default function MembershipPage() {
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
   const vaultedGfi = {
-    token: SupportedCrypto.Gfi,
+    token: "GFI",
     amount: sum("amount", data?.vaultedGfis),
   };
 
@@ -331,7 +321,7 @@ export default function MembershipPage() {
                         <AssetGroupSubheading
                           left="Capital"
                           right={formatCrypto({
-                            token: SupportedCrypto.Usdc,
+                            token: "USDC",
                             amount: vaultableCapitalAssets.reduce(
                               (prev, current) =>
                                 prev.add(current.usdcAmount.amount),
@@ -407,7 +397,7 @@ export default function MembershipPage() {
                   <AssetGroupSubheading
                     left="GFI"
                     right={formatCrypto({
-                      token: SupportedCrypto.Gfi,
+                      token: "GFI",
                       amount: vaultedGfi.amount,
                     })}
                   />
@@ -428,12 +418,12 @@ export default function MembershipPage() {
                         description: "Governance Token",
                         icon: "Gfi",
                         nativeAmount: {
-                          token: SupportedCrypto.Gfi,
+                          token: "GFI",
                           amount: vaultedGfi.amount,
                         },
                         usdcAmount: gfiToUsdc(
                           {
-                            token: SupportedCrypto.Gfi,
+                            token: "GFI",
                             amount: vaultedGfi.amount,
                           },
                           data.gfiPrice.price.amount
@@ -448,7 +438,7 @@ export default function MembershipPage() {
                     right={
                       data
                         ? formatCrypto({
-                            token: SupportedCrypto.Usdc,
+                            token: "USDC",
                             amount: sum("usdcEquivalent", [
                               ...data.vaultedStakedPositions,
                               ...data.vaultedPoolTokens,
@@ -467,18 +457,10 @@ export default function MembershipPage() {
                       {data.vaultedStakedPositions.map((vsp) => (
                         <AssetBox
                           key={vsp.id}
-                          asset={{
-                            name: "Staked FIDU",
-                            description: "Goldfinch Senior Pool Position",
-                            nativeAmount: {
-                              token: SupportedCrypto.Fidu,
-                              amount: vsp.seniorPoolStakedPosition.amount,
-                            },
-                            usdcAmount: {
-                              token: SupportedCrypto.Usdc,
-                              amount: vsp.usdcEquivalent,
-                            },
-                          }}
+                          asset={convertStakedPositionToAsset(
+                            vsp.seniorPoolStakedPosition,
+                            sharePrice
+                          )}
                         />
                       ))}
                       {data.vaultedPoolTokens.map((vpt) => (
@@ -495,7 +477,7 @@ export default function MembershipPage() {
                         name: "Capital",
                         description: "Vaulted capital",
                         usdcAmount: {
-                          token: SupportedCrypto.Usdc,
+                          token: "USDC",
                           amount: BigNumber.from(0),
                         },
                       }}
@@ -523,7 +505,7 @@ export default function MembershipPage() {
                   onClose={() => setIsAddToVaultOpen(false)}
                   maxVaultableGfi={
                     data.viewer.gfiBalance ?? {
-                      token: SupportedCrypto.Gfi,
+                      token: "GFI",
                       amount: BigNumber.from(0),
                     }
                   }
@@ -538,7 +520,7 @@ export default function MembershipPage() {
                   sharePrice={sharePrice}
                   unstakedFidu={
                     data.viewer.fiduBalance ?? {
-                      token: SupportedCrypto.Fidu,
+                      token: "FIDU",
                       amount: BigNumber.from(0),
                     }
                   }

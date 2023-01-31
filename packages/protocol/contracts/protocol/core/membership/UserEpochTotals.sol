@@ -85,7 +85,9 @@ library UserEpochTotals {
   /// @param _total storage pointer to the UserEpochTotal
   /// @return current the currentAmount of the UserEpochTotal
   /// @return next the nextAmount of the UserEpochTotal
-  function getTotals(UserEpochTotal storage _total) internal view returns (uint256 current, uint256 next) {
+  function getTotals(
+    UserEpochTotal storage _total
+  ) internal view returns (uint256 current, uint256 next) {
     UserEpochTotal memory total = _total;
     if (Epochs.current() == total.checkpointedAt) {
       return (total.eligibleAmount, total.totalAmount);

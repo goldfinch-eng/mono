@@ -1,6 +1,5 @@
 import { Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 import { assertUnreachable } from "@/lib/utils";
 
 /**
@@ -20,13 +19,13 @@ export function FormatWithIcon({
       includeToken: false,
     });
   const icon =
-    cryptoAmount.token === SupportedCrypto.Usdc ? (
+    cryptoAmount.token === "USDC" ? (
       <Icon size="md" name="Usdc" />
-    ) : cryptoAmount.token === SupportedCrypto.Gfi ? (
+    ) : cryptoAmount.token === "GFI" ? (
       <Icon size="md" name="Gfi" />
-    ) : cryptoAmount.token === SupportedCrypto.CurveLp ? (
+    ) : cryptoAmount.token === "CURVE_LP" ? (
       <Icon size="md" name="Curve" />
-    ) : cryptoAmount.token === SupportedCrypto.Fidu ? (
+    ) : cryptoAmount.token === "FIDU" ? (
       "FIDU"
     ) : (
       assertUnreachable(cryptoAmount.token)

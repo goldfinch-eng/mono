@@ -121,13 +121,26 @@
           "withdraw": [],
           "withdrawInFidu": [],
           "redeem": [],
-          "writedown": []
+          "writedown": [],
+          "claimWithdrawalRequest": [],
+          "initializeEpochs": [],
+          "cancelWithdrawalRequest": [],
+          "requestWithdrawal": [],
+          "addToWithdrawalRequest": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
           "mintTo": [],
           "burnFrom": [],
           "updateGoldfinchConfig": []
+        },
+        "**/WithdrawalRequestToken.sol:WithdrawalRequestToken": {
+          "approve": [],
+          "setApprovalForAll": [],
+          "transferFrom": [],
+          "safeTransferFrom": [],
+          "mint": ["onlySeniorPool"],
+          "burn": ["onlySeniorPool"]
         },
         "**/TransferRestrictedVault.sol:TransferRestrictedVault": {
           "depositJunior": [],
@@ -208,10 +221,12 @@
           "unpause": []
         },
         "**/UniqueIdentity.sol:UniqueIdentity": {
-          "mint": ["onlySigner"],
+          "mint": ["onlySigner", "incrementNonce"],
+          "mintTo": ["onlySignerMintTo", "incrementNonce"],
+          "_mintTo": [],
           "safeTransferFrom": [],
           "safeBatchTransferFrom": [],
-          "burn": ["onlySigner"]
+          "burn": ["onlySigner", "incrementNonce"]
         },
         "**/TranchingLogic.sol:*": {
           "lockTranche":  [],

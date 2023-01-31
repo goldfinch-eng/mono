@@ -3,7 +3,7 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./ICreditLine.sol";
+import {ICreditLine} from "./ICreditLine.sol";
 
 abstract contract IV2CreditLine is ICreditLine {
   function principal() external view virtual returns (uint256);
@@ -24,14 +24,7 @@ abstract contract IV2CreditLine is ICreditLine {
 
   function drawdown(uint256 amount) external virtual;
 
-  function assess()
-    external
-    virtual
-    returns (
-      uint256,
-      uint256,
-      uint256
-    );
+  function assess() external virtual returns (uint256, uint256, uint256);
 
   function initialize(
     address _config,

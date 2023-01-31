@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label: ReactNode;
   labelDecoration?: ReactNode;
   labelClassName?: string;
   hideLabel?: boolean;

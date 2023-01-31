@@ -13,7 +13,6 @@ import {
 } from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
-import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
   getTotalDeposited,
   isV1StyleDeal,
@@ -21,6 +20,7 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
+  getListOfAllTranchedPoolAddresses,
 } from "./helpers"
 import {
   bigDecimalToBigInt,
@@ -175,6 +175,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
   tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
   tranchedPool.isPaused = poolContract.paused()
+  tranchedPool.drawdownsPaused = poolContract.drawdownsPaused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
   tranchedPool.totalDeployed = totalDeployed
@@ -185,6 +186,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   const creditLineAddress = poolContract.creditLine().toHexString()
   const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
   tranchedPool.creditLine = creditLine.id
+  tranchedPool.borrowerContract = creditLine.borrowerContract
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
   tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
   // This can happen in weird cases where the senior pool investment causes a pool to overfill
@@ -234,21 +236,16 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.initialInterestOwed = calculateInitialInterestOwed(creditLine)
   tranchedPool.save()
 
-  if (isCreating) {
-    const seniorPoolStatus = getOrInitSeniorPoolStatus()
-    const tpl = seniorPoolStatus.tranchedPools
-    tpl.push(tranchedPool.id)
-    seniorPoolStatus.tranchedPools = tpl
-    seniorPoolStatus.save()
-  }
   calculateApyFromGfiForAllPools(timestamp)
 
   return tranchedPool
 }
 
-// TODO leverage ratio should really be expressed as a BigDecimal https://linear.app/goldfinch/issue/GFI-951/leverage-ratio-should-be-expressed-as-bigdecimal-in-subgraph
-export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigInt {
-  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
+export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigDecimal {
+  return goldfinchConfigContract
+    .getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
+    .toBigDecimal()
+    .div(FIDU_DECIMALS.toBigDecimal())
 }
 
 class Repayment {
@@ -290,8 +287,8 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
   if (backerRewards.totalRewards == BigInt.zero() || backerRewards.maxInterestDollarsEligible == BigInt.zero()) {
     return
   }
-  const seniorPoolStatus = getOrInitSeniorPoolStatus()
-  const tranchedPoolList = seniorPoolStatus.tranchedPools
+  // TODO this should exclude closed pools (like Cauris #3) but there's no on-chain indicator that can determine this.
+  const tranchedPoolList = getListOfAllTranchedPoolAddresses()
   let repaymentSchedules: Repayment[] = []
   for (let i = 0; i < tranchedPoolList.length; i++) {
     const tranchedPool = TranchedPool.load(tranchedPoolList[i])
@@ -423,7 +420,7 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
 
     let divisor: BigDecimal = BigDecimal.fromString("1")
     if (tranchedPool.estimatedLeverageRatio !== null) {
-      divisor = tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1)).toBigDecimal()
+      divisor = tranchedPool.estimatedLeverageRatio!.plus(BigDecimal.fromString("1"))
     }
     const juniorPrincipalDollars = creditLine.maxLimit.divDecimal(divisor).div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)

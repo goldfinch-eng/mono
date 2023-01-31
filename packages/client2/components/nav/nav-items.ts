@@ -1,8 +1,3 @@
-const oldClientOrigin =
-  process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
-    ? "https://murmuration.goldfinch.finance"
-    : "https://borrow.app.goldfinch.finance";
-
 type NavItem = {
   label: string;
   href: string;
@@ -11,7 +6,7 @@ type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { label: "Earn", href: "/earn" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Borrow", href: `${oldClientOrigin}/borrow` },
+  { label: "Borrow", href: "/borrow" },
   { label: "GFI", href: `/gfi` },
   { label: "Stake", href: `/stake` },
   { label: "Membership", href: "/membership" },

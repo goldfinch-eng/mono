@@ -2,7 +2,6 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-
 import "../../external/ERC1155PresetPauserUpgradeable.sol";
 import "../../interfaces/IUniqueIdentity.sol";
 
@@ -80,12 +79,38 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     uint256 id,
     uint256 expiresAt,
     bytes calldata signature
-  ) public payable override onlySigner(_msgSender(), id, expiresAt, signature) incrementNonce(_msgSender()) {
+  )
+    public
+    payable
+    override
+    onlySigner(_msgSender(), id, expiresAt, signature)
+    incrementNonce(_msgSender())
+  {
+    _mintTo(_msgSender(), id);
+  }
+
+  function mintTo(
+    address recipient,
+    uint256 id,
+    uint256 expiresAt,
+    bytes calldata signature
+  )
+    public
+    payable
+    override
+    onlySignerMintTo(recipient, id, expiresAt, signature)
+    incrementNonce(_msgSender())
+  {
+    require(balanceOf(_msgSender(), id) == 0, "msgSender already owns UID");
+    _mintTo(recipient, id);
+  }
+
+  function _mintTo(address mintToAddress, uint256 id) private {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(supportedUIDTypes[id] == true, "Token id not supported");
-    require(balanceOf(_msgSender(), id) == 0, "Balance before mint must be 0");
+    require(balanceOf(mintToAddress, id) == 0, "Balance before mint must be 0");
 
-    _mint(_msgSender(), id, 1, "");
+    _mint(mintToAddress, id, 1, "");
   }
 
   function burn(
@@ -123,9 +148,42 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   ) {
     require(block.timestamp < expiresAt, "Signature has expired");
 
-    bytes32 hash = keccak256(abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid));
+    bytes32 hash = keccak256(
+      abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid)
+    );
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
-    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
+    require(
+      hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)),
+      "Invalid signer"
+    );
+    _;
+  }
+
+  modifier onlySignerMintTo(
+    address mintToAddress,
+    uint256 id,
+    uint256 expiresAt,
+    bytes calldata signature
+  ) {
+    require(block.timestamp < expiresAt, "Signature has expired");
+
+    bytes32 hash = keccak256(
+      abi.encodePacked(
+        _msgSender(),
+        mintToAddress,
+        id,
+        expiresAt,
+        address(this),
+        nonces[_msgSender()],
+        block.chainid
+      )
+    );
+
+    bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
+    require(
+      hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)),
+      "Invalid signer"
+    );
     _;
   }
 

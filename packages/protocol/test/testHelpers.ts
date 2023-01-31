@@ -39,10 +39,12 @@ import {
   TestStakingRewardsInstance,
   TestPoolTokensInstance,
   StakingRewardsInstance,
+  WithdrawalRequestTokenInstance,
+  TestSeniorPoolCallerInstance,
   MembershipCollectorInstance,
   ERC20SplitterInstance,
 } from "../typechain/truffle"
-import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -56,8 +58,7 @@ const HALF_CENT = usdcVal(1).div(new BN(200))
 const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
-import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
-import {ERC20Splitter} from "../typechain/ethers"
+import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -102,6 +103,10 @@ function fiduToUSDC(number: BN | number) {
 
 function getNumShares(usdcAmount: BN, sharePrice: BN) {
   return usdcToFidu(usdcAmount).mul(FIDU_DECIMALS).div(sharePrice)
+}
+
+function usdcFromShares(fiduAmount: BN, sharePrice: BN) {
+  return fiduToUSDC(fiduAmount.mul(sharePrice)).div(FIDU_DECIMALS)
 }
 
 const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
@@ -297,6 +302,7 @@ async function deployAllContracts(
   options: DeployAllContractsOptions = {}
 ): Promise<{
   seniorPool: SeniorPoolInstance
+  seniorPoolCaller: TestSeniorPoolCallerInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
@@ -315,11 +321,11 @@ async function deployAllContracts(
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
   zapper: ZapperInstance
+  withdrawalRequestToken: WithdrawalRequestTokenInstance
   reserveSplitter: ERC20SplitterInstance
   membershipCollector: MembershipCollectorInstance
 }> {
   await deployments.fixture("baseDeploy")
-  await deployments.fixture("pendingMainnetMigrations")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
@@ -375,6 +381,12 @@ async function deployAllContracts(
     merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
   }
 
+  await deployments.deploy("TestSeniorPoolCaller", {
+    from: await getProtocolOwner(),
+    args: [seniorPool.address, usdc.address, fidu.address],
+  })
+  const seniorPoolCaller = await getTruffleContract<TestSeniorPoolCallerInstance>("TestSeniorPoolCaller")
+
   const uniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity")
   const go = await getTruffleContract<GoInstance>("Go")
 
@@ -383,8 +395,11 @@ async function deployAllContracts(
   const reserveSplitter = await getTruffleContract<ERC20SplitterInstance>("ERC20Splitter")
   const membershipCollector = await getTruffleContract<MembershipCollectorInstance>("MembershipCollector")
 
+  const withdrawalRequestToken = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
+
   return {
     seniorPool,
+    seniorPoolCaller,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
@@ -405,6 +420,7 @@ async function deployAllContracts(
     zapper,
     reserveSplitter,
     membershipCollector,
+    withdrawalRequestToken,
   }
 }
 
@@ -685,15 +701,10 @@ export function dbg<T>(x: T): T {
 
 // Some staked fidu holders that can be used in mainnet forking tests
 export const stakedFiduHolders = [
-  // ~300K FIDU
+  // ~452 FIDU
   {
-    address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
-    stakingRewardsTokenId: 2118,
-  },
-  // ~600K FIDU
-  {
-    address: "0xcFD727653C3d5a1B943f675781d3245B884f1d34",
-    stakingRewardsTokenId: 2116,
+    address: "0x4f59359C1010E47dAEaFab784dCfd13866DcB221",
+    stakingRewardsTokenId: 2119,
   },
   // ~19k FIDU
   {
@@ -754,6 +765,7 @@ export {
   gfiVal,
   usdcVal,
   fiduVal,
+  usdcFromShares,
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,

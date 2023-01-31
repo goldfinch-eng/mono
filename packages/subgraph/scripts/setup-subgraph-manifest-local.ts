@@ -5,22 +5,27 @@ import path from "path"
 import yaml from "js-yaml"
 
 import devDeployments from "../../protocol/deployments/all_dev.json"
-type ContractName = keyof typeof devDeployments["31337"]["localhost"]["contracts"]
+type ContractName = keyof typeof devDeployments["31337"][0]["contracts"]
 
 console.log("Updating subgraph-local.yaml")
 
-const localhostContracts = devDeployments["31337"].localhost.contracts
+const localhostContracts = devDeployments["31337"][0].contracts
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
-for (let dataSource of subgraphManifest.dataSources) {
+for (const dataSource of subgraphManifest.dataSources) {
   dataSource.network = "localhost"
   delete dataSource.source.startBlock
-  dataSource.source.address =
-    localhostContracts[dataSource.name as ContractName]?.address ?? "0x0000000000000000000000000000000000000000"
+  if (dataSource.name === "CurveFiduUSDC") {
+    dataSource.source.address = "0x0000000000000000000000000000000000000000"
+  } else if (dataSource.name === "LegacyGoldfinchConfig") {
+    dataSource.source.address = localhostContracts["GoldfinchConfig"].address
+  } else {
+    dataSource.source.address = localhostContracts[dataSource.name as ContractName].address
+  }
 }
 
-for (let dataSource of subgraphManifest.templates) {
+for (const dataSource of subgraphManifest.templates) {
   dataSource.network = "localhost"
 }
 

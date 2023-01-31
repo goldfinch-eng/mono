@@ -7,7 +7,6 @@ import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import {
   StakedPositionType,
-  SupportedCrypto,
   UnstakeFormPositionFieldsFragment,
 } from "@/lib/graphql/generated";
 import { getOptimalPositionsToUnstake, sum } from "@/lib/pools";
@@ -42,10 +41,7 @@ export function UnstakeForm({
   showVaultWarning = false,
 }: UnstakeForm) {
   const max = {
-    token:
-      positionType === StakedPositionType.CurveLp
-        ? SupportedCrypto.CurveLp
-        : SupportedCrypto.Fidu,
+    token: positionType === "CurveLP" ? "CURVE_LP" : "FIDU",
     amount: sum("amount", positions),
   };
   const { account, provider } = useWallet();
@@ -70,9 +66,7 @@ export function UnstakeForm({
 
     const value = utils.parseUnits(
       data.amount,
-      positionType === StakedPositionType.Fidu
-        ? FIDU_DECIMALS
-        : CURVE_LP_DECIMALS
+      positionType === "Fidu" ? FIDU_DECIMALS : CURVE_LP_DECIMALS
     );
 
     const optimalPositions = getOptimalPositionsToUnstake(positions, value);
@@ -90,9 +84,7 @@ export function UnstakeForm({
   const validateMax = async (value: string) => {
     const parsedValue = utils.parseUnits(
       value,
-      positionType === StakedPositionType.Fidu
-        ? FIDU_DECIMALS
-        : CURVE_LP_DECIMALS
+      positionType === "Fidu" ? FIDU_DECIMALS : CURVE_LP_DECIMALS
     );
 
     if (parsedValue.gt(max.amount)) {
@@ -113,10 +105,10 @@ export function UnstakeForm({
             label="Unstake amount"
             hideLabel
             unit={
-              positionType === StakedPositionType.Fidu
-                ? SupportedCrypto.Fidu
-                : positionType === StakedPositionType.CurveLp
-                ? SupportedCrypto.CurveLp
+              positionType === "Fidu"
+                ? "FIDU"
+                : positionType === "CurveLP"
+                ? "CURVE_LP"
                 : assertUnreachable(positionType)
             }
             rules={{ required: "Required", validate: validateMax }}

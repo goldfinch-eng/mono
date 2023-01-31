@@ -55,11 +55,7 @@ library SafeMath {
    * Requirements:
    * - Subtraction cannot overflow.
    */
-  function sub(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
+  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
     return OzSafeMath.sub(a, b, errorMessage);
   }
 
@@ -103,11 +99,7 @@ library SafeMath {
    * Requirements:
    * - The divisor cannot be zero.
    */
-  function div(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
+  function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
     return OzSafeMath.div(a, b, errorMessage);
   }
 
@@ -126,11 +118,7 @@ library SafeMath {
     return OzSafeMath.mod(a, b, "");
   }
 
-  function mod(
-    uint256 a,
-    uint256 b,
-    string memory errorMessage
-  ) internal pure returns (uint256) {
+  function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
     return OzSafeMath.mod(a, b, errorMessage);
   }
 }

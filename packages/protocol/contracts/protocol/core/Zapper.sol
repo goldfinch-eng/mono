@@ -3,18 +3,18 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "../../interfaces/openzeppelin/IERC721.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import {IERC721} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+import {SafeERC20} from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/IPoolTokens.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/IRequiresUID.sol";
-import "../../interfaces/IStakingRewards.sol";
-import "./Accountant.sol";
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
+import {IStakingRewards, StakedPositionType} from "../../interfaces/IStakingRewards.sol";
+import {Accountant} from "./Accountant.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 
 /// @title Zapper
 /// @author Emily Hsia, Mark Hudnall, Will Johnston, Dalton Sweeney
@@ -22,7 +22,6 @@ import "./ConfigHelper.sol";
 contract Zapper is BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  using SafeMath for uint256;
 
   struct Zap {
     address owner;
@@ -33,7 +32,10 @@ contract Zapper is BaseUpgradeablePausable {
   mapping(uint256 => Zap) public tranchedPoolZaps;
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    require(
+      owner != address(0) && address(_config) != address(0),
+      "Owner and config addresses cannot be empty"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = _config;
   }
@@ -59,7 +61,12 @@ contract Zapper is BaseUpgradeablePausable {
       if (i > 0 && stakingRewardsTokenIds[i] <= stakingRewardsTokenIds[i - 1]) {
         revert("Token ids not sorted");
       }
-      poolTokenIds[i] = _zapFiduAmountToTranchedPool(stakingRewardsTokenIds[i], tranchedPool, tranche, fiduAmounts[i]);
+      poolTokenIds[i] = _zapFiduAmountToTranchedPool(
+        stakingRewardsTokenIds[i],
+        tranchedPool,
+        tranche,
+        fiduAmounts[i]
+      );
     }
 
     return poolTokenIds;
@@ -69,7 +76,9 @@ contract Zapper is BaseUpgradeablePausable {
   ///   You may perform this action anytime before the respective tranche locks.
   /// @param poolTokenIds PoolTokens ERC721 ids to unzap. Token ids MUST be sorted ascending.
   ///   The caller MUST be the address that performed the initial zaps.
-  function unzapMultipleFromTranchedPools(uint256[] calldata poolTokenIds) public whenNotPaused nonReentrant {
+  function unzapMultipleFromTranchedPools(
+    uint256[] calldata poolTokenIds
+  ) public whenNotPaused nonReentrant {
     for (uint256 i = 0; i < poolTokenIds.length; ++i) {
       if (i > 0 && poolTokenIds[i] <= poolTokenIds[i - 1]) {
         revert("Token ids not sorted");
@@ -82,7 +91,9 @@ contract Zapper is BaseUpgradeablePausable {
   ///   only succeeds if the tranched pool has locked.
   /// @param poolTokenIds PoolTokens ERC721 ids to claim. Token ids MUST be sorted ascending.
   ///   The caller MUST be the address that performed the initial zaps.
-  function claimMultipleTranchedPoolZaps(uint256[] calldata poolTokenIds) public whenNotPaused nonReentrant {
+  function claimMultipleTranchedPoolZaps(
+    uint256[] calldata poolTokenIds
+  ) public whenNotPaused nonReentrant {
     for (uint256 i = 0; i < poolTokenIds.length; ++i) {
       if (i > 0 && poolTokenIds[i] <= poolTokenIds[i - 1]) {
         revert("Token ids not sorted");
@@ -234,11 +245,16 @@ contract Zapper is BaseUpgradeablePausable {
 
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
-    ITranchedPool.TrancheInfo memory trancheInfo = ITranchedPool(tokenInfo.pool).getTranche(tokenInfo.tranche);
+    ITranchedPool.TrancheInfo memory trancheInfo = ITranchedPool(tokenInfo.pool).getTranche(
+      tokenInfo.tranche
+    );
 
-    require(trancheInfo.lockedUntil != 0 && block.timestamp > trancheInfo.lockedUntil, "Zap locked");
+    require(
+      trancheInfo.lockedUntil != 0 && block.timestamp > trancheInfo.lockedUntil,
+      "Zap locked"
+    );
 
-    IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
+    IERC721(address(poolTokens)).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
 
   /// @notice See zapStakeToTranchedPool
@@ -254,29 +270,16 @@ contract Zapper is BaseUpgradeablePausable {
     require(_validPool(tranchedPool), "Invalid pool");
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
     require(_hasAllowedUID(tranchedPool), "Address not go-listed");
-    require(stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu, "Bad positionType");
+    require(
+      stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu,
+      "Bad positionType"
+    );
 
     uint256 shares = seniorPool.getNumShares(usdcAmount);
     stakingRewards.unstake(tokenId, shares);
 
-    uint256 fiduBalanceBeforeWithdraw = config.getFidu().balanceOf(address(this));
     uint256 withdrawnAmount = seniorPool.withdraw(usdcAmount);
     require(withdrawnAmount == usdcAmount, "Withdrawn amount != requested amount");
-
-    // If funds are swept from compound in `seniorPool.withdraw(usdcAmount)` then, due to an
-    // increase in the share price, less Fidu is burned than the amount transferred to Zapper
-    // from `stakingRewards.unstake(tokenId, shares)`. The difference is added back to the
-    // user's staking position.
-    uint256 fiduBurned = fiduBalanceBeforeWithdraw.sub(config.getFidu().balanceOf(address(this)));
-    if (fiduBurned < shares) {
-      uint256 shareRefund = shares.sub(fiduBurned);
-      SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), shareRefund);
-      stakingRewards.addToStake(tokenId, shareRefund);
-      require(
-        config.getFidu().allowance(address(this), address(stakingRewards)) == 0,
-        "Entire allowance of FIDU has not been used."
-      );
-    }
 
     SafeERC20.safeApprove(config.getUSDC(), address(tranchedPool), usdcAmount);
     poolTokenId = tranchedPool.deposit(tranche, usdcAmount);
@@ -305,7 +308,10 @@ contract Zapper is BaseUpgradeablePausable {
     require(_validPool(tranchedPool), "Invalid pool");
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
     require(_hasAllowedUID(tranchedPool), "Address not go-listed");
-    require(stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu, "Bad positionType");
+    require(
+      stakingRewards.getPosition(tokenId).positionType == StakedPositionType.Fidu,
+      "Bad positionType"
+    );
 
     stakingRewards.unstake(tokenId, fiduAmount);
     uint256 withdrawnAmount = seniorPool.withdrawInFidu(fiduAmount);

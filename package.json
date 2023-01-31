@@ -1,37 +1,47 @@
 {
   "name": "root",
   "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
   "scripts": {
-    "bootstrap": "npx lerna bootstrap && npm run stub-dev-deployments && npm run build",
-    "stub-dev-deployments": "sh -c \"[ ! -e \"packages/protocol/deployments/all_dev.json\" ] && echo {} > packages/protocol/deployments/all_dev.json || true\"",
-    "start": "npm run kill-ports && REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
-    "start:local": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
-    "start:murmuration": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:murmuration && BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json npx lerna run --ignore @goldfinch-eng/client2 start:murmuration --parallel",
-    "kill-ports": "for i in 4000 4001 3000 3002 5001 8545 8080; do lsof -t -i:$i | xargs -r kill; done",
-    "test": "NODE_OPTIONS=--unhandled-rejections=strict npx lerna run --ignore @goldfinch-eng/client2 test --stream",
-    "test:client": "npm run test -- --scope @goldfinch-eng/client",
-    "test:protocol": "npm run test -- --scope @goldfinch-eng/protocol",
-    "test:autotasks": "npm run test -- --scope @goldfinch-eng/autotasks",
-    "lint": "npx lerna run --ignore @goldfinch-eng/client2 lint --no-bail",
-    "lint:fix": "npx lerna run --ignore @goldfinch-eng/client2 lint:fix --no-bail",
-    "prepare": "husky install",
-    "build": "npx lerna run --ignore @goldfinch-eng/client2 build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 build --stream --ignore @goldfinch-eng/protocol",
-    "build-netlify": "npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --ignore @goldfinch-eng/protocol",
-    "pre-push": "npx lerna run --ignore @goldfinch-eng/client2 pre-push --stream --concurrency 1 --since HEAD --exclude-dependents",
-    "pre-commit": "npx lerna run pre-commit --stream --concurrency 1 --since HEAD --exclude-dependents"
+    "postinstall": "husky install",
+    "stub-dev-deployments": "sh ./mock_all_dev.sh",
+    "clean": "git clean -fdx -e \".env*\"",
+    "start": "HARDHAT_FORK=mainnet yarn workspaces foreach -pvi --include '{@goldfinch-eng/protocol,@goldfinch-eng/server,@goldfinch-eng/functions}' run start",
+    "start:local": "yarn workspace @goldfinch-eng/protocol run generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes yarn workspaces foreach -pvi --include '{@goldfinch-eng/protocol,@goldfinch-eng/server,@goldfinch-eng/functions}' run start",
+    "test": "NODE_OPTIONS=--unhandled-rejections=strict yarn workspaces foreach run test",
+    "test:protocol": "yarn workspace @goldfinch-eng/protocol run test",
+    "test:autotasks": "yarn workspace @goldfinch-eng/autotasks run test",
+    "lint": "yarn stub-dev-deployments && yarn workspaces foreach -pt run lint",
+    "lint:fix": "yarn stub-dev-deployments && yarn workspaces foreach -pt run lint:fix",
+    "build": "yarn workspaces foreach -pt run build",
+    "build:core": "yarn workspaces foreach -ptRvi --from '{@goldfinch-eng/protocol,@goldfinch-eng/server,@goldfinch-eng/functions}' run build",
+    "pre-commit": "yarn workspaces foreach -vA --since --exclude root run pre-commit"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/experimental-utils": "^5.14.0",
-    "@typescript-eslint/parser": "^4.31.1",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/experimental-utils": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-chai-friendly": "^0.7.2",
     "eslint-plugin-mocha-no-only": "^1.1.1",
-    "husky": "^7.0.2",
-    "lerna": "^5.3.0",
-    "prettier": "^2.4.0",
-    "prettier-plugin-solidity": "^1.0.0-beta.19",
-    "typescript": "^4.4.3"
-  }
+    "hardhat": "^2.12.2",
+    "husky": "^8.0.2",
+    "lint-staged": "^13.1.0",
+    "prettier": "^2.8.0",
+    "prettier-plugin-solidity": "^1.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3"
+  },
+  "resolutions": {
+    "@types/react": "17.0.39",
+    "@types/react-dom": "17.0.6",
+    "@float-capital/float-subgraph-uncrashable": "0.0.0-alpha.6",
+    "hardhat-deploy@^0.11.14": "patch:hardhat-deploy@npm%3A0.11.22#./.yarn/patches/hardhat-deploy-npm-0.11.22-0e28661e12.patch"
+  },
+  "packageManager": "yarn@3.3.0"
 }

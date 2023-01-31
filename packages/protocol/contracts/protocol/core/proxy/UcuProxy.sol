@@ -18,14 +18,17 @@ import {IERC173} from "../../../interfaces/IERC173.sol";
 contract UcuProxy is IERC173, Proxy {
   /// @dev Storage slot with the address of the current implementation.
   /// This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1
-  bytes32 private constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+  bytes32 private constant _IMPLEMENTATION_SLOT =
+    0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
   // defined here: https://eips.ethereum.org/EIPS/eip-1967
   // result of `bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1)`
-  bytes32 private constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+  bytes32 private constant _ADMIN_SLOT =
+    0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
   // result of `bytes32(uint256(keccak256('eipxxxx.proxy.repository')) - 1)`
-  bytes32 private constant _REPOSITORY_SLOT = 0x007037545499569801a5c0bd8dbf5fccb13988c7610367d129f45ee69b1624f8;
+  bytes32 private constant _REPOSITORY_SLOT =
+    0x007037545499569801a5c0bd8dbf5fccb13988c7610367d129f45ee69b1624f8;
 
   // ///////////////////// EXTERNAL ///////////////////////////////////////////////////////////////////////////
 

@@ -8,11 +8,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
 import { FIDU_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
-import {
-  ChartDisbursementFieldsFragment,
-  CryptoAmount,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { ChartDisbursementFieldsFragment } from "@/lib/graphql/generated";
 import { epochFinalizedDate } from "@/lib/membership";
 import { sharesToUsdc, sum } from "@/lib/pools";
 
@@ -60,7 +56,7 @@ export function YourRewards({
         sum("rewards", disbursements.slice(0, index + 1))
       ),
       cryptoAmount: {
-        token: SupportedCrypto.Fidu,
+        token: "FIDU",
         amount: sum("rewards", disbursements.slice(0, index + 1)),
       },
       projectedAmount: null,
@@ -79,7 +75,7 @@ export function YourRewards({
           timestamp: currentEpochFinalizedDate.getTime(),
           amount: null,
           cryptoAmount: {
-            token: SupportedCrypto.Fidu,
+            token: "FIDU",
             amount: lastFinalizedData.cryptoAmount.amount.add(
               accruedThisEpoch.amount
             ),
@@ -147,12 +143,12 @@ export function YourRewards({
             icon={<div className="h-2 w-2 rounded-full bg-mint-450" />}
             tooltip="The total value of Member Rewards distributed to your address since you became a Member."
             left={formatCrypto({
-              token: SupportedCrypto.Usdc,
+              token: "USDC",
               amount: sharesToUsdc(sum("rewards", disbursements), sharePrice)
                 .amount,
             })}
             right={formatCrypto({
-              token: SupportedCrypto.Fidu,
+              token: "FIDU",
               amount: sum("rewards", disbursements),
             })}
           />

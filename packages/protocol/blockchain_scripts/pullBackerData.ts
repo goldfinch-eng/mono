@@ -103,7 +103,7 @@ async function main() {
 
       const users = getUsers(admin.firestore())
       const user = await users.doc(`${addr.toLowerCase()}`).get()
-      const personaInquiryId = user.data()?.persona.id
+      const personaInquiryId = user.data()?.persona?.id
       let emailAddress
       if (personaInquiryId) {
         const response = await axios.get(`${PERSONA_BASE_URL}/inquiries/${personaInquiryId}`, {

@@ -42,7 +42,10 @@ library PoolTokensAsset {
    * @param assetTokenId tokenId of the Pool Token to evaluate
    * @return USDC equivalent value
    */
-  function getUsdcEquivalent(Context context, uint256 assetTokenId) internal view returns (uint256) {
+  function getUsdcEquivalent(
+    Context context,
+    uint256 assetTokenId
+  ) internal view returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = context.poolTokens().getTokenInfo(assetTokenId);
     return tokenInfo.principalAmount - tokenInfo.principalRedeemed;
   }

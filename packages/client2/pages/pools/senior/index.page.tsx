@@ -8,9 +8,12 @@ import {
   HelperText,
   Button,
   goldfinchLogoWhiteBgPngUrl,
+  Link,
+  HeavyTable,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
+import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
@@ -19,8 +22,9 @@ import {
   SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
 } from "./senior-pool-supply-panel";
 import {
-  SeniorPoolWithDrawalPanel,
+  SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
@@ -33,6 +37,9 @@ gql`
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
+
+  ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
+
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
@@ -52,11 +59,10 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        sharePrice
-        usdcBalance
-      }
+      address
+      sharePrice
+      withdrawalCancellationFee
+      epochEndsAt @client
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
     }
@@ -67,10 +73,10 @@ gql`
       }
     }
     viewer @client {
-      fiduBalance {
-        token
-        amount
-      }
+      fiduBalance
+    }
+    seniorPoolWithdrawalRequests(where: { user: $user }) {
+      ...SeniorPoolWithdrawalPanelWithdrawalRequestFields
     }
   }
 `;
@@ -89,10 +95,11 @@ export default function SeniorPoolPage() {
   const fiatPerGfi = data?.gfiPrice?.price.amount;
   const shouldShowWithdrawal =
     account &&
-    seniorPool?.latestPoolStatus.sharePrice &&
+    seniorPool?.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
       data?.seniorPoolStakedPositions.length !== 0 ||
-      data?.vaultedStakedPositions.length !== 0);
+      data?.vaultedStakedPositions.length !== 0 ||
+      data?.seniorPoolWithdrawalRequests.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -150,7 +157,7 @@ export default function SeniorPoolPage() {
                 colorScheme="secondary"
                 iconRight="ArrowTopRight"
                 as="a"
-                href={`https://etherscan.io/address/${seniorPool.id}`}
+                href={`https://etherscan.io/address/${seniorPool.address}`}
                 target="_blank"
                 rel="noopener"
               >
@@ -163,7 +170,7 @@ export default function SeniorPoolPage() {
           </Heading>
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
-          <div className="flex flex-col items-stretch gap-8">
+          <div className="flex flex-col items-stretch gap-3">
             {seniorPool && fiatPerGfi && data?.viewer ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
@@ -172,15 +179,20 @@ export default function SeniorPoolPage() {
               />
             ) : null}
 
-            {data && shouldShowWithdrawal && (
-              <SeniorPoolWithDrawalPanel
+            {seniorPool && shouldShowWithdrawal && (
+              <SeniorPoolWithdrawalPanel
+                canUserParticipate={
+                  user ? canUserParticipateInSeniorPool(user) : false
+                }
+                cancellationFee={seniorPool.withdrawalCancellationFee}
+                epochEndsAt={seniorPool.epochEndsAt}
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
-                seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                seniorPoolSharePrice={seniorPool.sharePrice}
                 stakedPositions={data.seniorPoolStakedPositions}
                 vaultedStakedPositions={data.vaultedStakedPositions.map(
                   (s) => s.seniorPoolStakedPosition
                 )}
-                seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
+                existingWithdrawalRequest={data.seniorPoolWithdrawalRequests[0]}
               />
             )}
 
@@ -189,10 +201,8 @@ export default function SeniorPoolPage() {
             fiatPerGfi ? (
               <UnstakedFiduBanner
                 fiduBalance={data.viewer.fiduBalance}
-                sharePrice={seniorPool?.latestPoolStatus.sharePrice}
-                estimatedApyFromGfiRaw={
-                  seniorPool?.latestPoolStatus.estimatedApyFromGfiRaw
-                }
+                sharePrice={seniorPool.sharePrice}
+                estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}
@@ -205,9 +215,9 @@ export default function SeniorPoolPage() {
               may be outdated.
             </HelperText>
           ) : null}
-          {seniorPool ? (
-            <StatusSection className="mb-12" seniorPool={seniorPool} />
-          ) : null}
+
+          <StatusSection className="mb-12" seniorPool={seniorPool} />
+
           <div className="mb-20">
             <h2 className="mb-8 text-3xl">Overview</h2>
             <p className="mb-8 text-2xl font-light">
@@ -227,29 +237,7 @@ export default function SeniorPoolPage() {
             </Button>
           </div>
 
-          <TransactionTable />
-          <div className="flex gap-2">
-            <Button
-              as="a"
-              href="https://dune.com/goldfinch/goldfinch"
-              colorScheme="secondary"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              Dashboard
-            </Button>
-            <Button
-              as="a"
-              href={`https://etherscan.io/address/${seniorPool?.id}`}
-              colorScheme="secondary"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              Pool
-            </Button>
-          </div>
-
-          <div className="mt-20">
+          <div className="mb-20">
             <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
             <ul className="list-outside list-disc space-y-5 pl-5">
               <li>
@@ -266,6 +254,59 @@ export default function SeniorPoolPage() {
                 plus GFI from liquidity mining distributions.
               </li>
             </ul>
+          </div>
+
+          <div className="mb-20">
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold">Liquidity options</h2>
+            </div>
+            <HeavyTable
+              rows={[
+                [
+                  "Withdrawal Request",
+                  null,
+                  <div key="withdrawal-request">
+                    <div className="mb-2">
+                      To withdraw capital from the Senior Pool, an LP must
+                      submit a Withdrawal Request. Capital is distributed for
+                      withdrawal every two weeks, based on availability and
+                      requested amount.
+                    </div>
+                    <Link
+                      href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
+                      iconRight="ArrowTopRight"
+                      className="text-sand-500"
+                      openInNewTab
+                    >
+                      Read more
+                    </Link>
+                  </div>,
+                ],
+              ]}
+            />
+          </div>
+
+          <TransactionTable />
+
+          <div className="flex gap-2">
+            <Button
+              as="a"
+              href="https://dune.com/goldfinch/goldfinch"
+              colorScheme="secondary"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              Dashboard
+            </Button>
+            <Button
+              as="a"
+              href={`https://etherscan.io/address/${seniorPool?.address}`}
+              colorScheme="secondary"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              Pool
+            </Button>
           </div>
         </div>
       </div>

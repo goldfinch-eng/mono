@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
 
 /**
  * @title A read only ERC721 token
@@ -17,19 +17,11 @@ abstract contract ERC721NonTransferable is IERC721Upgradeable {
   // Throw if a mutating function is called
   error ReadOnly();
 
-  function safeTransferFrom(
-    address,
-    address,
-    uint256
-  ) external pure {
+  function safeTransferFrom(address, address, uint256) external pure {
     revert ReadOnly();
   }
 
-  function transferFrom(
-    address,
-    address,
-    uint256
-  ) external pure {
+  function transferFrom(address, address, uint256) external pure {
     revert ReadOnly();
   }
 
@@ -49,12 +41,7 @@ abstract contract ERC721NonTransferable is IERC721Upgradeable {
     revert ReadOnly();
   }
 
-  function safeTransferFrom(
-    address,
-    address,
-    uint256,
-    bytes calldata
-  ) external pure {
+  function safeTransferFrom(address, address, uint256, bytes calldata) external pure {
     revert ReadOnly();
   }
 }

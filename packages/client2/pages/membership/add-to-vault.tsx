@@ -11,14 +11,14 @@ import {
   Link,
   ModalStepper,
   useStepperContext,
+  AssetPicker,
+  AssetBox,
+  AssetBoxPlaceholder,
+  AssetInputBox,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
-import {
-  CryptoAmount,
-  MembershipPageQuery,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { MembershipPageQuery } from "@/lib/graphql/generated";
 import {
   calculateNewMonthlyMembershipReward,
   epochFinalizedDate,
@@ -33,14 +33,11 @@ import {
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import {
-  AssetBox,
-  GfiBox,
-  AssetPicker,
-  AssetBoxPlaceholder,
-  convertPoolTokenToAsset,
-} from "./asset-box";
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
+import {
+  convertStakedPositionToAsset,
+  convertPoolTokenToAsset,
+} from "./helpers";
 import { Legalese } from "./legal-agreement";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
@@ -102,22 +99,22 @@ export function AddToVault({
 }
 
 interface StepperDataType {
-  gfiToVault: CryptoAmount;
+  gfiToVault: CryptoAmount<"GFI">;
   stakedPositionsToVault: StakedPosition[];
   poolTokensToVault: PoolToken[];
   rewardProjection?: {
-    newMonthlyReward: CryptoAmount;
-    diff: CryptoAmount;
+    newMonthlyReward: CryptoAmount<"FIDU">;
+    diff: CryptoAmount<"FIDU">;
   };
 }
 
 interface SelectionStepProps {
-  maxVaultableGfi: CryptoAmount;
+  maxVaultableGfi: CryptoAmount<"GFI">;
   fiatPerGfi: number;
   vaultableStakedPositions: StakedPosition[];
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
-  unstakedFidu: CryptoAmount;
+  unstakedFidu: CryptoAmount<"FIDU">;
   previousEpochRewardTotal?: BigNumber;
 }
 
@@ -131,12 +128,12 @@ function SelectionStep({
   previousEpochRewardTotal,
 }: SelectionStepProps) {
   const availableCapitalTotal = {
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
     amount: sharesToUsdc(
       sum("amount", vaultableStakedPositions),
       sharePrice
     ).amount.add(sum("principalAmount", vaultablePoolTokens)),
-  };
+  } as const;
   const rhfMethods = useForm<{
     gfiToVault: string;
     stakedPositionsToVault: string[];
@@ -145,10 +142,7 @@ function SelectionStep({
     defaultValues: { stakedPositionsToVault: [], poolTokensToVault: [] },
   });
   const { control, watch } = rhfMethods;
-  const gfiToVault = stringToCryptoAmount(
-    watch("gfiToVault"),
-    SupportedCrypto.Gfi
-  );
+  const gfiToVault = stringToCryptoAmount(watch("gfiToVault"), "GFI");
   const stakedPositionsToVault = vaultableStakedPositions.filter((s) =>
     watch("stakedPositionsToVault").includes(s.id)
   );
@@ -157,7 +151,7 @@ function SelectionStep({
   );
   const selectedCapitalTotal = useMemo(
     () => ({
-      token: SupportedCrypto.Usdc,
+      token: "USDC",
       amount: sharesToUsdc(
         sum("amount", stakedPositionsToVault),
         sharePrice
@@ -244,11 +238,17 @@ function SelectionStep({
         {maxVaultableGfi.amount.isZero() ? (
           <BuyGfiCta />
         ) : (
-          <GfiBox
-            maxGfi={maxVaultableGfi}
+          <AssetInputBox
+            asset={{
+              name: "GFI",
+              description: "Goldfinch Token",
+              nativeAmount: maxVaultableGfi,
+              usdcAmount: gfiToUsdc(maxVaultableGfi, fiatPerGfi),
+            }}
             fiatPerGfi={fiatPerGfi}
-            name="gfiToVault"
             control={control}
+            name="gfiToVault"
+            label="GFI to Vault"
           />
         )}
       </div>
@@ -266,15 +266,7 @@ function SelectionStep({
               control={control}
               options={vaultableStakedPositions.map((vsp) => ({
                 id: vsp.id,
-                asset: {
-                  name: "Staked FIDU",
-                  description: "Goldfinch Senior Pool Position",
-                  usdcAmount: sharesToUsdc(vsp.amount, sharePrice),
-                  nativeAmount: {
-                    token: SupportedCrypto.Fidu,
-                    amount: vsp.amount,
-                  },
-                },
+                asset: convertStakedPositionToAsset(vsp, sharePrice),
               }))}
             />
             <AssetPicker
@@ -356,13 +348,14 @@ function ReviewStep({
     rewardProjection,
   } = data as StepperDataType;
   const selectedCapitalTotal = useMemo(
-    () => ({
-      token: SupportedCrypto.Usdc,
-      amount: sharesToUsdc(
-        sum("amount", stakedPositionsToVault),
-        sharePrice
-      ).amount.add(sum("principalAmount", poolTokensToVault)),
-    }),
+    () =>
+      ({
+        token: "USDC",
+        amount: sharesToUsdc(
+          sum("amount", stakedPositionsToVault),
+          sharePrice
+        ).amount.add(sum("principalAmount", poolTokensToVault)),
+      } as const),
     [stakedPositionsToVault, poolTokensToVault, sharePrice]
   );
 
@@ -476,15 +469,7 @@ function ReviewStep({
           {stakedPositionsToVault.map((s) => (
             <AssetBox
               key={`staked-fidu-${s.id}`}
-              asset={{
-                name: "Staked FIDU",
-                description: "Goldfinch Senior Pool Position",
-                usdcAmount: sharesToUsdc(s.amount, sharePrice),
-                nativeAmount: {
-                  token: SupportedCrypto.Fidu,
-                  amount: s.amount,
-                },
-              }}
+              asset={convertStakedPositionToAsset(s, sharePrice)}
             />
           ))}
           {poolTokensToVault.map((p) => (

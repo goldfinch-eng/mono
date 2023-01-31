@@ -6,11 +6,7 @@ import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import {
-  CryptoAmount,
-  MigrateFormPositionFieldsFragment,
-  SupportedCrypto,
-} from "@/lib/graphql/generated";
+import { MigrateFormPositionFieldsFragment } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
   getOptimalPositionsToUnstake,
@@ -29,7 +25,7 @@ export const MIGRATE_FORM_POSITION_FIELDS = gql`
 `;
 
 interface StakeCardMigrateFormProps {
-  usdcBalance: CryptoAmount;
+  usdcBalance: CryptoAmount<"USDC">;
   positions: MigrateFormPositionFieldsFragment[];
   sharePrice: BigNumber;
   onComplete: () => void;
@@ -49,9 +45,9 @@ export function MigrateForm({
   showVaultWarning = false,
 }: StakeCardMigrateFormProps) {
   const maxFidu = {
-    token: SupportedCrypto.Fidu,
+    token: "FIDU",
     amount: sum("amount", positions),
-  };
+  } as const;
   const { account, provider } = useWallet();
 
   const rhfMethods = useForm<StakeMigrateForm>();
@@ -204,7 +200,7 @@ export function MigrateForm({
               includeSymbol: false,
               includeToken: false,
             })})`}
-            unit={SupportedCrypto.Fidu}
+            unit="FIDU"
             rules={{ required: "Required", validate: validateMaxFidu }}
             textSize="xl"
             onMaxClick={handleMaxFidu}
@@ -226,7 +222,7 @@ export function MigrateForm({
             includeSymbol: false,
             includeToken: false,
           })})`}
-          unit={SupportedCrypto.Usdc}
+          unit="USDC"
           rules={{ required: "Required", validate: validateMaxUsdc }}
           textSize="xl"
           onMaxClick={handleMaxUsdc}

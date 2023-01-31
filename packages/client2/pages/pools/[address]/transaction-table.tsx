@@ -11,10 +11,7 @@ import {
   Table,
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import {
-  useTranchedPoolTransactionTableQuery,
-  TransactionCategory,
-} from "@/lib/graphql/generated";
+import { useTranchedPoolTransactionTableQuery } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 
@@ -35,6 +32,8 @@ gql`
       transactionHash
       user {
         id
+        ENSName @client
+        ENSAvatar @client
       }
       category
       sentAmount
@@ -56,17 +55,20 @@ interface TransactionTableProps {
 }
 
 const subtractiveIconTransactionCategories = [
-  TransactionCategory.TranchedPoolWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
-  TransactionCategory.SeniorPoolRedemption,
+  "TRANCHED_POOL_WITHDRAWAL",
+  "TRANCHED_POOL_DRAWDOWN",
+  "SENIOR_POOL_REDEMPTION",
 ];
 
-const sentTokenCategories = [TransactionCategory.TranchedPoolDeposit];
+const sentTokenCategories = [
+  "TRANCHED_POOL_DEPOSIT",
+  "TRANCHED_POOL_REPAYMENT",
+];
 
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
     useTranchedPoolTransactionTableQuery({
-      variables: { tranchedPoolId, first: 20, skip: 0 },
+      variables: { tranchedPoolId, first: 10, skip: 0 },
     });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -78,8 +80,8 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
     const tranchedPool = transaction.tranchedPool!;
 
     const user =
-      transaction.category === TransactionCategory.TranchedPoolDrawdown ||
-      transaction.category === TransactionCategory.TranchedPoolRepayment ? (
+      transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
+      transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
         <div className="flex items-center gap-2">
           <Image
             src={tranchedPool.borrowerLogo}
@@ -90,13 +92,17 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
           />
           <span>{tranchedPool.borrowerName}</span>
         </div>
-      ) : transaction.category === TransactionCategory.SeniorPoolRedemption ? (
+      ) : transaction.category === "SENIOR_POOL_REDEMPTION" ? (
         <div className="flex items-center gap-2">
           <GoldfinchLogo className="h-6 w-6" />
           Senior Pool
         </div>
       ) : (
-        <Address address={transaction.user.id} />
+        <Address
+          address={transaction.user.id}
+          ENSName={transaction.user.ENSName}
+          ENSAvatar={transaction.user.ENSAvatar}
+        />
       );
 
     let tokenToDisplay = transaction.receivedToken;

@@ -7,7 +7,6 @@ import {
   ShimmerLines,
 } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 
 export const BORROWER_POOL_COLOR_CLASS = "bg-eggplant-300";
 export const GFI_COLOR_CLASS = "bg-mustard-450";
@@ -18,17 +17,14 @@ interface Holding {
   name: string;
   tooltip?: string;
   colorClass: string;
-  /**
-   * CryptoAmount expressed in USDC
-   */
-  usdc: CryptoAmount;
+  usdc: CryptoAmount<"USDC">;
   percentage: number;
 }
 
 interface PortfolioSummaryProps {
   className?: string;
   holdings: Holding[];
-  totalUsdc: CryptoAmount;
+  totalUsdc: CryptoAmount<"USDC">;
 }
 
 export function PortfolioSummary({

@@ -13,6 +13,8 @@ import {TestConstants} from "./TestConstants.t.sol";
 
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 import {Fidu} from "../../protocol/core/Fidu.sol";
+import {StakingRewards} from "../../rewards/StakingRewards.sol";
+import {IStakingRewards} from "../../interfaces/IStakingRewards.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
 
@@ -25,13 +27,12 @@ contract ProtocolHelper is IProtocolHelper {
   GoldfinchConfig internal _gfConfig;
   GoldfinchFactory internal _gfFactory;
   Fidu internal _fidu;
+  StakingRewards internal _stakingRewards;
   TestERC20 internal _usdc;
 
-  constructor(
-    Vm vm,
-    address gfOwner,
-    address treasury
-  ) public {
+  constructor(Vm vm, address gfOwner, address treasury) public {
+    vm.assume(gfOwner != address(0));
+    vm.assume(treasury != address(0));
     vm.startPrank(gfOwner);
 
     _usdc = new TestERC20(type(uint256).max, uint8(TestConstants.USDC_DECIMALS));
@@ -51,6 +52,10 @@ contract ProtocolHelper is IProtocolHelper {
     _fidu.__initialize__(gfOwner, "Fidu", "FIDU", _gfConfig);
     _gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), address(_fidu));
 
+    _stakingRewards = new StakingRewards();
+    _stakingRewards.__initialize__(gfOwner, _gfConfig);
+    _gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(_stakingRewards));
+
     vm.stopPrank();
   }
 
@@ -64,6 +69,10 @@ contract ProtocolHelper is IProtocolHelper {
 
   function gfFactory() external override returns (IGoldfinchFactory) {
     return IGoldfinchFactory(address(_gfFactory));
+  }
+
+  function stakingRewards() external override returns (IStakingRewards) {
+    return IStakingRewards(address(_stakingRewards));
   }
 
   function usdc() external override returns (IERC20) {

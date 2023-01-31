@@ -49,6 +49,6 @@ else
     node_modules/run-node/run-node "$scriptPath" $hookName "$gitParams"
   else
     echo "Can't find Husky, skipping $hookName hook"
-    echo "You can reinstall it using 'npm install husky --save-dev' or delete this hook"
+    echo "You can reinstall it using 'yarn install husky --save-dev' or delete this hook"
   fi
 fi

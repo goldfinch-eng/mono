@@ -1,7 +1,13 @@
+extend type User {
+  ENSName: String
+  ENSAvatar: String
+}
+
 extend type SeniorPool {
   name: String!
   category: String!
   icon: String!
+  epochEndsAt: Int!
 }
 
 extend type TranchedPool {
@@ -11,7 +17,10 @@ extend type TranchedPool {
 }
 
 extend type CreditLine {
-  isLate: Boolean
+  isLate: Boolean!
+  interestOwed: BigInt!
+  collectedPaymentBalance: BigInt!
+  isAfterTermEndTime: Boolean!
 }
 
 extend type SeniorPoolStakedPosition {
@@ -39,10 +48,15 @@ type GfiPrice {
   lastUpdated: Int!
 }
 
-type CryptoAmount {
-  token: SupportedCrypto!
-  amount: BigInt!
-}
+# Important note: there doesn't need to be custom parser/serializer for CryptoAmount because
+# 1. The type only exists on the client
+# 2. Since it only exists on the client, it can only be produced by local resolvers
+# 3. The results from local resolvers do not pass though apollo-link-scalars
+scalar CryptoAmount
+scalar UsdcAmount
+scalar FiduAmount
+scalar GfiAmount
+scalar CurveLpAmount
 
 enum IndirectGrantSource {
   MERKLE_DISTRIBUTOR
@@ -101,13 +115,13 @@ type DirectGfiGrant implements GfiGrant {
 
 type Viewer {
   account(format: String): String
-  usdcBalance: CryptoAmount
-  gfiBalance: CryptoAmount
-  fiduBalance: CryptoAmount
-  curveLpBalance: CryptoAmount
+  usdcBalance: UsdcAmount
+  gfiBalance: GfiAmount
+  fiduBalance: FiduAmount
+  curveLpBalance: CurveLpAmount
   gfiGrants: [GfiGrant!]!
-  claimableMembershipRewards: CryptoAmount
-  accruedMembershipRewardsThisEpoch: CryptoAmount
+  claimableMembershipRewards: FiduAmount
+  accruedMembershipRewardsThisEpoch: FiduAmount
 }
 
 type BlockInfo {
@@ -127,4 +141,15 @@ extend type Query {
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
   currentBlock: BlockInfo!
   curvePool: CurvePool!
+}
+
+extend type SeniorPoolWithdrawalRequest {
+  """
+  Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
+  """
+  previewUsdcWithdrawable: BigInt!
+  """
+  Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
+  """
+  previewFiduRequested: BigInt!
 }

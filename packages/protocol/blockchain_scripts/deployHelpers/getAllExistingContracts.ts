@@ -9,7 +9,7 @@ export function getCurrentlyDeployedContracts(chainId: ChainId = MAINNET_CHAIN_I
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const deploymentsFile = require("../../deployments/all.json")
   const chainName = CHAIN_NAME_BY_ID[chainId]
-  return deploymentsFile[chainId][chainName].contracts
+  return deploymentsFile[chainId].find((item: {name: string}) => item.name === chainName).contracts
 }
 
 export async function getAllExistingContracts(chainId: ChainId = MAINNET_CHAIN_ID): Promise<{[key: string]: any}> {

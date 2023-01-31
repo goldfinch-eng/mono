@@ -2,7 +2,7 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0xDD4bb1B6c13a7139F43da6598429f87e7FFe7CC6
+https://etherscan.io/address/0xf0F8d382a4e1e2F26891B1a95f9Dcb89406bd4A1
 
 Library for handling key financial calculations, such as interest and principal accrual.
 
@@ -73,7 +73,7 @@ function calculateWritedownForPrincipal(contract ICreditLine cl, uint256 princip
 ### calculateAmountOwedForOneDay
 
 ```solidity
-function calculateAmountOwedForOneDay(contract ICreditLine cl) public view returns (struct FixedPoint.Unsigned interestOwed)
+function calculateAmountOwedForOneDay(contract ICreditLine cl) public view returns (struct FixedPoint.Unsigned)
 ```
 
 ### calculateInterestAccrued

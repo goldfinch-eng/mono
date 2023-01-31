@@ -1,4 +1,4 @@
-/* global artifacts web3 */
+/* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
 const {deployments} = hre
@@ -19,7 +19,6 @@ describe("Borrower", async () => {
   let owner,
     borrower: string,
     borrowerContract: BorrowerInstance,
-    goldfinchConfig,
     usdc: ERC20Instance,
     tranchedPool: TranchedPoolInstance,
     creditLine: CreditLineInstance,
@@ -67,7 +66,7 @@ describe("Borrower", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, borrower, person3, underwriter, reserve] = accounts
-    ;({goldfinchConfig, usdc, tranchedPool, creditLine, borrowerContract} = await setupTest())
+    ;({usdc, tranchedPool, creditLine, borrowerContract} = await setupTest())
   })
 
   describe("drawdown", async () => {

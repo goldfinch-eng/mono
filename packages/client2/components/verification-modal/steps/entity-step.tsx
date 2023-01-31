@@ -1,5 +1,7 @@
 import { useWizard } from "react-use-wizard";
 
+import { dataLayerPushEvent } from "@/lib/analytics";
+
 import { BigButton } from "../big-button";
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -19,6 +21,9 @@ export function EntityStep() {
           onClick={() => {
             setEntity("entity");
             goToStep(VerificationFlowSteps.ParallelMarkets);
+            dataLayerPushEvent("INVESTOR_TYPE_SELECTED", {
+              type: "institutional",
+            });
           }}
         >
           A business or entity
@@ -28,6 +33,7 @@ export function EntityStep() {
           onClick={() => {
             setEntity("individual");
             goToStep(VerificationFlowSteps.Residence);
+            dataLayerPushEvent("INVESTOR_TYPE_SELECTED", { type: "retail" });
           }}
         >
           An individual (myself)

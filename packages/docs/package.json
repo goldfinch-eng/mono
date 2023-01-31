@@ -7,10 +7,9 @@
     "start": "docusaurus start --port 3002",
     "build": "docusaurus build",
     "_copy-solidity-docs": "cp -r ../protocol/solidity-docgen-docs/protocol/core/. ./docs/reference/contracts/core/. && cp -r ../protocol/solidity-docgen-docs/protocol/periphery/. ./docs/reference/contracts/periphery/. && cp -r ../protocol/solidity-docgen-docs/rewards/. ./docs/reference/contracts/rewards/.",
-    "_move-deprecated-docs": "mv ./docs/reference/contracts/core/{Pool,CreditDesk}.md ./docs/reference/contracts/deprecated",
-    "_add-deployed-addresses-to-solidity-docs": "npx ts-node utils/addDeployedAddressesToSolidityDocs",
-    "_build-solidity-docs": "cd ../protocol && npm run docs && cd ../docs ",
-    "build-contract-docs": "npm run _build-solidity-docs && npm run _copy-solidity-docs && npm run _move-deprecated-docs && npm run _add-deployed-addresses-to-solidity-docs",
+    "_add-deployed-addresses-to-solidity-docs": "yarn ts-node utils/addDeployedAddressesToSolidityDocs",
+    "_build-solidity-docs": "cd ../protocol && yarn docs && cd ../docs ",
+    "build-contract-docs": "yarn _build-solidity-docs && yarn _copy-solidity-docs && yarn _add-deployed-addresses-to-solidity-docs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -22,6 +21,7 @@
   "dependencies": {
     "@docusaurus/core": "2.0.0-beta.18",
     "@docusaurus/preset-classic": "2.0.0-beta.18",
+    "@goldfinch-eng/utils": "^0.0.1",
     "@mdx-js/react": "^1.6.22",
     "clsx": "^1.1.1",
     "prism-react-renderer": "^1.3.1",
@@ -33,9 +33,9 @@
     "@tsconfig/docusaurus": "^1.0.5",
     "@types/lodash": "^4.14.182",
     "lodash": "^4.17.21",
-    "prettier": "^2.6.2",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.3"
+    "prettier": "^2.8.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3"
   },
   "browserslist": {
     "production": [

@@ -1,36 +1,6 @@
-/* global web3 artifacts */
-import {decodeLogs, expect, getFirstLog, toTruffle} from "./testHelpers"
-import {ContractDeployer} from "../blockchain_scripts/deployHelpers"
-import hre from "hardhat"
+import {decodeLogs, expect, getFirstLog} from "./testHelpers"
 import BN from "bn.js"
-import {assertNonNullable} from "@goldfinch-eng/utils"
-import {expectEvent} from "@openzeppelin/test-helpers"
-const {deployments} = hre
-import {TestConfigurableRoyaltyStandard} from "../typechain/ethers/TestConfigurableRoyaltyStandard"
-import {TestConfigurableRoyaltyStandardInstance} from "../typechain/truffle/TestConfigurableRoyaltyStandard"
-import {RoyaltyParamsSet} from "../typechain/truffle/ConfigurableRoyaltyStandard"
-
-const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-  const [owner, anotherUser] = await web3.eth.getAccounts()
-  assertNonNullable(owner)
-  assertNonNullable(anotherUser)
-
-  const deployer = new ContractDeployer(console.log, hre)
-
-  const royaltyStandard = await toTruffle<TestConfigurableRoyaltyStandardInstance>(
-    await deployer.deploy<TestConfigurableRoyaltyStandard>("TestConfigurableRoyaltyStandard", {
-      from: owner,
-      args: [owner],
-    }),
-    "TestConfigurableRoyaltyStandard"
-  )
-
-  return {
-    owner,
-    anotherUser,
-    royaltyStandard,
-  }
-})
+import {RoyaltyParamsSet} from "../typechain/truffle/contracts/protocol/core/ConfigurableRoyaltyStandard"
 
 export function behavesLikeConfigurableRoyaltyStandard(
   params: () => {owner: string; anotherUser: string; contract: ConfigurableRoyaltyStandard}
@@ -121,27 +91,3 @@ interface ConfigurableRoyaltyStandard {
     ): Promise<number>
   }
 }
-
-describe("ConfigurableRoyaltyStandard", () => {
-  let owner: string
-  let anotherUser: string
-  let contract: TestConfigurableRoyaltyStandardInstance
-
-  beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, anotherUser, royaltyStandard: contract} = await testSetup())
-  })
-
-  behavesLikeConfigurableRoyaltyStandard(() => ({
-    contract,
-    owner,
-    anotherUser,
-  }))
-
-  describe("supportsInterface", async () => {
-    it("can use constant from abstract base contract", async () => {
-      const INTERFACE_ID_ERC2981 = "0x2a55205a"
-      expect(await contract.supportsInterface(INTERFACE_ID_ERC2981)).to.be.true
-    })
-  })
-})

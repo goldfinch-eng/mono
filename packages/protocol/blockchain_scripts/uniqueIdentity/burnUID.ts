@@ -110,7 +110,7 @@ async function destroyUser(
     "x-goldfinch-address": signerAddress,
     "x-goldfinch-signature": signature,
     "x-goldfinch-signature-plaintext": message,
-    "x-goldfinch-signature-block-num": blockNum,
+    "x-goldfinch-signature-block-num": `${blockNum}`,
     "content-type": "application/json",
   }
 
@@ -169,6 +169,10 @@ function getEnvVars() {
   return {network, burnAccount, burnUidType, credentials, burnerPrivateKey, prepareRemintAccount, personaApiKey}
 }
 
+/**
+ * burnUID script. NOTE: This script works for UID's minted with Persona KYC. It currently doesn't support burning
+ * UID's minted with Parallel Markets.
+ */
 async function main(): Promise<void> {
   const network = hre.network.name
   const {burnAccount, burnUidType, credentials, burnerPrivateKey, prepareRemintAccount} = getEnvVars()
@@ -179,6 +183,36 @@ async function main(): Promise<void> {
   console.log(`burnUidType: ${burnUidType}`)
   console.log(`defender api key: ${credentials.apiKey}`)
   console.log(`prepareRemintAccount: ${prepareRemintAccount}`)
+
+  console.log(`Fetching persona account for ${burnAccount}`)
+  const personaAccount = await fetchAccount(burnAccount)
+  if (!personaAccount) {
+    throw new Error(`Could not find persona account for address to burn ${burnAccount}`)
+  }
+  console.log(personaAccount)
+
+  // Validate the remint account doesn't already exist on Persona. This should be remedied before
+  // running the script again
+  if (prepareRemintAccount) {
+    console.log(`Checking if persona acct already exists for prepareRemintAccount: ${prepareRemintAccount}`)
+    let remintAccount
+    try {
+      remintAccount = await fetchAccount(prepareRemintAccount)
+    } catch (error) {
+      console.error(JSON.stringify(error))
+      throw new Error(`Could not validate if prepareRemintAccount already exists on Persona`)
+    }
+    if (remintAccount) {
+      throw new Error(
+        `\
+        The remint account is already the reference id for persona account ${remintAccount.personaId}!
+        For this script to run successfully there cannot be an existing account whose reference id is
+        the remint account. To fix these issue use Persona's consolidate accounts api (https://docs.withpersona.com/reference/consolidate-into-an-account)
+        to merge account ${remintAccount.personaId} into ${personaAccount.personaId}
+        `
+      )
+    }
+  }
 
   const provider = new DefenderRelayProvider(credentials)
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
@@ -194,16 +228,6 @@ async function main(): Promise<void> {
   if (prepareRemintAccount) {
     // Replacing the user's Persona account's reference id will allow them to pass document verification
     // using the prepareRemintAccount
-    console.log(`Fetching persona account for ${burnAccount}`)
-    const personaAccount = await fetchAccount(burnAccount)
-    console.log(personaAccount)
-
-    if (!personaAccount) {
-      throw new Error(
-        `Could not find persona account with referenceId ${burnAccount}. Double check the id (Persona ids are case sensitive)`
-      )
-    }
-
     console.log(`updating reference id for account to be ${prepareRemintAccount}`)
     const updatedPersonaAccount = await updateReferenceId(personaAccount, prepareRemintAccount)
     console.log(updatedPersonaAccount)

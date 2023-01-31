@@ -3,14 +3,14 @@ import BN from "bn.js"
 import hre from "hardhat"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
-import {GFIInstance, GoldfinchConfigInstance} from "../typechain/truffle"
+import {GFIInstance} from "../typechain/truffle"
 import {
   CommunityRewardsInstance,
   Granted,
   GrantRevoked,
   RewardAdded,
   RewardPaid,
-} from "../typechain/truffle/CommunityRewards"
+} from "../typechain/truffle/contracts/rewards/CommunityRewards"
 import {
   assertCommunityRewardsVestingRewards,
   expectStateAfterGetReward,
@@ -36,15 +36,11 @@ const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
 describe("CommunityRewards", () => {
-  let owner: string,
-    anotherUser: string,
-    gfi: GFIInstance,
-    communityRewards: CommunityRewardsInstance,
-    goldfinchConfig: GoldfinchConfigInstance
+  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, anotherUser, gfi, communityRewards, goldfinchConfig} = await setupTest())
+    ;({owner, anotherUser, gfi, communityRewards} = await setupTest())
     await communityRewards.setTokenLaunchTimeInSeconds(TOKEN_LAUNCH_TIME)
     await advanceTime({toSecond: TOKEN_LAUNCH_TIME})
   })

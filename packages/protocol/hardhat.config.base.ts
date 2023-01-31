@@ -11,6 +11,7 @@ import {
 import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 import "solidity-docgen"
+import "solidity-coverage"
 import {subtask} from "hardhat/config"
 import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task-names"
 
@@ -54,7 +55,7 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 16020635, // Nov-21-2022 08:00:23 PM +UTC
+            blockNumber: 16388055, // Jan-12-2023 03:32:11 AM +UTC
           }
         : undefined,
     },

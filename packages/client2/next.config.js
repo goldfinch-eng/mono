@@ -75,8 +75,16 @@ const nextConfig = {
     "page.md",
   ],
   images: {
-    domains: ["localhost", "34.133.55.171"],
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        pathname: "/goldfinch_cms/**",
+      },
+      ...(process.env.NODE_ENV === "development"
+        ? [{ hostname: "localhost" }]
+        : []),
+    ],
   },
   async redirects() {
     return [
@@ -133,6 +141,12 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(
-  withSentryConfig(withMDX(nextConfig), sentryWebpackPluginOptions)
-);
+let enhancedNextConfig = withMDX(nextConfig);
+if (process.env.SENTRY_AUTH_TOKEN) {
+  enhancedNextConfig = withSentryConfig(
+    enhancedNextConfig,
+    sentryWebpackPluginOptions
+  );
+}
+enhancedNextConfig = withBundleAnalyzer(enhancedNextConfig);
+module.exports = enhancedNextConfig;

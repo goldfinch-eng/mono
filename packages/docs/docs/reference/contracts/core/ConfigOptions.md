@@ -19,7 +19,8 @@ enum Numbers {
   LatenessMaxDays,
   DrawdownPeriodInSeconds,
   TransferRestrictionPeriodInDays,
-  LeverageRatio
+  LeverageRatio,
+  SeniorPoolWithdrawalCancelationFeeInBps
 }
 ```
 
@@ -49,7 +50,9 @@ enum Addresses {
   Go,
   BackerRewards,
   StakingRewards,
-  FiduUSDCCurveLP
+  FiduUSDCCurveLP,
+  TranchedPoolImplementationRepository,
+  WithdrawalRequestToken
 }
 ```
 

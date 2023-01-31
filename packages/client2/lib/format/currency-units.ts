@@ -7,11 +7,7 @@ import {
   CURVE_LP_DECIMALS,
 } from "@/constants";
 
-import {
-  CryptoAmount,
-  FiatAmount,
-  SupportedCrypto,
-} from "../graphql/generated";
+import { FiatAmount, SupportedCrypto } from "../graphql/generated";
 
 export function formatFiat(
   fiatAmount: FiatAmount,
@@ -35,10 +31,10 @@ const decimalFormatter = new Intl.NumberFormat("en-US", {
 });
 
 const cryptoPrecision: Record<SupportedCrypto, number> = {
-  [SupportedCrypto.Usdc]: USDC_DECIMALS,
-  [SupportedCrypto.Gfi]: GFI_DECIMALS,
-  [SupportedCrypto.Fidu]: FIDU_DECIMALS,
-  [SupportedCrypto.CurveLp]: CURVE_LP_DECIMALS,
+  USDC: USDC_DECIMALS,
+  GFI: GFI_DECIMALS,
+  FIDU: FIDU_DECIMALS,
+  CURVE_LP: CURVE_LP_DECIMALS,
 };
 
 export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
@@ -67,8 +63,8 @@ export function formatCrypto(
   options?: FormatCryptoOptions
 ): string {
   const defaultOptions: FormatCryptoOptions = {
-    includeSymbol: cryptoAmount.token === SupportedCrypto.Usdc,
-    includeToken: cryptoAmount.token !== SupportedCrypto.Usdc,
+    includeSymbol: cryptoAmount.token === "USDC",
+    includeToken: cryptoAmount.token !== "USDC",
     useMaximumPrecision: false,
   };
   const { includeSymbol, includeToken, useMaximumPrecision } = {
@@ -83,17 +79,16 @@ export function formatCrypto(
       })
     : decimalFormatter;
   const amount = float > 0 && float < 0.01 ? "<0.01" : formatter.format(float);
-  const prefix =
-    cryptoAmount.token === SupportedCrypto.Usdc && includeSymbol ? "$" : "";
+  const prefix = cryptoAmount.token === "USDC" && includeSymbol ? "$" : "";
   const suffix = includeToken ? ` ${tokenMap[cryptoAmount.token]}` : "";
   return prefix.concat(amount).concat(suffix);
 }
 
 const tokenMap: Record<SupportedCrypto, string> = {
-  [SupportedCrypto.Usdc]: "USDC",
-  [SupportedCrypto.Gfi]: "GFI",
-  [SupportedCrypto.Fidu]: "FIDU",
-  [SupportedCrypto.CurveLp]: "FIDU-USDC-F",
+  USDC: "USDC",
+  GFI: "GFI",
+  FIDU: "FIDU",
+  CURVE_LP: "FIDU-USDC-F",
 };
 
 export function stringToCryptoAmount(

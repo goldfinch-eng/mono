@@ -1,0 +1,880 @@
+# Internal Audit
+
+## Staking Rewards
+
+### Goal
+
+Break the contract. Get it to do something we wouldn't want it to do.
+
+### Responsibilities of the contract
+
+- Manage accounting and disbursal of GFI for owners of FIDU who stake their FIDU using the contract
+- Manage accounting and disbursal of GFI for owners of FIDU-USDC Curve LP tokens who stake those tokens using the contract
+- Provide some public view functions that describe this accounting (e.g. for use by the frontend)
+
+### Contract code
+
+NOTE: This audit covers the contract code at the top level; it does NOT cover code inherited from base contracts, except where noted.
+
+#### Mutative functions
+
+##### External / public
+
+- **initialize**
+  - [x] How could it break?
+    - Fail to call initializers of inherited functions
+      - Current defense
+        - None / manual
+      - Review status
+        - NOT REVIEWED
+    - Allow zero-address `owner`
+      - Review status
+        - BUG
+          - REMEDY
+            - Priority: LOW
+              - The contract has already been initialized.
+    - Allow zero-address `_config`
+      - Review status
+        - BUG
+          - REMEDY
+            - Priority: LOW
+              - The contract has already been initialized.
+    - Fail to give `owner` the correct roles (owner role and pauser role)
+      - Current defense
+        - None / manual
+      - Review status
+        - Looks OK, but did not review `_setupRole()` function internals
+    - Fail to set the correct role (owner role) as admin of owner role and pauser role
+      - Current defense
+        - None / manual
+      - Review status
+        - Looks OK, but did not review `_setRoleAdmin()` function internals
+    - Fail to set `config` address
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to set `vestingLength`
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Allow being called more than once
+      - Current defense
+        - `initializer` modifier
+      - Review status
+        - Looks OK, but did not review `initializer` modifier internals
+- initZapperRole
+  - [x] How could it break?
+    - Fail to set the correct role (owner role) as admin of Zapper role
+      - Current defense
+        - None / manual
+      - Review status
+        - Looks OK, but did not review `_setRoleAdmin()` function internals
+- stake
+  - [x] How could it break?
+    - Reentrancy
+      - Current defense
+        - `nonReentrant` modifier
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Current defense
+        - `whenNotPaused` modifier
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint 0 token
+      - Current defense
+        - `updateReward(0)` modifier
+      - Review status
+        - OK, and see `updateReward` modifier review status.
+    - Stake incorrect `amount`
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Stake incorrect `positionType`
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Stake for incorrect staker
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Stake for incorrect staked-position NFT recipient
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to do correct accounting and minting of NFT
+      - Current defense
+        - `_stake()`
+      - Review status
+        - See `_stake()` review status.
+- depositAndStake
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint 0 token
+      - Review status
+        - OK, and see `updateReward` modifier review status.
+    - Fail to check go-list status of sender
+      - Review status
+        - OK
+    - Fail to transfer correctly
+      - Review status
+        - OK
+    - Fail to deposit into senior pool correctly
+      - Review status
+        - OK
+    - Fail to stake correctly
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- depositWithPermitAndStake
+  - [x] How could it break?
+    - Review status
+      - OK
+- depositToCurve
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to deposit to Curve
+      - Review status
+        - See `_depositToCurve()`.
+    - Fail to emit event
+      - Review status
+        - OK
+- depositToCurveAndStake
+  - [x] How could it break?
+    - Review status
+      - OK
+- depositToCurveAndStakeFrom
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint 0 token
+      - Review status
+        - OK, and see `updateReward` modifier review status.
+    - Fail to deposit to Curve correctly
+      - Review status
+        - OK
+    - Fail to stake Curve LP tokens correctly
+      - Review status
+        - ISSUE
+          - Does amount of `curveLPTokens` have correct mantissa for compatibility with StakingRewards logic?
+            - In theory, even if `curveLPTokens` has a different mantissa than FIDU, this differential could be included in the value of the base exchange rate or effective multiplier (probably base exchange rate seems more appropriate).
+            - I see this comment:
+            ```
+            // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
+            uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
+            ```
+            - I think, given the context, that that comment may be describing the mantissa of the Curve LP token _price_, rather than the token itself?
+            - TODO In any case, we should confirm the mantissa of the Curve LP token itself and its price, and include comments that link to that info.
+          - REMEDY
+            - Priority: CRITICAL
+            - Check this, as noted.
+        - Otherwise OK
+    - Fail to emit event
+      - Review status
+        - OK
+- unstake
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint token being withdrawn
+      - Review status
+        - OK, and see `updateReward` modifier review status.
+    - Fail to unstake correctly
+      - Review status
+        - See `_unstake()`
+    - Fail to transfer correct amount to sender
+      - Review status
+        - OK
+- unstakeMultiple
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Improper args: differing lengths
+      - Review status
+        - OK
+    - Incorrect summation of amounts to unstake
+      - Review status
+        - ISSUE Same comment here, that IMO it'd be better (because safer) to use exhaustive if/else-if blocks, and reverting in the else block.
+          - REMEDY
+            - Priority: MEDIUM
+            - I think this is worth doing for clarity. It would make our life easier if we ever want to support another position type.
+        - Otherwise OK
+    - Fail to transfer FIDU correctly
+      - Review status
+        - OK
+    - Fail to transfer Curve LP token correctly
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- unstakeAndWithdraw
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Incorrect unstake-and-withdraw logic
+      - Review status
+        - See `_unstakeAndWithdraw()`.
+    - Fail to emit event
+      - Review status
+        - OK
+- unstakeAndWithdrawMultiple
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Improper args: differing lengths
+      - Review status
+        - OK
+    - Fail to sum USDC total correctly
+      - Review status
+        - OK
+    - Fail to track FIDU amounts correctly
+      - Review status
+        - OK
+    - Fail to unstake-and-withdraw each token
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- unstakeAndWithdrawInFidu
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Incorrect unstake-and-withdraw-in-fidu logic
+      - Review status
+        - See `_unstakeAndWithdrawInFidu()`.
+    - Fail to emit event
+      - Review status
+        - OK
+- unstakeAndWithdrawMultipleInFidu
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Improper args: differing lengths
+      - Review status
+        - OK
+    - Fail to unstake-and-withdraw-in-FIDU each token
+      - Review status
+        - OK
+    - Fail to sum USDC total correctly
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- kick
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint token being kicked
+      - Review status
+        - OK
+- updatePositionEffectiveMultiplier
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - ISSUE
+          - The `nonReentrant` modifier is unnecessary because this function doesn't cause any function calls to outside of this contract
+          - REMEDY
+            - Priority: LOW
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint the token being updated
+      - Review status
+        - OK
+    - Allow non-owner of token to call
+      - Review status
+        - OK
+    - If we ever wanted the multipler to decrease, this is currently prohibited by a `require()` statement
+      - Review status
+        - ISSUE
+          - How do we know we'd never want the effective multiplier to decrease?
+          - We should add a comment explaining why we're so sure of this.
+          - What is the main use-case, anyway, where we want the effective multiplier to increase?
+          - Note that if we change this invariant, we'll need to also modify the logic for updating `totalStakedSupply`, to prevent underflow error.
+          - REMEDY
+            - Priority: HIGH
+            - Decision: Not a real issue. We want to honor the original multiplier for the user's sake, so we don't want to allow the effective multiplier for a given position to decrease.
+    - Fail to set the new effective multiplier correctly
+      - Review status
+        - OK
+    - Fail to update the `totalStakedSupply` correctly
+      - Review status
+        - BUG
+          - Staked positions prior to GIP-1 do not have an `effectiveMultiplier`, so their value is implicitly 0. This results in an incorrect incrementing of `totalStakedSupply`, because the `prevEffectiveAmount` would be 0, so we'd be adding `newEffectiveAmount` to `totalStakedSupply` -- but we don't want to add anything for these tokens, because they're already reflected in `totalStakedSupply`.
+          - REMEDY
+            - Priority: CRITICAL
+            - Write `forceInitializeBaseTokenExchangeRateAndEffectiveMultiplier()` function, and use it in migration, for all existing staked positions.
+              - Then could remove `baseTokenExchangeRate == 0` ternary in `toEffectiveAmount()`
+              - This isn't the only possible solution, but it probably keeps the contract easiest to reason about, because baseTokenExchangeRate and effectiveMultiplier logic would apply equally well to all tokens
+- getReward
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - Looks OK, but did not review `nonReentrant` modifier internals
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint token being kicked
+      - Review status
+        - OK
+    - Allow non-owner to claim reward
+      - Review status
+        - OK
+    - Fail to calculate correct claimable amount
+      - Review status
+        - OK
+    - Fail to account for claiming
+      - Review status
+        - OK
+    - Fail to transfer rewards to sender
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- exit
+  - [x] How could it break?
+    - Review status
+      - OK
+- addToStake
+  - ISSUE
+    - We should document why this function exists, how it enables needed Zapper functionality.
+    - REMEDY
+      - Priority: HIGH
+  - [x] How could it break?
+    - Reentrancy
+      - Review status
+        - OK
+    - Execution when contract is paused
+      - Review status
+        - Looks OK, but did not review `whenNotPaused` modifier internals
+    - Fail to checkpoint the token being updated
+      - Review status
+        - OK
+    - Allow non-Zapper to call the function
+      - Review status
+        - OK
+    - Fail to increment amount correctly
+      - Review status
+        - ISSUE
+          - We are not currently validating that the position is a FIDU position. We should validate this, as Zapper should not be able to affect Curve LP positions.
+          - REMEDY
+            - Priority: HIGH
+        - Otherwise OK
+    - Fail to increment totalStakedSupply correctly
+      - Review status
+        - ISSUE
+          - Everywhere else in the contract that we update `totalStakedSupply`, we do so using an "effective amount", using `_positionToEffectiveAmount(positions[tokenId])`. We should do so here as well.
+            - Note that this use of "effective amount" for FIDU positions, more specifically for pre-existing FIDU positions, encounters the ISSUE / BUG described for `toEffectiveAmount` for those positions.
+          - REMEDY
+            - Priority: HIGH
+        - Otherwise OK
+    - Fail to transfer staked token to this contract
+      - Review status
+        - OK
+- loadRewards
+  - [x] How could it break?
+    - Allow non-admin to call the function
+      - Review status
+        - OK
+    - Fail to checkpoint the 0 token
+      - Review status
+        - OK
+    - Fail to transfer rewards amount from sender to this contract
+      - Review status
+        - OK
+    - Fail to increment rewardsAvailable
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- setRewardsParameters
+  - [x] How could it break?
+    - Allow non-admin to call the function
+      - Review status
+        - OK
+    - Fail to checkpoint the 0 token
+      - Review status
+        - OK
+    - Allow \_maxRate less than \_minRate
+      - Review status
+        - OK
+    - Allow \_maxRateAtPercent less than \_minRateAtPercent
+      - Review status
+        - OK
+    - Fail to set values correctly
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- setEffectiveMultiplier
+  - [x] How could it break?
+    - Allow non-admin to call the function
+      - Review status
+        - OK
+    - Fail to checkpoint the 0 token
+      - Review status
+        - OK
+    - Allow decreasing the multiplier value
+      - Review status
+        - ISSUE
+          - Currently this function will allow setting a multiplier value that is less than the existing value. Why do we want to allow that, if in `updatePositionEffectiveMultiplier()` we don't allow an existing position to update the multiplier it uses to a lesser value?
+          - REMEDY
+            - Priority: HIGH
+            - Decision: Not an issue. We want to be able to decrease the effective multiplier for a given position type; we just don't want it to be able to decrease for a given position.
+        - Otherwise OK
+    - Allow setting the multiplier value to 0
+      - Review status
+        - ISSUE
+          - Currently this function allows setting a multiplier value to 0 -- but such a value would never be used by the current implementation of `getEffectiveMultiplier()`. Should we disallow setting a value of 0? If you want to use a value of 1, you can just set the value to 1.
+          - REMEDY
+            - Priority: HIGH
+        - Otherwise OK
+    - Fail to set the new multiplier value correctly
+      - Review status
+        - OK
+    - Fail to emit event
+      - Review status
+        - OK
+- setVestingSchedule
+  - [x] How could it break?
+    - Review status
+      - OK
+- updateGoldfinchConfig
+  - [x] How could it break?
+    - Review status
+      - OK
+
+##### Internal
+
+- \_depositToCurve
+  - [x] How could it break?
+    - allow staking 0 FIDU and 0 USDC
+    - reentrancy via call to `curveLP.add_liquidity()`
+      - Review status
+        - OK. Every function that calls `_depositToCurve()` has `nonReentrant` modifier.
+    - Fail to transfer FIDU to this contract and to Curve
+      - Review status
+        - OK
+    - Fail to transfer USDC to this contract and to Curve
+      - Review status
+        - OK
+    - Pass incorrect args to `curveLP.add_liquidity()`
+      - Review status
+        - ISSUE
+          - Should `min_mint_amount` be meaningful, to mitigate risk of slippage?
+          - REMEDY
+            - Priority: HIGH
+            - Allow up to 25% slippage, min mint amount 75%
+        - Otherwise OK
+    - Incorrect behavior of `curveLP.add_liquidity()`
+      - Review status
+        - ISSUE
+          - Should we check that the Curve contract has transferred the expected amount of FIDU and/or USDC, and that allowance has decremented accordingly?
+            - Would be unnecessary if that contract is not upgradeable and we have a test that establishes the result.
+          - REMEDY
+            - Priority: HIGH
+            - Confirmed it's not upgradeable.
+- \_stake
+  - [x] How could it break?
+    - Allow staking 0 amount
+      - Current defense
+        - `require` statement
+      - Review status
+        - OK
+    - Fail to increment token id
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to initialize accumulated-rewards-per-token correctly for the position
+      - Current defense
+        - Calling `_updateReward()` for the new token id, before initializing the position.
+      - Review status
+        - OK
+    - Fail to transfer from `staker`
+      - Review status
+        - OK
+    - Fail to make `nftRecipient` owner of the staked-position NFT
+      - Review status
+        - OK
+    - Fail to transfer `amount` of staking token
+      - Review status
+        - OK
+    - Fail to use correct staking token
+      - Review status
+        - OK
+    - Fail to use correct base token exchange rate
+      - Review status
+        - OK
+    - Fail to use correct effective multiplier
+      - Review status
+        - OK
+    - Fail to initialize position state correctly
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to increment total staked supply correctly using effective amount
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to emit Staked event
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+    - Fail to return token id
+      - Current defense
+        - None / manual
+      - Review status
+        - OK
+- \_unstakeAndWithdraw
+  - [x] How could it break?
+    - reentrancy via call to `USDC.safeTransfer()`
+      - Review status
+        - OK. Every function that calls `_unstakeAndWithdraw_()` has `nonReentrant` modifier.
+    - Fail to checkpoint token being unstaked-and-withdrawn
+      - Review status
+        - OK
+    - Fail to only allow withdrawal of FIDU
+      - Review status
+        - OK
+    - Fail to enforce go-list status
+      - Review status
+        - OK
+    - Fail to withdraw from Senior Pool
+      - Review status
+        - OK
+    - Fail to unstake withdrawn FIDU
+      - Review status
+        - OK
+    - Fail to transfer USDC to sender
+      - Review status
+        - OK
+    - Incorrect return values
+      - Review status
+        - OK
+- \_unstakeAndWithdrawInFidu
+  - [x] How could this break?
+    - reentrancy via call to `USDC.safeTransfer()`
+      - Review status
+        - OK. Every function that calls `_unstakeAndWithdrawInFidu()` has `nonReentrant` modifier.
+    - Fail to checkpoint token being unstaked-and-withdrawn
+      - Review status
+        - OK
+    - Fail to only allow withdrawal of FIDU
+      - Review status
+        - OK
+    - Fail to enforce go-list status
+      - Review status
+        - OK
+    - Fail to withdraw FIDU from senior pool
+      - Review status
+        - OK
+    - Fail to unstake correct FIDU amount
+      - Review status
+        - OK
+    - Fail to transfer USDC to sender
+      - Review status
+        - OK
+    - Incorrect return value
+      - Review status
+        - OK
+- \_unstake
+  - [x] How could it break?
+    - Allow non-owner-and-non-zapper of token to perform the unstaking
+      - Review status
+        - ISSUE
+          - Because the Zapper only needs permission to call `unstake()`, it would be more appropriate to move this access-control exception for the Zapper into that function and out of `_unstake()`, so that the Zapper does not have permission to perform all the other unstaking functions which call `_unstake()`.
+          - REMEDY
+            - Priority: HIGH
+            - Implement requiring user approval for Zapper to be able to unstake their position
+        - Otherwise OK
+    - Allow unstaking 0 amount
+      - Review status
+        - OK
+    - Allow unstaking more than the staked amount on the position
+      - Review status
+        - OK
+    - Allow unstaking if the position is still locked
+      - Review status
+        - OK
+    - Decrement the total staked supply incorrectly
+      - Review status
+        - OK
+    - Decrement the amount on the position incorrectly
+      - Review status
+        - OK
+    - Slash incorrectly / by an incorrect amount
+      - Review status
+        - ISSUE
+          - If the sender is the Zapper, unvested rewards are not slashed. This is quite a significant exception and deserves an explanation; I am frustrated at the lack of documentation of something like this. I suppose the reason for the exception is: we're just trusting the Zapper, that in whatever it may be doing on behalf of a user for which reason it needs to unstake, that objective is equally valuable to the protocol and so the user deserves to keep earning their original amount of rewards.
+          - REMEDY
+            - Priority: HIGH
+        - Otherwise OK
+    - Fail to emit event
+      - Review status
+        - OK
+- \_updateReward
+  - Review status
+    - ISSUE
+      - Currently in calculating `rewardsJustDistributed`, we divide by `stakingTokenMantissa()`. Semantically, I think this is incorrect. We should be dividing by "rewards token mantissa". We are fortunate that they happen to be the same.
+      - REMEDY
+        - Priority: MEDIUM
+    - Otherwise OK
+
+#### View / pure functions
+
+##### External / Public
+
+- stakedBalanceOf
+  - Review status
+    - ISSUE
+      - This function returns the naked `amount` on the position; it does not convert the amount to an "effective amount". This behavior is not documented. We should call `_positionToEffectiveAmount()` -- and note that this call encounters the BUG noted for `toEffectiveAmount()`.
+      - REMEDY
+        - Priority: HIGH
+        - Add @dev comment that this is meant to be the bare `amount`
+    - Otherwise OK
+- rewardsToken
+  - Review status
+    - OK
+- stakingToken
+  - Review status
+    - ISSUE
+      - I'd prefer to write this using exhaustive if/else-if blocks, and revert in an else block, so that the code is explicit about the position types being handled.
+      - REMEDY
+        - Priority: MEDIUM
+          - I think this is worth doing for clarity. It would make our life easier if we ever want to support another position type.
+        - Decision: Not doing, to minimize contract size.
+    - Otherwise OK
+- baseStakingToken
+  - Review status
+    - OK
+- rewardPerToken
+  - Review status
+    - OK
+- earnedSinceLastCheckpoint
+  - Review status
+    - ISSUE
+      - Currently we divide by `stakingTokenMantissa()`. Semantically, I think this is incorrect. We should be dividing by "rewards token mantissa". We are fortunate that they happen to be the same.
+      - REMEDY
+        - Priority: MEDIUM
+    - Otherwise OK
+- totalOptimisticClaimable
+  - Review status
+    - OK
+- optimisticClaimable
+  - Review status
+    - OK
+- claimableRewards
+  - Review status
+    - OK
+- totalVestedAt
+  - Review status
+    - OK
+- currentEarnRatePerToken
+  - Review status
+    - OK
+- positionCurrentEarnRate
+  - [x] How could it break
+    - Fail to convert position amount to effective amount
+      - Review status
+        - OK
+- getEffectiveMultiplier
+
+  - [x] How could it break?
+    - Impossibility of using an effective multiplier value of 0.
+      - If we had set an effective multiplier of 0, that value wouldn't be used. The current logic would use 1 instead.
+      - Review status
+        - ISSUE
+          - REMEDY
+            - Priority: HIGH
+            - We need to evaluate and decide whether we want to give ourselves the ability to set an effective multiplier as 0, as a meaningful value, for the purpose of effectively terminating the further earning of rewards for a particular position type.
+            - Decision: leave as-is
+    - Extreme value of multiplier
+      - Currently there is no lower bound besides > 0, or upper bound, on the effective multiplier value returned by this function. Is that really what we want?
+      - Review status
+        - ~~ISSUE~~
+          - I think given the simplicity of this function, we're comfortable relying on ourselves to have set the effective multiplier value for a given position type correctly, and caught a mistake in that in tests before doing so.
+
+- getBaseTokenExchangeRate
+  - [x] How could it break?
+    - Returning incorrect value, given positionType
+      - Review status
+        - OK
+    - Reentrancy via external contract calls
+      - `config.getFiduUSDCCurveLP().get_virtual_price()`
+      - `config.getSeniorPool().sharePrice()`
+      - Review status
+        - OK. We use `nonReentrant` on all functions that call this function.
+    - Extreme value for `config.getFiduUSDCCurveLP().get_virtual_price()`
+      - Review status
+        - ISSUE
+          - Should we constrain this value, so that it can't be arbitrarily low or high?
+          - REMEDY
+            - Priority: CRITICAL
+              - We should evaluate whether we want to impose some bounds on this value, since it has a runtime dependency outside the Goldfinch protocol (namely, the virtual price from Curve).
+              - 2x upper bound
+              - 0.5x lower bound
+              - See if other protocols impose bounds
+    - Extreme value for `config.getSeniorPool().sharePrice()`
+      - Review status
+        - OK
+          - I think we are comfortable taking the senior pool share price at face value.
+
+##### Internal
+
+- \_additionalRewardsPerTokenSinceLastUpdate
+  - Review status
+    - OK
+- rewardRate
+  - Review status
+    - SKIPPED. Hasn't changed in 8 months.
+- \_positionToEffectiveAmount
+  - [x] How could it break?
+    - Improper passage of arguments to `toEffectiveAmount()`
+      - Review status
+        - OK
+- toEffectiveAmount
+  - [x] How could it break?
+    - Incorrect handling for staked positions lacking `baseTokenExchangeRate`
+      - Review status
+        - OK
+    - Incorrect handling for staked positions lacking `effectiveMultiplier`
+      - Review status
+        - BUG
+          - Staked positions prior to GIP-1 do not have an `effectiveMultiplier`, so their value for that is implicitly 0. Which means `_positionToEffectiveAmount()` will return 0 for them everywhere. This breaks: `positionCurrentEarnRate()`, `earnedSinceLastCheckpoint()`
+            - This could be fixed by calling `updatePositionEffectiveMultiplier()` for all the existing staked positions before doing the migration...but `updatePositionEffectiveMultiplier()` would have a BUG for those tokens -- see audit of that function.
+          - REMEDY
+            - Priority: CRITICAL
+            - Decision: Handle conversion from unsafe effective multiplier to safe effective multiplier, at runtime using a function.
+    - Incorrect arithmetic
+      - Review status
+        - ISSUE
+          - Do we not want to sanity-check the returned "effective amount" value, as some multiple of the original `amount`, to prevent some extreme multiple?
+          - REMEDY
+            - Priority: CRITICAL
+            - We should evaluate whether we are comfortable fully relying on the base token exchange rate and effective multiplier values having been set correctly "upstream", or whether we'd feel better about imposing a cap on the combined multiplicative effect of those two values.
+            - Decision: We are comfortable relying on setting bounds on the base token exchange rate, plus our testing of setting the effective multiplier value.
+        - Otherwise OK
+  - Review status
+    - OK
+- stakingTokenMantissa
+- isAdmin
+  - Review status
+    - OK
+- isZapper
+  - Review status
+    - OK
+- isGoListed
+  - Review status
+    - OK
+- canWithdraw
+  - Review status
+    - OK
+
+#### Modifiers
+
+- updateReward
+  - Review status
+    - OK
+- onlyAdmin
+  - Review status
+    - OK
+
+#### State variables
+
+- lastUpdateTime
+- accumulatedRewardsPerToken
+- rewardsAvailable
+- positionToAccumulatedRewardsPerToken
+- targetCapacity
+- minRate
+- maxRate
+- maxRateAtPercent
+- minRateAtPercent
+- vestingLength
+- totalStakedSupply
+- totalLeveragedStakedSupply
+- leverageMultipliers
+- positions
+- effectiveMultipliers
+
+#### Events
+
+- RewardAdded
+- Staked
+- DepositedAndStaked
+- DepositedToCurve
+- DepositedToCurveAndStaked
+- Unstaked
+- UnstakedMultiple
+- UnstakedAndWithdrew
+- UnstakedAndWithdrewMultiple
+- RewardPaid
+- GoldfinchConfigUpdated
+
+## StakingRewardsVesting
+
+Mostly SKIPPED. No changes to this contract in this audit cycle.
+
+- checkpoint
+  - Review status
+    - OK

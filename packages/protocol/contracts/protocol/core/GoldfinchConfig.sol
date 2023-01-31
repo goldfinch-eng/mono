@@ -3,9 +3,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
-import "../../interfaces/IGoldfinchConfig.sol";
-import "./ConfigOptions.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
+import {ConfigOptions} from "./ConfigOptions.sol";
 
 /**
  * @title GoldfinchConfig
@@ -160,7 +160,10 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   }
 
   modifier onlyGoListerRole() {
-    require(hasRole(GO_LISTER_ROLE, _msgSender()), "Must have go-lister role to perform this action");
+    require(
+      hasRole(GO_LISTER_ROLE, _msgSender()),
+      "Must have go-lister role to perform this action"
+    );
     _;
   }
 }

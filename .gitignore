@@ -36,6 +36,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Yarn metadata
+.yarn/install-state.gz
+
 # TypeScript v1 declaration files
 typings/
 
@@ -79,8 +82,6 @@ artifacts/
 
 notes.txt
 
-**/*/client/config/protocol-local.json
-**/*/client/config/pool-metadata/localhost.json
 **/*/deployments/localhost_31337
 **/*/deployments/localhost_5777
 **/*/deployments/localhost
@@ -101,7 +102,6 @@ venv/
 
 .dir-locals.el
 .projectile
-.python-version
 .rgignore
 goldfinch-frontends-prod-firebase*.json
 goldfinch-frontends-prod-*.json

@@ -1,10 +1,14 @@
 import type { CollectionConfig } from "payload/types";
+import { afterMediaChange } from "../hooks/media";
 
 const Media: CollectionConfig = {
   slug: "media",
   labels: {
     singular: "Media",
     plural: "Media",
+  },
+  hooks: {
+    afterChange: [afterMediaChange],
   },
   access: {
     read: () => true,
@@ -42,6 +46,11 @@ const Media: CollectionConfig = {
     {
       name: "alt",
       label: "Alt Text",
+      type: "text",
+    },
+    {
+      name: "fileNameOverride",
+      label: "File Name Override",
       type: "text",
     },
   ],

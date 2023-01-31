@@ -1,6 +1,7 @@
+import { BigNumber } from "ethers";
+
 export * from "./contract-addresses";
 export * from "./metadata/borrowers";
-
 export { default as POOL_METADATA } from "./metadata/index";
 
 const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME as string;
@@ -11,6 +12,7 @@ export const DESIRED_CHAIN_ID =
   networkName === "mainnet" ? 1 : networkName === "murmuration" ? 31337 : 31337;
 
 export const USDC_DECIMALS = 6;
+export const USDC_MANTISSA = BigNumber.from(10).pow(USDC_DECIMALS);
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
@@ -51,7 +53,9 @@ export const PERSONA_CONFIG: PersonaConfig =
       };
 
 export const SERVER_URL =
-  networkName === "mainnet"
+  typeof process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL
+    : networkName === "mainnet"
     ? ""
     : networkName === "murmuration"
     ? "https://murmuration.goldfinch.finance"

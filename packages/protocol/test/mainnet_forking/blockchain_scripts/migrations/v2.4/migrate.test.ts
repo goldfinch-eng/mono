@@ -31,7 +31,7 @@ import {
   CommunityRewardsInstance,
   GFIInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
+import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/rewards/CommunityRewards"
 import _ from "lodash"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
 import {assertCommunityRewardsVestingRewards} from "@goldfinch-eng/protocol/test/communityRewardsHelpers"
@@ -182,7 +182,6 @@ xdescribe("v2.4", async function () {
         grant: {amount},
       } = grant
 
-      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
       const recipientBalanceBefore = await gfi.balanceOf(recipient)
 
       await impersonateAccount(hre, recipient)
@@ -261,9 +260,8 @@ xdescribe("v2.4", async function () {
     for (const grant of sampledGrants) {
       const {
         index,
-        proof,
         account: recipient,
-        grant: {amount, vestingLength, cliffLength, vestingInterval},
+        grant: {amount},
       } = grant
 
       const rewardsAvailableBefore = await communityRewards.rewardsAvailable()

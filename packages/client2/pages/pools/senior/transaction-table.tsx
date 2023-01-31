@@ -4,7 +4,7 @@ import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
-import { Link, Table } from "@/components/design-system";
+import { Link, Table, goldfinchLogoPngUrl } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   TransactionCategory,
@@ -26,6 +26,7 @@ gql`
           SENIOR_POOL_WITHDRAWAL
           SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
           SENIOR_POOL_UNSTAKE
+          SENIOR_POOL_DISTRIBUTION
         ]
       }
       orderBy: timestamp
@@ -37,6 +38,8 @@ gql`
       transactionHash
       user {
         id
+        ENSName @client
+        ENSAvatar @client
       }
       timestamp
       category
@@ -55,22 +58,24 @@ gql`
 `;
 
 const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
-  TransactionCategory.SeniorPoolWithdrawal,
-  TransactionCategory.SeniorPoolUnstake,
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
+  "SENIOR_POOL_WITHDRAWAL",
+  "SENIOR_POOL_UNSTAKE",
+  "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL",
+  "TRANCHED_POOL_DRAWDOWN",
+  "SENIOR_POOL_DISTRIBUTION",
 ]);
 
 const sentTokenCategories = new Set<TransactionCategory>([
-  TransactionCategory.SeniorPoolStake,
-  TransactionCategory.SeniorPoolDepositAndStake,
-  TransactionCategory.TranchedPoolRepayment,
+  "SENIOR_POOL_STAKE",
+  "SENIOR_POOL_DEPOSIT_AND_STAKE",
+  "TRANCHED_POOL_REPAYMENT",
+  "SENIOR_POOL_DISTRIBUTION",
 ]);
 
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
   const { data, error, fetchMore } = useBorrowerTransactionsQuery({
-    variables: { first: 20, skip: 0 },
+    variables: { first: 10, skip: 0 },
   });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -104,8 +109,8 @@ export function TransactionTable() {
 
     return [
       <div key={`${transaction.id}-user`} className="flex items-center gap-2">
-        {transaction.category === TransactionCategory.TranchedPoolDrawdown ||
-        transaction.category === TransactionCategory.TranchedPoolRepayment ? (
+        {transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
+        transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
           <>
             <Image
               src={transaction.tranchedPool?.borrowerLogo as string}
@@ -116,8 +121,23 @@ export function TransactionTable() {
             />
             <div>{transaction.tranchedPool?.borrowerName}</div>
           </>
+        ) : transaction.category === "SENIOR_POOL_DISTRIBUTION" ? (
+          <>
+            <Image
+              src={goldfinchLogoPngUrl}
+              width={24}
+              height={24}
+              className="shrink-0 overflow-hidden rounded-full"
+              alt=""
+            />
+            <div>Goldfinch Protocol</div>
+          </>
         ) : (
-          <Address address={transaction.user.id} />
+          <Address
+            address={transaction.user.id}
+            ENSName={transaction.user.ENSName}
+            ENSAvatar={transaction.user.ENSAvatar}
+          />
         )}
       </div>,
       <div key={`${transaction.id}-category`} className="text-left">

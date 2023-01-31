@@ -9,6 +9,12 @@ import type {
 import type { Deal, Borrower } from "../generated/payload-types";
 import { revalidate } from "../lib/revalidate";
 
+function getDeals(borrower: Borrower): string[] {
+  // deals is Deal[] | string[]; types which don't overlap. We use it as a string[]
+  // so declare it as such to pacify typescript.
+  return (borrower.deals ?? []) as string[]
+}
+
 export const beforeDealChange: CollectionBeforeChangeHook<Deal> = async ({
   data,
   operation,
@@ -33,13 +39,15 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
     depth: 0,
   });
 
+  const deals = getDeals(newBorrower)
+
   // Add deal to borrower if it is not there
-  if (!(newBorrower.deals || []).includes(doc.id)) {
+  if (deals.includes(doc.id)) {
     await payload.update({
       collection: "borrowers",
       id: newBorrower.id,
       data: {
-        deals: [...(newBorrower.deals || []), doc.id],
+        deals: [...deals, doc.id],
       },
     });
   }
@@ -60,7 +68,7 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
       collection: "borrowers",
       id: oldBorrower.id,
       data: {
-        deals: (oldBorrower.deals || []).filter((deal) => deal !== doc.id),
+        deals: getDeals(oldBorrower).filter((deal) => deal !== doc.id),
       },
     });
   }
@@ -97,7 +105,7 @@ export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({
     collection: "borrowers",
     id: borrower.id,
     data: {
-      deals: (borrower.deals || []).filter((deal) => deal !== id),
+      deals: getDeals(borrower).filter((deal) => deal !== id),
     },
   });
 };

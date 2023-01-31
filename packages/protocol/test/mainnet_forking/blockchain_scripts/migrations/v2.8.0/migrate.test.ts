@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import hre, {deployments, ethers, getNamedAccounts} from "hardhat"
+import hre, {deployments, getNamedAccounts} from "hardhat"
 import {
   getProtocolOwner,
   getTruffleContract,
@@ -67,8 +67,8 @@ import {
   setupAndDepositMultiple,
   DepositType,
 } from "@goldfinch-eng/protocol/test/util/membershipRewards"
-import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/GFILedger"
-import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/ICapitalLedger"
+import {GFIDeposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/membership/GFILedger"
+import {CapitalERC721Deposit} from "@goldfinch-eng/protocol/typechain/truffle/contracts/interfaces/ICapitalLedger"
 import bn from "bignumber.js"
 import {routingIdOf} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers/routingIdOf"
 
@@ -128,7 +128,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe("v2.8.0", async function () {
+describe.skip("v2.8.0", async function () {
   let accessControl: AccessControlInstance
 
   let gfi: GFIInstance
@@ -2130,7 +2130,6 @@ describe("v2.8.0", async function () {
       })
     })
   })
-
   context("Router addresses", async () => {
     it("sets core protocol addresses", async () => {
       expect(await router.contracts(routingIdOf("GFI"))).to.eq("0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b")

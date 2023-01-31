@@ -7,9 +7,11 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {Rewards} from "../interfaces/IStakingRewards.sol";
 
+import {Rewards} from "../interfaces/IStakingRewards.sol";
+
 library StakingRewardsVesting {
-  using SafeMath for uint256;
   using StakingRewardsVesting for Rewards;
+  using SafeMath for uint256;
 
   uint256 internal constant PERCENTAGE_DECIMALS = 1e18;
 
@@ -26,7 +28,12 @@ library StakingRewardsVesting {
   }
 
   function checkpoint(Rewards storage rewards) internal {
-    uint256 newTotalVested = totalVestedAt(rewards.startTime, rewards.endTime, block.timestamp, rewards.currentGrant());
+    uint256 newTotalVested = totalVestedAt(
+      rewards.startTime,
+      rewards.endTime,
+      block.timestamp,
+      rewards.currentGrant()
+    );
 
     if (newTotalVested > rewards.totalVested) {
       uint256 difference = newTotalVested.sub(rewards.totalVested);

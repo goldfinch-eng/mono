@@ -39,18 +39,18 @@ export type DollarInputProps = ComponentProps<typeof Input> &
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
-  [SupportedFiat.Usd]: { mask: "$amount", scale: 2 },
-  [SupportedCrypto.Usdc]: { mask: "$amount USDC", scale: USDC_DECIMALS },
-  [SupportedCrypto.Fidu]: { mask: "amount FIDU", scale: FIDU_DECIMALS },
-  [SupportedCrypto.Gfi]: { mask: "amount GFI", scale: GFI_DECIMALS },
-  [SupportedCrypto.CurveLp]: {
+  USD: { mask: "$amount", scale: 2 },
+  USDC: { mask: "$amount USDC", scale: USDC_DECIMALS },
+  FIDU: { mask: "amount FIDU", scale: FIDU_DECIMALS },
+  GFI: { mask: "amount GFI", scale: GFI_DECIMALS },
+  CURVE_LP: {
     mask: "amount FIDU-USDC-F",
     scale: CURVE_LP_DECIMALS,
   },
 };
 
 export function DollarInput({
-  unit = SupportedCrypto.Usdc,
+  unit = "USDC",
   maxValue,
   onMaxClick,
   onChange: callbackOnChange,
@@ -62,7 +62,7 @@ export function DollarInput({
   ...rest
 }: DollarInputProps) {
   const {
-    field: { onChange: rhfOnChange, ...controllerField },
+    field: { onChange: rhfOnChange, ref, ...controllerField },
   } = useController({
     name,
     rules,
@@ -76,8 +76,17 @@ export function DollarInput({
     callbackOnChange?.(s);
   };
 
+  const refAssigner = (node: { element: HTMLInputElement }) => {
+    if (node) {
+      ref(node.element);
+    }
+  };
+
   return (
     <MaskedInput
+      // this is wack man
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={refAssigner as any}
       mask={unitProperties[unit].mask}
       blocks={{
         amount: {
@@ -101,7 +110,7 @@ export function DollarInput({
                 const max =
                   typeof maxValue === "function" ? await maxValue() : maxValue;
                 const formatted: string =
-                  unit === SupportedFiat.Usd
+                  unit === "USD"
                     ? formatFiat({ symbol: unit, amount: max.toNumber() })
                     : formatUnits(max, unitProperties[unit].scale);
                 onChange(formatted);
@@ -111,10 +120,10 @@ export function DollarInput({
               }
             }}
             className={clsx(
-              "block rounded-md border p-2 text-[10px] font-semibold uppercase leading-none text-white",
+              "block rounded border p-2 text-[10px] font-semibold uppercase leading-none text-white transition-colors",
               rest.colorScheme === "dark"
-                ? "border-sky-500 bg-sky-900"
-                : "border-sand-700 bg-sand-700"
+                ? "border-twilight-500 bg-twilight-700 hover:bg-twilight-800 active:bg-twilight-900"
+                : "border-transparent bg-sand-700 hover:bg-sand-800 active:bg-sand-900"
             )}
           >
             Max

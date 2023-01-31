@@ -40,14 +40,19 @@ interface IMembershipDirector {
    * @return eligibleScore score that is currently eligible for rewards
    * @return totalScore score that will be elgible for rewards next epoch
    */
-  function currentScore(address owner) external view returns (uint256 eligibleScore, uint256 totalScore);
+  function currentScore(
+    address owner
+  ) external view returns (uint256 eligibleScore, uint256 totalScore);
 
   /**
    * @notice Get the sum of all member scores that are currently eligible and that will be eligible next epoch
    * @return eligibleTotal sum of all member scores that are currently eligible
    * @return nextEpochTotal sum of all member scores that will be eligible next epoch
    */
-  function totalMemberScores() external view returns (uint256 eligibleTotal, uint256 nextEpochTotal);
+  function totalMemberScores()
+    external
+    view
+    returns (uint256 eligibleTotal, uint256 nextEpochTotal);
 
   /**
    * @notice Estimate the score for an existing member, given some changes in GFI and capital

@@ -7,8 +7,11 @@ import {
   indirectGfiGrantResolvers,
 } from "./gfi-grants";
 import { rootQueryResolvers } from "./query";
+import { seniorPoolResolvers } from "./senior-pool";
+import { seniorPoolWithdrawalRequestResolvers } from "./senior-pool-withdrawal-request";
 import { stakedPositionResolvers } from "./staked-position";
 import { tranchedPoolResolvers } from "./tranched-pool";
+import { userResolvers } from "./user";
 import { viewerResolvers } from "./viewer";
 
 export const resolvers: Resolvers = {
@@ -20,4 +23,7 @@ export const resolvers: Resolvers = {
   SeniorPoolStakedPosition: stakedPositionResolvers,
   CurvePool: curvePoolResolvers,
   TranchedPool: tranchedPoolResolvers,
+  SeniorPoolWithdrawalRequest: seniorPoolWithdrawalRequestResolvers,
+  SeniorPool: seniorPoolResolvers,
+  User: userResolvers,
 };

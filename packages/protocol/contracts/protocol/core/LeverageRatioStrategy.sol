@@ -3,16 +3,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "../../interfaces/ISeniorPoolStrategy.sol";
-import "../../interfaces/ISeniorPool.sol";
-import "../../interfaces/ITranchedPool.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {ISeniorPoolStrategy} from "../../interfaces/ISeniorPoolStrategy.sol";
+import {ISeniorPool} from "../../interfaces/ISeniorPool.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 
 abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
-  using SafeMath for uint256;
-
   uint256 internal constant LEVERAGE_RATIO_DECIMALS = 1e18;
 
   /**
@@ -24,7 +21,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @param pool The tranched pool to invest into (as the senior)
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
-  function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+  function invest(
+    ISeniorPool seniorPool,
+    ITranchedPool pool
+  ) public view override returns (uint256) {
     uint256 nSlices = pool.numSlices();
     // If the pool has no slices, we cant invest
     if (nSlices == 0) {
@@ -51,7 +51,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @param pool The tranched pool to invest into (as the senior)
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
-  function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+  function estimateInvestment(
+    ISeniorPool seniorPool,
+    ITranchedPool pool
+  ) public view override returns (uint256) {
     uint256 nSlices = pool.numSlices();
     // If the pool has no slices, we cant invest
     if (nSlices == 0) {
@@ -85,7 +88,10 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
   /// @param pool pool to fetch tranches from
   /// @param sliceIndex slice index to fetch tranches from
   /// @return (juniorTranche, seniorTranche)
-  function _getTranchesInSlice(ITranchedPool pool, uint256 sliceIndex)
+  function _getTranchesInSlice(
+    ITranchedPool pool,
+    uint256 sliceIndex
+  )
     internal
     view
     returns (

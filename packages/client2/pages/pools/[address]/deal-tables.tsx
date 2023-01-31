@@ -1,22 +1,21 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import { ReactNode } from "react";
 
 import {
   Button,
   InfoIconTooltip,
   ShimmerLines,
   Link,
+  HeavyTable,
+  HeavyTableRow,
 } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
 import {
-  SupportedCrypto,
   DealTermsTableFieldsFragment,
   SecuritiesRecourseTableFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
   BorrowerFinancialsTableFieldsFragment,
-  SupportedFiat,
   BorrowerPerformanceTableFieldsFragment,
   Deal_DealType,
 } from "@/lib/graphql/generated";
@@ -29,10 +28,12 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
     fundableAt
     creditLine {
       interestAprDecimal
-      maxLimit
+      limit
       paymentPeriodInDays
       termInDays
-      borrower
+      borrowerContract {
+        id
+      }
       lateFeeApr
     }
   }
@@ -120,7 +121,7 @@ export function DealTermsTable({
       {!tranchedPool ? (
         <ShimmerLines truncateFirstLine={false} lines={8} />
       ) : (
-        <Table
+        <HeavyTable
           rows={[
             [
               "Interest Rate",
@@ -131,8 +132,8 @@ export function DealTermsTable({
               "Drawdown cap",
               "The total funds that the Borrower can drawdown from this Pool.",
               formatCrypto({
-                token: SupportedCrypto.Usdc,
-                amount: tranchedPool.creditLine.maxLimit,
+                token: "USDC",
+                amount: tranchedPool.creditLine.limit,
               }),
             ],
             [
@@ -155,7 +156,7 @@ export function DealTermsTable({
               ),
             ],
             [
-              "Dealtype",
+              "Deal type",
               <div key="dealtype" className="max-w-sm">
                 <p>
                   <b>Unitranche</b> - Pool is funded by a single class of
@@ -178,7 +179,9 @@ export function DealTermsTable({
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer investments. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
               isMultitranche && tranchedPool.estimatedLeverageRatio
-                ? tranchedPool.estimatedLeverageRatio.toString()
+                ? `${tranchedPool.estimatedLeverageRatio
+                    .toUnsafeFloat()
+                    .toString()}x`
                 : "N/A",
             ],
             [
@@ -197,7 +200,7 @@ export function DealTermsTable({
             [
               "Borrower address",
               "The Ethereum address associated with this Borrower.",
-              tranchedPool.creditLine.borrower,
+              tranchedPool.creditLine.borrowerContract.id,
             ],
           ]}
         />
@@ -213,7 +216,7 @@ interface SecuritiesRecourseTableProps {
 export function SecuritiesRecourseTable({
   details,
 }: SecuritiesRecourseTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
   if (details?.secured) {
     rows.push(["Secured", null, details.secured === "yes" ? "Yes" : "No"]);
   }
@@ -261,7 +264,7 @@ export function SecuritiesRecourseTable({
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Securities and recourse</h2>
-      <Table rows={rows} />
+      <HeavyTable rows={rows} />
     </div>
   );
 }
@@ -275,7 +278,7 @@ export function BorrowerFinancialsTable({
   otherPools,
   borrowerFinancials,
 }: BorrowerFinancialsTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
 
   if (borrowerFinancials?.totalLoansOriginated) {
     rows.push([
@@ -283,7 +286,7 @@ export function BorrowerFinancialsTable({
       null,
       formatFiat({
         amount: borrowerFinancials.totalLoansOriginated,
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
       }),
     ]);
   }
@@ -293,7 +296,7 @@ export function BorrowerFinancialsTable({
       null,
       formatFiat({
         amount: borrowerFinancials.currentLoansOutstanding,
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
       }),
     ]);
   }
@@ -302,7 +305,7 @@ export function BorrowerFinancialsTable({
       "AUM",
       null,
       formatFiat({
-        symbol: SupportedFiat.Usd,
+        symbol: "USD",
         amount: borrowerFinancials.aum,
       }),
     ]);
@@ -364,7 +367,7 @@ export function BorrowerFinancialsTable({
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Borrower Financials</h2>
-      <Table rows={rows} />
+      <HeavyTable rows={rows} />
     </div>
   );
 }
@@ -376,7 +379,7 @@ interface UnderwritingPerformanceTableProps {
 export function UnderwritingPerformanceTable({
   details,
 }: UnderwritingPerformanceTableProps) {
-  const rows: TableRow[] = [];
+  const rows: HeavyTableRow[] = [];
   if (details?.performanceDocument) {
     rows.push([
       "Performance and loss rate",
@@ -413,36 +416,7 @@ export function UnderwritingPerformanceTable({
       <h2 className="mb-8 text-lg font-semibold">
         Underwriting &amp; Performance
       </h2>
-      <Table rows={rows} />
-    </div>
-  );
-}
-
-type TableRow = [string, string | ReactNode | null, ReactNode];
-
-function Table({ rows }: { rows: TableRow[] }) {
-  return (
-    <div className="overflow-auto">
-      <table className="w-full border-collapse border border-sand-200 text-sand-600">
-        <tbody>
-          {rows.map(([heading, tooltip, value], index) => (
-            <tr key={index} className="border border-sand-200">
-              <th
-                scope="row"
-                className="bg-sand-50 p-5 text-left align-top font-medium sm:min-w-[260px]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-sand-600">{heading}</div>
-                  {tooltip ? (
-                    <InfoIconTooltip size="sm" content={tooltip} />
-                  ) : null}
-                </div>
-              </th>
-              <td className="p-5 align-top">{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <HeavyTable rows={rows} />
     </div>
   );
 }

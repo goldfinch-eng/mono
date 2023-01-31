@@ -7,9 +7,11 @@ import { Identicon } from "../identicon";
 
 interface AddressProps {
   address: string;
+  ENSName?: string | null;
+  ENSAvatar?: string | null;
 }
 
-export function Address({ address }: AddressProps) {
+export function Address({ address, ENSName, ENSAvatar }: AddressProps) {
   const [showCopied, setShowCopied] = useState(false);
   const copyAddress = () => {
     navigator.clipboard.writeText(address);
@@ -22,7 +24,7 @@ export function Address({ address }: AddressProps) {
       placement="right"
       content={
         showCopied ? (
-          "Copied to clipboard"
+          "Copied address to clipboard"
         ) : (
           <button
             className="flex items-center justify-center"
@@ -34,8 +36,17 @@ export function Address({ address }: AddressProps) {
       }
     >
       <button className="flex items-center gap-2" onClick={copyAddress}>
-        <Identicon account={address} className="h-6 w-6 shrink-0" />
-        <span>{abbreviateAddress(address)}</span>
+        {ENSAvatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            src={ENSAvatar}
+            className="h-6 w-6 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <Identicon account={address} className="h-6 w-6 shrink-0" />
+        )}
+        <span>{ENSName ? ENSName : abbreviateAddress(address)}</span>
       </button>
     </Tooltip>
   );

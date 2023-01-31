@@ -9,16 +9,15 @@ import {
   Form,
   Paragraph,
 } from "@/components/design-system";
-import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { FIDU_DECIMALS, USDC_DECIMALS, USDC_MANTISSA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatPercent } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 interface LpCurveFormProps {
-  balance: CryptoAmount;
+  balance: CryptoAmount<"FIDU" | "USDC">;
   type: "FIDU" | "USDC";
   onComplete: () => Promise<unknown>;
 }
@@ -123,7 +122,6 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
       });
 
       const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
-      const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
       const value = utils.parseUnits(
         amount,
         type === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
@@ -144,7 +142,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
         const realValue = fiduAmount
           .mul(fiduSharePrice)
           .div(fiduMantissa)
-          .add(usdcAmount.mul(fiduMantissa).div(usdcMantissa));
+          .add(usdcAmount.mul(fiduMantissa).div(USDC_MANTISSA));
         const slippage = Math.abs(
           FixedNumber.from(virtualValue)
             .divUnsafe(FixedNumber.from(realValue))

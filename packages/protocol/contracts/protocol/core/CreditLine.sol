@@ -3,14 +3,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./GoldfinchConfig.sol";
-import "./ConfigHelper.sol";
-import "./BaseUpgradeablePausable.sol";
-import "./Accountant.sol";
-import "../../interfaces/IERC20withDec.sol";
-import "../../interfaces/ICreditLine.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {Accountant} from "./Accountant.sol";
+import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
  * @title CreditLine
@@ -61,7 +60,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 _lateFeeApr,
     uint256 _principalGracePeriodInDays
   ) public initializer {
-    require(_config != address(0) && owner != address(0) && _borrower != address(0), "Zero address passed in");
+    require(
+      _config != address(0) && owner != address(0) && _borrower != address(0),
+      "Zero address passed in"
+    );
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
     borrower = _borrower;
@@ -104,7 +106,9 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       }
     }
 
-    (uint256 _interestOwed, uint256 _principalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    (uint256 _interestOwed, uint256 _principalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(
+      timestamp
+    );
     balance = balance.add(amount);
 
     updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
@@ -179,15 +183,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    * @return Amount applied towards interest
    * @return Amount applied towards principal
    */
-  function assess()
-    public
-    onlyAdmin
-    returns (
-      uint256,
-      uint256,
-      uint256
-    )
-  {
+  function assess() public onlyAdmin returns (uint256, uint256, uint256) {
     // Do not assess until a full period has elapsed or past due
     require(balance > 0, "Must have balance to assess credit line");
 
@@ -220,7 +216,9 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     // Active loan that has entered a new period, so return the *next* newNextDueTime.
     // But never return something after the termEndTime
     if (balance > 0 && curTimestamp >= newNextDueTime) {
-      uint256 secondsToAdvance = (curTimestamp.sub(newNextDueTime).div(secondsPerPeriod)).add(1).mul(secondsPerPeriod);
+      uint256 secondsToAdvance = (curTimestamp.sub(newNextDueTime).div(secondsPerPeriod))
+        .add(1)
+        .mul(secondsPerPeriod);
       newNextDueTime = newNextDueTime.add(secondsToAdvance);
       return Math.min(newNextDueTime, termEndTime);
     }
@@ -259,15 +257,13 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    * @param timestamp The timestamp on which accrual calculations should be based. This allows us
    *  to be precise when we assess a Credit Line
    */
-  function handlePayment(uint256 paymentAmount, uint256 timestamp)
-    internal
-    returns (
-      uint256,
-      uint256,
-      uint256
-    )
-  {
-    (uint256 newInterestOwed, uint256 newPrincipalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+  function handlePayment(
+    uint256 paymentAmount,
+    uint256 timestamp
+  ) internal returns (uint256, uint256, uint256) {
+    (uint256 newInterestOwed, uint256 newPrincipalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(
+      timestamp
+    );
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       balance,
@@ -292,12 +288,11 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function _updateAndGetInterestAndPrincipalOwedAsOf(uint256 timestamp) internal returns (uint256, uint256) {
-    (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
-      this,
-      timestamp,
-      config.getLatenessGracePeriodInDays()
-    );
+  function _updateAndGetInterestAndPrincipalOwedAsOf(
+    uint256 timestamp
+  ) internal returns (uint256, uint256) {
+    (uint256 interestAccrued, uint256 principalAccrued) = Accountant
+      .calculateInterestAndPrincipalAccrued(this, timestamp, config.getLatenessGracePeriodInDays());
     if (interestAccrued > 0) {
       // If we've accrued any interest, update interestAccruedAsOf to the time that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next

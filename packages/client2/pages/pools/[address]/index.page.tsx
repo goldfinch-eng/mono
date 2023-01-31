@@ -1,7 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
@@ -22,13 +22,10 @@ import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
-  SupportedCrypto,
-  UidType,
   useSingleTranchedPoolDataQuery,
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
-  Deal_DealType,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -62,7 +59,6 @@ import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-  WITHDRAWAL_PANEL_ZAP_FIELDS,
 } from "./withdrawal-panel";
 
 gql`
@@ -70,7 +66,6 @@ gql`
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
-  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -101,7 +96,9 @@ gql`
         paymentPeriodInDays
         nextDueTime
         interestAprDecimal
-        borrower
+        borrowerContract {
+          id
+        }
         lateFeeApr
       }
       initialInterestOwed
@@ -116,11 +113,8 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -133,9 +127,6 @@ gql`
       ...SupplyPanelUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
-      }
-      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
-        ...WithdrawalPanelZapFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         id
@@ -213,6 +204,7 @@ const singleDealQuery = gql`
       defaultInterestRate
       transactionStructure {
         filename
+        fileNameOverride
         alt
         url
         mimeType
@@ -254,7 +246,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-  const isMultitranche = dealDetails.dealType === Deal_DealType.Multitranche;
+  const isMultitranche = dealDetails.dealType === "multitranche";
 
   if (error) {
     return (
@@ -266,25 +258,31 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
   const backerSupply = tranchedPool?.juniorDeposited
-    ? {
-        token: SupportedCrypto.Usdc,
+    ? ({
+        token: "USDC",
         amount: tranchedPool.juniorDeposited,
-      }
+      } as const)
     : undefined;
+
   const seniorSupply =
     backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
-      ? {
-          token: SupportedCrypto.Usdc,
-          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
-        }
+      ? ({
+          token: "USDC",
+          amount: utils.parseUnits(
+            FixedNumber.from(backerSupply.amount)
+              .mulUnsafe(tranchedPool.estimatedLeverageRatio)
+              .toString(),
+            0
+          ),
+        } as const)
       : undefined;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =
-    tranchedPool?.allowedUidTypes.includes(UidType.UsAccreditedIndividual) ||
-    tranchedPool?.allowedUidTypes.includes(UidType.UsEntity);
+    tranchedPool?.allowedUidTypes.includes("US_ACCREDITED_INDIVIDUAL") ||
+    tranchedPool?.allowedUidTypes.includes("US_ENTITY");
   const noUid =
     !user?.isNonUsEntity &&
     !user?.isNonUsIndividual &&
@@ -331,15 +329,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </BannerPortal>
       ) : null}
 
-      {poolStatus !== null && poolStatus !== undefined && (
-        <SubnavPortal>
+      <SubnavPortal>
+        {poolStatus && tranchedPool ? (
           <Marquee colorScheme={getMarqueeColor(poolStatus)}>
             {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
           </Marquee>
-          {/* gives the illusion of rounded corners on the top of the page */}
-          <div className="-mt-3 h-3 rounded-t-xl bg-white" />
-        </SubnavPortal>
-      )}
+        ) : (
+          <Marquee className="invisible">LOADING (placeholder)</Marquee>
+        )}
+        {/* gives the illusion of rounded corners on the top of the page */}
+        <div className="-mt-3 h-3 rounded-t-xl bg-white" />
+      </SubnavPortal>
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
@@ -382,7 +382,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               goal={
                 tranchedPool?.creditLine.maxLimit
                   ? {
-                      token: SupportedCrypto.Usdc,
+                      token: "USDC",
                       amount: tranchedPool.creditLine.maxLimit,
                     }
                   : undefined
@@ -397,9 +397,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               className="mt-12"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-              }
+              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
               fiatPerGfi={fiatPerGfi}
             />
           ) : null}
@@ -413,20 +411,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   tranchedPool={tranchedPool}
                   user={user}
                   fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
                   agreement={dealDetails.agreement}
-                  isUnitrancheDeal={
-                    dealDetails.dealType === Deal_DealType.Unitranche
-                  }
+                  isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />
               ) : null}
 
               {data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0 ||
                 data?.user.vaultedPoolTokens.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
@@ -434,7 +426,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   vaultedPoolTokens={data.user.vaultedPoolTokens.map(
                     (v) => v.poolToken
                   )}
-                  zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
                     BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(

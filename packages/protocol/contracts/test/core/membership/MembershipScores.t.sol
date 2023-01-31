@@ -19,7 +19,12 @@ contract MembershipScoresTest is Test {
 
   function test_calculateScore_failUintConversion() public {
     vm.expectRevert("SafeCast: value doesn't fit in an int256");
-    MembershipScores.calculateScore(1 * 1e18, 2 * 1e6, uint256(type(int256).max) + 1, uint256(type(int256).max) + 2);
+    MembershipScores.calculateScore(
+      1 * 1e18,
+      2 * 1e6,
+      uint256(type(int256).max) + 1,
+      uint256(type(int256).max) + 2
+    );
 
     vm.expectRevert("SafeCast: value doesn't fit in an int256");
     MembershipScores.calculateScore(1 * 1e18, 2 * 1e6, 1, type(uint256).max);
@@ -34,10 +39,26 @@ contract MembershipScoresTest is Test {
     assertEq(MembershipScores.calculateScore(1 * 1e18, 1 * 1e6, 1, 2), 1 * 1e18);
     assertEq(MembershipScores.calculateScore(2 * 1e18, 2 * 1e6, 1, 2), 2 * 1e18);
     assertEq(MembershipScores.calculateScore(3 * 1e18, 3 * 1e6, 1, 2), 3 * 1e18);
-    assertApproxEqAbs(MembershipScores.calculateScore(1 * 1e18, 2 * 1e6, 1, 2), 1414213562373000000, 1e6);
-    assertApproxEqAbs(MembershipScores.calculateScore(2 * 1e18, 1 * 1e6, 1, 2), 1414213562373000000, 1e6);
-    assertApproxEqAbs(MembershipScores.calculateScore(3 * 1e18, 2 * 1e6, 1, 2), 2449489742783000000, 1e6);
-    assertApproxEqAbs(MembershipScores.calculateScore(2 * 1e18, 3 * 1e6, 1, 2), 2449489742783000000, 1e6);
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(1 * 1e18, 2 * 1e6, 1, 2),
+      1414213562373000000,
+      1e6
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(2 * 1e18, 1 * 1e6, 1, 2),
+      1414213562373000000,
+      1e6
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(3 * 1e18, 2 * 1e6, 1, 2),
+      2449489742783000000,
+      1e6
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(2 * 1e18, 3 * 1e6, 1, 2),
+      2449489742783000000,
+      1e6
+    );
   }
 
   function test_calculateScore_commutative(uint256 a, uint256 b) public {
@@ -65,7 +86,11 @@ contract MembershipScoresTest is Test {
       1e16
     );
 
-    assertApproxEqAbs(MembershipScores.calculateScore(a, b, 1, 2), MembershipScores.calculateScore(b, a, 1, 2), 1e16);
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(a, b, 1, 2),
+      MembershipScores.calculateScore(b, a, 1, 2),
+      1e16
+    );
   }
 
   function test_calculateScore_simple(uint256 x) public {
@@ -90,12 +115,22 @@ contract MembershipScoresTest is Test {
 
       assertTrue(
         evenSplit >
-          MembershipScores.calculateScore((x * 1e18 * i) / iterations, (x * 1e6 * (iterations - i)) / iterations, 1, 2)
+          MembershipScores.calculateScore(
+            (x * 1e18 * i) / iterations,
+            (x * 1e6 * (iterations - i)) / iterations,
+            1,
+            2
+          )
       );
 
       assertTrue(
         evenSplit >
-          MembershipScores.calculateScore((x * 1e18 * (iterations - i)) / iterations, (x * 1e6 * i) / iterations, 1, 2)
+          MembershipScores.calculateScore(
+            (x * 1e18 * (iterations - i)) / iterations,
+            (x * 1e6 * i) / iterations,
+            1,
+            2
+          )
       );
     }
   }
@@ -103,13 +138,33 @@ contract MembershipScoresTest is Test {
   function test_calculateScore_fractional() public {
     // Test that fractional values evaluate within expected bounds
 
-    assertApproxEqAbs(MembershipScores.calculateScore(100 * 1e18, 1, 1, 2), 10000000000000000, 1e16);
-    assertApproxEqAbs(MembershipScores.calculateScore(100 * 1e18, 1e6 / 2, 1, 2), 7071067811870000000, 1e16);
-    assertApproxEqAbs(MembershipScores.calculateScore(100 * 1e18, 1e6 - 1, 1, 2), 9999994999990000000, 1e16);
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(100 * 1e18, 1, 1, 2),
+      10000000000000000,
+      1e16
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(100 * 1e18, 1e6 / 2, 1, 2),
+      7071067811870000000,
+      1e16
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(100 * 1e18, 1e6 - 1, 1, 2),
+      9999994999990000000,
+      1e16
+    );
 
     assertApproxEqAbs(MembershipScores.calculateScore(1, 100 * 1e6, 1, 2), 10000000000000000, 1e16);
-    assertApproxEqAbs(MembershipScores.calculateScore(1e18 / 2, 100 * 1e6, 1, 2), 7071067811870000000, 1e16);
-    assertApproxEqAbs(MembershipScores.calculateScore(1e18 - 1, 100 * 1e6, 1, 2), 9999994999990000000, 1e16);
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(1e18 / 2, 100 * 1e6, 1, 2),
+      7071067811870000000,
+      1e16
+    );
+    assertApproxEqAbs(
+      MembershipScores.calculateScore(1e18 - 1, 100 * 1e6, 1, 2),
+      9999994999990000000,
+      1e16
+    );
   }
 
   function test_calculateScore_fuzzyMagnitude(uint256 gfi, uint256 capital) public {
@@ -137,7 +192,10 @@ contract MembershipScoresTest is Test {
     vm.assume(capital < 1e12);
 
     // Less than or equal because if gfi ~= capital then score = gfi = capital
-    assertTrue(MembershipScores.calculateScore(gfi * 1e18, capital * 1e6, 1, 2) <= (gfi * 1e18 * capital * 1e6) / 2);
+    assertTrue(
+      MembershipScores.calculateScore(gfi * 1e18, capital * 1e6, 1, 2) <=
+        (gfi * 1e18 * capital * 1e6) / 2
+    );
   }
 
   function test_calculateScore_all() public {
@@ -172,7 +230,10 @@ contract MembershipScoresTest is Test {
     // required bounds and do not need to adjust.
 
     string memory root = vm.projectRoot();
-    string memory path = string.concat(root, "/contracts/test/fixtures/cobb_douglas_actualBase.json");
+    string memory path = string.concat(
+      root,
+      "/contracts/test/fixtures/cobb_douglas_actualBase.json"
+    );
     string memory data = vm.readFile(path);
     bytes memory parsedData = vm.parseJson(data);
     TestCase[] memory testCases = abi.decode(parsedData, (TestCase[]));

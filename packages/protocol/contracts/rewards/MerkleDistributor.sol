@@ -53,7 +53,9 @@ contract MerkleDistributor is IMerkleDistributor {
     /// it is important that no more than one of the arguments to `abi.encodePacked()` here be a
     /// dynamic type (see definition in
     /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#formal-specification-of-the-encoding).
-    bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount, vestingLength, cliffLength, vestingInterval));
+    bytes32 node = keccak256(
+      abi.encodePacked(index, msg.sender, amount, vestingLength, cliffLength, vestingInterval)
+    );
     require(MerkleProof.verify(merkleProof, merkleRoot, node), "Invalid proof");
 
     // Mark it accepted and perform the granting.
@@ -66,6 +68,14 @@ contract MerkleDistributor is IMerkleDistributor {
       vestingInterval
     );
 
-    emit GrantAccepted(tokenId, index, msg.sender, amount, vestingLength, cliffLength, vestingInterval);
+    emit GrantAccepted(
+      tokenId,
+      index,
+      msg.sender,
+      amount,
+      vestingLength,
+      cliffLength,
+      vestingInterval
+    );
   }
 }

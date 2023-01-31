@@ -2,6 +2,7 @@
 const colors = require("tailwindcss/colors");
 const defaultTheme = require("tailwindcss/defaultTheme");
 
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
@@ -10,6 +11,18 @@ module.exports = {
   ],
   theme: {
     colors: {
+      twilight: {
+        50: "#F4F6FE",
+        100: "#E4E6F4",
+        200: "#DBDEEE",
+        300: "#C3C7E1",
+        400: "#9BA0C0",
+        500: "#6B7091",
+        600: "#4C5172",
+        700: "#3A3E5F",
+        800: "#1F2445",
+        900: "#1D213B",
+      },
       sand: {
         50: "#FAFAF9",
         100: "#F5F5F4",
@@ -135,12 +148,19 @@ module.exports = {
           "0%": { transform: "translateX(0%)" },
           "100%": { transform: "translateX(-100%)" },
         },
+        twinkle: {
+          "0%": { transform: "scale(0) rotate(0deg)" },
+          "50%": { transform: "scale(1) rotate(180deg)" },
+          "100%": { transform: "scale(0) rotate(359deg)" },
+        },
       },
       animation: {
         "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
         marquee: "marquee 60s linear infinite",
+        twinkle: "twinkle 1s",
       },
       backgroundImage: {
+        "midnight-01": "linear-gradient(180deg, #626A9B 0%, #222749 100%)",
         "sunrise-01":
           "linear-gradient(180deg, rgba(29,50,95,1) 0%, rgba(118,95,148,1) 50%, rgba(248,224,206,1) 100%)",
         "sunrise-02":

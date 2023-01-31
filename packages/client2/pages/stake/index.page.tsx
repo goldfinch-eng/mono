@@ -9,11 +9,7 @@ import {
   Shimmer,
 } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  StakedPositionType,
-  SupportedCrypto,
-  useStakePageQuery,
-} from "@/lib/graphql/generated";
+import { useStakePageQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -57,12 +53,9 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApy
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApy
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -72,18 +65,9 @@ gql`
       }
     }
     viewer @client {
-      usdcBalance {
-        token
-        amount
-      }
-      fiduBalance {
-        token
-        amount
-      }
-      curveLpBalance {
-        token
-        amount
-      }
+      usdcBalance
+      fiduBalance
+      curveLpBalance
     }
     curvePool @client {
       estimatedCurveStakingApyRaw
@@ -115,23 +99,23 @@ export default function StakePage() {
     amount: sum("amount", fiduPositions).add(
       sum("amount", vaultedFiduPositions)
     ),
-    token: SupportedCrypto.Fidu,
-  };
+    token: "FIDU",
+  } as const;
   const curveStaked = {
     amount: sum("amount", curvePositions),
-    token: SupportedCrypto.CurveLp,
-  };
+    token: "CURVE_LP",
+  } as const;
   const fiduBalance = data?.viewer.fiduBalance ?? {
     amount: BigNumber.from(0),
-    token: SupportedCrypto.Fidu,
+    token: "FIDU",
   };
   const curveBalance = data?.viewer.curveLpBalance ?? {
     amount: BigNumber.from(0),
-    token: SupportedCrypto.CurveLp,
+    token: "CURVE_LP",
   };
   const usdcBalance = data?.viewer.usdcBalance ?? {
     amount: BigNumber.from(0),
-    token: SupportedCrypto.Usdc,
+    token: "USDC",
   };
 
   const curveApyFromGfi = data
@@ -207,7 +191,7 @@ export default function StakePage() {
                 headingLabel="Token to stake"
                 slot1={`${formatPercent(
                   computeApyFromGfiInFiat(
-                    data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
+                    data.seniorPools[0].estimatedApyFromGfiRaw,
                     data.gfiPrice.price.amount
                   )
                 )} GFI`}
@@ -227,14 +211,14 @@ export default function StakePage() {
                     <Tab.Panel>
                       <StakeForm
                         max={fiduBalance}
-                        positionType={StakedPositionType.Fidu}
+                        positionType="Fidu"
                         onComplete={refetch}
                       />
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
                         positions={fiduPositions}
-                        positionType={StakedPositionType.Fidu}
+                        positionType="Fidu"
                         onComplete={refetch}
                         showVaultWarning={vaultedFiduPositions.length > 0}
                       />
@@ -248,9 +232,7 @@ export default function StakePage() {
                       <MigrateForm
                         usdcBalance={usdcBalance}
                         positions={fiduPositions}
-                        sharePrice={
-                          data.seniorPools[0].latestPoolStatus.sharePrice
-                        }
+                        sharePrice={data.seniorPools[0].sharePrice}
                         onComplete={refetch}
                         showVaultWarning={vaultedFiduPositions.length > 0}
                       />
@@ -282,14 +264,14 @@ export default function StakePage() {
                     <Tab.Panel>
                       <StakeForm
                         max={curveBalance}
-                        positionType={StakedPositionType.CurveLp}
+                        positionType="CurveLP"
                         onComplete={refetch}
                       />
                     </Tab.Panel>
                     <Tab.Panel>
                       <UnstakeForm
                         positions={curvePositions}
-                        positionType={StakedPositionType.CurveLp}
+                        positionType="CurveLP"
                         onComplete={refetch}
                       />
                     </Tab.Panel>

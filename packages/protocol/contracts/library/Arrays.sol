@@ -12,10 +12,10 @@ library Arrays {
    * @return replaced whether or not the index was replaced. Only false if the removed item was the last item
    *  in the array.
    */
-  function reorderingRemove(uint256[] storage array, uint256 index)
-    internal
-    returns (uint256 newLength, bool replaced)
-  {
+  function reorderingRemove(
+    uint256[] storage array,
+    uint256 index
+  ) internal returns (uint256 newLength, bool replaced) {
     newLength = array.length - 1;
     replaced = newLength != index;
 
