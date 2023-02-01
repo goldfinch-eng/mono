@@ -21,20 +21,23 @@ function ManageNavOption() {
       <Popover
         content={() => (
           <div>
-            {MANAGE_SUB_NAV_ITEMS.map((item) => {
-              const showNewText = item.href === "/membership";
+            {MANAGE_SUB_NAV_ITEMS.map(({ label, href }) => {
+              const showNewText = href === "/membership";
 
               return (
-                <div key={`secondary-menu-${item.label}`} className="flex">
-                  <NextLink passHref href={item.href}>
-                    <a className="flex items-center justify-between py-2 text-sm font-medium hover:underline">
-                      <span className={showNewText ? "mr-1" : "mr-4"}>
-                        {item.label}
-                      </span>
+                <div key={`secondary-menu-${label}`} className="flex">
+                  <NextLink passHref href={href}>
+                    <a
+                      className={clsx(
+                        "flex items-center justify-between py-2 text-sm font-medium hover:underline",
+                        showNewText ? "mr-1" : "mr-4"
+                      )}
+                    >
+                      {label}
                     </a>
                   </NextLink>
                   {showNewText && (
-                    <span className="py-1.5 text-[10px] font-semibold text-mustard-500">
+                    <span className="pt-1.5 text-[10px] font-semibold text-mustard-500">
                       NEW
                     </span>
                   )}
