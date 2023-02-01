@@ -18,6 +18,10 @@ export const MANAGE_SUB_NAV_ITEMS: NavItem[] = [
 ];
 
 export const SECONDARY_MENU_ITEMS = [
+  {
+    label: "Getting started",
+    href: "https://docs.goldfinch.finance/goldfinch/guides/getting-started",
+  },
   { label: "Governance", href: "https://gov.goldfinch.finance/" },
   { label: "Docs", href: "https://docs.goldfinch.finance/goldfinch/" },
   {

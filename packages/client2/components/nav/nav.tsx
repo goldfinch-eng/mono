@@ -17,35 +17,49 @@ function ManageNavOption() {
   ).includes(router.pathname);
 
   return (
-    <Popover
-      content={() => (
-        <div>
-          {MANAGE_SUB_NAV_ITEMS.map((item) => (
-            <a
-              href={item.href}
-              key={`secondary-menu-${item.label}`}
-              className="flex items-center justify-between py-2 text-sm font-medium hover:underline"
-              rel="noreferrer"
-            >
-              <span className="mr-4">{item.label}</span>
-            </a>
-          ))}
-        </div>
-      )}
-      trigger="hover"
-    >
-      <button
-        className={clsx(
-          "flex cursor-pointer items-center border-b-2 px-5 text-sm font-medium !no-underline",
-          isManageNavActive
-            ? "border-eggplant-600 text-sand-900"
-            : "border-transparent text-sand-700"
+    <>
+      <Popover
+        content={() => (
+          <div>
+            {MANAGE_SUB_NAV_ITEMS.map((item) => {
+              const showNewText = item.href === "/membership";
+
+              return (
+                <div key={`secondary-menu-${item.label}`} className="flex">
+                  <a
+                    href={item.href}
+                    className="flex items-center justify-between py-2 text-sm font-medium hover:underline"
+                    rel="noreferrer"
+                  >
+                    <span className={showNewText ? "mr-1" : "mr-4"}>
+                      {item.label}
+                    </span>
+                  </a>
+                  {showNewText && (
+                    <span className="py-1.5 text-[10px] font-semibold text-mustard-500">
+                      NEW
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
+        trigger="hover"
       >
-        Manage
-        <Icon name="ChevronDown" size="sm" className="ml-0.5" />
-      </button>
-    </Popover>
+        <button
+          className={clsx(
+            "flex cursor-pointer items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
+            isManageNavActive
+              ? "border-mustard-500 text-sand-900"
+              : "border-transparent text-sand-700"
+          )}
+        >
+          Manage
+          <Icon name="ChevronDown" size="sm" className="ml-0.5" />
+        </button>
+      </Popover>
+    </>
   );
 }
 
@@ -63,17 +77,14 @@ export function Nav() {
         <div className="flex flex-1">
           <NextLink href="/" passHref>
             <a className="flex items-center justify-center p-3">
-              <GoldfinchLogo className="h-7 w-7" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard-300">
+                <GoldfinchLogo className="h-5 w-5" />
+              </div>
             </a>
           </NextLink>
         </div>
 
         <nav className="hidden flex-1 flex-row justify-center md:flex">
-          {/* {NAV_ITEMS.map(({ label, href }) => (
-            <NavLink key={`${label}-${href}`} href={href}>
-              {label}
-            </NavLink>
-          ))} */}
           <NavLink href="/earn">Deals</NavLink>
           <ManageNavOption />
           <NavLink href="/borrow">Borrow</NavLink>
@@ -106,10 +117,10 @@ export function NavLink({
   return (
     <Link
       className={clsx(
-        "flex items-center border-b-2 px-5 text-sm font-medium !no-underline",
+        "flex items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
         isCurrentPage
-          ? "border-eggplant-600 text-sand-900"
-          : "border-transparent text-sand-700 hover:border-eggplant-600",
+          ? "border-mustard-500 text-sand-900"
+          : "border-transparent text-sand-700 hover:border-mustard-500",
         className
       )}
       href={href}
