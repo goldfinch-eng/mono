@@ -253,7 +253,7 @@ export function SeniorPoolSupplyPanel({
         <MiniTable
           deemphasizeRowHeadings
           omitVerticalBorders
-          bodyRows={[
+          rows={[
             ["USDC", formatPercent(seniorPoolApyUsdc)],
             ["GFI", formatPercent(seniorPoolApyFromGfiFiat)],
           ]}
