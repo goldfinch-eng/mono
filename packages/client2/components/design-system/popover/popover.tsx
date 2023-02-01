@@ -23,6 +23,7 @@ interface PopoverProps {
   children: JSX.Element;
   content: ReactNode | (({ close }: { close: () => void }) => ReactNode);
   placement?: Placement;
+  offset?: number;
   trigger?: "click" | "hover";
 }
 
@@ -44,6 +45,7 @@ export function Popover({
   children,
   content,
   placement = "bottom",
+  offset: offsetAmount = 12,
   trigger = "click",
 }: PopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +55,7 @@ export function Popover({
       onOpenChange: setIsOpen,
       strategy: "fixed",
       placement,
-      middleware: [offset(12), flip(), shift({ padding: 12 })],
+      middleware: [offset(offsetAmount), flip(), shift({ padding: 12 })],
     });
 
   const interactionProps =

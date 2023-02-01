@@ -45,6 +45,7 @@ function ManageNavOption() {
             })}
           </div>
         )}
+        offset={-6}
         trigger="hover"
       >
         <button
