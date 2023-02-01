@@ -1,7 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
-import clsx from "clsx";
 import { BigNumber } from "ethers/lib/ethers";
-import { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -10,6 +8,7 @@ import {
   Form,
   InfoIconTooltip,
   Link,
+  MiniTable,
 } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -198,58 +197,49 @@ export function ClaimPanel({
           })}
         </div>
       </div>
-      <MiniTable className="mb-4">
-        <tbody>
-          <tr className="first-row group">
-            <MiniTableCell fadingBg>
-              <div className="flex items-center justify-between gap-2">
-                USDC
-                <InfoIconTooltip
-                  size="xs"
-                  className="text-white opacity-60"
-                  content="This includes your claimable principal and interest."
-                />
-              </div>
-            </MiniTableCell>
-            <MiniTableCell alignRight fadingText>
-              {formatCrypto(claimableUsdc, {
-                includeSymbol: false,
-                includeToken: true,
-              })}
-            </MiniTableCell>
-            <MiniTableCell alignRight>
-              {formatCrypto(claimableUsdc, {
-                includeSymbol: true,
-                includeToken: false,
-              })}
-            </MiniTableCell>
-          </tr>
-          <tr className="last-row group">
-            <MiniTableCell fadingBg>
-              <div className="flex items-center justify-between gap-2">
-                GFI
-                <InfoIconTooltip
-                  size="xs"
-                  className="text-white opacity-60"
-                  content="Your GFI rewards for backing this pool."
-                />
-              </div>
-            </MiniTableCell>
-            <MiniTableCell alignRight fadingText>
-              {formatCrypto(claimableGfi, {
-                includeSymbol: false,
-                includeToken: true,
-              })}
-            </MiniTableCell>
-            <MiniTableCell alignRight>
-              {formatCrypto(claimableGfiAsUsdc, {
-                includeSymbol: true,
-                includeToken: false,
-              })}
-            </MiniTableCell>
-          </tr>
-        </tbody>
-      </MiniTable>
+      {/* eslint-disable react/jsx-key */}
+      <MiniTable
+        className="mb-4"
+        deemphasizeMiddleCols
+        rows={[
+          [
+            <div className="flex items-center justify-between gap-2">
+              USDC
+              <InfoIconTooltip
+                size="xs"
+                className="text-white opacity-60"
+                content="This includes your claimable principal and interest."
+              />
+            </div>,
+            formatCrypto(claimableUsdc, {
+              includeSymbol: false,
+              includeToken: true,
+            }),
+            formatCrypto(claimableUsdc, {
+              includeSymbol: true,
+              includeToken: false,
+            }),
+          ],
+          [
+            <div className="flex items-center justify-between gap-2">
+              GFI
+              <InfoIconTooltip
+                size="xs"
+                className="text-white opacity-60"
+                content="Your GFI rewards for backing this pool."
+              />
+            </div>,
+            formatCrypto(claimableGfi, {
+              includeSymbol: false,
+              includeToken: true,
+            }),
+            formatCrypto(claimableGfiAsUsdc, {
+              includeSymbol: true,
+              includeToken: false,
+            }),
+          ],
+        ]}
+      />
       <Form rhfMethods={rhfMethods} onSubmit={claim}>
         <Button
           type="submit"
@@ -281,50 +271,5 @@ export function ClaimPanel({
         </Alert>
       ) : null}
     </div>
-  );
-}
-
-function MiniTable({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className: string;
-}) {
-  return (
-    <div
-      className={clsx(
-        className,
-        "rounded border border-white border-opacity-25 text-xs"
-      )}
-    >
-      <table className="w-full border-collapse">{children}</table>
-    </div>
-  );
-}
-
-function MiniTableCell({
-  children,
-  fadingBg = false,
-  fadingText = false,
-  alignRight = false,
-}: {
-  className?: string;
-  children: ReactNode;
-  fadingBg?: boolean;
-  fadingText?: boolean;
-  alignRight?: boolean;
-}) {
-  return (
-    <td
-      className={clsx(
-        "border border-white border-opacity-25 py-2 px-3 first:border-l-0 last:border-r-0 group-[.first-row]:border-t-0 group-[.last-row]:border-b-0",
-        fadingBg ? "bg-white bg-opacity-5" : null,
-        fadingText ? "text-white text-opacity-60" : null,
-        alignRight ? "text-right" : null
-      )}
-    >
-      {children}
-    </td>
   );
 }
