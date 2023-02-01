@@ -3,12 +3,51 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
+import { Link, GoldfinchLogo, Icon, Popover } from "@/components/design-system";
 
 import { MobileNav } from "./mobile-nav";
-import { NAV_ITEMS } from "./nav-items";
+import { MANAGE_SUB_NAV_ITEMS } from "./nav-items";
 import { SecondaryMenu } from "./secondary-menu";
 import { WalletButton } from "./wallet-button";
+
+function ManageNavOption() {
+  const router = useRouter();
+  const isManageNavActive = MANAGE_SUB_NAV_ITEMS.map(
+    ({ href }) => href
+  ).includes(router.pathname);
+
+  return (
+    <Popover
+      content={() => (
+        <div>
+          {MANAGE_SUB_NAV_ITEMS.map((item) => (
+            <a
+              href={item.href}
+              key={`secondary-menu-${item.label}`}
+              className="flex items-center justify-between py-2 text-sm font-medium hover:underline"
+              rel="noreferrer"
+            >
+              <span className="mr-4">{item.label}</span>
+            </a>
+          ))}
+        </div>
+      )}
+      trigger="hover"
+    >
+      <button
+        className={clsx(
+          "flex cursor-pointer items-center border-b-2 px-5 text-sm font-medium !no-underline",
+          isManageNavActive
+            ? "border-eggplant-600 text-sand-900"
+            : "border-transparent text-sand-700"
+        )}
+      >
+        Manage
+        <Icon name="ChevronDown" size="sm" className="ml-0.5" />
+      </button>
+    </Popover>
+  );
+}
 
 export function Nav() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -30,11 +69,14 @@ export function Nav() {
         </div>
 
         <nav className="hidden flex-1 flex-row justify-center md:flex">
-          {NAV_ITEMS.map(({ label, href }) => (
+          {/* {NAV_ITEMS.map(({ label, href }) => (
             <NavLink key={`${label}-${href}`} href={href}>
               {label}
             </NavLink>
-          ))}
+          ))} */}
+          <NavLink href="/earn">Deals</NavLink>
+          <ManageNavOption />
+          <NavLink href="/borrow">Borrow</NavLink>
         </nav>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">

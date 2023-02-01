@@ -11,6 +11,10 @@ import {
   Placement,
   FloatingFocusManager,
   FloatingPortal,
+  useHover,
+  safePolygon,
+  FloatingContext,
+  ReferenceType,
 } from "@floating-ui/react-dom-interactions";
 import { Transition } from "@headlessui/react";
 import { useState, useEffect, Fragment, ReactNode, cloneElement } from "react";
@@ -19,12 +23,28 @@ interface PopoverProps {
   children: JSX.Element;
   content: ReactNode | (({ close }: { close: () => void }) => ReactNode);
   placement?: Placement;
+  trigger?: "click" | "hover";
 }
+
+// TODO Zadra: Explain:
+// "React Hook "useClick" is called conditionally. React Hooks must be called in the exact same order in every component render."
+const ClickInteractionProps = ({
+  context,
+}: {
+  context: FloatingContext<ReferenceType>;
+}) => useClick(context);
+
+const HoverInteractionProps = ({
+  context,
+}: {
+  context: FloatingContext<ReferenceType>;
+}) => useHover(context, { handleClose: safePolygon() });
 
 export function Popover({
   children,
   content,
   placement = "bottom",
+  trigger = "click",
 }: PopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { x, y, context, strategy, reference, floating, update, refs } =
@@ -36,8 +56,13 @@ export function Popover({
       middleware: [offset(12), flip(), shift({ padding: 12 })],
     });
 
+  const interactionProps =
+    trigger === "click"
+      ? ClickInteractionProps({ context })
+      : HoverInteractionProps({ context });
+
   const { getReferenceProps, getFloatingProps } = useInteractions([
-    useClick(context),
+    interactionProps,
     useRole(context),
     useDismiss(context),
   ]);

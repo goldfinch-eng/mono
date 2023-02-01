@@ -5,11 +5,16 @@ type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Earn", href: "/earn" },
-  { label: "Dashboard", href: "/dashboard" },
   { label: "Borrow", href: "/borrow" },
   { label: "GFI", href: `/gfi` },
   { label: "Stake", href: `/stake` },
+];
+
+export const MANAGE_SUB_NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Membership", href: "/membership" },
+  { label: "Claim GFI", href: `/gfi` },
+  { label: "Stake", href: `/stake` },
 ];
 
 export const SECONDARY_MENU_ITEMS = [
