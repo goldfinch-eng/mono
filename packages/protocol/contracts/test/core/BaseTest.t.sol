@@ -132,8 +132,8 @@ abstract contract BaseTest is Test {
     assertEq(x, 0);
   }
 
-  function assertZero(uint256 x, string memory msg) internal {
-    assertEq(x, 0, msg);
+  function assertZero(uint256 x, string memory message) internal {
+    assertEq(x, 0, message);
   }
 
   modifier onlyAllowListed(address _address) {

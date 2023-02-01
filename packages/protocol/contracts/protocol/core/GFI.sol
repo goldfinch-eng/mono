@@ -61,7 +61,7 @@ contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable, IGFI {
     emit CapUpdated(_msgSender(), cap);
   }
 
-  function mintingAmountIsWithinCap(uint256 amount) internal returns (bool) {
+  function mintingAmountIsWithinCap(uint256 amount) internal view returns (bool) {
     return totalSupply().add(amount) <= cap;
   }
 

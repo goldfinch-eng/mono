@@ -21,7 +21,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -53,7 +53,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -84,7 +84,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: sigReceiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -116,7 +116,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -140,7 +140,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -171,7 +171,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -213,7 +213,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: invalidUidAddress,
+      uidAddress: invalidUidAddress,
       signerPrivateKey: signerKey
     });
 
@@ -239,7 +239,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -274,7 +274,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -304,7 +304,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -332,7 +332,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -364,7 +364,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -396,7 +396,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -428,7 +428,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 1,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -460,7 +460,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -478,7 +478,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 1,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
     vm.expectRevert("Balance before mint must be 0");
@@ -504,7 +504,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -541,7 +541,7 @@ contract UniqueIdentityMintToTest is UniqueIdentityBaseTest {
       nonce: 0,
       sender: sender,
       receiver: receiver,
-      uid: address(uid),
+      uidAddress: address(uid),
       signerPrivateKey: signerKey
     });
 

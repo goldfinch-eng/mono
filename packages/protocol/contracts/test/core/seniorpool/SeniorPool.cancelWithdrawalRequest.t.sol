@@ -163,8 +163,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
 
   function testCancelWithdrawalRequestCannotBeCalledMoreThanOnce(
     address user,
-    uint256 amount,
-    uint256 investAmount
+    uint256 amount
   ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     amount = bound(amount, 1e6, 100_000_000e6);
     fundAddress(user, amount);

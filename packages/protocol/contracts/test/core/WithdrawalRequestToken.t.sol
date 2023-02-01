@@ -94,7 +94,7 @@ contract WithdrawalRequestTokenTest is BaseTest {
     address approvedAddress,
     bool approved
   ) public onlyAllowListed(tokenOwner) onlyAllowListed(approvedAddress) impersonating(tokenOwner) {
-    uint256 tokenId = mint(tokenOwner);
+    mint(tokenOwner);
 
     vm.expectRevert("Disabled");
     token.setApprovalForAll(approvedAddress, approved);

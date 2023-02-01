@@ -18,10 +18,10 @@ library ConfigurableRoyaltyStandard {
   uint256 internal constant _PERCENTAGE_DECIMALS = 1e18;
 
   struct RoyaltyParams {
-    /// @dev The address that should receive royalties
+    // The address that should receive royalties
     address receiver;
-    /// @dev The percent of `salePrice` that should be taken for royalties.
-    ///   Represented with `_PERCENTAGE_DECIMALS` where `_PERCENTAGE_DECIMALS` is 100%.
+    // The percent of `salePrice` that should be taken for royalties.
+    // Represented with `_PERCENTAGE_DECIMALS` where `_PERCENTAGE_DECIMALS` is 100%.
     uint256 royaltyPercent;
   }
 
@@ -35,6 +35,7 @@ library ConfigurableRoyaltyStandard {
   /// @return royaltyAmount The royalty payment amount for _salePrice
   function royaltyInfo(
     RoyaltyParams storage params,
+    // solhint-disable-next-line no-unused-vars
     uint256 _tokenId,
     uint256 _salePrice
   ) internal view returns (address, uint256) {

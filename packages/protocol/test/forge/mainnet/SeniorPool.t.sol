@@ -7,7 +7,7 @@ contract SeniorPoolMainnetForkingTest is BaseMainnetForkingTest {
     super.setUp();
   }
 
-  function testSharePriceDoesntRevert() public {
+  function testSharePriceDoesntRevert() public view {
     seniorPool.sharePrice();
   }
 }

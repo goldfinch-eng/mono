@@ -28,7 +28,7 @@ contract CakeHelper {
     accessControl.setAdmin(address(accessControl), superAdmin);
   }
 
-  function contractFor(bytes4 key) external returns (address) {
+  function contractFor(bytes4 key) external view returns (address) {
     return router.contracts(key);
   }
 }
