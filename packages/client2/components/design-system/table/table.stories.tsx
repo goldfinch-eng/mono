@@ -37,9 +37,9 @@ export const MiniTableStory: ComponentStory<typeof MiniTable> = () => {
   return (
     <div className="bg-twilight-900 p-10">
       <MiniTable
-        bodyRows={[
-          ["USDC", "4.20%"],
-          ["GFI", "4.20%"],
+        rows={[
+          ["USDC", "1000", "4.20%"],
+          ["GFI", "69", "4.20%"],
         ]}
       />
     </div>
