@@ -11,6 +11,7 @@ import {
   Icon,
   InfoIconTooltip,
   Link,
+  MiniTable,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
@@ -249,24 +250,14 @@ export function SeniorPoolSupplyPanel({
             )}
           </div>
         </div>
-        <div className="rounded border border-white/20">
-          <table className="text-xs">
-            <tbody>
-              <tr className="border-b border-white/20">
-                <td className="p-2">USDC</td>
-                <td className="p-2 text-right">
-                  {formatPercent(seniorPoolApyUsdc)}
-                </td>
-              </tr>
-              <tr>
-                <td className="p-2">GFI</td>
-                <td className="p-2 text-right">
-                  {formatPercent(seniorPoolApyFromGfiFiat)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <MiniTable
+          deemphasizeRowHeadings
+          omitVerticalBorders
+          bodyRows={[
+            ["USDC", formatPercent(seniorPoolApyUsdc)],
+            ["GFI", formatPercent(seniorPoolApyFromGfiFiat)],
+          ]}
+        />
       </div>
 
       {!account ? (
