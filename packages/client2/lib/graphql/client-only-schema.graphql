@@ -131,7 +131,7 @@ type BlockInfo {
 
 type CurvePool {
   estimatedCurveStakingApyRaw: BigDecimal!
-  usdcPerLpToken: BigDecimal!
+  usdPerLpToken: BigDecimal!
 }
 
 extend type Query {
