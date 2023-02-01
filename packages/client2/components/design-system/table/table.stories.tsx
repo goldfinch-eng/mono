@@ -1,6 +1,6 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { Table, HeavyTable } from "./index";
+import { Table, HeavyTable, MiniTable } from "./index";
 
 export default {
   title: "Components/Table",
@@ -30,5 +30,18 @@ export const HeavyTableStory: ComponentStory<typeof HeavyTable> = () => {
         ],
       ]}
     />
+  );
+};
+
+export const MiniTableStory: ComponentStory<typeof MiniTable> = () => {
+  return (
+    <div className="bg-twilight-900 p-10">
+      <MiniTable
+        bodyRows={[
+          ["USDC", "4.20%"],
+          ["GFI", "4.20%"],
+        ]}
+      />
+    </div>
   );
 };
