@@ -12,10 +12,9 @@ import {
   FloatingFocusManager,
   FloatingPortal,
   useHover,
+  useFocus,
   safePolygon,
-  FloatingContext,
-  ReferenceType,
-} from "@floating-ui/react-dom-interactions";
+} from "@floating-ui/react";
 import { Transition } from "@headlessui/react";
 import { useState, useEffect, Fragment, ReactNode, cloneElement } from "react";
 
@@ -26,20 +25,6 @@ interface PopoverProps {
   offset?: number;
   trigger?: "click" | "hover";
 }
-
-// TODO Zadra: Explain:
-// "React Hook "useClick" is called conditionally. React Hooks must be called in the exact same order in every component render."
-const ClickInteractionProps = ({
-  context,
-}: {
-  context: FloatingContext<ReferenceType>;
-}) => useClick(context);
-
-const HoverInteractionProps = ({
-  context,
-}: {
-  context: FloatingContext<ReferenceType>;
-}) => useHover(context, { handleClose: safePolygon() });
 
 export function Popover({
   children,
@@ -58,13 +43,19 @@ export function Popover({
       middleware: [offset(offsetAmount), flip(), shift({ padding: 12 })],
     });
 
-  const interactionProps =
+  // The `trigger` prop is never expected to change for the lifetime of an instance of this component. This is a little sneaky, but I think this is acceptable.
+  /* eslint-disable react-hooks/rules-of-hooks */
+  const interactions =
     trigger === "click"
-      ? ClickInteractionProps({ context })
-      : HoverInteractionProps({ context });
+      ? [useClick(context)]
+      : [
+          useHover(context, { restMs: 10, handleClose: safePolygon() }),
+          useFocus(context),
+        ];
+  /* eslint-enable react-hooks/rules-of-hooks */
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
-    interactionProps,
+    ...interactions,
     useRole(context),
     useDismiss(context),
   ]);
@@ -81,38 +72,43 @@ export function Popover({
         children,
         getReferenceProps({ ref: reference, ...children.props })
       )}
-      <FloatingPortal>
-        <div
-          ref={floating}
-          {...getFloatingProps({
-            ref: floating,
-            style: {
-              zIndex: 10,
-              position: strategy,
-              top: y ?? "",
-              left: x ?? "",
-            },
-          })}
+      <FloatingPortal preserveTabOrder>
+        <FloatingFocusManager
+          context={context}
+          modal={false}
+          order={["reference", "content"]}
+          initialFocus={-1}
         >
-          <Transition
-            as={Fragment}
-            show={isOpen}
-            enter="transition duration-200 ease-in"
-            enterFrom="transform scale-95 opacity-0"
-            enterTo="transform scale-100 opacity-100"
-            leave="transition duration-200 ease-out"
-            leaveFrom="transform scale-100 opacity-100"
-            leaveTo="transform scale-95 opacity-0"
+          <div
+            ref={floating}
+            {...getFloatingProps({
+              ref: floating,
+              style: {
+                zIndex: 10,
+                position: strategy,
+                top: y ?? "",
+                left: x ?? "",
+              },
+            })}
           >
-            <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 drop-shadow-lg">
-              <FloatingFocusManager context={context} modal={false}>
+            <Transition
+              as={Fragment}
+              show={isOpen}
+              enter="transition duration-200 ease-in"
+              enterFrom="transform scale-95 opacity-0"
+              enterTo="transform scale-100 opacity-100"
+              leave="transition duration-200 ease-out"
+              leaveFrom="transform scale-100 opacity-100"
+              leaveTo="transform scale-95 opacity-0"
+            >
+              <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 drop-shadow-lg">
                 {typeof content === "function"
                   ? content({ close: () => setIsOpen(false) })
                   : content}
-              </FloatingFocusManager>
-            </div>
-          </Transition>
-        </div>
+              </div>
+            </Transition>
+          </div>
+        </FloatingFocusManager>
       </FloatingPortal>
     </>
   );

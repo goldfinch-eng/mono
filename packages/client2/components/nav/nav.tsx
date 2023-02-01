@@ -26,15 +26,13 @@ function ManageNavOption() {
 
               return (
                 <div key={`secondary-menu-${item.label}`} className="flex">
-                  <a
-                    href={item.href}
-                    className="flex items-center justify-between py-2 text-sm font-medium hover:underline"
-                    rel="noreferrer"
-                  >
-                    <span className={showNewText ? "mr-1" : "mr-4"}>
-                      {item.label}
-                    </span>
-                  </a>
+                  <NextLink passHref href={item.href}>
+                    <a className="flex items-center justify-between py-2 text-sm font-medium hover:underline">
+                      <span className={showNewText ? "mr-1" : "mr-4"}>
+                        {item.label}
+                      </span>
+                    </a>
+                  </NextLink>
                   {showNewText && (
                     <span className="py-1.5 text-[10px] font-semibold text-mustard-500">
                       NEW
@@ -45,7 +43,7 @@ function ManageNavOption() {
             })}
           </div>
         )}
-        offset={-6}
+        offset={-2}
         trigger="hover"
       >
         <button
