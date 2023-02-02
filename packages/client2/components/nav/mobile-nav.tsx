@@ -4,10 +4,10 @@ import { useEffect } from "react";
 import { Fragment } from "react";
 
 import { Icon } from "@/components/design-system";
-import { NavLink } from "@/components/nav";
+import { TopLevelNavItem } from "@/components/nav";
 import { WalletButton } from "@/components/nav/wallet-button";
 
-import { NAV_ITEMS } from "./nav-items";
+import { MOBILE_NAV } from "./nav-items";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -63,18 +63,18 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         </div>
 
         <div className="flex flex-col">
-          {NAV_ITEMS.map(({ label, href }) => {
+          {MOBILE_NAV.map(({ label, href }) => {
             const showNewText = href === "/membership";
 
             return (
               <div key={`secondary-menu-${label}`} className="flex">
-                <NavLink
+                <TopLevelNavItem
                   key={`${label}-${href}`}
                   href={href}
                   className="my-3 ml-6 w-fit py-3 px-0 text-3xl"
                 >
                   {label}
-                </NavLink>
+                </TopLevelNavItem>
                 {showNewText && (
                   <span className="ml-2 pt-6 text-sm font-semibold text-mustard-500">
                     NEW

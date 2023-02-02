@@ -1,22 +1,30 @@
-type NavItem = {
-  label: string;
-  href: string;
-};
+type NavLink = { label: string; href: string; isNew?: boolean };
 
-export const NAV_ITEMS: NavItem[] = [
+export type NestedNav = { label: string; links: NavLink[] };
+
+type Nav = (NavLink | NestedNav)[];
+
+export const DESKTOP_NAV: Nav = [
   { label: "Deals", href: "/earn" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Membership", href: "/membership" },
-  { label: "Claim GFI", href: `/gfi` },
-  { label: "Stake", href: `/stake` },
+  {
+    label: "Manage",
+    links: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Membership", href: "/membership", isNew: true },
+      { label: "Claim GFI", href: `/gfi` },
+      { label: "Stake", href: `/stake` },
+    ],
+  },
   { label: "Borrow", href: "/borrow" },
 ];
 
-export const MANAGE_SUB_NAV_ITEMS: NavItem[] = [
+export const MOBILE_NAV: NavLink[] = [
+  { label: "Deals", href: "/earn" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Membership", href: "/membership" },
+  { label: "Membership", href: "/membership", isNew: true },
   { label: "Claim GFI", href: `/gfi` },
   { label: "Stake", href: `/stake` },
+  { label: "Borrow", href: "/borrow" },
 ];
 
 export const SECONDARY_MENU_ITEMS = [
