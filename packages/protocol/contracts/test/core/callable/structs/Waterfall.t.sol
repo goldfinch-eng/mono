@@ -5,10 +5,10 @@ pragma experimental ABIEncoderV2;
 
 
 import "forge-std/Test.sol";
-import {Waterfall, WaterfallLogic, Tranche, TrancheLib} from "../../../../protocol/core/callable/structs/Waterfall.sol";
+import {Waterfall, WaterfallLogic, Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 
 using WaterfallLogic for Waterfall;
-using TrancheLib for Tranche;
+using TrancheLogic for Tranche;
 
 contract TestWaterfall is Test {
   

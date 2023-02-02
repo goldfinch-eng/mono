@@ -35,11 +35,13 @@ library WaterfallLogic {
     return w._tranches.length;
   }
 
-  function pay(
+  /// @notice apply a payment. Principal payments are only applied to tranches below `trancheIndex`
+  function payUntil(
     Waterfall storage w,
     uint interestAmount,
-    uint principalAmount
-  ) external {
+    uint principalAmount,
+    uint trancheIndex
+  ) internal returns (uint principalNotApplied) {
     uint totalPrincipalOutstanding = w.totalPrincipalOutstanding ();
 
     // assume that tranches are ordered in priority. First is highest priority
@@ -49,13 +51,13 @@ library WaterfallLogic {
     for (uint i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
       uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) / totalPrincipalOutstanding;
-      uint principalPayment = tranche.principalOutstanding().min(principalAmount);
-    
+      uint principalPayment = i < trancheIndex ? tranche.principalOutstanding().min(principalAmount) : 0;
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
-
       tranche.pay(proRataInterestPayment, principalPayment);
     }
+
+    return principalAmount;
   }
 
   function drawdown(Waterfall storage w, uint principalAmount) external {
@@ -114,8 +116,8 @@ struct Tranche {
   uint[50] __padding;
 }
 
-library TrancheLib {
-  using TrancheLib for Tranche;
+library TrancheLogic {
+  using TrancheLogic for Tranche;
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) external {
     assert(t._principalPaid + principalAmount <= t.principalAmount);
 
