@@ -6,6 +6,7 @@ import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
+import { OpenDealCard } from "@/pages/earn/open-deal-card";
 
 import {
   PoolCard,
@@ -76,7 +77,7 @@ export default function EarnPage({
         level={2}
         className="mb-12 text-center !text-5xl md:!text-6xl lg:text-left"
       >
-        Pools
+        Deals
       </Heading>
       {error ? (
         <HelperText isError className="mb-12">
@@ -84,75 +85,121 @@ export default function EarnPage({
           outdated.
         </HelperText>
       ) : null}
-      <Heading
-        as="h2"
-        level={4}
-        className="mb-3 !font-serif !text-[2.5rem] !font-bold"
-      >
-        Senior Pool
-      </Heading>
-      <Paragraph className="mb-8 !text-lg">
-        The simple option for automatically diversified yields. Capital is
-        distributed across Borrower Pools, and is protected by Backer capital
-        for lower-risk investment.
-      </Paragraph>
       <div className="mb-15">
         {!seniorPool || !fiatPerGfi ? (
           <PoolCardPlaceholder />
         ) : (
-          <PoolCard
-            title={seniorPool.name}
-            subtitle={seniorPool.category}
-            icon={seniorPool.icon}
-            apy={seniorPool.estimatedApy}
-            apyWithGfi={seniorPool.estimatedApy.addUnsafe(
-              computeApyFromGfiInFiat(
-                seniorPool.estimatedApyFromGfiRaw,
-                fiatPerGfi
-              )
-            )}
-            apyTooltipContent={
-              <div>
-                <div className="mb-4">
-                  The Senior Pool&apos;s total current estimated APY, including
-                  the current USDC APY and est. GFI rewards APY.
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <div>Senior Pool APY</div>
-                    <div>{formatPercent(seniorPool.estimatedApy)}</div>
+          <div>
+            <div className="text-md mb-6 font-medium text-sand-700">
+              6 Open Deals
+            </div>
+            <div className="mb-20 flex flex-wrap gap-5">
+              {/* Senior Pool */}
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+              <OpenDealCard
+                owner="Goldfinch"
+                icon={seniorPool.icon}
+                title="Goldfinch Senior Pool"
+                description={
+                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                }
+              />
+            </div>
+
+            {/* Tranched Pools */}
+            <PoolCard
+              title={seniorPool.name}
+              subtitle={seniorPool.category}
+              icon={seniorPool.icon}
+              apy={seniorPool.estimatedApy}
+              apyWithGfi={seniorPool.estimatedApy.addUnsafe(
+                computeApyFromGfiInFiat(
+                  seniorPool.estimatedApyFromGfiRaw,
+                  fiatPerGfi
+                )
+              )}
+              apyTooltipContent={
+                <div>
+                  <div className="mb-4">
+                    The Senior Pool&apos;s total current estimated APY,
+                    including the current USDC APY and est. GFI rewards APY.
                   </div>
-                  <div className="flex justify-between">
-                    <div>GFI Distribution APY</div>
-                    <div>
-                      {formatPercent(
-                        computeApyFromGfiInFiat(
-                          seniorPool.estimatedApyFromGfiRaw,
-                          fiatPerGfi
-                        )
-                      )}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <div>Senior Pool APY</div>
+                      <div>{formatPercent(seniorPool.estimatedApy)}</div>
                     </div>
-                  </div>
-                  <hr className="my-3 border-t border-sand-300" />
-                  <div className="flex justify-between">
-                    <div>Total Est. APY</div>
-                    <div>
-                      {formatPercent(
-                        seniorPool.estimatedApy.addUnsafe(
+                    <div className="flex justify-between">
+                      <div>GFI Distribution APY</div>
+                      <div>
+                        {formatPercent(
                           computeApyFromGfiInFiat(
                             seniorPool.estimatedApyFromGfiRaw,
                             fiatPerGfi
                           )
-                        )
-                      )}
+                        )}
+                      </div>
+                    </div>
+                    <hr className="my-3 border-t border-sand-300" />
+                    <div className="flex justify-between">
+                      <div>Total Est. APY</div>
+                      <div>
+                        {formatPercent(
+                          seniorPool.estimatedApy.addUnsafe(
+                            computeApyFromGfiInFiat(
+                              seniorPool.estimatedApyFromGfiRaw,
+                              fiatPerGfi
+                            )
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            }
-            href="/pools/senior"
-            poolStatus={PoolStatus.Open}
-          />
+              }
+              href="/pools/senior"
+              poolStatus={PoolStatus.Open}
+            />
+          </div>
         )}
       </div>
       <Heading level={2} className="mb-3 !font-serif !text-[2.5rem] !font-bold">
