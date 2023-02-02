@@ -17,51 +17,49 @@ function ManageNavOption() {
   ).includes(router.pathname);
 
   return (
-    <>
-      <Popover
-        content={() => (
-          <div>
-            {MANAGE_SUB_NAV_ITEMS.map(({ label, href }) => {
-              const showNewText = href === "/membership";
+    <Popover
+      content={() => (
+        <div>
+          {MANAGE_SUB_NAV_ITEMS.map(({ label, href }) => {
+            const showNewText = href === "/membership";
 
-              return (
-                <div key={`secondary-menu-${label}`} className="flex">
-                  <NextLink passHref href={href}>
-                    <a
-                      className={clsx(
-                        "flex items-center justify-between py-2 text-sm font-medium hover:underline",
-                        showNewText ? "mr-1" : "mr-4"
-                      )}
-                    >
-                      {label}
-                    </a>
-                  </NextLink>
-                  {showNewText && (
-                    <span className="pt-1.5 text-[10px] font-semibold text-mustard-500">
-                      NEW
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            return (
+              <div key={`secondary-menu-${label}`} className="flex">
+                <NextLink passHref href={href}>
+                  <a
+                    className={clsx(
+                      "flex items-center justify-between py-2 text-sm font-medium hover:underline",
+                      showNewText ? "mr-1" : "mr-4"
+                    )}
+                  >
+                    {label}
+                  </a>
+                </NextLink>
+                {showNewText && (
+                  <span className="pt-1.5 text-[10px] font-semibold text-mustard-500">
+                    NEW
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      offset={-2}
+      trigger="hover"
+    >
+      <button
+        className={clsx(
+          "flex cursor-pointer items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
+          isManageNavActive
+            ? "border-mustard-500 text-sand-900"
+            : "border-transparent text-sand-700"
         )}
-        offset={-2}
-        trigger="hover"
       >
-        <button
-          className={clsx(
-            "flex cursor-pointer items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
-            isManageNavActive
-              ? "border-mustard-500 text-sand-900"
-              : "border-transparent text-sand-700"
-          )}
-        >
-          Manage
-          <Icon name="ChevronDown" size="sm" className="ml-0.5" />
-        </button>
-      </Popover>
-    </>
+        Manage
+        <Icon name="ChevronDown" size="sm" className="ml-0.5" />
+      </button>
+    </Popover>
   );
 }
 
