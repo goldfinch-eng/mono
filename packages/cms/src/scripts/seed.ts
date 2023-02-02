@@ -2,20 +2,21 @@ import payload from "payload";
 import fs from "fs";
 import path from "path";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 console.log("WARNING: SEEDING ONLY WORKS ON AN EMPTY DATABASE");
 
-// Initialize Payload
-payload.init({
-  secret: process.env.PAYLOAD_SECRET,
-  mongoURL: process.env.MONGODB_URI,
-  mongoOptions: {
-    dbName: "payload",
-  },
-  local: true,
-});
+const initializePayload = async () => {
+  await payload.init({
+    secret: process.env.PAYLOAD_SECRET,
+    mongoURL: process.env.MONGODB_URI,
+    mongoOptions: {
+      dbName: "payload",
+    },
+    local: true,
+  });
+};
 
 /**
  * Import files
@@ -108,7 +109,7 @@ const seedDeals = async () => {
   console.log(`Importing deal data: (${Object.keys(dealsData).length} total)`);
 
   // Keep track of deals per borrower
-  let dealMapping: {
+  const dealMapping: {
     [borrowerId: string]: string[];
   } = {};
 
@@ -204,6 +205,7 @@ const seedDeals = async () => {
 };
 
 const main = async () => {
+  await initializePayload();
   await seedBorrowers();
   await seedDeals();
 
