@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,6 +12,7 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
+import { CURVE_LP_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
@@ -683,11 +684,11 @@ function curveLpTokensToUsdc(
   lpTokens: BigNumber,
   usdPerCurveLpToken: FixedNumber
 ) {
-  const usdcValue = usdPerCurveLpToken
-    .mulUnsafe(FixedNumber.from(lpTokens))
+  const usdValue = usdPerCurveLpToken
+    .mulUnsafe(FixedNumber.from(utils.formatUnits(lpTokens, CURVE_LP_DECIMALS)))
     .round();
   return {
-    amount: BigNumber.from(usdcValue.toString().split(".")[0]),
+    amount: utils.parseUnits(usdValue.toString().split(".")[0], USDC_DECIMALS),
     token: "USDC" as const,
   };
 }
