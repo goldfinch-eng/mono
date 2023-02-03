@@ -8,8 +8,8 @@ require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 const initializePayload = async () => {
   await payload.init({
-    secret: process.env.PAYLOAD_SECRET,
-    mongoURL: process.env.MONGODB_URI,
+    secret: process.env.PAYLOAD_SECRET as string,
+    mongoURL: process.env.MONGODB_URI as string,
     mongoOptions: {
       dbName: "payload",
     },
