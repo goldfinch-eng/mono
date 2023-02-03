@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "predev": "yarn generate:types && yarn generate:graphQLSchema",
+    "predev": "yarn generate:types && yarn generate:graphQLSchema && yarn seed:localhost",
     "dev": "yarn predev && cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts nodemon",
     "prebuild": "yarn generate:types && yarn generate:graphQLSchema",
     "build:payload": "yarn prebuild && cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts payload build",

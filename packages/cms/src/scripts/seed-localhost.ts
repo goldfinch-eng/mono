@@ -158,6 +158,9 @@ const importDeals = async () => {
         borrowerContract {
           id
         }
+        creditLine {
+          termStartTime
+        }
       }
     }
   `;
@@ -184,7 +187,8 @@ const importDeals = async () => {
   await Promise.all(
     gqlResult.tranchedPools.map(async (tranchedPool) => {
       const id = tranchedPool.id;
-      const index = parseInt(tranchedPool.id, 16) % borrowers.length;
+      const index = parseInt(tranchedPool.id.slice(-2), 16) % borrowers.length;
+      const isDrawnDown = tranchedPool.creditLine.termStartTime === "0";
       const borrower = borrowers[index];
       const deal = {
         name: _.sample([
@@ -238,6 +242,9 @@ const importDeals = async () => {
                 ]
               : null,
             borrower: borrower.id,
+            dealType: isDrawnDown
+              ? "multitranche"
+              : _.sample(["multitranche", "unitranche"]),
           },
         });
       } catch (e) {
