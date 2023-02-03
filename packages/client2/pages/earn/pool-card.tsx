@@ -202,6 +202,7 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     creditLine {
       id
       maxLimit
+      termInDays
     }
     ...TranchedPoolStatusFields
   }
@@ -215,6 +216,7 @@ export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
     category
     borrower {
       id
+      name
       logo {
         url
       }

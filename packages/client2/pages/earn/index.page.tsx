@@ -4,9 +4,20 @@ import { GetStaticProps, InferGetStaticPropsType } from "next";
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
-import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
-import { OpenDealCard } from "@/pages/earn/open-deal-card";
+import {
+  useEarnPageQuery,
+  EarnPageCmsQuery,
+  TranchedPoolCardDealFieldsFragment,
+} from "@/lib/graphql/generated";
+import {
+  computeApyFromGfiInFiat,
+  getTranchedPoolStatus,
+  PoolStatus,
+} from "@/lib/pools";
+import {
+  OpenDealCard,
+  OpenDealCardPlaceholder,
+} from "@/pages/earn/open-deal-card";
 
 import {
   PoolCard,
@@ -68,7 +79,13 @@ export default function EarnPage({
   const tranchedPools = data?.tranchedPools?.filter(
     (tranchedPool) => !!dealMetadata[tranchedPool.id]
   );
+  const openTranchedPools = tranchedPools?.filter(
+    (tranchedPool) => getTranchedPoolStatus(tranchedPool) === PoolStatus.Open
+  );
   const fiatPerGfi = data?.gfiPrice?.price.amount;
+
+  // + 1 for Senior Pool
+  const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
 
   return (
     <div>
@@ -86,63 +103,78 @@ export default function EarnPage({
         </HelperText>
       ) : null}
       <div className="mb-15">
-        {!seniorPool || !fiatPerGfi ? (
-          <PoolCardPlaceholder />
+        {!seniorPool || !fiatPerGfi || !tranchedPools ? (
+          <div>
+            <div className="text-md invisible mb-6 font-medium text-sand-700">
+              Loading
+            </div>
+            <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              <OpenDealCardPlaceholder />
+              <OpenDealCardPlaceholder />
+              <OpenDealCardPlaceholder />
+            </div>
+          </div>
         ) : (
           <div>
             <div className="text-md mb-6 font-medium text-sand-700">
-              6 Open Deals
+              {`${openDealsCount} Open Deals`}
             </div>
             <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {/* Senior Pool */}
               <OpenDealCard
                 owner="Goldfinch"
                 icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
+                title={seniorPool.name}
                 description={
                   "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
                 }
+                apy={seniorPool.estimatedApy}
+                gfiApy={computeApyFromGfiInFiat(
+                  seniorPool.estimatedApyFromGfiRaw,
+                  fiatPerGfi
+                )}
               />
-              <OpenDealCard
-                owner="Goldfinch"
-                icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
-              />
-              <OpenDealCard
-                owner="Goldfinch"
-                icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
-              />
-              <OpenDealCard
-                owner="Goldfinch"
-                icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
-              />
-              <OpenDealCard
-                owner="Goldfinch"
-                icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
-              />
-              <OpenDealCard
-                owner="Goldfinch"
-                icon={seniorPool.icon}
-                title="Goldfinch Senior Pool"
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
-              />
+              {openTranchedPools?.map((tranchedPool) => {
+                const dealDetails = dealMetadata[
+                  tranchedPool.id
+                ] as TranchedPoolCardDealFieldsFragment;
+
+                const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
+                  tranchedPool.estimatedJuniorApyFromGfiRaw,
+                  fiatPerGfi
+                );
+
+                const seniorPoolApyFromGfi = computeApyFromGfiInFiat(
+                  seniorPool.estimatedApyFromGfiRaw,
+                  fiatPerGfi
+                );
+
+                const apyFromGfi =
+                  tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                    ? tranchedPool.estimatedJuniorApyFromGfiRaw
+                    : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+
+                // TODO: better way to do this? Convert days to months
+                const termLengthInMonths = Math.floor(
+                  tranchedPool.creditLine.termInDays.toNumber() / 30
+                );
+
+                return (
+                  <OpenDealCard
+                    key={tranchedPool.id}
+                    owner={dealDetails?.borrower?.name}
+                    icon={dealDetails?.borrower?.logo?.url}
+                    title={dealDetails?.name}
+                    description={
+                      "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
+                    }
+                    apy={tranchedPool.estimatedJuniorApy}
+                    gfiApy={apyFromGfi}
+                    termLengthInMonths={termLengthInMonths}
+                    dealType={dealDetails?.dealType}
+                  />
+                );
+              })}
             </div>
 
             {/* Tranched Pools */}
