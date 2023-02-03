@@ -152,6 +152,52 @@ dataSources:
       file: ./src/mappings/pool_tokens.ts
 
   - kind: ethereum/contract
+    name: Pool
+    network: mainnet
+    source:
+      address: "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
+      abi: Pool
+      startBlock: 11370642
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Pool
+      abis:
+        - name: Pool
+          file: ./abis/Pool.json
+      eventHandlers:
+        - event: PrincipalCollected(indexed address,uint256)
+          handler: handlePrincipalCollected
+        - event: InterestCollected(indexed address,uint256,uint256)
+          handler: handleInterestCollected
+        - event: PrincipalWrittendown(indexed address,int256)
+          handler: handlePrincipalWrittendown
+      file: ./src/mappings/pool.ts
+
+  - kind: ethereum/contract
+    name: CreditDesk
+    network: mainnet
+    source:
+      address: "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+      abi: CreditDesk
+      startBlock: 11370661
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - CreditDesk
+      abis:
+        - name: CreditDesk
+          file: ./abis/CreditDesk.json
+      eventHandlers:
+        - event: DrawdownMade(indexed address,indexed address,uint256)
+          handler: handleDrawdownMade
+      file: ./src/mappings/credit_desk.ts
+
+  - kind: ethereum/contract
     name: StakingRewards
     network: mainnet
     source:
