@@ -7,19 +7,32 @@ import { TranchedPool } from "../generated";
 
 export const tranchedPoolResolvers: Resolvers[string] = {
   name(tranchedPool: TranchedPool) {
-    return POOL_METADATA[tranchedPool.id]?.name ?? `Pool ${tranchedPool.id}`;
+    return (
+      POOL_METADATA[tranchedPool.id as keyof typeof POOL_METADATA]?.name ??
+      `Pool ${tranchedPool.id}`
+    );
   },
   borrowerName(tranchedPool: TranchedPool) {
-    const borrowerId = POOL_METADATA[tranchedPool.id]?.borrower;
+    const borrowerId =
+      POOL_METADATA[tranchedPool.id as keyof typeof POOL_METADATA]?.borrower;
     if (borrowerId) {
-      return BORROWER_METADATA[borrowerId].name;
+      const borrower =
+        BORROWER_METADATA[borrowerId as keyof typeof BORROWER_METADATA];
+      if (borrower) {
+        return borrower.name;
+      }
     }
     return "Borrower";
   },
   borrowerLogo(tranchedPool: TranchedPool) {
-    const borrowerId = POOL_METADATA[tranchedPool.id]?.borrower;
+    const borrowerId =
+      POOL_METADATA[tranchedPool.id as keyof typeof POOL_METADATA]?.borrower;
     if (borrowerId) {
-      return BORROWER_METADATA[borrowerId].logo;
+      const borrower =
+        BORROWER_METADATA[borrowerId as keyof typeof BORROWER_METADATA];
+      if (borrower) {
+        return borrower.logo;
+      }
     }
     return goldfinchLogoPngUrl;
   },
