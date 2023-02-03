@@ -59,10 +59,11 @@ const insertLocalBorrowers = async () => {
           return;
         }
         console.log(`Importing borrower: ${borrower.name}`);
-        let logoId;
+        let logoId: string;
         if (borrower.logoPath) {
           const thing = await payload.create({
             collection: "media",
+            // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
             data: { alt: "Pug" },
             filePath: borrower.logoPath,
           });
@@ -106,6 +107,7 @@ const insertLocalBorrowers = async () => {
 
         return await payload.create({
           collection: "borrowers",
+          // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
           data: {
             ...borrower,
             bio,
@@ -214,6 +216,7 @@ const importDeals = async () => {
         await payload.create({
           collection: "deals",
           depth: 0,
+          // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
           data: {
             ...deal,
             id,
@@ -244,7 +247,9 @@ const importDeals = async () => {
             borrower: borrower.id,
             dealType: isDrawnDown
               ? "multitranche"
-              : _.sample(["multitranche", "unitranche"]),
+              : (_.sample(["multitranche", "unitranche"]) as
+                  | "multitranche"
+                  | "unitranche"),
           },
         });
       } catch (e) {
@@ -263,6 +268,7 @@ const importDeals = async () => {
         id: borrowerId,
         collection: "borrowers",
         depth: 0,
+        // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
         data: {
           deals: dealMapping[borrowerId],
         },
