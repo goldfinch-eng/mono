@@ -4477,6 +4477,8 @@ __metadata:
     cross-env: ^7.0.3
     dotenv: ^8.2.0
     express: ^4.17.1
+    graphql-request: ^5.1.0
+    lodash: ^4.17.21
     nodemon: ^2.0.6
     payload: ^1.6.3
     ts-node: ^10.9.1
@@ -22567,6 +22569,20 @@ __metadata:
   peerDependencies:
     graphql: 14 - 16
   checksum: 2e8900d10cded401b253a05650719321123e3b0ad5bc57523288892e0226dccf43668ec937753420084f649fb4e3f998f2547c884b746a3e91fa0a43f93e62d4
+  languageName: node
+  linkType: hard
+
+"graphql-request@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "graphql-request@npm:5.1.0"
+  dependencies:
+    "@graphql-typed-document-node/core": ^3.1.1
+    cross-fetch: ^3.1.5
+    extract-files: ^9.0.0
+    form-data: ^3.0.0
+  peerDependencies:
+    graphql: 14 - 16
+  checksum: 8b65d5c1b0cad8996a843b52305b2712ffbf842c700487d4cee1ed719f22baacaacfddafb65572bcddd67d57fd1d2d389dee2430ffba4b34c3ab542d079446c7
   languageName: node
   linkType: hard
 
