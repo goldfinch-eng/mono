@@ -1,7 +1,6 @@
 import payload from "payload";
-import fs from "fs";
 import path from "path";
-import { GraphQLClient, gql, request } from "graphql-request";
+import { GraphQLClient, gql } from "graphql-request";
 import _ from "lodash";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
@@ -17,23 +16,6 @@ const initializePayload = async () => {
     local: true,
   });
 };
-
-/**
- * Import files
- */
-const borrowersData = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "borrowers.json"), "utf-8")
-);
-
-const dealsData = JSON.parse(
-  fs.readFileSync(
-    path.resolve(
-      __dirname,
-      process.env.SEED_LOCALHOST_DEALS ? "localhost-deals.json" : "deals.json"
-    ),
-    "utf-8"
-  )
-);
 
 const localBorrowers = [
   {

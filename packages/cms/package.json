@@ -21,7 +21,6 @@
     "start:dev": "yarn services:start && yarn dev",
     "start:prod": "yarn build && yarn serve",
     "deploy:prod": "docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable && docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable",
-    "seed": "PAYLOAD_CONFIG_PATH=src/payload.config.ts yarn ts-node src/scripts/seed.ts",
     "seed:localhost": "PAYLOAD_CONFIG_PATH=src/payload.config.ts SEEDING_DB=true yarn ts-node src/scripts/seed-localhost.ts"
   },
   "dependencies": {
