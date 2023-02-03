@@ -1,6 +1,5 @@
 import { Resolvers } from "@apollo/client";
 
-import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 
 import { TranchedPool } from "../generated";
@@ -34,6 +33,6 @@ export const tranchedPoolResolvers: Resolvers[string] = {
         return borrower.logo;
       }
     }
-    return goldfinchLogoPngUrl;
+    return null;
   },
 };

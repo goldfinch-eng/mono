@@ -83,13 +83,20 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
       transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
       transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
         <div className="flex items-center gap-2">
-          <Image
-            src={tranchedPool.borrowerLogo}
-            alt=""
-            width={24}
-            height={24}
-            className="shrink-0 overflow-hidden rounded-full"
-          />
+          {tranchedPool.borrowerLogo ? (
+            <Image
+              src={tranchedPool.borrowerLogo}
+              alt=""
+              width={24}
+              height={24}
+              className="shrink-0 overflow-hidden rounded-full"
+            />
+          ) : (
+            <div
+              style={{ width: "24px", height: "24px" }}
+              className="shrink-0 rounded-full bg-sand-200"
+            />
+          )}
           <span>{tranchedPool.borrowerName}</span>
         </div>
       ) : transaction.category === "SENIOR_POOL_REDEMPTION" ? (

@@ -13,7 +13,7 @@ extend type SeniorPool {
 extend type TranchedPool {
   name: String!
   borrowerName: String!
-  borrowerLogo: String!
+  borrowerLogo: String
 }
 
 extend type CreditLine {

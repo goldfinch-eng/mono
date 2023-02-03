@@ -112,13 +112,20 @@ export function TransactionTable() {
         {transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
         transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
           <>
-            <Image
-              src={transaction.tranchedPool?.borrowerLogo as string}
-              width={24}
-              height={24}
-              className="shrink-0 overflow-hidden rounded-full"
-              alt=""
-            />
+            {transaction.tranchedPool?.borrowerLogo ? (
+              <Image
+                src={transaction.tranchedPool?.borrowerLogo as string}
+                width={24}
+                height={24}
+                className="shrink-0 overflow-hidden rounded-full"
+                alt=""
+              />
+            ) : (
+              <div
+                style={{ width: "24px", height: "24px" }}
+                className="shrink-0 rounded-full"
+              />
+            )}
             <div>{transaction.tranchedPool?.borrowerName}</div>
           </>
         ) : transaction.category === "SENIOR_POOL_DISTRIBUTION" ? (
