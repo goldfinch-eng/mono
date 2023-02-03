@@ -14,6 +14,8 @@ Google Cloud Storage is an object storage web service that is used to store all 
 
 The local development environment will initalize a local instance of MongoDB and a mock Google Cloud Storage service using Docker to simulate the production environment.
 
+**IMPORTANT**: You must run the local subgraph before starting the CMS locally. This is because the startup scripts for the CMS will read the subgraph to find tranched pools to import.
+
 ### Prerequsities
 
 - Docker
