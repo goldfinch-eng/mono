@@ -21,7 +21,7 @@ export function OpenDealCard({
   return (
     <div
       className={clsx(
-        "flex h-[410px] min-w-[410px] max-w-[410px] flex-col justify-between rounded-3xl border border-mustard-200 bg-mustard-100 px-10 py-8",
+        "flex h-[440px] flex-col justify-between rounded-3xl border border-mustard-200 bg-mustard-100 p-8",
         className
       )}
     >
@@ -50,7 +50,7 @@ export function OpenDealCard({
         </div>
 
         {/* Description */}
-        <div className="mb-6">
+        <div className="mb-5">
           <div className="text-sm text-sand-700 opacity-70">{description}</div>
         </div>
 
@@ -58,21 +58,21 @@ export function OpenDealCard({
         <Chip colorScheme="mustard">Diversified Portfolio</Chip>
       </div>
 
-      <div className="grid grid-cols-2 items-end border-b">
-        <div>
+      <div className="grid items-end divide-y divide-mustard-200 text-sm">
+        <div className="flex justify-between py-2">
           <div>Fixed USDC interest</div>
+          <div>12.46%</div>
         </div>
-        <div className="flex justify-self-end">12.46%</div>
 
-        <div>
+        <div className="flex justify-between py-2">
           <div>Variable GFI APY</div>
+          <div>7.21%</div>
         </div>
-        <div className="flex justify-self-end">7.21%</div>
 
-        <div>
+        <div className="flex justify-between pt-2">
           <div>Loan term</div>
+          <div>Open-ended</div>
         </div>
-        <div className="flex justify-self-end">Open-ended</div>
       </div>
     </div>
   );

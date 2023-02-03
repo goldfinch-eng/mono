@@ -122,7 +122,7 @@ export const TopLevelNavItem = forwardRef<
   ref
 ) {
   const router = useRouter();
-  const _highlighted = highlighted ?? router.pathname === href;
+  const _highlighted = highlighted || router.pathname === href;
   const cl = clsx(
     "flex items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
     _highlighted

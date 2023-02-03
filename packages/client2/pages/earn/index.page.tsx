@@ -93,7 +93,7 @@ export default function EarnPage({
             <div className="text-md mb-6 font-medium text-sand-700">
               6 Open Deals
             </div>
-            <div className="mb-20 flex flex-wrap gap-5">
+            <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {/* Senior Pool */}
               <OpenDealCard
                 owner="Goldfinch"
