@@ -133,5 +133,11 @@ Scripts are stored inside of the `src/scripts` directory. Since the location of 
 Running the seeding script:
 
 ```
-ts-node scripts/seed.ts
+ts-node scripts/seed-localhost.ts
 ```
+
+Useful scripts are exposed to you via the package.json file. Additionally, there is a production dump of MongoDB available here as `prod-dump.tar`. You can untar it and use `mongorestore prod-dump` on it to import prod data into your local MongoDB. This dump was generated with the following command:
+```
+mongodump --db=payload --excludeCollectionsWithPrefix=_ --excludeCollection=cms-users --out=prod-dump
+```
+As you can see, it did not include production users.
