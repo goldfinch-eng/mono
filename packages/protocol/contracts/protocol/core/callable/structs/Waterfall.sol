@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.13;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -9,29 +9,26 @@ using MathUpgradeable for uint256;
 
 struct Waterfall {
   Tranche[] _tranches;
+  uint[50] __padding;
 }
 
 library WaterfallLogic {
-  using WaterfallLogic for Waterfall;  
+  using WaterfallLogic for Waterfall;
   using TrancheLogic for Tranche;
 
-  function initialize(
-    Waterfall storage w,
-    uint nTranches
-  ) internal returns (Waterfall storage) {
-    w._tranches = new Tranche[](nTranches);
+  function initialize(Waterfall storage w, uint nTranches) internal returns (Waterfall storage) {
+    for (uint i = 0; i < nTranches; i++) {
+      Tranche memory t;
+      w._tranches.push(t);
+    }
+    return w;
   }
 
-  function getTranche(
-    Waterfall storage w,
-    uint trancheId
-  ) internal view returns (Tranche storage) {
+  function getTranche(Waterfall storage w, uint trancheId) internal view returns (Tranche storage) {
     return w._tranches[trancheId];
   }
 
-  function numTranches(
-    Waterfall storage w
-  ) internal view returns (uint) {
+  function numTranches(Waterfall storage w) internal view returns (uint) {
     return w._tranches.length;
   }
 
@@ -42,7 +39,7 @@ library WaterfallLogic {
     uint principalAmount,
     uint trancheIndex
   ) internal returns (uint principalNotApplied) {
-    uint totalPrincipalOutstanding = w.totalPrincipalOutstanding ();
+    uint totalPrincipalOutstanding = w.totalPrincipalOutstanding();
 
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
@@ -50,8 +47,11 @@ library WaterfallLogic {
     // always process the last index (make it not part of the array?)
     for (uint i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
-      uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) / totalPrincipalOutstanding;
-      uint principalPayment = i < trancheIndex ? tranche.principalOutstanding().min(principalAmount) : 0;
+      uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) /
+        totalPrincipalOutstanding;
+      uint principalPayment = i < trancheIndex
+        ? tranche.principalOutstanding().min(principalAmount)
+        : 0;
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
       tranche.pay(proRataInterestPayment, principalPayment);
@@ -62,10 +62,11 @@ library WaterfallLogic {
 
   function drawdown(Waterfall storage w, uint principalAmount) internal {
     // drawdown pro rata
-    uint totalPrincipal = w.totalPrincipal();
+    uint totalPrincipal = w.totalPrincipalOutstanding();
     for (uint i = 0; i < w.numTranches(); i++) {
       Tranche storage tranche = w.getTranche(i);
-      uint perTranchePrincipalAmount = principalAmount * tranche.principalAmount() / totalPrincipal;
+      uint perTranchePrincipalAmount = (principalAmount * tranche.principalOutstanding()) /
+        totalPrincipal;
       tranche.drawdown(perTranchePrincipalAmount);
     }
   }
@@ -73,9 +74,14 @@ library WaterfallLogic {
   /**
    * @notice Move principal and paid interest from one tranche to another
    */
-  function move(Waterfall storage w, uint principalAmount, uint fromTrancheId, uint toTrancheId) internal {
+  function move(
+    Waterfall storage w,
+    uint principalAmount,
+    uint fromTrancheId,
+    uint toTrancheId
+  ) internal {
     (uint principalTaken, uint interestTaken) = w.getTranche(fromTrancheId).take(principalAmount);
-    return w.getTranche(toTrancheId).addToBalances(principalTaken, interestTaken);
+    return w.getTranche(toTrancheId).addToBalances(principalAmount, principalTaken, interestTaken);
   }
 
   /**
@@ -91,10 +97,25 @@ library WaterfallLogic {
   }
 
   /**
-   * Returns the lifetime amount withdrawable 
+   * Returns the lifetime amount withdrawable
    */
-  function cumulativeAmountWithdrawable(Waterfall storage w, uint trancheId, uint256 principal) internal view returns (uint, uint) {
+  function cumulativeAmountWithdrawable(
+    Waterfall storage w,
+    uint trancheId,
+    uint256 principal
+  ) internal view returns (uint, uint) {
     return w._tranches[trancheId].cumulativeAmountWithdrawable(principal);
+  }
+
+  /// @notice Returns the total amount of interest paid to all tranches
+  function totalInterestPaid(Waterfall storage w) internal view returns (uint) {
+    // TODO(will): this can be optimized by storing the aggregate amount paid
+    //       as a storage var and updating when the tranches are paid
+    uint totalInterestPaid;
+    for (uint i = 0; i < w.numTranches(); i++) {
+      totalInterestPaid += w.getTranche(i).interestPaid();
+    }
+    return totalInterestPaid;
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
@@ -115,26 +136,40 @@ library WaterfallLogic {
     }
     return sum;
   }
-}
 
+  /**
+   *
+   * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
+   */
+  function totalPrincipalOwedUpToTranche(
+    Waterfall storage w,
+    uint256 trancheIndex
+  ) internal view returns (uint sum) {
+    uint sum;
+    for (uint i = 0; i < trancheIndex; i++) {
+      sum += w._tranches[i].principalOutstanding();
+    }
+    return sum;
+  }
+}
 
 struct Tranche {
   uint _principalDeposited;
   uint _principalPaid;
   uint _interestPaid;
-
   // TODO: verify that this works for upgradeability
   uint[50] __padding;
 }
 
 library TrancheLogic {
   using TrancheLogic for Tranche;
+
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) internal {
-    assert(t._principalPaid + principalAmount <= t.principalAmount);
+    assert(t._principalPaid + principalAmount <= t.principalOutstanding());
 
     t._interestPaid += interestAmount;
     t._principalPaid += principalAmount;
-  }  
+  }
 
   function principalOutstanding(Tranche storage t) internal view returns (uint) {
     return t._principalDeposited - t._principalPaid;
@@ -152,20 +187,23 @@ library TrancheLogic {
   /**
    * @notice remove `principal` from the Tranche and its corresponding interest
    */
-  function take(Tranche storage t, uint principal) internal returns (uint principalTaken, uint interestTaken) {
-    uint interestTaken = t._interestPaid * principal / t._principalDeposited;
+  function take(
+    Tranche storage t,
+    uint principal
+  ) internal returns (uint principalPaid, uint interestTaken) {
+    interestTaken = (t._interestPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principal;
     // Take pro rata portion of paid principal
-    t._principalPaid -= t._principalPaid * principal / t._principalDeposited;
-    return interestTaken;
+    principalPaid = (t._principalPaid * principal) / t._principalDeposited;
+    t._principalPaid -= principalPaid;
   }
 
   // depositing into the tranche for the first time(uncalled)
   function deposit(Tranche storage t, uint principal) internal {
     // SAFETY but gas cost
     assert(t._interestPaid == 0);
-    t._principal += principal;
+    t._principalDeposited += principal;
     // NOTE: this is so that principalOutstanding = 0 before drawdown
     t._principalPaid += principal;
   }
@@ -195,22 +233,31 @@ library TrancheLogic {
   }
 
   // returns principal, interest withdrawable
-  function cumulativeAmountWithdrawable(Tranche storage t, uint256 principalAmount) internal view returns (uint, uint) {
+  function cumulativeAmountWithdrawable(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint, uint) {
     return (
       t.cumulativePrincipalWithdrawable(principalAmount),
       t.cumulativeInterestWithdrawable(principalAmount)
     );
   }
 
-  function cumulativePrincipalWithdrawable(Tranche storage t, uint256 principalAmount) internal view returns (uint) {
-    return t.principalPaid() * principalAmount / t.principalDeposited();
+  function cumulativePrincipalWithdrawable(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint) {
+    return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
-  function cumulativeInterestWithdrawable(Tranche storage t, uint256 principalAmount) internal view returns (uint) {
-    return t.interestPaid() * principalAmount / t.principalDeposited();
+  function cumulativeInterestWithdrawable(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint) {
+    return (t.interestPaid() * principalAmount) / t.principalDeposited();
   }
 
   function drawdown(Tranche storage t, uint principalAmount) internal {
-    t.principalPaid -= principalAmount;
+    t._principalPaid -= principalAmount;
   }
 }

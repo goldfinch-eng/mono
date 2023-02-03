@@ -554,6 +554,7 @@ contract CallableLoan is
     return totalReserveAmount;
   }
 
+  // TODO: Callable loan should no longer initialize a separate credit line
   function _createAndSetCreditLine(
     address _borrower,
     uint256 _maxLimit,

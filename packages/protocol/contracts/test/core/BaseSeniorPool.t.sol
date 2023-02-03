@@ -152,6 +152,7 @@ contract SeniorPoolBaseTest is BaseTest {
 
     // Exclude known addresses from fuzzed inputs. This prevents flakey errors like
     // "Error sent ERC1155 to non-receiver"
+    fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));

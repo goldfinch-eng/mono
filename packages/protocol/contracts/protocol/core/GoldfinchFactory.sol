@@ -9,6 +9,7 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../../interfaces/ICallableLoan.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {IPeriodMapper} from "../../interfaces/IPeriodMapper.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
@@ -31,6 +32,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
+  event CallableLoanCreated(ICallableLoan indexed loan, address indexed borrower);
   event CreditLineCreated(ICreditLine indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
