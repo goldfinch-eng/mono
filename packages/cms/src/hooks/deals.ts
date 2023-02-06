@@ -12,7 +12,7 @@ import { revalidate } from "../lib/revalidate";
 function getDeals(borrower: Borrower): string[] {
   // deals is Deal[] | string[]; types which don't overlap. We use it as a string[]
   // so declare it as such to pacify typescript.
-  return (borrower.deals ?? []) as string[]
+  return (borrower.deals ?? []) as string[];
 }
 
 export const beforeDealChange: CollectionBeforeChangeHook<Deal> = async ({
@@ -33,19 +33,20 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
   operation,
 }) => {
   // Get new borrower
-  const newBorrower = await payload.findByID<Borrower>({
+  const newBorrower = await payload.findByID({
     collection: "borrowers",
     id: doc.borrower as string,
     depth: 0,
   });
 
-  const deals = getDeals(newBorrower)
+  const deals = getDeals(newBorrower);
 
   // Add deal to borrower if it is not there
   if (deals.includes(doc.id)) {
     await payload.update({
       collection: "borrowers",
       id: newBorrower.id,
+      // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
       data: {
         deals: [...deals, doc.id],
       },
@@ -58,7 +59,7 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
       return doc;
     }
 
-    const oldBorrower = await payload.findByID<Borrower>({
+    const oldBorrower = await payload.findByID({
       collection: "borrowers",
       id: previousDoc.borrower as string,
       depth: 0,
@@ -67,6 +68,7 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
     await payload.update({
       collection: "borrowers",
       id: oldBorrower.id,
+      // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
       data: {
         deals: getDeals(oldBorrower).filter((deal) => deal !== doc.id),
       },
@@ -95,7 +97,7 @@ export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({
   id,
   doc,
 }) => {
-  const borrower = await payload.findByID<Borrower>({
+  const borrower = await payload.findByID({
     collection: "borrowers",
     id: doc.borrower as string,
     depth: 0,
@@ -104,6 +106,7 @@ export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({
   await payload.update({
     collection: "borrowers",
     id: borrower.id,
+    // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
     data: {
       deals: getDeals(borrower).filter((deal) => deal !== id),
     },

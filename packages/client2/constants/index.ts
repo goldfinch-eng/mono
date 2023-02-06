@@ -1,8 +1,8 @@
 import { BigNumber } from "ethers";
 
 export * from "./contract-addresses";
-export * from "./metadata/borrowers";
-export { default as POOL_METADATA } from "./metadata/index";
+export { default as BORROWER_METADATA } from "@/cms-cache/borrowers.json";
+export { default as POOL_METADATA } from "@/cms-cache/deals.json";
 
 const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME as string;
 if (!networkName) {
