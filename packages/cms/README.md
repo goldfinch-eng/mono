@@ -69,12 +69,12 @@ gcloud auth login
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-3. Once authenticated, build the image and tag it:
+3. Once authenticated, build the image and tag it (**IMPORTANT**: The Dockerfile is in the root of the monorepo. You must `cd` to the root for this.):
 
 ```
 #  "--platform x86-64" is an optional parameter if you are using a x64 machine - only required for arm64 machines due to npm module "sharp" failing to install. See https://github.com/lovell/sharp/issues/2482
 
-docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG> --platform x86-64
+docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG> --platform x86-64 -f cms.Dockerfile
 ```
 
 4. Deploy the tagged image to the Artifact Registry
