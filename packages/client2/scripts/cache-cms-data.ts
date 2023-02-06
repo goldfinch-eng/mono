@@ -28,7 +28,7 @@ async function main() {
   log("Fetching borrowers from CMS");
   const borrowerQuery = gql`
     {
-      Borrowers {
+      Borrowers(limit: 100) {
         docs {
           id
           name
@@ -64,7 +64,7 @@ async function main() {
   log("Fetching deals from CMS");
   const dealQuery = gql`
     {
-      Deals {
+      Deals(limit: 100) {
         docs {
           id
           name
