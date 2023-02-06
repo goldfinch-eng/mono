@@ -69,18 +69,18 @@ gcloud auth login
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-3. Once authenticated, build the image and tag it (**IMPORTANT**: The Dockerfile is in the root of the monorepo. You must `cd` to the root for this.):
+3. Once authenticated, build the image and tag it (**IMPORTANT**: The Dockerfile is in the root of the monorepo. You must `cd` to the root for this. Also, we use the tag `stable` in production):
 
 ```
 #  "--platform x86-64" is an optional parameter if you are using a x64 machine - only required for arm64 machines due to npm module "sharp" failing to install. See https://github.com/lovell/sharp/issues/2482
 
-docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG> --platform x86-64 -f cms.Dockerfile
+docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable -f cms.Dockerfile
 ```
 
 4. Deploy the tagged image to the Artifact Registry
 
 ```
-docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG>
+docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable
 ```
 
 5. Once the image is sent to the registry, you can use the image to launch or re-launch the Payload CMS server. If a Payload server is already running, you will have to **Restart** the machine for the new image to be loaded
