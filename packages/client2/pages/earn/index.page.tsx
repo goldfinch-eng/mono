@@ -15,6 +15,10 @@ import {
   PoolStatus,
 } from "@/lib/pools";
 import {
+  GoldfinchPoolsMetrics,
+  TRANCHED_POOL_ROSTERS_METRICS_FIELDS,
+} from "@/pages/earn/goldfinch-pools-metrics";
+import {
   OpenDealCard,
   OpenDealCardPlaceholder,
 } from "@/pages/earn/open-deal-card";
@@ -29,6 +33,7 @@ import {
 
 gql`
   ${TRANCHED_POOL_CARD_FIELDS}
+  ${TRANCHED_POOL_ROSTERS_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
@@ -42,6 +47,14 @@ gql`
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
       ...TranchedPoolCardFields
+    }
+    tranchedPoolRosters(first: 1) {
+      id
+      totalDrawdowns
+      totalWritedowns
+      totalReserveCollected
+      totalInterestCollected
+      totalPrincipalCollected
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -79,10 +92,17 @@ export default function EarnPage({
   const tranchedPools = data?.tranchedPools?.filter(
     (tranchedPool) => !!dealMetadata[tranchedPool.id]
   );
+
+  const tranchedPoolRoster = data?.tranchedPoolRosters?.[0];
+
+  const fiatPerGfi = data?.gfiPrice?.price.amount;
+
   const openTranchedPools = tranchedPools?.filter(
     (tranchedPool) => getTranchedPoolStatus(tranchedPool) === PoolStatus.Open
   );
-  const fiatPerGfi = data?.gfiPrice?.price.amount;
+  // const closedTranchedPools = tranchedPools?.filter(
+  //   (tranchedPool) => getTranchedPoolStatus(tranchedPool) !== PoolStatus.Open
+  // );
 
   // + 1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
@@ -103,9 +123,9 @@ export default function EarnPage({
         </HelperText>
       ) : null}
       <div className="mb-15">
-        {!seniorPool || !fiatPerGfi || !tranchedPools ? (
+        {!seniorPool || !fiatPerGfi || !tranchedPools || !tranchedPoolRoster ? (
           <div>
-            <div className="text-md invisible mb-6 font-medium text-sand-700">
+            <div className="invisible mb-6 font-medium text-sand-700">
               Loading
             </div>
             <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -116,11 +136,20 @@ export default function EarnPage({
           </div>
         ) : (
           <div>
-            <div className="text-md mb-6 font-medium text-sand-700">
+            {/* Goldfinch Pools metrics */}
+            <div className="mb-6 font-medium text-sand-700">
+              Goldfinch Pools metrics
+            </div>
+            <GoldfinchPoolsMetrics
+              className="mb-20"
+              tranchedPoolRoster={tranchedPoolRoster}
+            />
+
+            {/* Open Pools */}
+            <div className="mb-6 font-medium text-sand-700">
               {`${openDealsCount} Open Deals`}
             </div>
             <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {/* Senior Pool */}
               <OpenDealCard
                 owner="Goldfinch"
                 icon={seniorPool.icon}
