@@ -12,6 +12,8 @@ export async function revalidate(path: string) {
       throw new Error(body.message);
     }
   } catch (e) {
-    console.error(`Revalidation failed. ${(e as Error).message}`);
+    if (!process.env.SEEDING_DB) {
+      console.error(`Revalidation failed. ${(e as Error).message}`);
+    }
   }
 }

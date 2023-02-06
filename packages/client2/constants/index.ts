@@ -1,8 +1,8 @@
 import { BigNumber } from "ethers";
 
 export * from "./contract-addresses";
-export * from "./metadata/borrowers";
-export { default as POOL_METADATA } from "./metadata/index";
+export { default as BORROWER_METADATA } from "@/cms-cache/borrowers.json";
+export { default as POOL_METADATA } from "@/cms-cache/deals.json";
 
 const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME as string;
 if (!networkName) {
@@ -16,6 +16,7 @@ export const USDC_MANTISSA = BigNumber.from(10).pow(USDC_DECIMALS);
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
+export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
 export const TRANCHES = {
   Senior: 1,
