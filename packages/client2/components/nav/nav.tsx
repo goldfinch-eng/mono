@@ -72,21 +72,21 @@ export function Nav() {
               </div>
             </a>
           </NextLink>
-        </div>
 
-        <nav className="hidden flex-1 flex-row justify-center md:flex">
-          {DESKTOP_NAV.map((navItem) => {
-            if ("href" in navItem) {
-              return (
-                <TopLevelNavItem key={navItem.label} href={navItem.href}>
-                  {navItem.label}
-                </TopLevelNavItem>
-              );
-            } else {
-              return <Nested key={navItem.label} nested={navItem} />;
-            }
-          })}
-        </nav>
+          <nav className="ml-8 hidden justify-center md:flex">
+            {DESKTOP_NAV.map((navItem) => {
+              if ("href" in navItem) {
+                return (
+                  <TopLevelNavItem key={navItem.label} href={navItem.href}>
+                    {navItem.label}
+                  </TopLevelNavItem>
+                );
+              } else {
+                return <Nested key={navItem.label} nested={navItem} />;
+              }
+            })}
+          </nav>
+        </div>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
           <WalletButton />

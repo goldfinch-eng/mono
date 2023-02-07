@@ -89,7 +89,7 @@ export function GoldfinchPoolsMetrics({
   return (
     <div
       className={clsx(
-        "-mx-10 grid grid-cols-3 divide-x divide-sand-300 rounded-b-xl border-b border-sand-300",
+        "grid grid-cols-3 divide-x divide-sand-300 rounded-b-xl border-b border-sand-300",
         className
       )}
     >

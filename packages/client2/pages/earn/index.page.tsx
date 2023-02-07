@@ -132,10 +132,9 @@ export default function EarnPage({
           <div>
             {/* ZADRA - Goldfinch Pools metrics */}
             <GoldfinchPoolsMetrics
-              className="mb-20"
+              className="-mt-14 mb-20"
               tranchedPoolRoster={tranchedPoolRoster}
             />
-
             {/* ZADRA - Open Pools */}
             <div className="mb-6 font-medium text-sand-700">
               {`${openDealsCount} Open Deals`}
