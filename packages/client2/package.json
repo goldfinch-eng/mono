@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prepare-data": "ts-node scripts/populate-contract-addresses.ts && ts-node scripts/prepare-metadata.ts && yarn gen-contract-types && yarn codegen",
+    "prepare-data": "ts-node scripts/populate-contract-addresses.ts && ts-node scripts/cache-cms-data.ts && yarn gen-contract-types && yarn codegen",
     "dev": "yarn prepare-data && ts-node scripts/copy-gfi-grant-files.ts && next dev -p 3001",
     "build": "yarn prepare-data && next build",
     "start": "next start -p 3001",
@@ -85,6 +85,7 @@
     "eslint-config-next": "12.1.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-storybook": "^0.5.7",
+    "graphql-request": "^5.1.0",
     "lint-staged": "^13.1.0",
     "postcss": "^8.4.7",
     "prettier": "^2.8.0",

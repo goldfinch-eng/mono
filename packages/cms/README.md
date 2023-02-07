@@ -14,6 +14,8 @@ Google Cloud Storage is an object storage web service that is used to store all 
 
 The local development environment will initalize a local instance of MongoDB and a mock Google Cloud Storage service using Docker to simulate the production environment.
 
+**IMPORTANT**: You must run the local subgraph before starting the CMS locally. This is because the startup scripts for the CMS will read the subgraph to find tranched pools to import.
+
 ### Prerequsities
 
 - Docker
@@ -67,18 +69,18 @@ gcloud auth login
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-3. Once authenticated, build the image and tag it:
+3. Once authenticated, build the image and tag it (**IMPORTANT**: The Dockerfile is in the root of the monorepo. You must `cd` to the root for this. Also, we use the tag `stable` in production):
 
 ```
 #  "--platform x86-64" is an optional parameter if you are using a x64 machine - only required for arm64 machines due to npm module "sharp" failing to install. See https://github.com/lovell/sharp/issues/2482
 
-docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG> --platform x86-64
+docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable -f cms.Dockerfile
 ```
 
 4. Deploy the tagged image to the Artifact Registry
 
 ```
-docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG>
+docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable
 ```
 
 5. Once the image is sent to the registry, you can use the image to launch or re-launch the Payload CMS server. If a Payload server is already running, you will have to **Restart** the machine for the new image to be loaded
@@ -131,5 +133,11 @@ Scripts are stored inside of the `src/scripts` directory. Since the location of 
 Running the seeding script:
 
 ```
-ts-node scripts/seed.ts
+ts-node scripts/seed-localhost.ts
 ```
+
+Useful scripts are exposed to you via the package.json file. Additionally, there is a production dump of MongoDB available here as `prod-dump.tar`. You can untar it and use `mongorestore --uri="YOUR_CONNECTION_STRING" prod-dump` on it to import prod data into your local MongoDB. This dump was generated with the following command:
+```
+mongodump --db=payload --excludeCollectionsWithPrefix=_ --excludeCollection=cms-users --out=prod-dump
+```
+As you can see, it did not include production users.
