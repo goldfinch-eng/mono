@@ -29,7 +29,7 @@ async function main() {
   console.log(`TokenId,FiduHolder,Staked FIDU Amount,PositionType`)
   const batchSize = 300
   for (let batchIndex = 0; batchIndex < Math.ceil(numStakedFiduTokens / batchSize); batchIndex++) {
-    const batchOfPromises: Promise<string>[] = []
+    const batchOfPromises: Promise<void>[] = []
     for (
       let tokenId = batchIndex * batchSize + 1;
       tokenId < Math.min((batchIndex + 1) * batchSize + 1, numStakedFiduTokens);
