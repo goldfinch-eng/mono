@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { ReactNode, useState } from "react";
 
-import { Icon, Link } from "@/components/design-system";
+import { Alert, Icon } from "@/components/design-system";
 
 interface RewardCardScaffoldProps {
   heading: string;
@@ -11,7 +11,7 @@ interface RewardCardScaffoldProps {
   action: ReactNode;
   expandedDetails: ReactNode;
   warning?: string;
-  includeVaultNotice?: boolean;
+  noticeText?: string;
 }
 
 export function RewardCardScaffold({
@@ -22,7 +22,7 @@ export function RewardCardScaffold({
   action,
   expandedDetails,
   warning,
-  includeVaultNotice = false,
+  noticeText,
 }: RewardCardScaffoldProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -65,16 +65,10 @@ export function RewardCardScaffold({
           </div>
         </>
       ) : null}
-      {includeVaultNotice ? (
-        <div className="relative z-10 mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded bg-mustard-200 py-2 px-3 text-xs text-mustard-900">
-          <div>
-            You cannot claim GFI from a capital position while it is in the
-            Vault.
-          </div>
-          <Link href="/membership" iconRight="ArrowSmRight">
-            Go to Vault
-          </Link>
-        </div>
+      {noticeText ? (
+        <Alert type="info" className="mt-4">
+          {noticeText}
+        </Alert>
       ) : null}
     </div>
   );

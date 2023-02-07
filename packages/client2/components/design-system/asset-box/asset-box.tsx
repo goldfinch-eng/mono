@@ -86,7 +86,7 @@ export function AssetBox({
         ) : null}
       </div>
       {notice ? (
-        <div className="mt-6 rounded bg-mustard-200 p-2.5 text-center text-xs font-medium">
+        <div className="mt-6 rounded bg-mustard-200 p-2.5 text-xs font-medium">
           {notice}
         </div>
       ) : null}
