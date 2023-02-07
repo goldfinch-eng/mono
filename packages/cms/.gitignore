@@ -173,3 +173,6 @@ src/scripts/localhost-deals.json
 # generated types
 src/generated/generated-schema.graphql
 src/generated/payload-types.ts
+
+# production mongodb dump
+prod-dump/
