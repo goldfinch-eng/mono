@@ -110,13 +110,6 @@ export default function EarnPage({
 
   return (
     <div>
-      <Heading
-        as="h1"
-        level={2}
-        className="mb-12 text-center !text-5xl md:!text-6xl lg:text-left"
-      >
-        Deals
-      </Heading>
       {error ? (
         <HelperText isError className="mb-12">
           There was a problem fetching data on pools. Shown data may be
@@ -138,9 +131,6 @@ export default function EarnPage({
         ) : (
           <div>
             {/* ZADRA - Goldfinch Pools metrics */}
-            <div className="mb-6 font-medium text-sand-700">
-              Goldfinch Pools metrics
-            </div>
             <GoldfinchPoolsMetrics
               className="mb-20"
               tranchedPoolRoster={tranchedPoolRoster}
@@ -227,7 +217,7 @@ export default function EarnPage({
                   termEndTime={tranchedPool.creditLine.termEndTime}
                   limit={tranchedPool.creditLine.limit}
                   poolStatus={poolStatus}
-                  // isLate={tranchedPool.creditLine.isLate}
+                  isLate={tranchedPool.creditLine.isLate}
                 />
               );
             })}

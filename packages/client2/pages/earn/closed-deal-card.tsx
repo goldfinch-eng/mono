@@ -14,7 +14,7 @@ interface ClosedDealCardProps {
   termEndTime: BigNumber;
   limit: BigNumber;
   poolStatus: PoolStatus;
-  isLate?: boolean;
+  isLate: boolean;
 }
 
 const ClosedDealStatus = ({
