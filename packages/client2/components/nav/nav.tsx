@@ -57,7 +57,7 @@ export function Nav() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   return (
     <>
-      <div className="flex flex-row border-b border-sand-100 px-6 md:px-10">
+      <div className="flex flex-row border-b border-sand-300 px-6 md:px-10">
         <div className="self-center md:hidden">
           <button className="p-1" onClick={() => setIsMobileNavOpen(true)}>
             <Icon name="Menu" size="md" />

@@ -14,6 +14,7 @@ import {
   getTranchedPoolStatus,
   PoolStatus,
 } from "@/lib/pools";
+import { ClosedDealCard } from "@/pages/earn/closed-deal-card";
 import {
   GoldfinchPoolsMetrics,
   TRANCHED_POOL_ROSTERS_METRICS_FIELDS,
@@ -100,9 +101,9 @@ export default function EarnPage({
   const openTranchedPools = tranchedPools?.filter(
     (tranchedPool) => getTranchedPoolStatus(tranchedPool) === PoolStatus.Open
   );
-  // const closedTranchedPools = tranchedPools?.filter(
-  //   (tranchedPool) => getTranchedPoolStatus(tranchedPool) !== PoolStatus.Open
-  // );
+  const closedTranchedPools = tranchedPools?.filter(
+    (tranchedPool) => getTranchedPoolStatus(tranchedPool) !== PoolStatus.Open
+  );
 
   // + 1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
@@ -136,7 +137,7 @@ export default function EarnPage({
           </div>
         ) : (
           <div>
-            {/* Goldfinch Pools metrics */}
+            {/* ZADRA - Goldfinch Pools metrics */}
             <div className="mb-6 font-medium text-sand-700">
               Goldfinch Pools metrics
             </div>
@@ -145,13 +146,13 @@ export default function EarnPage({
               tranchedPoolRoster={tranchedPoolRoster}
             />
 
-            {/* Open Pools */}
+            {/* ZADRA - Open Pools */}
             <div className="mb-6 font-medium text-sand-700">
               {`${openDealsCount} Open Deals`}
             </div>
             <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               <OpenDealCard
-                owner="Goldfinch"
+                borrowerName="Goldfinch"
                 icon={seniorPool.icon}
                 title={seniorPool.name}
                 description={
@@ -191,7 +192,7 @@ export default function EarnPage({
                 return (
                   <OpenDealCard
                     key={tranchedPool.id}
-                    owner={dealDetails?.borrower?.name}
+                    borrowerName={dealDetails?.borrower?.name}
                     icon={dealDetails?.borrower?.logo?.url}
                     title={dealDetails?.name}
                     description={
@@ -206,7 +207,31 @@ export default function EarnPage({
               })}
             </div>
 
-            {/* Tranched Pools */}
+            {/* ZADRA - Closed Pools */}
+            <div className="mb-6 font-medium text-sand-700">
+              {`${closedTranchedPools?.length} Closed Pools`}
+            </div>
+            {closedTranchedPools?.map((tranchedPool) => {
+              const dealDetails = dealMetadata[
+                tranchedPool.id
+              ] as TranchedPoolCardDealFieldsFragment;
+
+              const poolStatus = getTranchedPoolStatus(tranchedPool);
+
+              return (
+                <ClosedDealCard
+                  key={tranchedPool.id}
+                  borrowerName={dealDetails?.borrower?.name}
+                  icon={dealDetails?.borrower?.logo?.url}
+                  title={dealDetails?.name}
+                  termEndTime={tranchedPool.creditLine.termEndTime}
+                  limit={tranchedPool.creditLine.limit}
+                  poolStatus={poolStatus}
+                  // isLate={tranchedPool.creditLine.isLate}
+                />
+              );
+            })}
+
             <PoolCard
               title={seniorPool.name}
               subtitle={seniorPool.category}

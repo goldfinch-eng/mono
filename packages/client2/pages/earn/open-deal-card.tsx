@@ -13,7 +13,7 @@ import {
 
 interface OpenDealCardProps {
   className?: string;
-  owner?: string;
+  borrowerName?: string;
   icon?: string | null;
   title: string;
   description: string;
@@ -35,7 +35,7 @@ function ChipCta({ dealType }: { dealType?: Deal_DealType | null }) {
 
 export function OpenDealCard({
   className,
-  owner,
+  borrowerName,
   icon,
   title,
   description,
@@ -57,14 +57,13 @@ export function OpenDealCard({
             {icon ? (
               <Image
                 src={icon}
-                alt={`${owner} icon`}
+                alt={`${borrowerName} icon`}
                 fill
                 className="object-contain"
-                sizes="48px"
               />
             ) : null}
           </div>
-          <div className="ml-2 text-sm text-sand-700">{owner}</div>
+          <div className="ml-2 text-sm text-sand-700">{borrowerName}</div>
         </div>
 
         <div className="mb-4">
@@ -122,7 +121,7 @@ export function OpenDealCardPlaceholder() {
   return (
     <div className="flex h-[440px] flex-col justify-between rounded-3xl border border-mustard-200 bg-mustard-100 p-8">
       <div>
-        {/* Icon & Owner */}
+        {/* Icon & borrowerName */}
         <div className="mb-4 flex items-center">
           <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white" />
         </div>

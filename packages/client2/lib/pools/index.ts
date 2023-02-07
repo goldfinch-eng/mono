@@ -36,6 +36,7 @@ export const TRANCHED_POOL_STATUS_FIELDS = gql`
       id
       balance
       termEndTime
+      isLate @client
     }
   }
 `;
