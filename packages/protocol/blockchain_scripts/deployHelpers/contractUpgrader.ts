@@ -2,7 +2,7 @@ import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {ContractDeployer, currentChainId} from "./"
 import {getExistingContracts} from "./getExistingContracts"
-import {UpgradedContracts, upgradeContracts} from "./upgradeContracts"
+import {UpgradedContracts, upgradeContracts, ContractUpgradeData, getName} from "./upgradeContracts"
 import {Logger} from "../types"
 
 export class ContractUpgrader {
@@ -17,12 +17,15 @@ export class ContractUpgrader {
     this.deployer = deployer
   }
 
-  async upgrade({contracts}: {contracts: string[]}, options: {proxyOwner?: string} = {}): Promise<UpgradedContracts> {
+  async upgrade(
+    {contracts}: {contracts: ContractUpgradeData[]},
+    options: {proxyOwner?: string} = {}
+  ): Promise<UpgradedContracts> {
     const {gf_deployer} = await this.hre.getNamedAccounts()
     assertNonNullable(gf_deployer)
     const chainId = await currentChainId()
-    this.logger(`Upgrading contracts: ${contracts}`)
-    const existingContracts = await getExistingContracts(contracts, gf_deployer, chainId)
+    this.logger(`Upgrading contracts: ${contracts.map(getName)}`)
+    const existingContracts = await getExistingContracts(contracts.map(getName), gf_deployer, chainId)
     const upgradedContracts = await upgradeContracts({
       contractsToUpgrade: contracts,
       contracts: existingContracts,

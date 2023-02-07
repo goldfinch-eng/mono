@@ -75,7 +75,7 @@ async function updateGoldfinchConfigs({
 }): Promise<Effects> {
   const protocolOwner = await getProtocolOwner()
   const ethersContracts = await Promise.all(
-    contracts.map((c) => (typeof c === "string" ? getEthersContract(c, {from: protocolOwner}) : c))
+    contracts.map((c) => (typeof c === "string" ? getEthersContract(c as any, {from: protocolOwner}) : c))
   )
   const updates = await Promise.all(
     ethersContracts.map((c) => asNonNullable(c.populateTransaction.updateGoldfinchConfig)())

@@ -8,25 +8,57 @@ import {IERC721Metadata} from "./openzeppelin/IERC721Metadata.sol";
 import {IERC721Enumerable} from "./openzeppelin/IERC721Enumerable.sol";
 
 interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
+  /// @notice Get the staking rewards position
+  /// @param tokenId id of the position token
+  /// @return position the position
   function getPosition(uint256 tokenId) external view returns (StakedPosition memory position);
 
+  /// @notice Unstake an amount of `stakingToken()` (FIDU, FiduUSDCCurveLP, etc) associated with
+  ///   a given position and transfer to msg.sender. Any remaining staked amount will continue to
+  ///   accrue rewards.
+  /// @dev This function checkpoints rewards
+  /// @param tokenId A staking position token ID
+  /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) external;
 
+  /// @notice Add `amount` to an existing FIDU position (`tokenId`)
+  /// @param tokenId A staking position token ID
+  /// @param amount Amount of `stakingToken()` to be added to tokenId's position
   function addToStake(uint256 tokenId, uint256 amount) external;
 
+  /// @notice Returns the staked balance of a given position token.
+  /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
+  ///   the number of tokens the user has staked for a given position. The effective amount is the bare
+  ///   amount multiplied by the token's underlying asset type multiplier. This multiplier is a crypto-
+  ///   economic parameter determined by governance.
+  /// @param tokenId A staking position token ID
+  /// @return Amount of staked tokens denominated in `stakingToken().decimals()`
   function stakedBalanceOf(uint256 tokenId) external view returns (uint256);
 
+  /// @notice Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
   function depositToCurveAndStakeFrom(
     address nftRecipient,
     uint256 fiduAmount,
     uint256 usdcAmount
   ) external;
 
+  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
+  ///   multiplier will be reset to 1x.
+  /// @dev This will also checkpoint their rewards up to the current time.
   function kick(uint256 tokenId) external;
 
+  /// @notice Accumulated rewards per token at the last checkpoint
   function accumulatedRewardsPerToken() external view returns (uint256);
 
+  /// @notice The block timestamp when rewards were last checkpointed
   function lastUpdateTime() external view returns (uint256);
+
+  /// @notice Claim rewards for a given staked position
+  /// @param tokenId A staking position token ID
+  /// @return amount of rewards claimed
+  function getReward(uint256 tokenId) external returns (uint256);
 
   /* ========== EVENTS ========== */
 

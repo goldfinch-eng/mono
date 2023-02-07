@@ -21,7 +21,7 @@ async function getImplementationAddress(address: string): Promise<string> {
 }
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
+  await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 })
 
 // Note that these tests relies on the fact that, for mainnet-forking, the transaction is mined as well as submitted.

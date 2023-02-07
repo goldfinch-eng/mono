@@ -12,11 +12,23 @@ import {deleteZapAfterClaimMaybe} from "../entities/zapper"
 import {removeFromList} from "../utils"
 
 export function handleTokenBurned(event: TokenBurned): void {
-  const token = TranchedPoolToken.load(event.params.tokenId.toString())
+  const burnedTokenId = event.params.tokenId.toString()
+  const token = TranchedPoolToken.load(burnedTokenId)
   if (!token) {
     return
   }
-  store.remove("TranchedPoolToken", event.params.tokenId.toString())
+  store.remove("TranchedPoolToken", burnedTokenId)
+
+  // Remove the token from both the user and tranched pool's token list
+  const tranchedPool = TranchedPool.load(event.params.pool.toHexString())
+  const user = getOrInitUser(event.params.owner)
+
+  if (tranchedPool) {
+    tranchedPool.tokens = removeFromList(tranchedPool.tokens, burnedTokenId)
+    user.tranchedPoolTokens = removeFromList(user.tranchedPoolTokens, burnedTokenId)
+    tranchedPool.save()
+    user.save()
+  }
 }
 
 export function handleTokenMinted(event: TokenMinted): void {

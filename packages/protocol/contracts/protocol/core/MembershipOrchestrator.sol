@@ -41,14 +41,10 @@ contract MembershipOrchestrator is
 {
   /// Thrown when anything is called with an unsupported asset
   error UnsupportedAssetAddress(address addr);
-  /// Thrown when a non-owner attempts to withdraw an asset
-  error CannotWithdrawUnownedAsset(address nonOwner);
-  /// Thrown when attempting to withdraw nothing
-  error MustWithdrawSomething();
-  /// Thrown when withdrawing for multiple owners
-  error CannotWithdrawForMultipleOwners();
-  /// Thrown when withdrawing for a position held by address 0
-  error CannotWithdrawForAddress0();
+  /// Thrown when calling a method with invalid input
+  error RequiresValidInput();
+  /// Thrown when operating on an unowned asset
+  error CannotOperateOnUnownedAsset(address nonOwner);
 
   constructor(Context _context) Base(_context) {}
 
@@ -91,14 +87,14 @@ contract MembershipOrchestrator is
       owner = context.capitalLedger().ownerOf(withdrawal.capitalPositions[0]);
     }
 
-    if (owner == address(0)) revert MustWithdrawSomething();
+    if (owner == address(0)) revert RequiresValidInput();
 
     for (uint256 i = 0; i < withdrawal.gfiPositions.length; i++) {
       uint256 positionId = withdrawal.gfiPositions[i].id;
       address positionOwner = context.gfiLedger().ownerOf(positionId);
 
-      if (positionOwner == address(0)) revert CannotWithdrawForAddress0();
-      if (positionOwner != owner) revert CannotWithdrawForMultipleOwners();
+      if (positionOwner == address(0)) revert CannotOperateOnUnownedAsset(address(0));
+      if (positionOwner != owner) revert CannotOperateOnUnownedAsset(positionOwner);
 
       _withdrawGFI(positionId, withdrawal.gfiPositions[i].amount);
     }
@@ -107,8 +103,8 @@ contract MembershipOrchestrator is
       uint256 positionId = withdrawal.capitalPositions[i];
       address positionOwner = context.capitalLedger().ownerOf(positionId);
 
-      if (positionOwner == address(0)) revert CannotWithdrawForAddress0();
-      if (positionOwner != owner) revert CannotWithdrawForMultipleOwners();
+      if (positionOwner == address(0)) revert CannotOperateOnUnownedAsset(address(0));
+      if (positionOwner != owner) revert CannotOperateOnUnownedAsset(positionOwner);
 
       _withdrawCapital(positionId);
     }
@@ -119,6 +115,25 @@ contract MembershipOrchestrator is
   /// @inheritdoc IMembershipOrchestrator
   function collectRewards() external nonReentrant whenNotPaused returns (uint256) {
     return context.membershipDirector().collectRewards(msg.sender);
+  }
+
+  /// @inheritdoc IMembershipOrchestrator
+  function harvest(uint256[] calldata capitalPositionIds) external nonReentrant whenNotPaused {
+    if (capitalPositionIds.length == 0) revert RequiresValidInput();
+
+    for (uint256 i = 0; i < capitalPositionIds.length; i++) {
+      uint256 capitalPositionId = capitalPositionIds[i];
+
+      address owner = context.capitalLedger().ownerOf(capitalPositionId);
+      if (owner != msg.sender) revert CannotOperateOnUnownedAsset(msg.sender);
+
+      context.capitalLedger().harvest(capitalPositionId);
+    }
+
+    // Consume adjustment to account for possible token principal changes
+    // Checkpoints the user's rewards as they may get a new score from the changes
+    address owner = context.capitalLedger().ownerOf(capitalPositionIds[0]);
+    context.membershipDirector().consumeHoldingsAdjustment(owner);
   }
 
   /// @inheritdoc IMembershipOrchestrator
@@ -230,7 +245,7 @@ contract MembershipOrchestrator is
 
   function _withdrawGFI(uint256 positionId) private returns (uint256) {
     if (context.gfiLedger().ownerOf(positionId) != msg.sender) {
-      revert CannotWithdrawUnownedAsset(msg.sender);
+      revert CannotOperateOnUnownedAsset(msg.sender);
     }
 
     return context.gfiLedger().withdraw(positionId);
@@ -238,7 +253,7 @@ contract MembershipOrchestrator is
 
   function _withdrawGFI(uint256 positionId, uint256 amount) private returns (uint256) {
     if (context.gfiLedger().ownerOf(positionId) != msg.sender) {
-      revert CannotWithdrawUnownedAsset(msg.sender);
+      revert CannotOperateOnUnownedAsset(msg.sender);
     }
 
     return context.gfiLedger().withdraw(positionId, amount);
@@ -246,7 +261,7 @@ contract MembershipOrchestrator is
 
   function _withdrawCapital(uint256 positionId) private {
     if (context.capitalLedger().ownerOf(positionId) != msg.sender) {
-      revert CannotWithdrawUnownedAsset(msg.sender);
+      revert CannotOperateOnUnownedAsset(msg.sender);
     }
 
     context.capitalLedger().withdraw(positionId);

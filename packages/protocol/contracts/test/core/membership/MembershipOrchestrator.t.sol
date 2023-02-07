@@ -12,6 +12,9 @@ import {Base} from "../../../cake/Base.sol";
 
 import "../../../interfaces/IMembershipOrchestrator.sol";
 import {IStakingRewards, StakedPosition, StakedPositionType} from "../../../interfaces/IStakingRewards.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
+import {IGo} from "../../../interfaces/IGo.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 
 import {FiduConversions} from "../../../library/FiduConversions.sol";
 
@@ -28,11 +31,9 @@ import {ERC20Splitter} from "../../../protocol/core/membership/ERC20Splitter.sol
 import "../../../protocol/core/membership/Epochs.sol";
 import {AccessControl} from "../../../cake/AccessControl.sol";
 
-import {Test, stdError} from "forge-std/Test.sol";
+import {Test, stdError, StdCheats} from "forge-std/Test.sol";
 
 import {CakeHelper} from "../../cake/helpers/CakeHelper.t.sol";
-
-import {console} from "forge-std/console.sol";
 
 using Routing.Context for Context;
 
@@ -42,9 +43,14 @@ contract MembershipOrchestratorTest is Test {
   MembershipOrchestrator private orchestrator;
 
   MockedStakingRewards private stakingRewards;
+  MockedSeniorPool private seniorPool;
+  MockedPoolTokens private poolTokens;
+  MockedBackerRewards private backerRewards;
+  MockedTranchedPool private tranchedPool;
   MockERC20 private gfi;
   MockERC20 private fidu;
   MockERC20 private usdc;
+  MockedGo private go;
 
   address private governance = address(2);
   address private pauser = address(3);
@@ -69,13 +75,20 @@ contract MembershipOrchestratorTest is Test {
     );
 
     stakingRewards = new MockedStakingRewards();
-    stakingRewards.init();
+    stakingRewards.init(cake.context());
     cake.router().setContract(Routing.Keys.StakingRewards, address(stakingRewards));
 
-    cake.router().setContract(
-      Routing.Keys.SeniorPool,
-      address(new MockedSeniorPool(cake.context()))
-    );
+    seniorPool = new MockedSeniorPool(cake.context());
+    cake.router().setContract(Routing.Keys.SeniorPool, address(seniorPool));
+    poolTokens = new MockedPoolTokens();
+    backerRewards = new MockedBackerRewards();
+    tranchedPool = new MockedTranchedPool();
+    poolTokens.init(cake.context(), tranchedPool, backerRewards);
+    backerRewards.init(poolTokens);
+    tranchedPool.init(poolTokens);
+    cake.router().setContract(Routing.Keys.PoolTokens, address(poolTokens));
+    cake.router().setContract(Routing.Keys.BackerRewards, address(backerRewards));
+
     cake.router().setContract(
       Routing.Keys.MembershipVault,
       address(new MembershipVault(cake.context()))
@@ -89,7 +102,7 @@ contract MembershipOrchestratorTest is Test {
       address(new MembershipLedger(cake.context()))
     );
 
-    gfi = new MockERC20(type(uint256).max);
+    gfi = new MockERC20(type(uint256).max / 2);
     cake.router().setContract(Routing.Keys.GFI, address(gfi));
 
     fidu = new MockERC20(type(uint256).max);
@@ -97,6 +110,9 @@ contract MembershipOrchestratorTest is Test {
 
     usdc = new MockERC20(type(uint256).max);
     cake.router().setContract(Routing.Keys.USDC, address(usdc));
+
+    go = new MockedGo();
+    cake.router().setContract(Routing.Keys.Go, address(go));
 
     MembershipLedger membershipLedger = new MembershipLedger(cake.context());
     membershipLedger.initialize();
@@ -266,7 +282,7 @@ contract MembershipOrchestratorTest is Test {
 
     vm.expectRevert(
       abi.encodeWithSelector(
-        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
         address(this)
       )
     );
@@ -290,7 +306,7 @@ contract MembershipOrchestratorTest is Test {
   function test_withdrawCapital_notOwner() public withOtherStakedFiduDeposit(address(5), 21e18) {
     vm.expectRevert(
       abi.encodeWithSelector(
-        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
         address(this)
       )
     );
@@ -379,7 +395,7 @@ contract MembershipOrchestratorTest is Test {
   }
 
   function test_withdraw_nothingRequested() public {
-    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.MustWithdrawSomething.selector));
+    vm.expectRevert(abi.encodeWithSelector(MembershipOrchestrator.RequiresValidInput.selector));
     orchestrator.withdraw(
       Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: new uint256[](0)})
     );
@@ -399,7 +415,10 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[0] = 1;
 
     vm.expectRevert(
-      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector)
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(5)
+      )
     );
     orchestrator.withdraw(
       Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
@@ -412,7 +431,7 @@ contract MembershipOrchestratorTest is Test {
 
     vm.expectRevert(
       abi.encodeWithSelector(
-        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
         address(this)
       )
     );
@@ -442,7 +461,10 @@ contract MembershipOrchestratorTest is Test {
     gfiPositions[2] = ERC20Withdrawal({id: 1, amount: 10});
 
     vm.expectRevert(
-      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(0)
+      )
     );
     orchestrator.withdraw(
       Withdrawal({gfiPositions: gfiPositions, capitalPositions: new uint256[](0)})
@@ -463,7 +485,10 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[1] = 2;
 
     vm.expectRevert(
-      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForMultipleOwners.selector)
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(5)
+      )
     );
     orchestrator.withdraw(
       Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
@@ -476,7 +501,7 @@ contract MembershipOrchestratorTest is Test {
 
     vm.expectRevert(
       abi.encodeWithSelector(
-        MembershipOrchestrator.CannotWithdrawUnownedAsset.selector,
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
         address(this)
       )
     );
@@ -491,7 +516,10 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[1] = 1;
 
     vm.expectRevert(
-      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(0)
+      )
     );
     orchestrator.withdraw(
       Withdrawal({gfiPositions: new ERC20Withdrawal[](0), capitalPositions: capitalPositions})
@@ -513,7 +541,10 @@ contract MembershipOrchestratorTest is Test {
     capitalPositions[2] = 100; // Invalid id!
 
     vm.expectRevert(
-      abi.encodeWithSelector(MembershipOrchestrator.CannotWithdrawForAddress0.selector)
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(0)
+      )
     );
     orchestrator.withdraw(
       Withdrawal({gfiPositions: gfiPositions, capitalPositions: capitalPositions})
@@ -875,6 +906,354 @@ contract MembershipOrchestratorTest is Test {
     orchestrator.collectRewards();
   }
 
+  function test_harvest_paused() public {
+    vm.startPrank(pauser);
+    orchestrator.pause();
+    vm.stopPrank();
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = 1;
+
+    vm.expectRevert(bytes("Pausable: paused"));
+    orchestrator.harvest(capitalPositions);
+  }
+
+  function test_harvest() public {
+    address owner = address(2);
+    StdCheats.deal(address(gfi), address(stakingRewards), uint256(100));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    uint256 id = depositStakedFidu(owner, 6e18);
+
+    seniorPool.setSharePrice(seniorPool.sharePrice() * 2);
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 10);
+    assertEq(previousEligible, 0);
+    assertEq(eligible, 0);
+    assertTrue(total > previousTotal);
+    assertEq(previousEligibleCapital, 0);
+    assertEq(eligibleCapital, 0);
+    assertEq(totalCapital, previousTotalCapital * 2);
+  }
+
+  function test_harvest_poolToken() public {
+    address owner = address(2);
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    (, uint256 id) = depositPoolToken(owner, 6e18, 0);
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.prank(owner);
+
+    // We're harvesting a pool token with no principal change & no new rewards
+    // it should revert
+    vm.expectRevert(bytes("IA"));
+    orchestrator.harvest(capitalPositions);
+  }
+
+  function test_harvest_poolToken_principalAndGFI() public {
+    address owner = address(2);
+    // Give usdc & gfi to poolTokens to distribute
+    StdCheats.deal(address(usdc), address(poolTokens), uint256(100e18));
+    StdCheats.deal(address(gfi), address(poolTokens), uint256(100e18));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    (, uint256 id) = depositPoolToken(owner, 6e18, 0);
+
+    poolTokens.setRedeemable({id: id, principal: 2e18, interest: 2e18, rewards: 10});
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 10);
+    assertEq(usdc.balanceOf(owner), 4e18);
+    assertEq(previousEligible, 0);
+    assertEq(eligible, 0);
+    assertTrue(total < previousTotal);
+    assertEq(previousEligibleCapital, 0);
+    assertEq(eligibleCapital, 0);
+    assertEq(previousTotalCapital, 6e18);
+    assertEq(totalCapital, 4e18);
+  }
+
+  function test_harvest_poolToken_duplicate() public {
+    address owner = address(2);
+    // Give usdc & gfi to poolTokens to distribute
+    StdCheats.deal(address(usdc), address(poolTokens), uint256(100e18));
+    StdCheats.deal(address(gfi), address(poolTokens), uint256(100e18));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    // There are no other capital positions so the capital position and pool
+    // token position ids happen to be the same, so ignore the first in the tuple
+    (, uint256 id) = depositPoolToken(owner, 6e18, 0);
+
+    poolTokens.setRedeemable({id: id, principal: 2e18, interest: 2e18, rewards: 10});
+
+    uint256[] memory capitalPositions = new uint256[](2);
+    capitalPositions[0] = id;
+    capitalPositions[1] = id;
+
+    vm.prank(owner);
+    // "IA" error in TranchedPool _withdraw should trigger
+    vm.expectRevert(bytes("IA"));
+    orchestrator.harvest(capitalPositions);
+  }
+
+  function test_harvest_poolToken_multiple() public {
+    address owner = address(2);
+    // Give usdc & gfi to poolTokens to distribute
+    StdCheats.deal(address(usdc), address(poolTokens), uint256(100e18));
+    StdCheats.deal(address(gfi), address(poolTokens), uint256(100e18));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    // There are no other capital positions so the capital position and pool
+    // token position ids happen to be the same, so ignore the first in the tuple
+    (, uint256 id1) = depositPoolToken(owner, 6e18, 0);
+    (, uint256 id2) = depositPoolToken(owner, 6e18, 0);
+
+    poolTokens.setRedeemable({id: id1, principal: 2e18, interest: 2e18, rewards: 10});
+    poolTokens.setRedeemable({id: id2, principal: 2e18, interest: 2e18, rewards: 10});
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](2);
+    capitalPositions[0] = id1;
+    capitalPositions[1] = id2;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    // We're harvesting a pool token with no principal change & no new rewards
+    // nothing should happen.
+    assertEq(gfi.balanceOf(owner), 20);
+    assertEq(usdc.balanceOf(owner), 8e18);
+    assertEq(previousEligible, 0);
+    assertEq(eligible, 0);
+    assertTrue(total < previousTotal);
+    assertEq(previousEligibleCapital, 0);
+    assertEq(eligibleCapital, 0);
+    assertEq(previousTotalCapital, 12e18);
+    assertEq(totalCapital, 8e18);
+  }
+
+  function test_harvest_nextEpoch() public {
+    address owner = address(2);
+    StdCheats.deal(address(gfi), address(stakingRewards), uint256(100));
+    // Give usdc & gfi to poolTokens to distribute
+    StdCheats.deal(address(usdc), address(poolTokens), uint256(100e18));
+    StdCheats.deal(address(gfi), address(poolTokens), uint256(100e18));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    uint256 stakedFiduId = depositStakedFidu(owner, 6e18);
+    (uint256 poolTokenId, uint256 poolTokenUnderlyingId) = depositPoolToken(owner, 4e6, 0);
+
+    skip(Epochs.EPOCH_SECONDS);
+
+    seniorPool.setSharePrice(seniorPool.sharePrice() * 2);
+    poolTokens.setRedeemable({id: poolTokenUnderlyingId, principal: 0, interest: 2e6, rewards: 10});
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](2);
+    capitalPositions[0] = stakedFiduId;
+    capitalPositions[1] = poolTokenId;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 20);
+    assertEq(usdc.balanceOf(owner), 2e6);
+    assertEq(previousEligible, 0);
+    assertTrue(eligible > previousEligible);
+    assertTrue(total > previousTotal);
+    assertEq(eligibleCapital, 16e6); // Fidu value doubled, pool token still worth 4
+    assertEq(totalCapital, 16e6);
+
+    // ensure that harvesting again reverts as there is nothing to claim
+    vm.prank(owner);
+
+    vm.expectRevert(bytes("IA"));
+    orchestrator.harvest(capitalPositions);
+  }
+
+  function test_harvest_decreaseScore() public {
+    address owner = address(2);
+    StdCheats.deal(address(gfi), address(stakingRewards), uint256(100));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    uint256 id1 = depositStakedFidu(owner, 6e18);
+    uint256 id2 = depositStakedFidu(owner, 6e18);
+
+    seniorPool.setSharePrice(seniorPool.sharePrice() / 2);
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](2);
+    capitalPositions[0] = id1;
+    capitalPositions[1] = id2;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 20);
+    assertEq(previousEligible, 0);
+    assertEq(eligible, 0);
+    assertTrue(total < previousTotal);
+    assertEq(eligibleCapital, 0);
+    assertEq(previousEligibleCapital, 0);
+    assertEq(totalCapital, previousTotalCapital / 2);
+  }
+
+  function test_harvest_decreaseScore_nextEpoch() public {
+    address owner = address(2);
+    StdCheats.deal(address(gfi), address(stakingRewards), uint256(100));
+
+    // Deposit GFI so the owner has a score
+    depositGFI(owner, 2e18);
+
+    uint256 id = depositStakedFidu(owner, 6e18);
+    skip(Epochs.EPOCH_SECONDS);
+
+    seniorPool.setSharePrice(seniorPool.sharePrice() / 2);
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 10);
+    assertEq(previousEligible, 0);
+    // Greater as previousEligible was 0
+    assertTrue(eligible > previousEligible);
+    // Lesser as harvest caused the capital to adjust to the new share price
+    assertTrue(total < previousTotal);
+    assertEq(eligibleCapital, previousEligibleCapital / 2);
+    assertEq(totalCapital, previousTotalCapital / 2);
+  }
+
+  function test_harvest_noChange() public {
+    address owner = address(2);
+    StdCheats.deal(address(gfi), address(stakingRewards), uint256(100));
+
+    uint256 id = depositStakedFidu(owner, 6e18);
+
+    assertEq(gfi.balanceOf(owner), 0);
+
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.memberScoreOf(owner);
+    (uint256 previousEligibleCapital, uint256 previousTotalCapital) = orchestrator
+      .totalCapitalHeldBy(owner);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.prank(owner);
+    orchestrator.harvest(capitalPositions);
+
+    (uint256 eligible, uint256 total) = orchestrator.memberScoreOf(owner);
+    (uint256 eligibleCapital, uint256 totalCapital) = orchestrator.totalCapitalHeldBy(owner);
+
+    assertEq(gfi.balanceOf(owner), 10);
+    assertEq(eligible, previousEligible);
+    assertEq(total, previousTotal);
+    assertEq(eligibleCapital, previousEligibleCapital);
+    assertEq(totalCapital, previousTotalCapital);
+  }
+
+  function test_harvest_notOwner() public {
+    uint256 id = depositStakedFidu(address(1), 6e18);
+
+    uint256[] memory capitalPositions = new uint256[](1);
+    capitalPositions[0] = id;
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        MembershipOrchestrator.CannotOperateOnUnownedAsset.selector,
+        address(this)
+      )
+    );
+    orchestrator.harvest(capitalPositions);
+  }
+
   function test_scenario_offByOne() public {
     address reserveSplitter = cake.contractFor(Routing.Keys.ReserveSplitter);
 
@@ -1154,11 +1533,9 @@ contract MembershipOrchestratorTest is Test {
   function depositStakedFidu(address addr, uint256 balance) private returns (uint256 id) {
     (uint256 previousEligible, uint256 previousTotal) = orchestrator.totalCapitalHeldBy(addr);
 
+    vm.startPrank(addr);
     uint256 stakedFiduId = stakingRewards.mint(StakedPositionType.Fidu, balance);
 
-    stakingRewards.safeTransferFrom(address(this), addr, stakedFiduId);
-
-    vm.startPrank(addr);
     stakingRewards.approve(address(orchestrator), stakedFiduId);
     CapitalDeposit[] memory capitalDeposits = new CapitalDeposit[](1);
     capitalDeposits[0] = CapitalDeposit({assetAddress: address(stakingRewards), id: stakedFiduId});
@@ -1184,8 +1561,27 @@ contract MembershipOrchestratorTest is Test {
     );
   }
 
-  function depositPoolToken(address addr, uint256 principle, uint256 principleRedeemed) private {
-    // todo
+  function depositPoolToken(
+    address addr,
+    uint256 principle,
+    uint256 principleRedeemed
+  ) private returns (uint256 id, uint256 poolTokenId) {
+    (uint256 previousEligible, uint256 previousTotal) = orchestrator.totalCapitalHeldBy(addr);
+
+    vm.startPrank(addr);
+    poolTokenId = poolTokens.mint(principle, principleRedeemed);
+
+    poolTokens.approve(address(orchestrator), poolTokenId);
+    CapitalDeposit[] memory capitalDeposits = new CapitalDeposit[](1);
+    capitalDeposits[0] = CapitalDeposit({assetAddress: address(poolTokens), id: poolTokenId});
+    id = orchestrator
+      .deposit(Deposit({gfi: 0, capitalDeposits: capitalDeposits}))
+      .capitalPositionIds[0];
+    vm.stopPrank();
+
+    (uint256 eligible, uint256 total) = orchestrator.totalCapitalHeldBy(addr);
+    assertEq(eligible, previousEligible);
+    assertEq(total, previousTotal + principle - principleRedeemed);
   }
 
   modifier withGFIDeposit(uint256 amount) {
@@ -1230,6 +1626,155 @@ contract MembershipOrchestratorTest is Test {
   event RewardsClaimed(address indexed owner, uint256 rewards);
 }
 
+contract MockedPoolTokens is ERC721Upgradeable {
+  struct Token {
+    address owner;
+    uint256 principalAmount;
+    uint256 principalRedeemed;
+    uint256 redeemablePrincipal;
+    uint256 redeemableInterest;
+    uint256 redeemableRewards;
+  }
+
+  Token[] public tokens;
+  Context context;
+
+  MockedTranchedPool tranchedPool;
+  MockedBackerRewards backerRewards;
+
+  function init(
+    Context _context,
+    MockedTranchedPool _tranchedPool,
+    MockedBackerRewards _backerRewards
+  ) external {
+    context = _context;
+    tranchedPool = _tranchedPool;
+    backerRewards = _backerRewards;
+
+    Token memory token;
+    tokens.push(token);
+    __ERC721_init_unchained("Goldfinch Mocked Pool Token", "MOCKED_PT");
+  }
+
+  function mint(uint256 principalAmount, uint256 principalRedeemed) external returns (uint256) {
+    _safeMint(msg.sender, tokens.length);
+
+    tokens.push(
+      Token({
+        owner: msg.sender,
+        principalAmount: principalAmount,
+        principalRedeemed: principalRedeemed,
+        redeemablePrincipal: 0,
+        redeemableInterest: 0,
+        redeemableRewards: 0
+      })
+    );
+
+    return tokens.length - 1;
+  }
+
+  function setRedeemable(
+    uint256 id,
+    uint256 principal,
+    uint256 interest,
+    uint256 rewards
+  ) external {
+    tokens[id].redeemablePrincipal = principal;
+    tokens[id].redeemableInterest = interest;
+    tokens[id].redeemableRewards = rewards;
+  }
+
+  function withdrawRewards(address to, uint256 id) external returns (uint256 rewards) {
+    Token memory token = tokens[id];
+
+    tokens[id].redeemableRewards = 0;
+
+    context.gfi().transfer(to, token.redeemableRewards);
+
+    return token.redeemableRewards;
+  }
+
+  function withdrawMax(
+    address to,
+    uint256 id
+  ) external returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    Token memory token = tokens[id];
+
+    require(tokens[id].redeemableInterest + tokens[id].redeemablePrincipal > 0, "IA");
+
+    tokens[id].redeemableInterest = 0;
+    tokens[id].redeemablePrincipal = 0;
+    tokens[id].principalRedeemed += token.redeemablePrincipal;
+
+    context.usdc().transfer(to, token.redeemableInterest + token.redeemablePrincipal);
+
+    return (token.redeemableInterest, token.redeemablePrincipal);
+  }
+
+  function getTokenInfo(uint256 id) external returns (IPoolTokens.TokenInfo memory) {
+    Token memory token = tokens[id];
+
+    return
+      IPoolTokens.TokenInfo({
+        pool: address(tranchedPool),
+        tranche: 2,
+        principalAmount: token.principalAmount,
+        principalRedeemed: token.principalRedeemed,
+        interestRedeemed: 2
+      });
+  }
+}
+
+contract MockedBackerRewards {
+  // Unlike the actual implementation of backer rewards, this simply delegates calls
+  // to the mocked pool tokens. This allows us to easily track all state in one object.
+  MockedPoolTokens poolTokens;
+
+  function init(MockedPoolTokens _poolTokens) external {
+    poolTokens = _poolTokens;
+  }
+
+  function withdraw(uint256 id) external returns (uint256 rewards) {
+    return poolTokens.withdrawRewards(msg.sender, id);
+  }
+}
+
+contract MockedTranchedPool {
+  // Unlike the actual implementation of backer rewards, this simply delegates calls
+  // to the mocked pool tokens. This allows us to easily track all state in one object.
+  MockedPoolTokens poolTokens;
+
+  function init(MockedPoolTokens _poolTokens) external {
+    poolTokens = _poolTokens;
+  }
+
+  function withdrawMax(
+    uint256 id
+  ) external returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    return poolTokens.withdrawMax(msg.sender, id);
+  }
+
+  function getAllowedUIDTypes() external returns (uint256[] memory) {
+    uint256[] memory allowedTypes = new uint256[](2);
+    allowedTypes[0] = 0;
+    allowedTypes[1] = 1;
+
+    return allowedTypes;
+  }
+
+  function getTranche(uint256 tranche) external view returns (ITranchedPool.TrancheInfo memory) {
+    return
+      ITranchedPool.TrancheInfo({
+        id: tranche,
+        principalDeposited: 9,
+        principalSharePrice: 9,
+        interestSharePrice: 9,
+        // Set non-zero so the pool token is valid
+        lockedUntil: 1
+      });
+  }
+}
+
 contract MockERC20 is ERC20Upgradeable {
   constructor(uint256 initialSupply) {
     _mint(msg.sender, initialSupply);
@@ -1238,13 +1783,17 @@ contract MockERC20 is ERC20Upgradeable {
 
 contract MockedStakingRewards is ERC721Upgradeable {
   struct Token {
+    address owner;
     StakedPositionType positionType;
     uint256 balance;
   }
 
   Token[] public tokens;
+  Context context;
 
-  function init() external {
+  function init(Context _context) external {
+    context = _context;
+
     Token memory token;
     tokens.push(token);
     __ERC721_init_unchained("Goldfinch V2 LP Staking Tokens", "GFI-V2-LPS");
@@ -1253,7 +1802,7 @@ contract MockedStakingRewards is ERC721Upgradeable {
   function mint(StakedPositionType t, uint256 balance) external returns (uint256) {
     _safeMint(msg.sender, tokens.length);
 
-    tokens.push(Token({positionType: t, balance: balance}));
+    tokens.push(Token({owner: msg.sender, positionType: t, balance: balance}));
 
     return tokens.length - 1;
   }
@@ -1265,22 +1814,37 @@ contract MockedStakingRewards is ERC721Upgradeable {
   function stakedBalanceOf(uint256 tokenId) external view returns (uint256) {
     return tokens[tokenId].balance;
   }
+
+  function getReward(uint256 id) external returns (uint256) {
+    context.gfi().transfer(tokens[id].owner, 10);
+  }
 }
 
 contract MockedSeniorPool is Base {
+  uint256 public sharePrice = 1e18;
+
   constructor(Context _context) Base(_context) {}
 
-  function sharePrice() public pure returns (uint256) {
-    return 1e18;
+  function setSharePrice(uint256 newPrice) external {
+    sharePrice = newPrice;
   }
 
   function deposit(uint256 usdcAmount) external returns (uint256) {
     require(usdcAmount > 0, "Must deposit more than zero");
 
-    uint256 amount = FiduConversions.usdcToFidu(usdcAmount, sharePrice());
+    uint256 amount = FiduConversions.usdcToFidu(usdcAmount, sharePrice);
 
     context.fidu().transfer(msg.sender, amount);
 
     return amount;
+  }
+}
+
+contract MockedGo {
+  function goOnlyIdTypes(
+    address account,
+    uint256[] calldata onlyIdTypes
+  ) external view returns (bool) {
+    return true;
   }
 }
