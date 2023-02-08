@@ -1,6 +1,7 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
 import * as migrate321 from "../blockchain_scripts/migrations/v3.2.1/migrate3_2_1"
+import * as migrate330 from "../blockchain_scripts/migrations/v3.3.0/migrate3_3_0"
 
 /**
  * Setup pending mainnet migration contracts in the Goldfinch contract ecosystem.
@@ -11,6 +12,7 @@ import * as migrate321 from "../blockchain_scripts/migrations/v3.2.1/migrate3_2_
 async function main(hre: HardhatRuntimeEnvironment) {
   console.log("Running pending mainnet migrations...")
   await migrate321.main()
+  await migrate330.main()
   console.log("Ran pending mainnet migrations...")
 }
 

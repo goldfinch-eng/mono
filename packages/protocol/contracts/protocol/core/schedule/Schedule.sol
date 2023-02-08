@@ -155,8 +155,8 @@ contract Schedule is ISchedule {
   ) external view override returns (uint256) {
     return
       Math.min(
-        _nextPrincipalDueTimeAt(startTime, timestamp),
-        _nextInterestDueTimeAt(startTime, timestamp)
+        nextPrincipalDueTimeAt(startTime, timestamp),
+        nextInterestDueTimeAt(startTime, timestamp)
       );
   }
 
@@ -213,14 +213,11 @@ contract Schedule is ISchedule {
     return principalPeriod > 0 ? _startOfPrincipalPeriod(startTime, principalPeriod) : 0;
   }
 
-  //===============================================================================
-  // Internal functions
-  //===============================================================================
-
-  function _nextPrincipalDueTimeAt(
+  /// @inheritdoc ISchedule
+  function nextPrincipalDueTimeAt(
     uint256 startTime,
     uint256 timestamp
-  ) internal view returns (uint256) {
+  ) public view override returns (uint256) {
     uint256 nextPrincipalPeriod = Math.min(
       totalPrincipalPeriods(),
       principalPeriodAt(startTime, timestamp).add(1)
@@ -228,17 +225,21 @@ contract Schedule is ISchedule {
     return _startOfPrincipalPeriod(startTime, nextPrincipalPeriod);
   }
 
-  /// @notice Returns the next time interest will come due, or the termEndTime if there are no more due times
-  function _nextInterestDueTimeAt(
+  /// @inheritdoc ISchedule
+  function nextInterestDueTimeAt(
     uint256 startTime,
     uint256 timestamp
-  ) internal view returns (uint256) {
+  ) public view override returns (uint256) {
     uint256 nextInterestPeriod = Math.min(
       totalInterestPeriods(),
       interestPeriodAt(startTime, timestamp).add(1)
     );
     return _startOfInterestPeriod(startTime, nextInterestPeriod);
   }
+
+  //===============================================================================
+  // Internal functions
+  //===============================================================================
 
   /// @notice Returns the absolute period that the terms will end in, accounting
   ///           for the stub period

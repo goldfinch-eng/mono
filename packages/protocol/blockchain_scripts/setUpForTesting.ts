@@ -51,7 +51,7 @@ import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
-import {ScheduleInstance} from "../typechain/truffle"
+import {MonthlyScheduleRepoInstance, ScheduleInstance} from "../typechain/truffle"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -195,6 +195,53 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const protocolBorrowerCon = lastEventArgs[0]
     logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
+    let signer = ethers.provider.getSigner(borrower)
+    let depositAmount = new BN(10000).mul(USDCDecimals)
+
+    let txn
+
+    /*** CALLABLE LOAN OPEN START ***/
+    const openCallableLoan = await createCallableLoanForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    // TODO: Pool metadata will be incorrect for now
+    await writePoolMetadata({pool: openCallableLoan, borrower: "CALLABLE OPEN"})
+    await impersonateAccount(hre, borrower)
+    depositAmount = new BN(5000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
+    await txn.wait()
+    // TODO: Use correct uncalled tranche for deposit
+    txn = await openCallableLoan.connect(signer).deposit(1, String(depositAmount))
+    await txn.wait()
+    /*** CALLABLE LOAN END ***/
+
+    /*** CALLABLE LOAN CLOSED START ***/
+    const closedCallableLoan = await createCallableLoanForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: closedCallableLoan, borrower: "CALLABLE CLOSED"})
+    await impersonateAccount(hre, borrower)
+    signer = ethers.provider.getSigner(borrower)
+    depositAmount = new BN(10000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
+    await txn.wait()
+    txn = await closedCallableLoan.connect(signer).deposit(1, String(depositAmount))
+    await txn.wait()
+
+    await closedCallableLoan.lockPool()
+    await txn.wait()
+    /*** CALLABLE LOAN CLOSED END ***/
+
     /*** UNITRANCHE OPEN START ***/
     const unitranche = await createPoolForBorrower({
       getOrNull,
@@ -206,9 +253,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     })
     await writePoolMetadata({pool: unitranche, borrower: "UNITRANCHE OPEN"})
     await impersonateAccount(hre, borrower)
-    let signer = ethers.provider.getSigner(borrower)
-    let depositAmount = new BN(5000).mul(USDCDecimals)
-    let txn = await erc20.connect(signer).approve(unitranche.address, String(depositAmount))
+    depositAmount = new BN(5000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(unitranche.address, String(depositAmount))
     await txn.wait()
     txn = await unitranche.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
     await txn.wait()
@@ -793,26 +839,77 @@ async function createPoolForBorrower({
   allowedUIDTypes: Array<number>
   limitInDollars?: number
 }): Promise<TranchedPool> {
-  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+  const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
+  await monthlyScheduleRepo.createSchedule(24, 1, 1, 1)
+  const schedule = await monthlyScheduleRepo.getSchedule(24, 1, 1, 1)
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const lateFeeApr = String(new BN(0))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
+
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createPool(
-        borrower,
-        juniorFeePercent,
-        limit,
-        interestApr,
-        schedule.address,
-        lateFeeApr,
-        fundableAt,
-        allowedUIDTypes
-      )
+      .createPool(borrower, juniorFeePercent, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
+  ).wait()
+  const lastEventArgs = getLastEventArgs(result)
+  const poolAddress = lastEventArgs[0]
+  const poolContract = await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool")
+  assertNonNullable(poolContract)
+  const pool = poolContract.attach(poolAddress).connect(underwriterSigner)
+
+  logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
+  let txn = await erc20.connect(underwriterSigner).approve(pool.address, String(limit))
+  await txn.wait()
+
+  if (depositor) {
+    const depositAmount = String(new BN(limit).div(new BN(20)))
+    const depositorSigner = ethers.provider.getSigner(depositor)
+    txn = await erc20.connect(depositorSigner).approve(pool.address, String(limit))
+    await txn.wait()
+    txn = await pool.connect(depositorSigner).deposit(TRANCHES.Junior, depositAmount)
+    await txn.wait()
+
+    logger(`Deposited ${depositAmount} into ${pool.address} via ${depositor}`)
+  }
+  return pool
+}
+
+async function createCallableLoanForBorrower({
+  getOrNull,
+  underwriter,
+  goldfinchFactory,
+  borrower,
+  depositor,
+  erc20,
+  allowedUIDTypes,
+  limitInDollars,
+}: {
+  getOrNull: any
+  underwriter: string
+  goldfinchFactory: GoldfinchFactory
+  borrower: string
+  depositor?: string
+  erc20: Contract
+  allowedUIDTypes: Array<number>
+  limitInDollars?: number
+}): Promise<TranchedPool> {
+  const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
+  await monthlyScheduleRepo.createSchedule(24, 1, 1, 1)
+  const schedule = await monthlyScheduleRepo.getSchedule(24, 1, 1, 1)
+  const juniorFeePercent = String(new BN(20))
+  const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
+  const interestApr = String(interestAprAsBN("5.00"))
+  const lateFeeApr = String(new BN(0))
+  const fundableAt = String(new BN(0))
+  const underwriterSigner = ethers.provider.getSigner(underwriter)
+
+  const result = await (
+    await goldfinchFactory
+      .connect(underwriterSigner)
+      .createCallableLoan(borrower, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const poolAddress = lastEventArgs[0]

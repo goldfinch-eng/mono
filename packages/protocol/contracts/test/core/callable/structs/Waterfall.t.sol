@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.13;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-
 import "forge-std/Test.sol";
+// solhint-disable-next-line max-line-length
 import {Waterfall, WaterfallLogic, Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 
 using WaterfallLogic for Waterfall;
 using TrancheLogic for Tranche;
 
 contract TestWaterfall is Test {
-  
   Waterfall internal w;
-  
+
   function setUp() external {
     w.initialize(4);
   }
 
-  function testDepositAddsPrincipalToTranche(
-    uint amount
-  ) external {
+  function testDepositAddsPrincipalToTranche(uint amount) external {
     uint trancheId;
     trancheId = bound(trancheId, 0, w.numTranches());
     Tranche storage trancheBefore = w.getTranche(trancheId);
@@ -29,7 +26,7 @@ contract TestWaterfall is Test {
     assertTrue(trancheBefore.interestPaid() == 0);
 
     w.deposit(trancheId, amount);
-  
+
     for (uint i = 0; i < w.numTranches(); i++) {
       Tranche storage sampled = w.getTranche(i);
       // if its the tranche that we deposited into
@@ -57,9 +54,5 @@ contract TestWaterfall is Test {
     - updates totalPrincipalOutstanding with principalPaid
 
   cumulativeRedeemableAmount
-
-
-
   */
-
 }

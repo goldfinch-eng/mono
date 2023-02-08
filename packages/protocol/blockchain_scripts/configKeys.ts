@@ -40,6 +40,7 @@ const CONFIG_KEYS_BY_TYPE = {
     TranchedPoolImplementationRepository: 23,
     WithdrawalRequestToken: 24,
     MonthlyScheduleRepo: 25,
+    CallableLoanImplementationRepository: 26,
   },
 }
 

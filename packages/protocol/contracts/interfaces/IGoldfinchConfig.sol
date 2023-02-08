@@ -4,9 +4,9 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface IGoldfinchConfig {
-  function getNumber(uint256 index) external returns (uint256);
+  function getNumber(uint256 index) external view returns (uint256);
 
-  function getAddress(uint256 index) external returns (address);
+  function getAddress(uint256 index) external view returns (address);
 
   function setAddress(uint256 index, address newAddress) external returns (address);
 

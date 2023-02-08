@@ -102,9 +102,7 @@ contract CallableLoan is
         hasAllowedUID(msg.sender),
       "NA"
     );
-    require(amountToCall == 0);
     // TODO: Actually submit call request
-    require(false, "Not implemented");
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
@@ -554,6 +552,7 @@ contract CallableLoan is
     return totalReserveAmount;
   }
 
+  // TODO: Callable loan should no longer initialize a separate credit line
   function _createAndSetCreditLine(
     address _borrower,
     uint256 _maxLimit,

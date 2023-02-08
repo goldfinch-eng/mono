@@ -25,6 +25,8 @@ import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
+import * as migrate330 from "../blockchain_scripts/migrations/v3.3.0/migrate3_3_0"
+
 import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
 import {deployMonthlyScheduleRepo} from "./baseDeploy/deployMonthlyScheduleRepo"
 
@@ -106,6 +108,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   console.log("Set legacy go list")
 
   await deployMonthlyScheduleRepo(deployer, deployEffects, config)
+  await migrate330.main()
 
   await deployEffects.executeDeferred()
 }

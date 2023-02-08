@@ -72,4 +72,20 @@ interface ISchedule {
    * @notice Returns the timestamp that the term began
    */
   function termStartTime(uint256 startTime) external view returns (uint256);
+
+  /**
+   * @notice Returns the next time principal will come due, or the termEndTime if there are no more due times
+   */
+  function nextPrincipalDueTimeAt(
+    uint256 startTime,
+    uint256 timestamp
+  ) external view returns (uint256);
+
+  /**
+   * @notice Returns the next time interest will come due, or the termEndTime if there are no more due times
+   */
+  function nextInterestDueTimeAt(
+    uint256 startTime,
+    uint256 timestamp
+  ) external view returns (uint256);
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 /**
@@ -55,9 +55,9 @@ library ConfigOptions {
     BackerRewards,
     StakingRewards,
     FiduUSDCCurveLP,
-    CallableLoanImplementationRepository,
     TranchedPoolImplementationRepository,
     WithdrawalRequestToken,
-    MonthlyScheduleRepo
+    MonthlyScheduleRepo,
+    CallableLoanImplementationRepository
   }
 }

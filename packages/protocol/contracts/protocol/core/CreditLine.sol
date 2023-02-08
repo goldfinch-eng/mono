@@ -230,7 +230,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     require(timestamp >= _checkpointedAsOf, "IT");
     // After loan maturity there is no concept of additional interest. All interest accrued
-    // automatically beocmes interest owed.
+    // automatically becomes interest owed.
     if (timestamp > termEndTime()) {
       return totalInterestAccruedAt(timestamp);
     }
