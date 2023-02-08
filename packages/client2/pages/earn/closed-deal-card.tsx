@@ -76,11 +76,11 @@ export function ClosedDealCard({
   return (
     <div
       className={clsx(
-        "relative grid grid-cols-12 rounded-xl bg-sand-100 py-6 px-8 hover:bg-sand-200",
+        "relative grid grid-cols-12 rounded-xl border border-sand-200 bg-white py-6 px-8 hover:bg-sand-100",
         className
       )}
     >
-      <div className="col-span-6 flex flex-col justify-center">
+      <div className="col-span-12 mb-5 flex flex-col justify-center sm:col-span-6 sm:mb-0">
         <div className="mb-2 flex items-center">
           <div className="relative mr-2 h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white">
             {icon ? (
@@ -97,7 +97,10 @@ export function ClosedDealCard({
         <div className="font-serif text-xl font-semibold">{title}</div>
       </div>
       {cardSectionDetails.map((item, i) => (
-        <div key={i} className="col-span-2 flex flex-col justify-center">
+        <div
+          key={i}
+          className="col-span-12 mb-4 flex flex-col justify-center sm:col-span-2 sm:mb-0"
+        >
           <NextLink href={href} passHref>
             <a className="mb-2 text-sm before:absolute before:inset-0">
               {item.title}

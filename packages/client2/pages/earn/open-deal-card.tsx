@@ -119,13 +119,15 @@ export function OpenDealCard({
             >
               <div className="flex">
                 <NextLink href={href} passHref>
-                  <a className="mr-1 text-sm before:absolute before:inset-0">
+                  <a className="mr-1 text-xs before:absolute before:inset-0 sm:text-sm">
                     {item.title}
                   </a>
                 </NextLink>
                 <InfoIconTooltip content={item.tooltipContent} size="sm" />
               </div>
-              <div className="font-semibold">{item.value}</div>
+              <div className="text-sm font-semibold sm:text-base">
+                {item.value}
+              </div>
             </div>
           ))}
         </div>

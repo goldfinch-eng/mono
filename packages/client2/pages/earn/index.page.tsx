@@ -243,7 +243,7 @@ export default function EarnPage({
             {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
               <Button
                 onClick={() => setShowMoreClosedPools(true)}
-                className="mb-15 w-full"
+                className="mb-15 w-full bg-sand-200 hover:bg-sand-300"
                 colorScheme="secondary"
                 size="lg"
               >

@@ -89,17 +89,19 @@ export function GoldfinchPoolsMetrics({
   return (
     <div
       className={clsx(
-        "grid grid-cols-3 divide-x divide-sand-300 rounded-b-xl border-b border-sand-300",
+        "divid-x-0 grid grid-cols-1 divide-y divide-sand-300 rounded-b-xl border-b border-sand-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0",
         className
       )}
     >
       {poolsMetricsSummaryData.map((item, i) => (
         <div key={i} className="px-10 py-6">
-          <div className="mb-3 flex items-center">
+          <div className="mb-3 flex items-center justify-center sm:justify-start">
             <div className="mr-1 text-sm">{item.title}</div>
             <InfoIconTooltip content={item.tooltipContent} size="sm" />
           </div>
-          <div className="text-3xl">{item.value}</div>
+          <div className="flex justify-center text-3xl sm:justify-start">
+            {item.value}
+          </div>
         </div>
       ))}
     </div>
