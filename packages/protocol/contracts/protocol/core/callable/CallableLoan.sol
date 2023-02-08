@@ -102,9 +102,7 @@ contract CallableLoan is
         hasAllowedUID(msg.sender),
       "NA"
     );
-    require(amountToCall == 0);
     // TODO: Actually submit call request
-    require(false, "Not implemented");
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
