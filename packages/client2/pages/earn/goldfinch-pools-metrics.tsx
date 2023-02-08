@@ -38,6 +38,7 @@ const formatForMetrics = (amount: BigNumber) => {
   }
 
   const float = cryptoToFloat({ amount: rounded, token: "USDC" });
+  // TODO: ',' or '.' for metrics amount seperator?
   return `$ ${millify(float, { precision: 2, decimalSeparator: "," })}`;
 };
 
@@ -68,6 +69,7 @@ export function GoldfinchPoolsMetrics({
           FixedNumber.from(totalDrawdowns)
         );
 
+  // TODO: Pending tooltip content from Jake
   const poolsMetricsSummaryData = [
     {
       title: "Active Loans",

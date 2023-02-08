@@ -38,7 +38,7 @@ const ClosedDealStatus = ({
       );
     case PoolStatus.Repaid:
       return <div className="text-mint-450">Fully repaid</div>;
-    // TODO Zadra: How to determine if a pool as defaulted?
+    // TODO: How to determine if a pool has defaulted?
     case PoolStatus.Default:
       return <div className="text-clay-500">Default</div>;
     default:

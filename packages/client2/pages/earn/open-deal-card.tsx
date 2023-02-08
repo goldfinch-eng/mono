@@ -38,6 +38,7 @@ export function OpenDealCard({
 }: OpenDealCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // TODO: Pending tooltip content from Jake
   const dealInfoItems = [
     {
       title: "Variable GFI APY",

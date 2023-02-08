@@ -119,7 +119,7 @@ export default function EarnPage({
     }
   });
 
-  // + 1 for Senior Pool
+  // +1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
 
   const loading =
@@ -154,6 +154,7 @@ export default function EarnPage({
           <div className="h-[22rem] sm:h-[7.25rem]">
             <GoldfinchPoolsMetrics
               tranchedPoolRoster={tranchedPoolRoster}
+              // TODO: Confirm with design whether we want full app width for metrics or not
               className="absolute left-0 right-0 -mt-14"
             />
           </div>
@@ -244,7 +245,7 @@ export default function EarnPage({
           {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
             <Button
               onClick={() => setShowMoreClosedPools(true)}
-              className="w-full bg-sand-200 hover:bg-sand-300"
+              className="w-full"
               colorScheme="secondary"
               size="lg"
             >
