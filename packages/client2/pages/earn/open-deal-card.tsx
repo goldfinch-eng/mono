@@ -81,7 +81,11 @@ export function OpenDealCard({
             ) : null}
           </div>
           <div className="ml-4 flex flex-col">
-            <div className="mb-1 font-semibold">{title}</div>
+            <NextLink href={href} passHref>
+              <a className="mb-1 font-semibold before:absolute before:inset-0">
+                {title}
+              </a>
+            </NextLink>
             <div className="text-sm text-sand-500">{subtitle}</div>
           </div>
         </div>
@@ -118,11 +122,7 @@ export function OpenDealCard({
               )}
             >
               <div className="flex">
-                <NextLink href={href} passHref>
-                  <a className="mr-1 text-xs before:absolute before:inset-0 sm:text-sm">
-                    {item.title}
-                  </a>
-                </NextLink>
+                <div className="mr-1 text-xs sm:text-sm">{item.title}</div>
                 <InfoIconTooltip content={item.tooltipContent} size="sm" />
               </div>
               <div className="text-sm font-semibold sm:text-base">

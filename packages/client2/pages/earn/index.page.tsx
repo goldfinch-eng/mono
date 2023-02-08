@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Button,
@@ -94,6 +94,11 @@ export default function EarnPage({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
+  const metricsSectionRef = useRef<HTMLDivElement>(null);
+  const [metricsSectionHeight, setMetricsSectionHeight] = useState<
+    undefined | number
+  >(undefined);
+
   const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
 
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
@@ -127,6 +132,13 @@ export default function EarnPage({
   // + 1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
 
+  useEffect(() => {
+    if (metricsSectionRef.current) {
+      const height = metricsSectionRef.current.offsetHeight;
+      setMetricsSectionHeight(height);
+    }
+  }, [metricsSectionRef]);
+
   return (
     <div>
       {error ? (
@@ -150,10 +162,17 @@ export default function EarnPage({
         ) : (
           <div>
             {/* ZADRA - Goldfinch Pools metrics */}
-            <GoldfinchPoolsMetrics
-              className="-mt-14 mb-15"
-              tranchedPoolRoster={tranchedPoolRoster}
-            />
+            <div
+              className="mb-15"
+              style={{ height: `${metricsSectionHeight}px` }}
+            >
+              <div ref={metricsSectionRef} className="absolute left-0 right-0">
+                <GoldfinchPoolsMetrics
+                  tranchedPoolRoster={tranchedPoolRoster}
+                  className="-mt-14"
+                />
+              </div>
+            </div>
             {/* ZADRA - Open Pools */}
             <div className="mb-6 font-medium text-sand-700">
               {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
