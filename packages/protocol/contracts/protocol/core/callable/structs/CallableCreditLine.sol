@@ -173,6 +173,13 @@ library CallableCreditLineLogic {
       //   cl._bufferedPayments - firstInterestPayment
       // );
 
+      // applyBuffer function needs to know how much
+      //   - "Making a payment exactly when principal + interest is due should be
+      //     indistinguishable from applying a prepaid buffer"
+      //   - principalOutstanding is in remaining buckets
+      //   - Allocate to uncalled capital tranche, and remaining buffer depending
+      //     on amount of principal outstanding in remaining called tranches.
+
       /**
        * Pay interest owed up until the end of the buffered principal period,
        * then apply the buffer to ONLY the buffered principal period.
@@ -182,7 +189,7 @@ library CallableCreditLineLogic {
       uint256 bufferedPaymentsRemainder = cl._waterfall.payUntil(
         firstInterestPayment,
         cl._bufferedPayments - firstInterestPayment,
-        activePrincipalPeriodAtLastCheckpoint + 1
+        cl._paymentSchedule.currentPrincipalPeriod()
       );
 
       // uint256 bufferedPaymentsRemainder = cl
@@ -192,8 +199,8 @@ library CallableCreditLineLogic {
       if (bufferedPaymentsRemainder > 0) {
         cl._bufferedPayments = cl._waterfall.payUntil(
           0,
-          firstPrincipalPayment,
-          cl._waterfall.lastTrancheIndex()
+          bufferedPaymentsRemainder,
+          cl._waterfall.numTranches() - 1
         );
       }
 
