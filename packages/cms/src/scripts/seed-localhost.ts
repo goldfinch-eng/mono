@@ -3,6 +3,8 @@ import path from "path";
 import { GraphQLClient, gql } from "graphql-request";
 import _ from "lodash";
 
+import { Borrower, Deal, Media } from "payload/generated-types";
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -63,8 +65,7 @@ const insertLocalBorrowers = async () => {
         if (borrower.logoPath) {
           const thing = await payload.create({
             collection: "media",
-            // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
-            data: { alt: "Pug" },
+            data: { alt: "Pug" } as Media,
             filePath: borrower.logoPath,
           });
           logoId = thing.id;
@@ -107,12 +108,11 @@ const insertLocalBorrowers = async () => {
 
         return await payload.create({
           collection: "borrowers",
-          // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
           data: {
             ...borrower,
             bio,
             logo: logoId,
-          },
+          } as unknown as Borrower,
           filePath: borrower.logoPath,
         });
       } catch (e) {
@@ -216,7 +216,6 @@ const importDeals = async () => {
         await payload.create({
           collection: "deals",
           depth: 0,
-          // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
           data: {
             ...deal,
             id,
@@ -250,7 +249,7 @@ const importDeals = async () => {
               : (_.sample(["multitranche", "unitranche"]) as
                   | "multitranche"
                   | "unitranche"),
-          },
+          } as unknown as Deal,
         });
       } catch (e) {
         // if this failed, it was probably because the deal already existed.
@@ -268,7 +267,6 @@ const importDeals = async () => {
         id: borrowerId,
         collection: "borrowers",
         depth: 0,
-        // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
         data: {
           deals: dealMapping[borrowerId],
         },
