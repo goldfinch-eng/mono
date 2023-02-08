@@ -8,6 +8,7 @@ import {
   useEarnPageQuery,
   EarnPageCmsQuery,
   TranchedPoolCardDealFieldsFragment,
+  TranchedPoolCardFieldsFragment,
 } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
@@ -98,12 +99,21 @@ export default function EarnPage({
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
-  const openTranchedPools = tranchedPools?.filter(
-    (tranchedPool) => getTranchedPoolStatus(tranchedPool) === PoolStatus.Open
-  );
-  const closedTranchedPools = tranchedPools?.filter(
-    (tranchedPool) => getTranchedPoolStatus(tranchedPool) !== PoolStatus.Open
-  );
+  const openTranchedPools: TranchedPoolCardFieldsFragment[] = [];
+  const closedTranchedPools: TranchedPoolCardFieldsFragment[] = [];
+
+  tranchedPools?.forEach((tranchedPool) => {
+    const poolStatus = getTranchedPoolStatus(tranchedPool);
+    if (
+      [PoolStatus.Open, PoolStatus.Paused, PoolStatus.ComingSoon].includes(
+        poolStatus
+      )
+    ) {
+      openTranchedPools.push(tranchedPool);
+    } else if ([PoolStatus.Repaid, PoolStatus.Full].includes(poolStatus)) {
+      closedTranchedPools.push(tranchedPool);
+    }
+  });
 
   // + 1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
@@ -141,12 +151,9 @@ export default function EarnPage({
             </div>
             <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               <OpenDealCard
-                borrowerName="Goldfinch"
                 icon={seniorPool.icon}
                 title={seniorPool.name}
-                description={
-                  "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                }
+                subtitle={seniorPool.category}
                 apy={seniorPool.estimatedApy}
                 gfiApy={computeApyFromGfiInFiat(
                   seniorPool.estimatedApyFromGfiRaw,
@@ -173,7 +180,6 @@ export default function EarnPage({
                     ? tranchedPool.estimatedJuniorApyFromGfiRaw
                     : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
-                // TODO: better way to do this? Convert days to months
                 const termLengthInMonths = Math.floor(
                   tranchedPool.creditLine.termInDays.toNumber() / 30
                 );
@@ -181,12 +187,9 @@ export default function EarnPage({
                 return (
                   <OpenDealCard
                     key={tranchedPool.id}
-                    borrowerName={dealDetails?.borrower?.name}
                     icon={dealDetails?.borrower?.logo?.url}
                     title={dealDetails?.name}
-                    description={
-                      "Auto-diversified across the entire portfolio of Goldfinch direct lending pools. Request withdrawal of investment any time; withdrawal requests fulfilled on a 2 week-rolling window basis."
-                    }
+                    subtitle={dealDetails?.category}
                     apy={tranchedPool.estimatedJuniorApy}
                     gfiApy={apyFromGfi}
                     termLengthInMonths={termLengthInMonths}

@@ -2,9 +2,11 @@ import clsx from "clsx";
 import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
+import { ReactNode } from "react";
 
 import { formatCrypto } from "@/lib/format";
 import { PoolStatus } from "@/lib/pools";
+import { assertUnreachable } from "@/lib/utils";
 
 interface ClosedDealCardProps {
   className?: string;
@@ -24,28 +26,21 @@ const ClosedDealStatus = ({
   poolStatus: PoolStatus;
   isLate: boolean;
 }) => {
-  // TODO ZADRA: Rest of statuses
-  let text = "";
   switch (poolStatus) {
     case PoolStatus.Full:
-      text = isLate ? "Grace Period" : "On Time";
-      break;
-    case PoolStatus.Closed:
-      text = "Cancelled";
-      break;
+      return isLate ? (
+        <div className="text-mustard-450">Grace Period</div>
+      ) : (
+        <div className="text-mint-450">On Time</div>
+      );
     case PoolStatus.Repaid:
-      text = "Fully Repaid";
-      break;
-    case PoolStatus.Paused:
-      text = "Paused";
-      break;
-    // TODO Zadra: Default?
-    case PoolStatus.Full:
-      text = "Cancelled";
-      break;
+      return <div className="text-mint-450">Fully repaid</div>;
+    // TODO Zadra: How to determine if a pool as defaulted?
+    case PoolStatus.Default:
+      return <div className="text-clay-500">Default</div>;
+    default:
+      assertUnreachable(poolStatus as never);
   }
-
-  return <div className="font-semibold">{text}</div>;
 };
 
 export function ClosedDealCard({
@@ -58,6 +53,23 @@ export function ClosedDealCard({
   poolStatus,
   isLate = false,
 }: ClosedDealCardProps) {
+  const cardSectionDetails: { title: string; content: string | ReactNode }[] = [
+    {
+      title: "Total loan amount",
+      content: formatCrypto({ amount: limit, token: "USDC" }),
+    },
+    {
+      title: "Maturity date",
+      content: termEndTime.isZero()
+        ? "-"
+        : formatDate(termEndTime.toNumber() * 1000, "MMM d, y"),
+    },
+    {
+      title: "Status",
+      content: <ClosedDealStatus poolStatus={poolStatus} isLate={isLate} />,
+    },
+  ];
+
   return (
     <div
       className={clsx(
@@ -81,27 +93,12 @@ export function ClosedDealCard({
         </div>
         <div className="font-serif text-xl font-semibold">{title}</div>
       </div>
-      {/* TODO: Map iterate array this  */}
-      <div className="col-span-2 flex flex-col justify-center">
-        <div className="mb-2 text-sm">Total loan amount</div>
-        <div className="font-semibold">
-          {formatCrypto({ amount: limit, token: "USDC" })}
+      {cardSectionDetails.map((item, i) => (
+        <div key={i} className="col-span-2 flex flex-col justify-center">
+          <div className="mb-2 text-sm">{item.title}</div>
+          <div className="font-semibold">{item.content}</div>
         </div>
-      </div>
-
-      <div className="col-span-2 flex flex-col justify-center">
-        <div className="mb-2 text-sm">Maturity date</div>
-        <div className="font-semibold">
-          {termEndTime.isZero()
-            ? "-"
-            : formatDate(termEndTime.toNumber() * 1000, "MMM d, y")}
-        </div>
-      </div>
-
-      <div className="col-span-2 flex flex-col justify-center">
-        <div className="mb-2 text-sm">Status</div>
-        <ClosedDealStatus poolStatus={poolStatus} isLate={isLate} />
-      </div>
+      ))}
     </div>
   );
 }

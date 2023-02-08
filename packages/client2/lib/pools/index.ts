@@ -48,6 +48,7 @@ export enum PoolStatus {
   Full,
   ComingSoon,
   Open,
+  Default,
 }
 
 /**
