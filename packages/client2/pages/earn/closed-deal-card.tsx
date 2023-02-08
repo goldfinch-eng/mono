@@ -5,6 +5,7 @@ import Image from "next/future/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
 
+import { ShimmerLines } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { PoolStatus } from "@/lib/pools";
 import { assertUnreachable } from "@/lib/utils";
@@ -82,7 +83,7 @@ export function ClosedDealCard({
     >
       <div className="col-span-12 mb-5 flex flex-col justify-center sm:col-span-6 sm:mb-0">
         <div className="mb-2 flex items-center">
-          <div className="relative mr-2 h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white">
+          <div className="relative mr-2 h-5 w-5 shrink-0 overflow-hidden rounded-full bg-sand-200">
             {icon ? (
               <Image
                 src={icon}
@@ -107,6 +108,46 @@ export function ClosedDealCard({
             </a>
           </NextLink>
           <div className="font-semibold">{item.content}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ClosedDealCardPlaceholder({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "relative grid grid-cols-12 rounded-xl border border-sand-200 bg-white py-6 px-8 hover:bg-sand-100",
+        className
+      )}
+    >
+      <div className="col-span-12 mb-5 flex flex-col justify-center sm:col-span-6 sm:mb-0">
+        <div className="mb-2 flex items-center">
+          <div className="relative mr-2 h-5 w-5 shrink-0 overflow-hidden rounded-full bg-sand-200" />
+          <div className="w-1/2 text-sm">
+            <ShimmerLines lines={1} className="w-full" />
+          </div>
+        </div>
+        <div className="font-serif text-xl font-semibold">
+          <ShimmerLines lines={1} className="w-full" />
+        </div>
+      </div>
+      {[0, 1, 2].map((item) => (
+        <div
+          key={item}
+          className="col-span-12 mb-4 flex flex-col justify-center sm:col-span-2 sm:mb-0"
+        >
+          <div className="mb-2 text-sm">
+            <ShimmerLines lines={1} className="w-full" />
+          </div>
+          <div className="font-semibold">
+            <ShimmerLines lines={1} className="w-full" />
+          </div>
         </div>
       ))}
     </div>
