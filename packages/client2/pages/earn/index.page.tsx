@@ -1,7 +1,14 @@
 import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
+import { useState } from "react";
 
-import { Heading, HelperText, Paragraph } from "@/components/design-system";
+import {
+  Button,
+  Heading,
+  HelperText,
+  Paragraph,
+} from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -87,6 +94,8 @@ export default function EarnPage({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
+  const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
+
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
@@ -132,7 +141,7 @@ export default function EarnPage({
             <div className="invisible mb-6 font-medium text-sand-700">
               Loading
             </div>
-            <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               <OpenDealCardPlaceholder />
               <OpenDealCardPlaceholder />
               <OpenDealCardPlaceholder />
@@ -142,14 +151,14 @@ export default function EarnPage({
           <div>
             {/* ZADRA - Goldfinch Pools metrics */}
             <GoldfinchPoolsMetrics
-              className="-mt-14 mb-20"
+              className="-mt-14 mb-15"
               tranchedPoolRoster={tranchedPoolRoster}
             />
             {/* ZADRA - Open Pools */}
             <div className="mb-6 font-medium text-sand-700">
-              {`${openDealsCount} Open Deals`}
+              {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
             </div>
-            <div className="mb-20 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               <OpenDealCard
                 icon={seniorPool.icon}
                 title={seniorPool.name}
@@ -159,6 +168,7 @@ export default function EarnPage({
                   seniorPool.estimatedApyFromGfiRaw,
                   fiatPerGfi
                 )}
+                href="/pools/senior"
               />
               {openTranchedPools?.map((tranchedPool) => {
                 const dealDetails = dealMetadata[
@@ -194,6 +204,7 @@ export default function EarnPage({
                     gfiApy={apyFromGfi}
                     termLengthInMonths={termLengthInMonths}
                     dealType={dealDetails?.dealType}
+                    href={`/pools/${tranchedPool.id}`}
                   />
                 );
               })}
@@ -203,7 +214,7 @@ export default function EarnPage({
             <div className="mb-6 font-medium text-sand-700">
               {`${closedTranchedPools?.length} Closed Pools`}
             </div>
-            {closedTranchedPools?.map((tranchedPool) => {
+            {closedTranchedPools?.map((tranchedPool, i) => {
               const dealDetails = dealMetadata[
                 tranchedPool.id
               ] as TranchedPoolCardDealFieldsFragment;
@@ -213,6 +224,11 @@ export default function EarnPage({
               return (
                 <ClosedDealCard
                   key={tranchedPool.id}
+                  // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
+                  className={clsx(
+                    "mb-2",
+                    !showMoreClosedPools && i >= 4 && "invisible !absolute"
+                  )}
                   borrowerName={dealDetails?.borrower?.name}
                   icon={dealDetails?.borrower?.logo?.url}
                   title={dealDetails?.name}
@@ -220,9 +236,20 @@ export default function EarnPage({
                   limit={tranchedPool.creditLine.limit}
                   poolStatus={poolStatus}
                   isLate={tranchedPool.creditLine.isLate}
+                  href={`/pools/${tranchedPool.id}`}
                 />
               );
             })}
+            {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
+              <Button
+                onClick={() => setShowMoreClosedPools(true)}
+                className="mb-15 w-full"
+                colorScheme="secondary"
+                size="lg"
+              >
+                {`View ${closedTranchedPools?.length - 4} more closed pools`}
+              </Button>
+            )}
 
             <PoolCard
               title={seniorPool.name}

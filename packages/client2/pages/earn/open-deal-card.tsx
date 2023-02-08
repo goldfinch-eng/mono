@@ -2,6 +2,7 @@ import { Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { FixedNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
+import NextLink from "next/link";
 import { Fragment, useState } from "react";
 
 import {
@@ -21,6 +22,7 @@ interface OpenDealCardProps {
   gfiApy: FixedNumber;
   termLengthInMonths?: number;
   dealType?: Deal_DealType | null;
+  href: string;
 }
 
 export function OpenDealCard({
@@ -32,6 +34,7 @@ export function OpenDealCard({
   gfiApy,
   termLengthInMonths,
   dealType,
+  href,
 }: OpenDealCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -59,7 +62,7 @@ export function OpenDealCard({
   return (
     <div
       className={clsx(
-        "flex h-[25rem] flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 hover:bg-mustard-200",
+        "relative flex h-[25rem] flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 hover:bg-mustard-200",
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -115,7 +118,11 @@ export function OpenDealCard({
               )}
             >
               <div className="flex">
-                <div className="mr-1 text-sm">{item.title}</div>
+                <NextLink href={href} passHref>
+                  <a className="mr-1 text-sm before:absolute before:inset-0">
+                    {item.title}
+                  </a>
+                </NextLink>
                 <InfoIconTooltip content={item.tooltipContent} size="sm" />
               </div>
               <div className="font-semibold">{item.value}</div>

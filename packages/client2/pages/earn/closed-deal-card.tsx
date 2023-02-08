@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
+import NextLink from "next/link";
 import { ReactNode } from "react";
 
 import { formatCrypto } from "@/lib/format";
@@ -17,6 +18,7 @@ interface ClosedDealCardProps {
   limit: BigNumber;
   poolStatus: PoolStatus;
   isLate: boolean;
+  href: string;
 }
 
 const ClosedDealStatus = ({
@@ -51,7 +53,8 @@ export function ClosedDealCard({
   termEndTime,
   limit,
   poolStatus,
-  isLate = false,
+  isLate,
+  href,
 }: ClosedDealCardProps) {
   const cardSectionDetails: { title: string; content: string | ReactNode }[] = [
     {
@@ -73,7 +76,7 @@ export function ClosedDealCard({
   return (
     <div
       className={clsx(
-        "mb-2 grid grid-cols-12 rounded-xl bg-sand-100 py-6 px-8 hover:bg-sand-200",
+        "relative grid grid-cols-12 rounded-xl bg-sand-100 py-6 px-8 hover:bg-sand-200",
         className
       )}
     >
@@ -95,7 +98,11 @@ export function ClosedDealCard({
       </div>
       {cardSectionDetails.map((item, i) => (
         <div key={i} className="col-span-2 flex flex-col justify-center">
-          <div className="mb-2 text-sm">{item.title}</div>
+          <NextLink href={href} passHref>
+            <a className="mb-2 text-sm before:absolute before:inset-0">
+              {item.title}
+            </a>
+          </NextLink>
           <div className="font-semibold">{item.content}</div>
         </div>
       ))}
