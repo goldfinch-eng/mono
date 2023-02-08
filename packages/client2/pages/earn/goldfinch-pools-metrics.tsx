@@ -4,12 +4,7 @@ import { BigNumber, FixedNumber } from "ethers/lib/ethers";
 import millify from "millify";
 
 import { InfoIconTooltip, ShimmerLines } from "@/components/design-system";
-import {
-  cryptoToFloat,
-  formatCrypto,
-  formatPercent,
-  roundDownToPrecision,
-} from "@/lib/format";
+import { cryptoToFloat, formatPercent } from "@/lib/format";
 import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
 export const TRANCHED_POOL_ROSTERS_METRICS_FIELDS = gql`
@@ -28,18 +23,10 @@ interface GoldfinchPoolsMetricsProps {
   protocol: ProtocolMetricsFieldsFragment;
 }
 
-// Expresses metric abbreviated in millions "M", rounded down to the nearest 100,000th
+// Expresses metric abbreviated in millions "M"
 const formatForMetrics = (amount: BigNumber) => {
-  const rounded = roundDownToPrecision(amount, BigNumber.from(100000 * 1e6));
-
-  // Format as normal when less than 100,000 - a metric this low would only occur in dev env
-  if (rounded.eq(0)) {
-    return formatCrypto({ amount: amount, token: "USDC" });
-  }
-
-  const float = cryptoToFloat({ amount: rounded, token: "USDC" });
-  // TODO: ',' or '.' for metrics amount seperator?
-  return `$ ${millify(float, { precision: 2, decimalSeparator: "," })}`;
+  const float = cryptoToFloat({ amount, token: "USDC" });
+  return `$${millify(float, { precision: 2 })}`;
 };
 
 export function GoldfinchPoolsMetrics({
