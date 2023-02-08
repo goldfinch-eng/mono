@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,6 +12,7 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
+import { CURVE_LP_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
@@ -90,7 +91,7 @@ gql`
       amount
     }
     curvePool @client {
-      usdcPerLpToken
+      usdPerLpToken
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -235,7 +236,7 @@ export default function DashboardPage() {
           ? data.viewer.curveLpBalance.amount
           : BigNumber.from(0)
       ),
-      data.curvePool.usdcPerLpToken
+      data.curvePool.usdPerLpToken
     );
 
     const totalUsdc = {
@@ -589,14 +590,14 @@ export default function DashboardPage() {
                                 percentage: computePercentage(
                                   curveLpTokensToUsdc(
                                     stakedPosition.amount,
-                                    data.curvePool.usdcPerLpToken
+                                    data.curvePool.usdPerLpToken
                                   ).amount,
                                   totalUsdc.amount
                                 ),
                                 quantity: stakedPosition.amount,
                                 usdcValue: curveLpTokensToUsdc(
                                   stakedPosition.amount,
-                                  data.curvePool.usdcPerLpToken
+                                  data.curvePool.usdPerLpToken
                                 ),
                                 url: "/stake",
                               })
@@ -609,14 +610,14 @@ export default function DashboardPage() {
                                     percentage: computePercentage(
                                       curveLpTokensToUsdc(
                                         data.viewer.curveLpBalance.amount,
-                                        data.curvePool.usdcPerLpToken
+                                        data.curvePool.usdPerLpToken
                                       ).amount,
                                       totalUsdc.amount
                                     ),
                                     quantity: data.viewer.curveLpBalance.amount,
                                     usdcValue: curveLpTokensToUsdc(
                                       data.viewer.curveLpBalance.amount,
-                                      data.curvePool.usdcPerLpToken
+                                      data.curvePool.usdPerLpToken
                                     ),
                                     url: "/stake",
                                   },
@@ -683,11 +684,11 @@ function curveLpTokensToUsdc(
   lpTokens: BigNumber,
   usdPerCurveLpToken: FixedNumber
 ) {
-  const usdcValue = usdPerCurveLpToken
-    .mulUnsafe(FixedNumber.from(lpTokens))
+  const usdValue = usdPerCurveLpToken
+    .mulUnsafe(FixedNumber.from(utils.formatUnits(lpTokens, CURVE_LP_DECIMALS)))
     .round();
   return {
-    amount: BigNumber.from(usdcValue.toString().split(".")[0]),
+    amount: utils.parseUnits(usdValue.toString().split(".")[0], USDC_DECIMALS),
     token: "USDC" as const,
   };
 }

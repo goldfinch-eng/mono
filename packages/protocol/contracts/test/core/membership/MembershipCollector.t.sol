@@ -24,7 +24,7 @@ import {IAccessControl} from "../../../interfaces/IAccessControl.sol";
 using Routing.Context for Context;
 
 contract MockFidu is ERC20 {
-  constructor() public ERC20("FIDU", "FIDU") {}
+  constructor() ERC20("FIDU", "FIDU") {}
 
   function mintTo(address to, uint256 amount) external {
     _mint(to, amount);
@@ -56,7 +56,7 @@ contract MockSeniorPool {
     return depositShares;
   }
 
-  function getNumShares(uint256 usdcAmount) external view returns (uint256) {
+  function getNumShares(uint256) external view returns (uint256) {
     return numShares;
   }
 }
@@ -236,7 +236,7 @@ contract MembershipCollectorTest is BaseTest {
     public
     impersonating(reserveSplitterAddress)
   {
-    uint256 firstRewardEpoch = startingEpoch + 5;
+    firstRewardEpoch = startingEpoch + 5;
 
     // Custom collector so we can set firstRewardEpoch
     membershipCollector = new MembershipCollector(cake.context(), firstRewardEpoch);
@@ -348,7 +348,6 @@ contract MembershipCollectorTest is BaseTest {
     uint256 fiduAmount = 100_000e18;
     seniorPool.mockDepositShares(fiduAmount);
 
-    uint256 pendingDistributionAmountUsdc = usdcAmount;
     uint256 pendingDistributionAmountFidu = fiduAmount;
     seniorPool.mockGetNumShares(pendingDistributionAmountFidu);
 

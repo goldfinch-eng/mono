@@ -237,7 +237,22 @@ export default function SupplyPanel({
         <span className="text-sm">Est. APY</span>
         <InfoIconTooltip
           size="sm"
-          content="The pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
+          content={
+            <div className="max-w-xs">
+              The Pool&rsquo;s total current estimated APY, including the
+              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
+              volatile and changes based on several variables including the
+              price of GFI, the total capital deployed on Goldfinch, and Senior
+              Pool&rsquo;s utilization. Learn more in the{" "}
+              <Link
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                openInNewTab
+              >
+                Goldfinch Documentation
+              </Link>
+              .
+            </div>
+          }
         />
       </div>
 

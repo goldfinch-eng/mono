@@ -99,4 +99,31 @@ library CapitalAssets {
 
     revert InvalidAsset(address(asset));
   }
+
+  /**
+   * @notice Harvests the associated rewards, interest, and other accrued assets
+   *  associated with the asset token. For example, if given a PoolToken asset,
+   *  this will collect the GFI rewards (if available), redeemable interest, and
+   *  redeemable principal, and send that to the `owner`.
+   * @param context goldfinch context for routing
+   * @param owner address to send the harvested assets to
+   * @param asset ERC721 to harvest
+   * @param assetTokenId id of the token to harvest
+   */
+  function harvest(
+    Context context,
+    address owner,
+    IERC721Upgradeable asset,
+    uint256 assetTokenId
+  ) internal {
+    if (PoolTokensAsset.isType(context, address(asset))) {
+      return PoolTokensAsset.harvest(context, owner, assetTokenId);
+    }
+
+    if (StakedFiduAsset.isType(context, address(asset))) {
+      return StakedFiduAsset.harvest(context, owner, assetTokenId);
+    }
+
+    revert InvalidAsset(address(asset));
+  }
 }

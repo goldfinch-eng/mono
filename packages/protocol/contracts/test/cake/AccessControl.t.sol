@@ -65,7 +65,7 @@ contract AccessControlTest is Test {
     accessControl.requireAdmin(resource, someOtherAddress);
   }
 
-  function testRequireSuperAdminSucceedsForAdminOfAccessControlContract() public {
+  function testRequireSuperAdminSucceedsForAdminOfAccessControlContract() public view {
     accessControl.requireSuperAdmin(superAdmin);
   }
 

@@ -105,18 +105,7 @@ contract GoldfinchFactoryTest is BaseTest {
 
     uint256[] memory allowedIdTypes = new uint256[](1);
     vm.expectRevert("Must have admin or borrower role to perform this action");
-    ITranchedPool pool = gfFactory.createPool(
-      address(this),
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      block.timestamp,
-      allowedIdTypes
-    );
+    gfFactory.createPool(address(this), 1, 2, 3, 4, 5, 6, 7, block.timestamp, allowedIdTypes);
   }
 
   function testOwnerCanGrantBorrowerRole(address newBorrower) public impersonating(GF_OWNER) {

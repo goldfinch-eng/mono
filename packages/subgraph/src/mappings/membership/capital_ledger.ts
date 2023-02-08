@@ -1,7 +1,12 @@
 import {store} from "@graphprotocol/graph-ts"
 
 import {CapitalERC721Deposit, CapitalERC721Withdrawal} from "../../../generated/CapitalLedger/CapitalLedger"
-import {VaultedStakedPosition, VaultedPoolToken, TranchedPoolToken} from "../../../generated/schema"
+import {
+  VaultedStakedPosition,
+  VaultedPoolToken,
+  TranchedPoolToken,
+  SeniorPoolStakedPosition,
+} from "../../../generated/schema"
 
 import {STAKING_REWARDS_ADDRESS, POOL_TOKENS_ADDRESS} from "../../address-manifest"
 import {createTransactionFromEvent} from "../../entities/helpers"
@@ -15,6 +20,9 @@ export function handleCapitalErc721Deposit(event: CapitalERC721Deposit): void {
     vaultedStakedPosition.vaultedAt = event.block.timestamp.toI32()
     vaultedStakedPosition.seniorPoolStakedPosition = event.params.assetTokenId.toString()
     vaultedStakedPosition.save()
+    const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.assetTokenId.toString()))
+    stakedPosition.vaultedAsset = vaultedStakedPosition.id
+    stakedPosition.save()
 
     const transaction = createTransactionFromEvent(event, "MEMBERSHIP_CAPITAL_DEPOSIT", event.params.owner)
     transaction.sentNftId = event.params.assetTokenId.toString()
@@ -29,6 +37,8 @@ export function handleCapitalErc721Deposit(event: CapitalERC721Deposit): void {
     const poolToken = assert(TranchedPoolToken.load(event.params.assetTokenId.toString()))
     vaultedPoolToken.tranchedPool = poolToken.tranchedPool
     vaultedPoolToken.save()
+    poolToken.vaultedAsset = vaultedPoolToken.id
+    poolToken.save()
 
     const transaction = createTransactionFromEvent(event, "MEMBERSHIP_CAPITAL_DEPOSIT", event.params.owner)
     transaction.sentNftId = event.params.assetTokenId.toString()
@@ -46,12 +56,22 @@ export function handleCapitalErc721Withdrawal(event: CapitalERC721Withdrawal): v
     transaction.receivedNftId = vaultedStakedPosition.seniorPoolStakedPosition
     transaction.receivedNftType = "STAKING_TOKEN"
     transaction.save()
+
     store.remove("VaultedStakedPosition", id)
+
+    const stakedPosition = assert(SeniorPoolStakedPosition.load(vaultedStakedPosition.seniorPoolStakedPosition))
+    stakedPosition.vaultedAsset = null
+    stakedPosition.save()
   } else if (vaultedPoolToken != null) {
     const transaction = createTransactionFromEvent(event, "MEMBERSHIP_CAPITAL_WITHDRAWAL", event.params.owner)
     transaction.receivedNftId = vaultedPoolToken.poolToken
     transaction.receivedNftType = "POOL_TOKEN"
     transaction.save()
+
     store.remove("VaultedPoolToken", id)
+
+    const poolToken = assert(TranchedPoolToken.load(vaultedPoolToken.poolToken))
+    poolToken.vaultedAsset = null
+    poolToken.save()
   }
 }

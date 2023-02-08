@@ -186,12 +186,12 @@ contract MembershipDirector is IMembershipDirector, Base, Initializable {
   }
 
   function _shareOfEpochRewards(uint256 epoch, uint256 memberScore) private view returns (uint256) {
-    uint256 totalMemberScores = context.membershipVault().totalAtEpoch(epoch);
+    uint256 totalMemberScoresForEpoch = context.membershipVault().totalAtEpoch(epoch);
     uint256 rewardTotal = context.membershipCollector().rewardsForEpoch(epoch);
 
-    if (memberScore > totalMemberScores) revert InvalidVaultPosition();
-    if (totalMemberScores == 0) return 0;
+    if (memberScore > totalMemberScoresForEpoch) revert InvalidVaultPosition();
+    if (totalMemberScoresForEpoch == 0) return 0;
 
-    return (memberScore * rewardTotal) / totalMemberScores;
+    return (memberScore * rewardTotal) / totalMemberScoresForEpoch;
   }
 }

@@ -37,10 +37,14 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
 
 interface StakingCardProps {
   position: StakingCardPositionFieldsFragment;
-  vaulted?: boolean;
+  vaultedCapitalPositionId?: string;
 }
 
-export function StakingCard({ position, vaulted = false }: StakingCardProps) {
+export function StakingCard({
+  position,
+  vaultedCapitalPositionId,
+}: StakingCardProps) {
+  const vaulted = !!vaultedCapitalPositionId;
   const stakedToken =
     position.positionType === "Fidu"
       ? "FIDU"
@@ -62,12 +66,24 @@ export function StakingCard({ position, vaulted = false }: StakingCardProps) {
     if (!provider) {
       return;
     }
-    const stakingRewardsContract = await getContract({
-      name: "StakingRewards",
-      provider,
-    });
-    const transaction = stakingRewardsContract.getReward(position.id);
-    await toastTransaction({ transaction });
+    if (vaulted) {
+      const membershipOrchestratorContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const transaction = membershipOrchestratorContract.harvest([
+        vaultedCapitalPositionId,
+      ]);
+      await toastTransaction({ transaction });
+    } else {
+      const stakingRewardsContract = await getContract({
+        name: "StakingRewards",
+        provider,
+      });
+      const transaction = stakingRewardsContract.getReward(position.id);
+      await toastTransaction({ transaction });
+    }
+
     await apolloClient.refetchQueries({ include: "active" });
   };
 
@@ -91,7 +107,7 @@ export function StakingCard({ position, vaulted = false }: StakingCardProps) {
           <Button
             size="lg"
             type="submit"
-            disabled={position.claimable.isZero() || vaulted}
+            disabled={position.claimable.isZero()}
           >
             {!position.claimable.isZero() ? "Claim GFI" : "Still Locked"}
           </Button>
@@ -137,7 +153,6 @@ export function StakingCard({ position, vaulted = false }: StakingCardProps) {
           />
         </>
       }
-      includeVaultNotice={vaulted}
     />
   );
 }

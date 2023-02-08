@@ -3,6 +3,9 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
+// solhint-disable-next-line max-line-length
+import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+
 import "../../../../library/FiduConversions.sol";
 import {Context} from "../../../../cake/Context.sol";
 import "../../../../cake/Routing.sol" as Routing;
@@ -12,6 +15,7 @@ import {IStakingRewards, StakedPositionType} from "../../../../interfaces/IStaki
 import {ISeniorPool} from "../../../../interfaces/ISeniorPool.sol";
 
 using Routing.Context for Context;
+using SafeERC20 for IERC20Upgradeable;
 
 library StakedFiduAsset {
   CapitalAssetType public constant AssetType = CapitalAssetType.ERC721;
@@ -47,5 +51,20 @@ library StakedFiduAsset {
   ) internal view returns (uint256) {
     uint256 stakedFiduBalance = context.stakingRewards().stakedBalanceOf(assetTokenId);
     return FiduConversions.fiduToUsdc(stakedFiduBalance, context.seniorPool().sharePrice());
+  }
+
+  /**
+   * @notice Harvest GFI rewards on a staked fidu token and send them to `owner`.
+   * @param context goldfinch context for routing
+   * @param owner address to send the GFI to
+   * @param assetTokenId id of the position to harvest
+   */
+  function harvest(Context context, address owner, uint256 assetTokenId) internal {
+    // Sends reward to owner (this contract)
+    uint256 reward = context.stakingRewards().getReward(assetTokenId);
+
+    if (reward > 0) {
+      context.gfi().safeTransfer(owner, reward);
+    }
   }
 }

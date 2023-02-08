@@ -47,8 +47,7 @@ lib/graphql/schema.json
 types/ethers-contracts
 
 # auto-generated files for connecting app to metadata
-constants/metadata/index.ts
-constants/metadata/localhost.json
+cms-cache/*.json
 
 # auto-generated file for feeding the app deployed contract addresses
 constants/contract-addresses/index.ts

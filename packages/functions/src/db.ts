@@ -12,6 +12,9 @@ let _configForTest: FirebaseConfig = {
     release: process.env.COMMIT_ID_FOR_TEST || "",
     environment: "test",
   },
+  slack: {
+    token: process.env.SLACK_TOKEN || "",
+  },
 }
 
 /**
@@ -87,6 +90,9 @@ export type FirebaseConfig = {
     // eslint-disable-next-line camelcase
     allowed_ips: string
     secret?: string
+  }
+  slack: {
+    token: string
   }
 }
 /**

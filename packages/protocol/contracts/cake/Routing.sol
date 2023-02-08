@@ -12,16 +12,16 @@ import {IMembershipDirector} from "../interfaces/IMembershipDirector.sol";
 import {IMembershipOrchestrator} from "../interfaces/IMembershipOrchestrator.sol";
 import {IMembershipLedger} from "../interfaces/IMembershipLedger.sol";
 import {IMembershipCollector} from "../interfaces/IMembershipCollector.sol";
+import {IBackerRewards} from "../interfaces/IBackerRewards.sol";
 
 import {ISeniorPool} from "../interfaces/ISeniorPool.sol";
 import {IPoolTokens} from "../interfaces/IPoolTokens.sol";
 import {IStakingRewards} from "../interfaces/IStakingRewards.sol";
+import {IGo} from "../interfaces/IGo.sol";
 
 import {IERC20Splitter} from "../interfaces/IERC20Splitter.sol";
 import {Context as ContextContract} from "./Context.sol";
 import {IAccessControl} from "../interfaces/IAccessControl.sol";
-
-import {Router} from "./Router.sol";
 
 /// @title Routing.Keys
 /// @notice This library is used to define routing keys used by `Router`.
@@ -55,6 +55,8 @@ library Keys {
   bytes4 internal constant StakingRewards = bytes4(keccak256("StakingRewards"));
   bytes4 internal constant ProtocolAdmin = bytes4(keccak256("ProtocolAdmin"));
   bytes4 internal constant PauserAdmin = bytes4(keccak256("PauserAdmin"));
+  bytes4 internal constant BackerRewards = bytes4(keccak256("BackerRewards"));
+  bytes4 internal constant Go = bytes4(keccak256("Go"));
 }
 
 /// @title Routing.Context
@@ -130,5 +132,13 @@ library Context {
 
   function pauserAdmin(ContextContract context) internal view returns (address) {
     return context.router().contracts(Keys.PauserAdmin);
+  }
+
+  function backerRewards(ContextContract context) internal view returns (IBackerRewards) {
+    return IBackerRewards(context.router().contracts(Keys.BackerRewards));
+  }
+
+  function go(ContextContract context) internal view returns (IGo) {
+    return IGo(context.router().contracts(Keys.Go));
   }
 }

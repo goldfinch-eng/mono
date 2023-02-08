@@ -32,7 +32,7 @@ contract TranchedPoolImplementationRepositoryTest is Test {
     assertVersionEq(proxyAsTp.getVersion(), tranchedPoolImpl.getVersion());
   }
 
-  function assertVersionEq(uint8[3] memory a, uint8[3] memory b) internal returns (bool) {
+  function assertVersionEq(uint8[3] memory a, uint8[3] memory b) internal pure returns (bool) {
     return a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
   }
 

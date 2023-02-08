@@ -1,0 +1,11 @@
+**/node_modules
+packages/
+!packages/cms/
+packages/cms/google-cloud-storage
+packages/cms/media
+packages/cms/dist
+packages/cms/.env
+packages/cms/.env.example
+packages/cms/.gcloudignore
+packages/cms/.gitignore
+packages/cms/README.md

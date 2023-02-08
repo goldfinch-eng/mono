@@ -13,7 +13,7 @@ extend type SeniorPool {
 extend type TranchedPool {
   name: String!
   borrowerName: String!
-  borrowerLogo: String!
+  borrowerLogo: String
 }
 
 extend type CreditLine {
@@ -131,7 +131,7 @@ type BlockInfo {
 
 type CurvePool {
   estimatedCurveStakingApyRaw: BigDecimal!
-  usdcPerLpToken: BigDecimal!
+  usdPerLpToken: BigDecimal!
 }
 
 extend type Query {

@@ -15,12 +15,12 @@ import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 contract AccountantTest is BaseTest, AccountantTestHelpers {
   using FixedPoint for FixedPoint.Unsigned;
 
-  address internal constant borrower = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0;
-  uint256 internal constant interestApr = 300000000000000000; // 3%
-  uint256 internal constant paymentPeriodInDays = 30;
-  uint256 internal constant termInDays = 365;
-  uint256 internal constant lateFeeApr = 30000000000000000; // 3%
-  uint256 internal constant gracePeriodInDays = 1000 days;
+  address internal constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0;
+  uint256 internal constant INTEREST_APR = 300000000000000000; // 3%
+  uint256 internal constant PAYMENT_PERIOD_IN_DAYS = 30;
+  uint256 internal constant TERM_IN_DAYS = 365;
+  uint256 internal constant LATE_FEE_APR = 30000000000000000; // 3%
+  uint256 internal constant GRACE_PERIOD_IN_DAYS = 1000 days;
 
   TestCreditLine internal cl;
 
@@ -28,7 +28,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 _balance,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays
-  ) public returns (uint256) {
+  ) public pure returns (uint256) {
     uint256 paymentPeriodInSeconds = _paymentPeriodInDays * TestConstants.SECONDS_PER_DAY;
     uint256 totalInterestPerYear = (_balance * _interestApr) / TestConstants.INTEREST_DECIMALS;
     uint256 result = (totalInterestPerYear * paymentPeriodInSeconds) /
@@ -43,18 +43,18 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     cl.initialize(
       address(protocol.gfConfig()),
       PROTOCOL_OWNER,
-      borrower,
+      BORROWER,
       usdcVal(10_000_000), // max limit
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      gracePeriodInDays
+      INTEREST_APR,
+      PAYMENT_PERIOD_IN_DAYS,
+      TERM_IN_DAYS,
+      LATE_FEE_APR,
+      GRACE_PERIOD_IN_DAYS
     );
 
     vm.startPrank(PROTOCOL_OWNER);
     cl.setInterestAccruedAsOf(block.timestamp);
-    cl.setTermEndTime(block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY);
+    cl.setTermEndTime(block.timestamp + TERM_IN_DAYS * TestConstants.SECONDS_PER_DAY);
     cl.setBalance(usdcVal(10_000_00));
     vm.stopPrank();
   }
@@ -67,13 +67,13 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     _timestamp = bound(
       _timestamp,
       block.timestamp,
-      block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY - 1
+      block.timestamp + TERM_IN_DAYS * TestConstants.SECONDS_PER_DAY - 1
     );
 
     (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
       _timestamp,
-      gracePeriodInDays
+      GRACE_PERIOD_IN_DAYS
     );
 
     uint256 expectedInterest = getInterestAccrued(
@@ -93,14 +93,14 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, 0) {
     _timestamp = bound(
       _timestamp,
-      block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY,
-      block.timestamp + termInDays * TestConstants.SECONDS_PER_DAY * 2
+      block.timestamp + TERM_IN_DAYS * TestConstants.SECONDS_PER_DAY,
+      block.timestamp + TERM_IN_DAYS * TestConstants.SECONDS_PER_DAY * 2
     );
 
     (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
       _timestamp,
-      gracePeriodInDays
+      GRACE_PERIOD_IN_DAYS
     );
 
     uint256 expectedInterest = getInterestAccrued(
@@ -121,8 +121,8 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   )
     public
     impersonating(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
-    withNextDueTime(cl, block.timestamp + paymentPeriodInDays * TestConstants.SECONDS_PER_DAY)
+    withLateFeeApr(cl, LATE_FEE_APR)
+    withNextDueTime(cl, block.timestamp + PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY)
   {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
@@ -151,8 +151,8 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   )
     public
     impersonating(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
-    withNextDueTime(cl, block.timestamp + paymentPeriodInDays * TestConstants.SECONDS_PER_DAY)
+    withLateFeeApr(cl, LATE_FEE_APR)
+    withNextDueTime(cl, block.timestamp + PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY)
   {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
@@ -188,7 +188,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   )
     public
     impersonating(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
+    withLateFeeApr(cl, LATE_FEE_APR)
     withNextDueTime(cl, cl.termEndTime())
   {
     uint256 lateFeeGracePeriod = 7 days;
@@ -218,7 +218,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   )
     public
     impersonating(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
+    withLateFeeApr(cl, LATE_FEE_APR)
     withNextDueTime(cl, cl.termEndTime())
   {
     uint256 lateFeeGracePeriod = 7 days;
@@ -249,7 +249,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
   /// @notice Late fee should kick in based on my nextDueTime and not be affected by my lastFullPaymentTime
   function test_lateFeeStart_unchanged_on_lastFullPaymentTime_change(
     uint256 _timestamp
-  ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, lateFeeApr) {
+  ) public impersonating(PROTOCOL_OWNER) withLateFeeApr(cl, LATE_FEE_APR) {
     uint256 nextDueTime = cl.nextDueTime();
     uint256 lateFeeGracePeriod = 7 days;
     _timestamp = bound(_timestamp, nextDueTime + lateFeeGracePeriod, cl.termEndTime());
@@ -462,7 +462,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       getInterestAccrued(0, TestConstants.SECONDS_PER_DAY, cl.balance(), cl.interestApr())
     )
   {
-    skip(block.timestamp + (paymentPeriodInDays * TestConstants.SECONDS_PER_DAY) / 2);
+    skip(block.timestamp + (PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY) / 2);
     uint256 gracePeriodInDays = 30;
     uint256 maxDaysLate = 120;
 
@@ -495,7 +495,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     withInterestApr(cl, 30000000000000000)
     withInterestOwed(
       cl,
-      interestOwedForOnePeriod(usdcVal(10), 30000000000000000, paymentPeriodInDays) * 2
+      interestOwedForOnePeriod(usdcVal(10), 30000000000000000, PAYMENT_PERIOD_IN_DAYS) * 2
     )
   {
     uint256 gracePeriodInDays = 30;
@@ -543,7 +543,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       cl,
       getInterestAccrued(
         0,
-        paymentPeriodInDays * TestConstants.SECONDS_PER_DAY + 10,
+        PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY + 10,
         cl.balance(),
         cl.interestApr()
       )
@@ -596,7 +596,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
       cl,
       getInterestAccrued(
         0,
-        paymentPeriodInDays * TestConstants.SECONDS_PER_DAY,
+        PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY,
         cl.balance(),
         cl.interestApr()
       )

@@ -48,6 +48,7 @@ abstract contract BaseTest is Test {
     fuzzHelper.exclude(TREASURY);
     fuzzHelper.exclude(address(protocol.gfFactory()));
     fuzzHelper.exclude(address(protocol.fidu()));
+    fuzzHelper.exclude(address(protocol.gfi()));
     fuzzHelper.exclude(address(protocol.gfConfig()));
     // Forge VM
     fuzzHelper.exclude(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
@@ -132,8 +133,8 @@ abstract contract BaseTest is Test {
     assertEq(x, 0);
   }
 
-  function assertZero(uint256 x, string memory msg) internal {
-    assertEq(x, 0, msg);
+  function assertZero(uint256 x, string memory message) internal {
+    assertEq(x, 0, message);
   }
 
   modifier onlyAllowListed(address _address) {

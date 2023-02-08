@@ -43,90 +43,21 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   uint256 internal constant USDC_MANTISSA = 10 ** 6;
   uint256 internal constant NUM_TRANCHES_PER_SLICE = 2;
 
-  struct BackerRewardsInfo {
-    uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
-  }
+  /// @inheritdoc IBackerRewards
+  uint256 public override totalRewards;
 
-  struct BackerRewardsTokenInfo {
-    uint256 rewardsClaimed; // gfi claimed
-    uint256 accRewardsPerPrincipalDollarAtMint; // Pool's accRewardsPerPrincipalDollar at PoolToken mint()
-  }
+  /// @inheritdoc IBackerRewards
+  uint256 public override maxInterestDollarsEligible;
 
-  /// @notice Staking rewards parameters relevant to a TranchedPool
-  struct StakingRewardsPoolInfo {
-    // @notice the value `StakingRewards.accumulatedRewardsPerToken()` at the last checkpoint
-    uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
-    // @notice last time the rewards info was updated
-    //
-    // we need this in order to know how much to pro rate rewards after the term is over.
-    uint256 lastUpdateTime;
-    // @notice staking rewards parameters for each slice of the tranched pool
-    StakingRewardsSliceInfo[] slicesInfo;
-  }
+  /// @inheritdoc IBackerRewards
+  uint256 public override totalInterestReceived;
 
-  /// @notice Staking rewards paramters relevant to a TranchedPool slice
-  struct StakingRewardsSliceInfo {
-    // @notice fidu share price when the slice is first drawn down
-    //
-    // we need to save this to calculate what an equivalent position in
-    // the senior pool would be at the time the slice is downdown
-    uint256 fiduSharePriceAtDrawdown;
-    // @notice the amount of principal deployed at the last checkpoint
-    //
-    // we use this to calculate the amount of principal that should
-    // acctually accrue rewards during between the last checkpoint and
-    // and subsequent updates
-    uint256 principalDeployedAtLastCheckpoint;
-    // @notice the value of StakingRewards.accumulatedRewardsPerToken() at time of drawdown
-    //
-    // we need to keep track of this to use this as a base value to accumulate rewards
-    // for tokens. If the token has never claimed staking rewards, we use this value
-    // and the current staking rewards accumulator
-    uint256 accumulatedRewardsPerTokenAtDrawdown;
-    // @notice amount of rewards per token accumulated over the lifetime of the slice that a backer
-    //          can claim
-    uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
-    // @notice the amount of rewards per token accumulated over the lifetime of the slice
-    //
-    // this value is "unrealized" because backers will be unable to claim against this value.
-    // we keep this value so that we can always accumulate rewards for the amount of capital
-    // deployed at any point in time, but not allow backers to withdraw them until a payment
-    // is made. For example: we want to accumulate rewards when a backer does a drawdown. but
-    // a backer shouldn't be allowed to claim rewards until a payment is made.
-    //
-    // this value is scaled depending on the current proportion of capital currently deployed
-    // in the slice. For example, if the staking rewards contract accrued 10 rewards per token
-    // between the current checkpoint and a new update, and only 20% of the capital was deployed
-    // during that period, we would accumulate 2 (10 * 20%) rewards.
-    uint256 unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint;
-  }
+  /// @inheritdoc IBackerRewards
+  uint256 public override totalRewardPercentOfTotalGFI;
 
-  /// @notice Staking rewards parameters relevant to a PoolToken
-  struct StakingRewardsTokenInfo {
-    // @notice the amount of rewards accumulated the last time a token's rewards were withdrawn
-    uint256 accumulatedRewardsPerTokenAtLastWithdraw;
-  }
-
-  /// @notice total amount of GFI rewards available, times 1e18
-  uint256 public totalRewards;
-
-  /// @notice interest $ eligible for gfi rewards, times 1e18
-  uint256 public maxInterestDollarsEligible;
-
-  /// @notice counter of total interest repayments, times 1e6
-  uint256 public totalInterestReceived;
-
-  /// @notice totalRewards/totalGFISupply * 100, times 1e18
-  uint256 public totalRewardPercentOfTotalGFI;
-
-  /// @notice poolTokenId -> BackerRewardsTokenInfo
   mapping(uint256 => BackerRewardsTokenInfo) public tokens;
-
-  /// @notice pool.address -> BackerRewardsInfo
   mapping(address => BackerRewardsInfo) public pools;
-
-  /// @notice Staking rewards info for each pool
-  mapping(ITranchedPool => StakingRewardsPoolInfo) public poolStakingRewards; // pool.address -> StakingRewardsPoolInfo
+  mapping(ITranchedPool => StakingRewardsPoolInfo) public poolStakingRewards;
 
   /// @notice Staking rewards info for each pool token
   mapping(uint256 => StakingRewardsTokenInfo) public tokenStakingRewards;
@@ -176,11 +107,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     }
   }
 
-  /**
-   * @notice Calculates the accRewardsPerPrincipalDollar for a given pool,
-   *          when a interest payment is received by the protocol
-   * @param _interestPaymentAmount The amount of total dollars the interest payment, expects 10^6 value
-   */
+  /// @inheritdoc IBackerRewards
   function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool nonReentrant {
     // note: do not use a require statment because that will TranchedPool kill execution
     if (_interestPaymentAmount > 0) {
@@ -220,11 +147,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     emit BackerRewardsSetMaxInterestDollarsEligible(_msgSender(), _maxInterestDollarsEligible);
   }
 
-  /**
-   * @notice When a pool token is minted for multiple drawdowns,
-   *  set accRewardsPerPrincipalDollarAtMint to the current accRewardsPerPrincipalDollar price
-   * @param tokenId Pool token id
-   */
+  /// @inheritdoc IBackerRewards
   function setPoolTokenAccRewardsPerPrincipalDollarAtMint(
     address poolAddress,
     uint256 tokenId
@@ -242,8 +165,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
       .accRewardsPerPrincipalDollar;
   }
 
-  /// @notice callback for TranchedPools when they drawdown
-  /// @dev initializes rewards info for the calling TranchedPool
+  /// @inheritdoc IBackerRewards
   function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool nonReentrant {
     ITranchedPool pool = ITranchedPool(_msgSender());
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
@@ -287,11 +209,60 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   }
 
   /**
+   * @inheritdoc IBackerRewards
+   * @dev The sum of newRewardsClaimed across the split tokens MUST be equal to (or be very slightly smaller
+   * than, in the case of rounding due to integer division) the original token's rewardsClaimed. Furthermore,
+   * they must be split proportional to the original and new token's principalAmounts. This impl validates
+   * neither of those things because only the pool tokens contract can call it, and it trusts that the PoolTokens
+   * contract doesn't call maliciously.
+   */
+  function setBackerAndStakingRewardsTokenInfoOnSplit(
+    BackerRewardsTokenInfo memory originalBackerRewardsTokenInfo,
+    StakingRewardsTokenInfo memory originalStakingRewardsTokenInfo,
+    uint256 newTokenId,
+    uint256 newRewardsClaimed
+  ) external override onlyPoolTokens {
+    tokens[newTokenId] = BackerRewardsTokenInfo({
+      rewardsClaimed: newRewardsClaimed,
+      accRewardsPerPrincipalDollarAtMint: originalBackerRewardsTokenInfo
+        .accRewardsPerPrincipalDollarAtMint
+    });
+    tokenStakingRewards[newTokenId] = originalStakingRewardsTokenInfo;
+  }
+
+  /// @inheritdoc IBackerRewards
+  function clearTokenInfo(uint256 tokenId) external override onlyPoolTokens {
+    delete tokens[tokenId];
+    delete tokenStakingRewards[tokenId];
+  }
+
+  /// @inheritdoc IBackerRewards
+  function getTokenInfo(
+    uint256 poolTokenId
+  ) external view override returns (BackerRewardsTokenInfo memory) {
+    return tokens[poolTokenId];
+  }
+
+  /// @inheritdoc IBackerRewards
+  function getStakingRewardsTokenInfo(
+    uint256 poolTokenId
+  ) external view override returns (StakingRewardsTokenInfo memory) {
+    return tokenStakingRewards[poolTokenId];
+  }
+
+  /// @inheritdoc IBackerRewards
+  function getBackerStakingRewardsPoolInfo(
+    ITranchedPool pool
+  ) external view override returns (StakingRewardsPoolInfo memory) {
+    return poolStakingRewards[pool];
+  }
+
+  /**
    * @notice Calculate the gross available gfi rewards for a PoolToken
    * @param tokenId Pool token id
    * @return The amount of GFI claimable
    */
-  function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
+  function poolTokenClaimableRewards(uint256 tokenId) public view override returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -371,11 +342,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     }
   }
 
-  /**
-   * @notice PoolToken request to withdraw all allocated rewards
-   * @param tokenId Pool token id
-   */
-  function withdraw(uint256 tokenId) public whenNotPaused nonReentrant {
+  /// @inheritdoc IBackerRewards
+  function withdraw(uint256 tokenId) public override whenNotPaused nonReentrant returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -411,6 +379,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
       claimableBackerRewards,
       claimableStakingRewards
     );
+
+    return totalClaimableRewards;
   }
 
   /**
@@ -897,6 +867,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   }
 
   /* ======== MODIFIERS  ======== */
+
+  modifier onlyPoolTokens() {
+    require(msg.sender == address(config.getPoolTokens()), "Not PoolTokens");
+    _;
+  }
 
   modifier onlyPool() {
     require(config.getPoolTokens().validPool(_msgSender()), "Invalid pool!");
