@@ -100,7 +100,7 @@ export async function main() {
 
   // await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
-  // await deployEffects.executeDeferred()
+  await deployEffects.executeDeferred()
 
   console.log("Finished deploy 3.3.0")
 }
