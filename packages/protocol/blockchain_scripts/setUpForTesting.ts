@@ -51,7 +51,7 @@ import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
-import {ScheduleInstance} from "../typechain/truffle"
+import {MonthlyScheduleRepoInstance, ScheduleInstance} from "../typechain/truffle"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -793,26 +793,20 @@ async function createPoolForBorrower({
   allowedUIDTypes: Array<number>
   limitInDollars?: number
 }): Promise<TranchedPool> {
-  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+  const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
+  await monthlyScheduleRepo.createSchedule(24, 1, 1, 1)
+  const schedule = await monthlyScheduleRepo.getSchedule(24, 1, 1, 1)
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const lateFeeApr = String(new BN(0))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
+
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createPool(
-        borrower,
-        juniorFeePercent,
-        limit,
-        interestApr,
-        schedule.address,
-        lateFeeApr,
-        fundableAt,
-        allowedUIDTypes
-      )
+      .createPool(borrower, juniorFeePercent, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const poolAddress = lastEventArgs[0]
