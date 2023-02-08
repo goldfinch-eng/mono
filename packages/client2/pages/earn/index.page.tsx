@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   Button,
@@ -25,6 +25,7 @@ import {
 import { ClosedDealCard } from "@/pages/earn/closed-deal-card";
 import {
   GoldfinchPoolsMetrics,
+  GoldfinchPoolsMetricsPlaceholder,
   TRANCHED_POOL_ROSTERS_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
@@ -94,11 +95,6 @@ export default function EarnPage({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
-  const metricsSectionRef = useRef<HTMLDivElement>(null);
-  const [metricsSectionHeight, setMetricsSectionHeight] = useState<
-    undefined | number
-  >(undefined);
-
   const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
 
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
@@ -132,13 +128,6 @@ export default function EarnPage({
   // + 1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
 
-  useEffect(() => {
-    if (metricsSectionRef.current) {
-      const height = metricsSectionRef.current.offsetHeight;
-      setMetricsSectionHeight(height);
-    }
-  }, [metricsSectionRef]);
-
   return (
     <div>
       {error ? (
@@ -150,28 +139,30 @@ export default function EarnPage({
       <div className="mb-15">
         {!seniorPool || !fiatPerGfi || !tranchedPools || !tranchedPoolRoster ? (
           <div>
-            <div className="invisible mb-6 font-medium text-sand-700">
-              Loading
+            <div className="h-[22rem] sm:h-[7.25rem]">
+              <GoldfinchPoolsMetricsPlaceholder className="absolute left-0 right-0 -mt-14" />
             </div>
+            <div className="invisible mb-6">Loading</div>
             <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              <OpenDealCardPlaceholder />
-              <OpenDealCardPlaceholder />
-              <OpenDealCardPlaceholder />
+              {[0, 1, 2].map((i) => (
+                <OpenDealCardPlaceholder key={i} />
+              ))}
+            </div>
+            <div className="invisible mb-6">Loading</div>
+            <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <OpenDealCardPlaceholder key={i} />
+              ))}
             </div>
           </div>
         ) : (
           <div>
             {/* ZADRA - Goldfinch Pools metrics */}
-            <div
-              className="mb-15"
-              style={{ height: `${metricsSectionHeight}px` }}
-            >
-              <div ref={metricsSectionRef} className="absolute left-0 right-0">
-                <GoldfinchPoolsMetrics
-                  tranchedPoolRoster={tranchedPoolRoster}
-                  className="-mt-14"
-                />
-              </div>
+            <div className="h-[22rem] sm:h-[7.25rem]">
+              <GoldfinchPoolsMetrics
+                tranchedPoolRoster={tranchedPoolRoster}
+                className="absolute left-0 right-0 -mt-14"
+              />
             </div>
             {/* ZADRA - Open Pools */}
             <div className="mb-6 font-medium text-sand-700">

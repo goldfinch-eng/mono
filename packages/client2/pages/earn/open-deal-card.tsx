@@ -138,30 +138,52 @@ export function OpenDealCard({
 
 export function OpenDealCardPlaceholder() {
   return (
-    <div className="flex h-[440px] flex-col justify-between rounded-3xl border border-mustard-200 bg-mustard-100 p-8">
+    <div className="relative flex h-[25rem] flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 hover:bg-mustard-200">
       <div>
-        {/* Icon & borrowerName */}
         <div className="mb-4 flex items-center">
-          <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white" />
-        </div>
-
-        {/* Title */}
-        <div className="mb-4">
-          <div className="font-serif text-2xl font-semibold	text-sand-800">
-            <ShimmerLines lines={1} truncateFirstLine />
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white" />
+          <div className="ml-4 flex w-full flex-col">
+            <div className="mb-1 font-semibold">
+              <ShimmerLines lines={1} className="w-full" />
+            </div>
+            <div className="text-sm text-sand-500">
+              <ShimmerLines lines={1} className="w-full" />
+            </div>
           </div>
-        </div>
-
-        {/* Description */}
-        <div className="mb-5">
-          <ShimmerLines lines={4} truncateFirstLine={false} />
         </div>
       </div>
 
-      <div className="grid items-end">
-        <ShimmerLines lines={1} truncateFirstLine={false} className="py-2" />
-        <ShimmerLines lines={1} truncateFirstLine={false} className="py-2" />
-        <ShimmerLines lines={1} truncateFirstLine={false} className="pt-2" />
+      <div>
+        <div className="mb-6 flex items-end justify-between">
+          <div className="w-full">
+            <div className="mb-2 text-sm">
+              <ShimmerLines lines={1} className="w-full" />
+            </div>
+            <div className="font-serif text-[2.5rem]">
+              <ShimmerLines lines={1} className="w-full" />
+            </div>
+          </div>
+        </div>
+        <div className="grid divide-y divide-mustard-200 border-t border-mustard-200">
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className={clsx(
+                "flex items-center justify-between",
+                item === [0, 1, 2].length - 1 ? "pt-3" : "py-3"
+              )}
+            >
+              <div className="flex w-full">
+                <div className="mr-1 w-full text-xs sm:text-sm">
+                  <ShimmerLines lines={1} className="w-full" />
+                </div>
+              </div>
+              <div className="w-full text-sm font-semibold sm:text-base">
+                <ShimmerLines lines={1} className="w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

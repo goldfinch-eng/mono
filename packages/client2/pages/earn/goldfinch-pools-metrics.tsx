@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { BigNumber, FixedNumber } from "ethers/lib/ethers";
 import millify from "millify";
 
-import { InfoIconTooltip } from "@/components/design-system";
+import { InfoIconTooltip, ShimmerLines } from "@/components/design-system";
 import {
   cryptoToFloat,
   formatCrypto,
@@ -101,6 +101,32 @@ export function GoldfinchPoolsMetrics({
           </div>
           <div className="flex justify-center text-3xl sm:justify-start">
             {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function GoldfinchPoolsMetricsPlaceholder({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "grid grid-cols-1 divide-x-0 divide-y divide-sand-300 rounded-b-xl border-b border-sand-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0",
+        className
+      )}
+    >
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="px-10 py-6">
+          <div className="mb-3 flex items-center justify-center sm:justify-start">
+            <ShimmerLines lines={1} className="w-full" />
+          </div>
+          <div className="flex justify-center text-3xl sm:justify-start">
+            <ShimmerLines lines={1} className="w-full" />
           </div>
         </div>
       ))}
