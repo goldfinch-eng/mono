@@ -1,7 +1,12 @@
 import { gql } from "@apollo/client";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 
-import { Heading, HelperText, Paragraph } from "@/components/design-system";
+import {
+  Heading,
+  HelperText,
+  Link,
+  Paragraph,
+} from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
@@ -114,8 +119,19 @@ export default function EarnPage({
             apyTooltipContent={
               <div>
                 <div className="mb-4">
-                  The Senior Pool&apos;s total current estimated APY, including
-                  the current USDC APY and est. GFI rewards APY.
+                  The Senior Pool&rsquo;s total current estimated APY, including
+                  the current USDC APY and est. GFI rewards APY. The GFI rewards
+                  APY is volatile and changes based on several variables
+                  including the price of GFI, the total capital deployed on
+                  Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
+                  the{" "}
+                  <Link
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining)"
+                    openInNewTab
+                  >
+                    Goldfinch Documentation
+                  </Link>
+                  .
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
