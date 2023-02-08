@@ -32,7 +32,7 @@ import {
 } from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
-import {getListOfAllTranchedPoolAddresses} from "./tranched_pool_roster"
+import {getListOfAllTranchedPoolAddresses} from "./protocol"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)

@@ -1,8 +1,4 @@
-import {
-  updateTotalInterestCollected,
-  updateTotalPrincipalCollected,
-  updateTotalWriteDowns,
-} from "../entities/tranched_pool_roster"
+import {updateTotalInterestCollected, updateTotalPrincipalCollected, updateTotalWriteDowns} from "../entities/protocol"
 import {PrincipalCollected, InterestCollected, PrincipalWrittendown} from "../../generated/Pool/Pool"
 
 export function handlePrincipalCollected(event: PrincipalCollected): void {

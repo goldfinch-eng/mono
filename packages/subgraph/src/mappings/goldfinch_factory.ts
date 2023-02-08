@@ -6,7 +6,7 @@ import {BorrowerCreated, PoolCreated} from "../../generated/GoldfinchFactory/Gol
 import {TranchedPool as TranchedPoolTemplate} from "../../generated/templates"
 import {getOrInitBorrower} from "../entities/borrower"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
-import {addToListOfAllTranchedPools} from "../entities/tranched_pool_roster"
+import {addToListOfAllTranchedPools} from "../entities/protocol"
 
 export function handlePoolCreated(event: PoolCreated): void {
   if (INVALID_POOLS.has(event.params.pool.toHexString())) {

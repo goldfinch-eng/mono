@@ -52,7 +52,7 @@ gql`
       id
       ...TranchedPoolCardFields
     }
-    tranchedPoolRosters(first: 1) {
+    protocols(first: 1) {
       id
       totalDrawdowns
       totalWritedowns
@@ -99,7 +99,7 @@ export default function EarnPage({
     (tranchedPool) => !!dealMetadata[tranchedPool.id]
   );
 
-  const tranchedPoolRoster = data?.tranchedPoolRosters?.[0];
+  const protocol = data?.protocols[0];
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
@@ -122,8 +122,7 @@ export default function EarnPage({
   // +1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
 
-  const loading =
-    !seniorPool || !fiatPerGfi || !tranchedPools || !tranchedPoolRoster;
+  const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
 
   return (
     <div>
@@ -153,7 +152,7 @@ export default function EarnPage({
         <>
           <div className="h-[22rem] sm:h-[7.25rem]">
             <GoldfinchPoolsMetrics
-              tranchedPoolRoster={tranchedPoolRoster}
+              protocol={protocol}
               // TODO: Confirm with design whether we want full app width for metrics or not
               className="absolute left-0 right-0 -mt-14"
             />

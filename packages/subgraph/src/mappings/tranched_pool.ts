@@ -21,7 +21,7 @@ import {
   updateTotalInterestCollected,
   updateTotalPrincipalCollected,
   updateTotalReserveCollected,
-} from "../entities/tranched_pool_roster"
+} from "../entities/protocol"
 import {
   handleDeposit,
   updatePoolCreditLine,

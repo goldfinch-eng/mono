@@ -10,10 +10,10 @@ import {
   formatPercent,
   roundDownToPrecision,
 } from "@/lib/format";
-import { TranchedPoolRostersMetricsFieldsFragment } from "@/lib/graphql/generated";
+import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
 export const TRANCHED_POOL_ROSTERS_METRICS_FIELDS = gql`
-  fragment tranchedPoolRostersMetricsFields on TranchedPoolRoster {
+  fragment protocolMetricsFields on Protocol {
     id
     totalDrawdowns
     totalWritedowns
@@ -25,7 +25,7 @@ export const TRANCHED_POOL_ROSTERS_METRICS_FIELDS = gql`
 
 interface GoldfinchPoolsMetricsProps {
   className?: string;
-  tranchedPoolRoster: TranchedPoolRostersMetricsFieldsFragment;
+  protocol: ProtocolMetricsFieldsFragment;
 }
 
 // Expresses metric abbreviated in millions "M", rounded down to the nearest 100,000th
@@ -44,7 +44,7 @@ const formatForMetrics = (amount: BigNumber) => {
 
 export function GoldfinchPoolsMetrics({
   className,
-  tranchedPoolRoster,
+  protocol,
 }: GoldfinchPoolsMetricsProps) {
   const {
     totalDrawdowns,
@@ -52,7 +52,7 @@ export function GoldfinchPoolsMetrics({
     totalWritedowns,
     totalInterestCollected,
     totalReserveCollected,
-  } = tranchedPoolRoster;
+  } = protocol;
 
   const activeLoans = totalDrawdowns
     .sub(totalPrincipalCollected)

@@ -25,7 +25,7 @@ import {
 import {STAKING_REWARDS_ADDRESS} from "../../address-manifest"
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../../entities/helpers"
-import {updateTotalWriteDowns} from "../../entities/tranched_pool_roster"
+import {updateTotalWriteDowns} from "../../entities/protocol"
 import {getOrInitUser} from "../../entities/user"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../../entities/withdrawal_roster"
 import {getAddressFromConfig} from "../../utils"
