@@ -150,13 +150,7 @@ export default function EarnPage({
         </>
       ) : (
         <>
-          <div className="h-[22rem] sm:h-[7.25rem]">
-            <GoldfinchPoolsMetrics
-              protocol={protocol}
-              // TODO: Confirm with design whether we want full app width for metrics or not
-              className="absolute left-0 right-0 -mt-14"
-            />
-          </div>
+          <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
           <div className="mb-6 font-medium text-sand-700">
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
           </div>
