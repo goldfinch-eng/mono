@@ -120,7 +120,7 @@ export default function EarnPage({
   });
 
   // +1 for Senior Pool
-  const openDealsCount = openTranchedPools ? openTranchedPools?.length + 1 : 0;
+  const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
 
   const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
 
@@ -192,9 +192,9 @@ export default function EarnPage({
               return (
                 <OpenDealCard
                   key={tranchedPool.id}
-                  icon={dealDetails?.borrower?.logo?.url}
-                  title={dealDetails?.name}
-                  subtitle={dealDetails?.category}
+                  icon={dealDetails.borrower.logo?.url}
+                  title={dealDetails.name}
+                  subtitle={dealDetails.category}
                   usdcApy={tranchedPool.estimatedJuniorApy}
                   gfiApy={apyFromGfi}
                   termLengthInMonths={termLengthInMonths}
@@ -206,9 +206,9 @@ export default function EarnPage({
           </div>
 
           <div className="mb-6 font-medium text-sand-700">
-            {`${closedTranchedPools?.length} Closed Pools`}
+            {`${closedTranchedPools.length} Closed Pools`}
           </div>
-          {closedTranchedPools?.map((tranchedPool, i) => {
+          {closedTranchedPools.map((tranchedPool, i) => {
             const dealDetails = dealMetadata[
               tranchedPool.id
             ] as TranchedPoolCardDealFieldsFragment;
@@ -223,9 +223,9 @@ export default function EarnPage({
                   "mb-2",
                   !showMoreClosedPools && i >= 4 && "invisible !absolute"
                 )}
-                borrowerName={dealDetails?.borrower?.name}
-                icon={dealDetails?.borrower?.logo?.url}
-                title={dealDetails?.name}
+                borrowerName={dealDetails.borrower.name}
+                icon={dealDetails.borrower.logo?.url}
+                title={dealDetails.name}
                 termEndTime={tranchedPool.creditLine.termEndTime}
                 limit={tranchedPool.creditLine.limit}
                 poolStatus={poolStatus}
