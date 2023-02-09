@@ -126,7 +126,7 @@ export default function EarnPage({
                   Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
                   the{" "}
                   <Link
-                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining)"
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
                     openInNewTab
                   >
                     Goldfinch Documentation
