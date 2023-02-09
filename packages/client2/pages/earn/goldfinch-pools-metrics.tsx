@@ -1,9 +1,8 @@
 import { gql } from "@apollo/client";
-import clsx from "clsx";
 import { BigNumber, FixedNumber } from "ethers/lib/ethers";
 import millify from "millify";
 
-import { InfoIconTooltip, ShimmerLines } from "@/components/design-system";
+import { Stat, StatGrid } from "@/components/design-system";
 import { cryptoToFloat, formatPercent } from "@/lib/format";
 import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
@@ -57,43 +56,29 @@ export function GoldfinchPoolsMetrics({
         );
 
   // TODO: Pending tooltip content from Jake
-  const poolsMetricsSummaryData = [
-    {
-      title: "Active Loans",
-      tooltipContent: "[TODO] Active Loans tooltip",
-      value: formatForMetrics(activeLoans),
-    },
-    {
-      title: "Average Default Rate",
-      tooltipContent: "[TODO] Average Default Rate tooltip",
-      value: formatPercent(averageDefaultRate),
-    },
-    {
-      title: "Total loans repaid",
-      tooltipContent: "[TODO] Total loans repaid tooltip",
-      value: formatForMetrics(totalLoansRepaid),
-    },
-  ];
-
   return (
-    <div
-      className={clsx(
-        "grid grid-cols-1 divide-x-0 divide-y divide-sand-300 rounded-xl border border-sand-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0",
-        className
-      )}
+    <StatGrid
+      bgColor="mustard-50"
+      borderColor="sand-300"
+      className={className}
+      size="lg"
     >
-      {poolsMetricsSummaryData.map((item, i) => (
-        <div key={i} className="flex flex-col justify-between px-10 py-6">
-          <div className="mb-3 flex items-center justify-center sm:justify-start">
-            <div className="mr-1 text-sm">{item.title}</div>
-            <InfoIconTooltip content={item.tooltipContent} size="sm" />
-          </div>
-          <div className="flex justify-center text-3xl sm:justify-start">
-            {item.value}
-          </div>
-        </div>
-      ))}
-    </div>
+      <Stat
+        label="Active Loans"
+        tooltip="[TODO] Active Loans tooltip"
+        value={formatForMetrics(activeLoans)}
+      />
+      <Stat
+        label="Average Default Rate"
+        tooltip="[TODO] Average Default Rate tooltip"
+        value={formatPercent(averageDefaultRate)}
+      />
+      <Stat
+        label="Total Loans Repaid"
+        tooltip="[TODO] Total loans repaid tooltip"
+        value={formatForMetrics(totalLoansRepaid)}
+      />
+    </StatGrid>
   );
 }
 
@@ -103,22 +88,21 @@ export function GoldfinchPoolsMetricsPlaceholder({
   className?: string;
 }) {
   return (
-    <div
-      className={clsx(
-        "grid grid-cols-1 divide-x-0 divide-y divide-sand-300 rounded-b-xl border-b border-sand-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0",
-        className
-      )}
+    <StatGrid
+      bgColor="mustard-50"
+      borderColor="sand-300"
+      className={className}
+      size="lg"
     >
-      {[0, 1, 2].map((item) => (
-        <div key={item} className="px-10 py-6">
-          <div className="mb-3 flex items-center justify-center sm:justify-start">
-            <ShimmerLines lines={1} className="w-full" />
-          </div>
-          <div className="flex justify-center text-3xl sm:justify-start">
-            <ShimmerLines lines={1} className="w-full" />
-          </div>
-        </div>
-      ))}
-    </div>
+      <Stat label="Active Loans" tooltip="[TODO] Active Loans tooltip" />
+      <Stat
+        label="Average Default Rate"
+        tooltip="[TODO] Average Default Rate tooltip"
+      />
+      <Stat
+        label="Total Loans Repaid"
+        tooltip="[TODO] Total loans repaid tooltip"
+      />
+    </StatGrid>
   );
 }

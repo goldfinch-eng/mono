@@ -134,9 +134,7 @@ export default function EarnPage({
       ) : null}
       {loading ? (
         <>
-          <div className="h-[22rem] sm:h-[7.25rem]">
-            <GoldfinchPoolsMetricsPlaceholder className="absolute left-0 right-0 -mt-14" />
-          </div>
+          <GoldfinchPoolsMetricsPlaceholder className="mb-20" />
           <div className="invisible mb-6">Loading</div>
           <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
