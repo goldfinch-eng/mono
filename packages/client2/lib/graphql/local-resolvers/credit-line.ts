@@ -43,6 +43,62 @@ export const creditLineResolvers: Resolvers[string] = {
       );
     }
   },
+  async isInDefault(creditLine: CreditLine): Promise<boolean> {
+    const provider = await getProvider();
+
+    const creditLineContract = await getContract({
+      name: "CreditLine",
+      address: creditLine.id,
+      provider,
+      useSigner: false,
+    });
+
+    try {
+      // Newer credit lines have this function than can be used to immediately determine if principal is in default
+      const withinPrincipalGracePeriod =
+        await creditLineContract.withinPrincipalGracePeriod();
+      if (!withinPrincipalGracePeriod) {
+        return true;
+      }
+    } catch (e) {
+      // Do nothing, move on
+    }
+
+    const goldfinchConfigContract = await getContract({
+      name: "GoldfinchConfig",
+      address: await creditLineContract.config(),
+      provider,
+      useSigner: false,
+    });
+
+    const [
+      currentBlock,
+      lastFullPaymentTime,
+      paymentPeriodInDays,
+      latenessGracePeriodInDays,
+    ] = await Promise.all([
+      provider.getBlock("latest"),
+      creditLineContract.lastFullPaymentTime(),
+      creditLineContract.paymentPeriodInDays(),
+      goldfinchConfigContract.getNumber(5),
+    ]);
+
+    if (lastFullPaymentTime.isZero()) {
+      // Brand new creditline
+      return false;
+    }
+
+    const secondsSinceLastFullPayment =
+      currentBlock.timestamp - lastFullPaymentTime.toNumber();
+
+    const secondsPerDay = 60 * 60 * 24;
+
+    return (
+      secondsSinceLastFullPayment >
+      (paymentPeriodInDays.toNumber() + latenessGracePeriodInDays.toNumber()) *
+        secondsPerDay
+    );
+  },
   async collectedPaymentBalance(creditLine: CreditLine): Promise<BigNumber> {
     const provider = await getProvider();
     const usdcContract = await getContract({ name: "USDC", provider });
