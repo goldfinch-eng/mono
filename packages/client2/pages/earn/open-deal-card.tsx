@@ -43,25 +43,23 @@ export function OpenDealCard({
     {
       title: "Variable GFI APY",
       tooltipContent: (
-        <div>
-          <div className="mb-4">
-            The {dealType === "seniorPool" ? "Senior" : ""} Pool&rsquo;s est.
-            GFI rewards APY. The GFI rewards APY is volatile and changes based
-            on several variables including the price of GFI, the total capital
-            deployed on Goldfinch, and Senior Pool&rsquo;s utilization. Learn
-            more in the{" "}
-            <Link
-              href={
-                dealType === "seniorPool"
-                  ? "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
-                  : "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
-              }
-              openInNewTab
-            >
-              Goldfinch Documentation
-            </Link>
-            .
-          </div>
+        <div className="max-w-xs">
+          The {dealType === "seniorPool" ? "Senior" : ""} Pool&rsquo;s est. GFI
+          rewards APY. The GFI rewards APY is volatile and changes based on
+          several variables including the price of GFI, the total capital
+          deployed on Goldfinch, and Senior Pool&rsquo;s utilization. Learn more
+          in the{" "}
+          <Link
+            href={
+              dealType === "seniorPool"
+                ? "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                : "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+            }
+            openInNewTab
+          >
+            Goldfinch Documentation
+          </Link>
+          .
         </div>
       ),
       value: formatPercent(gfiApy),
