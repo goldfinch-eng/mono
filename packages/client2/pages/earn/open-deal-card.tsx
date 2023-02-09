@@ -1,9 +1,7 @@
-import { Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { FixedNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
 import NextLink from "next/link";
-import { Fragment, useState } from "react";
 
 import {
   Icon,
@@ -36,8 +34,6 @@ export function OpenDealCard({
   dealType,
   href,
 }: OpenDealCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   // TODO: Pending tooltip content from Jake
   const dealInfoItems = [
     {
@@ -82,11 +78,9 @@ export function OpenDealCard({
   return (
     <div
       className={clsx(
-        "relative flex h-[25rem] flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 hover:bg-mustard-200",
+        "group relative flex h-[25rem] flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 transition-colors hover:bg-mustard-200",
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div>
         <div className="mb-4 flex items-center">
@@ -112,24 +106,17 @@ export function OpenDealCard({
       </div>
 
       <div>
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <div className="mb-2 text-sm">Fixed USDC interest</div>
-            <div className="font-serif text-[2.5rem]">{formatPercent(apy)}</div>
-          </div>
-          <div className="mb-4">
-            <Transition
-              show={isHovered}
-              as={Fragment}
-              enter="transition-all duration-150 ease-in-out"
-              enterFrom="-translate-x-full opacity-0"
-              enterTo="translate-x-0 opacity-150"
-              leave="transition-all duration-150 ease-in-out"
-              leaveFrom="translate-x-0 opacity-150"
-              leaveTo="-translate-x-full opacity-0"
-            >
-              <Icon name="ArrowSmRight" size="md" />
-            </Transition>
+        <div className="mb-6">
+          <div className="mb-2 text-sm">Fixed USDC interest</div>
+          <div className="flex items-end justify-between">
+            <div className="font-serif text-4xl font-semibold leading-none">
+              {formatPercent(apy)}
+            </div>
+            <Icon
+              name="ArrowSmRight"
+              size="md"
+              className="pointer-events-none mb-1 -translate-x-full opacity-0 transition-all duration-150 ease-in-out group-hover:translate-x-0 group-hover:opacity-100"
+            />
           </div>
         </div>
         <div className="grid divide-y divide-mustard-200 border-t border-mustard-200">
