@@ -100,7 +100,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     allowedUIDTypes = ids;
   }
 
-  function getAllowedUIDTypes() external view returns (uint256[] memory) {
+  function getAllowedUIDTypes() external view override returns (uint256[] memory) {
     return allowedUIDTypes;
   }
 

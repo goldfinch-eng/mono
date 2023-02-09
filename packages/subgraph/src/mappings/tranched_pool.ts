@@ -1,4 +1,6 @@
-import {TranchedPool} from "../../generated/schema"
+import {Address} from "@graphprotocol/graph-ts"
+
+import {TranchedPool, TranchedPoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,
@@ -68,11 +70,17 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
   const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  let underlyingOwner = poolToken.user
+  if (poolToken.vaultedAsset) {
+    const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))
+    underlyingOwner = vaultedPoolToken.user
+  }
 
   const transaction = createTransactionFromEvent(
     event,
     event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
-    event.params.owner
+    Address.fromString(underlyingOwner)
   )
   transaction.transactionHash = event.transaction.hash
   transaction.tranchedPool = event.address.toHexString()

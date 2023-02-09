@@ -163,6 +163,7 @@ export default function EarnPage({
                 fiatPerGfi
               )}
               href="/pools/senior"
+              dealType="seniorPool"
             />
             {openTranchedPools?.map((tranchedPool) => {
               const dealDetails = dealMetadata[
@@ -197,7 +198,7 @@ export default function EarnPage({
                   apy={tranchedPool.estimatedJuniorApy}
                   gfiApy={apyFromGfi}
                   termLengthInMonths={termLengthInMonths}
-                  dealType={dealDetails?.dealType}
+                  dealType={dealDetails.dealType ?? "multitranche"}
                   href={`/pools/${tranchedPool.id}`}
                 />
               );

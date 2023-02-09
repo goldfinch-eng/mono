@@ -18,9 +18,9 @@ contract GFITest is BaseTest {
 
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
 
-    gfi = new GFI(GF_OWNER, "Goldfinch", "GFI", 100000000000000000000000000);
+    gfi = GFI(address(protocol.gfi()));
+
     _startImpersonation(GF_OWNER);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.GFI), address(gfi));
     gfi.mint(GF_OWNER, 1e10);
 
     fuzzHelper.exclude(address(gfi));

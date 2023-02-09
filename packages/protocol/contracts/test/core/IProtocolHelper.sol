@@ -13,6 +13,8 @@ interface IProtocolHelper {
 
   function fidu() external returns (IERC20);
 
+  function gfi() external returns (IERC20);
+
   function gfFactory() external returns (IGoldfinchFactory);
 
   function stakingRewards() external returns (IStakingRewards);

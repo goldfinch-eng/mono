@@ -85,7 +85,22 @@ gql`
       ...StakedPositionFieldsForAssets
     }
     tranchedPoolTokens(
-      where: { user: $userId, principalAmount_gt: 0 }
+      where: {
+        user: $userId
+        principalAmount_gt: 0
+        tranche_: { lockedUntil_gt: 0 }
+      }
+      orderBy: mintedAt
+      orderDirection: desc
+    ) {
+      ...PoolTokenFieldsForAssets
+    }
+    ineligiblePoolTokens: tranchedPoolTokens(
+      where: {
+        user: $userId
+        principalAmount_gt: 0
+        tranche_: { lockedUntil: 0 }
+      }
       orderBy: mintedAt
       orderDirection: desc
     ) {
@@ -369,6 +384,13 @@ export default function MembershipPage() {
                               }
                             />
                           ) : null}
+                          {data.ineligiblePoolTokens.map((pt) => (
+                            <AssetBox
+                              key={pt.id}
+                              asset={convertPoolTokenToAsset(pt)}
+                              notice="You cannot vault this pool token because the borrower has not yet drawn down from this pool."
+                            />
+                          ))}
                         </div>
                       </div>
                       <AssetGroupButton
@@ -524,6 +546,7 @@ export default function MembershipPage() {
                       amount: BigNumber.from(0),
                     }
                   }
+                  ineligiblePoolTokens={data.ineligiblePoolTokens}
                   currentBlockTimestampMs={data.currentBlock.timestamp * 1000}
                   previousEpochRewardTotal={previousEpochRewardTotal}
                 />

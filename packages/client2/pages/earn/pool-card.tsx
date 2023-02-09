@@ -7,6 +7,7 @@ import { ReactNode } from "react";
 import {
   Chip,
   InfoIconTooltip,
+  Link,
   ShimmerLines,
 } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
@@ -266,8 +267,18 @@ export function TranchedPoolCard({
       apyTooltipContent={
         <div>
           <div className="mb-4">
-            The Pool&apos;s total estimated APY, including the Pool&apos;s USDC
-            APY and est. GFI rewards APY.
+            The Pool&rsquo;s total current estimated APY, including the current
+            USDC APY and est. GFI rewards APY. The GFI rewards APY is volatile
+            and changes based on several variables including the price of GFI,
+            the total capital deployed on Goldfinch, and Senior Pool&rsquo;s
+            utilization. Learn more in the{" "}
+            <Link
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+              openInNewTab
+            >
+              Goldfinch Documentation
+            </Link>
+            .
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">

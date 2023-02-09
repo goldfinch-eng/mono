@@ -8,10 +8,10 @@ import { Fragment, useState } from "react";
 import {
   Icon,
   InfoIconTooltip,
+  Link,
   ShimmerLines,
 } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
-import { Deal_DealType } from "@/lib/graphql/generated";
 
 interface OpenDealCardProps {
   className?: string;
@@ -21,7 +21,7 @@ interface OpenDealCardProps {
   apy: FixedNumber;
   gfiApy: FixedNumber;
   termLengthInMonths?: number;
-  dealType?: Deal_DealType | null;
+  dealType: "multitranche" | "unitranche" | "seniorPool";
   href: string;
 }
 
@@ -42,7 +42,28 @@ export function OpenDealCard({
   const dealInfoItems = [
     {
       title: "Variable GFI APY",
-      tooltipContent: "[TODO] Variable GFI APY tooltip",
+      tooltipContent: (
+        <div>
+          <div className="mb-4">
+            The {dealType === "seniorPool" ? "Senior" : ""} Pool&rsquo;s est.
+            GFI rewards APY. The GFI rewards APY is volatile and changes based
+            on several variables including the price of GFI, the total capital
+            deployed on Goldfinch, and Senior Pool&rsquo;s utilization. Learn
+            more in the{" "}
+            <Link
+              href={
+                dealType === "seniorPool"
+                  ? "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                  : "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+              }
+              openInNewTab
+            >
+              Goldfinch Documentation
+            </Link>
+            .
+          </div>
+        </div>
+      ),
       value: formatPercent(gfiApy),
     },
     {
@@ -54,9 +75,9 @@ export function OpenDealCard({
       title: "Liquidity",
       tooltipContent: "[TODO] Liquidity tooltip",
       value:
-        dealType === "multitranche" || dealType === "unitranche"
-          ? "End of loan term"
-          : "2 weeks withdraw requests",
+        dealType === "seniorPool"
+          ? "2 week withdraw requests"
+          : "End of loan term",
     },
   ];
 

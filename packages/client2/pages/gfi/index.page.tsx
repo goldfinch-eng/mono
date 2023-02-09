@@ -179,14 +179,18 @@ export default function GfiPage() {
                   <StakingCard
                     key={v.id}
                     position={v.seniorPoolStakedPosition}
-                    vaulted
+                    vaultedCapitalPositionId={v.id}
                   />
                 ))}
                 {data.tranchedPoolTokens.map((token) => (
                   <BackerCard key={token.id} token={token} />
                 ))}
                 {data.vaultedPoolTokens.map((v) => (
-                  <BackerCard key={v.id} token={v.poolToken} vaulted />
+                  <BackerCard
+                    key={v.id}
+                    token={v.poolToken}
+                    vaultedCapitalPositionId={v.id}
+                  />
                 ))}
                 {grantsWithTokens?.map(
                   ({ grant, token, claimable, locked }, index) => (

@@ -35,6 +35,15 @@ import {JsonRpcSigner} from "@ethersproject/providers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 const {deployments, web3} = hre
 
+/**
+ * If the curve pool is very imbalanced, tests may start to fail in this file when the mainnet
+ * forking block is updated.
+ *
+ * Instead of changing the tolerances, first look at updating the SEED_AMOUNT. This adds extra
+ * liquidity to the curve pool, resulting in a lower price impact.
+ */
+const SEED_AMOUNT = 10_000_000 // USD value seeded to the curve pool before tests
+
 const TEST_TIMEOUT = 180000 // 3 mins
 const TOLERANCE = bigVal(1).mul(new BN(15)).div(new BN(100)) // 15%
 const LARGE_TOLERANCE = TOLERANCE.mul(new BN(2)) // 30%
@@ -503,6 +512,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
       await depositToSeniorPool(usdcVal(1_000_000), resources, {from: goListedUser})
       fiduDeposited = await fidu.balanceOf(goListedUser)
       await erc20Approve(fidu, curvePool.address, fiduDeposited, [goListedUser])
+
       await curvePool.exchange(0, 1, fiduDeposited, 0, {from: goListedUser})
     })
 
@@ -673,13 +683,13 @@ async function setupSeniorPool(resources: TestResources) {
 async function seedCurvePool(resources: TestResources) {
   const {usdc, fidu, seniorPool, curvePool, owner} = resources
 
-  await fundWithWhales(["USDC"], [owner], 5_000_000)
+  await fundWithWhales(["USDC"], [owner], SEED_AMOUNT)
 
   await erc20Approve(usdc, curvePool.address, MAX_UINT, [owner])
   await erc20Approve(fidu, curvePool.address, MAX_UINT, [owner])
 
   const {usdcAmountToDeposit, usdcAmountForFiduToDeposit} = await calculateBalancedDepositAmounts(
-    usdcVal(5_000_000),
+    usdcVal(SEED_AMOUNT),
     resources
   )
 

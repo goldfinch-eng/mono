@@ -1,5 +1,6 @@
-import {BigInt, Bytes, log} from "@graphprotocol/graph-ts"
-import {SeniorPoolStakedPosition} from "../../generated/schema"
+import {Address, BigInt, Bytes, log} from "@graphprotocol/graph-ts"
+
+import {SeniorPoolStakedPosition, VaultedStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
   Staked,
@@ -188,7 +189,13 @@ export function handleRewardPaid(event: RewardPaid): void {
   position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
   position.save()
 
-  const transaction = createTransactionFromEvent(event, "STAKING_REWARDS_CLAIMED", event.params.user)
+  let underlyingOwner = position.user
+  if (position.vaultedAsset != null) {
+    const vaultedStakedPosition = assert(VaultedStakedPosition.load(position.vaultedAsset as string))
+    underlyingOwner = vaultedStakedPosition.user
+  }
+
+  const transaction = createTransactionFromEvent(event, "STAKING_REWARDS_CLAIMED", Address.fromString(underlyingOwner))
   transaction.receivedAmount = event.params.reward
   transaction.receivedToken = "GFI"
   transaction.save()

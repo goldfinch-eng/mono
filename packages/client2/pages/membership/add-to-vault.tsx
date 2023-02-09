@@ -69,6 +69,7 @@ export function AddToVault({
   sharePrice,
   vaultablePoolTokens,
   unstakedFidu,
+  ineligiblePoolTokens,
   currentBlockTimestampMs,
   previousEpochRewardTotal,
 }: AddToVaultProps) {
@@ -87,6 +88,7 @@ export function AddToVault({
         sharePrice={sharePrice}
         vaultablePoolTokens={vaultablePoolTokens}
         unstakedFidu={unstakedFidu}
+        ineligiblePoolTokens={ineligiblePoolTokens}
         previousEpochRewardTotal={previousEpochRewardTotal}
       />
       <ReviewStep
@@ -115,6 +117,7 @@ interface SelectionStepProps {
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
   unstakedFidu: CryptoAmount<"FIDU">;
+  ineligiblePoolTokens: PoolToken[];
   previousEpochRewardTotal?: BigNumber;
 }
 
@@ -124,6 +127,7 @@ function SelectionStep({
   vaultableStakedPositions,
   sharePrice,
   vaultablePoolTokens,
+  ineligiblePoolTokens,
   unstakedFidu,
   previousEpochRewardTotal,
 }: SelectionStepProps) {
@@ -297,6 +301,13 @@ function SelectionStep({
                 }
               />
             ) : null}
+            {ineligiblePoolTokens.map((pt) => (
+              <AssetBox
+                key={`ineligible-pool-token-${pt.id}`}
+                asset={convertPoolTokenToAsset(pt)}
+                notice="You cannot vault this pool token because the borrower has not yet drawn down from this pool."
+              />
+            ))}
           </div>
         )}
       </div>

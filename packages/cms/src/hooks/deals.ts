@@ -46,7 +46,6 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
     await payload.update({
       collection: "borrowers",
       id: newBorrower.id,
-      // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
       data: {
         deals: [...deals, doc.id],
       },
@@ -68,7 +67,6 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
     await payload.update({
       collection: "borrowers",
       id: oldBorrower.id,
-      // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
       data: {
         deals: getDeals(oldBorrower).filter((deal) => deal !== doc.id),
       },
@@ -106,7 +104,6 @@ export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({
   await payload.update({
     collection: "borrowers",
     id: borrower.id,
-    // @ts-expect-error https://github.com/payloadcms/payload/issues/2009
     data: {
       deals: getDeals(borrower).filter((deal) => deal !== id),
     },
