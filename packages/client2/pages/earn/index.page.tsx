@@ -157,7 +157,7 @@ export default function EarnPage({
               icon={seniorPool.icon}
               title={seniorPool.name}
               subtitle={seniorPool.category}
-              apy={seniorPool.estimatedApy}
+              usdcApy={seniorPool.estimatedApy}
               gfiApy={computeApyFromGfiInFiat(
                 seniorPool.estimatedApyFromGfiRaw,
                 fiatPerGfi
@@ -195,7 +195,7 @@ export default function EarnPage({
                   icon={dealDetails?.borrower?.logo?.url}
                   title={dealDetails?.name}
                   subtitle={dealDetails?.category}
-                  apy={tranchedPool.estimatedJuniorApy}
+                  usdcApy={tranchedPool.estimatedJuniorApy}
                   gfiApy={apyFromGfi}
                   termLengthInMonths={termLengthInMonths}
                   dealType={dealDetails.dealType ?? "multitranche"}

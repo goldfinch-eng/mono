@@ -16,7 +16,7 @@ interface OpenDealCardProps {
   title: string;
   subtitle: string;
   icon?: string | null;
-  apy: FixedNumber;
+  usdcApy: FixedNumber;
   gfiApy: FixedNumber;
   termLengthInMonths?: number;
   dealType: "multitranche" | "unitranche" | "seniorPool";
@@ -28,7 +28,7 @@ export function OpenDealCard({
   title,
   subtitle,
   icon,
-  apy,
+  usdcApy,
   gfiApy,
   termLengthInMonths,
   dealType,
@@ -110,7 +110,7 @@ export function OpenDealCard({
           <div className="mb-2 text-sm">Fixed USDC interest</div>
           <div className="flex items-end justify-between">
             <div className="font-serif text-4xl font-semibold leading-none">
-              {formatPercent(apy)}
+              {formatPercent(usdcApy)}
             </div>
             <Icon
               name="ArrowSmRight"
