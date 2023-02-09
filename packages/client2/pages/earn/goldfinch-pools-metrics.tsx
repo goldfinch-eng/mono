@@ -6,7 +6,7 @@ import { Stat, StatGrid } from "@/components/design-system";
 import { cryptoToFloat, formatPercent } from "@/lib/format";
 import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
-export const TRANCHED_POOL_ROSTERS_METRICS_FIELDS = gql`
+export const PROTOCOL_METRICS_FIELDS = gql`
   fragment protocolMetricsFields on Protocol {
     id
     totalDrawdowns

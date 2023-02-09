@@ -23,7 +23,7 @@ import {
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
-  TRANCHED_POOL_ROSTERS_METRICS_FIELDS,
+  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
@@ -37,7 +37,7 @@ import {
 
 gql`
   ${TRANCHED_POOL_CARD_FIELDS}
-  ${TRANCHED_POOL_ROSTERS_METRICS_FIELDS}
+  ${PROTOCOL_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
