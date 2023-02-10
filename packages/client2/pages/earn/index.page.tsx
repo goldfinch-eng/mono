@@ -1,5 +1,4 @@
 import { gql } from "@apollo/client";
-import clsx from "clsx";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 import { useState } from "react";
 
@@ -9,35 +8,24 @@ import {
   useEarnPageQuery,
   EarnPageCmsQuery,
   TranchedPoolCardDealFieldsFragment,
-  TranchedPoolCardFieldsFragment,
 } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
-  getTranchedPoolStatus,
-  PoolStatus,
+  getTranchedPoolFundingStatus,
+  TranchedPoolFundingStatus,
 } from "@/lib/pools";
-import {
-  ClosedDealCard,
-  ClosedDealCardPlaceholder,
-} from "@/pages/earn/closed-deal-card";
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
-  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
   OpenDealCardPlaceholder,
 } from "@/pages/earn/open-deal-card";
 
-import {
-  TRANCHED_POOL_CARD_FIELDS,
-  TRANCHED_POOL_CARD_DEAL_FIELDS,
-} from "./pool-card";
+import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
 gql`
-  ${TRANCHED_POOL_CARD_FIELDS}
-  ${PROTOCOL_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
@@ -50,7 +38,19 @@ gql`
     }
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
-      ...TranchedPoolCardFields
+      estimatedJuniorApy
+      estimatedJuniorApyFromGfiRaw
+      fundableAt
+      remainingCapacity
+      creditLine {
+        id
+        limit
+        balance
+        termInDays
+        termEndTime
+        isLate @client
+        isInDefault @client
+      }
     }
     protocols(first: 1) {
       id
@@ -74,11 +74,19 @@ gql`
 `;
 
 const earnCmsQuery = gql`
-  ${TRANCHED_POOL_CARD_DEAL_FIELDS}
   query EarnPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...TranchedPoolCardDealFields
+        id
+        name
+        dealType
+        borrower {
+          id
+          name
+          logo {
+            url
+          }
+        }
       }
     }
   }
@@ -103,21 +111,20 @@ export default function EarnPage({
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
-  const openTranchedPools: TranchedPoolCardFieldsFragment[] = [];
-  const closedTranchedPools: TranchedPoolCardFieldsFragment[] = [];
-
-  tranchedPools?.forEach((tranchedPool) => {
-    const poolStatus = getTranchedPoolStatus(tranchedPool);
-    if (
-      [PoolStatus.Open, PoolStatus.Paused, PoolStatus.ComingSoon].includes(
-        poolStatus
-      )
-    ) {
-      openTranchedPools.push(tranchedPool);
-    } else if ([PoolStatus.Repaid, PoolStatus.Full].includes(poolStatus)) {
-      closedTranchedPools.push(tranchedPool);
-    }
-  });
+  const openTranchedPools =
+    tranchedPools?.filter(
+      (tranchedPool) =>
+        getTranchedPoolFundingStatus(tranchedPool) ===
+        TranchedPoolFundingStatus.Open
+    ) ?? [];
+  const closedTranchedPools =
+    tranchedPools?.filter(
+      (tranchedPool) =>
+        getTranchedPoolFundingStatus(tranchedPool) ===
+          TranchedPoolFundingStatus.Closed ||
+        getTranchedPoolFundingStatus(tranchedPool) ===
+          TranchedPoolFundingStatus.Full
+    ) ?? [];
 
   // +1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
@@ -142,9 +149,11 @@ export default function EarnPage({
             ))}
           </div>
           <div className="invisible mb-6">Loading</div>
-          {[0, 1, 2].map((i) => (
-            <ClosedDealCardPlaceholder className="mb-2" key={i} />
-          ))}
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <ClosedDealCardPlaceholder key={i} />
+            ))}
+          </div>
         </>
       ) : (
         <>
@@ -208,32 +217,20 @@ export default function EarnPage({
           <div className="mb-6 font-medium text-sand-700">
             {`${closedTranchedPools.length} Closed Pools`}
           </div>
-          {closedTranchedPools.map((tranchedPool, i) => {
-            const dealDetails = dealMetadata[
-              tranchedPool.id
-            ] as TranchedPoolCardDealFieldsFragment;
-
-            const poolStatus = getTranchedPoolStatus(tranchedPool);
-
-            return (
+          <div className="space-y-2">
+            {closedTranchedPools.map((tranchedPool, i) => (
               <ClosedDealCard
                 key={tranchedPool.id}
                 // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
-                className={clsx(
-                  "mb-2",
-                  !showMoreClosedPools && i >= 4 && "invisible !absolute"
-                )}
-                borrowerName={dealDetails.borrower.name}
-                icon={dealDetails.borrower.logo?.url}
-                title={dealDetails.name}
-                termEndTime={tranchedPool.creditLine.termEndTime}
-                limit={tranchedPool.creditLine.limit}
-                poolStatus={poolStatus}
-                isLate={tranchedPool.creditLine.isLate}
+                className={
+                  !showMoreClosedPools && i >= 4 ? "hidden" : undefined
+                }
                 href={`/pools/${tranchedPool.id}`}
+                tranchedPool={tranchedPool}
+                deal={dealMetadata[tranchedPool.id]}
               />
-            );
-          })}
+            ))}
+          </div>
           {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
             <Button
               onClick={() => setShowMoreClosedPools(true)}
