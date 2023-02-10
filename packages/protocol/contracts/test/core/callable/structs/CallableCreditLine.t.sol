@@ -159,8 +159,6 @@ contract TestCallableCreditLine is Test {
 
   function testEarliestPrincipalOutstandingTrancheIndex() public {}
 
-  function testStartOfCallableTrancheIndexAt() public {}
-
   // TODO
   function testIsLate() public {}
 
