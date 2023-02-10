@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 using MathUpgradeable for uint256;
 
@@ -61,15 +62,26 @@ library WaterfallLogic {
   }
 
   function drawdown(Waterfall storage w, uint principalAmount) internal {
-    // drawdown pro rata
-    uint totalPrincipal = w.totalPrincipalOutstanding();
-    for (uint i = 0; i < w.numTranches(); i++) {
+    // drawdown in reverse order of payment priority
+    for (uint i = w.numTranches() - 1; i > 0; i--) {
       Tranche storage tranche = w.getTranche(i);
-      uint perTranchePrincipalAmount = (principalAmount * tranche.principalOutstanding()) /
-        totalPrincipal;
-      tranche.drawdown(perTranchePrincipalAmount);
+      uint withdrawAmount = MathUpgradeable.min(tranche.principalPaid(), principalAmount);
+      principalAmount -= withdrawAmount;
+      tranche.drawdown(withdrawAmount);
     }
   }
+
+  // function drawdown(Waterfall storage w, uint principalAmount) internal {
+  //   // drawdown pro rata
+  //   uint totalPrincipalPaid = w.totalPrincipalPaid();
+
+  //   for (uint i = 0; i < w.numTranches(); i++) {
+  //     Tranche storage tranche = w.getTranche(i);
+  //     uint perTranchePrincipalAmount = (principalAmount * tranche.totalPrincipalPaid()) /
+  //       totalPrincipalPaid;
+  //     tranche.drawdown(perTranchePrincipalAmount);
+  //   }
+  // }
 
   /**
    * @notice Move principal and paid interest from one tranche to another
@@ -105,6 +117,17 @@ library WaterfallLogic {
     uint256 principal
   ) internal view returns (uint, uint) {
     return w._tranches[trancheId].cumulativeAmountWithdrawable(principal);
+  }
+
+  /// @notice Returns the total amount of principal paid to all tranches
+  function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint) {
+    // TODO(will): this can be optimized by storing the aggregate amount paid
+    //       as a storage var and updating when the tranches are paid
+    uint totalPrincipalDeposited;
+    for (uint i = 0; i < w.numTranches(); i++) {
+      totalPrincipalDeposited += w.getTranche(i).principalDeposited();
+    }
+    return totalPrincipalDeposited;
   }
 
   /// @notice Returns the total amount of interest paid to all tranches
@@ -258,6 +281,7 @@ library TrancheLogic {
   }
 
   function drawdown(Tranche storage t, uint principalAmount) internal {
+    require(principalAmount <= t._principalPaid);
     t._principalPaid -= principalAmount;
   }
 }
