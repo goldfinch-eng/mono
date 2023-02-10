@@ -24,23 +24,23 @@ export function ScrollingSectionedContainer({
     }
     const intersectionObserver = new IntersectionObserver(
       (entries) => {
-        for (let i = 0; i < entries.length; i++) {
-          if (entries[i].isIntersecting) {
-            const index = parseInt(
-              entries[i].target.getAttribute("data-index") as string
-            );
-            setScrolledNavIndex(index);
-            break;
-          }
+        const sorted = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (sorted.length > 0) {
+          const index = parseInt(
+            sorted[0].target.getAttribute("data-index") as string
+          );
+          setScrolledNavIndex(index);
         }
       },
-      { threshold: 0.6, rootMargin: "20% 0% 0% 0%" }
+      { threshold: 0.8 }
     );
     for (const sectionNode of sectionNodes.current) {
       intersectionObserver.observe(sectionNode);
     }
     return () => intersectionObserver.disconnect();
-  });
+  }, []);
 
   return (
     <div className="relative">
