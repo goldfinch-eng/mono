@@ -1,15 +1,11 @@
 import { gql } from "@apollo/client";
-import { GetStaticProps, InferGetStaticPropsType } from "next";
+import { InferGetStaticPropsType } from "next";
 import { useState } from "react";
 
 import { Button, HelperText, Link } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
-import {
-  useEarnPageQuery,
-  EarnPageCmsQuery,
-  TranchedPoolCardDealFieldsFragment,
-} from "@/lib/graphql/generated";
+import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
   getTranchedPoolFundingStatus,
@@ -81,6 +77,7 @@ const earnCmsQuery = gql`
       docs {
         id
         name
+        category
         dealType
         borrower {
           id
@@ -144,13 +141,13 @@ export default function EarnPage({
       {loading ? (
         <>
           <GoldfinchPoolsMetricsPlaceholder className="mb-20" />
-          <div className="invisible mb-6">Loading</div>
+          <EarnPageHeading>Open Deals</EarnPageHeading>
           <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <OpenDealCardPlaceholder key={i} />
             ))}
           </div>
-          <div className="invisible mb-6">Loading</div>
+          <EarnPageHeading>Closed Deals</EarnPageHeading>
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
               <ClosedDealCardPlaceholder key={i} />
@@ -160,9 +157,9 @@ export default function EarnPage({
       ) : (
         <>
           <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
-          <div className="mb-6 font-medium text-sand-700">
+          <EarnPageHeading>
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
-          </div>
+          </EarnPageHeading>
           <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <OpenDealCard
               icon={seniorPool.icon}
@@ -194,9 +191,7 @@ export default function EarnPage({
               href="/pools/senior"
             />
             {openTranchedPools?.map((tranchedPool) => {
-              const dealDetails = dealMetadata[
-                tranchedPool.id
-              ] as TranchedPoolCardDealFieldsFragment;
+              const dealDetails = dealMetadata[tranchedPool.id];
 
               const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
                 tranchedPool.estimatedJuniorApyFromGfiRaw,
@@ -273,9 +268,7 @@ export default function EarnPage({
             })}
           </div>
 
-          <div className="mb-6 font-medium text-sand-700">
-            {`${closedTranchedPools.length} Closed Pools`}
-          </div>
+          <EarnPageHeading>{`${closedTranchedPools.length} Closed Pools`}</EarnPageHeading>
           <div className="space-y-2">
             {closedTranchedPools.map((tranchedPool, i) => {
               const deal = dealMetadata[tranchedPool.id];
@@ -315,7 +308,7 @@ export default function EarnPage({
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({
     query: earnCmsQuery,
     fetchPolicy: "network-only",
@@ -345,3 +338,7 @@ export const getStaticProps: GetStaticProps = async () => {
     },
   };
 };
+
+function EarnPageHeading({ children }: { children: string }) {
+  return <div className="mb-6 font-medium">{children}</div>;
+}
