@@ -239,7 +239,22 @@ export function SeniorPoolSupplyPanel({
         <span className="text-sm">Total est. APY</span>
         <InfoIconTooltip
           className="!text-white/60"
-          content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY."
+          content={
+            <div className="max-w-xs">
+              The Senior Pool&rsquo;s total current estimated APY, including the
+              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
+              volatile and changes based on several variables including the
+              price of GFI, the total capital deployed on Goldfinch, and Senior
+              Pool&rsquo;s utilization. Learn more in the{" "}
+              <Link
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                openInNewTab
+              >
+                Goldfinch Documentation
+              </Link>
+              .
+            </div>
+          }
         />
       </div>
       <div className="mb-8 flex items-start justify-between gap-4">

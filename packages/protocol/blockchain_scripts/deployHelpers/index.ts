@@ -34,6 +34,7 @@ const INTEREST_DECIMALS = new BN(String(1e18))
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
+import {ProbablyValidContract} from "./contracts"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -308,10 +309,13 @@ function toAtomic(amount: BN, decimals = USDCDecimals): string {
 type GetContractOptions = {
   at?: string
   from?: string
+  // Path to the referenced contract if hardhat is unable to resolve by name
+  // ex: "contracts/cake/Context.sol:Context"
+  path?: string
 }
 
 export async function getEthersContract<T extends BaseContract | Contract = Contract>(
-  contractName: string,
+  contractName: ProbablyValidContract,
   opts: GetContractOptions = {}
 ): Promise<T> {
   if (!opts.at) {
@@ -319,7 +323,7 @@ export async function getEthersContract<T extends BaseContract | Contract = Cont
   }
   const at = opts.at
   const from = opts.from || (await getProtocolOwner())
-  const abi = await artifacts.require(contractName).abi
+  const abi = await artifacts.require(opts.path || contractName).abi
   const contract = await ethers.getContractAt(abi, at)
   const signer = await ethers.getSigner(from)
   return contract.connect(signer) as unknown as T

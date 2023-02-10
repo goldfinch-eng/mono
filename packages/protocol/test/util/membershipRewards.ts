@@ -334,5 +334,9 @@ export const setupPoolTokenPosition = async ({
   const tokenMinted = decodeAndGetFirstLog<TokenMinted>(tokenMintedResult.receipt.rawLogs, poolTokens, "TokenMinted")
   const poolTokenId = tokenMinted.args.tokenId
 
+  // Pool must be drawn down to be eligible for membership
+  await tranchedPool.lockJuniorCapital({from: borrowerAddress})
+  await tranchedPool.lockPool({from: borrowerAddress})
+
   return {poolTokenId, tranchedPoolAddress: tranchedPool.address}
 }

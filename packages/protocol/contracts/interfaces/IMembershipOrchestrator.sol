@@ -66,6 +66,15 @@ interface IMembershipOrchestrator {
   function collectRewards() external returns (uint256);
 
   /**
+   * @notice Harvest the rewards, interest, redeemable principal, or other assets
+   *  associated with the underlying capital asset. For example, if given a PoolToken,
+   *  this will collect the GFI rewards (if available), redeemable interest, and
+   *  redeemable principal, and send that to the owner of the capital position.
+   * @param capitalPositionIds id of the capital position to harvest the underlying asset of
+   */
+  function harvest(uint256[] calldata capitalPositionIds) external;
+
+  /**
    * @notice Check how many rewards are claimable at this moment in time for caller.
    * @param addr the address to check claimable rewards for
    * @return how many rewards could be claimed by a call to `collectRewards`

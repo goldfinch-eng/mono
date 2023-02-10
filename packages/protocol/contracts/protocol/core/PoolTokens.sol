@@ -12,6 +12,7 @@ import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
 import {IERC2981} from "../../interfaces/IERC2981.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
+import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 
 /**
  * @title PoolTokens
@@ -28,12 +29,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
-  struct PoolInfo {
-    uint256 totalMinted;
-    uint256 totalPrincipalRedeemed;
-    bool created;
-  }
-
   // tokenId => tokenInfo
   mapping(uint256 => TokenInfo) public tokens;
   // poolAddress => poolInfo
@@ -41,37 +36,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
 
   ConfigurableRoyaltyStandard.RoyaltyParams public royaltyParams;
   using ConfigurableRoyaltyStandard for ConfigurableRoyaltyStandard.RoyaltyParams;
-
-  event TokenMinted(
-    address indexed owner,
-    address indexed pool,
-    uint256 indexed tokenId,
-    uint256 amount,
-    uint256 tranche
-  );
-
-  event TokenRedeemed(
-    address indexed owner,
-    address indexed pool,
-    uint256 indexed tokenId,
-    uint256 principalRedeemed,
-    uint256 interestRedeemed,
-    uint256 tranche
-  );
-
-  event TokenPrincipalWithdrawn(
-    address indexed owner,
-    address indexed pool,
-    uint256 indexed tokenId,
-    uint256 principalWithdrawn,
-    uint256 tranche
-  );
-
-  event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);
-
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
-
-  event RoyaltyParamsSet(address indexed sender, address newReceiver, uint256 newRoyaltyPercent);
 
   /*
     We are using our own initializer function so that OZ doesn't automatically
@@ -101,30 +65,29 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
-  /**
-   * @notice Called by pool to create a debt position in a particular tranche and amount
-   * @param params Struct containing the tranche and the amount
-   * @param to The address that should own the position
-   * @return tokenId The token ID (auto-incrementing integer across all pools)
-   */
+  /// @inheritdoc IPoolTokens
   function mint(
     MintParams calldata params,
     address to
   ) external virtual override onlyPool whenNotPaused returns (uint256 tokenId) {
     address poolAddress = _msgSender();
-    tokenId = _createToken(params, poolAddress);
-    _mint(to, tokenId);
+
+    PoolInfo storage pool = pools[poolAddress];
+    pool.totalMinted = pool.totalMinted.add(params.principalAmount);
+
+    tokenId = _createToken({
+      principalAmount: params.principalAmount,
+      tranche: params.tranche,
+      principalRedeemed: 0,
+      interestRedeemed: 0,
+      poolAddress: poolAddress,
+      mintTo: to
+    });
+
     config.getBackerRewards().setPoolTokenAccRewardsPerPrincipalDollarAtMint(_msgSender(), tokenId);
-    emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
-    return tokenId;
   }
 
-  /**
-   * @notice Updates a token to reflect the principal and interest amounts that have been redeemed.
-   * @param tokenId The token id to update (must be owned by the pool calling this function)
-   * @param principalRedeemed The incremental amount of principal redeemed (cannot be more than principal deposited)
-   * @param interestRedeemed The incremental amount of interest redeemed
-   */
+  /// @inheritdoc IPoolTokens
   function redeem(
     uint256 tokenId,
     uint256 principalRedeemed,
@@ -172,12 +135,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     tokenInfo.principalRedeemed = tokenInfo.principalRedeemed.sub(amount);
   }
 
-  /**
-   * @notice Decrement a token's principal amount. This is different from `redeem`, which captures changes to
-   *   principal and/or interest that occur when a loan is in progress.
-   * @param tokenId The token id to update (must be owned by the pool calling this function)
-   * @param principalAmount The incremental amount of principal redeemed (cannot be more than principal deposited)
-   */
+  /// @inheritdoc IPoolTokens
   function withdrawPrincipal(
     uint256 tokenId,
     uint256 principalAmount
@@ -203,10 +161,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     );
   }
 
-  /**
-   * @dev Burns a specific ERC721 token, and removes the data from our mappings
-   * @param tokenId uint256 id of the ERC721 token to be burned.
-   */
+  /// @inheritdoc IPoolTokens
   function burn(uint256 tokenId) external virtual override whenNotPaused {
     TokenInfo memory token = _getTokenInfo(tokenId);
     bool canBurn = _isApprovedOrOwner(_msgSender(), tokenId);
@@ -217,19 +172,21 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
       token.principalRedeemed == token.principalAmount,
       "Can only burn fully redeemed tokens"
     );
-    _destroyAndBurn(tokenId);
-    emit TokenBurned(owner, token.pool, tokenId);
+    // If we let you burn with claimable backer rewards then it would blackhole your rewards,
+    // so you must claim all rewards before burning
+    require(config.getBackerRewards().poolTokenClaimableRewards(tokenId) == 0, "rewards>0");
+    _destroyAndBurn(owner, address(token.pool), tokenId);
   }
 
   function getTokenInfo(uint256 tokenId) external view virtual override returns (TokenInfo memory) {
     return _getTokenInfo(tokenId);
   }
 
-  /**
-   * @notice Called by the GoldfinchFactory to register the pool as a valid pool. Only valid pools can mint/redeem
-   * tokens
-   * @param newPool The address of the newly created pool
-   */
+  function getPoolInfo(address pool) external view override returns (PoolInfo memory) {
+    return pools[pool];
+  }
+
+  /// @inheritdoc IPoolTokens
   function onPoolCreated(address newPool) external override onlyGoldfinchFactory {
     pools[newPool].created = true;
   }
@@ -247,32 +204,169 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     return _isApprovedOrOwner(spender, tokenId);
   }
 
+  /**
+   * @inheritdoc IPoolTokens
+   * @dev NA: Not Authorized
+   * @dev IA: Invalid Amount - newPrincipal1 not in range (0, principalAmount)
+   */
+  function splitToken(
+    uint256 tokenId,
+    uint256 newPrincipal1
+  ) external override returns (uint256 tokenId1, uint256 tokenId2) {
+    require(_isApprovedOrOwner(msg.sender, tokenId), "NA");
+    TokenInfo memory tokenInfo = _getTokenInfo(tokenId);
+    require(0 < newPrincipal1 && newPrincipal1 < tokenInfo.principalAmount, "IA");
+
+    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = config
+      .getBackerRewards()
+      .getTokenInfo(tokenId);
+
+    IBackerRewards.StakingRewardsTokenInfo memory backerStakingRewardsTokenInfo = config
+      .getBackerRewards()
+      .getStakingRewardsTokenInfo(tokenId);
+
+    // Burn the original token before calling out to other contracts to prevent possible reentrancy attacks.
+    // A reentrancy guard on this function alone is insufficient because someone may be able to reenter the
+    // protocol through a different contract that reads pool token metadata. Following checks-effects-interactions
+    // here leads to a clunky implementation (fn's with many params) but guarding against potential reentrancy
+    // is more important.
+    address tokenOwner = ownerOf(tokenId);
+    _destroyAndBurn(tokenOwner, address(tokenInfo.pool), tokenId);
+
+    (tokenId1, tokenId2) = _createSplitTokens(tokenInfo, tokenOwner, newPrincipal1);
+    _setBackerRewardsForSplitTokens(
+      tokenInfo,
+      backerRewardsTokenInfo,
+      backerStakingRewardsTokenInfo,
+      tokenId1,
+      tokenId2,
+      newPrincipal1
+    );
+
+    emit TokenSplit({
+      owner: tokenOwner,
+      pool: tokenInfo.pool,
+      tokenId: tokenId,
+      newTokenId1: tokenId1,
+      newPrincipal1: newPrincipal1,
+      newTokenId2: tokenId2,
+      newPrincipal2: tokenInfo.principalAmount.sub(newPrincipal1)
+    });
+  }
+
+  /// @notice Initialize the backer rewards metadata for split tokens
+  function _setBackerRewardsForSplitTokens(
+    TokenInfo memory tokenInfo,
+    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo,
+    IBackerRewards.StakingRewardsTokenInfo memory stakingRewardsTokenInfo,
+    uint256 newTokenId1,
+    uint256 newTokenId2,
+    uint256 newPrincipal1
+  ) internal {
+    uint256 rewardsClaimed1 = backerRewardsTokenInfo.rewardsClaimed.mul(newPrincipal1).div(
+      tokenInfo.principalAmount
+    );
+
+    config.getBackerRewards().setBackerAndStakingRewardsTokenInfoOnSplit({
+      originalBackerRewardsTokenInfo: backerRewardsTokenInfo,
+      originalStakingRewardsTokenInfo: stakingRewardsTokenInfo,
+      newTokenId: newTokenId1,
+      newRewardsClaimed: rewardsClaimed1
+    });
+
+    config.getBackerRewards().setBackerAndStakingRewardsTokenInfoOnSplit({
+      originalBackerRewardsTokenInfo: backerRewardsTokenInfo,
+      originalStakingRewardsTokenInfo: stakingRewardsTokenInfo,
+      newTokenId: newTokenId2,
+      newRewardsClaimed: backerRewardsTokenInfo.rewardsClaimed.sub(rewardsClaimed1)
+    });
+  }
+
+  /// @notice Split tokenId into two new tokens. Assumes that newPrincipal1 is valid for the token's principalAmount
+  function _createSplitTokens(
+    TokenInfo memory tokenInfo,
+    address tokenOwner,
+    uint256 newPrincipal1
+  ) internal returns (uint256 newTokenId1, uint256 newTokenId2) {
+    // All new vals are proportional to the new token's principal
+    uint256 principalRedeemed1 = tokenInfo.principalRedeemed.mul(newPrincipal1).div(
+      tokenInfo.principalAmount
+    );
+    uint256 interestRedeemed1 = tokenInfo.interestRedeemed.mul(newPrincipal1).div(
+      tokenInfo.principalAmount
+    );
+
+    newTokenId1 = _createToken(
+      newPrincipal1,
+      tokenInfo.tranche,
+      principalRedeemed1,
+      interestRedeemed1,
+      tokenInfo.pool,
+      tokenOwner
+    );
+
+    newTokenId2 = _createToken(
+      tokenInfo.principalAmount.sub(newPrincipal1),
+      tokenInfo.tranche,
+      tokenInfo.principalRedeemed.sub(principalRedeemed1),
+      tokenInfo.interestRedeemed.sub(interestRedeemed1),
+      tokenInfo.pool,
+      tokenOwner
+    );
+  }
+
+  /// @inheritdoc IPoolTokens
   function validPool(address sender) public view virtual override returns (bool) {
     return _validPool(sender);
   }
 
+  /**
+   * @notice Mint the token and save its metadata to storage
+   * @param principalAmount token principal
+   * @param tranche tranche of the pool to which the token belongs
+   * @param principalRedeemed amount of principal already redeemed for the token. This is
+   *  0 for tokens created from a deposit, and could be non-zero for tokens created from a split
+   * @param interestRedeemed amount of interest already redeemed for the token. This is
+   *  0 for tokens created from a deposit, and could be non-zero for tokens created from a split
+   * @param poolAddress pool to which the token belongs
+   * @param mintTo the token owner
+   * @return tokenId id of the created token
+   */
   function _createToken(
-    MintParams calldata params,
-    address poolAddress
+    uint256 principalAmount,
+    uint256 tranche,
+    uint256 principalRedeemed,
+    uint256 interestRedeemed,
+    address poolAddress,
+    address mintTo
   ) internal returns (uint256 tokenId) {
-    PoolInfo storage pool = pools[poolAddress];
-
     _tokenIdTracker.increment();
     tokenId = _tokenIdTracker.current();
+
     tokens[tokenId] = TokenInfo({
       pool: poolAddress,
-      tranche: params.tranche,
-      principalAmount: params.principalAmount,
-      principalRedeemed: 0,
-      interestRedeemed: 0
+      tranche: tranche,
+      principalAmount: principalAmount,
+      principalRedeemed: principalRedeemed,
+      interestRedeemed: interestRedeemed
     });
-    pool.totalMinted = pool.totalMinted.add(params.principalAmount);
-    return tokenId;
+
+    _mint(mintTo, tokenId);
+
+    emit TokenMinted({
+      owner: mintTo,
+      pool: poolAddress,
+      tokenId: tokenId,
+      amount: principalAmount,
+      tranche: tranche
+    });
   }
 
-  function _destroyAndBurn(uint256 tokenId) internal {
+  function _destroyAndBurn(address owner, address pool, uint256 tokenId) internal {
     delete tokens[tokenId];
     _burn(tokenId);
+    config.getBackerRewards().clearTokenInfo(tokenId);
+    emit TokenBurned(owner, pool, tokenId);
   }
 
   function _validPool(address poolAddress) internal view virtual returns (bool) {

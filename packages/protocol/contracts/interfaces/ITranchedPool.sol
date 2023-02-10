@@ -43,6 +43,8 @@ abstract contract ITranchedPool {
     uint256[] calldata _allowedUIDTypes
   ) public virtual;
 
+  function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
+
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
 
   function pay(uint256 amount) external virtual;

@@ -55,6 +55,30 @@ library UserEpochTotals {
     total.totalAmount += amount;
   }
 
+  /// @notice Record an increase of `amount` instantly based on the time of the deposit.
+  ///  This is counted either:
+  ///  1. To just the totalAmount if the deposit was this epoch
+  ///  2. To both the totalAmount and eligibleAmount if the deposit was before this epoch
+  /// @param total storage pointer to the UserEpochTotal
+  /// @param amount amount to increase the total by
+  function recordInstantIncrease(
+    UserEpochTotal storage total,
+    uint256 amount,
+    uint256 depositTimestamp
+  ) internal {
+    uint256 depositEpoch = Epochs.fromSeconds(depositTimestamp);
+    if (depositEpoch > Epochs.current()) revert InvalidDepositEpoch(depositEpoch);
+
+    _checkpoint(total);
+
+    if (depositEpoch < Epochs.current()) {
+      // If this was deposited earlier, then it also counts towards eligible
+      total.eligibleAmount += amount;
+    }
+
+    total.totalAmount += amount;
+  }
+
   /// @notice Record a decrease of `amount` in the `total`. Depending on the `depositTimestamp`
   ///  this will withdraw from the total's currentAmount (if it's withdrawn from an already valid deposit)
   ///  or from the total's nextAmount (if it's withdrawn from a deposit this epoch).

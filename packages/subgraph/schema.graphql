@@ -32,6 +32,8 @@ type SeniorPoolStakedPosition @entity {
   """
   startTime: BigInt!
   totalRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedStakedPosition
 }
 
 type BorrowerContract @entity {
@@ -65,7 +67,7 @@ type User @entity {
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
 
-type SeniorTrancheInfo @entity {
+interface TrancheInfo {
   id: ID!
   trancheId: BigInt!
   tranchedPool: TranchedPool!
@@ -75,7 +77,17 @@ type SeniorTrancheInfo @entity {
   interestSharePrice: BigInt!
 }
 
-type JuniorTrancheInfo @entity {
+type SeniorTrancheInfo implements TrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type JuniorTrancheInfo implements TrancheInfo @entity {
   id: ID!
   trancheId: BigInt!
   tranchedPool: TranchedPool!
@@ -175,7 +187,7 @@ type TranchedPoolToken @entity {
   mintedAt: BigInt!
   user: User!
   tranchedPool: TranchedPool!
-  tranche: BigInt!
+  tranche: TrancheInfo!
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
@@ -193,6 +205,8 @@ type TranchedPoolToken @entity {
   Refers to the rewards that are received from LP rewards matching
   """
   stakingRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedPoolToken
 }
 
 type StakingRewardsData @entity {
