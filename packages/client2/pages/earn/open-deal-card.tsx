@@ -7,7 +7,6 @@ import { ReactNode } from "react";
 import {
   Icon,
   InfoIconTooltip,
-  Link,
   Shimmer,
   ShimmerLines,
 } from "@/components/design-system";
@@ -20,8 +19,9 @@ interface OpenDealCardProps {
   icon?: string | null;
   usdcApy: FixedNumber;
   gfiApy: FixedNumber;
+  gfiApyTooltip: ReactNode;
   termLengthInMonths?: number;
-  dealType: "multitranche" | "unitranche" | "seniorPool";
+  liquidity: string;
   href: string;
 }
 
@@ -32,8 +32,9 @@ export function OpenDealCard({
   icon,
   usdcApy,
   gfiApy,
+  gfiApyTooltip,
   termLengthInMonths,
-  dealType,
+  liquidity,
   href,
 }: OpenDealCardProps) {
   // TODO: Pending tooltip content from Jake
@@ -82,26 +83,7 @@ export function OpenDealCard({
         <div>
           <InfoLine
             label="Variable GFI APY"
-            tooltip={
-              <div className="max-w-xs">
-                The {dealType === "seniorPool" ? "Senior" : ""} Pool&rsquo;s
-                est. GFI rewards APY. The GFI rewards APY is volatile and
-                changes based on several variables including the price of GFI,
-                the total capital deployed on Goldfinch, and Senior Pool&rsquo;s
-                utilization. Learn more in the{" "}
-                <Link
-                  href={
-                    dealType === "seniorPool"
-                      ? "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
-                      : "https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
-                  }
-                  openInNewTab
-                >
-                  Goldfinch Documentation
-                </Link>
-                .
-              </div>
-            }
+            tooltip={<div className="max-w-xs">{gfiApyTooltip}</div>}
             value={formatPercent(gfiApy)}
           />
           <InfoLine
@@ -114,11 +96,7 @@ export function OpenDealCard({
           <InfoLine
             label="Liquidity"
             tooltip="[TODO] Liquidity tooltip"
-            value={
-              dealType === "seniorPool"
-                ? "2 week withdraw requests"
-                : "End of loan term"
-            }
+            value={liquidity}
           />
         </div>
       </div>

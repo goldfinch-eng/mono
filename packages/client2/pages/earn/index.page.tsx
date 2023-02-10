@@ -2,7 +2,8 @@ import { gql } from "@apollo/client";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 import { useState } from "react";
 
-import { Button, HelperText } from "@/components/design-system";
+import { Button, HelperText, Link } from "@/components/design-system";
+import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   useEarnPageQuery,
@@ -171,8 +172,25 @@ export default function EarnPage({
                 seniorPool.estimatedApyFromGfiRaw,
                 fiatPerGfi
               )}
+              gfiApyTooltip={
+                <div className="mb-4">
+                  The Senior Pool&rsquo;s total current estimated APY, including
+                  the current USDC APY and est. GFI rewards APY. The GFI rewards
+                  APY is volatile and changes based on several variables
+                  including the price of GFI, the total capital deployed on
+                  Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
+                  the{" "}
+                  <Link
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                    openInNewTab
+                  >
+                    Goldfinch Documentation
+                  </Link>
+                  .
+                </div>
+              }
+              liquidity="2 week withdraw requests"
               href="/pools/senior"
-              dealType="seniorPool"
             />
             {openTranchedPools?.map((tranchedPool) => {
               const dealDetails = dealMetadata[
@@ -206,8 +224,48 @@ export default function EarnPage({
                   subtitle={dealDetails.category}
                   usdcApy={tranchedPool.estimatedJuniorApy}
                   gfiApy={apyFromGfi}
+                  gfiApyTooltip={
+                    <div>
+                      <div className="mb-4">
+                        The Pool&rsquo;s total current estimated APY, including
+                        the current USDC APY and est. GFI rewards APY. The GFI
+                        rewards APY is volatile and changes based on several
+                        variables including the price of GFI, the total capital
+                        deployed on Goldfinch, and Senior Pool&rsquo;s
+                        utilization. Learn more in the{" "}
+                        <Link
+                          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                          openInNewTab
+                        >
+                          Goldfinch Documentation
+                        </Link>
+                        .
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <div>Backer liquidity mining GFI APY</div>
+                          <div>{formatPercent(tranchedPoolApyFromGfi)}</div>
+                        </div>
+                        <div className="flex justify-between">
+                          <div>LP rewards match GFI APY</div>
+                          <div>
+                            {formatPercent(
+                              tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                                ? 0
+                                : seniorPoolApyFromGfi
+                            )}
+                          </div>
+                        </div>
+                        <hr className="border-t border-sand-300" />
+                        <div className="flex justify-between">
+                          <div>Total Est. APY</div>
+                          <div>{formatPercent(apyFromGfi)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  }
                   termLengthInMonths={termLengthInMonths}
-                  dealType={dealDetails.dealType ?? "multitranche"}
+                  liquidity="End of loan term"
                   href={`/pools/${tranchedPool.id}`}
                 />
               );
