@@ -295,7 +295,7 @@ export default function EarnPage({
           {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
             <Button
               onClick={() => setShowMoreClosedPools(true)}
-              className="w-full"
+              className="mt-2 w-full"
               colorScheme="secondary"
               size="lg"
             >
