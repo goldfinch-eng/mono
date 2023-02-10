@@ -13,6 +13,7 @@ import {
 import {
   computeApyFromGfiInFiat,
   getTranchedPoolFundingStatus,
+  getTranchedPoolRepaymentStatus,
   TranchedPoolFundingStatus,
 } from "@/lib/pools";
 import {
@@ -276,18 +277,27 @@ export default function EarnPage({
             {`${closedTranchedPools.length} Closed Pools`}
           </div>
           <div className="space-y-2">
-            {closedTranchedPools.map((tranchedPool, i) => (
-              <ClosedDealCard
-                key={tranchedPool.id}
-                // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
-                className={
-                  !showMoreClosedPools && i >= 4 ? "hidden" : undefined
-                }
-                href={`/pools/${tranchedPool.id}`}
-                tranchedPool={tranchedPool}
-                deal={dealMetadata[tranchedPool.id]}
-              />
-            ))}
+            {closedTranchedPools.map((tranchedPool, i) => {
+              const deal = dealMetadata[tranchedPool.id];
+              const repaymentStatus =
+                getTranchedPoolRepaymentStatus(tranchedPool);
+              return (
+                <ClosedDealCard
+                  key={tranchedPool.id}
+                  // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
+                  className={
+                    !showMoreClosedPools && i >= 4 ? "hidden" : undefined
+                  }
+                  borrowerName={deal.borrower.name}
+                  icon={deal.borrower.logo?.url}
+                  dealName={deal.name}
+                  loanAmount={tranchedPool.creditLine.limit}
+                  termEndTime={tranchedPool.creditLine.termEndTime}
+                  repaymentStatus={repaymentStatus}
+                  href={`/pools/${tranchedPool.id}`}
+                />
+              );
+            })}
           </div>
           {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
             <Button

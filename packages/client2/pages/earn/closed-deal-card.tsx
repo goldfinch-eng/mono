@@ -1,21 +1,13 @@
-import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { format as formatDate } from "date-fns";
+import { BigNumber } from "ethers";
 import Image from "next/future/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
 
 import { Shimmer } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import {
-  ClosedDealCardTranchedPoolFieldsFragment,
-  ClosedDealCardDealFieldsFragment,
-} from "@/lib/graphql/generated";
-import {
-  getTranchedPoolRepaymentStatus,
-  PoolRepaymentStatus,
-  TRANCHED_POOL_REPAYMENT_STATUS_FIELDS,
-} from "@/lib/pools";
+import { PoolRepaymentStatus } from "@/lib/pools";
 import { assertUnreachable } from "@/lib/utils";
 
 interface LayoutProps {
@@ -132,69 +124,47 @@ function Status({
   }
 }
 
-export const CLOSED_DEAL_CARD_TRANCHED_POOL_FIELDS = gql`
-  ${TRANCHED_POOL_REPAYMENT_STATUS_FIELDS}
-  fragment ClosedDealCardTranchedPoolFields on TranchedPool {
-    id
-    creditLine {
-      id
-      limit
-    }
-    ...TranchedPoolRepaymentStatusFields
-  }
-`;
-
-export const CLOSED_DEAL_CARD_DEAL_FIELDS = gql`
-  fragment ClosedDealCardDealFields on Deal {
-    id
-    name
-    borrower {
-      id
-      name
-      logo {
-        url
-      }
-    }
-  }
-`;
-
 interface ClosedDealCardProps {
   className?: string;
-  tranchedPool: ClosedDealCardTranchedPoolFieldsFragment;
-  deal: ClosedDealCardDealFieldsFragment;
+  borrowerName: string;
+  icon?: string | null;
+  dealName: string;
+  termEndTime: BigNumber;
+  loanAmount: BigNumber;
+  repaymentStatus: PoolRepaymentStatus;
   href: string;
 }
 
 export function ClosedDealCard({
   className,
-  tranchedPool,
-  deal,
+  borrowerName,
+  icon,
+  dealName,
+  termEndTime,
+  loanAmount,
+  repaymentStatus,
   href,
 }: ClosedDealCardProps) {
-  const poolRepaymentStatus = getTranchedPoolRepaymentStatus(tranchedPool);
   return (
     <ClosedDealCardLayout
       className={className}
-      title={deal.borrower.name}
-      subtitle={deal.name}
-      icon={deal.borrower.logo?.url}
+      title={borrowerName}
+      subtitle={dealName}
+      icon={icon}
       href={href}
       data1Label="Total loan amount"
       data1Value={formatCrypto({
         token: "USDC",
-        amount: tranchedPool.creditLine.limit,
+        amount: loanAmount,
       })}
       data2Label="Maturity date"
       data2Value={
-        tranchedPool.creditLine.termEndTime.isZero()
+        termEndTime.isZero()
           ? "-"
-          : formatDate(
-              tranchedPool.creditLine.termEndTime.toNumber() * 1000,
-              "MMM d, y"
-            )
+          : formatDate(termEndTime.toNumber() * 1000, "MMM d, y")
       }
       data3Label="Status"
-      data3Value={<Status poolRepaymentStatus={poolRepaymentStatus} />}
+      data3Value={<Status poolRepaymentStatus={repaymentStatus} />}
     />
   );
 }
