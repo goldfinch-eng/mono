@@ -5,13 +5,15 @@ pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, CheckpointedCallableCreditLine, CheckpointedCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
 import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 
 using CallableCreditLineLogic for CallableCreditLine;
+using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
+
 using TrancheLogic for Tranche;
 
 contract TestCallableCreditLine is Test {
@@ -37,13 +39,6 @@ contract TestCallableCreditLine is Test {
       gracePrincipalPeriods: 0
     });
     schedule = defaultSchedule();
-    callableCreditLine.init(
-      config,
-      DEFAULT_APR,
-      schedule,
-      DEFAULT_LATE_ADDITIONAL_APR,
-      DEFAULT_LIMIT
-    );
   }
 
   function defaultSchedule() public returns (ISchedule) {
@@ -57,37 +52,58 @@ contract TestCallableCreditLine is Test {
   }
 
   function testInitialize() public {
-    assertEq(address(callableCreditLine._config), address(config));
-    assertEq(address(callableCreditLine._paymentSchedule.schedule), address(schedule));
-    assertEq(callableCreditLine.interestApr(), DEFAULT_APR);
-    assertEq(callableCreditLine.lateFeeAdditionalApr(), DEFAULT_LATE_ADDITIONAL_APR);
-    assertEq(callableCreditLine.limit(), DEFAULT_LIMIT);
+    callableCreditLine.initialize(
+      config,
+      DEFAULT_APR,
+      schedule,
+      DEFAULT_LATE_ADDITIONAL_APR,
+      DEFAULT_LIMIT
+    );
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    assertEq(address(cpcl._config), address(config));
+    assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
+    assertEq(cpcl.interestApr(), DEFAULT_APR);
+    assertEq(cpcl.lateFeeAdditionalApr(), DEFAULT_LATE_ADDITIONAL_APR);
+    assertEq(cpcl.limit(), DEFAULT_LIMIT);
   }
 
   // TODO
-  function testDeposit() public {
-    callableCreditLine.deposit(1000);
-    assertEq(callableCreditLine.totalPrincipalDeposited(), 1000);
-    assertEq(callableCreditLine.totalPrincipalPaid(), 1000);
-    assertEq(callableCreditLine.principalOutstanding(), 0);
-    assertEq(callableCreditLine.totalInterestAccrued(), 0);
-    assertEq(callableCreditLine.interestOwed(), 0);
+  function testDeposit(uint256 depositAmount) public {
+    callableCreditLine = defaultWithLimit(depositAmount);
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    cpcl.deposit(depositAmount);
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
+    assertEq(cpcl.totalPrincipalPaid(), depositAmount);
+    assertEq(cpcl.principalOutstanding(), 0);
+    assertEq(cpcl.totalInterestAccrued(), 0);
+    assertEq(cpcl.interestOwed(), 0);
   }
 
   // TODO
-  function testDrawdown() public {
-    callableCreditLine.deposit(1000);
-    callableCreditLine.drawdown(1000);
-    assertEq(callableCreditLine.totalPrincipalDeposited(), 1000);
-    assertEq(callableCreditLine.totalPrincipalPaid(), 0);
-    assertEq(callableCreditLine.principalOutstanding(), 1000);
-    assertEq(callableCreditLine.totalInterestAccrued(), 0);
-    assertEq(callableCreditLine.interestOwed(), 0);
+  function testDrawdown(uint256 depositAmount, uint256 drawdownAmount) public {
+    callableCreditLine = defaultWithLimit(depositAmount);
+    drawdownAmount = bound(drawdownAmount, 0, depositAmount);
+    CheckpointedCallableCreditLine cpcl = callableCreditLine.checkpoint();
+    cpcl.deposit(depositAmount);
+    cpcl.drawdown(drawdownAmount);
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
+    assertEq(cpcl.totalPrincipalPaid(), depositAmount - drawdownAmount);
+    assertEq(cpcl.principalOutstanding(), drawdownAmount);
+    assertEq(cpcl.totalInterestAccrued(), 0);
+    assertEq(cpcl.interestOwed(), 0);
   }
 
   // TODO
-  function testPay() public {
-    callableCreditLine.drawdown(1000);
+  function testPay(uint256 depositAmount, uint256 interest, uint256 principal) public {
+    CheckpointedCallableCreditLine cpcl = fullyFundedAndDrawndown(depositAmount);
+    cpcl.pay(interest, principal);
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
+    assertEq(cpcl.totalPrincipalPaid(), depositAmount - drawdownAmount);
+    assertEq(cpcl.principalOutstanding(), drawdownAmount);
+
+    // Assert that interest is prepaid
+    assertEq(cpcl.totalInterestAccrued(), 0);
+    assertEq(cpcl.interestOwed(), 0);
   }
 
   function testCall() public {}
@@ -164,6 +180,18 @@ contract TestCallableCreditLine is Test {
 
   // TODO
   function testInterestAccrualWithoutRepayment() public {}
+
+  function defaultWithLimit(uint256 limit) public returns (CallableCreditLine) {
+    return new CallableCreditLine(config, defaultInterestApr, schedule, 0, limit);
+  }
+
+  function fullyFundedAndDrawndown(uint256 limit) public returns (CheckpointedCallableCreditLine) {
+    callableCreditLine = defaultWithLimit(limit);
+    CheckpointedCallableCreditLine cpcl = callableCreditLine.checkpoint();
+    cpcl.deposit(limit);
+    cpcl.drawdown(limit);
+    return cpcl;
+  }
 
   // Interest calculations and accounting after repayment
   // 1. Calculation of interest accrual over time without accounting for repayments.
