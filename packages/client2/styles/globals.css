@@ -15,6 +15,7 @@
   body,
   #__next {
     height: 100%;
+    @apply scroll-smooth;
   }
   body {
     @apply font-sans font-normal text-sand-700;
