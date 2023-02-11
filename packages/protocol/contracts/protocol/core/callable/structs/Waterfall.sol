@@ -214,11 +214,13 @@ library TrancheLogic {
     Tranche storage t,
     uint principal
   ) internal returns (uint principalPaid, uint interestTaken) {
+    require(t._principalDeposited > 0, "IT");
     interestTaken = (t._interestPaid * principal) / t._principalDeposited;
-    t._interestPaid -= interestTaken;
-    t._principalDeposited -= principal;
     // Take pro rata portion of paid principal
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
+    t._interestPaid -= interestTaken;
+    t._principalDeposited -= principal;
+
     t._principalPaid -= principalPaid;
   }
 

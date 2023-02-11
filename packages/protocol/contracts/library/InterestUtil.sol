@@ -37,7 +37,7 @@ library InterestUtil {
     uint256 interestApr,
     uint256 lateInterestApr
   ) public pure returns (uint256 interest) {
-    if (end < start) return 0;
+    if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
     if (lateFeesStartsAt < end) {

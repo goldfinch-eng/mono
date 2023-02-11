@@ -49,16 +49,15 @@ library CallableCreditLineLogic {
 
 struct CheckpointedCallableCreditLine {
   IGoldfinchConfig _config;
+  uint256 _limit;
+  uint256 _interestApr;
+  uint256 _lateAdditionalApr;
   // TODO: Need config properties for when call request periods rollover/lock
   uint256 _checkpointedAsOf;
   uint256 _bufferedPayments;
-  uint256 _interestApr;
-  uint256 _lateAdditionalApr;
   uint256 _lastFullPaymentTime;
-  uint256 _limit;
   uint256 _totalInterestOwed;
   uint256 _totalInterestAccruedAtLastCheckpoint;
-  uint256 _settledPrincipalBalance;
   PaymentSchedule _paymentSchedule;
   Waterfall _waterfall;
   uint[50] __padding;
@@ -116,7 +115,7 @@ library CheckpointedCallableCreditLineLogic {
     cl._bufferedPayments = cl._waterfall.payUntil(
       principalAmount,
       interestAmount,
-      cl._paymentSchedule.currentPrincipalPeriod() - 1
+      cl._paymentSchedule.currentPrincipalPeriod()
     );
   }
 
@@ -144,11 +143,7 @@ library CheckpointedCallableCreditLineLogic {
       activeCallTranche < cl.uncalledCapitalIndex(),
       "Cannot call during the last call request period"
     );
-    cl._waterfall.move(
-      amount,
-      cl.uncalledCapitalIndex(),
-      cl._paymentSchedule.currentPrincipalPeriod()
-    );
+    cl._waterfall.move(amount, cl.uncalledCapitalIndex(), activeCallTranche);
   }
 
   function deposit(CheckpointedCallableCreditLine storage cl, uint256 amount) internal {

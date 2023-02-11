@@ -17,9 +17,8 @@ contract TestWaterfall is Test {
     w.initialize(4);
   }
 
-  function testDepositAddsPrincipalToTranche(uint amount) external {
-    uint trancheId;
-    trancheId = bound(trancheId, 0, w.numTranches());
+  function testDepositAddsPrincipalToTranche(uint amount, uint8 trancheId) external {
+    trancheId = uint8(bound(trancheId, 0, w.numTranches() - 1));
     Tranche storage trancheBefore = w.getTranche(trancheId);
     assertTrue(trancheBefore.principalDeposited() == 0);
     assertTrue(trancheBefore.principalPaid() == 0);
@@ -33,7 +32,7 @@ contract TestWaterfall is Test {
       bool isTrancheWeDepositedInto = i == trancheId;
       assertEq(sampled.principalDeposited(), isTrancheWeDepositedInto ? amount : 0);
       assertEq(sampled.interestPaid(), 0);
-      assertEq(sampled.principalPaid(), 0);
+      assertEq(sampled.principalPaid(), isTrancheWeDepositedInto ? amount : 0);
     }
   }
 
