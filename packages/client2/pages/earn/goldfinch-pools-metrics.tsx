@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers/lib/ethers";
-import millify from "millify";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { cryptoToFloat, formatPercent } from "@/lib/format";
@@ -22,10 +21,17 @@ interface GoldfinchPoolsMetricsProps {
   protocol: ProtocolMetricsFieldsFragment;
 }
 
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  notation: "compact",
+  style: "currency",
+  currency: "USD",
+});
 // Expresses metric abbreviated in millions "M"
 const formatForMetrics = (amount: BigNumber) => {
   const float = cryptoToFloat({ amount, token: "USDC" });
-  return `$${millify(float, { precision: 2 })}`;
+  return numberFormatter.format(float);
 };
 
 export function GoldfinchPoolsMetrics({

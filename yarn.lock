@@ -4443,7 +4443,6 @@ __metadata:
     graphql-request: ^5.1.0
     html-entities: ^2.3.3
     lint-staged: ^13.1.0
-    millify: ^5.0.1
     next: ^12.3.1
     persona: ^4.5.0
     postcss: ^8.4.7
@@ -28436,17 +28435,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"millify@npm:^5.0.1":
-  version: 5.0.1
-  resolution: "millify@npm:5.0.1"
-  dependencies:
-    yargs: ^17.0.1
-  bin:
-    millify: bin/millify
-  checksum: a30e8dfcd8a774aae17bfba16ff1fcc9f2d3aafd066dc202a756a2c777482b9cfe80745873a3b7d5684e5d7edda5853108002bc0f751ccb75ad381e32cd4650d
-  languageName: node
-  linkType: hard
-
 "mime-db@npm:1.52.0, mime-db@npm:>= 1.43.0 < 2":
   version: 1.52.0
   resolution: "mime-db@npm:1.52.0"
@@ -42893,7 +42881,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.0.0, yargs@npm:^17.0.1":
+"yargs@npm:^17.0.0":
   version: 17.6.2
   resolution: "yargs@npm:17.6.2"
   dependencies:
