@@ -23,6 +23,8 @@ import {
 
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
+const visiblePoolOnFirstLoad = 4;
+
 gql`
   query EarnPage {
     seniorPools(first: 1) {
@@ -279,7 +281,9 @@ export default function EarnPage({
                   key={tranchedPool.id}
                   // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
                   className={
-                    !showMoreClosedPools && i >= 4 ? "hidden" : undefined
+                    !showMoreClosedPools && i >= visiblePoolOnFirstLoad
+                      ? "hidden"
+                      : undefined
                   }
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}
