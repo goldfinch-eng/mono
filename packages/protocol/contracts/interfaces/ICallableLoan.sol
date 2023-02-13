@@ -1,10 +1,9 @@
 pragma solidity >=0.6.12;
 
-// import {ILoan} from "./ILoan.sol";
+import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
-import {ITranchedPool} from "./ITranchedPool.sol";
 
-interface ICallableLoan is ITranchedPool {
+interface ICallableLoan is ILoan {
   // is ILoan {
   // TODO: Update with final `initialize` interface once CallableLoan removes ITranchedPool conformance
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
@@ -17,22 +16,20 @@ interface ICallableLoan is ITranchedPool {
   /// @param _lateFeeApr late fee interest rate for the loan, which kicks in `LatenessGracePeriodInDays` days after a
   ///   payment becomes late
   /// @param _fundableAt earliest time at which the first slice can be funded
-  // function initialize(
-  //   address _config,
-  //   address _borrower,
-  //   uint256 _limit,
-  //   uint256 _interestApr,
-  //   ISchedule _schedule,
-  //   uint256 _lateFeeApr,
-  //   uint256 _fundableAt,
-  //   uint256[] calldata _allowedUIDTypes
-  // ) external;
+  function initialize(
+    address _config,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external;
 
   // function initialize(
   //   address _config,
   //   address _borrower,
-  //   // TODO: Remove once ITranchedPool conformance is removed
-  //   uint256 _juniorFeePercent,
   //   uint256 _limit,
   //   uint256 _interestApr,
   //   ISchedule _schedule,

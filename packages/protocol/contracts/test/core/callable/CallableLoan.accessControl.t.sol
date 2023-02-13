@@ -79,10 +79,6 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.lockPool();
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.initializeNextSlice(block.timestamp);
-    _stopImpersonation();
-
-    vm.expectRevert("Pausable: paused");
     callableLoan.pay(usdcVal(1));
 
     vm.expectRevert("Pausable: paused");

@@ -129,7 +129,6 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     loan.initialize(
       address(config),
       _borrower,
-      0,
       _limit,
       _interestApr,
       _schedule,

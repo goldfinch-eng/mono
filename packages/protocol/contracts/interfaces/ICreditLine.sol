@@ -3,7 +3,6 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ITranchedPool} from "./ITranchedPool.sol";
 import {ILoan} from "./ILoan.sol";
 
 import {ICreditLine} from "./ICreditLine.sol";

@@ -12,20 +12,6 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
 contract CallableLoanInitializationTest is CallableLoanBaseTest {
-  function testInitializationSetsCorrectTrancheDefaults() public {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    ITranchedPool.TrancheInfo memory junior = callableLoan.getTranche(2);
-    assertZero(junior.interestSharePrice);
-    assertZero(junior.principalDeposited);
-    assertZero(junior.lockedUntil);
-
-    ITranchedPool.TrancheInfo memory senior = callableLoan.getTranche(1);
-    assertZero(senior.interestSharePrice);
-    assertZero(senior.principalDeposited);
-    assertZero(senior.lockedUntil);
-  }
-
   function testInitializationGrantsProperRoles() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
@@ -37,7 +23,7 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     uint256[] memory uidTypes = new uint256[](1);
     ISchedule s = defaultSchedule();
     vm.expectRevert("Contract instance has already been initialized");
-    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, 0, s, 0, block.timestamp, uidTypes);
+    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, s, 0, block.timestamp, uidTypes);
   }
 
   function testCreditLineCannotBeReinitialized() public {

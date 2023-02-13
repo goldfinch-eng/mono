@@ -8,7 +8,6 @@ import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
-import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
 import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWithDec.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -30,10 +29,8 @@ import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule
 /// @author Warbler Labs
 contract CallableLoan is
   BaseUpgradeablePausable,
-  ITranchedPool,
   ICallableLoan,
   ICreditLine,
-  // TODO: Should remove ITranchedPool once we have moved all casts from ITranchedPool to ILoan.
   IRequiresUID,
   IVersioned
 {
@@ -58,19 +55,29 @@ contract CallableLoan is
   uint256 public totalDeployed;
   uint256 public fundableAt;
 
-  /// @inheritdoc ITranchedPool
+  /// Unsupported - only included for compatibility with ICreditLine.
+  function initialize(
+    address _config,
+    address owner,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    ISchedule _schedule,
+    uint256 _lateFeeApr
+  ) external override initializer {
+    revert("US");
+  }
+
   function initialize(
     address _config,
     address _borrower,
-    // TODO: Remove once ITranchedPool conformance is removed
-    uint256 _juniorFeePercent,
     uint256 _limit,
     uint256 _interestApr,
     ISchedule _schedule,
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) public override initializer {
+  ) public initializer {
     require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
 
     config = IGoldfinchConfig(_config);
@@ -114,10 +121,6 @@ contract CallableLoan is
   function getAllowedUIDTypes() external view returns (uint256[] memory) {
     return allowedUIDTypes;
   }
-
-  /// @notice Intentionable no-op. Included to be compatible with the v1 pool interface
-  // solhint-disable-next-line no-empty-blocks
-  function assess() external override whenNotPaused {}
 
   /// @inheritdoc ILoan
   /// @dev TL: tranche locked
@@ -282,11 +285,6 @@ contract CallableLoan is
     // );
   }
 
-  /// @inheritdoc ITranchedPool
-  function lockJuniorCapital() external override onlyLocker whenNotPaused {
-    revert("TODO: Remove lockJuniorCapital once we migrate away from ITranchedPool");
-  }
-
   /// @inheritdoc ILoan
   function lockPool() external override onlyLocker whenNotPaused {
     _lockPool();
@@ -424,35 +422,6 @@ contract CallableLoan is
   function setLimit(uint256 newAmount) external override onlyAdmin {
     revert("US");
     // callableCreditLine.setLimit(newAmount);
-  }
-
-  /// @inheritdoc ITranchedPool
-  // TODO: Remove
-  function getTranche(
-    uint256 tranche
-  ) public view override returns (ITranchedPool.TrancheInfo memory) {
-    // return _getTrancheInfo(tranche);
-    return ITranchedPool.TrancheInfo(0, 0, 0, 0, 0);
-  }
-
-  /// @inheritdoc ITranchedPool
-  // TODO: Remove
-  function poolSlices(
-    uint256 index
-  ) external view override returns (ITranchedPool.PoolSlice memory) {
-    // return _poolSlices[index];
-    return ITranchedPool.PoolSlice(getTranche(0), getTranche(0), 0, 0);
-  }
-
-  /// @inheritdoc ITranchedPool
-  // TODO: Remove
-  function totalJuniorDeposits() external view override returns (uint256) {
-    // uint256 total;
-    // for (uint256 i = 0; i < numSlices; i++) {
-    //   total = total.add(_poolSlices[i].juniorTranche.principalDeposited);
-    // }
-    // return total;
-    return 0;
   }
 
   /// @inheritdoc ILoan
@@ -603,19 +572,6 @@ contract CallableLoan is
     return false;
   }
 
-  // TODO: Remove these conformances to ITranchedPool
-  /// @notice Initialize the next slice for the pool. Enables backers and the senior pool to provide additional
-  ///   capital to the borrower.
-  /// @param _fundableAt time at which the new slice (now the current slice) becomes fundable
-  function initializeNextSlice(uint256 _fundableAt) external override {}
-
-  // TODO: Remove these conformances to ITranchedPool
-  /// @notice Get the current number of slices for this pool
-  /// @return numSlices total current slice count
-  function numSlices() external view override returns (uint256) {
-    return 0;
-  }
-
   // // ICreditLine Conformance /////////////////////////////////////////////////////
 
   /**
@@ -640,17 +596,6 @@ contract CallableLoan is
   }
 
   // // ICreditLine Conformance TODO Should all be external/////////////////////////////////////////////////////
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external override initializer {
-    revert("US");
-  }
 
   function balance() public view returns (uint256) {
     return 0;
