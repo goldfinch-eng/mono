@@ -37,7 +37,7 @@ export function OpenDealCard({
   liquidity,
   href,
 }: OpenDealCardProps) {
-  // TODO: Pending tooltip content from Jake
+  // TODO: Pending finalized tooltip content from Jake. Andre wrote what's here as placeholders.
   return (
     <div
       className={clsx(
@@ -89,14 +89,18 @@ export function OpenDealCard({
           />
           <InfoLine
             label="Loan term"
-            tooltip="[TODO] Loan term tooltip"
+            tooltip={
+              termLengthInMonths
+                ? "Length of the loan term up until the principal is due."
+                : "This deal does not have a fixed term length."
+            }
             value={
               termLengthInMonths ? `${termLengthInMonths} months` : "Open-ended"
             }
           />
           <InfoLine
             label="Liquidity"
-            tooltip="[TODO] Liquidity tooltip"
+            tooltip="When you can withdraw and reclaim your invested capital."
             value={liquidity}
           />
         </div>
