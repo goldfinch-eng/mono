@@ -372,27 +372,6 @@ contract CallableLoan is
     return pa;
   }
 
-  /// @notice Pauses the pool and sweeps any remaining funds to the treasury reserve.
-  function emergencyShutdown() public onlyAdmin {
-    if (!paused()) {
-      pause();
-    }
-
-    IERC20UpgradeableWithDec usdc = config.getUSDC();
-    address reserveAddress = config.reserveAddress();
-    // Sweep any funds to community reserve
-    uint256 poolBalance = usdc.balanceOf(address(this));
-    if (poolBalance > 0) {
-      config.getUSDC().safeERC20Transfer(reserveAddress, poolBalance);
-    }
-
-    uint256 clBalance = usdc.balanceOf(address(this));
-    if (clBalance > 0) {
-      usdc.safeERC20TransferFrom(address(this), reserveAddress, clBalance);
-    }
-    emit EmergencyShutdown(address(this));
-  }
-
   function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
     PaymentSchedule storage ps = callableCreditLine.paymentSchedule();
     return ps.nextDueTimeAt(timestamp);
