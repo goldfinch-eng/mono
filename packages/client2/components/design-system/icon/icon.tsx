@@ -5,6 +5,7 @@ import { forwardRef } from "react";
 import Curve from "./raster/curve.png";
 import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
+import ArrowLeft from "./svg/arrow-left.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUpCircle from "./svg/arrow-up-circle-solid.svg";
@@ -33,6 +34,7 @@ import X from "./svg/x.svg";
 export const iconManifest = {
   ArrowDown,
   ArrowDownCircle,
+  ArrowLeft,
   ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
