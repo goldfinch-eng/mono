@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {console2 as console} from "forge-std/console2.sol";
+// import {console2 as console} from "forge-std/console2.sol";
 
 /// @notice Convenience struct for passing startTime to all Schedule methods
 struct PaymentSchedule {
@@ -59,8 +59,8 @@ library PaymentScheduleLogic {
     PaymentSchedule storage s,
     uint256 timestamp
   ) internal view isActiveMod(s) returns (uint256) {
-    console.log("timestamp", timestamp);
-    console.log("s.startTime", s.startTime);
+    // console.log("timestamp", timestamp);
+    // console.log("s.startTime", s.startTime);
     return s.schedule.principalPeriodAt(s.startTime, timestamp);
   }
 

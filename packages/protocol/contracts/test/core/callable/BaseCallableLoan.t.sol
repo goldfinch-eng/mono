@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IGoldfinchFactory} from "../../../interfaces/IGoldfinchFactory.sol";
@@ -69,6 +70,15 @@ contract CallableLoanBaseTest is BaseTest {
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     fuzzHelper.exclude(address(uid));
+
+    // BackerRewards setup
+    IBackerRewards backerRewards = IBackerRewards(deployCode("BackerRewards.sol"));
+    (bool backerRewardsInitializeSuccess, ) = address(backerRewards).call(
+      abi.encodeWithSignature("__initialize__(address,address)", GF_OWNER, address(gfConfig))
+    );
+    require(backerRewardsInitializeSuccess, "BackerRewards failed to initialize");
+    gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
+    fuzzHelper.exclude(address(backerRewards));
 
     // PoolTokens setup
     poolTokens = IPoolTokens(deployCode("PoolTokens.sol"));

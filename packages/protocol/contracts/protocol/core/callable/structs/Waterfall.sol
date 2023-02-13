@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import {console2 as console} from "forge-std/console2.sol";
+// import {console2 as console} from "forge-std/console2.sol";
 
 using MathUpgradeable for uint256;
 
@@ -14,12 +14,9 @@ struct Waterfall {
 }
 
 using WaterfallLogic for Waterfall global;
-using WaterfallLogic for Waterfall global;
+using TrancheLogic for Tranche global;
 
 library WaterfallLogic {
-  using WaterfallLogic for Waterfall;
-  using TrancheLogic for Tranche;
-
   function initialize(Waterfall storage w, uint nTranches) internal returns (Waterfall storage) {
     for (uint i = 0; i < nTranches; i++) {
       Tranche memory t;
@@ -45,30 +42,28 @@ library WaterfallLogic {
   ) internal returns (uint principalNotApplied) {
     uint totalPrincipalOutstanding = w.totalPrincipalOutstanding();
 
-    console.log("payUntil: interestAmount", interestAmount);
+    // console.log("payUntil: interestAmount", interestAmount);
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
     // always process the last index (make it not part of the array?)
     for (uint i = 0; i < w._tranches.length; i++) {
-      console.log("i: ", i);
+      // console.log("i: ", i);
       Tranche storage tranche = w._tranches[i];
-      console.log("After getting tranche");
-      console.log(interestAmount);
-      console.log(totalPrincipalOutstanding);
-      console.log(tranche.principalOutstanding());
-      console.log(tranche.principalOutstanding() * interestAmount);
+      // console.log("After getting tranche");
+      // console.log(interestAmount);
+      // console.log(totalPrincipalOutstanding);
       uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) /
         totalPrincipalOutstanding;
-      console.log("principalPayment");
+      // console.log("principalPayment");
       uint principalPayment = i < trancheIndex
         ? tranche.principalOutstanding().min(principalAmount)
         : 0;
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
-      console.log("tranche pay");
-      console.log(proRataInterestPayment);
-      console.log(principalPayment);
+      // console.log("tranche pay");
+      // console.log(proRataInterestPayment);
+      // console.log(principalPayment);
       tranche.pay(proRataInterestPayment, principalPayment);
     }
 
@@ -106,9 +101,9 @@ library WaterfallLogic {
     uint fromTrancheId,
     uint toTrancheId
   ) internal {
-    console.log("move1");
+    // console.log("move1");
     (uint principalTaken, uint interestTaken) = w.getTranche(fromTrancheId).take(principalAmount);
-    console.log("move2");
+    // console.log("move2");
     return w.getTranche(toTrancheId).addToBalances(principalAmount, principalTaken, interestTaken);
   }
 
@@ -184,11 +179,11 @@ library WaterfallLogic {
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint sum) {
-    console.log("totalPrincipalOwedUpToTranche");
+    // console.log("totalPrincipalOwedUpToTranche");
     uint sum;
     for (uint i = 0; i < trancheIndex; i++) {
-      console.log("i", i);
-      console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
+      // console.log("i", i);
+      // console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
       sum += w._tranches[i].principalOutstanding();
     }
     return sum;
@@ -204,8 +199,6 @@ struct Tranche {
 }
 
 library TrancheLogic {
-  using TrancheLogic for Tranche;
-
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) internal {
     assert(t._principalPaid + principalAmount <= t.principalOutstanding());
 
@@ -234,13 +227,13 @@ library TrancheLogic {
     uint principal
   ) internal returns (uint principalPaid, uint interestTaken) {
     require(t._principalDeposited > 0, "IT");
-    console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
+    // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
     interestTaken = (t._interestPaid * principal) / t._principalDeposited;
-    console.log("interestTaken", interestTaken);
+    // console.log("interestTaken", interestTaken);
 
     // Take pro rata portion of paid principal
-    console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
-    console.log("principalPaid", principalPaid);
+    // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
+    // console.log("principalPaid", principalPaid);
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principal;

@@ -20,7 +20,7 @@ library InterestUtil {
     uint256 secondsElapsed,
     uint256 principal,
     uint256 interestApr
-  ) public pure returns (uint256 interest) {
+  ) internal pure returns (uint256 interest) {
     uint256 totalInterestPerYear = (principal * interestApr) / INTEREST_DECIMALS;
     interest = (totalInterestPerYear * secondsElapsed) / SECONDS_PER_YEAR;
   }
@@ -36,7 +36,7 @@ library InterestUtil {
     uint256 principal,
     uint256 interestApr,
     uint256 lateInterestApr
-  ) public pure returns (uint256 interest) {
+  ) internal pure returns (uint256 interest) {
     if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);

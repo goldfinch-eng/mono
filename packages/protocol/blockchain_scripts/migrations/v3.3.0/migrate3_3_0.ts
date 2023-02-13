@@ -37,37 +37,53 @@ export async function main() {
     ],
   })
 
-  // Deploy tranche logic
-  const trancheLogic = await deployer.deployLibrary("TrancheLogic", {
-    from: gf_deployer,
-  })
+  // TODO: Determine if we want to do library linking.
+  // // Deploy tranche logic
+  // const trancheLogic = await deployer.deployLibrary("TrancheLogic", {
+  //   from: gf_deployer,
+  // })
 
-  // Deploy waterfall logic
-  const waterfallLogic = await deployer.deployLibrary("WaterfallLogic", {
-    from: gf_deployer,
-  })
+  // // Deploy waterfall logic
+  // const waterfallLogic = await deployer.deployLibrary("WaterfallLogic", {
+  //   from: gf_deployer,
+  //   libraries: {
+  //     TrancheLogic: trancheLogic.address,
+  //   },
+  // })
 
-  // Deploy callable credit line logic
-  const callableCreditLineLogic = await deployer.deployLibrary("CallableCreditLineLogic", {
-    from: gf_deployer,
-  })
+  // // Deploy callable credit line logic
+  // const checkpointedCallableCreditLineLogic = await deployer.deployLibrary("CheckpointedCallableCreditLineLogic", {
+  //   from: gf_deployer,
+  //   libraries: {
+  //     TrancheLogic: trancheLogic.address,
+  //     WaterfallLogic: waterfallLogic.address,
+  //   },
+  // })
 
-  // Deploy TranchingLogic
-  const tranchingLogic = await deployer.deployLibrary("TranchingLogic", {
-    from: gf_deployer,
-  })
+  // // Deploy callable credit line logic
+  // const callableCreditLineLogic = await deployer.deployLibrary("CallableCreditLineLogic", {
+  //   from: gf_deployer,
+  // })
+
+  // const paymentScheduleLogic = await deployer.deployLibrary("PaymentScheduleLogic", {
+  //   from: gf_deployer,
+  // })
 
   // Deploy Callable Loan
   const callableLoan = await deployer.deploy("CallableLoan", {
     from: gf_deployer,
-    libraries: {
-      TranchingLogic: tranchingLogic.address,
-      // TODO: Remove TranchingLogic library and add in legitimate libraries as they are integrated.
-      //   TrancheLogic: trancheLogic.address,
-      //   WaterfallLogic: waterfallLogic.address,
-      //   CallableCreditLineLogic: callableCreditLineLogic.address,
-    },
+    // TODO: Determine if we want to do library linking.
+    // libraries: {
+    //   TrancheLogic: trancheLogic.address,
+    //   WaterfallLogic: waterfallLogic.address,
+    //   CallableCreditLineLogic: callableCreditLineLogic.address,
+    //   CheckpointedCallableCreditLineLogic: checkpointedCallableCreditLineLogic.address,
+    //   PaymentScheduleLogic: paymentScheduleLogic.address,
+    //   InterestUtil: interestUtil.address,
+    // },
   })
+
+  console.log("CallableLoan address: ", callableLoan.address)
 
   // Deploy the callable loan implementation repository and add it to the config
   const callableLoanImplRepo = await deployer.deploy("CallableLoanImplementationRepository", {

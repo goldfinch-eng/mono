@@ -38,12 +38,8 @@ contract CallableLoan is
   IVersioned
 {
   IGoldfinchConfig public config;
-  using PaymentScheduleLogic for PaymentSchedule;
+
   using CallableLoanConfigHelper for IGoldfinchConfig;
-  using TrancheLogic for Tranche;
-  using WaterfallLogic for Waterfall;
-  using CallableCreditLineLogic for CallableCreditLine;
-  using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
   using SafeERC20Transfer for IERC20UpgradeableWithDec;
   using SaturatingSub for uint256;
 
@@ -54,7 +50,6 @@ contract CallableLoan is
 
   CallableCreditLine private callableCreditLine;
 
-  ICreditLine public override creditLine;
   uint256 public override startTime;
   uint256 public override createdAt;
   address public override borrower;
@@ -262,10 +257,9 @@ contract CallableLoan is
     //   .calculateExpectedSharePrice(amountRemaining, currentSlice);
     // currentSlice.principalDeployed = currentSlice.principalDeployed.add(amount);
     // totalDeployed = totalDeployed.add(amount);
-    // address borrower = creditLine.borrower();
+    // address borrower = borrower();
 
     // TODO: Store borrower
-    address borrower = address(0);
 
     config.getUSDC().safeERC20Transfer(borrower, amount);
     emit DrawdownMade(borrower, amount);
@@ -319,13 +313,9 @@ contract CallableLoan is
     )
   {
     require(timestamp >= block.timestamp, "IT");
-    require(creditLine.termEndTime() > 0, "LI");
+    require(termEndTime() > 0, "LI");
 
-    return (
-      creditLine.interestOwedAt(timestamp),
-      creditLine.interestAccruedAt(timestamp),
-      creditLine.principalOwedAt(timestamp)
-    );
+    return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
   }
 
   /// @inheritdoc ILoan
@@ -335,17 +325,12 @@ contract CallableLoan is
   ) external override nonReentrant whenNotPaused returns (PaymentAllocation memory) {
     require(amount > 0, "ZA");
     // Send money to the credit line. Only take what's actually owed
-    uint256 maxPayableAmount = creditLine.interestAccrued() +
-      creditLine.interestOwed() +
-      creditLine.balance();
+    uint256 maxPayableAmount = interestAccrued() + interestOwed() + balance();
     uint256 amountToPay = MathUpgradeable.min(amount, maxPayableAmount);
     config.getUSDC().safeERC20TransferFrom(msg.sender, address(this), amountToPay);
 
     // pay interest first, then principal
-    uint256 interestAmount = MathUpgradeable.min(
-      amountToPay,
-      creditLine.interestOwed() + creditLine.interestAccrued()
-    );
+    uint256 interestAmount = MathUpgradeable.min(amountToPay, interestOwed() + interestAccrued());
     uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
 
     PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
@@ -357,11 +342,12 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @dev ZA: zero amount
+  /// TODO: Turn back to external
   function pay(
     uint256 principalAmount,
     uint256 interestAmount
   )
-    external
+    public
     override(ICreditLine, ILoan)
     nonReentrant
     whenNotPaused
@@ -371,10 +357,10 @@ contract CallableLoan is
     require(totalPayment > 0, "ZA");
 
     // If there is an excess principal payment then only take what we actually need
-    uint256 principalToPay = MathUpgradeable.min(principalAmount, creditLine.balance());
+    uint256 principalToPay = MathUpgradeable.min(principalAmount, balance());
 
     // If there is an excess interest payment then only take what we actually need
-    uint256 maxPayableInterest = creditLine.interestAccrued() + creditLine.interestOwed();
+    uint256 maxPayableInterest = interestAccrued() + interestOwed();
     uint256 interestToPay = MathUpgradeable.min(interestAmount, maxPayableInterest);
     config.getUSDC().safeERC20TransferFrom(
       msg.sender,
@@ -402,9 +388,9 @@ contract CallableLoan is
       config.getUSDC().safeERC20Transfer(reserveAddress, poolBalance);
     }
 
-    uint256 clBalance = usdc.balanceOf(address(creditLine));
+    uint256 clBalance = usdc.balanceOf(address(this));
     if (clBalance > 0) {
-      usdc.safeERC20TransferFrom(address(creditLine), reserveAddress, clBalance);
+      usdc.safeERC20TransferFrom(address(this), reserveAddress, clBalance);
     }
     emit EmergencyShutdown(address(this));
   }
@@ -434,9 +420,10 @@ contract CallableLoan is
     emit DrawdownsUnpaused(address(this));
   }
 
-  // CreditLine proxy method
+  // CreditLine proxy method + ICreditLine
   function setLimit(uint256 newAmount) external override onlyAdmin {
-    return creditLine.setLimit(newAmount);
+    revert("US");
+    // callableCreditLine.setLimit(newAmount);
   }
 
   /// @inheritdoc ITranchedPool
@@ -497,9 +484,9 @@ contract CallableLoan is
     // It also causes issues trying to allocate payments to an empty slice (divide by zero)
     require(_locked(), "NL");
 
-    uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
-    PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
-    interestAccrued = creditLine.totalInterestAccrued() - interestAccrued;
+    uint256 interestAccrued = totalInterestAccruedAt(interestAccruedAsOf());
+    PaymentAllocation memory pa = pay(principalPayment, interestPayment);
+    interestAccrued = totalInterestAccrued() - interestAccrued;
 
     return pa;
   }
@@ -528,26 +515,6 @@ contract CallableLoan is
     emit ReserveFundsCollected(address(this), totalReserveAmount);
 
     return totalReserveAmount;
-  }
-
-  // TODO: Callable loan should no longer initialize a separate credit line
-  function _createAndSetCreditLine(
-    address _borrower,
-    uint256 _maxLimit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) internal {
-    creditLine = ICreditLine(config.getGoldfinchFactory().createCreditLine());
-    creditLine.initialize(
-      address(config),
-      address(this), // Set self as the owner
-      _borrower,
-      _maxLimit,
-      _interestApr,
-      _schedule,
-      _lateFeeApr
-    );
   }
 
   // // Internal //////////////////////////////////////////////////////////////////
@@ -620,8 +587,8 @@ contract CallableLoan is
     // );
 
     // TODO:
-    // creditLine.setLimit(
-    //   MathUpgradeable.min(creditLine.limit().add(currentTotal), creditLine.maxLimit())
+    // setLimit(
+    //   MathUpgradeable.min(creditLine.limit().add(currentTotal), maxLimit())
     // );
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
     // TODO:
@@ -649,7 +616,14 @@ contract CallableLoan is
     return 0;
   }
 
-  // // ICallable Conformance /////////////////////////////////////////////////////
+  // // ICreditLine Conformance /////////////////////////////////////////////////////
+
+  /**
+   *
+   */
+  function creditLine() external view override returns (ICreditLine) {
+    return this;
+  }
 
   /**
    * Unsupported in callable loans.
@@ -662,10 +636,10 @@ contract CallableLoan is
    * Unsupported in callable loans.
    */
   function setMaxLimit(uint256 newAmount) external override {
-    revert("US"); // Check 1
+    revert("US");
   }
 
-  // // ICallable Conformance TODO /////////////////////////////////////////////////////
+  // // ICreditLine Conformance TODO Should all be external/////////////////////////////////////////////////////
   function initialize(
     address _config,
     address owner,
@@ -678,85 +652,85 @@ contract CallableLoan is
     revert("US");
   }
 
-  function balance() external view returns (uint256) {
+  function balance() public view returns (uint256) {
     return 0;
   }
 
-  function interestOwed() external view returns (uint256) {
+  function interestOwed() public view returns (uint256) {
     return 0;
   }
 
-  function principalOwed() external view override returns (uint256) {
+  function principalOwed() public view override returns (uint256) {
     return 0;
   }
 
-  function termEndTime() external view override returns (uint256) {
+  function termEndTime() public view override returns (uint256) {
     return 0;
   }
 
-  function nextDueTime() external view override returns (uint256) {
+  function nextDueTime() public view override returns (uint256) {
     return 0;
   }
 
-  function interestAccruedAsOf() external view override returns (uint256) {
+  function interestAccruedAsOf() public view override returns (uint256) {
     return 0;
   }
 
-  function lastFullPaymentTime() external view override returns (uint256) {
+  function lastFullPaymentTime() public view override returns (uint256) {
     return 0;
   }
 
-  function currentLimit() external view override returns (uint256) {
+  function currentLimit() public view override returns (uint256) {
     return 0;
   }
 
-  function limit() external view override returns (uint256) {
+  function limit() public view override returns (uint256) {
     return 0;
   }
 
-  function interestApr() external view override returns (uint256) {
+  function interestApr() public view override returns (uint256) {
     return 0;
   }
 
-  function lateFeeApr() external view override returns (uint256) {
+  function lateFeeApr() public view override returns (uint256) {
     return 0;
   }
 
-  function isLate() external view returns (bool) {
+  function isLate() public view returns (bool) {
     return false;
   }
 
-  function withinPrincipalGracePeriod() external view returns (bool) {
+  function withinPrincipalGracePeriod() public view returns (bool) {
     return false;
   }
 
   /// @notice Cumulative interest accrued up to now
-  function totalInterestAccrued() external view override returns (uint256) {
+  function totalInterestAccrued() public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative interest accrued up to `timestamp`
-  function totalInterestAccruedAt(uint256 timestamp) external view override returns (uint256) {
+  function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative interest paid back up to now
-  function totalInterestPaid() external view override returns (uint256) {
+  function totalInterestPaid() public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative interest owed up to now
-  function totalInterestOwed() external view override returns (uint256) {
+  function totalInterestOwed() public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative interest owed up to `timestamp`
-  function totalInterestOwedAt(uint256 timestamp) external view override returns (uint256) {
+  function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Interest that would be owed at `timestamp`
-  function interestOwedAt(uint256 timestamp) external view override returns (uint256) {
+  function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
@@ -764,7 +738,7 @@ contract CallableLoan is
   ///   owed interest once we cross into the next payment period. Is 0 if the
   ///   current time is after loan maturity (all interest accrued immediately becomes
   ///   interest owed).
-  function interestAccrued() external view override returns (uint256) {
+  function interestAccrued() public view override returns (uint256) {
     return 0;
   }
 
@@ -772,32 +746,32 @@ contract CallableLoan is
   ///   owed interest once we cross into the payment period after `timestamp`. Is 0
   ///   if `timestamp` is after loan maturity (all interest accrued immediately becomes
   ///   interest owed).
-  function interestAccruedAt(uint256 timestamp) external view override returns (uint256) {
+  function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Principal owed up to `timestamp`
-  function principalOwedAt(uint256 timestamp) external view override returns (uint256) {
+  function principalOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Returns the total amount of principal thats been paid
-  function totalPrincipalPaid() external view override returns (uint256) {
+  function totalPrincipalPaid() public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative principal owed at timestamp
-  function totalPrincipalOwedAt(uint256 timestamp) external view override returns (uint256) {
+  function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Cumulative principal owed at current timestamp
-  function totalPrincipalOwed() external view override returns (uint256) {
+  function totalPrincipalOwed() public view override returns (uint256) {
     return 0;
   }
 
   /// @notice Time of first drawdown
-  function termStartTime() external view override returns (uint256) {
+  function termStartTime() public view override returns (uint256) {
     return 0;
   }
 

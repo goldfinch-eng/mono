@@ -43,7 +43,7 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
 
     assertZero(cl.interestOwed() + cl.principalOwed() + cl.balance());
 
-    _startImpersonation(cl.borrower());
+    _startImpersonation(callableLoan.borrower());
     callableLoan.drawdown(usdcVal(100));
 
     // termStartTime should be the same

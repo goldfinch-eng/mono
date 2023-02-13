@@ -3,6 +3,8 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
+// import {console2 as console} from "forge-std/console2.sol";
+
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
@@ -13,8 +15,6 @@ import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSched
 import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
-import {console2 as console} from "forge-std/console2.sol";
-
 struct CallableCreditLine {
   CheckpointedCallableCreditLine _cpcl;
 }
@@ -23,11 +23,6 @@ using CallableCreditLineLogic for CallableCreditLine global;
 using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine global;
 
 library CallableCreditLineLogic {
-  using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
-  using CallableCreditLineLogic for CallableCreditLine;
-  using PaymentScheduleLogic for PaymentSchedule;
-  using WaterfallLogic for Waterfall;
-  using TrancheLogic for Tranche;
   using SaturatingSub for uint256;
   using ConfigNumbersHelper for IGoldfinchConfig;
 
@@ -85,10 +80,6 @@ struct CheckpointedCallableCreditLine {
  *  - Withdrawal of undrawndown funds whi
  */
 library CheckpointedCallableCreditLineLogic {
-  using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
-  using PaymentScheduleLogic for PaymentSchedule;
-  using WaterfallLogic for Waterfall;
-  using TrancheLogic for Tranche;
   using SaturatingSub for uint256;
   using ConfigNumbersHelper for IGoldfinchConfig;
 
@@ -125,9 +116,9 @@ library CheckpointedCallableCreditLineLogic {
     uint256 principalAmount,
     uint256 interestAmount
   ) internal {
-    console.log("pay 1");
-    console.log(cl._paymentSchedule.currentPrincipalPeriod());
-    console.log("pay2");
+    // console.log("pay 1");
+    // console.log(cl._paymentSchedule.currentPrincipalPeriod());
+    // console.log("pay2");
     cl._bufferedPayments = cl._waterfall.payUntil(
       principalAmount,
       interestAmount,
@@ -154,16 +145,16 @@ library CheckpointedCallableCreditLineLogic {
   }
 
   function submitCall(CheckpointedCallableCreditLine storage cl, uint256 amount) internal {
-    console.log("call 1");
+    // console.log("call 1");
     uint256 activeCallTranche = cl._paymentSchedule.currentPrincipalPeriod();
-    console.log("call 2");
+    // console.log("call 2");
     require(
       activeCallTranche < cl.uncalledCapitalIndex(),
       "Cannot call during the last call request period"
     );
-    console.log("call 3");
-    console.log("cl.uncalledCapitalIndex(): ", cl.uncalledCapitalIndex());
-    console.log("activeCallTranche: ", activeCallTranche);
+    // console.log("call 3");
+    // console.log("cl.uncalledCapitalIndex(): ", cl.uncalledCapitalIndex());
+    // console.log("activeCallTranche: ", activeCallTranche);
 
     cl._waterfall.move(amount, cl.uncalledCapitalIndex(), activeCallTranche);
   }
@@ -499,17 +490,17 @@ library CheckpointedCallableCreditLineLogic {
       timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
-  function interestApr(CheckpointedCallableCreditLine storage cl) public view returns (uint) {
+  function interestApr(CheckpointedCallableCreditLine storage cl) internal view returns (uint) {
     return cl._interestApr;
   }
 
   function lateFeeAdditionalApr(
     CheckpointedCallableCreditLine storage cl
-  ) public view returns (uint) {
+  ) internal view returns (uint) {
     return cl._lateAdditionalApr;
   }
 
-  function limit(CheckpointedCallableCreditLine storage cl) public view returns (uint) {
+  function limit(CheckpointedCallableCreditLine storage cl) internal view returns (uint) {
     return cl._limit;
   }
 

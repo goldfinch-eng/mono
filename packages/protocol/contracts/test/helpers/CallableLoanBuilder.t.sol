@@ -39,7 +39,7 @@ contract CallableLoanBuilder {
       monthlyScheduleRepo.createSchedule({
         periodsInTerm: 12,
         periodsPerInterestPeriod: 1,
-        periodsPerPrincipalPeriod: 12,
+        periodsPerPrincipalPeriod: 3,
         gracePrincipalPeriods: 0
       });
   }

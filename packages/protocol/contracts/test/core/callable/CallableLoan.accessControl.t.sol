@@ -24,7 +24,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   function testAccessControlLockerIsBorrowerAndGovernance() public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
-    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), cl.borrower()));
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), callableLoan.borrower()));
   }
 
   function testOwnerCanGrantRoles(address user) public impersonating(GF_OWNER) {
@@ -135,62 +135,61 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     callableLoan.pause();
   }
 
-  function testBorrowerCanLockPool(
-    uint256 depositAmount,
-    address depositor
-  ) public impersonating(BORROWER) {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+  // TODO: Unclear if locking should still be supported.
+  // function testBorrowerCanLockPool(
+  //   uint256 depositAmount,
+  //   address depositor
+  // ) public impersonating(BORROWER) {
+  //   (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
-    vm.assume(depositAmount > 0);
-    vm.assume(fuzzHelper.isAllowed(depositor));
-    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
+  //   vm.assume(depositAmount > 0);
+  //   vm.assume(fuzzHelper.isAllowed(depositor));
+  //   depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
 
-    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
+  //   uid._mintForTest(depositor, 1, 1, "");
+  //   depositAndDrawdown(callableLoan, depositAmount, depositor);
+  //   assertEq(
+  //     callableLoan.getTranche(1).lockedUntil,
+  //     block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+  //   );
 
-    uid._mintForTest(depositor, 1, 1, "");
-    depositAndDrawdown(callableLoan, depositAmount, depositor);
-    assertEq(
-      callableLoan.getTranche(1).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
+  //   //TODO: Add in tests for equivalent of principal share price behavior.
+  //   assertEq(cl.limit(), depositAmount);
+  // }
 
-    //TODO: Add in tests for equivalent of principal share price behavior.
-    assertEq(cl.limit(), depositAmount);
-  }
+  // function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
+  //   (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
-  function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+  //   depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
+  //   deposit(callableLoan, 1, depositAmount, GF_OWNER);
 
-    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
-    deposit(callableLoan, 1, depositAmount, GF_OWNER);
+  //   callableLoan.lockPool();
+  //   assertEq(
+  //     callableLoan.getTranche(1).lockedUntil,
+  //     block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
+  //   );
+  //   assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
+  //   // Limit should be the sum of junior and senior deposits
+  //   assertEq(cl.limit(), depositAmount);
+  // }
 
-    callableLoan.lockPool();
-    assertEq(
-      callableLoan.getTranche(1).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
-    // Limit should be the sum of junior and senior deposits
-    assertEq(cl.limit(), depositAmount);
-  }
+  // function testCannotLockPoolTwice() public impersonating(BORROWER) {
+  //   (CallableLoan callableLoan, ) = defaultCallableLoan();
 
-  function testCannotLockPoolTwice() public impersonating(BORROWER) {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
+  //   callableLoan.lockPool();
 
-    callableLoan.lockPool();
+  //   vm.expectRevert(bytes("TL"));
+  //   callableLoan.lockPool();
+  // }
 
-    vm.expectRevert(bytes("TL"));
-    callableLoan.lockPool();
-  }
+  // function testNonBorrowerNonOwnerCannotLockPool(
+  //   address nonBorrowerNonOwner
+  // ) public impersonating(nonBorrowerNonOwner) {
+  //   vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
 
-  function testNonBorrowerNonOwnerCannotLockPool(
-    address nonBorrowerNonOwner
-  ) public impersonating(nonBorrowerNonOwner) {
-    vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
+  //   (CallableLoan callableLoan, ) = defaultCallableLoan();
 
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    vm.expectRevert(bytes("NA"));
-    callableLoan.lockPool();
-  }
+  //   vm.expectRevert(bytes("NA"));
+  //   callableLoan.lockPool();
+  // }
 }
