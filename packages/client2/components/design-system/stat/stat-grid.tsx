@@ -85,7 +85,7 @@ export function Stat({ label, value, tooltip }: StatProps) {
       )}
     >
       <div className="mb-3 flex items-center text-sm text-sand-600">
-        <span className={clsx(tooltip ? "mr-2" : "")}>{label}</span>
+        <span className={clsx(tooltip ? "mr-2" : null)}>{label}</span>
         {tooltip && <InfoIconTooltip size="sm" content={tooltip} />}
       </div>
       <div

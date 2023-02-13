@@ -15,6 +15,7 @@ import {
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
+  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
@@ -23,7 +24,10 @@ import {
 
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
+const visiblePoolOnFirstLoad = 4;
+
 gql`
+  ${PROTOCOL_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
@@ -52,11 +56,7 @@ gql`
     }
     protocols(first: 1) {
       id
-      totalDrawdowns
-      totalWritedowns
-      totalReserveCollected
-      totalInterestCollected
-      totalPrincipalCollected
+      ...ProtocolMetricsFields
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -279,7 +279,9 @@ export default function EarnPage({
                   key={tranchedPool.id}
                   // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
                   className={
-                    !showMoreClosedPools && i >= 4 ? "hidden" : undefined
+                    !showMoreClosedPools && i >= visiblePoolOnFirstLoad
+                      ? "hidden"
+                      : undefined
                   }
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}

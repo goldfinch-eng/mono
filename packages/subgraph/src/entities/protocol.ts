@@ -1,4 +1,4 @@
-import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {Protocol} from "../../generated/schema"
 
 function getOrInitProtocol(): Protocol {
@@ -8,6 +8,7 @@ function getOrInitProtocol(): Protocol {
     protocol.tranchedPools = []
     protocol.totalWritedowns = BigInt.zero()
     protocol.totalDrawdowns = BigInt.zero()
+    protocol.defaultRate = BigDecimal.zero()
     protocol.totalPrincipalCollected = BigInt.zero()
     protocol.totalInterestCollected = BigInt.zero()
     protocol.totalReserveCollected = BigInt.zero()
@@ -28,12 +29,20 @@ export function addToListOfAllTranchedPools(tranchedPoolAddress: Address): void 
 export function updateTotalWriteDowns(amount: BigInt): void {
   const protocol = getOrInitProtocol()
   protocol.totalWritedowns = protocol.totalWritedowns.plus(amount)
+  protocol.defaultRate =
+    protocol.totalDrawdowns.isZero() || protocol.totalWritedowns.isZero()
+      ? BigDecimal.zero()
+      : protocol.totalWritedowns.divDecimal(protocol.totalDrawdowns.toBigDecimal())
   protocol.save()
 }
 
 export function updateTotalDrawdowns(amount: BigInt): void {
   const protocol = getOrInitProtocol()
   protocol.totalDrawdowns = protocol.totalDrawdowns.plus(amount)
+  protocol.defaultRate =
+    protocol.totalDrawdowns.isZero() || protocol.totalWritedowns.isZero()
+      ? BigDecimal.zero()
+      : protocol.totalWritedowns.divDecimal(protocol.totalDrawdowns.toBigDecimal())
   protocol.save()
 }
 

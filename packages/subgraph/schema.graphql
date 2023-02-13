@@ -183,6 +183,7 @@ type Protocol @entity {
   id: ID! # Hardcoded to "1" because this is a singleton
   totalWritedowns: BigInt!
   totalDrawdowns: BigInt!
+  defaultRate: BigDecimal!
   totalPrincipalCollected: BigInt!
   totalInterestCollected: BigInt!
   totalReserveCollected: BigInt!

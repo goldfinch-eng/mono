@@ -1,15 +1,16 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers/lib/ethers";
+import { BigNumber } from "ethers/lib/ethers";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { cryptoToFloat, formatPercent } from "@/lib/format";
 import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
 export const PROTOCOL_METRICS_FIELDS = gql`
-  fragment protocolMetricsFields on Protocol {
+  fragment ProtocolMetricsFields on Protocol {
     id
     totalDrawdowns
     totalWritedowns
+    defaultRate
     totalReserveCollected
     totalInterestCollected
     totalPrincipalCollected
@@ -44,6 +45,7 @@ export function GoldfinchPoolsMetrics({
     totalWritedowns,
     totalInterestCollected,
     totalReserveCollected,
+    defaultRate,
   } = protocol;
 
   const activeLoans = totalDrawdowns
@@ -54,14 +56,7 @@ export function GoldfinchPoolsMetrics({
     .add(totalInterestCollected)
     .sub(totalReserveCollected);
 
-  const averageDefaultRate =
-    totalWritedowns.isZero() || totalDrawdowns.isZero()
-      ? FixedNumber.from(0)
-      : FixedNumber.from(totalWritedowns).divUnsafe(
-          FixedNumber.from(totalDrawdowns)
-        );
-
-  // TODO: Pending tooltip content from Jake
+  // TODO: Pending final tooltip content from Jake. Andre has written in the current content as a placeholder.
   return (
     <StatGrid
       bgColor="mustard-50"
@@ -71,17 +66,17 @@ export function GoldfinchPoolsMetrics({
     >
       <Stat
         label="Active Loans"
-        tooltip="[TODO] Active Loans tooltip"
+        tooltip="Total principal outstanding across all loans in the Goldfinch Protocol."
         value={formatForMetrics(activeLoans)}
       />
       <Stat
         label="Average Default Rate"
-        tooltip="[TODO] Average Default Rate tooltip"
-        value={formatPercent(averageDefaultRate)}
+        tooltip="Average default rate across all loans in the Goldfinch Protocol."
+        value={formatPercent(defaultRate)}
       />
       <Stat
         label="Total Loans Repaid"
-        tooltip="[TODO] Total loans repaid tooltip"
+        tooltip="Total amount of principal and interest repaid across all loans in the Goldfinch Protocol."
         value={formatForMetrics(totalLoansRepaid)}
       />
     </StatGrid>
@@ -100,15 +95,9 @@ export function GoldfinchPoolsMetricsPlaceholder({
       className={className}
       size="lg"
     >
-      <Stat label="Active Loans" tooltip="[TODO] Active Loans tooltip" />
-      <Stat
-        label="Average Default Rate"
-        tooltip="[TODO] Average Default Rate tooltip"
-      />
-      <Stat
-        label="Total Loans Repaid"
-        tooltip="[TODO] Total loans repaid tooltip"
-      />
+      <Stat label="Active Loans" />
+      <Stat label="Average Default Rate" />
+      <Stat label="Total Loans Repaid" />
     </StatGrid>
   );
 }

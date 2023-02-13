@@ -3,7 +3,7 @@ import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 import Image from "next/future/image";
 import NextLink from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, ReactElement } from "react";
 
 import { Shimmer } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
@@ -16,12 +16,11 @@ interface LayoutProps {
   title: ReactNode;
   subtitle: ReactNode;
   href?: string;
-  data1Label: ReactNode;
-  data1Value: ReactNode;
-  data2Label: ReactNode;
-  data2Value: ReactNode;
-  data3Label: ReactNode;
-  data3Value: ReactNode;
+  data: [
+    ReactElement<DataProps>,
+    ReactElement<DataProps>,
+    ReactElement<DataProps>
+  ];
 }
 
 export function ClosedDealCardLayout({
@@ -30,12 +29,7 @@ export function ClosedDealCardLayout({
   title,
   subtitle,
   href,
-  data1Label,
-  data1Value,
-  data2Label,
-  data2Value,
-  data3Label,
-  data3Value,
+  data,
 }: LayoutProps) {
   return (
     <div
@@ -72,14 +66,17 @@ export function ClosedDealCardLayout({
         </div>
         <div className="font-serif text-xl font-semibold">{subtitle}</div>
       </div>
-      <Data label={data1Label} value={data1Value} />
-      <Data label={data2Label} value={data2Value} />
-      <Data label={data3Label} value={data3Value} />
+      {data}
     </div>
   );
 }
 
-function Data({ label, value }: { label: ReactNode; value: ReactNode }) {
+interface DataProps {
+  label: ReactNode;
+  value: ReactNode;
+}
+
+function Data({ label, value }: DataProps) {
   return (
     <div className="lg:col-span-2">
       <div className="mb-2 whitespace-nowrap text-sm">{label}</div>
@@ -93,12 +90,23 @@ export function ClosedDealCardPlaceholder() {
     <ClosedDealCardLayout
       title={<Shimmer className="w-10" />}
       subtitle={<Shimmer className="w-48" />}
-      data1Label="Total loan amount"
-      data1Value={<Shimmer isTruncated={false} />}
-      data2Label="Maturity date"
-      data2Value={<Shimmer isTruncated={false} />}
-      data3Label="Status"
-      data3Value={<Shimmer isTruncated={false} />}
+      data={[
+        <Data
+          key="amount"
+          label="Total loan amount"
+          value={<Shimmer isTruncated={false} />}
+        />,
+        <Data
+          key="date"
+          label="Maturity date"
+          value={<Shimmer isTruncated={false} />}
+        />,
+        <Data
+          key="status"
+          label="Status"
+          value={<Shimmer isTruncated={false} />}
+        />,
+      ]}
     />
   );
 }
@@ -152,19 +160,30 @@ export function ClosedDealCard({
       subtitle={dealName}
       icon={icon}
       href={href}
-      data1Label="Total loan amount"
-      data1Value={formatCrypto({
-        token: "USDC",
-        amount: loanAmount,
-      })}
-      data2Label="Maturity date"
-      data2Value={
-        termEndTime.isZero()
-          ? "-"
-          : formatDate(termEndTime.toNumber() * 1000, "MMM d, y")
-      }
-      data3Label="Status"
-      data3Value={<Status poolRepaymentStatus={repaymentStatus} />}
+      data={[
+        <Data
+          key="amount"
+          label="Total loan amount"
+          value={formatCrypto({
+            token: "USDC",
+            amount: loanAmount,
+          })}
+        />,
+        <Data
+          key="date"
+          label="Maturity date"
+          value={
+            termEndTime.isZero()
+              ? "-"
+              : formatDate(termEndTime.toNumber() * 1000, "MMM d, y")
+          }
+        />,
+        <Data
+          key="status"
+          label="Status"
+          value={<Status poolRepaymentStatus={repaymentStatus} />}
+        />,
+      ]}
     />
   );
 }

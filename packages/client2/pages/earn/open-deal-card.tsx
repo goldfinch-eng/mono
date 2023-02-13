@@ -6,7 +6,7 @@ import { ReactNode } from "react";
 
 import {
   Icon,
-  InfoIconTooltip,
+  InfoLine,
   Shimmer,
   ShimmerLines,
 } from "@/components/design-system";
@@ -37,7 +37,7 @@ export function OpenDealCard({
   liquidity,
   href,
 }: OpenDealCardProps) {
-  // TODO: Pending tooltip content from Jake
+  // TODO: Pending finalized tooltip content from Jake. Andre wrote what's here as placeholders.
   return (
     <div
       className={clsx(
@@ -52,6 +52,7 @@ export function OpenDealCard({
               src={icon}
               alt={`${title} icon`}
               fill
+              sizes="48px"
               className="object-contain"
             />
           ) : null}
@@ -80,7 +81,7 @@ export function OpenDealCard({
             />
           </div>
         </div>
-        <div>
+        <div className="-mb-3">
           <InfoLine
             label="Variable GFI APY"
             tooltip={<div className="max-w-xs">{gfiApyTooltip}</div>}
@@ -88,39 +89,21 @@ export function OpenDealCard({
           />
           <InfoLine
             label="Loan term"
-            tooltip="[TODO] Loan term tooltip"
+            tooltip={
+              termLengthInMonths
+                ? "Length of the loan term up until the principal is due."
+                : "This deal does not have a fixed term length."
+            }
             value={
               termLengthInMonths ? `${termLengthInMonths} months` : "Open-ended"
             }
           />
           <InfoLine
             label="Liquidity"
-            tooltip="[TODO] Liquidity tooltip"
+            tooltip="When you can withdraw and reclaim your invested capital."
             value={liquidity}
           />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoLine({
-  label,
-  value,
-  tooltip,
-}: {
-  label: string;
-  value?: string;
-  tooltip?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-t border-mustard-200 py-3 last:pb-0">
-      <div className="flex">
-        <div className="mr-1 text-xs sm:text-sm">{label}</div>
-        {tooltip ? <InfoIconTooltip content={tooltip} size="sm" /> : null}
-      </div>
-      <div className="text-right text-sm font-semibold sm:text-base">
-        {value ? value : <Shimmer style={{ width: "15ch" }} />}
       </div>
     </div>
   );
@@ -150,7 +133,7 @@ export function OpenDealCardPlaceholder() {
             </div>
           </div>
         </div>
-        <div>
+        <div className="-mb-3">
           <InfoLine label="Variable GFI APY" />
           <InfoLine label="Loan term" />
           <InfoLine label="Liquidity" />
