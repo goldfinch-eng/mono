@@ -55,12 +55,12 @@
   }
   @media screen(lg) {
     .pool-layout {
-      grid-template-columns: calc(65% - theme(spacing.5)) calc(
-          35% - theme(spacing.5)
+      grid-template-columns: calc(45% - theme(spacing.5)) calc(
+          55% - theme(spacing.5)
         );
       grid-template-areas:
-        "heading widgets"
-        "info widgets";
+        "widgets heading"
+        "widgets info";
     }
   }
 }
