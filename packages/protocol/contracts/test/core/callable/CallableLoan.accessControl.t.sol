@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
@@ -22,7 +22,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   }
 
   function testAccessControlLockerIsBorrowerAndGovernance() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), cl.borrower()));
   }
@@ -139,7 +139,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     uint256 depositAmount,
     address depositor
   ) public impersonating(BORROWER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     vm.assume(depositAmount > 0);
     vm.assume(fuzzHelper.isAllowed(depositor));
@@ -159,7 +159,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   }
 
   function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
     deposit(callableLoan, 1, depositAmount, GF_OWNER);

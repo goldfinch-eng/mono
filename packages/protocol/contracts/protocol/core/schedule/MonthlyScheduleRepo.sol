@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {IMonthlyScheduleRepo} from "../../../interfaces/IMonthlyScheduleRepo.sol";
+import {IMonthlyPeriodMapper} from "../../../interfaces/IMonthlyPeriodMapper.sol";
 
 import {MonthlyPeriodMapper} from "./MonthlyPeriodMapper.sol";
 import {Schedule} from "./Schedule.sol";
@@ -15,7 +16,7 @@ import {Schedule} from "./Schedule.sol";
  * Goldfinch protocol.
  */
 contract MonthlyScheduleRepo is IMonthlyScheduleRepo {
-  MonthlyPeriodMapper public periodMapper;
+  IMonthlyPeriodMapper public override periodMapper;
 
   mapping(bytes32 => address) private schedules;
 

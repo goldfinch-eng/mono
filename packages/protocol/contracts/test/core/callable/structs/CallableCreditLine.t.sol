@@ -6,17 +6,20 @@ pragma experimental ABIEncoderV2;
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
 import {CallableCreditLine, CallableCreditLineLogic, CheckpointedCallableCreditLine, CheckpointedCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
 import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
+import {BaseTest} from "../../BaseTest.t.sol";
 
 using CallableCreditLineLogic for CallableCreditLine;
 using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
+using PaymentScheduleLogic for PaymentSchedule;
 
 using TrancheLogic for Tranche;
 
-contract TestCallableCreditLine is Test {
+contract TestCallableCreditLine is BaseTest {
   uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_ADDITIONAL_APR = 1 * 1e16;
@@ -28,8 +31,10 @@ contract TestCallableCreditLine is Test {
 
   uint256 constant defaultInterestApr = 1000;
   uint256 constant firstDepositor = 0x64;
+  uint256 constant atLeast6Months = 6 * 31 days;
 
-  function setUp() external {
+  function setUp() public override {
+    super.setUp();
     monthlyScheduleRepo = IMonthlyScheduleRepo(deployCode("MonthlyScheduleRepo.sol"));
     config = IGoldfinchConfig(deployCode("GoldfinchConfig.sol"));
     monthlyScheduleRepo.createSchedule({
@@ -68,8 +73,8 @@ contract TestCallableCreditLine is Test {
   }
 
   // TODO
-  function testDeposit(uint256 depositAmount) public {
-    callableCreditLine = defaultWithLimit(depositAmount);
+  function testDeposit(uint128 depositAmount) public {
+    setupDefaultWithLimit(depositAmount);
     CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
@@ -79,11 +84,10 @@ contract TestCallableCreditLine is Test {
     assertEq(cpcl.interestOwed(), 0);
   }
 
-  // TODO
-  function testDrawdown(uint256 depositAmount, uint256 drawdownAmount) public {
-    callableCreditLine = defaultWithLimit(depositAmount);
-    drawdownAmount = bound(drawdownAmount, 0, depositAmount);
-    CheckpointedCallableCreditLine cpcl = callableCreditLine.checkpoint();
+  function testDrawdown(uint128 depositAmount, uint128 drawdownAmount) public {
+    setupDefaultWithLimit(depositAmount);
+    drawdownAmount = boundUint128(drawdownAmount, 0, depositAmount);
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     cpcl.drawdown(drawdownAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
@@ -93,59 +97,58 @@ contract TestCallableCreditLine is Test {
     assertEq(cpcl.interestOwed(), 0);
   }
 
-  // TODO
-  function testPay(uint256 depositAmount, uint256 interest, uint256 principal) public {
-    CheckpointedCallableCreditLine cpcl = fullyFundedAndDrawndown(depositAmount);
-    cpcl.pay(interest, principal);
+  // TODO: Test pay when there is no cash drawndown.
+  function testPay(uint128 depositAmount, uint128 interest, uint128 principal) public {
+    depositAmount = boundUint128(depositAmount, 1, type(uint128).max);
+    setupFullyFundedAndDrawndown(depositAmount);
+    interest = boundUint128(interest, 0, depositAmount);
+    principal = boundUint128(principal, 0, depositAmount - interest);
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    console.log("1");
+    cpcl.pay(uint256(interest), uint256(principal));
+    console.log("2");
+    // TODO: Assert that principal is buffered
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
-    assertEq(cpcl.totalPrincipalPaid(), depositAmount - drawdownAmount);
-    assertEq(cpcl.principalOutstanding(), drawdownAmount);
+    assertEq(cpcl.totalPrincipalPaid(), 0);
+    assertEq(cpcl.principalOutstanding(), depositAmount);
 
-    // Assert that interest is prepaid
+    console.log("3");
+    // TODO: Assert that interest is buffered
     assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
   }
 
-  function testCall() public {}
+  // TODO: Test call where called amount is 0
+  function testCall(uint128 depositAmount, uint128 calledAmount) public {
+    depositAmount = boundUint128(depositAmount, 1, type(uint128).max);
+    calledAmount = boundUint128(calledAmount, 1, depositAmount);
+    setupFullyFundedAndDrawndown(depositAmount);
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    console.log("1");
+    vm.warp(cpcl._paymentSchedule.startTime);
+    cpcl.submitCall(calledAmount);
+    console.log("2");
+
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
+    assertEq(cpcl.totalPrincipalPaid(), 0);
+    assertEq(cpcl.principalOutstanding(), depositAmount);
+
+    console.log("3");
+
+    assertEq(cpcl.totalInterestAccrued(), 0);
+    console.log("4");
+    assertEq(cpcl.interestOwed(), 0);
+    assertEq(
+      cpcl.totalPrincipalOwedAt(cpcl._paymentSchedule.startTime + atLeast6Months),
+      calledAmount
+    );
+    assertEq(
+      cpcl.totalPrincipalOwedAt(cpcl._paymentSchedule.nextPrincipalDueTimeAt(block.timestamp)),
+      calledAmount
+    );
+  }
 
   function testWithdraw() public {}
-
-  function testUncalledCapitalIndex() public {}
-
-  function testCheckpoint() public {}
-
-  function testApplyBuffer() public {}
-
-  function testApplyBufferPreview() public {}
-
-  function testNextDueTimeAt() public {}
-
-  function testTermStartTime() public {}
-
-  function testTermEndTime() public {}
-
-  // TODO: Should account for end of term.
-  function testPrincipalOwedAt() public {}
-
-  function testPrincipalOwed() public {}
-
-  function testTotalPrincipalOwed() public {}
-
-  function testTotalPrincipalOwedAt() public {}
-
-  function testTotalPrincipalPaid() public {}
-
-  function testTotalPrincipalOwedBeforeTranche() public {}
-
-  function testTotalInterestOwed() public {}
-
-  function testTotalInterestOwedAt() public {}
-
-  function testInterestOwed() public {}
-
-  function testInterestOwedAt() public {}
-
-  function testInterestAccruedAt() public {}
 
   /**
    * Test cases
@@ -178,19 +181,15 @@ contract TestCallableCreditLine is Test {
   // TODO
   function testIsLate() public {}
 
-  // TODO
-  function testInterestAccrualWithoutRepayment() public {}
-
-  function defaultWithLimit(uint256 limit) public returns (CallableCreditLine) {
-    return new CallableCreditLine(config, defaultInterestApr, schedule, 0, limit);
+  function setupDefaultWithLimit(uint128 limit) public {
+    callableCreditLine.initialize(config, defaultInterestApr, schedule, 0, uint256(limit));
   }
 
-  function fullyFundedAndDrawndown(uint256 limit) public returns (CheckpointedCallableCreditLine) {
-    callableCreditLine = defaultWithLimit(limit);
-    CheckpointedCallableCreditLine cpcl = callableCreditLine.checkpoint();
-    cpcl.deposit(limit);
-    cpcl.drawdown(limit);
-    return cpcl;
+  function setupFullyFundedAndDrawndown(uint128 limit) public {
+    setupDefaultWithLimit(limit);
+    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    cpcl.deposit(uint256(limit));
+    cpcl.drawdown(uint256(limit));
   }
 
   // Interest calculations and accounting after repayment

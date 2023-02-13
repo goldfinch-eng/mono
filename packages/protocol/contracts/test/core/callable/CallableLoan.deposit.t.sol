@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
-
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
+import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/erc20/extensions/draft-IERC20PermitUpgradeable.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
@@ -94,7 +94,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
     // Token info is correct
     assertEq(poolTokens.ownerOf(poolToken), address(DEPOSITOR));
-    PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolToken);
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolToken);
     assertEq(tokenInfo.principalAmount, usdcVal(100));
     assertEq(tokenInfo.tranche, 1);
     assertZero(tokenInfo.principalRedeemed);
@@ -187,7 +187,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     ITranchedPool.TrancheInfo memory uncalledCapital = callableLoan.getTranche(1);
     assertEq(uncalledCapital.principalDeposited, usdcVal(100));
 
-    PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
     assertEq(tokenInfo.principalAmount, usdcVal(100));
     assertEq(tokenInfo.tranche, 1);
     assertZero(tokenInfo.principalRedeemed);
@@ -202,7 +202,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
     depositAmount = bound(depositAmount, limit, limit * 10);
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     setMaxLimit(callableLoan, limit);
 
     deposit(callableLoan, 1, depositAmount, DEPOSITOR);
@@ -215,7 +215,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
     depositAmount = bound(depositAmount, usdcVal(1), limit);
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     setMaxLimit(callableLoan, limit);
 
     deposit(callableLoan, 1, depositAmount, GF_OWNER);

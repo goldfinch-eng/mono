@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   function testNotSetIfInterestPaymentLtInterestOwed(uint256 interestPayment) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.nextDueTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
@@ -21,7 +21,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testSetToLastDueTimeIfFullInterestIsPaid(uint256 periodsToAdvance) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     periodsToAdvance = bound(periodsToAdvance, 1, 11);
     for (uint256 i = 0; i < periodsToAdvance; ++i) {
@@ -33,7 +33,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testNotSetWhenIfInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.termEndTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
@@ -44,7 +44,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testSetIfInterestAndPrincipalPaidPastTermEndTime(uint256 secondsPastTermEndTime) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, periodInSeconds(callableLoan) * 50);
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
@@ -54,7 +54,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testNotSetIfSeparateInterestPaymentLtInterestOwed(uint256 interestPayment) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.nextDueTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
@@ -68,7 +68,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     uint256 interestPayment,
     uint256 periodsToAdvance
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     periodsToAdvance = bound(periodsToAdvance, 1, 11);
     for (uint256 i = 0; i < periodsToAdvance; ++i) {
@@ -83,7 +83,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     uint256 interestPayment,
     uint256 principalPayment
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.termEndTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
@@ -97,7 +97,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   function testIfSeparateInterestAndPrincipalPaidPastTermEndTime(
     uint256 secondsPastTermEndTime
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
     secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, periodInSeconds(callableLoan) * 50);
@@ -108,7 +108,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testSetToBlockTimeOnFirstDrawdown() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
@@ -120,7 +120,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     // Drawdown some amount less than the total available
     drawdownAmount = bound(drawdownAmount, usdcVal(1), usdcVal(499));
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
     uint256 expectedLastFullPaymentTime = cl.lastFullPaymentTime();
@@ -132,7 +132,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   }
 
   function testSetToBlockTimeOnSecondDrawdownIfBalanceEq0(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
     pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());

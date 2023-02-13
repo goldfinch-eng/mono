@@ -1,56 +1,47 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {TranchingLogic} from "../../../protocol/core/TranchingLogic.sol";
-import {Accountant} from "../../../protocol/core/Accountant.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
-import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
-import {Fidu} from "../../../protocol/core/Fidu.sol";
-import {LeverageRatioStrategy} from "../../../protocol/core/LeverageRatioStrategy.sol";
-import {FixedLeverageRatioStrategy} from "../../../protocol/core/FixedLeverageRatioStrategy.sol";
-import {WithdrawalRequestToken} from "../../../protocol/core/WithdrawalRequestToken.sol";
-import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
-import {BackerRewards} from "../../../rewards/BackerRewards.sol";
-import {Go} from "../../../protocol/core/Go.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {IGoldfinchFactory} from "../../../interfaces/IGoldfinchFactory.sol";
+import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
+import {IGo} from "../../../interfaces/IGo.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 // solhint-disable-next-line max-line-length
-import {CallableLoanImplementationRepository} from "../../../protocol/core/callable/CallableLoanImplementationRepository.sol";
-import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
-import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
+import {IImplementationRepository} from "../../../interfaces/IImplementationRepository.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {IMonthlyScheduleRepo} from "../../../interfaces/IMonthlyScheduleRepo.sol";
+import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWithDec.sol";
 
 import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
-import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
-import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
+import {ITestUSDC} from "../../ITestUSDC.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanBaseTest is BaseTest {
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
   address public constant DEPOSITOR = 0x89b8CbAeBd6C623a69a4DEBe9EE03131b5F4Ff96; // random address
 
+  bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+
   uint256 internal constant UNIT_SHARE_PRICE = 1e18;
   uint256 internal constant DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS = 7 days;
   uint256 internal constant HALF_CENT = 1e6 / 200;
 
-  GoldfinchConfig internal gfConfig;
-  GoldfinchFactory internal gfFactory;
-  TestERC20 internal usdc;
-  Fidu internal fidu;
-  LeverageRatioStrategy internal strat;
-  WithdrawalRequestToken internal requestTokens;
+  IGoldfinchConfig internal gfConfig;
+  IGoldfinchFactory internal gfFactory;
+  ITestUSDC internal usdc;
   ITestUniqueIdentity0612 internal uid;
   CallableLoanBuilder internal callableLoanBuilder;
-  PoolTokens internal poolTokens;
-  Go internal go;
-  SeniorPool internal seniorPool;
+  IPoolTokens internal poolTokens;
+  IGo internal go;
 
   function setUp() public virtual override {
     super.setUp();
@@ -58,39 +49,13 @@ contract CallableLoanBaseTest is BaseTest {
     _startImpersonation(GF_OWNER);
 
     // GoldfinchConfig setup
-    gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
+    gfConfig = IGoldfinchConfig(address(protocol.gfConfig()));
 
     // Setup gfFactory
-    gfFactory = GoldfinchFactory(address(protocol.gfFactory()));
+    gfFactory = IGoldfinchFactory(address(protocol.gfFactory()));
 
     // USDC setup
-    usdc = TestERC20(address(protocol.usdc()));
-
-    // FIDU setup
-    fidu = Fidu(address(protocol.fidu()));
-
-    // SeniorPool setup
-    seniorPool = new SeniorPool();
-    seniorPool.initialize(GF_OWNER, gfConfig);
-    seniorPool.initializeEpochs();
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(seniorPool));
-    fuzzHelper.exclude(address(seniorPool));
-
-    fidu.grantRole(TestConstants.MINTER_ROLE, address(seniorPool));
-    FixedLeverageRatioStrategy _strat = new FixedLeverageRatioStrategy();
-    _strat.initialize(GF_OWNER, gfConfig);
-    strat = _strat;
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
-    fuzzHelper.exclude(address(strat));
-
-    // WithdrawalRequestToken setup
-    requestTokens = new WithdrawalRequestToken();
-    requestTokens.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
-      address(requestTokens)
-    );
-    fuzzHelper.exclude(address(requestTokens));
+    usdc = ITestUSDC(address(protocol.usdc()));
 
     // UniqueIdentity setup
     uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
@@ -106,27 +71,39 @@ contract CallableLoanBaseTest is BaseTest {
     fuzzHelper.exclude(address(uid));
 
     // PoolTokens setup
-    poolTokens = new PoolTokens();
-    poolTokens.__initialize__(GF_OWNER, gfConfig);
+    poolTokens = IPoolTokens(deployCode("PoolTokens.sol"));
+    (bool poolTokenInitializeSuccess, ) = address(poolTokens).call(
+      abi.encodeWithSignature("__initialize__(address,address)", GF_OWNER, address(gfConfig))
+    );
+    require(poolTokenInitializeSuccess, "PoolTokens failed to initialize");
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
     fuzzHelper.exclude(address(poolTokens));
 
-    // BackerRewards setup
-    BackerRewards backerRewards = new BackerRewards();
-    backerRewards.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
-    fuzzHelper.exclude(address(backerRewards));
-
     // Go setup
-    go = new Go();
-    go.initialize(GF_OWNER, gfConfig, address(uid));
+    go = IGo(deployCode("Go.sol"));
+    (bool goInitializeSuccess, ) = address(go).call(
+      abi.encodeWithSignature(
+        "initialize(address,address,address)",
+        GF_OWNER,
+        address(gfConfig),
+        address(uid)
+      )
+    );
+
+    require(goInitializeSuccess, "Go failed to initialize");
+
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
     fuzzHelper.exclude(address(go));
 
     // CallableLoan setup
     CallableLoan callableLoanImpl = new CallableLoan();
-    CallableLoanImplementationRepository callableLoanRepo = new CallableLoanImplementationRepository();
-    callableLoanRepo.initialize(GF_OWNER, address(callableLoanImpl));
+    IImplementationRepository callableLoanRepo = IImplementationRepository(
+      deployCode("CallableLoanImplementationRepository.sol")
+    );
+    (bool callableLoanRepoInitializeSuccess, ) = address(callableLoanRepo).call(
+      abi.encodeWithSignature("initialize(address,address)", GF_OWNER, address(callableLoanImpl))
+    );
+    require(callableLoanRepoInitializeSuccess, "CallableLoanRepo failed to initialize");
     gfConfig.setAddress(
       uint256(ConfigOptions.Addresses.CallableLoanImplementationRepository),
       address(callableLoanRepo)
@@ -134,16 +111,10 @@ contract CallableLoanBaseTest is BaseTest {
     fuzzHelper.exclude(address(callableLoanImpl));
     fuzzHelper.exclude(address(callableLoanRepo));
 
-    // CreditLine setup
-    CreditLine creditLineImpl = new CreditLine();
-    gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.CreditLineImplementation),
-      address(creditLineImpl)
-    );
-    fuzzHelper.exclude(address(creditLineImpl));
-
     // MonthlyScheduleRepository setup
-    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    IMonthlyScheduleRepo monthlyScheduleRepo = IMonthlyScheduleRepo(
+      deployCode("MonthlyScheduleRepo.sol")
+    );
     gfConfig.setAddress(
       uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
       address(monthlyScheduleRepo)
@@ -154,7 +125,14 @@ contract CallableLoanBaseTest is BaseTest {
     callableLoanBuilder = new CallableLoanBuilder(gfFactory, monthlyScheduleRepo);
     fuzzHelper.exclude(address(callableLoanBuilder));
     // Allow the builder to create pools
-    gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(callableLoanBuilder));
+    (bool grantRoleSuccess, ) = address(gfFactory).call(
+      abi.encodeWithSignature(
+        "grantRole(bytes32,address)",
+        OWNER_ROLE,
+        address(callableLoanBuilder)
+      )
+    );
+    require(grantRoleSuccess, "Failed to grant role to callableLoanBuilder");
 
     // Other config numbers
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 0.1%
@@ -162,15 +140,12 @@ contract CallableLoanBaseTest is BaseTest {
       uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds),
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
-    gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), 4000000000000000000); // 4x leverage
 
     // Other stuff
     addToGoList(GF_OWNER);
 
     fuzzHelper.exclude(BORROWER);
     fuzzHelper.exclude(DEPOSITOR);
-    fuzzHelper.exclude(address(TranchingLogic));
-    fuzzHelper.exclude(address(Accountant));
     fuzzHelper.exclude(address(this));
 
     // Fund the depositor
@@ -182,12 +157,12 @@ contract CallableLoanBaseTest is BaseTest {
   function defaultCallableLoan()
     internal
     impersonating(GF_OWNER)
-    returns (CallableLoan, CreditLine)
+    returns (CallableLoan, ICreditLine)
   {
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanBuilder.build(BORROWER);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.build(BORROWER);
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
-    (ISchedule schedule, ) = cl.schedule();
+    ISchedule schedule = callableLoan.schedule();
     fuzzHelper.exclude(address(schedule));
     return (callableLoan, cl);
   }
@@ -195,8 +170,8 @@ contract CallableLoanBaseTest is BaseTest {
   function callableLoanWithLateFees(
     uint256 lateFeeApr,
     uint256 lateFeeGracePeriodInDays
-  ) public impersonating(GF_OWNER) returns (CallableLoan, CreditLine) {
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanBuilder
+  ) public impersonating(GF_OWNER) returns (CallableLoan, ICreditLine) {
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder
       .withLateFeeApr(lateFeeApr)
       .build(BORROWER);
     fuzzHelper.exclude(address(callableLoan));

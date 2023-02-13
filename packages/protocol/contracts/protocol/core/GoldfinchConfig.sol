@@ -17,7 +17,7 @@ import {ConfigOptions} from "./ConfigOptions.sol";
  * @author Goldfinch
  */
 
-contract GoldfinchConfig is BaseUpgradeablePausable {
+contract GoldfinchConfig is BaseUpgradeablePausable, IGoldfinchConfig {
   bytes32 public constant GO_LISTER_ROLE = keccak256("GO_LISTER_ROLE");
 
   mapping(uint256 => address) public addresses;
@@ -42,14 +42,16 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     _setRoleAdmin(GO_LISTER_ROLE, OWNER_ROLE);
   }
 
-  function setAddress(uint256 addressIndex, address newAddress) public onlyAdmin {
+  /// @inheritdoc IGoldfinchConfig
+  function setAddress(uint256 addressIndex, address newAddress) public override onlyAdmin {
     require(addresses[addressIndex] == address(0), "Address has already been initialized");
 
     emit AddressUpdated(msg.sender, addressIndex, addresses[addressIndex], newAddress);
     addresses[addressIndex] = newAddress;
   }
 
-  function setNumber(uint256 index, uint256 newNumber) public onlyAdmin {
+  /// @inheritdoc IGoldfinchConfig
+  function setNumber(uint256 index, uint256 newNumber) public override onlyAdmin {
     emit NumberUpdated(msg.sender, index, numbers[index], newNumber);
     numbers[index] = newNumber;
   }
@@ -109,53 +111,38 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     valuesInitialized = true;
   }
 
-  /**
-   * @dev Adds a user to go-list
-   * @param _member address to add to go-list
-   */
-  function addToGoList(address _member) public onlyGoListerRole {
+  /// @inheritdoc IGoldfinchConfig
+  function addToGoList(address _member) public override onlyGoListerRole {
     goList[_member] = true;
     emit GoListed(_member);
   }
 
-  /**
-   * @dev removes a user from go-list
-   * @param _member address to remove from go-list
-   */
-  function removeFromGoList(address _member) public onlyGoListerRole {
+  /// @inheritdoc IGoldfinchConfig
+  function removeFromGoList(address _member) public override onlyGoListerRole {
     goList[_member] = false;
     emit NoListed(_member);
   }
 
-  /**
-   * @dev adds many users to go-list at once
-   * @param _members addresses to ad to go-list
-   */
-  function bulkAddToGoList(address[] calldata _members) external onlyGoListerRole {
+  /// @inheritdoc IGoldfinchConfig
+  function bulkAddToGoList(address[] calldata _members) external override onlyGoListerRole {
     for (uint256 i = 0; i < _members.length; i++) {
       addToGoList(_members[i]);
     }
   }
 
-  /**
-   * @dev removes many users from go-list at once
-   * @param _members addresses to remove from go-list
-   */
-  function bulkRemoveFromGoList(address[] calldata _members) external onlyGoListerRole {
+  /// @inheritdoc IGoldfinchConfig
+  function bulkRemoveFromGoList(address[] calldata _members) external override onlyGoListerRole {
     for (uint256 i = 0; i < _members.length; i++) {
       removeFromGoList(_members[i]);
     }
   }
 
-  /*
-    Using custom getters in case we want to change underlying implementation later,
-    or add checks or validations later on.
-  */
-  function getAddress(uint256 index) public view returns (address) {
+  /// @inheritdoc IGoldfinchConfig
+  function getAddress(uint256 index) public view override returns (address) {
     return addresses[index];
   }
 
-  function getNumber(uint256 index) public view returns (uint256) {
+  function getNumber(uint256 index) public view override returns (uint256) {
     return numbers[index];
   }
 

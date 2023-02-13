@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IImplementationRepository} from "../../../interfaces/IImplementationRepository.sol";
 
 /// @title User Controlled Upgrades (UCU) Proxy Repository
 /// A repository maintaing a collection of "lineages" of implementation contracts
@@ -12,25 +13,25 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 /// Lineages are a sequence of implementations each lineage can be thought of as
 /// a "major" revision of implementations. Implementations between lineages are
 /// considered incompatible.
-contract ImplementationRepository is BaseUpgradeablePausable {
+contract ImplementationRepository is BaseUpgradeablePausable, IImplementationRepository {
   address internal constant INVALID_IMPL = address(0);
   uint256 internal constant INVALID_LINEAGE_ID = 0;
 
   /// @notice returns data that will be delegatedCalled when the given implementation
   ///           is upgraded to
-  mapping(address => bytes) public upgradeDataFor;
+  mapping(address => bytes) public override upgradeDataFor;
 
   /// @dev mapping from one implementation to the succeeding implementation
   mapping(address => address) internal _nextImplementationOf;
 
   /// @notice Returns the id of the lineage a given implementation belongs to
-  mapping(address => uint256) public lineageIdOf;
+  mapping(address => uint256) public override lineageIdOf;
 
   /// @dev internal because we expose this through the `currentImplementation(uint256)` api
   mapping(uint256 => address) internal _currentOfLineage;
 
   /// @notice Returns the id of the most recently created lineage
-  uint256 public currentLineageId;
+  uint256 public override currentLineageId;
 
   // //////// External ////////////////////////////////////////////////////////////
 
@@ -52,7 +53,7 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   function setUpgradeDataFor(
     address implementation,
     bytes calldata data
-  ) external onlyAdmin whenNotPaused {
+  ) external override onlyAdmin whenNotPaused {
     _setUpgradeDataFor(implementation, data);
   }
 
@@ -64,7 +65,7 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @return newly created lineage's id
   function createLineage(
     address implementation
-  ) external onlyAdmin whenNotPaused returns (uint256) {
+  ) external override onlyAdmin whenNotPaused returns (uint256) {
     return _createLineage(implementation);
   }
 
@@ -73,7 +74,7 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @dev reverts if the contract is paused
   /// @dev reverts if `implementation` is not a contract
   /// @param implementation implementation to append
-  function append(address implementation) external onlyAdmin whenNotPaused {
+  function append(address implementation) external override onlyAdmin whenNotPaused {
     _append(implementation, currentLineageId);
   }
 
@@ -83,7 +84,10 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @dev reverts if `implementation` is not a contract
   /// @param implementation implementation to append
   /// @param lineageId id of lineage to append to
-  function append(address implementation, uint256 lineageId) external onlyAdmin whenNotPaused {
+  function append(
+    address implementation,
+    uint256 lineageId
+  ) external override onlyAdmin whenNotPaused {
     _append(implementation, lineageId);
   }
 
@@ -95,7 +99,7 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   ///       version is from events.
   /// @param toRemove Implementation to remove
   /// @param previous Implementation that currently has `toRemove` as its successor
-  function remove(address toRemove, address previous) external onlyAdmin whenNotPaused {
+  function remove(address toRemove, address previous) external override onlyAdmin whenNotPaused {
     _remove(toRemove, previous);
   }
 
@@ -104,14 +108,14 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @notice Returns `true` if an implementation has a next implementation set
   /// @param implementation implementation to check
   /// @return The implementation following the given implementation
-  function hasNext(address implementation) external view returns (bool) {
+  function hasNext(address implementation) external view override returns (bool) {
     return _nextImplementationOf[implementation] != INVALID_IMPL;
   }
 
   /// @notice Returns `true` if an implementation has already been added
   /// @param implementation Implementation to check existence of
   /// @return `true` if the implementation has already been added
-  function has(address implementation) external view returns (bool) {
+  function has(address implementation) external view override returns (bool) {
     return _has(implementation);
   }
 
@@ -122,22 +126,24 @@ contract ImplementationRepository is BaseUpgradeablePausable {
   /// @return Next Implementation
   function nextImplementationOf(
     address implementation
-  ) external view whenNotPaused returns (address) {
+  ) external view override whenNotPaused returns (address) {
     return _nextImplementationOf[implementation];
   }
 
   /// @notice Returns `true` if a given lineageId exists
-  function lineageExists(uint256 lineageId) external view returns (bool) {
+  function lineageExists(uint256 lineageId) external view override returns (bool) {
     return _lineageExists(lineageId);
   }
 
   /// @notice Return the current implementation of a lineage with the given `lineageId`
-  function currentImplementation(uint256 lineageId) external view whenNotPaused returns (address) {
+  function currentImplementation(
+    uint256 lineageId
+  ) external view override whenNotPaused returns (address) {
     return _currentImplementation(lineageId);
   }
 
   /// @notice return current implementaton of the current lineage
-  function currentImplementation() external view whenNotPaused returns (address) {
+  function currentImplementation() external view override whenNotPaused returns (address) {
     return _currentImplementation(currentLineageId);
   }
 

@@ -78,6 +78,9 @@
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []
         },
+        "**/BaseUpgradeablePausable08x.sol:BaseUpgradeablePausable": {
+          "__BaseUpgradeablePausable__init": []
+        },
         "**/Fidu.sol:Fidu": {
           "__initialize__": [],
           "mintTo": [],
@@ -100,19 +103,20 @@
         },
         "**/CallableLoan.sol:CallableLoan": {
           "setAllowedUIDTypes": ["onlyLocker"],
-          "call": [],
+          "submitCall": [],
           "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
           "lockPool": ["whenNotPaused", "onlyLocker"],
           "setFundableAt": ["onlyLocker"],
-          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
           "withdraw": ["whenNotPaused"],
           "withdrawMax": ["whenNotPaused"],
           "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
-          "pay": ["whenNotPaused"]
+          "pay": ["whenNotPaused"],
+          "initializeNextSlice": [],
+          "setMaxLimit": []
         },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],
@@ -131,8 +135,13 @@
         },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
-          "pause": [],
-          "unpause": []
+          "pause": ["onlyPauserRole"],
+          "unpause": ["onlyPauserRole"]
+        },
+        "**/PauserPausable08x.sol:PauserPausable": {
+          "__PauserPausable__init": [],
+          "pause": ["onlyPauserRole"],
+          "unpause": ["onlyPauserRole"]
         },
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],

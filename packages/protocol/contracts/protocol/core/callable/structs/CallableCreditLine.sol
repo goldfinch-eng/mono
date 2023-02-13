@@ -19,6 +19,9 @@ struct CallableCreditLine {
   CheckpointedCallableCreditLine _cpcl;
 }
 
+using CallableCreditLineLogic for CallableCreditLine global;
+using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine global;
+
 library CallableCreditLineLogic {
   using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
   using CallableCreditLineLogic for CallableCreditLine;
@@ -44,6 +47,16 @@ library CallableCreditLineLogic {
   ) internal returns (CheckpointedCallableCreditLine storage) {
     cl._cpcl.checkpoint();
     return cl._cpcl;
+  }
+
+  function schedule(CallableCreditLine storage cl) internal view returns (ISchedule) {
+    return cl.paymentSchedule().schedule;
+  }
+
+  function paymentSchedule(
+    CallableCreditLine storage cl
+  ) internal view returns (PaymentSchedule storage) {
+    return cl._cpcl._paymentSchedule;
   }
 }
 
@@ -112,6 +125,9 @@ library CheckpointedCallableCreditLineLogic {
     uint256 principalAmount,
     uint256 interestAmount
   ) internal {
+    console.log("pay 1");
+    console.log(cl._paymentSchedule.currentPrincipalPeriod());
+    console.log("pay2");
     cl._bufferedPayments = cl._waterfall.payUntil(
       principalAmount,
       interestAmount,
@@ -137,12 +153,18 @@ library CheckpointedCallableCreditLineLogic {
     cl._waterfall.drawdown(amount);
   }
 
-  function call(CheckpointedCallableCreditLine storage cl, uint256 amount) internal {
+  function submitCall(CheckpointedCallableCreditLine storage cl, uint256 amount) internal {
+    console.log("call 1");
     uint256 activeCallTranche = cl._paymentSchedule.currentPrincipalPeriod();
+    console.log("call 2");
     require(
       activeCallTranche < cl.uncalledCapitalIndex(),
       "Cannot call during the last call request period"
     );
+    console.log("call 3");
+    console.log("cl.uncalledCapitalIndex(): ", cl.uncalledCapitalIndex());
+    console.log("activeCallTranche: ", activeCallTranche);
+
     cl._waterfall.move(amount, cl.uncalledCapitalIndex(), activeCallTranche);
   }
 
@@ -276,11 +298,11 @@ library CheckpointedCallableCreditLineLogic {
   function principalOwedAt(
     CheckpointedCallableCreditLine storage cl,
     uint timestamp
-  ) internal view returns (uint principalOwed) {
+  ) internal view returns (uint returnedPrincipalOwed) {
     require(timestamp > block.timestamp, "Cannot query past principal owed");
     uint endTrancheIndex = cl._paymentSchedule.principalPeriodAt(timestamp);
     for (uint i = cl.earliestPrincipalOutstandingTrancheIndex(); i < endTrancheIndex; i++) {
-      principalOwed += cl._waterfall.getTranche(i).principalOutstanding();
+      returnedPrincipalOwed += cl._waterfall.getTranche(i).principalOutstanding();
     }
   }
 
@@ -409,7 +431,7 @@ library CheckpointedCallableCreditLineLogic {
   function totalInterestAccruedAt(
     CheckpointedCallableCreditLine storage cl,
     uint256 end
-  ) internal view returns (uint256 totalInterestAccrued) {
+  ) internal view returns (uint256 totalInterestAccruedReturned) {
     require(end >= cl._checkpointedAsOf, "IT");
     if (!cl._paymentSchedule.isActive()) {
       return 0;
@@ -422,7 +444,7 @@ library CheckpointedCallableCreditLineLogic {
     );
 
     // Calculate interest accrued before the payment buffer is applied.
-    totalInterestAccrued = InterestUtil.calculateInterest(
+    totalInterestAccruedReturned = InterestUtil.calculateInterest(
       cl._checkpointedAsOf,
       MathUpgradeable.min(applyBufferAt, end),
       lateFeesStartAt,
@@ -432,7 +454,7 @@ library CheckpointedCallableCreditLineLogic {
     );
     if (cl._bufferedPayments > 0 && applyBufferAt < end) {
       // Calculate interest accrued after the payment buffer is applied.
-      totalInterestAccrued += InterestUtil.calculateInterest(
+      totalInterestAccruedReturned += InterestUtil.calculateInterest(
         MathUpgradeable.min(applyBufferAt, end),
         end,
         lateFeesStartAt,

@@ -13,75 +13,79 @@ import "../../cake/Routing.sol" as Routing;
 using TestRouting for Context;
 
 library TestRoutingKeys {
-  bytes4 internal constant TestContract = bytes4(keccak256(abi.encode("TestContract")));
-  bytes4 internal constant TestContractDependency =
+  bytes4 internal constant TestContractKey = bytes4(keccak256(abi.encode("TestContract")));
+  bytes4 internal constant TestContractDependencyKey =
     bytes4(keccak256(abi.encode("TestContractDependency")));
-  bytes4 internal constant TestContractDependency2 =
+  bytes4 internal constant TestContractDependency2Key =
     bytes4(keccak256(abi.encode("TestContractDependency2")));
-  bytes4 internal constant TestContractDependency3 =
+  bytes4 internal constant TestContractDependency3Key =
     bytes4(keccak256(abi.encode("TestContractDependency3")));
 }
 
 library TestRouting {
   function testContract(Context context) internal view returns (TestContract) {
-    return TestContract(context.router().contracts(TestRoutingKeys.TestContract));
+    return TestContract(context.router().contracts(TestRoutingKeys.TestContractKey));
   }
 
   function testContractDependency(Context context) internal view returns (TestContractDependency) {
     return
-      TestContractDependency(context.router().contracts(TestRoutingKeys.TestContractDependency));
+      TestContractDependency(context.router().contracts(TestRoutingKeys.TestContractDependencyKey));
   }
 
   function testContractDependency2(
     Context context
   ) internal view returns (TestContractDependency2) {
     return
-      TestContractDependency2(context.router().contracts(TestRoutingKeys.TestContractDependency2));
+      TestContractDependency2(
+        context.router().contracts(TestRoutingKeys.TestContractDependency2Key)
+      );
   }
 
   function testContractDependency3(
     Context context
   ) internal view returns (TestContractDependency3) {
     return
-      TestContractDependency3(context.router().contracts(TestRoutingKeys.TestContractDependency3));
+      TestContractDependency3(
+        context.router().contracts(TestRoutingKeys.TestContractDependency3Key)
+      );
   }
 }
 
 contract TestContractDependency3 is Base {
-  constructor(Context _context) public Base(_context) {}
+  constructor(Context _context) Base(_context) {}
 
-  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContractDependency2) {}
+  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContractDependency2Key) {}
 }
 
 contract TestContractDependency2 is Base {
-  constructor(Context _context) public Base(_context) {}
+  constructor(Context _context) Base(_context) {}
 
-  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContractDependency) {}
+  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContractDependencyKey) {}
 
-  function callChainLength1() public onlyOperator(TestRoutingKeys.TestContractDependency) {
+  function callChainLength1() public onlyOperator(TestRoutingKeys.TestContractDependencyKey) {
     TestContractDependency3 dep = context.testContractDependency3();
     dep.callChainLength0();
   }
 }
 
 contract TestContractDependency is Base {
-  constructor(Context _context) public Base(_context) {}
+  constructor(Context _context) Base(_context) {}
 
-  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContract) {}
+  function callChainLength0() public onlyOperator(TestRoutingKeys.TestContractKey) {}
 
-  function callChainLength1() public onlyOperator(TestRoutingKeys.TestContract) {
+  function callChainLength1() public onlyOperator(TestRoutingKeys.TestContractKey) {
     TestContractDependency2 dep = context.testContractDependency2();
     dep.callChainLength0();
   }
 
-  function callChainLength2() public onlyOperator(TestRoutingKeys.TestContract) {
+  function callChainLength2() public onlyOperator(TestRoutingKeys.TestContractKey) {
     TestContractDependency2 dep = context.testContractDependency2();
     dep.callChainLength1();
   }
 }
 
 contract TestContract is Base {
-  constructor(Context _context) public Base(_context) {}
+  constructor(Context _context) Base(_context) {}
 
   function contextlessFunction() public {}
 
@@ -139,16 +143,22 @@ contract CakeTest is Test {
     context = new Context(router);
 
     testContract = new TestContract(context);
-    router.setContract(TestRoutingKeys.TestContract, address(testContract));
+    router.setContract(TestRoutingKeys.TestContractKey, address(testContract));
 
     testContractDependency = new TestContractDependency(context);
-    router.setContract(TestRoutingKeys.TestContractDependency, address(testContractDependency));
+    router.setContract(TestRoutingKeys.TestContractDependencyKey, address(testContractDependency));
 
     testContractDependency2 = new TestContractDependency2(context);
-    router.setContract(TestRoutingKeys.TestContractDependency2, address(testContractDependency2));
+    router.setContract(
+      TestRoutingKeys.TestContractDependency2Key,
+      address(testContractDependency2)
+    );
 
     testContractDependency3 = new TestContractDependency3(context);
-    router.setContract(TestRoutingKeys.TestContractDependency3, address(testContractDependency3));
+    router.setContract(
+      TestRoutingKeys.TestContractDependency3Key,
+      address(testContractDependency3)
+    );
   }
 
   function testContextlessFunction() public {

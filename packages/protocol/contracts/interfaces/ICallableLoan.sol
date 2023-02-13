@@ -2,19 +2,10 @@ pragma solidity >=0.6.12;
 
 // import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
+import {ITranchedPool} from "./ITranchedPool.sol";
 
-interface ICallableLoan {
-  // All call request periods are initialized into a sequential array during
-  // contract initialization.
-  struct CallRequestPeriod {
-    uint256 callRequestedTotal;
-    uint256 callRequestRepayments;
-    // startDatetime and index are probably derivable from CallRequestPeriod
-    // index in most calling contexts.
-    uint256 startDatetime;
-    uint256 index;
-  }
-
+interface ICallableLoan is ITranchedPool {
+  // is ILoan {
   // TODO: Update with final `initialize` interface once CallableLoan removes ITranchedPool conformance
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
   ///   contract creation to avoid initialization front-running
@@ -37,12 +28,31 @@ interface ICallableLoan {
   //   uint256[] calldata _allowedUIDTypes
   // ) external;
 
+  // function initialize(
+  //   address _config,
+  //   address _borrower,
+  //   // TODO: Remove once ITranchedPool conformance is removed
+  //   uint256 _juniorFeePercent,
+  //   uint256 _limit,
+  //   uint256 _interestApr,
+  //   ISchedule _schedule,
+  //   uint256 _lateFeeApr,
+  //   uint256 _fundableAt,
+  //   uint256[] calldata _allowedUIDTypes
+  // ) public;
+
   /// @notice Submits a call request for the specified pool token and amount
   ///         Mints a new, called pool token of the called amount.
   ///         Splits off any uncalled amount as a new uncalled pool token.
   /// @param amountToCall The amount of the pool token that should be called.
   /// @param poolTokenId The id of the pool token that should be called.
-  function call(uint256 amountToCall, uint256 poolTokenId) external;
+  function submitCall(uint256 amountToCall, uint256 poolTokenId) external;
+
+  function schedule() external view returns (ISchedule);
+
+  function startTime() external view returns (uint256);
+
+  function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
 
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,
@@ -50,5 +60,6 @@ interface ICallableLoan {
     uint256 indexed callRequestedTokenId,
     uint256 callRequestedAmount
   );
+  event CallableLoanCreated(ICallableLoan loanAddress, address borrower);
   event PoolLocked(address indexed pool, uint256 lockedUntil);
 }

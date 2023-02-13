@@ -4,7 +4,7 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {Vm} from "forge-std/Vm.sol";
-import {TestERC20} from "../TestERC20.sol";
+import {IERC20WithName} from "../../interfaces/IERC20WithName.sol";
 
 /// @notice Library for generating signatures for EIP712 depositWithPermit
 library DepositWithPermitHelpers {
@@ -18,7 +18,7 @@ library DepositWithPermitHelpers {
       bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
     );
 
-  function domainSeparator(TestERC20 token) internal view returns (bytes32) {
+  function domainSeparator(IERC20WithName token) internal view returns (bytes32) {
     uint256 chainId;
     // solhint-disable no-inline-assembly
     assembly {
@@ -37,7 +37,7 @@ library DepositWithPermitHelpers {
   }
 
   function approvalDigest(
-    TestERC20 token,
+    IERC20WithName token,
     address owner,
     address spender,
     uint256 value,

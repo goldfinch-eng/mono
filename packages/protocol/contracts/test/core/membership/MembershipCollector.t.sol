@@ -236,10 +236,10 @@ contract MembershipCollectorTest is BaseTest {
     public
     impersonating(reserveSplitterAddress)
   {
-    uint256 firstRewardEpoch = startingEpoch + 5;
+    uint256 newFirstRewardEpoch = startingEpoch + 5;
 
     // Custom collector so we can set firstRewardEpoch
-    membershipCollector = new MembershipCollector(cake.context(), firstRewardEpoch);
+    membershipCollector = new MembershipCollector(cake.context(), newFirstRewardEpoch);
 
     uint256 usdcAmount = 110_000e6;
     uint256 fiduAmount = 100_000e18;
@@ -251,7 +251,7 @@ contract MembershipCollectorTest is BaseTest {
 
     // Before the first reward epoch, so reward should go to first reward epoch
     assertEq(membershipCollector.rewardsForEpoch(Epochs.current()), 0);
-    assertEq(membershipCollector.rewardsForEpoch(firstRewardEpoch), fiduAmount);
+    assertEq(membershipCollector.rewardsForEpoch(newFirstRewardEpoch), fiduAmount);
 
     // +1 epoch
     skip(Epochs.EPOCH_SECONDS);
@@ -261,7 +261,7 @@ contract MembershipCollectorTest is BaseTest {
 
     // Still before the first reward epoch, so reward should go to first reward epoch
     assertEq(membershipCollector.rewardsForEpoch(Epochs.current()), 0);
-    assertEq(membershipCollector.rewardsForEpoch(firstRewardEpoch), fiduAmount * 2);
+    assertEq(membershipCollector.rewardsForEpoch(newFirstRewardEpoch), fiduAmount * 2);
 
     // +7 epoch, 2 past firstRewardEpoch, so amount will be split between first reward epoch
     // and the subsequent epoch
@@ -271,7 +271,7 @@ contract MembershipCollectorTest is BaseTest {
     membershipCollector.onReceive(usdcAmount);
 
     assertEq(
-      membershipCollector.rewardsForEpoch(firstRewardEpoch),
+      membershipCollector.rewardsForEpoch(newFirstRewardEpoch),
       fiduAmount * 2 + fiduAmount / 2
     );
     assertEq(membershipCollector.rewardsForEpoch(Epochs.current() - 1), fiduAmount / 2);

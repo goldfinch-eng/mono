@@ -1,33 +1,40 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {UcuProxy} from "../../../protocol/core/proxy/UcuProxy.sol";
+import {IUcuProxy} from "../../../interfaces/IUcuProxy.sol";
 // solhint-disable-next-line max-line-length
-import {CallableLoanImplementationRepository as Repo} from "../../../protocol/core/callable/CallableLoanImplementationRepository.sol";
+import {IVersionedImplementationRepository as IRepo} from "../../../interfaces/IVersionedImplementationRepository.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract CallableLoanImplementationRepositoryTest is Test {
   address internal constant OWNER = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
 
   CallableLoan internal callableLoanImpl = new CallableLoan();
-  Repo internal repo = new Repo();
+  IRepo internal repo = IRepo(deployCode("CallableLoanImplementationRepositoryTest.sol"));
 
   function testCanInitializeWithCurrentImpl() public {
-    repo.initialize(OWNER, address(callableLoanImpl));
+    (bool success, ) = address(repo).call(
+      abi.encodeWithSignature("initialize(address,address)", OWNER, address(callableLoanImpl))
+    );
+    require(success, "initialize failed");
     assertEq(repo.currentImplementation(), address(callableLoanImpl));
     assertEq(repo.getByVersion(callableLoanImpl.getVersion()), address(callableLoanImpl));
     assertTrue(repo.hasVersion(callableLoanImpl.getVersion()));
   }
 
   function testProxyInitializesCorrectly() public {
-    repo.initialize(OWNER, address(callableLoanImpl));
-
+    (bool success, ) = address(repo).call(
+      abi.encodeWithSignature("initialize(address,address)", OWNER, address(callableLoanImpl))
+    );
+    require(success, "initialize failed");
     vm.expectEmit(true, false, false, false);
     emit Upgraded(address(callableLoanImpl));
-    UcuProxy proxy = new UcuProxy(repo, OWNER, repo.currentLineageId());
+    IUcuProxy proxy = IUcuProxy(
+      deployCode("UcuProxy.sol", abi.encode(repo, OWNER, repo.currentLineageId()))
+    );
     CallableLoan proxyAsTp = CallableLoan(address(proxy));
     assertVersionEq(proxyAsTp.getVersion(), callableLoanImpl.getVersion());
   }

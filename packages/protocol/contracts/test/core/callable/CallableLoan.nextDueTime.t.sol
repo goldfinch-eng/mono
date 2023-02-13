@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
-
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   function testNextDueTimeIsZeroBeforeDrawdown() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertZero(cl.nextDueTime());
     deposit(callableLoan, 1, usdcVal(4), DEPOSITOR);
     assertZero(cl.nextDueTime());
@@ -22,10 +20,10 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   }
 
   function testNextDueTimeSetByDrawdown() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1), GF_OWNER);
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
 
     assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
@@ -34,7 +32,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     uint256 paymentTime,
     uint256 paymentAmount
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     paymentTime = bound(
       paymentTime,
@@ -53,7 +51,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   }
 
   function testNextDueTimeIsCappedAtTermEndTime(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() * 1000);
     vm.warp(timestamp);
@@ -62,12 +60,12 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   }
 
   function testNextDueTimeChangesWhenCrossingPeriods(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
     uint256 oldNextDueTime = cl.nextDueTime();
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
     uint256 newNextDueTime = s.nextDueTimeAt(startTime, timestamp);
 
     vm.warp(timestamp);
@@ -77,7 +75,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   }
 
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     pay(callableLoan, cl.balance() + cl.interestOwed() + cl.interestAccrued());
     assertZero(cl.balance(), "balance not zero");
@@ -86,14 +84,14 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
 
     vm.warp(timestamp);
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
     assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
 
   function testNextDueTimeUnchangedWhenIDrawdownOnZeroBalanceInSamePeriod(
     uint256 timestamp
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 oldNextDueTime = cl.nextDueTime();
     pay(callableLoan, cl.balance() + cl.interestAccrued() + cl.interestOwed());

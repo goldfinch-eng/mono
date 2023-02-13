@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
@@ -24,14 +24,14 @@ contract CallableLoanSetLimitAndMaxLimitTest is CallableLoanBaseTest {
     uint256 limit
   ) public impersonating(GF_OWNER) {
     limit = bound(limit, 0, maxLimit);
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     callableLoan.setMaxLimit(maxLimit);
     callableLoan.setLimit(limit);
     assertEq(cl.limit(), limit);
   }
 
   function testSetLimitRevertsIfLimitGtMaxLimit(uint256 limit) public impersonating(GF_OWNER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     limit = bound(limit, cl.maxLimit() + 1, type(uint256).max);
     vm.expectRevert("Cannot be more than the max limit");
     callableLoan.setLimit(limit);
@@ -48,7 +48,7 @@ contract CallableLoanSetLimitAndMaxLimitTest is CallableLoanBaseTest {
   }
 
   function testSetMaxLimitUpdatesMaxLimit(uint256 maxLimit) public impersonating(GF_OWNER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     callableLoan.setMaxLimit(maxLimit);
     assertEq(maxLimit, cl.maxLimit());
   }

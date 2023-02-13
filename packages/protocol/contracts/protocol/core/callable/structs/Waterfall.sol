@@ -13,6 +13,9 @@ struct Waterfall {
   uint[50] __padding;
 }
 
+using WaterfallLogic for Waterfall global;
+using WaterfallLogic for Waterfall global;
+
 library WaterfallLogic {
   using WaterfallLogic for Waterfall;
   using TrancheLogic for Tranche;
@@ -42,19 +45,30 @@ library WaterfallLogic {
   ) internal returns (uint principalNotApplied) {
     uint totalPrincipalOutstanding = w.totalPrincipalOutstanding();
 
+    console.log("payUntil: interestAmount", interestAmount);
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
     // always process the last index (make it not part of the array?)
     for (uint i = 0; i < w._tranches.length; i++) {
+      console.log("i: ", i);
       Tranche storage tranche = w._tranches[i];
+      console.log("After getting tranche");
+      console.log(interestAmount);
+      console.log(totalPrincipalOutstanding);
+      console.log(tranche.principalOutstanding());
+      console.log(tranche.principalOutstanding() * interestAmount);
       uint proRataInterestPayment = (interestAmount * tranche.principalOutstanding()) /
         totalPrincipalOutstanding;
+      console.log("principalPayment");
       uint principalPayment = i < trancheIndex
         ? tranche.principalOutstanding().min(principalAmount)
         : 0;
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
+      console.log("tranche pay");
+      console.log(proRataInterestPayment);
+      console.log(principalPayment);
       tranche.pay(proRataInterestPayment, principalPayment);
     }
 
@@ -92,7 +106,9 @@ library WaterfallLogic {
     uint fromTrancheId,
     uint toTrancheId
   ) internal {
+    console.log("move1");
     (uint principalTaken, uint interestTaken) = w.getTranche(fromTrancheId).take(principalAmount);
+    console.log("move2");
     return w.getTranche(toTrancheId).addToBalances(principalAmount, principalTaken, interestTaken);
   }
 
@@ -168,8 +184,11 @@ library WaterfallLogic {
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint sum) {
+    console.log("totalPrincipalOwedUpToTranche");
     uint sum;
     for (uint i = 0; i < trancheIndex; i++) {
+      console.log("i", i);
+      console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
       sum += w._tranches[i].principalOutstanding();
     }
     return sum;
@@ -215,8 +234,13 @@ library TrancheLogic {
     uint principal
   ) internal returns (uint principalPaid, uint interestTaken) {
     require(t._principalDeposited > 0, "IT");
+    console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
     interestTaken = (t._interestPaid * principal) / t._principalDeposited;
+    console.log("interestTaken", interestTaken);
+
     // Take pro rata portion of paid principal
+    console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
+    console.log("principalPaid", principalPaid);
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principal;

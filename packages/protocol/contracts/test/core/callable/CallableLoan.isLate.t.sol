@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function setUp() public override {
@@ -18,7 +18,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testNotLateIfNoBalance() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertFalse(cl.isLate());
 
     uint256 limit = usdcVal(100);
@@ -33,7 +33,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testNotLateIfNotPastDueTime(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
 
@@ -45,7 +45,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testNotLateIfPastDueTimeButWithinGracePeriod(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
 
     depositAndDrawdown(callableLoan, limit);
@@ -58,7 +58,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testLateIfPastDueTimeAndPastGracePeriod(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
 
@@ -70,7 +70,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testIsNotLateIfCurrentAtTermEndTimeAndInGracePeriod(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
 
@@ -89,7 +89,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
   }
 
   function testIsLateIfCurrentAtTermEndTimeAndAfterGracePeriod(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
 
     uid._mintForTest(GF_OWNER, 1, 1, "");

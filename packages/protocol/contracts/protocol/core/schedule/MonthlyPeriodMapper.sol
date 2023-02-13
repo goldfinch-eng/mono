@@ -3,13 +3,14 @@ pragma solidity 0.6.12;
 
 // solhint-disable-next-line
 import {BokkyPooBahsDateTimeLibrary as DateTimeLib} from "BokkyPooBahsDateTimeLibrary/contracts/BokkyPooBahsDateTimeLibrary.sol";
+import {IMonthlyPeriodMapper} from "../../../interfaces/IMonthlyPeriodMapper.sol";
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 
 /// @title Monthly schedule
 /// @author Warbler Labs Engineering
 /// @notice A schedule mapping timestamps to periods. Each period begins on the first second
 ///         of each month
-contract MonthlyPeriodMapper is IPeriodMapper {
+contract MonthlyPeriodMapper is IMonthlyPeriodMapper {
   // @inheritdoc IPeriodMapper
   function periodOf(uint256 timestamp) external pure override returns (uint256) {
     return DateTimeLib.diffMonths(0, timestamp);

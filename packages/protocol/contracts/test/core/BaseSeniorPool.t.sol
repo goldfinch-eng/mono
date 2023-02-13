@@ -17,6 +17,7 @@ import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {Go} from "../../protocol/core/Go.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";
+import {IERC20WithName} from "../../interfaces/IERC20WithName.sol";
 import {ITestUniqueIdentity0612} from "../../test/ITestUniqueIdentity0612.t.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
@@ -301,7 +302,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 deadline = type(uint256).max;
     // Get signature for permit
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
-      usdc,
+      IERC20WithName(address(usdc)),
       user,
       address(sp),
       amount,

@@ -118,15 +118,15 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external onlyAdminOrBorrower returns (ITranchedPool pool) {
+  ) external onlyAdminOrBorrower returns (ICallableLoan loan) {
     // need to enclose in a scope to avoid overflowing stack
     {
       ImplementationRepository repo = config.getCallableLoanImplementationRepository();
       UcuProxy callableLoanProxy = new UcuProxy(repo, _borrower, repo.currentLineageId());
-      pool = ITranchedPool(address(callableLoanProxy));
+      loan = ICallableLoan(address(callableLoanProxy));
     }
 
-    pool.initialize(
+    loan.initialize(
       address(config),
       _borrower,
       0,
@@ -137,8 +137,8 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       _fundableAt,
       _allowedUIDTypes
     );
-    emit PoolCreated(pool, _borrower);
-    config.getPoolTokens().onPoolCreated(address(pool));
+    emit CallableLoanCreated(loan, _borrower);
+    config.getPoolTokens().onPoolCreated(address(loan));
   }
 
   // Stolen from:
