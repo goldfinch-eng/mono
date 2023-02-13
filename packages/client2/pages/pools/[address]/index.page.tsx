@@ -96,7 +96,6 @@ gql`
         maxLimit
         id
         isLate @client
-        termStartTime
         termInDays
         paymentPeriodInDays
         nextDueTime

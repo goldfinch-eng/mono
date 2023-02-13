@@ -12,14 +12,15 @@ import {
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
+const secondsPerDay = 86400;
+
 export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
   fragment LoanSummaryTranchedPoolFields on TranchedPool {
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     creditLine {
-      termStartTime
-      termEndTime
+      termInDays
     }
   }
 `;
@@ -104,8 +105,8 @@ export function LoanSummary({
           label="Loan term"
           tooltip="Length of the loan term up until the principal is due."
           value={formatDistanceStrict(
-            loan.creditLine.termStartTime.toNumber() * 1000,
-            loan.creditLine.termEndTime.toNumber() * 1000,
+            0,
+            loan.creditLine.termInDays.toNumber() * secondsPerDay * 1000,
             { unit: "month", roundingMethod: "ceil" }
           )}
         />
