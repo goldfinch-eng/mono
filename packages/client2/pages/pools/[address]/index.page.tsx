@@ -3,6 +3,7 @@ import { ParsedUrlQuery } from "querystring";
 import { gql } from "@apollo/client";
 import { FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
+import NextLink from "next/link";
 
 import {
   Breadcrumb,
@@ -57,6 +58,7 @@ import {
   TRANCHED_POOL_STAT_GRID_FIELDS,
 } from "./status-section";
 import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
+import { LoanSummary } from "./v2-components/loan-summary";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -94,6 +96,7 @@ gql`
         maxLimit
         id
         isLate @client
+        termStartTime
         termInDays
         paymentPeriodInDays
         nextDueTime
@@ -408,6 +411,30 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </div>
 
         <div className="relative" style={{ gridArea: "widgets" }}>
+          <NextLink href="/earn" passHref>
+            <Button
+              as="a"
+              variant="rounded"
+              size="lg"
+              colorScheme="secondary"
+              iconLeft="ArrowLeft"
+              className="mb-10"
+            >
+              Back to Open Deals
+            </Button>
+          </NextLink>
+          <div className="sticky top-2 rounded-3xl bg-mustard-100 lg:p-10">
+            {tranchedPool && seniorPool && fiatPerGfi ? (
+              <LoanSummary
+                loan={tranchedPool}
+                deal={dealDetails}
+                seniorPoolEstimatedApyFromGfiRaw={
+                  seniorPool.estimatedApyFromGfiRaw
+                }
+                fiatPerGfi={fiatPerGfi}
+              />
+            ) : null}
+          </div>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
               {poolStatus === PoolStatus.Open ? (
