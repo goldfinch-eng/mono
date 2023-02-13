@@ -15,6 +15,7 @@ import {
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
+  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
@@ -26,6 +27,7 @@ import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 const visiblePoolOnFirstLoad = 4;
 
 gql`
+  ${PROTOCOL_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
@@ -54,11 +56,7 @@ gql`
     }
     protocols(first: 1) {
       id
-      totalDrawdowns
-      totalWritedowns
-      totalReserveCollected
-      totalInterestCollected
-      totalPrincipalCollected
+      ...ProtocolMetricsFields
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated

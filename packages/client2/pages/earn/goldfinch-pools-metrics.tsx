@@ -1,15 +1,16 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers/lib/ethers";
+import { BigNumber } from "ethers/lib/ethers";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { cryptoToFloat, formatPercent } from "@/lib/format";
 import { ProtocolMetricsFieldsFragment } from "@/lib/graphql/generated";
 
 export const PROTOCOL_METRICS_FIELDS = gql`
-  fragment protocolMetricsFields on Protocol {
+  fragment ProtocolMetricsFields on Protocol {
     id
     totalDrawdowns
     totalWritedowns
+    defaultRate
     totalReserveCollected
     totalInterestCollected
     totalPrincipalCollected
@@ -44,6 +45,7 @@ export function GoldfinchPoolsMetrics({
     totalWritedowns,
     totalInterestCollected,
     totalReserveCollected,
+    defaultRate,
   } = protocol;
 
   const activeLoans = totalDrawdowns
@@ -53,13 +55,6 @@ export function GoldfinchPoolsMetrics({
   const totalLoansRepaid = totalPrincipalCollected
     .add(totalInterestCollected)
     .sub(totalReserveCollected);
-
-  const averageDefaultRate =
-    totalWritedowns.isZero() || totalDrawdowns.isZero()
-      ? FixedNumber.from(0)
-      : FixedNumber.from(totalWritedowns).divUnsafe(
-          FixedNumber.from(totalDrawdowns)
-        );
 
   // TODO: Pending tooltip content from Jake
   return (
@@ -77,7 +72,7 @@ export function GoldfinchPoolsMetrics({
       <Stat
         label="Average Default Rate"
         tooltip="[TODO] Average Default Rate tooltip"
-        value={formatPercent(averageDefaultRate)}
+        value={formatPercent(defaultRate)}
       />
       <Stat
         label="Total Loans Repaid"
