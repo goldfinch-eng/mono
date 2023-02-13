@@ -6,7 +6,7 @@ import { ReactNode } from "react";
 
 import {
   Icon,
-  InfoIconTooltip,
+  InfoLine,
   Shimmer,
   ShimmerLines,
 } from "@/components/design-system";
@@ -81,7 +81,7 @@ export function OpenDealCard({
             />
           </div>
         </div>
-        <div>
+        <div className="-mb-3">
           <InfoLine
             label="Variable GFI APY"
             tooltip={<div className="max-w-xs">{gfiApyTooltip}</div>}
@@ -104,28 +104,6 @@ export function OpenDealCard({
             value={liquidity}
           />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoLine({
-  label,
-  value,
-  tooltip,
-}: {
-  label: string;
-  value?: string;
-  tooltip?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-t border-mustard-200 py-3 last:pb-0">
-      <div className="flex">
-        <div className="mr-1 text-xs sm:text-sm">{label}</div>
-        {tooltip ? <InfoIconTooltip content={tooltip} size="sm" /> : null}
-      </div>
-      <div className="text-right text-sm font-semibold sm:text-base">
-        {value ? value : <Shimmer style={{ width: "15ch" }} />}
       </div>
     </div>
   );
@@ -155,7 +133,7 @@ export function OpenDealCardPlaceholder() {
             </div>
           </div>
         </div>
-        <div>
+        <div className="-mb-3">
           <InfoLine label="Variable GFI APY" />
           <InfoLine label="Loan term" />
           <InfoLine label="Liquidity" />
