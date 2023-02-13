@@ -32,6 +32,8 @@ import {
   PoolStatus,
   getTranchedPoolStatus,
   TRANCHED_POOL_STATUS_FIELDS,
+  getTranchedPoolFundingStatus,
+  TranchedPoolFundingStatus,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -57,8 +59,11 @@ import {
   StatusSection,
   TRANCHED_POOL_STAT_GRID_FIELDS,
 } from "./status-section";
-import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
 import { LoanSummary } from "./v2-components/loan-summary";
+import {
+  SupplyForm,
+  SUPPLY_FORM_USER_FIELDS,
+} from "./v2-components/supply-form";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -67,7 +72,7 @@ import {
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
-  ${SUPPLY_PANEL_USER_FIELDS}
+  ${SUPPLY_FORM_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
@@ -263,6 +268,9 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   }
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
+  const fundingStatus = tranchedPool
+    ? getTranchedPoolFundingStatus(tranchedPool)
+    : null;
   const backerSupply = tranchedPool?.juniorDeposited
     ? ({
         token: "USDC",
@@ -424,29 +432,28 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           </NextLink>
           <div className="sticky top-2 rounded-3xl bg-mustard-100 lg:p-10">
             {tranchedPool && seniorPool && fiatPerGfi ? (
-              <LoanSummary
-                loan={tranchedPool}
-                deal={dealDetails}
-                seniorPoolEstimatedApyFromGfiRaw={
-                  seniorPool.estimatedApyFromGfiRaw
-                }
-                fiatPerGfi={fiatPerGfi}
-              />
+              <>
+                <LoanSummary
+                  loan={tranchedPool}
+                  deal={dealDetails}
+                  seniorPoolEstimatedApyFromGfiRaw={
+                    seniorPool.estimatedApyFromGfiRaw
+                  }
+                  fiatPerGfi={fiatPerGfi}
+                />
+                {fundingStatus === TranchedPoolFundingStatus.Open ? (
+                  <SupplyForm
+                    tranchedPool={tranchedPool}
+                    user={user}
+                    agreement={dealDetails.agreement}
+                    isUnitrancheDeal={dealDetails.dealType === "unitranche"}
+                  />
+                ) : null}
+              </>
             ) : null}
           </div>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open ? (
-                <SupplyPanel
-                  tranchedPool={tranchedPool}
-                  user={user}
-                  fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-                  agreement={dealDetails.agreement}
-                  isUnitrancheDeal={dealDetails.dealType === "unitranche"}
-                />
-              ) : null}
-
               {poolStatus === PoolStatus.Open &&
               data?.user &&
               data?.user.tranchedPoolTokens.length > 0 ? (
