@@ -13,9 +13,9 @@ export const DESKTOP_NAV: Nav = [
       { label: "Membership", href: "/membership", isNew: true },
       { label: "Claim GFI", href: `/gfi` },
       { label: "Stake", href: `/stake` },
+      { label: "Borrow", href: "/borrow" },
     ],
   },
-  { label: "Borrow", href: "/borrow" },
 ];
 
 export const MOBILE_NAV: NavLink[] = [

@@ -57,7 +57,7 @@ export function Nav() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   return (
     <>
-      <div className="flex flex-row border-b border-sand-100 px-6 md:px-10">
+      <div className="flex flex-row border-b border-sand-300 px-6 md:px-10">
         <div className="self-center md:hidden">
           <button className="p-1" onClick={() => setIsMobileNavOpen(true)}>
             <Icon name="Menu" size="md" />
@@ -72,21 +72,21 @@ export function Nav() {
               </div>
             </a>
           </NextLink>
-        </div>
 
-        <nav className="hidden flex-1 flex-row justify-center md:flex">
-          {DESKTOP_NAV.map((navItem) => {
-            if ("href" in navItem) {
-              return (
-                <TopLevelNavItem key={navItem.label} href={navItem.href}>
-                  {navItem.label}
-                </TopLevelNavItem>
-              );
-            } else {
-              return <Nested key={navItem.label} nested={navItem} />;
-            }
-          })}
-        </nav>
+          <nav className="ml-8 hidden justify-center md:flex">
+            {DESKTOP_NAV.map((navItem) => {
+              if ("href" in navItem) {
+                return (
+                  <TopLevelNavItem key={navItem.label} href={navItem.href}>
+                    {navItem.label}
+                  </TopLevelNavItem>
+                );
+              } else {
+                return <Nested key={navItem.label} nested={navItem} />;
+              }
+            })}
+          </nav>
+        </div>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
           <WalletButton />
@@ -122,7 +122,7 @@ export const TopLevelNavItem = forwardRef<
   ref
 ) {
   const router = useRouter();
-  const _highlighted = highlighted ?? router.pathname === href;
+  const _highlighted = highlighted || router.pathname === href;
   const cl = clsx(
     "flex items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
     _highlighted

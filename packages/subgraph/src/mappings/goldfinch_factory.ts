@@ -5,8 +5,8 @@ import {INVALID_POOLS} from "../../../utils/src/pools"
 import {BorrowerCreated, PoolCreated} from "../../generated/GoldfinchFactory/GoldfinchFactory"
 import {TranchedPool as TranchedPoolTemplate} from "../../generated/templates"
 import {getOrInitBorrower} from "../entities/borrower"
-import {addToListOfAllTranchedPools} from "../entities/helpers"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
+import {addToListOfAllTranchedPools} from "../entities/protocol"
 
 export function handlePoolCreated(event: PoolCreated): void {
   if (INVALID_POOLS.has(event.params.pool.toHexString())) {
