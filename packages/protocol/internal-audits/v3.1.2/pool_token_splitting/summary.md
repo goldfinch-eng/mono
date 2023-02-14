@@ -1,4 +1,4 @@
-![Warbler-Logo](./warbler-logo.png)
+![Warbler-Logo](../../warbler-logo.png)
 
 # Pool Token Splitting Audit 01/26/23
 

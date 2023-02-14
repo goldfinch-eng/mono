@@ -75,20 +75,18 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 
 ### State Mutating Functions
 
-- consider removing infinite USDC self approval
-
+- 🟢 consider removing infinite USDC self approval
   - current pattern: in initializer we self approve the max amount `require(config.getUSDC().approve(address(this), uint256(-1)))` and perform transfers as
     `config.getUSDC().safeERC20TransferFrom(address(this), config.reserveAddress(), totalReserveAmount);`.
   - suggestion: remove the self approval and use safeERC20Transfer for transfers from self
   - impact: simplification and gas savings
 
 - setAllowedUIDTypes
-
   - locker can set uid types to include us non-accredited, potentially opening us up to legal liability?
     - impact: unsure, need to ask Chris
   - locker can set uid types to be anything, including invalid UID values
     - impact: negligible but fixing it will improve code quality
-  - locker can get around the "has balance" requirement because it only checks the first slice
+  - 🟢 locker can get around the "has balance" requirement because it only checks the first slice
     - they can create pool, immediately lock the first slice, and initialize the second slice
     - as deposits come in for the second slice, they can change the allowed uid types at will
     - impact: these actions give no benefit to the borrower, it only inconveniences the depositors and warbler.
@@ -103,8 +101,7 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
   - suggested fix 2: fix the "has balance" check to check for deposits in all initialized slices
 
 - deposit
-
-  - the complexity of analyzing `DepositMade` events will increase
+  - 🟢 the complexity of analyzing `DepositMade` events will increase
     - Now that approved operators can deposit on behalf of a UID holder, the poolToken `owner` param in `DepositMade` events
       is not necessarily the UID holder. The UId holder can make deposits from an arbitrary number of operator contracts.
       - Questions like "How many deposits has this end user made in a particular pool?",
@@ -153,7 +150,6 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 ### Mutating Functions
 
 - deposit
-
   - Applies noReentrancy modifier?
     - yes
   - Flash loans used in conjunction with external AMM pools
@@ -170,7 +166,6 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
       - Normal Curve pool price mechanics shouldn't be susceptible to price manipulation without committed capital - no perceived risk.
 
 - withdraw
-
   - Applies noReentrancy modifier?
     - yes
 

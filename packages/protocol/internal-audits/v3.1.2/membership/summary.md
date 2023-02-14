@@ -1,4 +1,4 @@
-![Warbler-Logo](../11-10-22/warbler-logo.png)
+![Warbler-Logo](../../warbler-logo.png)
 
 # Membership Harvesting Audit 01/19/23
 
