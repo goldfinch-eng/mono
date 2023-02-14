@@ -15,6 +15,7 @@ export * from "./logo";
 export * from "./marquee";
 export * from "./modal";
 export * from "./popover";
+export * from "./scrolling-sectioned-container";
 export * from "./sentinel";
 export * from "./spinners";
 export * from "./stat";
