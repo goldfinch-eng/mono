@@ -1,4 +1,4 @@
-import { BigNumber, utils } from "ethers";
+import { utils } from "ethers";
 
 import {
   USDC_DECIMALS,
@@ -100,11 +100,4 @@ export function stringToCryptoAmount(
     cryptoPrecision[token]
   );
   return { token, amount };
-}
-
-/**
- * Rounds down a BigNumber to the nearest multiple of a provided precision
- */
-export function roundDownToPrecision(amount: BigNumber, precision: BigNumber) {
-  return amount.sub(amount.mod(precision));
 }
