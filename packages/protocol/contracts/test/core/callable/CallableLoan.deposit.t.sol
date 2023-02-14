@@ -8,7 +8,7 @@ import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 // solhint-disable-next-line max-line-length
-import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/erc20/extensions/draft-IERC20PermitUpgradeable.sol";
+import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";

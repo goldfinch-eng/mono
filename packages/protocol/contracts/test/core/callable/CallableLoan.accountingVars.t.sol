@@ -9,7 +9,8 @@ import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
-import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/erc20/extensions/draft-IERC20PermitUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 import {PaymentScheduleLogic, PaymentSchedule} from "../../../protocol/core/schedule/PaymentSchedule.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";

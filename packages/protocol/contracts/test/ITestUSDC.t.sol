@@ -6,6 +6,6 @@ pragma experimental ABIEncoderV2;
 import {IERC20WithName} from "../interfaces/IERC20WithName.sol";
 
 // solhint-disable-next-line max-line-length
-import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/erc20/extensions/draft-IERC20PermitUpgradeable.sol";
+import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 
 interface ITestUSDC is IERC20WithName, IERC20PermitUpgradeable {}
