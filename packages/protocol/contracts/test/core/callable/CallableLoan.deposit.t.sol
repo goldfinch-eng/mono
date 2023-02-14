@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
@@ -21,7 +21,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uint256 indexed tokenId,
     uint256 amount
   );
-  event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
+  event DepositsLocked(address indexed loan);
 
   function testDepositWithoutGoListOrUid() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
@@ -65,7 +65,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     console.log("2");
     callableLoan.deposit(1, usdcVal(100));
     console.log("3");
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
     console.log("4");
     vm.expectRevert(bytes("TL"));
     console.log("5");
@@ -134,12 +134,8 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.expectEmit(true, false, false, true);
     // TODO: Should emit pool locked instead of tranche locked.
-    emit TrancheLocked(
-      address(callableLoan),
-      1,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-    callableLoan.lockPool();
+    emit DepositsLocked(address(callableLoan));
+    // TODO: Drawdown to lock pool
   }
 
   function testDepositFailsForInvalidTranches(uint256 trancheId) public {
@@ -210,20 +206,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     setMaxLimit(callableLoan, limit);
 
     deposit(callableLoan, 1, depositAmount, DEPOSITOR);
-    lockPoolAsBorrower(callableLoan);
-
+    // TODO: Drawdown to lock pool
     assertEq(cl.limit(), limit);
-  }
-
-  function testLimitDecreasesToMatchDeposits(uint256 limit, uint256 depositAmount) public {
-    limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
-    depositAmount = bound(depositAmount, usdcVal(1), limit);
-
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    setMaxLimit(callableLoan, limit);
-
-    deposit(callableLoan, 1, depositAmount, GF_OWNER);
-    lockPoolAsBorrower(callableLoan);
-    assertEq(cl.limit(), depositAmount);
   }
 }

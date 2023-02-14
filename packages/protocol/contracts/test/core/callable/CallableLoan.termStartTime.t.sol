@@ -21,7 +21,7 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
     deposit(callableLoan, 1, usdcVal(1_000_000), DEPOSITOR);
-    lockAndDrawdown(callableLoan, usdcVal(100));
+    drawdown(callableLoan, 100);
 
     (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
     assertEq(cl.termStartTime(), s.termStartTime(startTime));
@@ -33,7 +33,7 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
     deposit(callableLoan, 1, usdcVal(1_000_000), DEPOSITOR);
-    lockAndDrawdown(callableLoan, usdcVal(100));
+    drawdown(callableLoan, 100);
 
     uint256 termStartTime = cl.termStartTime();
 

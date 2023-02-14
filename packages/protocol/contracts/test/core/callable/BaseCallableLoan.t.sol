@@ -215,21 +215,6 @@ contract CallableLoanBaseTest is BaseTest {
     return deposit(callableLoan, 1, depositAmount, depositor);
   }
 
-  function lockPoolAsBorrower(
-    CallableLoan callableLoan
-  ) internal impersonating(callableLoan.creditLine().borrower()) {
-    console.log("Locking pool");
-    callableLoan.lockPool();
-  }
-
-  function lockAndDrawdown(
-    CallableLoan callableLoan,
-    uint256 amount
-  ) internal impersonating(callableLoan.creditLine().borrower()) {
-    callableLoan.lockPool();
-    callableLoan.drawdown(amount);
-  }
-
   function pay(
     CallableLoan callableLoan,
     uint256 amount

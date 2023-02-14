@@ -107,6 +107,8 @@ library WaterfallLogic {
     return w.getTranche(toTrancheId).addToBalances(principalAmount, principalTaken, interestTaken);
   }
 
+  // Submit call request to the callable pool - Proportional amount of principal paid is moved
+
   /**
    * @notice Withdraw principal when the tranche is not locked
             Assumes that the caller is allowed to withdraw
@@ -290,6 +292,14 @@ library TrancheLogic {
     uint256 principalAmount
   ) internal view returns (uint) {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
+  }
+
+  function cumulativePrincipalRemaining(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint) {
+    return
+      ((t.principalDeposited() - t.principalPaid()) * principalAmount) / t.principalDeposited();
   }
 
   function cumulativeInterestWithdrawable(

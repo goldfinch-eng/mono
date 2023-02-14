@@ -37,12 +37,6 @@ interface ILoan {
     uint256 timestamp
   ) external view returns (uint256 interestOwed, uint256 interestAccrued, uint256 principalOwed);
 
-  /// @notice Lock the senior capital in the senior tranche of the current slice and reset the lock period of
-  ///   the junior capital to match the senior capital lock period. During this period the borrower has the
-  ///   option to draw down the pool. Beyond the drawdown period any unused capital is available to withdraw by
-  ///   all depositors.
-  function lockPool() external;
-
   /// @notice Drawdown the loan. The credit line's balance should increase by the amount drawn down.
   ///   Junior capital must be locked before this function can be called. If senior capital isn't locked
   ///   then this function will lock it for you (convenience to avoid calling lockPool() separately).
