@@ -124,7 +124,7 @@ export const TopLevelNavItem = forwardRef<
   const router = useRouter();
   const _highlighted = highlighted || router.pathname === href;
   const cl = clsx(
-    "flex items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline",
+    "flex items-center border-b-2 px-5 py-4 text-sm font-medium !no-underline -mb-px", // the negative margin allows this border to overlap the nav's own bottom border
     _highlighted
       ? "border-mustard-500 text-sand-900"
       : "border-transparent text-sand-700 hover:border-mustard-500",
