@@ -1,3 +1,5 @@
+![Warbler-Logo](../warbler-logo.png)
+
 # Audit Summary
 
 Auditors: [Dalton](https://github.com/daltyboy11), [Will](https://github.com/wbj-goldfinch), [Sanjay](https://github.com/sanjayprabhu)

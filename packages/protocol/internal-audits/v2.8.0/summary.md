@@ -1,4 +1,4 @@
-![Warbler-Logo](./warbler-logo.png)
+![Warbler-Logo](../warbler-logo.png)
 
 # Membership Vaults Audit 11/01/22
 
