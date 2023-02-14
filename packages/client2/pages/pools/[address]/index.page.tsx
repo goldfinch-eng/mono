@@ -48,16 +48,16 @@ import {
 } from "./v2-components/claim-panel";
 import {
   InvestAndWithdrawTabs,
-  SUPPLY_FORM_USER_FIELDS,
-  WITHDRAWAL_FORM_POOL_TOKEN_FIELDS,
+  SUPPLY_PANEL_USER_FIELDS,
+  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/invest-and-withdraw-tabs";
 import { LoanSummary } from "./v2-components/loan-summary";
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
-  ${SUPPLY_FORM_USER_FIELDS}
-  ${WITHDRAWAL_FORM_POOL_TOKEN_FIELDS}
+  ${SUPPLY_PANEL_USER_FIELDS}
+  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
@@ -117,9 +117,9 @@ gql`
     }
     user(id: $userId) {
       id
-      ...SupplyFormUserFields
+      ...SupplyPanelUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
-        ...WithdrawalFormPoolTokenFields
+        ...WithdrawalPanelPoolTokenFields
         ...ClaimPanelPoolTokenFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {

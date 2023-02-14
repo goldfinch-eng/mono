@@ -10,31 +10,31 @@ import {
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { WithdrawalFormPoolTokenFieldsFragment } from "@/lib/graphql/generated";
+import { WithdrawalPanelPoolTokenFieldsFragment } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-export const WITHDRAWAL_FORM_POOL_TOKEN_FIELDS = gql`
-  fragment WithdrawalFormPoolTokenFields on TranchedPoolToken {
+export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
+  fragment WithdrawalPanelPoolTokenFields on TranchedPoolToken {
     id
     principalAmount
   }
 `;
 
-interface WithdrawalFormProps {
+interface WithdrawalPanelProps {
   tranchedPoolAddress: string;
-  poolTokens: WithdrawalFormPoolTokenFieldsFragment[];
+  poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
 }
 
 interface FormFields {
   amount: string;
 }
 
-export function WithdrawalForm({
+export function WithdrawalPanel({
   tranchedPoolAddress,
   poolTokens,
-}: WithdrawalFormProps) {
+}: WithdrawalPanelProps) {
   const totalWithdrawable = sum("principalAmount", poolTokens);
 
   const rhfMethods = useForm<FormFields>();

@@ -7,28 +7,28 @@ import {
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
-  SupplyFormDealFieldsFragment,
-  SupplyFormTranchedPoolFieldsFragment,
-  SupplyFormUserFieldsFragment,
-  WithdrawalFormPoolTokenFieldsFragment,
+  SupplyPanelDealFieldsFragment,
+  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelUserFieldsFragment,
+  WithdrawalPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 
-import { SupplyForm } from "./supply-form";
-import { WithdrawalForm } from "./withdrawal-form";
+import { SupplyPanel } from "./supply-panel";
+import { WithdrawalPanel } from "./withdrawal-form";
 
 export {
-  SUPPLY_FORM_TRANCHED_POOL_FIELDS,
-  SUPPLY_FORM_DEAL_FIELDS,
-  SUPPLY_FORM_USER_FIELDS,
-} from "./supply-form";
-export { WITHDRAWAL_FORM_POOL_TOKEN_FIELDS } from "./withdrawal-form";
+  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_DEAL_FIELDS,
+  SUPPLY_PANEL_USER_FIELDS,
+} from "./supply-panel";
+export { WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS } from "./withdrawal-form";
 
 interface Props {
-  tranchedPool: SupplyFormTranchedPoolFieldsFragment;
-  user: SupplyFormUserFieldsFragment | null;
-  deal: SupplyFormDealFieldsFragment;
-  poolTokens: WithdrawalFormPoolTokenFieldsFragment[];
+  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  user: SupplyPanelUserFieldsFragment | null;
+  deal: SupplyPanelDealFieldsFragment;
+  poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
 }
 
 export function InvestAndWithdrawTabs({
@@ -63,10 +63,14 @@ export function InvestAndWithdrawTabs({
           </TabList>
           <TabPanels>
             <TabContent>
-              <SupplyForm tranchedPool={tranchedPool} user={user} deal={deal} />
+              <SupplyPanel
+                tranchedPool={tranchedPool}
+                user={user}
+                deal={deal}
+              />
             </TabContent>
             <TabContent>
-              <WithdrawalForm
+              <WithdrawalPanel
                 tranchedPoolAddress={tranchedPool.id}
                 poolTokens={poolTokens}
               />
@@ -74,7 +78,7 @@ export function InvestAndWithdrawTabs({
           </TabPanels>
         </TabGroup>
       ) : (
-        <SupplyForm tranchedPool={tranchedPool} user={user} deal={deal} />
+        <SupplyPanel tranchedPool={tranchedPool} user={user} deal={deal} />
       )}
     </div>
   );
