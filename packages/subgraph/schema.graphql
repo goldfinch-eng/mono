@@ -176,9 +176,17 @@ type TranchedPool @entity {
   borrowerContract: BorrowerContract!
 }
 
-# Internal use entity that just allows us to collect a list of all tranched pools
-type TranchedPoolRoster @entity {
+"""
+Captures protocol-wide data
+"""
+type Protocol @entity {
   id: ID! # Hardcoded to "1" because this is a singleton
+  totalWritedowns: BigInt!
+  totalDrawdowns: BigInt!
+  defaultRate: BigDecimal!
+  totalPrincipalCollected: BigInt!
+  totalInterestCollected: BigInt!
+  totalReserveCollected: BigInt!
   tranchedPools: [TranchedPool!]!
 }
 

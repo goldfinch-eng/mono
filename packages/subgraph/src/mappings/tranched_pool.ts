@@ -19,6 +19,12 @@ import {
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {
+  updateTotalDrawdowns,
+  updateTotalInterestCollected,
+  updateTotalPrincipalCollected,
+  updateTotalReserveCollected,
+} from "../entities/protocol"
+import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
@@ -127,6 +133,8 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   transaction.save()
 
   handleCreditLineBalanceChanged()
+
+  updateTotalDrawdowns(event.params.amount)
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
@@ -147,6 +155,10 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.sentToken = "USDC"
   transaction.save()
+
+  updateTotalPrincipalCollected(event.params.principalAmount)
+  updateTotalInterestCollected(event.params.interestAmount)
+  updateTotalReserveCollected(event.params.reserveAmount)
 
   handleCreditLineBalanceChanged()
 }

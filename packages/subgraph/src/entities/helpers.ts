@@ -1,12 +1,5 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
-import {
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  TranchedPool,
-  CreditLine,
-  Transaction,
-  TranchedPoolRoster,
-} from "../../generated/schema"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
 import {MAINNET_METADATA} from "../metadata"
@@ -164,23 +157,4 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
   return transaction
-}
-
-function getOrInitTranchedPoolRoster(): TranchedPoolRoster {
-  let tranchedPoolRoster = TranchedPoolRoster.load("1")
-  if (!tranchedPoolRoster) {
-    tranchedPoolRoster = new TranchedPoolRoster("1")
-    tranchedPoolRoster.tranchedPools = []
-  }
-  return tranchedPoolRoster
-}
-
-export function getListOfAllTranchedPoolAddresses(): string[] {
-  return getOrInitTranchedPoolRoster().tranchedPools
-}
-
-export function addToListOfAllTranchedPools(tranchedPoolAddress: Address): void {
-  const tranchedPoolRoster = getOrInitTranchedPoolRoster()
-  tranchedPoolRoster.tranchedPools = tranchedPoolRoster.tranchedPools.concat([tranchedPoolAddress.toHexString()])
-  tranchedPoolRoster.save()
 }

@@ -95,6 +95,10 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/Borrower__factory").then(
       (module) => module.Borrower__factory.connect
     ),
+  GoldfinchConfig: () =>
+    import("@/types/ethers-contracts/factories/GoldfinchConfig__factory").then(
+      (module) => module.GoldfinchConfig__factory.connect
+    ),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

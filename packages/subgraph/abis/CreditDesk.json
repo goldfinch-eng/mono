@@ -1,0 +1,30 @@
+{
+  "address": "0xD52dc1615c843c30F2e4668E101c0938e6007220",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "borrower",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "creditLine",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "drawdownAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DrawdownMade",
+      "type": "event"
+    }
+  ]
+}
