@@ -432,24 +432,28 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
             <div className="grow" />
             <div className="sticky bottom-2">
-              <div className="self-stretch rounded-3xl bg-mustard-100 lg:p-10">
+              <div className="self-stretch rounded-3xl bg-mustard-100">
                 {tranchedPool && seniorPool && fiatPerGfi ? (
                   <>
-                    <LoanSummary
-                      loan={tranchedPool}
-                      deal={dealDetails}
-                      seniorPoolEstimatedApyFromGfiRaw={
-                        seniorPool.estimatedApyFromGfiRaw
-                      }
-                      fiatPerGfi={fiatPerGfi}
-                    />
-                    {fundingStatus === TranchedPoolFundingStatus.Open ? (
-                      <InvestAndWithdrawTabs
-                        tranchedPool={tranchedPool}
-                        user={user}
+                    <div className="p-5 lg:p-10">
+                      <LoanSummary
+                        loan={tranchedPool}
                         deal={dealDetails}
-                        poolTokens={user?.tranchedPoolTokens ?? []}
+                        seniorPoolEstimatedApyFromGfiRaw={
+                          seniorPool.estimatedApyFromGfiRaw
+                        }
+                        fiatPerGfi={fiatPerGfi}
                       />
+                    </div>
+                    {fundingStatus === TranchedPoolFundingStatus.Open ? (
+                      <div className="border-t border-mustard-200 p-5 lg:p-10">
+                        <InvestAndWithdrawTabs
+                          tranchedPool={tranchedPool}
+                          user={user}
+                          deal={dealDetails}
+                          poolTokens={user?.tranchedPoolTokens ?? []}
+                        />
+                      </div>
                     ) : null}
                   </>
                 ) : null}

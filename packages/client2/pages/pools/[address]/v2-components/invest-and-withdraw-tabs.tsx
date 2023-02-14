@@ -41,7 +41,7 @@ export function InvestAndWithdrawTabs({
   const didUserInvest =
     totalUserCapitalInvested !== null && !totalUserCapitalInvested.isZero();
   return (
-    <div className="mt-10">
+    <div>
       {didUserInvest ? (
         <div className="mb-6">
           <div className="mb-3 flex justify-between gap-5 text-sm">
