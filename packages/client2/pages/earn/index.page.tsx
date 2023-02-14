@@ -298,7 +298,7 @@ export default function EarnPage({
             <Button
               onClick={() => setShowMoreClosedPools(true)}
               className="mt-2 w-full"
-              colorScheme="secondary"
+              colorScheme="sand"
               size="lg"
             >
               {`View ${closedTranchedPools?.length - 4} more closed pools`}
