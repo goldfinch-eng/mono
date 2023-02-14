@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
@@ -22,9 +22,9 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
   }
 
   function testAccessControlLockerIsBorrowerAndGovernance() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
-    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), cl.borrower()));
+    assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), callableLoan.borrower()));
   }
 
   function testOwnerCanGrantRoles(address user) public impersonating(GF_OWNER) {
@@ -73,14 +73,6 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     _startImpersonation(BORROWER);
     vm.expectRevert("Pausable: paused");
     callableLoan.drawdown(usdcVal(1));
-
-    _startImpersonation(BORROWER);
-    vm.expectRevert("Pausable: paused");
-    callableLoan.lockPool();
-
-    vm.expectRevert("Pausable: paused");
-    callableLoan.initializeNextSlice(block.timestamp);
-    _stopImpersonation();
 
     vm.expectRevert("Pausable: paused");
     callableLoan.pay(usdcVal(1));
@@ -133,64 +125,5 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
     vm.expectRevert(bytes("NA"));
     callableLoan.pause();
-  }
-
-  function testBorrowerCanLockPool(
-    uint256 depositAmount,
-    address depositor
-  ) public impersonating(BORROWER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-
-    vm.assume(depositAmount > 0);
-    vm.assume(fuzzHelper.isAllowed(depositor));
-    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
-
-    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
-
-    uid._mintForTest(depositor, 1, 1, "");
-    depositAndDrawdown(callableLoan, depositAmount, depositor);
-    assertEq(
-      callableLoan.getTranche(1).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-
-    //TODO: Add in tests for equivalent of principal share price behavior.
-    assertEq(cl.limit(), depositAmount);
-  }
-
-  function testOwnerCanLockPools(uint256 depositAmount) public impersonating(GF_OWNER) {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
-
-    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000));
-    deposit(callableLoan, 1, depositAmount, GF_OWNER);
-
-    callableLoan.lockPool();
-    assertEq(
-      callableLoan.getTranche(1).lockedUntil,
-      block.timestamp + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
-    );
-    assertEq(callableLoan.getTranche(1).principalSharePrice, UNIT_SHARE_PRICE);
-    // Limit should be the sum of junior and senior deposits
-    assertEq(cl.limit(), depositAmount);
-  }
-
-  function testCannotLockPoolTwice() public impersonating(BORROWER) {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    callableLoan.lockPool();
-
-    vm.expectRevert(bytes("TL"));
-    callableLoan.lockPool();
-  }
-
-  function testNonBorrowerNonOwnerCannotLockPool(
-    address nonBorrowerNonOwner
-  ) public impersonating(nonBorrowerNonOwner) {
-    vm.assume(fuzzHelper.isAllowed(nonBorrowerNonOwner));
-
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    vm.expectRevert(bytes("NA"));
-    callableLoan.lockPool();
   }
 }

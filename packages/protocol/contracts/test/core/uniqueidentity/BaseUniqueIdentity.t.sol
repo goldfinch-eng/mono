@@ -35,14 +35,14 @@ contract UniqueIdentityBaseTest is BaseTest {
     uint256 chainId,
     uint256 nonce,
     address recipient,
-    address uid,
+    address uidContract,
     uint256 signerPrivateKey
   ) internal returns (bytes memory) {
     bytes memory packed = abi.encodePacked(
       recipient,
       uidType,
       expiresAt,
-      address(uid),
+      address(uidContract),
       nonce,
       chainId
     );
@@ -60,7 +60,7 @@ contract UniqueIdentityBaseTest is BaseTest {
     uint256 nonce,
     address sender,
     address receiver,
-    address uid,
+    address uidContract,
     uint256 signerPrivateKey
   ) internal returns (bytes memory) {
     bytes memory packed = abi.encodePacked(
@@ -68,7 +68,7 @@ contract UniqueIdentityBaseTest is BaseTest {
       receiver,
       uidType,
       expiresAt,
-      address(uid),
+      address(uidContract),
       nonce,
       chainId
     );

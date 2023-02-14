@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import {CreditLine} from "../../protocol/core/CreditLine.sol";
-import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
+import {CallableLoan} from "../../protocol/core/callable/CallableLoan.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
+import {IMonthlyScheduleRepo} from "../../interfaces/IMonthlyScheduleRepo.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
 import {TestCallableLoan} from "../TestCallableLoan.sol";
 
@@ -16,15 +17,15 @@ contract CallableLoanBuilder {
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_APR = 0;
 
-  GoldfinchFactory private gfFactory;
-  MonthlyScheduleRepo private monthlyScheduleRepo;
+  IGoldfinchFactory private gfFactory;
+  IMonthlyScheduleRepo private monthlyScheduleRepo;
   uint256 private maxLimit;
   uint256 private apr;
   uint256 private lateFeeApr;
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
-  constructor(GoldfinchFactory _gfFactory, MonthlyScheduleRepo _monthlyScheduleRepo) public {
+  constructor(IGoldfinchFactory _gfFactory, IMonthlyScheduleRepo _monthlyScheduleRepo) public {
     gfFactory = _gfFactory;
     monthlyScheduleRepo = _monthlyScheduleRepo;
     maxLimit = DEFAULT_MAX_LIMIT;
@@ -38,23 +39,26 @@ contract CallableLoanBuilder {
       monthlyScheduleRepo.createSchedule({
         periodsInTerm: 12,
         periodsPerInterestPeriod: 1,
-        periodsPerPrincipalPeriod: 12,
+        periodsPerPrincipalPeriod: 3,
         gracePrincipalPeriods: 0
       });
   }
 
-  function build(address borrower) external returns (TestCallableLoan, CreditLine) {
-    ITranchedPool created = gfFactory.createCallableLoan(
-      borrower,
-      maxLimit,
-      apr,
-      defaultSchedule(),
-      lateFeeApr,
-      fundableAt,
-      allowedUIDTypes
+  function build(address borrower) external returns (CallableLoan, ICreditLine) {
+    CallableLoan callableLoan = CallableLoan(
+      address(
+        gfFactory.createCallableLoan(
+          borrower,
+          maxLimit,
+          apr,
+          defaultSchedule(),
+          lateFeeApr,
+          fundableAt,
+          allowedUIDTypes
+        )
+      )
     );
-    TestCallableLoan callableLoan = TestCallableLoan(address(created));
-    return (callableLoan, CreditLine(address(callableLoan.creditLine())));
+    return (callableLoan, ICreditLine(callableLoan.creditLine()));
   }
 
   function withMaxLimit(uint256 _maxLimit) external returns (CallableLoanBuilder) {

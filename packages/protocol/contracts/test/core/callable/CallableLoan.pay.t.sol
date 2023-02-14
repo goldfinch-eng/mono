@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
@@ -20,7 +20,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   }
 
   function testOnlyTakesWhatsNeededForExcessPayment(uint256 amount, uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
@@ -57,7 +57,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   }
 
   function testAcceptsPayment(uint256 amount, uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);

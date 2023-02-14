@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 

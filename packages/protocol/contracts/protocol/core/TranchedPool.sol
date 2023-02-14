@@ -264,7 +264,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     _lockJuniorCapital(numSlices.sub(1));
   }
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ITranchedPool
   function lockPool() external override onlyLocker whenNotPaused {
     _lockPool();
   }

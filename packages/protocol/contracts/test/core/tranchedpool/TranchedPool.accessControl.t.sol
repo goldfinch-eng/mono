@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
@@ -107,7 +108,7 @@ contract TranchedPoolAccessControlTest is TranchedPoolBaseTest {
     // None of these calls should revert
     deposit(pool, 2, usdcVal(100), user);
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
-      usdc,
+      IERC20WithName(address(usdc)),
       user,
       address(pool),
       usdcVal(100),

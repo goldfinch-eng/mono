@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
-import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {TestCreditLine} from "../../TestCreditLine.sol";
+import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
+import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
+import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
+import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/erc20/extensions/draft-IERC20PermitUpgradeable.sol";
+import {PaymentScheduleLogic, PaymentSchedule} from "../../../protocol/core/schedule/PaymentSchedule.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
-  using ConfigHelper for GoldfinchConfig;
+  using CallableLoanConfigHelper for IGoldfinchConfig;
+  using PaymentScheduleLogic for PaymentSchedule;
 
   function testGetInterestVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
-    (, CreditLine cl) = defaultCallableLoan();
+    (, ICreditLine cl) = defaultCallableLoan();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
     vm.expectRevert(bytes("IT"));
@@ -33,7 +36,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   }
 
   function testAccountingVarsWithinSamePeriod(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, block.timestamp + 1, cl.nextDueTime() - 1);
 
@@ -62,7 +65,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   }
 
   function testAccountingVarsCrossingOneOrMorePaymentPeriods(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime(), cl.termEndTime() - 1);
@@ -70,7 +73,8 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     // Principal owed shouldn't change before termEndTime
     uint256 expectedPrincipalOwed = cl.principalOwed();
     // Interest owed should be up to the most recently past next due time
-    (ISchedule schedule, uint64 startTime) = cl.schedule();
+    ISchedule schedule = callableLoan.schedule();
+    uint64 startTime = uint64(callableLoan.startTime());
     uint256 previousDueTime = schedule.previousInterestDueTimeAt(startTime, timestamp);
     uint256 expectedInterestOwed = getInterestAccrued(
       block.timestamp,
@@ -109,7 +113,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
   function testAccountingVarsForLatePaymentWithinGracePeriod(uint256 timestamp) public {
     // Callable Loan with 10% late fee
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + 5 days);
@@ -154,7 +158,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 timestamp
   ) public {
     // Loan with 10% late fee
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint256 drawdownTime = block.timestamp;
     timestamp = bound(
@@ -202,13 +206,17 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   function testTotalIntAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
-    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+    timestamp = bound(
+      timestamp,
+      callableLoan.nextDueTimeAt(cl.nextDueTime()),
+      cl.termEndTime() - 1
+    );
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = (callableLoan.paymentSchedule().asTuple());
 
     uint256 totalRegIntAccrued = getInterestAccrued(
       startTime,
@@ -242,13 +250,17 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   function testInterestAccruedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
-    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+    timestamp = bound(
+      timestamp,
+      callableLoan.nextDueTimeAt(cl.nextDueTime()),
+      cl.termEndTime() - 1
+    );
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
 
     // Calculate regular interest that has accrued in the current period (from last due time
     // until timestamp)
@@ -281,13 +293,17 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   function testInterestOwedForLatePaymentAfterGracePeriodAfterNextPaymentPeriod(
     uint256 timestamp
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLateFees(10 * 1e16, 5);
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Skip to the payment period after the next one
-    timestamp = bound(timestamp, cl.nextDueTimeAt(cl.nextDueTime()), cl.termEndTime() - 1);
+    timestamp = bound(
+      timestamp,
+      callableLoan.nextDueTimeAt(cl.nextDueTime()),
+      cl.termEndTime() - 1
+    );
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
 
     uint256 regIntOwed = getInterestAccrued(
       startTime,
@@ -315,7 +331,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   }
 
   function testAccountingVarsCrossingTermEndTime(uint256 timestamp) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + 1000 days);
 
@@ -346,7 +362,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 firstJump,
     uint256 secondJump
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Advance to random time during the loan and pay back everything

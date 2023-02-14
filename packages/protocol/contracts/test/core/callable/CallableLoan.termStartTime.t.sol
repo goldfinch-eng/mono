@@ -1,39 +1,39 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
   function testIsZeroBeforeFirstDrawdown() public {
-    (, CreditLine cl) = defaultCallableLoan();
+    (, ICreditLine cl) = defaultCallableLoan();
     assertZero(cl.termStartTime());
   }
 
   function testIsSetToTimeOfFirstDrawdown() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
     deposit(callableLoan, 1, usdcVal(1_000_000), DEPOSITOR);
-    lockAndDrawdown(callableLoan, usdcVal(100));
+    drawdown(callableLoan, 100);
 
-    (ISchedule s, uint64 startTime) = cl.schedule();
+    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
     assertEq(cl.termStartTime(), s.termStartTime(startTime));
   }
 
   function testDoesntResetOnSubsequentZeroBalanceDrawdowns() public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
     deposit(callableLoan, 1, usdcVal(1_000_000), DEPOSITOR);
-    lockAndDrawdown(callableLoan, usdcVal(100));
+    drawdown(callableLoan, 100);
 
     uint256 termStartTime = cl.termStartTime();
 
@@ -43,7 +43,7 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
 
     assertZero(cl.interestOwed() + cl.principalOwed() + cl.balance());
 
-    _startImpersonation(cl.borrower());
+    _startImpersonation(callableLoan.borrower());
     callableLoan.drawdown(usdcVal(100));
 
     // termStartTime should be the same

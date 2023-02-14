@@ -122,7 +122,7 @@ contract AccountantBaseTest is BaseTest {
     uint256 _balance,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays
-  ) internal returns (uint256) {
+  ) internal pure returns (uint256) {
     uint256 paymentPeriodInSeconds = _paymentPeriodInDays * TestConstants.SECONDS_PER_DAY;
     uint256 totalInterestPerYear = (_balance * _interestApr) / TestConstants.INTEREST_DECIMALS;
     uint256 result = (totalInterestPerYear * paymentPeriodInSeconds) /

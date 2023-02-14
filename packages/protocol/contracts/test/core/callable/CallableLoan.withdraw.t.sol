@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
+import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
@@ -31,13 +31,12 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     uid._mintForTest(otherDepositor, 1, 1, "");
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
 
     uint256 token1 = deposit(callableLoan, 1, amount1, DEPOSITOR);
     uint256 token2 = deposit(callableLoan, 1, amount2, otherDepositor);
 
-    lockPoolAsBorrower(callableLoan);
-    // Amounts available to withdraw should be 0 when the pool is locked
+    // TODO: Drawdown to lock pool    // Amounts available to withdraw should be 0 when the pool is locked
     {
       (uint256 interestRedeemable1, uint256 principalRedeemable1) = callableLoan
         .availableToWithdraw(token1);
@@ -198,7 +197,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(callableLoan, 1, depositAmount, user);
     withdraw(callableLoan, token, withdrawAmount, user);
-    PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
     assertEq(tokenInfo.principalAmount, depositAmount - withdrawAmount);
   }
 
@@ -217,7 +216,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     vm.warp(block.timestamp + secondsElapsed);
 
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
     vm.expectRevert(bytes("TL"));
     withdraw(callableLoan, token, depositAmount, user);
   }
@@ -234,12 +233,12 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
     uint256 juniorToken = deposit(callableLoan, 1, depositAmount, user);
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
 
     vm.warp(block.timestamp + secondsElapsed);
 
     withdraw(callableLoan, juniorToken, depositAmount, user);
-    PoolTokens.TokenInfo memory juniorTokenInfo = poolTokens.getTokenInfo(juniorToken);
+    IPoolTokens.TokenInfo memory juniorTokenInfo = poolTokens.getTokenInfo(juniorToken);
     assertEq(juniorTokenInfo.principalAmount, depositAmount);
     assertEq(juniorTokenInfo.principalRedeemed, depositAmount);
   }
@@ -250,7 +249,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 amount1,
     uint256 amount2
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     vm.assume(user1 != user2);
     vm.assume(fuzzHelper.isAllowed(user1));
     vm.assume(fuzzHelper.isAllowed(user2));
@@ -264,7 +263,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     setMaxLimit(callableLoan, amount1 + amount2);
     setLimit(callableLoan, amount1 + amount2);
-    lockAndDrawdown(callableLoan, amount1 + amount2);
+    drawdown(callableLoan, amount1 + amount2);
 
     vm.warp(cl.termEndTime());
 
@@ -288,7 +287,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       withdraw(callableLoan, token2, amount2 + interest2, user2);
       assertEq(usdc.balanceOf(user2), usdcBalanceBefore + amount2 + interest2);
 
-      PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+      IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
       assertApproxEqAbs(tokenInfo.principalRedeemed, amount1, HALF_CENT);
       assertApproxEqAbs(tokenInfo.interestRedeemed, interest1, HALF_CENT);
 
@@ -307,12 +306,12 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
   function testWithdrawEmitsAnEvent(address user) public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
 
     uint256 token = deposit(callableLoan, 1, usdcVal(1000), user);
-    lockAndDrawdown(callableLoan, usdcVal(1000));
+    drawdown(callableLoan, usdcVal(1000));
     vm.warp(cl.termEndTime());
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
 
@@ -465,7 +464,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(callableLoan, 1, amount, user);
     withdrawMax(callableLoan, token, user);
-    PoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
     assertZero(tokenInfo.principalAmount);
   }
 
@@ -481,7 +480,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
     uint256 juniorToken = deposit(callableLoan, 1, amount, user);
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
     vm.warp(block.timestamp + secondsElapsed);
 
     vm.expectRevert(bytes("TL"));
@@ -500,23 +499,23 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
     uint256 juniorToken = deposit(callableLoan, 1, amount, user);
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
 
     vm.warp(block.timestamp + secondsElapsed);
 
     withdrawMax(callableLoan, juniorToken, user);
-    PoolTokens.TokenInfo memory juniorTokenInfo = poolTokens.getTokenInfo(juniorToken);
+    IPoolTokens.TokenInfo memory juniorTokenInfo = poolTokens.getTokenInfo(juniorToken);
     assertEq(juniorTokenInfo.principalRedeemed, amount);
   }
 
   function testWithdrawMaxEmitsEvent(address user) public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(callableLoan, 1, usdcVal(1000), user);
-    lockAndDrawdown(callableLoan, usdcVal(1000));
+    drawdown(callableLoan, usdcVal(1000));
     vm.warp(cl.termEndTime());
     // Pay back
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
@@ -530,7 +529,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     address user,
     uint256 limit
   ) public {
-    (CallableLoan callableLoan, CreditLine cl) = defaultCallableLoan();
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     limit = bound(limit, usdcVal(100), usdcVal(10_000_000));
     setMaxLimit(callableLoan, limit);
