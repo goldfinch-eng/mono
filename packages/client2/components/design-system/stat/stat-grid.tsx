@@ -1,10 +1,16 @@
 import clsx from "clsx";
-import { ReactNode, Children, createContext, useContext } from "react";
+import {
+  ReactNode,
+  Children,
+  createContext,
+  useContext,
+  ReactElement,
+} from "react";
 
 import { InfoIconTooltip, Shimmer } from "@/components/design-system";
 
 interface StatGridProps {
-  children: ReactNode;
+  children: ReactElement<StatProps>[];
   className?: string;
   bgColor?: "white" | "mustard-50";
   borderColor?: "sand-200" | "sand-300";
@@ -51,6 +57,7 @@ export function StatGrid({
 }
 
 interface StatProps {
+  className?: string;
   /**
    * The label of the stat to display
    */
@@ -70,7 +77,7 @@ interface StatProps {
 /**
  * This component is not meant for use outside of being a direct child of <StatGrid>
  */
-export function Stat({ label, value, tooltip }: StatProps) {
+export function Stat({ className, label, value, tooltip }: StatProps) {
   const { bgColor, size } = useContext(StatGridContext);
   return (
     <div
@@ -81,7 +88,8 @@ export function Stat({ label, value, tooltip }: StatProps) {
           ? "bg-white"
           : bgColor === "mustard-50"
           ? "bg-mustard-50"
-          : null
+          : null,
+        className
       )}
     >
       <div className="mb-3 flex items-center text-sm text-sand-600">
@@ -90,9 +98,9 @@ export function Stat({ label, value, tooltip }: StatProps) {
       </div>
       <div
         className={clsx(
-          "font-medium text-sand-700",
+          "text-sand-700",
           size === "md"
-            ? "text-xl md:text-2xl"
+            ? "text-xl font-medium md:text-2xl"
             : size === "lg"
             ? "text-2xl sm:text-3xl"
             : null
