@@ -56,7 +56,6 @@ export function GoldfinchPoolsMetrics({
     .add(totalInterestCollected)
     .sub(totalReserveCollected);
 
-  // TODO: Pending final tooltip content from Jake. Andre has written in the current content as a placeholder.
   return (
     <StatGrid
       bgColor="mustard-50"
