@@ -15,7 +15,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     assertZero(cl.nextDueTime());
     deposit(callableLoan, 1, usdcVal(4), DEPOSITOR);
     assertZero(cl.nextDueTime());
-    lockPoolAsBorrower(callableLoan);
+    // TODO: Drawdown to lock pool
     assertZero(cl.nextDueTime());
   }
 

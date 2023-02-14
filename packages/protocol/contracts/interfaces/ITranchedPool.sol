@@ -64,6 +64,12 @@ interface ITranchedPool is ILoan {
   ///   tranche has not been locked and the drawdown period has ended. Only the borrower can call this function.
   function lockJuniorCapital() external;
 
+  /// @notice Lock the senior capital in the senior tranche of the current slice and reset the lock period of
+  ///   the junior capital to match the senior capital lock period. During this period the borrower has the
+  ///   option to draw down the pool. Beyond the drawdown period any unused capital is available to withdraw by
+  ///   all depositors.
+  function lockPool() external;
+
   /// @notice Initialize the next slice for the pool. Enables backers and the senior pool to provide additional
   ///   capital to the borrower.
   /// @param _fundableAt time at which the new slice (now the current slice) becomes fundable

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic, CheckpointedCallableCreditLine, CheckpointedCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+import {StaleCallableCreditLine, StaleCallableCreditLineLogic, CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
 import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
@@ -13,8 +13,8 @@ import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {BaseTest} from "../../BaseTest.t.sol";
 
+using StaleCallableCreditLineLogic for StaleCallableCreditLine;
 using CallableCreditLineLogic for CallableCreditLine;
-using CheckpointedCallableCreditLineLogic for CheckpointedCallableCreditLine;
 using PaymentScheduleLogic for PaymentSchedule;
 
 using TrancheLogic for Tranche;
@@ -24,7 +24,7 @@ contract TestCallableCreditLine is BaseTest {
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_ADDITIONAL_APR = 1 * 1e16;
 
-  CallableCreditLine internal callableCreditLine;
+  StaleCallableCreditLine internal callableCreditLine;
   IGoldfinchConfig internal config;
   IMonthlyScheduleRepo private monthlyScheduleRepo;
   ISchedule private schedule;
@@ -64,7 +64,7 @@ contract TestCallableCreditLine is BaseTest {
       DEFAULT_LATE_ADDITIONAL_APR,
       DEFAULT_LIMIT
     );
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     assertEq(address(cpcl._config), address(config));
     assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
     assertEq(cpcl.interestApr(), DEFAULT_APR);
@@ -75,7 +75,7 @@ contract TestCallableCreditLine is BaseTest {
   // TODO
   function testDeposit(uint128 depositAmount) public {
     setupDefaultWithLimit(depositAmount);
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount);
@@ -87,7 +87,7 @@ contract TestCallableCreditLine is BaseTest {
   function testDrawdown(uint128 depositAmount, uint128 drawdownAmount) public {
     setupDefaultWithLimit(depositAmount);
     drawdownAmount = boundUint128(drawdownAmount, 0, depositAmount);
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     cpcl.drawdown(drawdownAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
@@ -103,7 +103,7 @@ contract TestCallableCreditLine is BaseTest {
     setupFullyFundedAndDrawndown(depositAmount);
     interest = boundUint128(interest, 0, depositAmount);
     principal = boundUint128(principal, 0, depositAmount - interest);
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     console.log("1");
     cpcl.pay(uint256(interest), uint256(principal));
     console.log("2");
@@ -123,7 +123,7 @@ contract TestCallableCreditLine is BaseTest {
     depositAmount = boundUint128(depositAmount, 1, type(uint128).max);
     calledAmount = boundUint128(calledAmount, 1, depositAmount);
     setupFullyFundedAndDrawndown(depositAmount);
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     console.log("1");
     vm.warp(cpcl._paymentSchedule.startTime);
     cpcl.submitCall(calledAmount);
@@ -187,7 +187,7 @@ contract TestCallableCreditLine is BaseTest {
 
   function setupFullyFundedAndDrawndown(uint128 limit) public {
     setupDefaultWithLimit(limit);
-    CheckpointedCallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     cpcl.deposit(uint256(limit));
     cpcl.drawdown(uint256(limit));
   }

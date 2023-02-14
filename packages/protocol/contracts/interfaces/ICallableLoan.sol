@@ -4,7 +4,6 @@ import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
 
 interface ICallableLoan is ILoan {
-  // is ILoan {
   // TODO: Update with final `initialize` interface once CallableLoan removes ITranchedPool conformance
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
   ///   contract creation to avoid initialization front-running
@@ -53,10 +52,9 @@ interface ICallableLoan is ILoan {
 
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,
-    uint256 indexed remainingTokenId,
     uint256 indexed callRequestedTokenId,
-    uint256 callRequestedAmount
+    uint256 indexed remainingTokenId,
+    uint256 callAmount
   );
-  event CallableLoanCreated(ICallableLoan loanAddress, address borrower);
-  event PoolLocked(address indexed pool, uint256 lockedUntil);
+  event DepositsLocked(address indexed loan);
 }
