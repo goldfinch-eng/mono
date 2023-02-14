@@ -657,7 +657,7 @@ contract CallableLoan is
   }
 
   function isLate() public view returns (bool) {
-    return false;
+    return _staleCreditLine.isLate();
   }
 
   function withinPrincipalGracePeriod() public view returns (bool) {

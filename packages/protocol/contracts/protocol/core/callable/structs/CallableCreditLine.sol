@@ -52,6 +52,10 @@ library StaleCallableCreditLineLogic {
     return cl._cpcl.termStartTime();
   }
 
+  function isLate(StaleCallableCreditLine storage cl) internal view returns (bool) {
+    return cl._cpcl.isLate();
+  }
+
   function paymentSchedule(
     StaleCallableCreditLine storage cl
   ) internal view returns (PaymentSchedule storage) {
