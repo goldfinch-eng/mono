@@ -1,11 +1,12 @@
 import clsx from "clsx";
+import NextLink from "next/link";
 import { ReactNode, useEffect, useRef, useState } from "react";
 
-import { Sentinel } from "@/components/design-system";
+import { Button, Sentinel } from "@/components/design-system";
 
 interface ScrollingSectionedContainerProps {
   sections: { title: string; navTitle: string; content: ReactNode }[];
-  navAddons?: ReactNode;
+  navAddons?: { text: string; href: string }[];
 }
 
 const kebabCaseify = (s: string) => s.toLocaleLowerCase().replace(/\s/, "-");
@@ -47,7 +48,7 @@ export function ScrollingSectionedContainer({
       <Sentinel onVisibilityChange={setIsTopScrolled} />
       <div
         className={clsx(
-          "sticky top-0 flex max-w-max gap-1 rounded-full bg-mustard-50 transition-shadow",
+          "sticky top-0 flex max-w-max flex-wrap gap-1 rounded-full bg-mustard-50 text-sm transition-shadow",
           !isTopScrolled ? "shadow-md" : null
         )}
       >
@@ -60,7 +61,11 @@ export function ScrollingSectionedContainer({
             {navTitle}
           </ScrollNavLink>
         ))}
-        {navAddons}
+        {navAddons?.map(({ href, text }) => (
+          <AddonNavLink href={href} key={href}>
+            {text}
+          </AddonNavLink>
+        ))}
       </div>
       <div className="mt-8 space-y-15 px-4">
         {sections.map(({ navTitle, title, content }, index) => (
@@ -112,5 +117,26 @@ function ScrollNavLink({
     >
       {children}
     </a>
+  );
+}
+
+export function AddonNavLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <NextLink passHref href={href}>
+      <Button
+        as="a"
+        colorScheme="secondary"
+        variant="rounded"
+        iconRight="ArrowTopRight"
+      >
+        {children}
+      </Button>
+    </NextLink>
   );
 }
