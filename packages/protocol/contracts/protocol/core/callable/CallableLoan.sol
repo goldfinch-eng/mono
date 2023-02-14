@@ -732,7 +732,7 @@ contract CallableLoan is
 
   /// @notice Time of first drawdown
   function termStartTime() public view override returns (uint256) {
-    return _staleCreditLine.schedule().termStartTime();
+    return _staleCreditLine.termStartTime();
   }
 
   // // Modifiers /////////////////////////////////////////////////////////////////

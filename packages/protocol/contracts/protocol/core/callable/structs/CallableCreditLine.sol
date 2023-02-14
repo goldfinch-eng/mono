@@ -48,6 +48,10 @@ library StaleCallableCreditLineLogic {
     return cl.paymentSchedule().schedule;
   }
 
+  function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cpcl.termStartTime();
+  }
+
   function paymentSchedule(
     StaleCallableCreditLine storage cl
   ) internal view returns (PaymentSchedule storage) {
