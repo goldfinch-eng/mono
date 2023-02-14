@@ -414,48 +414,49 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           ) : null}
         </div>
 
-        <div
-          className="relative flex flex-col items-start"
-          style={{ gridArea: "widgets" }}
-        >
-          {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
-          <div className="grow" />
-          <div className="sticky bottom-2">
-            <NextLink href="/earn" passHref>
-              <Button
-                as="a"
-                variant="rounded"
-                size="lg"
-                colorScheme="secondary"
-                iconLeft="ArrowLeft"
-                className="mb-10"
-              >
-                Back to Open Deals
-              </Button>
-            </NextLink>
-            <div className="self-stretch rounded-3xl bg-mustard-100 lg:p-10">
-              {tranchedPool && seniorPool && fiatPerGfi ? (
-                <>
-                  <LoanSummary
-                    loan={tranchedPool}
-                    deal={dealDetails}
-                    seniorPoolEstimatedApyFromGfiRaw={
-                      seniorPool.estimatedApyFromGfiRaw
-                    }
-                    fiatPerGfi={fiatPerGfi}
-                  />
-                  {fundingStatus === TranchedPoolFundingStatus.Open ? (
-                    <InvestAndWithdrawTabs
-                      tranchedPool={tranchedPool}
-                      user={user}
+        <div className="flex flex-col" style={{ gridArea: "widgets" }}>
+          <NextLink href="/earn" passHref>
+            <Button
+              as="a"
+              variant="rounded"
+              size="lg"
+              colorScheme="secondary"
+              iconLeft="ArrowLeft"
+              className="mb-10 self-start"
+            >
+              Back to Open Deals
+            </Button>
+          </NextLink>
+
+          <div className="relative flex grow flex-col">
+            {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
+            <div className="grow" />
+            <div className="sticky bottom-2">
+              <div className="self-stretch rounded-3xl bg-mustard-100 lg:p-10">
+                {tranchedPool && seniorPool && fiatPerGfi ? (
+                  <>
+                    <LoanSummary
+                      loan={tranchedPool}
                       deal={dealDetails}
-                      poolTokens={user?.tranchedPoolTokens ?? []}
+                      seniorPoolEstimatedApyFromGfiRaw={
+                        seniorPool.estimatedApyFromGfiRaw
+                      }
+                      fiatPerGfi={fiatPerGfi}
                     />
-                  ) : null}
-                </>
-              ) : null}
+                    {fundingStatus === TranchedPoolFundingStatus.Open ? (
+                      <InvestAndWithdrawTabs
+                        tranchedPool={tranchedPool}
+                        user={user}
+                        deal={dealDetails}
+                        poolTokens={user?.tranchedPoolTokens ?? []}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
+
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
               {poolStatus !== PoolStatus.Open &&
