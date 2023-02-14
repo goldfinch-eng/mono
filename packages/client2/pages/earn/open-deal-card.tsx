@@ -68,7 +68,9 @@ export function OpenDealCard({
 
       <div>
         <div className="mb-6">
-          <div className="mb-2 text-sm">Fixed USDC interest</div>
+          <div className="mb-2 text-sm">
+            {termLengthInMonths ? "Fixed " : ""}USDC interest
+          </div>
           <div className="flex items-end justify-between">
             <div className="font-serif text-4xl font-semibold leading-none">
               {formatPercent(usdcApy)}
