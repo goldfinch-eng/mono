@@ -214,7 +214,7 @@ export function SupplyForm({
   }, [account, provider, user]);
 
   return (
-    <div className="mt-10">
+    <div>
       {!account ? (
         <Button
           className="block w-full"
@@ -256,7 +256,7 @@ export function SupplyForm({
           <DollarInput
             control={control}
             name="supply"
-            label="Supply amount"
+            label="Investment amount"
             labelDecoration={
               <span className="text-xs">
                 Balance:{" "}

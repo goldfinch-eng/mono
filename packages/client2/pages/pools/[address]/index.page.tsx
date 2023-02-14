@@ -21,6 +21,7 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
+import { formatCrypto } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   useSingleTranchedPoolDataQuery,
@@ -34,6 +35,7 @@ import {
   TRANCHED_POOL_STATUS_FIELDS,
   getTranchedPoolFundingStatus,
   TranchedPoolFundingStatus,
+  sum,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -65,15 +67,15 @@ import {
   SUPPLY_FORM_USER_FIELDS,
 } from "./v2-components/supply-form";
 import {
-  WithdrawalPanel,
-  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-} from "./withdrawal-panel";
+  WithdrawalForm,
+  WITHDRAWAL_FORM_POOL_TOKEN_FIELDS,
+} from "./v2-components/withdrawal-form";
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_FORM_USER_FIELDS}
-  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${WITHDRAWAL_FORM_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
@@ -133,9 +135,9 @@ gql`
     }
     user(id: $userId) {
       id
-      ...SupplyPanelUserFields
+      ...SupplyFormUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
-        ...WithdrawalPanelPoolTokenFields
+        ...WithdrawalFormPoolTokenFields
         ...ClaimPanelPoolTokenFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
@@ -291,6 +293,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         } as const)
       : undefined;
 
+  const totalUserCapitalInvested = user
+    ? sum(
+        "principalAmount",
+        user.tranchedPoolTokens.concat(
+          user.vaultedPoolTokens.map((vpt) => vpt.poolToken)
+        )
+      )
+    : null;
+  const didUserInvest =
+    totalUserCapitalInvested !== null && !totalUserCapitalInvested.isZero();
+
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
@@ -417,55 +430,92 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           ) : null}
         </div>
 
-        <div className="relative" style={{ gridArea: "widgets" }}>
-          <NextLink href="/earn" passHref>
-            <Button
-              as="a"
-              variant="rounded"
-              size="lg"
-              colorScheme="secondary"
-              iconLeft="ArrowLeft"
-              className="mb-10"
-            >
-              Back to Open Deals
-            </Button>
-          </NextLink>
-          <div className="sticky top-2 rounded-3xl bg-mustard-100 lg:p-10">
-            {tranchedPool && seniorPool && fiatPerGfi ? (
-              <>
-                <LoanSummary
-                  loan={tranchedPool}
-                  deal={dealDetails}
-                  seniorPoolEstimatedApyFromGfiRaw={
-                    seniorPool.estimatedApyFromGfiRaw
-                  }
-                  fiatPerGfi={fiatPerGfi}
-                />
-                {fundingStatus === TranchedPoolFundingStatus.Open ? (
-                  <SupplyForm
-                    tranchedPool={tranchedPool}
-                    user={user}
-                    agreement={dealDetails.agreement}
-                    isUnitrancheDeal={dealDetails.dealType === "unitranche"}
+        <div
+          className="relative flex flex-col items-start"
+          style={{ gridArea: "widgets" }}
+        >
+          {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
+          <div className="grow" />
+          <div className="sticky bottom-2">
+            <NextLink href="/earn" passHref>
+              <Button
+                as="a"
+                variant="rounded"
+                size="lg"
+                colorScheme="secondary"
+                iconLeft="ArrowLeft"
+                className="mb-10"
+              >
+                Back to Open Deals
+              </Button>
+            </NextLink>
+            <div className="self-stretch rounded-3xl bg-mustard-100 lg:p-10">
+              {tranchedPool && seniorPool && fiatPerGfi ? (
+                <>
+                  <LoanSummary
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    seniorPoolEstimatedApyFromGfiRaw={
+                      seniorPool.estimatedApyFromGfiRaw
+                    }
+                    fiatPerGfi={fiatPerGfi}
                   />
-                ) : null}
-              </>
-            ) : null}
+                  {fundingStatus === TranchedPoolFundingStatus.Open ? (
+                    <div className="mt-10">
+                      {didUserInvest ? (
+                        <div className="mb-6">
+                          <div className="mb-3 flex justify-between gap-5 text-sm">
+                            Total capital invested
+                          </div>
+                          <div className="font-serif text-5xl font-semibold">
+                            {formatCrypto({
+                              token: "USDC",
+                              amount: sum(
+                                "principalAmount",
+                                user?.tranchedPoolTokens
+                              ),
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                      <TabGroup>
+                        {didUserInvest ? (
+                          <TabList>
+                            <TabButton>Invest</TabButton>
+                            <TabButton>Withdraw</TabButton>
+                          </TabList>
+                        ) : null}
+                        <TabPanels>
+                          <TabContent
+                            className={didUserInvest ? undefined : "!pt-0"}
+                          >
+                            <SupplyForm
+                              tranchedPool={tranchedPool}
+                              user={user}
+                              agreement={dealDetails.agreement}
+                              isUnitrancheDeal={
+                                dealDetails.dealType === "unitranche"
+                              }
+                            />
+                          </TabContent>
+                          {user && user.tranchedPoolTokens.length > 0 ? (
+                            <TabContent>
+                              <WithdrawalForm
+                                tranchedPoolAddress={tranchedPool.id}
+                                poolTokens={user.tranchedPoolTokens}
+                              />
+                            </TabContent>
+                          ) : null}
+                        </TabPanels>
+                      </TabGroup>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
           </div>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open &&
-              data?.user &&
-              data?.user.tranchedPoolTokens.length > 0 ? (
-                <WithdrawalPanel
-                  tranchedPoolAddress={tranchedPool.id}
-                  poolTokens={data.user.tranchedPoolTokens}
-                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
-                    (v) => v.poolToken
-                  )}
-                />
-              ) : null}
-
               {poolStatus !== PoolStatus.Open &&
               data?.user &&
               (data?.user.tranchedPoolTokens.length > 0 ||
