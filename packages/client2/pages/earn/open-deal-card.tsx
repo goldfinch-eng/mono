@@ -40,12 +40,12 @@ export function OpenDealCard({
   return (
     <div
       className={clsx(
-        "group relative flex flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10 transition-colors hover:bg-mustard-200",
+        "group relative flex flex-col justify-between rounded-3xl border border-mustard-200 bg-mustard-100 py-8 px-10 transition-colors hover:bg-mustard-200",
         className
       )}
     >
       <div className="mb-15 flex items-center">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white">
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-mustard-500">
           {icon ? (
             <Image
               src={icon}
@@ -68,7 +68,9 @@ export function OpenDealCard({
 
       <div>
         <div className="mb-6">
-          <div className="mb-2 text-sm">Fixed USDC interest</div>
+          <div className="mb-2 text-sm">
+            {termLengthInMonths ? "Fixed " : ""}USDC interest
+          </div>
           <div className="flex items-end justify-between">
             <div className="font-serif text-4xl font-semibold leading-none">
               {formatPercent(usdcApy)}
@@ -112,7 +114,7 @@ export function OpenDealCardPlaceholder() {
   return (
     <div className="relative flex flex-col justify-between rounded-3xl border border-mustard-100 bg-mustard-100 py-8 px-10">
       <div className="mb-15 flex items-center">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white" />
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-sand-100" />
         <div className="ml-4 flex w-full flex-col">
           <div className="mb-1 font-semibold">
             <ShimmerLines lines={1} className="w-full" />

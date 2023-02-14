@@ -268,7 +268,7 @@ export default function EarnPage({
             })}
           </div>
 
-          <EarnPageHeading>{`${closedTranchedPools.length} Closed Pools`}</EarnPageHeading>
+          <EarnPageHeading>{`${closedTranchedPools.length} Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
             {closedTranchedPools.map((tranchedPool, i) => {
               const deal = dealMetadata[tranchedPool.id];
@@ -298,7 +298,7 @@ export default function EarnPage({
             <Button
               onClick={() => setShowMoreClosedPools(true)}
               className="mt-2 w-full"
-              colorScheme="secondary"
+              colorScheme="sand"
               size="lg"
             >
               {`View ${closedTranchedPools?.length - 4} more closed pools`}
