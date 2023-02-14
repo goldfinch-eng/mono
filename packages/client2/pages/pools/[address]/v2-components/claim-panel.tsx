@@ -1,5 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
-import { BigNumber } from "ethers/lib/ethers";
+import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import {
@@ -169,28 +169,22 @@ export function ClaimPanel({
     (vaultedPoolTokens.length > 0 && !canClaimGfi);
 
   return (
-    <div className="rounded-xl bg-midnight-01 p-5 text-white">
+    <div>
       <div className="mb-6">
         <div className="mb-1 flex items-center justify-between gap-2">
           <div>Your current position value</div>
-          <InfoIconTooltip
-            className="text-white opacity-60"
-            content="The remaining principal on this position plus any accrued interest."
-          />
+          <InfoIconTooltip content="The remaining principal on this position plus any accrued interest." />
         </div>
-        <div className="text-5xl font-medium">
+        <div className="font-serif text-5xl font-semibold">
           {formatCrypto(positionValue)}
         </div>
       </div>
       <div className="mb-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>Available to claim</div>
-          <InfoIconTooltip
-            className="text-white opacity-60"
-            content="The combined dollar value of claimable principal, interest, and GFI rewards on this position."
-          />
+          <InfoIconTooltip content="The combined dollar value of claimable principal, interest, and GFI rewards on this position." />
         </div>
-        <div className="text-3xl">
+        <div className="font-serif text-3xl">
           {formatCrypto({
             token: "USDC",
             amount: claimableUsdc.amount.add(claimableGfiAsUsdc.amount),
@@ -200,14 +194,13 @@ export function ClaimPanel({
       {/* eslint-disable react/jsx-key */}
       <MiniTable
         className="mb-4"
-        deemphasizeMiddleCols
+        colorScheme="mustard"
         rows={[
           [
             <div className="flex items-center justify-between gap-2">
               USDC
               <InfoIconTooltip
                 size="xs"
-                className="text-white opacity-60"
                 content="This includes your claimable principal and interest."
               />
             </div>,
@@ -225,7 +218,6 @@ export function ClaimPanel({
               GFI
               <InfoIconTooltip
                 size="xs"
-                className="text-white opacity-60"
                 content="Your GFI rewards for backing this pool."
               />
             </div>,
@@ -245,7 +237,7 @@ export function ClaimPanel({
           type="submit"
           className="w-full"
           size="xl"
-          colorScheme="secondary"
+          colorScheme="mustard"
           disabled={claimDisabled}
         >
           Claim

@@ -32,7 +32,6 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import { ClaimPanel, CLAIM_PANEL_POOL_TOKEN_FIELDS } from "./claim-panel";
 import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import {
@@ -43,6 +42,10 @@ import {
 import { DOCUMENT_FIELDS } from "./documents-list";
 import RepaymentProgressPanel from "./repayment-progress-panel";
 import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
+import {
+  ClaimPanel,
+  CLAIM_PANEL_POOL_TOKEN_FIELDS,
+} from "./v2-components/claim-panel";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_FORM_USER_FIELDS,
@@ -343,13 +346,26 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                         fiatPerGfi={fiatPerGfi}
                       />
                     </div>
-                    {fundingStatus === TranchedPoolFundingStatus.Open ? (
+                    {fundingStatus === TranchedPoolFundingStatus.Open ||
+                    fundingStatus === TranchedPoolFundingStatus.Cancelled ? (
                       <div className="border-t border-mustard-200 p-5 lg:p-10">
                         <InvestAndWithdrawTabs
                           tranchedPool={tranchedPool}
                           user={user}
                           deal={dealDetails}
                           poolTokens={user?.tranchedPoolTokens ?? []}
+                        />
+                      </div>
+                    ) : fundingStatus === TranchedPoolFundingStatus.Closed &&
+                      user &&
+                      (user.tranchedPoolTokens.length > 0 ||
+                        user.vaultedPoolTokens.length > 0) ? (
+                      <div className="border-t border-mustard-200 p-5 lg:p-10">
+                        <ClaimPanel
+                          poolTokens={user.tranchedPoolTokens}
+                          vaultedPoolTokens={user.vaultedPoolTokens}
+                          fiatPerGfi={fiatPerGfi}
+                          tranchedPool={tranchedPool}
                         />
                       </div>
                     ) : null}
@@ -361,18 +377,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus !== PoolStatus.Open &&
-              data?.user &&
-              (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.vaultedPoolTokens.length > 0) ? (
-                <ClaimPanel
-                  poolTokens={data.user.tranchedPoolTokens}
-                  vaultedPoolTokens={data.user.vaultedPoolTokens}
-                  fiatPerGfi={fiatPerGfi}
-                  tranchedPool={tranchedPool}
-                />
-              ) : null}
-
               {tranchedPool &&
               (poolStatus === PoolStatus.Full ||
                 poolStatus === PoolStatus.Repaid) ? (
