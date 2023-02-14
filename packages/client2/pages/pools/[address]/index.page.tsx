@@ -21,7 +21,6 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { formatCrypto } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   useSingleTranchedPoolDataQuery,
@@ -35,7 +34,6 @@ import {
   TRANCHED_POOL_STATUS_FIELDS,
   getTranchedPoolFundingStatus,
   TranchedPoolFundingStatus,
-  sum,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -61,15 +59,12 @@ import {
   StatusSection,
   TRANCHED_POOL_STAT_GRID_FIELDS,
 } from "./status-section";
-import { LoanSummary } from "./v2-components/loan-summary";
 import {
-  SupplyForm,
+  InvestAndWithdrawTabs,
   SUPPLY_FORM_USER_FIELDS,
-} from "./v2-components/supply-form";
-import {
-  WithdrawalForm,
   WITHDRAWAL_FORM_POOL_TOKEN_FIELDS,
-} from "./v2-components/withdrawal-form";
+} from "./v2-components/invest-and-withdraw-tabs";
+import { LoanSummary } from "./v2-components/loan-summary";
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
@@ -293,17 +288,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         } as const)
       : undefined;
 
-  const totalUserCapitalInvested = user
-    ? sum(
-        "principalAmount",
-        user.tranchedPoolTokens.concat(
-          user.vaultedPoolTokens.map((vpt) => vpt.poolToken)
-        )
-      )
-    : null;
-  const didUserInvest =
-    totalUserCapitalInvested !== null && !totalUserCapitalInvested.isZero();
-
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
@@ -461,54 +445,12 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     fiatPerGfi={fiatPerGfi}
                   />
                   {fundingStatus === TranchedPoolFundingStatus.Open ? (
-                    <div className="mt-10">
-                      {didUserInvest ? (
-                        <div className="mb-6">
-                          <div className="mb-3 flex justify-between gap-5 text-sm">
-                            Total capital invested
-                          </div>
-                          <div className="font-serif text-5xl font-semibold">
-                            {formatCrypto({
-                              token: "USDC",
-                              amount: sum(
-                                "principalAmount",
-                                user?.tranchedPoolTokens
-                              ),
-                            })}
-                          </div>
-                        </div>
-                      ) : null}
-                      <TabGroup>
-                        {didUserInvest ? (
-                          <TabList>
-                            <TabButton>Invest</TabButton>
-                            <TabButton>Withdraw</TabButton>
-                          </TabList>
-                        ) : null}
-                        <TabPanels>
-                          <TabContent
-                            className={didUserInvest ? undefined : "!pt-0"}
-                          >
-                            <SupplyForm
-                              tranchedPool={tranchedPool}
-                              user={user}
-                              agreement={dealDetails.agreement}
-                              isUnitrancheDeal={
-                                dealDetails.dealType === "unitranche"
-                              }
-                            />
-                          </TabContent>
-                          {user && user.tranchedPoolTokens.length > 0 ? (
-                            <TabContent>
-                              <WithdrawalForm
-                                tranchedPoolAddress={tranchedPool.id}
-                                poolTokens={user.tranchedPoolTokens}
-                              />
-                            </TabContent>
-                          ) : null}
-                        </TabPanels>
-                      </TabGroup>
-                    </div>
+                    <InvestAndWithdrawTabs
+                      tranchedPool={tranchedPool}
+                      user={user}
+                      deal={dealDetails}
+                      poolTokens={user?.tranchedPoolTokens ?? []}
+                    />
                   ) : null}
                 </>
               ) : null}

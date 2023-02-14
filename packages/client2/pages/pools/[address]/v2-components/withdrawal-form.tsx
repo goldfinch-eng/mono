@@ -18,7 +18,7 @@ import { useWallet } from "@/lib/wallet";
 export const WITHDRAWAL_FORM_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalFormPoolTokenFields on TranchedPoolToken {
     id
-    principalRedeemable
+    principalAmount
   }
 `;
 
@@ -35,7 +35,7 @@ export function WithdrawalForm({
   tranchedPoolAddress,
   poolTokens,
 }: WithdrawalFormProps) {
-  const totalWithdrawable = sum("principalRedeemable", poolTokens);
+  const totalWithdrawable = sum("principalAmount", poolTokens);
 
   const rhfMethods = useForm<FormFields>();
   const { control } = rhfMethods;
@@ -54,7 +54,7 @@ export function WithdrawalForm({
 
     const usdcToWithdraw = utils.parseUnits(data.amount, USDC_DECIMALS);
     let transaction;
-    if (usdcToWithdraw.lte(poolTokens[0].principalRedeemable)) {
+    if (usdcToWithdraw.lte(poolTokens[0].principalAmount)) {
       transaction = tranchedPoolContract.withdraw(
         BigNumber.from(poolTokens[0].id),
         usdcToWithdraw
@@ -67,7 +67,7 @@ export function WithdrawalForm({
         if (remainingAmount.isZero()) {
           break;
         }
-        const redeemable = poolToken.principalRedeemable;
+        const redeemable = poolToken.principalAmount;
         if (redeemable.isZero()) {
           continue;
         }

@@ -19,6 +19,7 @@ import { formatCrypto } from "@/lib/format";
 import {
   SupplyFormTranchedPoolFieldsFragment,
   SupplyFormUserFieldsFragment,
+  SupplyFormDealFieldsFragment,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
@@ -56,11 +57,18 @@ export const SUPPLY_FORM_USER_FIELDS = gql`
   }
 `;
 
+export const SUPPLY_FORM_DEAL_FIELDS = gql`
+  fragment SupplyFormDealFields on Deal {
+    id
+    agreement
+    dealType
+  }
+`;
+
 interface SupplyFormProps {
   tranchedPool: SupplyFormTranchedPoolFieldsFragment;
   user: SupplyFormUserFieldsFragment | null;
-  agreement?: string | null;
-  isUnitrancheDeal?: boolean;
+  deal: SupplyFormDealFieldsFragment;
 }
 
 interface SupplyForm {
@@ -77,8 +85,7 @@ export function SupplyForm({
     creditLine: { maxLimit },
   },
   user,
-  agreement,
-  isUnitrancheDeal = false,
+  deal,
 }: SupplyFormProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
@@ -99,7 +106,7 @@ export function SupplyForm({
   const { control, register } = rhfMethods;
 
   const remainingJuniorCapacity =
-    isUnitrancheDeal || !estimatedLeverageRatio
+    deal.dealType === "unitranche" || !estimatedLeverageRatio
       ? maxLimit.sub(juniorDeposited)
       : maxLimit
           .sub(
@@ -297,8 +304,8 @@ export function SupplyForm({
             By entering my name and clicking &ldquo;Invest&rdquo; below, I
             hereby agree and acknowledge that (i) I am electronically signing
             and becoming a party to the{" "}
-            {agreement ? (
-              <Link href={agreement} target="_blank" rel="noreferrer">
+            {deal.agreement ? (
+              <Link href={deal.agreement} target="_blank" rel="noreferrer">
                 Loan Agreement
               </Link>
             ) : (
