@@ -1,25 +1,15 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 import NextLink from "next/link";
 
 import {
-  Breadcrumb,
   Button,
-  TabButton,
-  TabContent,
-  TabGroup,
-  TabList,
-  TabPanels,
-  Heading,
-  ShimmerLines,
-  HelperText,
-  Marquee,
   Banner,
+  ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal, SubnavPortal } from "@/components/layout";
+import { BannerPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -38,7 +28,6 @@ import {
 import { useWallet } from "@/lib/wallet";
 
 import {
-  BorrowerProfile,
   BORROWER_PROFILE_FIELDS,
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
@@ -46,19 +35,14 @@ import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import { ClaimPanel, CLAIM_PANEL_POOL_TOKEN_FIELDS } from "./claim-panel";
 import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
-import DealSummary from "./deal-summary";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
   BORROWER_FINANCIALS_TABLE_FIELDS,
   BORROWER_PERFORMANCE_TABLE_FIELDS,
 } from "./deal-tables";
 import { DOCUMENT_FIELDS } from "./documents-list";
-import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
-import {
-  StatusSection,
-  TRANCHED_POOL_STAT_GRID_FIELDS,
-} from "./status-section";
+import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_FORM_USER_FIELDS,
@@ -150,41 +134,6 @@ gql`
   }
 `;
 
-const getMarqueeColor = (
-  poolStatus: PoolStatus
-): "yellow" | "purple" | "blue" | "green" | undefined => {
-  switch (poolStatus) {
-    case PoolStatus.Closed:
-    case PoolStatus.Full:
-      return "yellow";
-    case PoolStatus.Open:
-      return "purple";
-    case PoolStatus.ComingSoon:
-      return "blue";
-    case PoolStatus.Repaid:
-      return "green";
-    default:
-      return undefined;
-  }
-};
-
-const getMarqueeText = (poolStatus: PoolStatus, numBackers?: number) => {
-  switch (poolStatus) {
-    case PoolStatus.Full:
-      return ["Filled", `${numBackers} Backers`];
-    case PoolStatus.Open:
-      return ["Open", `${numBackers} Backers`];
-    case PoolStatus.ComingSoon:
-      return "Coming Soon";
-    case PoolStatus.Closed:
-      return "Closed";
-    case PoolStatus.Repaid:
-      return "Repaid";
-    default:
-      return "Paused";
-  }
-};
-
 const singleDealQuery = gql`
   ${DOCUMENT_FIELDS}
   ${CMS_TEAM_MEMBER_FIELDS}
@@ -254,7 +203,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-  const isMultitranche = dealDetails.dealType === "multitranche";
 
   if (error) {
     return (
@@ -268,25 +216,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   const fundingStatus = tranchedPool
     ? getTranchedPoolFundingStatus(tranchedPool)
     : null;
-  const backerSupply = tranchedPool?.juniorDeposited
-    ? ({
-        token: "USDC",
-        amount: tranchedPool.juniorDeposited,
-      } as const)
-    : undefined;
-
-  const seniorSupply =
-    backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
-      ? ({
-          token: "USDC",
-          amount: utils.parseUnits(
-            FixedNumber.from(backerSupply.amount)
-              .mulUnsafe(tranchedPool.estimatedLeverageRatio)
-              .toString(),
-            0
-          ),
-        } as const)
-      : undefined;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -340,78 +269,47 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </BannerPortal>
       ) : null}
 
-      <SubnavPortal>
-        {poolStatus && tranchedPool ? (
-          <Marquee colorScheme={getMarqueeColor(poolStatus)}>
-            {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
-          </Marquee>
-        ) : (
-          <Marquee className="invisible">LOADING (placeholder)</Marquee>
-        )}
-        {/* gives the illusion of rounded corners on the top of the page */}
-        <div className="-mt-3 h-3 rounded-t-xl bg-white" />
-      </SubnavPortal>
-
       <div className="pool-layout">
-        <div style={{ gridArea: "heading" }}>
-          <div className="mb-8 flex flex-wrap justify-between gap-2">
-            <div>
-              <Breadcrumb label={dealDetails.name} image={borrower.logo?.url} />
-            </div>
-            {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
-              <Button
-                variant="rounded"
-                colorScheme="secondary"
-                iconRight="ArrowTopRight"
-                as="a"
-                href={`https://etherscan.io/address/${tranchedPool.id}`}
-                target="_blank"
-                rel="noopener"
-              >
-                Contract
-              </Button>
-            ) : null}
-          </div>
-          <Heading
-            level={1}
-            className="mb-12 text-center text-sand-800 md:text-left"
-          >
-            {dealDetails.name}
-          </Heading>
-
-          {error ? (
-            <HelperText isError>
-              There was a problem fetching data on this pool. Shown data may be
-              outdated.
-            </HelperText>
-          ) : null}
-
-          {poolStatus === PoolStatus.Open ||
-          poolStatus === PoolStatus.Closed ? (
-            <FundingBar
-              isMultitranche={isMultitranche}
-              goal={
-                tranchedPool?.creditLine.maxLimit
-                  ? {
-                      token: "USDC",
-                      amount: tranchedPool.creditLine.maxLimit,
-                    }
-                  : undefined
-              }
-              backerSupply={backerSupply}
-              seniorSupply={seniorSupply}
-            />
-          ) : null}
-
-          {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
-            <StatusSection
-              className="mt-12"
-              poolStatus={poolStatus}
-              tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-              fiatPerGfi={fiatPerGfi}
-            />
-          ) : null}
+        <div style={{ gridArea: "info" }}>
+          <ScrollingSectionedContainer
+            sections={[
+              {
+                navTitle: "Overview",
+                title: "Overview",
+                content: <div className="h-80" />,
+              },
+              {
+                navTitle: "Highlights",
+                title: "Highlights",
+                content: <div className="h-80" />,
+              },
+              {
+                navTitle: "Analysis",
+                title: "Analysis",
+                content: <div className="h-80" />,
+              },
+              {
+                navTitle: "Repayment",
+                title: "Repayment terms",
+                content: <div className="h-80" />,
+              },
+              {
+                navTitle: "Borrower",
+                title: "Borrower details",
+                content: <div className="h-80" />,
+              },
+              {
+                navTitle: "Risk",
+                title: "Risk mitigation",
+                content: <div className="h-80" />,
+              },
+            ]}
+            navAddons={
+              dealDetails.dataroom
+                ? [{ text: "Dataroom", href: dealDetails.dataroom }]
+                : undefined
+            }
+          />
         </div>
 
         <div className="flex flex-col" style={{ gridArea: "widgets" }}>
@@ -490,36 +388,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               ) : null}
             </div>
           ) : null}
-        </div>
-
-        <div style={{ gridArea: "info" }}>
-          <TabGroup>
-            <TabList>
-              <TabButton>Deal Overview</TabButton>
-              <TabButton>Borrower Profile</TabButton>
-            </TabList>
-            <TabPanels>
-              <TabContent>
-                {tranchedPool && poolStatus !== null ? (
-                  <DealSummary
-                    dealData={dealDetails}
-                    poolChainData={tranchedPool}
-                    poolStatus={poolStatus}
-                  />
-                ) : (
-                  <ShimmerLines lines={10} />
-                )}
-              </TabContent>
-              <TabContent>
-                {data && data.borrowerOtherPools ? (
-                  <BorrowerProfile
-                    borrower={borrower}
-                    borrowerPools={data.borrowerOtherPools}
-                  />
-                ) : null}
-              </TabContent>
-            </TabPanels>
-          </TabGroup>
         </div>
       </div>
     </>
