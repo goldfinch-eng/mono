@@ -21,6 +21,7 @@ import {
 import {
   getTranchedPoolFundingStatus,
   TranchedPoolFundingStatus,
+  TRANCHED_POOL_FUNDING_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -55,6 +56,7 @@ gql`
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
+  ${TRANCHED_POOL_FUNDING_STATUS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -92,7 +94,7 @@ gql`
       initialInterestOwed
       principalAmountRepaid
       interestAmountRepaid
-      ...TranchedPoolStatusFields
+      ...TranchedPoolFundingStatusFields
     }
     borrowerOtherPools: tranchedPools(
       where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
