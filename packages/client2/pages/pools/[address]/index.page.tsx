@@ -19,9 +19,6 @@ import {
   SingleDealQueryVariables,
 } from "@/lib/graphql/generated";
 import {
-  PoolStatus,
-  getTranchedPoolStatus,
-  TRANCHED_POOL_STATUS_FIELDS,
   getTranchedPoolFundingStatus,
   TranchedPoolFundingStatus,
 } from "@/lib/pools";
@@ -39,7 +36,6 @@ import {
   BORROWER_PERFORMANCE_TABLE_FIELDS,
 } from "./deal-tables";
 import { DOCUMENT_FIELDS } from "./documents-list";
-import RepaymentProgressPanel from "./repayment-progress-panel";
 import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
 import {
   ClaimPanel,
@@ -54,7 +50,6 @@ import {
 import { LoanSummary } from "./v2-components/loan-summary";
 
 gql`
-  ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
@@ -215,7 +210,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
     );
   }
 
-  const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
   const fundingStatus = tranchedPool
     ? getTranchedPoolFundingStatus(tranchedPool)
     : null;
@@ -371,20 +365,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               </div>
             </div>
           </div>
-
-          {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="flex flex-col items-stretch gap-8">
-              {tranchedPool &&
-              (poolStatus === PoolStatus.Full ||
-                poolStatus === PoolStatus.Repaid) ? (
-                <RepaymentProgressPanel
-                  poolStatus={poolStatus}
-                  tranchedPool={tranchedPool}
-                  userPoolTokens={user?.tranchedPoolTokens ?? []}
-                />
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </div>
     </>
