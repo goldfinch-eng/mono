@@ -25,12 +25,12 @@ export function CreditMemoAnalysisCard({
   return (
     <div className={clsx(className, "rounded-xl bg-mustard-100 p-6")}>
       <div className="mb-5 flex justify-between">
-        <div className="mr-8 flex items-center">
+        <div className="flex items-center pr-8">
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sand-200">
             {thumbnail?.url ? (
               <Image
                 src={thumbnail?.url}
-                alt={`${name} icon`}
+                alt={`${thumbnail?.alt}`}
                 fill
                 sizes="48px"
                 className="object-contain"
@@ -39,10 +39,7 @@ export function CreditMemoAnalysisCard({
           </div>
           <div className="ml-3.5">
             <div className="mb-0.5 font-medium">{name}</div>
-            <div className="text-xs text-sand-500">
-              {/* TODO Zadra: These subtitles are much longer than seeing in designs i.e: CEO, Waystar Royco */}
-              {subtitle}
-            </div>
+            <div className="text-xs text-sand-500">{subtitle}</div>
           </div>
         </div>
         <Chip colorScheme="mint" className="flex h-8 min-w-fit items-center">
