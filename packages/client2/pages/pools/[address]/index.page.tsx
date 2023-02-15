@@ -333,48 +333,38 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
             <div className="grow" />
             <div className="sticky bottom-10">
-              <div className="self-stretch rounded-3xl bg-mustard-100">
+              <div className="divide-y divide-mustard-200 self-stretch rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
                 {tranchedPool && seniorPool && fiatPerGfi ? (
                   <>
-                    <div className="p-5 lg:p-10">
-                      <LoanSummary
-                        loan={tranchedPool}
-                        deal={dealDetails}
-                        seniorPoolEstimatedApyFromGfiRaw={
-                          seniorPool.estimatedApyFromGfiRaw
-                        }
-                        fiatPerGfi={fiatPerGfi}
-                      />
-                    </div>
+                    <LoanSummary
+                      loan={tranchedPool}
+                      deal={dealDetails}
+                      seniorPoolEstimatedApyFromGfiRaw={
+                        seniorPool.estimatedApyFromGfiRaw
+                      }
+                      fiatPerGfi={fiatPerGfi}
+                    />
                     {fundingStatus === TranchedPoolFundingStatus.Open ||
                     fundingStatus === TranchedPoolFundingStatus.Cancelled ? (
-                      <div className="border-t border-mustard-200 p-5 lg:p-10">
-                        <InvestAndWithdrawTabs
-                          tranchedPool={tranchedPool}
-                          user={user}
-                          deal={dealDetails}
-                          poolTokens={user?.tranchedPoolTokens ?? []}
-                        />
-                      </div>
+                      <InvestAndWithdrawTabs
+                        tranchedPool={tranchedPool}
+                        user={user}
+                        deal={dealDetails}
+                        poolTokens={user?.tranchedPoolTokens ?? []}
+                      />
                     ) : fundingStatus === TranchedPoolFundingStatus.Closed &&
                       user &&
                       (user.tranchedPoolTokens.length > 0 ||
                         user.vaultedPoolTokens.length > 0) ? (
-                      <div className="border-t border-mustard-200 p-5 lg:p-10">
-                        <ClaimPanel
-                          poolTokens={user.tranchedPoolTokens}
-                          vaultedPoolTokens={user.vaultedPoolTokens}
-                          fiatPerGfi={fiatPerGfi}
-                          tranchedPool={tranchedPool}
-                        />
-                      </div>
+                      <ClaimPanel
+                        poolTokens={user.tranchedPoolTokens}
+                        vaultedPoolTokens={user.vaultedPoolTokens}
+                        fiatPerGfi={fiatPerGfi}
+                        tranchedPool={tranchedPool}
+                      />
                     ) : fundingStatus ===
                       TranchedPoolFundingStatus.ComingSoon ? (
-                      <div className="border-t border-mustard-200 p-5 lg:p-10">
-                        <ComingSoonPanel
-                          fundableAt={tranchedPool?.fundableAt}
-                        />
-                      </div>
+                      <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
                     ) : null}
                   </>
                 ) : null}
