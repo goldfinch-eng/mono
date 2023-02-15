@@ -633,27 +633,27 @@ contract CallableLoan is
   }
 
   function interestAccruedAsOf() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.interestAccruedAsOf();
   }
 
   function lastFullPaymentTime() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.lastFullPaymentTime();
   }
 
   function currentLimit() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.limit();
   }
 
   function limit() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.limit();
   }
 
   function interestApr() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.interestApr();
   }
 
   function lateFeeApr() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.lateFeeApr();
   }
 
   function isLate() public view returns (bool) {

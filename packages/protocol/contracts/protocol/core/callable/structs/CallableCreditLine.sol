@@ -52,6 +52,26 @@ library StaleCallableCreditLineLogic {
     return cl._cpcl.termStartTime();
   }
 
+  function interestAccruedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cpcl.interestAccruedAsOf();
+  }
+
+  function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cpcl.lastFullPaymentTime();
+  }
+
+  function limit(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cpcl.limit();
+  }
+
+  function interestApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cpcl.interestApr();
+  }
+
+  function lateFeeApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cpcl.lateFeeApr();
+  }
+
   function paymentSchedule(
     StaleCallableCreditLine storage cl
   ) internal view returns (PaymentSchedule storage) {
@@ -507,6 +527,18 @@ library CallableCreditLineLogic {
 
   function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
     return cl.totalInterestAccruedAt(block.timestamp);
+  }
+
+  function interestAccruedAsOf(CallableCreditLine storage cl) internal view returns (uint) {
+    return cl._checkpointedAsOf;
+  }
+
+  function lastFullPaymentTime(CallableCreditLine storage cl) internal view returns (uint) {
+    return cl._lastFullPaymentTime;
+  }
+
+  function lateFeeApr(CallableCreditLine storage cl) internal view returns (uint) {
+    return cl._lateAdditionalApr;
   }
 
   function principalRemaining(
