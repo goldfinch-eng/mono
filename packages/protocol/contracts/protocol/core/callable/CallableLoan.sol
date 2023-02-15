@@ -372,7 +372,6 @@ contract CallableLoan is
     ILoan.PaymentAllocation memory pa = _pay(principalPayment + interestPayment);
     require(principalPayment >= pa.principalPayment + pa.additionalBalancePayment, "OPP");
     require(interestPayment >= pa.owedInterestPayment + pa.accruedInterestPayment, "IP");
-    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     return pa;
   }
 
