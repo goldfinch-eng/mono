@@ -46,8 +46,6 @@ interface ICallableLoan is ILoan {
 
   function schedule() external view returns (ISchedule);
 
-  function startTime() external view returns (uint256);
-
   function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
 
   event CallRequestSubmitted(

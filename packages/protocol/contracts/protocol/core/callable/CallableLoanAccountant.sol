@@ -19,7 +19,8 @@ library CallableLoanAccountant {
 
   /// @notice Allocate a payment to proper balances according to the payment waterfall.
   /// @param paymentAmount amount to allocate
-  /// @param principalOutstanding Remaining principal outstanding - similar to balance for v1 + v2 pools.
+  /// @param principalOutstanding Remaining principal outstanding
+  ///                                              - similar to balance for v1 + v2 pools.
   /// @param interestOwed interest owed on the credit line up to the last due time
   /// @param interestAccrued interest accrued between the last due time and the present time (unless last due time
   /// @param principalOwed principal owed on the credit line
