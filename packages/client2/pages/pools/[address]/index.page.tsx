@@ -2,12 +2,15 @@ import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
 import { GetStaticPaths, GetStaticProps } from "next";
+import Image from "next/future/image";
 import NextLink from "next/link";
 
 import {
   Button,
   Banner,
   ScrollingSectionedContainer,
+  Chip,
+  Icon,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
@@ -289,7 +292,62 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Analysis",
                 title: "Analysis",
-                content: <div className="h-80" />,
+                content: (
+                  <div className="h-80">
+                    {dealDetails.creditMemos &&
+                    dealDetails.creditMemos.length > 0 ? (
+                      <div>
+                        <div className="mb-6 text-sm text-sand-400">
+                          Analysis and summary of this deal completed by
+                          independent credit experts
+                        </div>
+                        {dealDetails.creditMemos.map((creditMemo) => {
+                          return (
+                            <div
+                              key={creditMemo.id}
+                              className="rounded-xl bg-mustard-100 p-6"
+                            >
+                              <div className="flex justify-between">
+                                <div className="flex items-center">
+                                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sand-200">
+                                    {creditMemo?.thumbnail?.url ? (
+                                      <Image
+                                        src={creditMemo.thumbnail.url}
+                                        alt={`${creditMemo.name} icon`}
+                                        fill
+                                        sizes="48px"
+                                        className="object-contain"
+                                      />
+                                    ) : null}
+                                  </div>
+                                  <div className="ml-3.5">
+                                    <div className="mb-0.5 font-medium">
+                                      Kendall Roy
+                                    </div>
+                                    <div className="text-xs text-sand-500">
+                                      CEO, Waystar Royco
+                                    </div>
+                                  </div>
+                                </div>
+                                <Chip
+                                  colorScheme="mint"
+                                  className="flex h-8 items-center"
+                                >
+                                  <Icon
+                                    name="Checkmark"
+                                    size="sm"
+                                    className="mr-2.5"
+                                  />
+                                  Vetted reviewer
+                                </Chip>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ),
               },
               {
                 navTitle: "Repayment",
