@@ -96,7 +96,7 @@ function calculateRemainingPeriodDueAmount({
     return BigNumber.from(0);
   }
 
-  return roundUpUsdcPenny(remainingPeriodDueAmount);
+  return remainingPeriodDueAmount;
 }
 
 /**
@@ -119,7 +119,7 @@ function calculateRemainingTotalDueAmount({
     return BigNumber.from(0);
   }
 
-  return roundUpUsdcPenny(remainingTotalDueAmount);
+  return remainingTotalDueAmount;
 }
 
 export enum CreditLineStatus {
