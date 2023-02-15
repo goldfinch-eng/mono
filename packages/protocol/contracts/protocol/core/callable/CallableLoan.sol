@@ -24,6 +24,7 @@ import {CallableCreditLine, CallableCreditLineLogic, StaleCallableCreditLine, St
 import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
+import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
@@ -117,9 +118,9 @@ contract CallableLoan is
 
     (uint256 interestWithdrawn, uint256 principalWithdrawn) = withdrawMax(poolTokenId);
     uint256 totalWithdrawn = interestWithdrawn + principalWithdrawn;
-    uint256 principalRemaining = cl.principalRemaining({
+    uint256 principalRemaining = cl.proportionalPrincipalOutstanding({
       trancheId: tokenInfo.tranche,
-      principalAmount: tokenInfo.principalAmount
+      principalDeposited: tokenInfo.principalAmount
     });
     require(callAmount > 0 && principalRemaining >= callAmount, "IA");
 
@@ -344,57 +345,33 @@ contract CallableLoan is
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
   }
 
-  // No pass yet
+  // Pass 1
   /// @inheritdoc ILoan
   /// @dev ZA: zero amount
   function pay(
     uint256 amount
   ) external override nonReentrant whenNotPaused returns (PaymentAllocation memory) {
-    require(amount > 0, "ZA");
-    // Send money to the credit line. Only take what's actually owed
-    uint256 maxPayableAmount = interestAccrued() + interestOwed() + balance();
-    uint256 amountToPay = MathUpgradeable.min(amount, maxPayableAmount);
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), amountToPay);
-
-    // pay interest first, then principal
-    uint256 interestAmount = MathUpgradeable.min(amountToPay, interestOwed() + interestAccrued());
-    uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
-
-    PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
-
-    // Payment remaining should always be 0 because we don't take excess usdc
-    assert(pa.paymentRemaining == 0);
-    return pa;
+    return _pay(amount);
   }
 
-  // No pass yet
+  // Pass 1
   /// @inheritdoc ILoan
   /// @dev ZA: zero amount
-  /// TODO: Turn back to external
+  /// @dev IPP: Insufficient principal payment - Amount of principal paid violates payment waterfall
+  /// @dev IIP: Insufficient interest payment - Amount of interest paid violates payment waterfall
   function pay(
-    uint256 principalAmount,
-    uint256 interestAmount
+    uint256 principalPayment,
+    uint256 interestPayment
   )
-    public
+    external
     override(ICreditLine, ILoan)
     nonReentrant
     whenNotPaused
     returns (PaymentAllocation memory)
   {
-    uint256 totalPayment = principalAmount + interestAmount;
-    require(totalPayment > 0, "ZA");
-
-    // If there is an excess principal payment then only take what we actually need
-    uint256 principalToPay = MathUpgradeable.min(principalAmount, balance());
-
-    // If there is an excess interest payment then only take what we actually need
-    uint256 maxPayableInterest = interestAccrued() + interestOwed();
-    uint256 interestToPay = MathUpgradeable.min(interestAmount, maxPayableInterest);
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), principalToPay + interestToPay);
-    PaymentAllocation memory pa = _pay(principalToPay, interestToPay);
-
-    // Payment remaining should always be 0 because we don't take excess usdc
-    assert(pa.paymentRemaining == 0);
+    ILoan.PaymentAllocation memory pa = _pay(principalPayment + interestPayment);
+    require(principalPayment >= pa.principalPayment + pa.additionalBalancePayment, "OPP");
+    require(interestPayment >= pa.owedInterestPayment + pa.accruedInterestPayment, "IP");
     return pa;
   }
 
@@ -402,6 +379,12 @@ contract CallableLoan is
   function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
     PaymentSchedule storage ps = _staleCreditLine.paymentSchedule();
     return ps.nextDueTimeAt(timestamp);
+  }
+
+  // Pass 1
+  function nextInterestDueTimeAt(uint256 timestamp) public view returns (uint256) {
+    PaymentSchedule storage ps = _staleCreditLine.paymentSchedule();
+    return ps.nextInterestDueTimeAt(timestamp);
   }
 
   // Pass 1
@@ -435,13 +418,6 @@ contract CallableLoan is
     revert("US");
   }
 
-  // /*
-  //  * Unsupported ILoan method kept for ILoan conformance
-  //  */
-  // function lockPool(uint256 newAmount) external onlyAdmin {
-  //   revert("US");
-  // }
-
   // No pass yet
   /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
@@ -463,49 +439,30 @@ contract CallableLoan is
 
   /* Internal functions  */
 
-  // No pass yet
-  /// @dev NL: not locked
-  function _pay(
-    uint256 principalPayment,
-    uint256 interestPayment
-  ) internal returns (PaymentAllocation memory) {
-    // We need to make sure the pool is locked before we allocate rewards to ensure it's not
-    // possible to game rewards by sandwiching an interest payment to an unlocked pool
-    // It also causes issues trying to allocate payments to an empty slice (divide by zero)
+  function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    require(amount > 0, "ZA");
     require(locked, "NL");
+    ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
+      amount,
+      cl.principalOutstandingIncludingReserves(),
+      cl.interestOwed(),
+      cl.interestAccrued(),
+      cl.principalOwed()
+    );
+    uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
+    uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
+    uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
 
-    uint256 interestAccrued = totalInterestAccruedAt(interestAccruedAsOf());
-    PaymentAllocation memory pa = pay(principalPayment, interestPayment);
-    interestAccrued = totalInterestAccrued() - interestAccrued;
+    uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
+    uint256 reserveFundsFee = (reserveFundsFeePercent * totalInterestPayment) / 100;
 
+    cl.pay(totalPrincipalPayment, totalInterestPayment);
+
+    config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
+    config.getUSDC().safeTransferFrom(address(this), config.reserveAddress(), reserveFundsFee);
+    emit ReserveFundsCollected(address(this), reserveFundsFee);
     return pa;
-  }
-
-  // No pass yet
-  function _collectInterestAndPrincipal(
-    uint256 interest,
-    uint256 principal
-  ) internal returns (uint256) {
-    // TODO: Remove
-    // uint256 totalReserveAmount = TranchingLogic.applyToAllSlices(
-    //   _poolSlices,
-    //   numSlices,
-    //   interest,
-    //   principal,
-    //   uint256(100).div(config.getReserveDenominator()), // Convert the denominator to percent
-    //   totalDeployed,
-    //   creditLine,
-    //   0
-    // );
-
-    // TODO: This is Placeholder - remove
-    uint256 totalReserveAmount = 0;
-
-    config.getUSDC().safeTransferFrom(address(this), config.reserveAddress(), totalReserveAmount);
-
-    emit ReserveFundsCollected(address(this), totalReserveAmount);
-
-    return totalReserveAmount;
   }
 
   // // Internal //////////////////////////////////////////////////////////////////

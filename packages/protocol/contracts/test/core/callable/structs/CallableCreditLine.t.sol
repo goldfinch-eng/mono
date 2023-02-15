@@ -11,6 +11,7 @@ import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
+import {ILoan} from "../../../../interfaces/ILoan.sol";
 import {BaseTest} from "../../BaseTest.t.sol";
 
 using StaleCallableCreditLineLogic for StaleCallableCreditLine;
