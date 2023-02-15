@@ -102,11 +102,11 @@ export function stringToCryptoAmount(
   return { token, amount };
 }
 
+export function roundToPrecision(amount: BigNumber, precision: number) {
+  const incremented = amount.add(precision - 1);
+  return incremented.sub(incremented.mod(precision));
+}
+
 export function roundUpUsdcPenny(usdcAmount: BigNumber) {
-  const penny = BigNumber.from("10000");
-  if (usdcAmount.mod(penny).isZero()) {
-    return usdcAmount;
-  }
-  const rounded = usdcAmount.add(penny).div(penny).mul(penny);
-  return rounded;
+  return roundToPrecision(usdcAmount, 10000);
 }
