@@ -32,7 +32,6 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
@@ -46,6 +45,7 @@ import {
   ClaimPanel,
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
+import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
@@ -332,7 +332,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           <div className="relative flex grow flex-col">
             {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
             <div className="grow" />
-            <div className="sticky bottom-2">
+            <div className="sticky bottom-10">
               <div className="self-stretch rounded-3xl bg-mustard-100">
                 {tranchedPool && seniorPool && fiatPerGfi ? (
                   <>
@@ -368,6 +368,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                           tranchedPool={tranchedPool}
                         />
                       </div>
+                    ) : fundingStatus ===
+                      TranchedPoolFundingStatus.ComingSoon ? (
+                      <div className="border-t border-mustard-200 p-5 lg:p-10">
+                        <ComingSoonPanel
+                          fundableAt={tranchedPool?.fundableAt}
+                        />
+                      </div>
                     ) : null}
                   </>
                 ) : null}
@@ -385,10 +392,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   tranchedPool={tranchedPool}
                   userPoolTokens={user?.tranchedPoolTokens ?? []}
                 />
-              ) : null}
-
-              {poolStatus === PoolStatus.ComingSoon ? (
-                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
               ) : null}
             </div>
           ) : null}
