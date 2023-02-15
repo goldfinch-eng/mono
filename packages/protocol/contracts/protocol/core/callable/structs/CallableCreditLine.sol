@@ -8,7 +8,8 @@ pragma experimental ABIEncoderV2;
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
-import {InterestUtil} from "../../../../library/InterestUtil.sol";
+import {CallableLoanAccountant} from "../CallableLoanAccountant.sol";
+import {ILoan} from "../../../../interfaces/ILoan.sol";
 
 import {Waterfall, WaterfallLogic, TrancheLogic, Tranche} from "./Waterfall.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
@@ -16,7 +17,7 @@ import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 struct StaleCallableCreditLine {
-  CallableCreditLine _cpcl;
+  CallableCreditLine _cl;
 }
 
 using StaleCallableCreditLineLogic for StaleCallableCreditLine global;
@@ -34,14 +35,14 @@ library StaleCallableCreditLineLogic {
     uint _lateAdditionalApr,
     uint _limit
   ) internal {
-    cl._cpcl.initialize(_config, _interestApr, _schedule, _lateAdditionalApr, _limit);
+    cl._cl.initialize(_config, _interestApr, _schedule, _lateAdditionalApr, _limit);
   }
 
   function checkpoint(
     StaleCallableCreditLine storage cl
   ) internal returns (CallableCreditLine storage) {
-    cl._cpcl.checkpoint();
-    return cl._cpcl;
+    cl._cl.checkpoint();
+    return cl._cl;
   }
 
   function schedule(StaleCallableCreditLine storage cl) internal view returns (ISchedule) {
@@ -49,33 +50,45 @@ library StaleCallableCreditLineLogic {
   }
 
   function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
-    return cl._cpcl.termStartTime();
+    return cl._cl.termStartTime();
   }
 
   function interestAccruedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
-    return cl._cpcl.interestAccruedAsOf();
+    return cl._cl.interestAccruedAsOf();
   }
 
   function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
-    return cl._cpcl.lastFullPaymentTime();
+    return cl._cl.lastFullPaymentTime();
   }
 
   function limit(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cpcl.limit();
+    return cl._cl.limit();
   }
 
   function interestApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cpcl.interestApr();
+    return cl._cl.interestApr();
   }
 
   function lateFeeApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cpcl.lateFeeApr();
+    return cl._cl.lateFeeApr();
   }
 
   function paymentSchedule(
     StaleCallableCreditLine storage cl
   ) internal view returns (PaymentSchedule storage) {
-    return cl._cpcl._paymentSchedule;
+    return cl._cl._paymentSchedule;
+  }
+
+  /**
+   * Returns the total amount of principal outstanding - after settling reserved principal.
+   */
+  function previewSettledPrincipalOutstanding(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return
+      cl._cl._waterfall.previewSettledPrincipalOustandingUpToTranche(
+        cl._cl.activeCallSubmissionTranche()
+      );
   }
 }
 
@@ -90,8 +103,8 @@ struct CallableCreditLine {
   uint256 _lastFullPaymentTime;
   uint256 _totalInterestOwed;
   uint256 _totalInterestAccruedAtLastCheckpoint;
-  PaymentSchedule _paymentSchedule;
   Waterfall _waterfall;
+  PaymentSchedule _paymentSchedule;
   uint[50] __padding;
 }
 
@@ -137,15 +150,12 @@ library CallableCreditLineLogic {
 
   function pay(
     CallableCreditLine storage cl,
-    uint256 principalAmount,
-    uint256 interestAmount
+    uint256 principalPayment,
+    uint256 interestPayment
   ) internal {
-    // console.log("pay 1");
-    // console.log(cl._paymentSchedule.currentPrincipalPeriod());
-    // console.log("pay2");
-    cl._bufferedPayments = cl._waterfall.payUntil(
-      principalAmount,
-      interestAmount,
+    cl._waterfall.payUntil(
+      principalPayment,
+      interestPayment,
       cl._paymentSchedule.currentPrincipalPeriod()
     );
   }
@@ -188,13 +198,6 @@ library CallableCreditLineLogic {
   }
 
   /**
-   * Withdraws funds from the uncalled capital tranche.
-   */
-  function withdraw(CallableCreditLine storage cl, uint256 amount) internal {
-    cl._waterfall.withdraw(amount, cl.uncalledCapitalTrancheIndex());
-  }
-
-  /**
    * Withdraws funds from the specified tranche.
    */
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
@@ -213,72 +216,79 @@ library CallableCreditLineLogic {
     uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
       cl._checkpointedAsOf
     );
-    uint256 lastInterestDueTime = cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp);
-    bool needToApplyBuffer = activePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint &&
-      cl._bufferedPayments > 0;
+    uint256 mostRecentlyPastInterestDueTime = cl._paymentSchedule.previousInterestDueTimeAt(
+      block.timestamp
+    );
+    bool needToSettleReserves = activePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint;
 
-    if (needToApplyBuffer) {
-      uint256 interestOwedWhenApplyingBuffer = cl.interestOwedAt(
-        cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf)
-      );
-      uint256 firstInterestPayment = MathUpgradeable.min(
-        interestOwedWhenApplyingBuffer,
-        cl._bufferedPayments
-      );
-
-      // Tranche storage checkpointedTranche = cl._waterfall._tranches[
-      //   activePrincipalPeriodAtLastCheckpoint
-      // ];
-      // uint256 bufferedPrincipalOutstanding = checkpointedTranche.principalOutstanding();
-      // uint256 firstPrincipalPayment = MathUpgradeable.min(
-      //   bufferedPrincipalOutstanding,
-      //   cl._bufferedPayments - firstInterestPayment
-      // );
-
-      // applyBuffer function needs to know how much
-      //   - "Making a payment exactly when principal + interest is due should be
-      //     indistinguishable from applying a prepaid buffer"
-      //   - principalOutstanding is in remaining buckets
-      //   - Allocate to uncalled capital tranche, and remaining buffer depending
-      //     on amount of principal outstanding in remaining called tranches.
-
-      /**
-       * Pay interest owed up until the end of the buffered principal period,
-       * then apply the buffer to ONLY the buffered principal period.
-       * TODO: This should be able to pay interest to all tranches with remaining principal
-       *       outstanding.
-       */
-      uint256 bufferedPaymentsRemainder = cl._waterfall.payUntil(
-        firstInterestPayment,
-        cl._bufferedPayments - firstInterestPayment,
-        cl._paymentSchedule.currentPrincipalPeriod()
-      );
-
-      // uint256 bufferedPaymentsRemainder = cl
-      //   ._bufferedPayments
-      //   .saturatingSub(firstInterestPayment)
-      //   .saturatingSub(firstPrincipalPayment);
-      if (bufferedPaymentsRemainder > 0) {
-        cl._bufferedPayments = cl._waterfall.payUntil(
-          0,
-          bufferedPaymentsRemainder,
-          cl.uncalledCapitalTrancheIndex()
-        );
-      }
-
-      // TODO: Pay any remaining balance to later interest then tranches.
-      cl._totalInterestOwed = cl.totalInterestOwedAt(lastInterestDueTime);
-      cl._checkpointedAsOf = block.timestamp;
-
-      cl._bufferedPayments = 0;
-      // Recalculate totalInterestAccrued after updating waterfall with buffered payments.
-      cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
-    } else {
-      if (lastInterestDueTime > cl._checkpointedAsOf) {
-        cl._totalInterestOwed = cl.totalInterestOwedAt(lastInterestDueTime);
-      }
-      cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
+    if (needToSettleReserves) {
+      cl._waterfall.settleReserves();
     }
+
+    cl._checkpointedAsOf = block.timestamp;
+
+    // if (needToApplyBuffer) {
+    //   uint256 interestOwedWhenApplyingBuffer = cl.interestOwedAt(
+    //     cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf)
+    //   );
+    //   uint256 firstInterestPayment = MathUpgradeable.min(
+    //     interestOwedWhenApplyingBuffer,
+    //     cl._bufferedPayments
+    //   );
+
+    //   // Tranche storage checkpointedTranche = cl._waterfall._tranches[
+    //   //   activePrincipalPeriodAtLastCheckpoint
+    //   // ];
+    //   // uint256 bufferedPrincipalOutstanding = checkpointedTranche.principalOutstanding();
+    //   // uint256 firstPrincipalPayment = MathUpgradeable.min(
+    //   //   bufferedPrincipalOutstanding,
+    //   //   cl._bufferedPayments - firstInterestPayment
+    //   // );
+
+    //   // applyBuffer function needs to know how much
+    //   //   - "Making a payment exactly when principal + interest is due should be
+    //   //     indistinguishable from applying a prepaid buffer"
+    //   //   - principalOutstanding is in remaining buckets
+    //   //   - Allocate to uncalled capital tranche, and remaining buffer depending
+    //   //     on amount of principal outstanding in remaining called tranches.
+
+    //   /**
+    //    * Pay interest owed up until the end of the buffered principal period,
+    //    * then apply the buffer to ONLY the buffered principal period.
+    //    * TODO: This should be able to pay interest to all tranches with remaining principal
+    //    *       outstanding.
+    //    */
+    //   cl._waterfall.payUntil(
+    //     firstInterestPayment,
+    //     cl._bufferedPayments - firstInterestPayment,
+    //     cl._paymentSchedule.currentPrincipalPeriod()
+    //   );
+
+    // uint256 bufferedPaymentsRemainder = cl
+    //   ._bufferedPayments
+    //   .saturatingSub(firstInterestPayment)
+    //   .saturatingSub(firstPrincipalPayment);
+    //   if (bufferedPaymentsRemainder > 0) {
+    //     cl._bufferedPayments = cl._waterfall.payUntil(
+    //       0,
+    //       bufferedPaymentsRemainder,
+    //       cl.uncalledCapitalTrancheIndex()
+    //     );
+    //   }
+
+    //   // TODO: Pay any remaining balance to later interest then tranches.
+    //   cl._totalInterestOwed = cl.totalInterestOwedAt(lastInterestDueTime);
+    //   cl._checkpointedAsOf = block.timestamp;
+
+    //   cl._bufferedPayments = 0;
+    //   // Recalculate totalInterestAccrued after updating waterfall with buffered payments.
+    //   cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
+    // } else {
+    //   if (lastInterestDueTime > cl._checkpointedAsOf) {
+    //     cl._totalInterestOwed = cl.totalInterestOwedAt(lastInterestDueTime);
+    //   }
+    //   cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
+    // }
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -390,9 +400,15 @@ library CallableCreditLineLogic {
   }
 
   /**
+   * Interest accrued up to `block.timestamp`
+   */
+  function interestAccrued(CallableCreditLine storage cl) internal view returns (uint) {
+    cl.interestAccruedAt(block.timestamp);
+  }
+
+  /**
    * Interest accrued up to `timestamp`
    * IT: Invalid timestamp - timestamp must be now or in the future.
-   * // TODO: Verify behavior - intention is unclear here.
    */
   function interestAccruedAt(
     CallableCreditLine storage cl,
@@ -449,7 +465,7 @@ library CallableCreditLineLogic {
     );
 
     // Calculate interest accrued before the payment buffer is applied.
-    totalInterestAccruedReturned = InterestUtil.calculateInterest(
+    totalInterestAccruedReturned = CallableLoanAccountant.calculateInterest(
       cl._checkpointedAsOf,
       MathUpgradeable.min(applyBufferAt, end),
       lateFeesStartAt,
@@ -459,7 +475,7 @@ library CallableCreditLineLogic {
     );
     if (cl._bufferedPayments > 0 && applyBufferAt < end) {
       // Calculate interest accrued after the payment buffer is applied.
-      totalInterestAccruedReturned += InterestUtil.calculateInterest(
+      totalInterestAccruedReturned += CallableLoanAccountant.calculateInterest(
         MathUpgradeable.min(applyBufferAt, end),
         end,
         lateFeesStartAt,
@@ -521,7 +537,19 @@ library CallableCreditLineLogic {
     return cl._waterfall.totalPrincipalDeposited();
   }
 
+  /**
+   * Returns the total amount of principal outstanding - not taking into account unsettled principal.
+   */
   function principalOutstanding(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._waterfall.totalPrincipalOutstanding();
+  }
+
+  /**
+   * Returns the total amount of principal outstanding - not taking into account unsettled principal.
+   */
+  function principalOutstandingIncludingReserves(
+    CallableCreditLine storage cl
+  ) internal view returns (uint256) {
     return cl._waterfall.totalPrincipalOutstanding();
   }
 
@@ -541,12 +569,12 @@ library CallableCreditLineLogic {
     return cl._lateAdditionalApr;
   }
 
-  function principalRemaining(
+  function proportionalPrincipalOutstanding(
     CallableCreditLine storage cl,
     uint256 trancheId,
-    uint256 principalAmount
+    uint256 principalDeposited
   ) internal view returns (uint256) {
-    return cl._waterfall.getTranche(trancheId).cumulativePrincipalRemaining(principalAmount);
+    return cl._waterfall.getTranche(trancheId).cumulativePrincipalRemaining(principalDeposited);
   }
 
   /*

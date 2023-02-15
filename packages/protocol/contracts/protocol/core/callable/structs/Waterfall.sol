@@ -34,12 +34,13 @@ library WaterfallLogic {
   }
 
   /// @notice apply a payment. Principal payments are only applied to tranches below `trancheIndex`
+  /// @dev op: overpayment
   function payUntil(
     Waterfall storage w,
     uint interestAmount,
     uint principalAmount,
     uint trancheIndex
-  ) internal returns (uint principalNotApplied) {
+  ) internal {
     uint totalPrincipalOutstanding = w.totalPrincipalOutstanding();
 
     // console.log("payUntil: interestAmount", interestAmount);
@@ -67,7 +68,7 @@ library WaterfallLogic {
       tranche.pay(proRataInterestPayment, principalPayment);
     }
 
-    return principalAmount;
+    require(principalAmount == 0, "OP");
   }
 
   function drawdown(Waterfall storage w, uint principalAmount) internal {
@@ -102,9 +103,17 @@ library WaterfallLogic {
     uint toTrancheId
   ) internal {
     // console.log("move1");
-    (uint principalTaken, uint interestTaken) = w.getTranche(fromTrancheId).take(principalAmount);
+    (uint principalTaken, uint principalReserved, uint interestTaken) = w
+      .getTranche(fromTrancheId)
+      .take(principalAmount);
     // console.log("move2");
-    return w.getTranche(toTrancheId).addToBalances(principalAmount, principalTaken, interestTaken);
+    return
+      w.getTranche(toTrancheId).addToBalances(
+        principalAmount,
+        principalTaken,
+        principalReserved,
+        interestTaken
+      );
   }
 
   // Submit call request to the callable pool - Proportional amount of principal paid is moved
@@ -119,6 +128,12 @@ library WaterfallLogic {
 
   function deposit(Waterfall storage w, uint trancheId, uint principalAmount) internal {
     return w._tranches[trancheId].deposit(principalAmount);
+  }
+
+  function settleReserves(Waterfall storage w) internal {
+    for (uint i = 0; i < w.numTranches(); i++) {
+      w._tranches[i].settleReserves();
+    }
   }
 
   /**
@@ -173,6 +188,16 @@ library WaterfallLogic {
     return sum;
   }
 
+  function totalPrincipalOutstandingWithReserves(
+    Waterfall storage w
+  ) internal view returns (uint sum) {
+    uint sum;
+    for (uint i = 0; i < w._tranches.length; i++) {
+      sum += w._tranches[i].principalOutstanding();
+    }
+    return sum;
+  }
+
   /**
    *
    * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
@@ -190,26 +215,45 @@ library WaterfallLogic {
     }
     return sum;
   }
+
+  function previewSettledPrincipalOustandingUpToTranche(
+    Waterfall storage w,
+    uint256 trancheIndex
+  ) internal view returns (uint sum) {
+    for (uint i = 0; i < trancheIndex; i++) {
+      sum += w._tranches[i].principalOutstandingWithSettledReserves();
+    }
+  }
 }
 
 struct Tranche {
   uint _principalDeposited;
   uint _principalPaid;
+  uint _principalReserved;
   uint _interestPaid;
   // TODO: verify that this works for upgradeability
   uint[50] __padding;
 }
 
 library TrancheLogic {
+  function settleReserves(Tranche storage t) internal {
+    t._principalPaid -= t._principalReserved;
+    t._principalReserved = 0;
+  }
+
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) internal {
     assert(t._principalPaid + principalAmount <= t.principalOutstanding());
 
     t._interestPaid += interestAmount;
-    t._principalPaid += principalAmount;
+    t._principalReserved += principalAmount;
   }
 
   function principalOutstanding(Tranche storage t) internal view returns (uint) {
     return t._principalDeposited - t._principalPaid;
+  }
+
+  function principalOutstandingWithSettledReserves(Tranche storage t) internal view returns (uint) {
+    return t._principalDeposited - t._principalPaid - t._principalReserved;
   }
 
   /**
@@ -227,7 +271,7 @@ library TrancheLogic {
   function take(
     Tranche storage t,
     uint principal
-  ) internal returns (uint principalPaid, uint interestTaken) {
+  ) internal returns (uint principalPaid, uint principalReserved, uint interestTaken) {
     require(t._principalDeposited > 0, "IT");
     // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
     interestTaken = (t._interestPaid * principal) / t._principalDeposited;
@@ -236,10 +280,11 @@ library TrancheLogic {
     // Take pro rata portion of paid principal
     // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
     // console.log("principalPaid", principalPaid);
+    principalReserved = (t._principalReserved * principal) / t._principalDeposited;
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principal;
-
+    t._principalReserved -= principal;
     t._principalPaid -= principalPaid;
   }
 
@@ -255,12 +300,14 @@ library TrancheLogic {
   function addToBalances(
     Tranche storage t,
     uint principalDeposited,
-    uint interestPaid,
-    uint principalPaid
+    uint principalPaid,
+    uint principalReserved,
+    uint interestPaid
   ) internal {
     t._principalDeposited += principalDeposited;
-    t._interestPaid += interestPaid;
     t._principalPaid += principalPaid;
+    t._principalReserved += principalReserved;
+    t._interestPaid += interestPaid;
   }
 
   function principalDeposited(Tranche storage t) internal view returns (uint) {

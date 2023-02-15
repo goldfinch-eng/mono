@@ -10,7 +10,6 @@ import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IMonthlyScheduleRepo} from "../../interfaces/IMonthlyScheduleRepo.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
-import {TestCallableLoan} from "../TestCallableLoan.sol";
 
 contract CallableLoanBuilder {
   uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000 * 1e6;
