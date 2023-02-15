@@ -72,7 +72,6 @@ contract CallableLoan is
     revert("US");
   }
 
-  // Pass 1
   function initialize(
     address _config,
     address _borrower,
@@ -103,7 +102,6 @@ contract CallableLoan is
     _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
   }
 
-  // Pass 1
   function submitCall(uint256 callAmount, uint256 poolTokenId) external override {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -138,7 +136,6 @@ contract CallableLoan is
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 
-  // Pass 1
   function _splitForCall(
     uint256 callAmount,
     uint256 poolTokenId,
@@ -162,7 +159,6 @@ contract CallableLoan is
     );
   }
 
-  // Pass 1
   /**
    * Set accepted UID types for the loan.
    * Requires that users have not already begun to deposit.
@@ -172,12 +168,10 @@ contract CallableLoan is
     allowedUIDTypes = ids;
   }
 
-  // Pass 1
   function getAllowedUIDTypes() external view returns (uint256[] memory) {
     return allowedUIDTypes;
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /**
    * @dev DL: deposits locked
@@ -211,7 +205,6 @@ contract CallableLoan is
     return tokenId;
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /**
    * @dev DL: deposits locked
@@ -243,7 +236,6 @@ contract CallableLoan is
     return deposit(tranche, amount);
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   function withdraw(
     uint256 tokenId,
@@ -253,7 +245,6 @@ contract CallableLoan is
     return _withdraw(tokenInfo, tokenId, amount);
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /// @dev LEN: argument length mismatch
   function withdrawMultiple(
@@ -267,7 +258,6 @@ contract CallableLoan is
     }
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   function withdrawMax(
     uint256 tokenId
@@ -292,7 +282,6 @@ contract CallableLoan is
     return _withdraw(tokenInfo, tokenId, amountWithdrawable);
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
   /// @dev IF: insufficient funds
@@ -315,13 +304,11 @@ contract CallableLoan is
     emit DrawdownMade(borrower, amount);
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   function setFundableAt(uint256 newFundableAt) external override onlyLocker {
     fundableAt = newFundableAt;
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /// @dev IT: invalid timestamp
   /// @dev LI: loan inactive
@@ -344,7 +331,6 @@ contract CallableLoan is
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /// @dev ZA: zero amount
   function pay(
@@ -353,7 +339,6 @@ contract CallableLoan is
     return _pay(amount);
   }
 
-  // Pass 1
   /// @inheritdoc ILoan
   /// @dev ZA: zero amount
   /// @dev IPP: Insufficient principal payment - Amount of principal paid violates payment waterfall
@@ -374,23 +359,19 @@ contract CallableLoan is
     return pa;
   }
 
-  // Pass 1
   function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
     return _staleCreditLine.nextDueTimeAt(timestamp);
   }
 
-  // Pass 1
   function nextInterestDueTimeAt(uint256 timestamp) public view returns (uint256) {
     PaymentSchedule storage ps = _staleCreditLine.paymentSchedule();
     return ps.nextInterestDueTimeAt(timestamp);
   }
 
-  // Pass 1
   function paymentSchedule() public view returns (PaymentSchedule memory) {
     return _staleCreditLine.paymentSchedule();
   }
 
-  // Pass 1
   function schedule() public view override returns (ISchedule) {
     return _staleCreditLine.schedule();
   }
@@ -430,7 +411,6 @@ contract CallableLoan is
     // }
   }
 
-  // Pass 1
   function hasAllowedUID(address sender) public view override returns (bool) {
     return config.getGo().goOnlyIdTypes(sender, allowedUIDTypes);
   }
@@ -530,7 +510,6 @@ contract CallableLoan is
     return (interestToRedeem, principalToRedeem);
   }
 
-  // Pass 1
   /// @dev DL: Deposits locked. Deposits have already been locked.
   function _lockDeposits() internal {
     require(!locked, "DL");
