@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
+import { roundUpUsdcPenny } from "@/lib/format";
 import { CreditLineAccountingFieldsFragment } from "@/lib/graphql/generated";
 
 /**
@@ -26,7 +27,7 @@ function calculateInterestOwed({
   balance: BigNumber;
 }): BigNumber {
   if (isLate) {
-    return interestOwed;
+    return roundUpUsdcPenny(interestOwed);
   }
 
   const expectedElapsedSeconds = nextDueTime.sub(interestAccruedAsOf);
@@ -39,7 +40,7 @@ function calculateInterestOwed({
     .mul(expectedElapsedSeconds)
     .div(interestAprMantissa);
 
-  return expectedAdditionalInterest.add(interestOwed);
+  return roundUpUsdcPenny(expectedAdditionalInterest.add(interestOwed));
 }
 
 /**
