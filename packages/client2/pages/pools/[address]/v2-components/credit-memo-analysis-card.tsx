@@ -5,13 +5,15 @@ import Image from "next/future/image";
 import { Button, Chip, Icon } from "@/components/design-system";
 import { CreditMemoFieldsFragment } from "@/lib/graphql/generated";
 
+interface CreditMemoAnalysisCardProps {
+  creditMemo: CreditMemoFieldsFragment;
+  className?: string;
+}
+
 export function CreditMemoAnalysisCard({
   creditMemo,
   className,
-}: {
-  creditMemo: CreditMemoFieldsFragment;
-  className?: string;
-}) {
+}: CreditMemoAnalysisCardProps) {
   const {
     thumbnail,
     name,
