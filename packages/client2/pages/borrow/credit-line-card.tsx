@@ -43,7 +43,7 @@ const CreditLineStatusWithTooltip = ({
         "100% of principal and accrued interest has been fully repaid.";
       break;
     case CreditLineStatus.PaymentLate:
-      label = "Late";
+      label = "Grace Period";
       tooltipContent =
         "Pool is past due on principal and or interest obligations.";
       break;
