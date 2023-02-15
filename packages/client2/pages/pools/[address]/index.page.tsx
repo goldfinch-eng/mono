@@ -280,47 +280,44 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Highlights",
                 title: "Highlights",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
-              {
-                navTitle: "Analysis",
-                title: "Analysis",
-                content:
-                  dealDetails.creditMemos &&
-                  dealDetails.creditMemos.length > 0 ? (
-                    <>
-                      <div className="mb-6 text-sm text-sand-400">
-                        Analysis and summary of this deal completed by
-                        independent credit experts
-                      </div>
-                      {dealDetails.creditMemos.map((creditMemo) => (
+              ...(dealDetails.creditMemos && dealDetails.creditMemos.length > 0
+                ? [
+                    {
+                      navTitle: "Analysis",
+                      title: "Analysis",
+                      subtitle:
+                        "Analysis and summary of this deal completed by independent credit experts",
+                      content: dealDetails.creditMemos.map((creditMemo) => (
                         <CreditMemoAnalysisCard
                           key={creditMemo.id}
                           creditMemo={creditMemo}
+                          className="mb-1.5"
                         />
-                      ))}
-                    </>
-                  ) : null,
-              },
+                      )),
+                    },
+                  ]
+                : []),
               {
                 navTitle: "Repayment",
                 title: "Repayment terms",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Borrower",
                 title: "Borrower details",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Risk",
                 title: "Risk mitigation",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
             ]}
             navAddons={

@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { format as formatDate } from "date-fns";
 import Image from "next/future/image";
 
@@ -6,11 +7,12 @@ import { CreditMemoFieldsFragment } from "@/lib/graphql/generated";
 
 export function CreditMemoAnalysisCard({
   creditMemo,
+  className,
 }: {
   creditMemo: CreditMemoFieldsFragment;
+  className?: string;
 }) {
   const {
-    id,
     thumbnail,
     name,
     content,
@@ -21,9 +23,9 @@ export function CreditMemoAnalysisCard({
   } = creditMemo;
 
   return (
-    <div key={id} className="rounded-xl bg-mustard-100 p-6">
+    <div className={clsx(className, "rounded-xl bg-mustard-100 p-6")}>
       <div className="mb-5 flex justify-between">
-        <div className="mr-2 flex items-center">
+        <div className="mr-8 flex items-center">
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sand-200">
             {thumbnail?.url ? (
               <Image

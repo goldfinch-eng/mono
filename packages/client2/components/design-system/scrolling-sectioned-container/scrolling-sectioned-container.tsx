@@ -5,7 +5,12 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { Button, Sentinel } from "@/components/design-system";
 
 interface ScrollingSectionedContainerProps {
-  sections: { title: string; navTitle: string; content: ReactNode }[];
+  sections: {
+    title: string;
+    navTitle: string;
+    subtitle?: string;
+    content: ReactNode;
+  }[];
   navAddons?: { text: string; href: string }[];
 }
 
@@ -68,7 +73,7 @@ export function ScrollingSectionedContainer({
         ))}
       </div>
       <div className="mt-8 space-y-15 px-4">
-        {sections.map(({ navTitle, title, content }, index) => (
+        {sections.map(({ navTitle, title, subtitle, content }, index) => (
           <div
             key={navTitle}
             ref={(node) => {
@@ -90,7 +95,12 @@ export function ScrollingSectionedContainer({
                 </span>
               </a>
             </h2>
-            {content}
+            {subtitle && (
+              <h3 className="font-base mb-6 text-sm font-normal text-sand-400">
+                {subtitle}
+              </h3>
+            )}
+            <div className="mb-16">{content}</div>
           </div>
         ))}
       </div>
