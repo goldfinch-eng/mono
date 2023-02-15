@@ -630,7 +630,7 @@ contract CallableLoan is
 
   /// @notice Cumulative interest paid back up to now
   function totalInterestPaid() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.totalInterestPaid();
   }
 
   /// @notice Cumulative interest owed up to now
@@ -671,7 +671,7 @@ contract CallableLoan is
 
   /// @notice Returns the total amount of principal thats been paid
   function totalPrincipalPaid() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.previewSettledPrincipalOutstanding();
   }
 
   /// @notice Cumulative principal owed at timestamp

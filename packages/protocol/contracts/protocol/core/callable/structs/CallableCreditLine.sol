@@ -101,6 +101,19 @@ library StaleCallableCreditLineLogic {
       );
   }
 
+  /**
+   * Returns the total amount of principal paid  - after settling any reserved principal which
+   * was set aside for now elapsed call request periods.
+   */
+  function previewSettledPrincipalPaid(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return
+      cl._cl._waterfall.previewSettledPrincipalPaidUpToTranche(
+        cl.paymentSchedule().currentPrincipalPeriod()
+      );
+  }
+
   function nextDueTimeAt(
     StaleCallableCreditLine storage cl,
     uint timestamp
@@ -114,6 +127,16 @@ library StaleCallableCreditLineLogic {
 
   function termEndTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
     return cl._cl.termEndTime();
+  }
+
+  /**
+   * Returns the total interest paid.
+   * Not a preview because interest is not (in current implementation) dependent upon checkpoint/settling reserves.
+   * This would require a checkpoint if principal payments could be settled on a more granular basis,
+   * potentially modifying interest accrual amount mid month/quarter.
+   */
+  function totalInterestPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cl.totalInterestPaid();
   }
 }
 
@@ -584,6 +607,10 @@ library CallableCreditLineLogic {
     uint256 principal
   ) internal view returns (uint, uint) {
     return cl._waterfall.cumulativeAmountWithdrawable(trancheId, principal);
+  }
+
+  function totalInterestPaid(CallableCreditLine storage cl) internal view returns (uint) {
+    cl._waterfall.totalInterestPaid();
   }
 
   ////////////////////////////////////////////////////////////////////////////////
