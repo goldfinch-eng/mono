@@ -43,6 +43,7 @@ import {
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
+import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
@@ -64,6 +65,7 @@ gql`
     $borrowerOtherPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
+      __typename
       id
       allowedUidTypes
       estimatedJuniorApy
@@ -275,7 +277,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: <div className="h-80" />,
+                content: (
+                  <div>
+                    {tranchedPool ? (
+                      <FundingStats loan={tranchedPool} deal={dealDetails} />
+                    ) : null}
+                  </div>
+                ),
               },
               {
                 navTitle: "Highlights",

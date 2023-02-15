@@ -78,7 +78,7 @@ export function ScrollingSectionedContainer({
             }}
             data-index={index}
           >
-            <h2 className="font-base mb-2 font-semibold">
+            <h2 className="font-base mb-6 font-semibold">
               <a
                 className="group scroll-mt-15 hover:underline"
                 id={kebabCaseify(navTitle)}
