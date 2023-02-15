@@ -547,6 +547,7 @@ contract CallableLoan is
   /**
    * Pass 1
    */
+  /// @inheritdoc ILoan
   function creditLine() external view override returns (ICreditLine) {
     return this;
   }
@@ -567,45 +568,55 @@ contract CallableLoan is
 
   // // ICreditLine Conformance TODO Should all be external/////////////////////////////////////////////////////
 
+  /// @inheritdoc ICreditLine
   function balance() public view returns (uint256) {
     return _staleCreditLine.totalPrincipalOutstanding();
   }
 
-  function interestOwed() public view returns (uint256) {
+  /// @inheritdoc ICreditLine
+  function interestOwed() public view override returns (uint256) {
     // TODO: Need to be able to preview on staleCreditLine
     // return _staleCreditLine.interestOwed();
     return 0;
   }
 
+  /// @inheritdoc ICreditLine
   function principalOwed() public view override returns (uint256) {
     // return _staleCreditLine.principalOwed();
     return 0;
   }
 
+  /// @inheritdoc ICreditLine
   function termEndTime() public view override returns (uint256) {
     return _staleCreditLine.termEndTime();
   }
 
+  /// @inheritdoc ICreditLine
   function nextDueTime() public view override returns (uint256) {
     return _staleCreditLine.nextDueTime();
   }
 
+  /// @inheritdoc ICreditLine
   function interestAccruedAsOf() public view override returns (uint256) {
     return _staleCreditLine.interestAccruedAsOf();
   }
 
+  /// @inheritdoc ICreditLine
   function currentLimit() public view override returns (uint256) {
     return _staleCreditLine.limit();
   }
 
+  /// @inheritdoc ICreditLine
   function limit() public view override returns (uint256) {
     return _staleCreditLine.limit();
   }
 
+  /// @inheritdoc ICreditLine
   function interestApr() public view override returns (uint256) {
     return _staleCreditLine.interestApr();
   }
 
+  /// @inheritdoc ICreditLine
   function lateFeeApr() public view override returns (uint256) {
     return _staleCreditLine.lateFeeApr();
   }
@@ -618,40 +629,37 @@ contract CallableLoan is
     return false;
   }
 
-  /// @notice Cumulative interest accrued up to now
+  /// @inheritdoc ICreditLine
   function totalInterestAccrued() public view override returns (uint256) {
     return 0;
   }
 
-  /// @notice Cumulative interest accrued up to `timestamp`
+  /// @inheritdoc ICreditLine
   function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
-  /// @notice Cumulative interest paid back up to now
+  /// @inheritdoc ICreditLine
   function totalInterestPaid() public view override returns (uint256) {
     return _staleCreditLine.totalInterestPaid();
   }
 
-  /// @notice Cumulative interest owed up to now
+  /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
-    return 0;
+    _staleCreditLine.totalInterestOwed();
   }
 
-  /// @notice Cumulative interest owed up to `timestamp`
+  /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
-    return 0;
+    _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
-  /// @notice Interest that would be owed at `timestamp`
+  /// @inheritdoc ICreditLine
   function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
-  /// @notice Interest accrued in the current payment period up to now. Converted to
-  ///   owed interest once we cross into the next payment period. Is 0 if the
-  ///   current time is after loan maturity (all interest accrued immediately becomes
-  ///   interest owed).
+  /// @inheritdoc ICreditLine
   function interestAccrued() public view override returns (uint256) {
     return 0;
   }
@@ -660,35 +668,37 @@ contract CallableLoan is
   ///   owed interest once we cross into the payment period after `timestamp`. Is 0
   ///   if `timestamp` is after loan maturity (all interest accrued immediately becomes
   ///   interest owed).
+  /// @inheritdoc ICreditLine
   function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
-  /// @notice Principal owed up to `timestamp`
+  /// @inheritdoc ICreditLine
   function principalOwedAt(uint256 timestamp) public view override returns (uint256) {
     return 0;
   }
 
-  /// @notice Returns the total amount of principal thats been paid
+  /// @inheritdoc ICreditLine
   function totalPrincipalPaid() public view override returns (uint256) {
-    return _staleCreditLine.previewSettledPrincipalOutstanding();
+    return _staleCreditLine.totalPrincipalPaid();
   }
 
-  /// @notice Cumulative principal owed at timestamp
+  /// @inheritdoc ICreditLine
   function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
-    return 0;
+    _staleCreditLine.totalPrincipalOwedAt(timestamp);
   }
 
-  /// @notice Cumulative principal owed at current timestamp
+  /// @inheritdoc ICreditLine
   function totalPrincipalOwed() public view override returns (uint256) {
-    return 0;
+    _staleCreditLine.totalPrincipalOwed();
   }
 
-  /// @notice Time of first drawdown
+  /// @inheritdoc ICreditLine
   function termStartTime() public view override returns (uint256) {
     return _staleCreditLine.termStartTime();
   }
 
+  /// @inheritdoc ICreditLine
   function lastFullPaymentTime() public view override returns (uint256) {
     return _staleCreditLine.lastFullPaymentTime();
   }

@@ -83,35 +83,41 @@ library StaleCallableCreditLineLogic {
     return cl._cl._paymentSchedule;
   }
 
-  function totalPrincipalOutstanding(
-    StaleCallableCreditLine storage cl
+  function totalInterestOwedAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
   ) internal view returns (uint256) {
-    // TODO: For every elapsed call request period since last checkpoint, we need to settle up reserved principal.
-    return cl._cl.totalPrincipalOutstanding(); // Invalid - see TODO above
+    // TODO: Use checkpoint to determine how much interest is owed -
+    return 0;
   }
 
   /**
    * Returns the total amount of principal outstanding  - after settling any reserved principal which
    * was set aside for now elapsed call request periods.
    */
-  function totalPrincipalOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+  function totalPrincipalOwedAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint256) {
     return
       cl._cl._waterfall.totalPrincipalOutstandingUpToTranche(
-        cl.paymentSchedule().currentPrincipalPeriod()
+        cl.paymentSchedule().principalPeriodAt(timestamp)
       );
   }
 
-  /**
-   * Returns the total amount of principal paid  - after settling any reserved principal which
-   * was set aside for now elapsed call request periods.
-   */
-  function previewSettledPrincipalPaid(
+  function totalInterestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl.totalInterestOwedAt(block.timestamp);
+  }
+
+  function totalPrincipalOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl.totalPrincipalOwedAt(block.timestamp);
+  }
+
+  function totalPrincipalOutstanding(
     StaleCallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return
-      cl._cl._waterfall.previewSettledPrincipalPaidUpToTranche(
-        cl.paymentSchedule().currentPrincipalPeriod()
-      );
+    // TODO: For every elapsed call request period since last checkpoint, we need to settle up reserved principal.
+    return cl._cl.totalPrincipalOutstanding(); // Invalid - see TODO above
   }
 
   function nextDueTimeAt(
@@ -137,6 +143,17 @@ library StaleCallableCreditLineLogic {
    */
   function totalInterestPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.totalInterestPaid();
+  }
+
+  /**
+   * Returns the total amount of principal paid  - after settling any reserved principal which
+   * was set aside for now elapsed call request periods.
+   */
+  function totalPrincipalPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return
+      cl._cl._waterfall.totalPrincipalPaidAfterSettlementUpToTranche(
+        cl.paymentSchedule().currentPrincipalPeriod()
+      );
   }
 }
 
