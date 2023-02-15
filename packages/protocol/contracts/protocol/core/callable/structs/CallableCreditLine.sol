@@ -74,7 +74,7 @@ library StaleCallableCreditLineLogic {
   }
 
   function isLate(StaleCallableCreditLine storage cl) internal view returns (bool) {
-    return cl._cpcl.isLate();
+    return cl._cl.isLate();
   }
 
   function paymentSchedule(

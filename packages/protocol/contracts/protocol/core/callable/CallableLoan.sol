@@ -568,10 +568,11 @@ contract CallableLoan is
   // // ICreditLine Conformance TODO Should all be external/////////////////////////////////////////////////////
 
   function balance() public view returns (uint256) {
-    return _staleCreditLine.totalPrincipalOwed();
+    return _staleCreditLine.totalPrincipalOutstanding();
   }
 
   function interestOwed() public view returns (uint256) {
+    // TODO: Need to be able to preview on staleCreditLine
     // return _staleCreditLine.interestOwed();
     return 0;
   }
