@@ -19,11 +19,9 @@ import {
   SingleDealQueryVariables,
 } from "@/lib/graphql/generated";
 import {
-  PoolStatus,
-  getTranchedPoolStatus,
-  TRANCHED_POOL_STATUS_FIELDS,
   getTranchedPoolFundingStatus,
   TranchedPoolFundingStatus,
+  TRANCHED_POOL_FUNDING_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 import { CreditMemoAnalysisCard } from "@/pages/pools/[address]/v2-components/credit-memo-analysis-card";
@@ -33,7 +31,6 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
@@ -41,12 +38,13 @@ import {
   BORROWER_PERFORMANCE_TABLE_FIELDS,
 } from "./deal-tables";
 import { DOCUMENT_FIELDS } from "./documents-list";
-import RepaymentProgressPanel from "./repayment-progress-panel";
 import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
 import {
   ClaimPanel,
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
+import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
+import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
@@ -55,12 +53,12 @@ import {
 import { LoanSummary } from "./v2-components/loan-summary";
 
 gql`
-  ${TRANCHED_POOL_STATUS_FIELDS}
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
+  ${TRANCHED_POOL_FUNDING_STATUS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -68,6 +66,7 @@ gql`
     $borrowerOtherPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
+      __typename
       id
       allowedUidTypes
       estimatedJuniorApy
@@ -86,6 +85,7 @@ gql`
         maxLimit
         id
         isLate @client
+        isInDefault @client
         termInDays
         paymentPeriodInDays
         nextDueTime
@@ -98,7 +98,7 @@ gql`
       initialInterestOwed
       principalAmountRepaid
       interestAmountRepaid
-      ...TranchedPoolStatusFields
+      ...TranchedPoolFundingStatusFields
     }
     borrowerOtherPools: tranchedPools(
       where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
@@ -216,7 +216,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
     );
   }
 
-  const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
   const fundingStatus = tranchedPool
     ? getTranchedPoolFundingStatus(tranchedPool)
     : null;
@@ -280,7 +279,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: <div className="h-96" />,
+                content: (
+                  <div>
+                    {tranchedPool ? (
+                      <FundingStats loan={tranchedPool} deal={dealDetails} />
+                    ) : null}
+                  </div>
+                ),
               },
               {
                 navTitle: "Highlights",
@@ -345,66 +350,45 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           <div className="relative flex grow flex-col">
             {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
             <div className="grow" />
-            <div className="sticky bottom-2">
-              <div className="self-stretch rounded-3xl bg-mustard-100">
+            <div className="sticky bottom-10">
+              <div className="divide-y divide-mustard-200 self-stretch rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
                 {tranchedPool && seniorPool && fiatPerGfi ? (
                   <>
-                    <div className="p-5 lg:p-10">
-                      <LoanSummary
-                        loan={tranchedPool}
-                        deal={dealDetails}
-                        seniorPoolEstimatedApyFromGfiRaw={
-                          seniorPool.estimatedApyFromGfiRaw
-                        }
-                        fiatPerGfi={fiatPerGfi}
-                      />
-                    </div>
+                    <LoanSummary
+                      loan={tranchedPool}
+                      deal={dealDetails}
+                      seniorPoolEstimatedApyFromGfiRaw={
+                        seniorPool.estimatedApyFromGfiRaw
+                      }
+                      fiatPerGfi={fiatPerGfi}
+                    />
                     {fundingStatus === TranchedPoolFundingStatus.Open ||
                     fundingStatus === TranchedPoolFundingStatus.Cancelled ? (
-                      <div className="border-t border-mustard-200 p-5 lg:p-10">
-                        <InvestAndWithdrawTabs
-                          tranchedPool={tranchedPool}
-                          user={user}
-                          deal={dealDetails}
-                          poolTokens={user?.tranchedPoolTokens ?? []}
-                        />
-                      </div>
+                      <InvestAndWithdrawTabs
+                        tranchedPool={tranchedPool}
+                        user={user}
+                        deal={dealDetails}
+                        poolTokens={user?.tranchedPoolTokens ?? []}
+                      />
                     ) : fundingStatus === TranchedPoolFundingStatus.Closed &&
                       user &&
                       (user.tranchedPoolTokens.length > 0 ||
                         user.vaultedPoolTokens.length > 0) ? (
-                      <div className="border-t border-mustard-200 p-5 lg:p-10">
-                        <ClaimPanel
-                          poolTokens={user.tranchedPoolTokens}
-                          vaultedPoolTokens={user.vaultedPoolTokens}
-                          fiatPerGfi={fiatPerGfi}
-                          tranchedPool={tranchedPool}
-                        />
-                      </div>
+                      <ClaimPanel
+                        poolTokens={user.tranchedPoolTokens}
+                        vaultedPoolTokens={user.vaultedPoolTokens}
+                        fiatPerGfi={fiatPerGfi}
+                        tranchedPool={tranchedPool}
+                      />
+                    ) : fundingStatus ===
+                      TranchedPoolFundingStatus.ComingSoon ? (
+                      <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
                     ) : null}
                   </>
                 ) : null}
               </div>
             </div>
           </div>
-
-          {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="flex flex-col items-stretch gap-8">
-              {tranchedPool &&
-              (poolStatus === PoolStatus.Full ||
-                poolStatus === PoolStatus.Repaid) ? (
-                <RepaymentProgressPanel
-                  poolStatus={poolStatus}
-                  tranchedPool={tranchedPool}
-                  userPoolTokens={user?.tranchedPoolTokens ?? []}
-                />
-              ) : null}
-
-              {poolStatus === PoolStatus.ComingSoon ? (
-                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </div>
     </>
