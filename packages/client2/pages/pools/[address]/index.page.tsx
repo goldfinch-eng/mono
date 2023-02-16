@@ -24,6 +24,7 @@ import {
   TRANCHED_POOL_FUNDING_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { RepaymentTermsStats } from "@/pages/pools/[address]/v2-components/repayment-terms-stats";
 
 import {
   BORROWER_PROFILE_FIELDS,
@@ -90,6 +91,7 @@ gql`
         isInDefault @client
         termInDays
         paymentPeriodInDays
+        termStartTime
         nextDueTime
         interestAprDecimal
         borrowerContract {
@@ -314,7 +316,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Repayment",
                 title: "Repayment terms",
-                content: <div className="h-96" />,
+                content: (
+                  <div className="h-96">
+                    <RepaymentTermsStats loan={tranchedPool} className="mb-6" />
+                  </div>
+                ),
               },
               {
                 navTitle: "Borrower",
