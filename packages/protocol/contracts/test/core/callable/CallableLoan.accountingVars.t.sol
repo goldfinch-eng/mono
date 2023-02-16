@@ -75,7 +75,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 expectedPrincipalOwed = cl.principalOwed();
     // Interest owed should be up to the most recently past next due time
     ISchedule schedule = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.startTime());
+    uint64 startTime = uint64(callableLoan.termStartTime());
     uint256 previousDueTime = schedule.previousInterestDueTimeAt(startTime, timestamp);
     uint256 expectedInterestOwed = getInterestAccrued(
       block.timestamp,

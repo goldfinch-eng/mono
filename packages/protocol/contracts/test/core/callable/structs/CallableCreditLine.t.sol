@@ -80,7 +80,7 @@ contract TestCallableCreditLine is BaseTest {
     cpcl.deposit(depositAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount);
-    assertEq(cpcl.principalOutstanding(), 0);
+    assertEq(cpcl.totalPrincipalOutstanding(), 0);
     assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
   }
@@ -93,7 +93,7 @@ contract TestCallableCreditLine is BaseTest {
     cpcl.drawdown(drawdownAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount - drawdownAmount);
-    assertEq(cpcl.principalOutstanding(), drawdownAmount);
+    assertEq(cpcl.totalPrincipalOutstanding(), drawdownAmount);
     assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
   }
@@ -111,7 +111,7 @@ contract TestCallableCreditLine is BaseTest {
     // TODO: Assert that principal is buffered
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), 0);
-    assertEq(cpcl.principalOutstanding(), depositAmount);
+    assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
 
     console.log("3");
     // TODO: Assert that interest is buffered
@@ -132,7 +132,7 @@ contract TestCallableCreditLine is BaseTest {
 
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), 0);
-    assertEq(cpcl.principalOutstanding(), depositAmount);
+    assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
 
     console.log("3");
 

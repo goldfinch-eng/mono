@@ -49,7 +49,6 @@ contract CallableLoan is
 
   StaleCallableCreditLine private _staleCreditLine;
 
-  uint256 public override startTime;
   uint256 public override createdAt;
   address public override borrower;
   bool public drawdownsPaused;
@@ -377,8 +376,7 @@ contract CallableLoan is
 
   // Pass 1
   function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
-    PaymentSchedule storage ps = _staleCreditLine.paymentSchedule();
-    return ps.nextDueTimeAt(timestamp);
+    return _staleCreditLine.nextDueTimeAt(timestamp);
   }
 
   // Pass 1
@@ -445,7 +443,7 @@ contract CallableLoan is
     require(locked, "NL");
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
       amount,
-      cl.principalOutstandingIncludingReserves(),
+      cl.totalPrincipalOutstanding(),
       cl.interestOwed(),
       cl.interestAccrued(),
       cl.principalOwed()
@@ -570,31 +568,29 @@ contract CallableLoan is
   // // ICreditLine Conformance TODO Should all be external/////////////////////////////////////////////////////
 
   function balance() public view returns (uint256) {
-    return 0;
+    return _staleCreditLine.totalPrincipalOwed();
   }
 
   function interestOwed() public view returns (uint256) {
+    // return _staleCreditLine.interestOwed();
     return 0;
   }
 
   function principalOwed() public view override returns (uint256) {
+    // return _staleCreditLine.principalOwed();
     return 0;
   }
 
   function termEndTime() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.termEndTime();
   }
 
   function nextDueTime() public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.nextDueTime();
   }
 
   function interestAccruedAsOf() public view override returns (uint256) {
     return _staleCreditLine.interestAccruedAsOf();
-  }
-
-  function lastFullPaymentTime() public view override returns (uint256) {
-    return _staleCreditLine.lastFullPaymentTime();
   }
 
   function currentLimit() public view override returns (uint256) {
@@ -690,6 +686,10 @@ contract CallableLoan is
   /// @notice Time of first drawdown
   function termStartTime() public view override returns (uint256) {
     return _staleCreditLine.termStartTime();
+  }
+
+  function lastFullPaymentTime() public view override returns (uint256) {
+    return _staleCreditLine.lastFullPaymentTime();
   }
 
   // // Modifiers /////////////////////////////////////////////////////////////////
