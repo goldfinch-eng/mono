@@ -11,7 +11,8 @@ interface ChipProps {
     | "yellow"
     | "green"
     | "sand"
-    | "transparent";
+    | "transparent"
+    | "mint";
 }
 
 export function Chip({
@@ -37,6 +38,8 @@ export function Chip({
           ? "border-0 bg-sand-100 text-sand-700"
           : colorScheme === "transparent"
           ? "border-eggplant-100 bg-transparent text-sand-700"
+          : colorScheme === "mint"
+          ? "border-mint-50 bg-mint-50 text-mint-600"
           : null,
         className
       )}

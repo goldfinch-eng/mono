@@ -30,7 +30,6 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
   BORROWER_FINANCIALS_TABLE_FIELDS,
@@ -43,6 +42,10 @@ import {
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
+import {
+  CreditMemoAnalysisCard,
+  CREDIT_MEMO_FIELDS,
+} from "./v2-components/credit-memo-analysis-card";
 import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
@@ -289,27 +292,39 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Highlights",
                 title: "Highlights",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
-              {
-                navTitle: "Analysis",
-                title: "Analysis",
-                content: <div className="h-80" />,
-              },
+              ...(dealDetails.creditMemos && dealDetails.creditMemos.length > 0
+                ? [
+                    {
+                      navTitle: "Analysis",
+                      title: "Analysis",
+                      subtitle:
+                        "Analysis and summary of this deal completed by independent credit experts",
+                      content: dealDetails.creditMemos.map((creditMemo) => (
+                        <CreditMemoAnalysisCard
+                          key={creditMemo.id}
+                          creditMemo={creditMemo}
+                          className="mb-1.5"
+                        />
+                      )),
+                    },
+                  ]
+                : []),
               {
                 navTitle: "Repayment",
                 title: "Repayment terms",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Borrower",
                 title: "Borrower details",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Risk",
                 title: "Risk mitigation",
-                content: <div className="h-80" />,
+                content: <div className="h-96" />,
               },
             ]}
             navAddons={
