@@ -132,18 +132,18 @@ export default function BorrowPage({
         </div>
       ) : (
         <div className="mb-3 ">
-          <div className="mb-3 grid grid-cols-12 gap-6 px-6 text-sand-500">
-            <div className="col-span-6 block md:col-span-5">Pool</div>
-            <div className="col-span-3 hidden justify-self-end md:block">
+          <div className="mb-3 grid grid-cols-12 gap-6 whitespace-nowrap px-6 text-sand-500">
+            <div className="col-span-6 block lg:col-span-4">Pool</div>
+            <div className="col-span-3 hidden justify-self-end lg:block">
               Credit Line
             </div>
-            <div className="col-span-2 hidden justify-self-end md:block">
+            <div className="col-span-2 hidden justify-self-end lg:block">
               Next Payment
             </div>
-            <div className="col-span-1 hidden justify-self-end md:block">
+            <div className="col-span-2 hidden justify-self-end lg:block">
               Status
             </div>
-            <div className="col-span-6 block justify-self-end md:col-span-1">
+            <div className="col-span-6 block justify-self-end lg:col-span-1">
               Due Date
             </div>
           </div>
