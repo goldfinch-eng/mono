@@ -179,6 +179,16 @@ library WaterfallLogic {
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
+  function totalPrincipalPaidAfterSettlementUpToTranche(
+    Waterfall storage w,
+    uint256 trancheIndex
+  ) internal view returns (uint totalPrincipalPaid) {
+    for (uint i = 0; i < w.numTranches(); i++) {
+      totalPrincipalPaid += w.getTranche(i).principalPaidAfterSettlement();
+    }
+  }
+
+  /// @notice Returns the total amount of principal paid to all tranches
   function totalPrincipalPaid(Waterfall storage w) internal view returns (uint) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
@@ -344,6 +354,11 @@ library TrancheLogic {
   /// @notice Returns the amount of principal paid to the tranche
   function principalPaid(Tranche storage t) internal view returns (uint) {
     return t._principalPaid;
+  }
+
+  /// @notice Returns the amount of principal paid + principal reserved
+  function principalPaidAfterSettlement(Tranche storage t) internal view returns (uint) {
+    return t._principalPaid + t._principalReserved;
   }
 
   function interestPaid(Tranche storage t) internal view returns (uint) {
