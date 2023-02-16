@@ -341,7 +341,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               as="a"
               variant="rounded"
               size="lg"
-              colorScheme="secondary"
+              colorScheme="sand"
               iconLeft="ArrowLeft"
               className="mb-10 self-start"
             >
