@@ -58,15 +58,19 @@ export function Nav() {
   return (
     <>
       <div className="flex flex-row border-b border-sand-300 px-6 md:px-10">
-        <div className="self-center md:hidden">
-          <button className="p-1" onClick={() => setIsMobileNavOpen(true)}>
+        <div className="mr-3 self-center md:hidden">
+          <button
+            className="-ml-1 p-1"
+            onClick={() => setIsMobileNavOpen(true)}
+          >
             <Icon name="Menu" size="md" />
           </button>
         </div>
 
         <div className="flex flex-1">
           <NextLink href="/" passHref>
-            <a className="flex items-center justify-center p-3">
+            {/* padding + negative margin keeps the clickable area big, but keeps the actual logo the correct distance from the left edge */}
+            <a className="-ml-3 flex items-center justify-center p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard-300">
                 <GoldfinchLogo className="h-5 w-5" />
               </div>
