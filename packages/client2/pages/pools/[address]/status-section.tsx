@@ -18,6 +18,7 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
     creditLine {
       id
       isLate @client
+      isInDefault @client
       termInDays
       paymentPeriodInDays
       termEndTime
@@ -89,9 +90,11 @@ export function StatusSection({
           ? "Repaid"
           : tranchedPool.creditLine.isLate
           ? "Grace Period"
-          : "Current"
+          : tranchedPool.creditLine.isInDefault
+          ? "Default"
+          : "On Time"
       }
-      tooltip="The current status of the Borrower's repayments to this Pool. A status of Current means that the Borrower is up-to-date on their principal and interest payments to this Pool. A status of Default means that the Borrower has been late on their principal and interest payments to this Pool beyond the grace period."
+      tooltip="The current status of the Borrower's repayments to this Pool. A status of On Time means that the Borrower is up-to-date on their principal and interest payments to this Pool. A status of Default means that the Borrower has been late on their principal and interest payments to this Pool beyond the grace period."
     />
   );
   const principalOutstandingStat = (
