@@ -371,10 +371,6 @@ contract CallableLoan is
     return _staleCreditLine.schedule();
   }
 
-  function scheduleAndTermStartTime() public view returns (ISchedule, uint64) {
-    return (_staleCreditLine.schedule(), _staleCreditLine.termStartTime());
-  }
-
   // TODO: Unnecessary now?
   /// @notice Pauses all drawdowns (but not deposits/withdraws)
   function pauseDrawdowns() public onlyAdmin {

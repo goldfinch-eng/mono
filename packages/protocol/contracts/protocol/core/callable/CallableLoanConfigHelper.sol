@@ -54,10 +54,6 @@ library CallableLoanConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
-  function backerRewardsAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.BackerRewards));
-  }
-
   function goldfinchFactoryAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory));
   }

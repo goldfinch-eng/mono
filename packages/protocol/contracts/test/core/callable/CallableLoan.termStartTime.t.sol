@@ -23,7 +23,8 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
     deposit(callableLoan, 1, usdcVal(1_000_000), DEPOSITOR);
     drawdown(callableLoan, 100);
 
-    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
+    ISchedule s = callableLoan.schedule();
+    uint64 startTime = uint64(callableLoan.termStartTime());
     assertEq(cl.termStartTime(), s.termStartTime(startTime));
   }
 

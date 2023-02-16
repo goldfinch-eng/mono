@@ -23,7 +23,8 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1), GF_OWNER);
 
-    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
+    ISchedule s = callableLoan.schedule();
+    uint64 startTime = uint64(callableLoan.termStartTime());
 
     assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
@@ -65,7 +66,8 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
     uint256 oldNextDueTime = cl.nextDueTime();
 
-    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
+    ISchedule s = callableLoan.schedule();
+    uint64 startTime = uint64(callableLoan.termStartTime());
     uint256 newNextDueTime = s.nextDueTimeAt(startTime, timestamp);
 
     vm.warp(timestamp);
@@ -84,7 +86,8 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
 
     vm.warp(timestamp);
 
-    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
+    ISchedule s = callableLoan.schedule();
+    uint64 startTime = uint64(callableLoan.termStartTime());
     assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
   }
 
