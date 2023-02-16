@@ -435,6 +435,14 @@ contract CallableLoan is
     uint256 reserveFundsFee = (reserveFundsFeePercent * totalInterestPayment) / 100;
 
     cl.pay(totalPrincipalPayment, totalInterestPayment);
+    emit PaymentApplied({
+      payer: msg.sender,
+      pool: address(this),
+      interest: totalInterestPayment,
+      principal: totalPrincipalPayment,
+      remaining: 0,
+      reserve: reserveFundsFee
+    });
 
     config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
     config.getUSDC().safeTransferFrom(address(this), config.reserveAddress(), reserveFundsFee);
