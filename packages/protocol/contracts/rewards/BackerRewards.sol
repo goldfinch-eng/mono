@@ -286,12 +286,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
   }
 
-  /// @notice callback for Callable loans when they drawdown
-  /// @dev initializes rewards info for the calling callable loan.
-  /// TODO: DO we need to lock this down to only callable loans?
-  //        Fill in
-  function onCallableLoanDrawdown() external onlyPool nonReentrant {}
-
   /**
    * @notice Calculate the gross available gfi rewards for a PoolToken
    * @param tokenId Pool token id
