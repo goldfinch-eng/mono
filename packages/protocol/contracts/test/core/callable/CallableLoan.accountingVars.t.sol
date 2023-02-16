@@ -217,7 +217,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.termEndTime() - 1
     );
 
-    (ISchedule s, uint64 startTime) = (callableLoan.paymentSchedule().asTuple());
+    (ISchedule s, uint64 startTime) = (callableLoan.scheduleAndTermStartTime());
 
     uint256 totalRegIntAccrued = getInterestAccrued(
       startTime,
@@ -261,7 +261,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.termEndTime() - 1
     );
 
-    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
+    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
 
     // Calculate regular interest that has accrued in the current period (from last due time
     // until timestamp)
@@ -304,7 +304,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.termEndTime() - 1
     );
 
-    (ISchedule s, uint64 startTime) = callableLoan.paymentSchedule().asTuple();
+    (ISchedule s, uint64 startTime) = callableLoan.scheduleAndTermStartTime();
 
     uint256 regIntOwed = getInterestAccrued(
       startTime,

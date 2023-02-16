@@ -46,15 +46,11 @@ library StaleCallableCreditLineLogic {
   }
 
   function schedule(StaleCallableCreditLine storage cl) internal view returns (ISchedule) {
-    return cl.paymentSchedule().schedule;
+    return cl._cl._paymentSchedule.schedule;
   }
 
-  function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint64) {
     return cl._cl.termStartTime();
-  }
-
-  function interestAccruedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
-    return cl._cl.interestAccruedAsOf();
   }
 
   function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
@@ -77,10 +73,30 @@ library StaleCallableCreditLineLogic {
     return cl._cl.isLate();
   }
 
-  function paymentSchedule(
-    StaleCallableCreditLine storage cl
-  ) internal view returns (PaymentSchedule storage) {
-    return cl._cl._paymentSchedule;
+  function checkpointedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cl.checkpointedAsOf();
+  }
+
+  function interestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl.interestOwedAt(block.timestamp);
+  }
+
+  function principalOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl.principalOwedAt(block.timestamp);
+  }
+
+  function interestOwedAt(
+    StaleCallableCreditLine storage cl,
+    uint256 timestamp
+  ) internal view returns (uint256) {
+    return cl.totalInterestOwedAt(timestamp) - cl.totalInterestPaid();
+  }
+
+  function principalOwedAt(
+    StaleCallableCreditLine storage cl,
+    uint256 timestamp
+  ) internal view returns (uint256) {
+    return cl.totalPrincipalOwedAt(block.timestamp) - cl.totalPrincipalPaidAt(timestamp);
   }
 
   function totalInterestOwedAt(
@@ -101,7 +117,7 @@ library StaleCallableCreditLineLogic {
   ) internal view returns (uint256) {
     return
       cl._cl._waterfall.totalPrincipalOutstandingUpToTranche(
-        cl.paymentSchedule().principalPeriodAt(timestamp)
+        cl._cl._paymentSchedule.principalPeriodAt(timestamp)
       );
   }
 
@@ -118,6 +134,13 @@ library StaleCallableCreditLineLogic {
   ) internal view returns (uint256) {
     // TODO: For every elapsed call request period since last checkpoint, we need to settle up reserved principal.
     return cl._cl.totalPrincipalOutstanding(); // Invalid - see TODO above
+  }
+
+  function nextInterestDueTimeAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint) {
+    return cl.nextInterestDueTimeAt(timestamp);
   }
 
   function nextDueTimeAt(
@@ -147,13 +170,24 @@ library StaleCallableCreditLineLogic {
 
   /**
    * Returns the total amount of principal paid  - after settling any reserved principal which
+   * was set aside for call request periods which would have elapsed at timestamp.
+   */
+  function totalPrincipalPaidAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint256) {
+    return
+      cl._cl._waterfall.totalPrincipalPaidAfterSettlementUpToTranche(
+        cl._cl._paymentSchedule.principalPeriodAt(timestamp)
+      );
+  }
+
+  /**
+   * Returns the total amount of principal paid  - after settling any reserved principal which
    * was set aside for now elapsed call request periods.
    */
   function totalPrincipalPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return
-      cl._cl._waterfall.totalPrincipalPaidAfterSettlementUpToTranche(
-        cl.paymentSchedule().currentPrincipalPeriod()
-      );
+    return cl.totalPrincipalPaidAt(block.timestamp);
   }
 }
 
@@ -329,6 +363,13 @@ library CallableCreditLineLogic {
     return uint32(cl._waterfall.numTranches() - 1);
   }
 
+  function nextInterestDueTimeAt(
+    CallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint) {
+    return cl._paymentSchedule.nextInterestDueTimeAt(timestamp);
+  }
+
   function nextDueTime(CallableCreditLine storage cl, uint timestamp) internal view returns (uint) {
     return cl.nextDueTimeAt(block.timestamp);
   }
@@ -340,8 +381,8 @@ library CallableCreditLineLogic {
     return cl._paymentSchedule.nextDueTimeAt(timestamp);
   }
 
-  function termStartTime(CallableCreditLine storage cl) internal view returns (uint) {
-    return cl._paymentSchedule.termStartTime();
+  function termStartTime(CallableCreditLine storage cl) internal view returns (uint64) {
+    return cl._paymentSchedule.startTime;
   }
 
   function termEndTime(CallableCreditLine storage cl) internal view returns (uint) {
@@ -585,7 +626,7 @@ library CallableCreditLineLogic {
     return cl.totalInterestAccruedAt(block.timestamp);
   }
 
-  function interestAccruedAsOf(CallableCreditLine storage cl) internal view returns (uint) {
+  function checkpointedAsOf(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._checkpointedAsOf;
   }
 
