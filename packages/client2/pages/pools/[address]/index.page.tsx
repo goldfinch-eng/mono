@@ -24,7 +24,6 @@ import {
   TRANCHED_POOL_FUNDING_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
-import { CreditMemoAnalysisCard } from "@/pages/pools/[address]/v2-components/credit-memo-analysis-card";
 
 import {
   BORROWER_PROFILE_FIELDS,
@@ -43,7 +42,10 @@ import {
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
-import { CREDIT_MEMO_FIELDS } from "./v2-components/credit-memo-analysis-card";
+import {
+  CreditMemoAnalysisCard,
+  CREDIT_MEMO_FIELDS,
+} from "./v2-components/credit-memo-analysis-card";
 import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
