@@ -364,16 +364,15 @@ contract CallableLoan is
   }
 
   function nextInterestDueTimeAt(uint256 timestamp) public view returns (uint256) {
-    PaymentSchedule storage ps = _staleCreditLine.paymentSchedule();
-    return ps.nextInterestDueTimeAt(timestamp);
-  }
-
-  function paymentSchedule() public view returns (PaymentSchedule memory) {
-    return _staleCreditLine.paymentSchedule();
+    return _staleCreditLine.nextInterestDueTimeAt(timestamp);
   }
 
   function schedule() public view override returns (ISchedule) {
     return _staleCreditLine.schedule();
+  }
+
+  function scheduleAndTermStartTime() public view returns (ISchedule, uint64) {
+    return (_staleCreditLine.schedule(), _staleCreditLine.termStartTime());
   }
 
   // TODO: Unnecessary now?
@@ -554,15 +553,12 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function interestOwed() public view override returns (uint256) {
-    // TODO: Need to be able to preview on staleCreditLine
-    // return _staleCreditLine.interestOwed();
-    return 0;
+    return _staleCreditLine.interestOwed();
   }
 
   /// @inheritdoc ICreditLine
   function principalOwed() public view override returns (uint256) {
-    // return _staleCreditLine.principalOwed();
-    return 0;
+    return _staleCreditLine.principalOwed();
   }
 
   /// @inheritdoc ICreditLine
@@ -635,7 +631,7 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.interestOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
@@ -654,7 +650,7 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function principalOwedAt(uint256 timestamp) public view override returns (uint256) {
-    return 0;
+    return _staleCreditLine.principalOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
