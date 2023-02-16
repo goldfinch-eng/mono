@@ -53,10 +53,6 @@ library StaleCallableCreditLineLogic {
     return cl._cl.termStartTime();
   }
 
-  function interestAccruedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
-    return cl._cl.interestAccruedAsOf();
-  }
-
   function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
     return cl._cl.lastFullPaymentTime();
   }
@@ -75,6 +71,10 @@ library StaleCallableCreditLineLogic {
 
   function isLate(StaleCallableCreditLine storage cl) internal view returns (bool) {
     return cl._cl.isLate();
+  }
+
+  function checkpointedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cl.checkpointedAsOf();
   }
 
   function interestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
@@ -626,7 +626,7 @@ library CallableCreditLineLogic {
     return cl.totalInterestAccruedAt(block.timestamp);
   }
 
-  function interestAccruedAsOf(CallableCreditLine storage cl) internal view returns (uint) {
+  function checkpointedAsOf(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._checkpointedAsOf;
   }
 

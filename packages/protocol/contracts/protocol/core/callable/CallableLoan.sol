@@ -571,9 +571,10 @@ contract CallableLoan is
     return _staleCreditLine.nextDueTime();
   }
 
-  /// @inheritdoc ICreditLine
+  /// @notice We keep this to conform to the ICreditLine interface, but it's redundant information
+  ///   now that we have `checkpointedAsOf`
   function interestAccruedAsOf() public view override returns (uint256) {
-    return _staleCreditLine.interestAccruedAsOf();
+    return _staleCreditLine.checkpointedAsOf();
   }
 
   /// @inheritdoc ICreditLine
