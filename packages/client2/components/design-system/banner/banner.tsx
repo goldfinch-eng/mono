@@ -28,13 +28,19 @@ export function Banner({
   return (
     <Disclosure
       as="div"
-      className={clsx("w-full bg-sky-500 px-5 text-white", className)}
+      className={clsx(
+        "w-full border-b border-sand-200 text-mustard-700",
+        className
+      )}
     >
       {({ open }) => (
-        <div className="mx-auto max-w-7xl">
-          <Disclosure.Button className="flex w-full items-center justify-between py-4 text-xs">
-            <div className={clsx("text-left", open ? "opacity-70" : null)}>
-              {initialContent}
+        <>
+          <Disclosure.Button className="flex w-full items-center justify-between py-4 px-6 text-xs md:px-10">
+            <div className="flex items-center gap-2">
+              <Icon name="InfoCircle" className="text-mustard-500" size="sm" />
+              <div className={clsx("text-left", open ? "opacity-70" : null)}>
+                {initialContent}
+              </div>
             </div>
             <Icon
               name="ChevronDown"
@@ -88,7 +94,7 @@ export function Banner({
           >
             <Disclosure.Panel>
               <div
-                className="text-xs transition-[max-height]"
+                className="px-6 text-xs transition-[max-height] md:px-10"
                 ref={transitionRef}
               >
                 {expandedContent}
@@ -97,7 +103,7 @@ export function Banner({
               </div>
             </Disclosure.Panel>
           </Transition>
-        </div>
+        </>
       )}
     </Disclosure>
   );
