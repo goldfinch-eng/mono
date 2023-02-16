@@ -35,7 +35,7 @@ export function Banner({
     >
       {({ open }) => (
         <>
-          <Disclosure.Button className="flex w-full items-center justify-between py-4 px-6 text-xs md:px-10">
+          <Disclosure.Button className="flex w-full items-center justify-between py-3 px-6 text-xs md:px-10">
             <div className="flex items-center gap-2">
               <Icon name="InfoCircle" className="text-mustard-500" size="sm" />
               <div className={clsx("text-left", open ? "opacity-70" : null)}>
@@ -99,7 +99,7 @@ export function Banner({
               >
                 {expandedContent}
                 {/* this looks silly but it's necessary in order to make this contribute to the parent div's scrollHeight (which must be accurate for animation) */}
-                <div className="pb-4" />
+                <div className="pb-3" />
               </div>
             </Disclosure.Panel>
           </Transition>
