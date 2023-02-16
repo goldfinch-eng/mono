@@ -1,9 +1,31 @@
 import clsx from "clsx";
 import { format as formatDate } from "date-fns";
+import { gql } from "graphql-request";
 import Image from "next/future/image";
 
 import { Button, Chip, Icon } from "@/components/design-system";
 import { CreditMemoFieldsFragment } from "@/lib/graphql/generated";
+
+export const CREDIT_MEMO_FIELDS = gql`
+  fragment CreditMemoFields on Deal_CreditMemos {
+    id
+    thumbnail {
+      url
+      alt
+      sizes {
+        thumbnail {
+          url
+        }
+      }
+    }
+    name
+    subtitle
+    content
+    date
+    fullMemoUrl
+    executiveSummaryUrl
+  }
+`;
 
 interface CreditMemoAnalysisCardProps {
   creditMemo: CreditMemoFieldsFragment;

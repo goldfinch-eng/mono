@@ -31,7 +31,6 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import {
   SECURITIES_RECOURSE_TABLE_FIELDS,
   BORROWER_FINANCIALS_TABLE_FIELDS,
@@ -44,6 +43,7 @@ import {
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
+import { CREDIT_MEMO_FIELDS } from "./v2-components/credit-memo-analysis-card";
 import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
