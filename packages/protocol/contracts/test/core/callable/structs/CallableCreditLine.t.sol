@@ -176,8 +176,6 @@ contract TestCallableCreditLine is BaseTest {
    */
   function testTotalInterestAccruedAt() public {}
 
-  function testEarliestPrincipalOutstandingTrancheIndex() public {}
-
   // TODO
   function testIsLate() public {}
 

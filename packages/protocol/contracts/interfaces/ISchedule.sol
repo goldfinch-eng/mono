@@ -88,4 +88,9 @@ interface ISchedule {
     uint256 startTime,
     uint256 timestamp
   ) external view returns (uint256);
+
+  /**
+   * @notice Returns the end time of the given period.
+   */
+  function periodEndTime(uint256 startTime, uint256 period) external view returns (uint256);
 }

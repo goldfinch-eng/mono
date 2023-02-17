@@ -205,7 +205,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     setMaxLimit(callableLoan, limit);
 
-    deposit(callableLoan, 1, depositAmount, DEPOSITOR);
+    deposit(callableLoan, 3, depositAmount, DEPOSITOR);
     // TODO: Drawdown to lock pool
     assertEq(cl.limit(), limit);
   }
