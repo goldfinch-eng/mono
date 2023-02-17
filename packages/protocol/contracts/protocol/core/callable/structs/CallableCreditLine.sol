@@ -83,7 +83,7 @@ library CallableCreditLineLogic {
   Main Write Functions
   ================================================================================*/
   // Scenario to test:
-  // Premise - Before first drawdown, and before first due date
+  // Premise - Before first due date
   // 1. Make first drawdown = 1/2 of deposits
   // 2. Some users withdraw portions of their deposits
   // 3. Borrower makes early interest repayment (also make version of test with early principal repayment)
@@ -96,7 +96,7 @@ library CallableCreditLineLogic {
     uint256 interestPayment
   ) internal {
     LoanState loanState = cl.loanState();
-    require(loanState == LoanState.InProgress || loanState == LoanState.FundingPeriod, "ILS");
+    require(loanState == LoanState.InProgress || loanState == LoanState.DrawdownPeriod, "ILS");
     cl._waterfall.payUntil(
       principalPayment,
       interestPayment,
@@ -161,7 +161,7 @@ library CallableCreditLineLogic {
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.FundingPeriod || loanState == LoanState.InProgress, "ILS");
-    cl._waterfall.withdraw(amount, trancheId);
+    cl._waterfall.withdraw({trancheId: trancheId, principalAmount: amount});
   }
 
   /// Settles payment reserves and updates the checkpointed values.
@@ -464,6 +464,9 @@ library CallableCreditLineLogic {
     uint trancheId,
     uint256 principal
   ) internal view returns (uint, uint) {
+    if (cl.loanState() == LoanState.FundingPeriod) {
+      return cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal);
+    }
     return
       trancheId >= cl.activeCallSubmissionTrancheIndex()
         ? cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal)

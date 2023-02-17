@@ -473,11 +473,7 @@ contract CallableLoan is
       }
     }
 
-    config.getUSDC().safeTransferFrom(
-      address(this),
-      msg.sender,
-      interestToRedeem + principalToRedeem
-    );
+    config.getUSDC().safeTransfer(msg.sender, interestToRedeem + principalToRedeem);
 
     emit WithdrawalMade({
       owner: msg.sender,
