@@ -127,7 +127,6 @@ library CallableCreditLineLogic {
     }
     require(loanState == LoanState.DrawdownPeriod, "ILS");
 
-    // TODO: COnditions for valid drawdown.
     require(
       amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <= cl._limit,
       "Cannot drawdown more than the limit"
@@ -210,7 +209,6 @@ library CallableCreditLineLogic {
     return uint32(cl._waterfall.numTranches() - 1);
   }
 
-  // TODO: Should account for end of term.
   function principalOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
