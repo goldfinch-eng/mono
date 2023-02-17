@@ -1,5 +1,6 @@
 import { format as formatDate } from "date-fns";
 import { gql } from "graphql-request";
+import { ReactNode } from "react";
 
 import { Shimmer, Stat, StatGrid } from "@/components/design-system";
 import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
@@ -28,74 +29,73 @@ export function RepaymentTermsStats({
 }: RepaymentTermsStatsProps) {
   const loading = !loan?.creditLine;
 
+  const stats: { label: string; value: ReactNode; tooltip: string }[] = [
+    {
+      label: "Loan term",
+      value: loading ? (
+        <Shimmer />
+      ) : (
+        `${Math.floor(loan.creditLine.termInDays.toNumber() / 30)} months`
+      ),
+      tooltip: "TODO: Loan term tooltip",
+    },
+    {
+      label: "Payment frequency",
+      value: loading ? (
+        <Shimmer />
+      ) : (
+        `${loan.creditLine.paymentPeriodInDays.toString()} days`
+      ),
+      tooltip: "TODO: Payment frequency tooltip",
+    },
+    {
+      label: "Total payments",
+      value: loading ? (
+        <Shimmer />
+      ) : (
+        Math.ceil(
+          loan.creditLine.termInDays.toNumber() /
+            loan.creditLine.paymentPeriodInDays.toNumber()
+        )
+      ),
+      tooltip: "TODO: Total payments tooltip",
+    },
+    {
+      label: "Repayment structure",
+      value: loading ? <Shimmer /> : "Bullet",
+      tooltip: "TODO: Repayment structure tooltip",
+    },
+    {
+      label: "Est. repayment start date",
+      value: loading ? (
+        <Shimmer />
+      ) : (
+        formatDate(loan.creditLine.termStartTime.toNumber() * 1000, "MMM d, y")
+      ),
+      tooltip: "TODO: Est. repayment start date tooltip",
+    },
+    {
+      label: "Est. loan maturity date",
+      value: loading ? (
+        <Shimmer />
+      ) : (
+        formatDate(loan.creditLine.termEndTime.toNumber() * 1000, "MMM d, y")
+      ),
+      tooltip: "TODO: Est. loan maturity date tooltip",
+    },
+  ];
+
   return (
     <StatGrid className={className}>
-      <Stat
-        className="bg-mustard-50"
-        label="Loan term"
-        value={
-          loading ? (
-            <Shimmer />
-          ) : (
-            `${Math.floor(loan.creditLine.termInDays.toNumber() / 30)} months`
-          )
-        }
-        tooltip="TODO: Loan term tooltip"
-      />
-      <Stat
-        className="bg-mustard-50"
-        label="Payment frequency"
-        value={
-          loading ? (
-            <Shimmer />
-          ) : (
-            `${loan.creditLine.paymentPeriodInDays.toString()} days`
-          )
-        }
-        tooltip="TODO: Payment frequency tooltip"
-      />
-      <Stat
-        className="bg-mustard-50"
-        label="Total payments"
-        value={loading ? <Shimmer /> : "36"}
-        tooltip="TODO: Total payments tooltip"
-      />
-      <Stat
-        className="bg-mustard-50"
-        label="Repayment structure"
-        value={loading ? <Shimmer /> : "Bullet"}
-        tooltip="TODO: Repayment structure tooltip"
-      />
-      <Stat
-        className="bg-mustard-50"
-        label="Est. repayment start date"
-        value={
-          loading ? (
-            <Shimmer />
-          ) : (
-            formatDate(
-              loan.creditLine.termStartTime.toNumber() * 1000,
-              "MMM d, y"
-            )
-          )
-        }
-        tooltip="TODO: Est. repayment start date tooltip"
-      />
-      <Stat
-        className="bg-mustard-50"
-        label="Est. loan maturity date"
-        value={
-          loading ? (
-            <Shimmer />
-          ) : (
-            formatDate(
-              loan.creditLine.termEndTime.toNumber() * 1000,
-              "MMM d, y"
-            )
-          )
-        }
-        tooltip="TODO: Est. loan maturity date tooltip"
-      />
+      {stats.map(({ label, value, tooltip }, i) => (
+        <Stat
+          key={i}
+          className="bg-mustard-50"
+          label={label}
+          value={value}
+          tooltip={tooltip}
+        />
+      ))}
     </StatGrid>
   );
 }
