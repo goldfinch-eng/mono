@@ -59,8 +59,6 @@ library PaymentScheduleLogic {
     PaymentSchedule storage s,
     uint256 timestamp
   ) internal view isActiveMod(s) returns (uint256) {
-    // console.log("timestamp", timestamp);
-    // console.log("s.startTime", s.startTime);
     return s.schedule.principalPeriodAt(s.startTime, timestamp);
   }
 
@@ -70,6 +68,13 @@ library PaymentScheduleLogic {
 
   function currentPeriod(PaymentSchedule storage s) internal view returns (uint256) {
     return s.periodAt(block.timestamp);
+  }
+
+  function periodEndTime(
+    PaymentSchedule storage s,
+    uint256 period
+  ) internal view isActiveMod(s) returns (uint256) {
+    return s.schedule.periodEndTime(s.startTime, period);
   }
 
   function periodAt(

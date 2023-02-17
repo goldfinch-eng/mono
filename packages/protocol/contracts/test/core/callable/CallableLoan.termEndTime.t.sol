@@ -26,7 +26,7 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
     drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
     setMaxLimit(callableLoan, drawdownAmount * 2);
 
-    deposit(callableLoan, 1, drawdownAmount * 2, DEPOSITOR);
+    deposit(callableLoan, 3, drawdownAmount * 2, DEPOSITOR);
     // TODO: Drawdown to lock pool
     drawdown(callableLoan, drawdownAmount);
     uint256 termEndTimeBefore = cl.termEndTime();

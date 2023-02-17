@@ -237,6 +237,12 @@ contract Schedule is ISchedule {
     return _startOfInterestPeriod(startTime, nextInterestPeriod);
   }
 
+  /// @inheritdoc ISchedule
+  function periodEndTime(uint256 startTime, uint256 period) public view override returns (uint256) {
+    uint256 absPeriod = _periodToAbsolutePeriod(startTime, period);
+    return periodMapper.startOf(absPeriod + 1);
+  }
+
   //===============================================================================
   // Internal functions
   //===============================================================================

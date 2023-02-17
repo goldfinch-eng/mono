@@ -13,7 +13,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   function testNextDueTimeIsZeroBeforeDrawdown() public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertZero(cl.nextDueTime());
-    deposit(callableLoan, 1, usdcVal(4), DEPOSITOR);
+    deposit(callableLoan, 3, usdcVal(4), DEPOSITOR);
     assertZero(cl.nextDueTime());
     // TODO: Drawdown to lock pool
     assertZero(cl.nextDueTime());

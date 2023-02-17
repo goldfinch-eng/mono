@@ -3,8 +3,6 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-// import {console2 as console} from "forge-std/console2.sol";
-
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 
@@ -20,7 +18,7 @@ struct StaleCallableCreditLine {
 using StaleCallableCreditLineLogic for StaleCallableCreditLine global;
 
 /**
- * Dumb wrapper around CallableCreditLine which returns a checkpointed
+ * Simple wrapper around CallableCreditLine which returns a checkpointed
  * CallableCreditLine after checkpoint() is called.
  */
 library StaleCallableCreditLineLogic {
@@ -103,10 +101,6 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalInterestOwedAt(timestamp);
   }
 
-  /**
-   * Returns the total amount of principal outstanding  - after settling any reserved principal which
-   * was set aside for now elapsed call request periods.
-   */
   function totalPrincipalOwedAt(
     StaleCallableCreditLine storage cl,
     uint timestamp
@@ -158,20 +152,34 @@ library StaleCallableCreditLineLogic {
     return cl._cl.proportionalInterestAndPrincipalAvailable(trancheId, principal);
   }
 
-  /**
-   * Returns the total interest paid.
-   * Not a preview because interest is not (in current implementation) dependent upon checkpoint/settling reserves.
-   * This would require a checkpoint if principal payments could be settled on a more granular basis,
-   * potentially modifying interest accrual amount mid month/quarter.
-   */
+  function totalInterestAccrued(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return cl._cl.totalInterestAccrued();
+  }
+
+  function totalInterestAccruedAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint256) {
+    return cl._cl.totalInterestAccruedAt(timestamp);
+  }
+
+  function interestAccrued(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cl.interestAccrued();
+  }
+
+  function interestAccruedAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint256) {
+    return cl._cl.interestAccruedAt(timestamp);
+  }
+
   function totalInterestPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.totalInterestPaid();
   }
 
-  /**
-   * Returns the total amount of principal paid  - after settling any reserved principal which
-   * was set aside for call request periods which would have elapsed at timestamp.
-   */
   function totalPrincipalPaidAt(
     StaleCallableCreditLine storage cl,
     uint timestamp
@@ -179,11 +187,19 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalPaidAt(timestamp);
   }
 
-  /**
-   * Returns the total amount of principal paid  - after settling any reserved principal which
-   * was set aside for now elapsed call request periods.
-   */
   function totalPrincipalPaid(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.totalPrincipalPaid();
+  }
+
+  function withinPrincipalGracePeriod(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (bool) {
+    return cl._cl.withinPrincipalGracePeriod();
+  }
+
+  function uncalledCapitalTrancheIndex(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return cl._cl.uncalledCapitalTrancheIndex();
   }
 }

@@ -34,6 +34,7 @@ import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from 
 import {
   BackerRewards,
   Borrower,
+  CallableLoan,
   CommunityRewards,
   CreditLine,
   GFI,
@@ -215,8 +216,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     depositAmount = new BN(5000).mul(USDCDecimals)
     txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
     await txn.wait()
-    // TODO: Use correct uncalled tranche for deposit
-    txn = await openCallableLoan.connect(signer).deposit(1, String(depositAmount))
+
+    txn = await openCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
     await txn.wait()
     /*** CALLABLE LOAN END ***/
 
@@ -235,10 +236,10 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     depositAmount = new BN(10000).mul(USDCDecimals)
     txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
     await txn.wait()
-    txn = await closedCallableLoan.connect(signer).deposit(1, String(depositAmount))
+    txn = await closedCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
     await txn.wait()
 
-    await closedCallableLoan.lockPool()
+    //TODO: Lock pool
     await txn.wait()
     /*** CALLABLE LOAN CLOSED END ***/
 
@@ -877,6 +878,16 @@ async function createPoolForBorrower({
   return pool
 }
 
+const CALLABLE_LOAN_SCHEDULE_CONFIG = {
+  numPeriods: 24,
+  numPeriodsPerPrincipalPeriods: 3,
+  numPeriodsPerInterestPeriod: 1,
+  gracePrincipalPeriods: 1,
+}
+const UNCALLED_CAPITAL_TRANCHE =
+  CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods / CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods -
+  CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods -
+  1
 async function createCallableLoanForBorrower({
   getOrNull,
   underwriter,
@@ -895,11 +906,21 @@ async function createCallableLoanForBorrower({
   erc20: Contract
   allowedUIDTypes: Array<number>
   limitInDollars?: number
-}): Promise<TranchedPool> {
+}): Promise<CallableLoan> {
   const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
-  await monthlyScheduleRepo.createSchedule(24, 1, 1, 1)
-  const schedule = await monthlyScheduleRepo.getSchedule(24, 1, 1, 1)
-  const juniorFeePercent = String(new BN(20))
+  await monthlyScheduleRepo.createSchedule(
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
+  )
+  const schedule = await monthlyScheduleRepo.getSchedule(
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
+    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
+  )
+
   const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const lateFeeApr = String(new BN(0))
@@ -912,24 +933,24 @@ async function createCallableLoanForBorrower({
       .createCallableLoan(borrower, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
-  const poolAddress = lastEventArgs[0]
-  const poolContract = await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool")
-  assertNonNullable(poolContract)
-  const pool = poolContract.attach(poolAddress).connect(underwriterSigner)
+  const loanAddress = lastEventArgs[0]
+  const loanContract = await getDeployedAsEthersContract<CallableLoan>(getOrNull, "CallableLoan")
+  assertNonNullable(loanContract)
+  const loan = loanContract.attach(loanAddress).connect(underwriterSigner)
 
-  logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
-  let txn = await erc20.connect(underwriterSigner).approve(pool.address, String(limit))
+  logger(`Created a Callable Loan ${loanAddress} for the borrower ${borrower}`)
+  let txn = await erc20.connect(underwriterSigner).approve(loan.address, String(limit))
   await txn.wait()
 
   if (depositor) {
     const depositAmount = String(new BN(limit).div(new BN(20)))
     const depositorSigner = ethers.provider.getSigner(depositor)
-    txn = await erc20.connect(depositorSigner).approve(pool.address, String(limit))
+    txn = await erc20.connect(depositorSigner).approve(loan.address, String(limit))
     await txn.wait()
-    txn = await pool.connect(depositorSigner).deposit(TRANCHES.Junior, depositAmount)
+    txn = await loan.connect(depositorSigner).deposit(UNCALLED_CAPITAL_TRANCHE, depositAmount)
     await txn.wait()
 
-    logger(`Deposited ${depositAmount} into ${pool.address} via ${depositor}`)
+    logger(`Deposited ${depositAmount} into ${loan.address} via ${depositor}`)
   }
-  return pool
+  return loan
 }

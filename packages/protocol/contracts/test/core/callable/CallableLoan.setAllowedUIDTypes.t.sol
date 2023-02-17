@@ -25,7 +25,7 @@ contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
-    deposit(callableLoan, 1, usdcVal(1), user);
+    deposit(callableLoan, 3, usdcVal(1), user);
 
     uint256[] memory newIds = new uint256[](0);
     vm.expectRevert("has balance");

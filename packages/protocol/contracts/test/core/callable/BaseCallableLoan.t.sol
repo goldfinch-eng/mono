@@ -212,7 +212,8 @@ contract CallableLoanBaseTest is BaseTest {
     uint256 depositAmount,
     address depositor
   ) internal returns (uint256) {
-    return deposit(callableLoan, 1, depositAmount, depositor);
+    return
+      deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), depositAmount, depositor);
   }
 
   function pay(
@@ -322,7 +323,7 @@ contract CallableLoanBaseTest is BaseTest {
     uint256 depositAmount,
     address investor
   ) internal impersonating(callableLoan.creditLine().borrower()) returns (uint256 tokenId) {
-    tokenId = deposit(callableLoan, 1, depositAmount, investor);
+    tokenId = deposit(callableLoan, 3, depositAmount, investor);
     callableLoan.drawdown(depositAmount);
   }
 

@@ -3,8 +3,8 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
@@ -45,7 +45,15 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
 
     bytes32 ownerRole = callableLoan.OWNER_ROLE();
-    vm.expectRevert("AccessControl: sender must be an admin to grant");
+    vm.expectRevert(
+      abi.encodePacked(
+        "AccessControl: account ",
+        StringsUpgradeable.toHexString(uint160(user), 20),
+        " is missing role ",
+        StringsUpgradeable.toHexString(uint256(ownerRole), 32)
+      )
+    );
+
     callableLoan.grantRole(ownerRole, user);
   }
 
@@ -54,10 +62,10 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     pause(callableLoan);
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.deposit(1, usdcVal(1));
+    callableLoan.deposit(3, usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.depositWithPermit(1, usdcVal(1), 0, 0, 0, 0);
+    callableLoan.depositWithPermit(3, usdcVal(1), 0, 0, 0, 0);
 
     vm.expectRevert("Pausable: paused");
     callableLoan.withdraw(1, usdcVal(1));
@@ -96,7 +104,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     unpause(callableLoan);
 
     // None of these calls should revert
-    deposit(callableLoan, 1, usdcVal(100), user);
+    deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), usdcVal(100), user);
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
       usdc,
       user,
@@ -106,7 +114,16 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
       block.timestamp + 1
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
-    depositWithPermit(callableLoan, 1, usdcVal(100), block.timestamp + 1, v, r, s, user);
+    depositWithPermit(
+      callableLoan,
+      callableLoan.uncalledCapitalTrancheIndex(),
+      usdcVal(100),
+      block.timestamp + 1,
+      v,
+      r,
+      s,
+      user
+    );
 
     withdraw(callableLoan, 1, usdcVal(1), user);
     withdrawMax(callableLoan, 2, user);

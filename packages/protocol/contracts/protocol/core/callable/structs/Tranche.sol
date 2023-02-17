@@ -21,7 +21,10 @@ library TrancheLogic {
   }
 
   function pay(Tranche storage t, uint interestAmount, uint principalAmount) internal {
-    assert(t._principalPaid + principalAmount + t._principalReserved <= t.principalOutstanding());
+    assert(
+      t._principalPaid + principalAmount + t._principalReserved <=
+        t.principalOutstandingWithReserves()
+    );
 
     t._interestPaid += interestAmount;
     t._principalReserved += principalAmount;
@@ -30,14 +33,14 @@ library TrancheLogic {
   /**
    * Returns principal outstanding, omitting _principalReserve.
    */
-  function settledPrincipalOutstanding(Tranche storage t) internal view returns (uint) {
+  function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
    * Returns principal outstanding, taking into account any _principalReserve.
    */
-  function principalOutstanding(Tranche storage t) internal view returns (uint) {
+  function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;
   }
 
