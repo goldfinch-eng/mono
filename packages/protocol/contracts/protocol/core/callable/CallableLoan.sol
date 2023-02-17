@@ -7,7 +7,7 @@ pragma experimental ABIEncoderV2;
 import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 // solhint-disable-next-line max-line-length
 import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
@@ -56,7 +56,6 @@ contract CallableLoan is
   uint256[] public allowedUIDTypes;
   uint256 public totalDeployed;
   uint256 public fundableAt;
-  bool public locked;
 
   /*
    * Unsupported - only included for compatibility with ICreditLine.
@@ -178,7 +177,6 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /**
-   * @dev DL: deposits locked
    * @dev IA: invalid amount - must be greater than 0.
    * @dev IT: invalid tranche - must be uncalled capital tranche
    * @dev NA: not authorized. Must have correct UID or be go listed
@@ -192,7 +190,6 @@ contract CallableLoan is
     uint256 amount
   ) public override nonReentrant whenNotPaused returns (uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    require(!locked, "DL");
     require(amount > 0, "IA");
     require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
     require(hasAllowedUID(msg.sender), "NA");
@@ -211,7 +208,6 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /**
-   * @dev DL: deposits locked
    * @dev IA: invalid amount - must be greater than 0.
    * @dev IT: invalid tranche - must be uncalled capital tranche
    * @dev NA: not authorized. Must have correct UID or be go listed
@@ -274,16 +270,9 @@ contract CallableLoan is
   {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    (uint256 interestWithdrawable, uint256 principalWithdrawable) = cl
-      .cumulativeAmountWithdrawable({
-        trancheId: tokenInfo.tranche,
-        principal: tokenInfo.principalAmount
-      });
-    uint256 amountWithdrawable = interestWithdrawable +
-      principalWithdrawable -
-      tokenInfo.principalRedeemed -
-      tokenInfo.interestRedeemed;
-    return _withdraw(tokenInfo, tokenId, amountWithdrawable);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
+    uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
+    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
   }
 
   /// @inheritdoc ILoan
@@ -299,9 +288,7 @@ contract CallableLoan is
     require(cl.totalPrincipalPaid() == 0);
     require(amount <= cl.totalPrincipalPaid(), "IF");
 
-    // Assumes investments have been made already (saves the borrower a separate transaction to lock the pool)
-    _lockDeposits();
-
+    // TODO: must implement locking in the credit line on drawdown
     cl.drawdown(amount);
 
     config.getUSDC().safeTransferFrom(address(this), borrower, amount);
@@ -399,15 +386,23 @@ contract CallableLoan is
   // No pass yet
   /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
-    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    // TODO:
-    // ITranchedPool.TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
+    return _availableToWithdraw(config.getPoolTokens().getTokenInfo(tokenId));
+  }
 
-    // if (block.timestamp > trancheInfo.lockedUntil) {
-    //   return TranchingLogic.redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
-    // } else {
-    return (0, 0);
-    // }
+  function _availableToWithdraw(
+    IPoolTokens.TokenInfo memory tokenInfo
+  ) internal view returns (uint interestAvailable, uint principalAvailable) {
+    // TODO: this should account for redemptions being locked for some period of time after and return (0, 0)
+      (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable)
+        = _staleCreditLine.proportionalInterestAndPrincipalAvailable(
+          tokenInfo.tranche,
+          tokenInfo.principalAmount
+        );
+      
+      return (
+        totalInterestWithdrawable - tokenInfo.interestRedeemed,
+        totalPrincipalWithdrawable - tokenInfo.principalRedeemed
+      );
   }
 
   function hasAllowedUID(address sender) public view override returns (bool) {
@@ -419,7 +414,6 @@ contract CallableLoan is
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
-    require(locked, "NL");
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
       amount,
       cl.totalPrincipalOutstanding(),
@@ -461,74 +455,52 @@ contract CallableLoan is
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256, uint256) {
-    /// @dev NA: not authorized
-    require(
-      config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender),
-      "NA"
-    );
     require(amount > 0, "ZA");
+    IPoolTokens poolTokens = config.getPoolTokens();
+    /// @dev NA: not authorized
+    require(poolTokens.isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    // calculate the amount that will ever be redeemable
+    (uint interestWithdrawable, uint principalWithdrawable) = _availableToWithdraw(tokenInfo);
 
-    // TODO: Require amount is less than or equal to the amount that can be withdrawn
-    // TODO: Need to include logic for determining redeemable amount on tokens.
-    //       callableCreditLine.cumulativeAmountWithdrawable(trancheId, ...tokenInfo)
-    // (uint256 interestRedeemable, uint256 principalRedeemable) = TranchingLogic
-    //   .redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
-    // uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
+    require(amount <= interestWithdrawable + principalWithdrawable, "IA");
 
-    // TODO START TEMPORARY
-    uint256 netRedeemable = 0;
-    // TODO END TEMPORARY
+    // prefer to withdraw interest first, then principal
+    uint interestToRedeem = Math.min(interestWithdrawable, amount);
+    uint amountAfterInterest = amount - interestToRedeem;
+    uint principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
-    require(amount <= netRedeemable, "IA");
-    // TODO: require(!locked, "DL");
-
-    uint256 interestToRedeem = 0;
-    uint256 principalToRedeem = 0;
-
-    // If the tranche has not been locked, ensure the deposited amount is correct
-    // TODO:
-    // if (trancheInfo.lockedUntil == 0) {
-    //   trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
-
-    //   principalToRedeem = amount;
-
-    //   config.getPoolTokens().withdrawPrincipal(tokenId, principalToRedeem);
-    // } else {
-    //   interestToRedeem = MathUpgradeable.min(interestRedeemable, amount);
-    //   principalToRedeem = MathUpgradeable.min(principalRedeemable, amount.sub(interestToRedeem));
-
-    //   config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
-    // }
+    // if the pool is locked, we need to decrease the deposit rather than the amount redeemed
+    {
+      if (cl.isActive()) {
+        poolTokens.redeem({
+          tokenId: tokenId,
+          principalRedeemed: principalToRedeem,
+          interestRedeemed: interestToRedeem
+        });
+      } else {
+        assert(interestToRedeem == 0);
+        cl.withdraw(tokenInfo.tranche, principalToRedeem);
+        poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
+      }
+    }
 
     config.getUSDC().safeTransferFrom(
       address(this),
       msg.sender,
-      principalToRedeem + interestToRedeem
+      interestToRedeem + principalToRedeem
     );
 
-    emit WithdrawalMade(
-      msg.sender,
-      tokenInfo.tranche,
-      tokenId,
-      interestToRedeem,
-      principalToRedeem
-    );
+    emit WithdrawalMade({
+      owner: msg.sender,
+      tranche: tokenInfo.tranche,
+      tokenId: tokenId,
+      interestWithdrawn: interestToRedeem,
+      principalWithdrawn: principalToRedeem
+    });
 
     return (interestToRedeem, principalToRedeem);
   }
-
-  /// @dev DL: Deposits locked. Deposits have already been locked.
-  function _lockDeposits() internal {
-    require(!locked, "DL");
-    locked = true;
-    // TODO: Is this still necessary?
-    // setLimit(
-    //   MathUpgradeable.min(creditLine.limit().add(currentTotal), maxLimit())
-    // );
-    emit DepositsLocked(address(this));
-  }
-
-  // // ICreditLine Conformance /////////////////////////////////////////////////////
 
   /**
    * Pass 1

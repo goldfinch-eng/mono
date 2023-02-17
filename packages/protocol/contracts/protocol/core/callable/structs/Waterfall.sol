@@ -145,15 +145,26 @@ library WaterfallLogic {
     }
   }
 
+  function proportionalInterestAndPrincipalAvailableAfterApplyReserves(
+    Waterfall storage w,
+    uint256 trancheId,
+    uint256 principalDeposited
+  ) internal view returns (uint256, uint) {
+    return
+      w.getTranche(trancheId).proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
+        principalDeposited
+      );
+  }
+
   /**
    * Returns the lifetime amount withdrawable
    */
-  function cumulativeAmountWithdrawable(
+  function proportionalInterestAndPrincipalAvailable(
     Waterfall storage w,
     uint trancheId,
     uint256 principal
   ) internal view returns (uint, uint) {
-    return w._tranches[trancheId].cumulativeAmountWithdrawable(principal);
+    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal);
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
@@ -279,7 +290,7 @@ struct Tranche {
 
 library TrancheLogic {
   function settleReserves(Tranche storage t) internal {
-    t._principalPaid -= t._principalReserved;
+    t._principalPaid += t._principalReserved;
     t._principalReserved = 0;
   }
 
@@ -382,14 +393,31 @@ library TrancheLogic {
   }
 
   // returns principal, interest withdrawable
-  function cumulativeAmountWithdrawable(
+  function proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint, uint) {
     return (
-      t.cumulativePrincipalWithdrawable(principalAmount),
-      t.cumulativeInterestWithdrawable(principalAmount)
+      t.cumulativeInterestWithdrawable(principalAmount),
+      t.proportionalPrincipalAvailableAfterApplyingReserves(principalAmount)
     );
+  }
+
+  function proportionalInterestAndPrincipalAvailable(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint, uint) {
+    return (
+      t.cumulativeInterestWithdrawable(principalAmount),
+      t.cumulativePrincipalWithdrawable(principalAmount)
+    );
+  }
+
+  function proportionalPrincipalAvailableAfterApplyingReserves(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint) {
+    return ((t.principalPaid() + t._principalReserved) * principalAmount) / t.principalDeposited();
   }
 
   function cumulativePrincipalWithdrawable(
