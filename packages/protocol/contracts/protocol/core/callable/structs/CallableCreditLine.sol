@@ -520,16 +520,22 @@ library CallableCreditLineLogic {
     return cl._paymentSchedule.currentPrincipalPeriod();
   }
 
-  // TODO:
-  /**
-   * Returns the lifetime amount withdrawable
-   */
-  function cumulativeAmountWithdrawable(
+  function proportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,
     uint trancheId,
     uint256 principal
   ) internal view returns (uint, uint) {
-    return cl._waterfall.cumulativeAmountWithdrawable(trancheId, principal);
+    return
+      trancheId >= cl.activeCallSubmissionTrancheIndex()
+        ? cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal)
+        : cl._waterfall.proportionalInterestAndPrincipalAvailableAfterApplyReserves(
+          trancheId,
+          principal
+        );
+  }
+
+  function isActive(CallableCreditLine storage cl) internal view returns (bool) {
+    return cl._paymentSchedule.isActive();
   }
 
   function totalInterestPaid(CallableCreditLine storage cl) internal view returns (uint) {

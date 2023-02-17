@@ -150,6 +150,14 @@ library StaleCallableCreditLineLogic {
     return cl._cl.termEndTime();
   }
 
+  function proportionalInterestAndPrincipalAvailable(
+    StaleCallableCreditLine storage cl,
+    uint trancheId,
+    uint principal
+  ) internal view returns (uint, uint) {
+    return cl._cl.proportionalInterestAndPrincipalAvailable(trancheId, principal);
+  }
+
   /**
    * Returns the total interest paid.
    * Not a preview because interest is not (in current implementation) dependent upon checkpoint/settling reserves.
