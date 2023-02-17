@@ -259,7 +259,7 @@ contract CallableLoan is
 
     cl.drawdown(amount);
 
-    config.getUSDC().safeTransferFrom(address(this), borrower, amount);
+    config.getUSDC().safeTransfer(borrower, amount);
     emit DrawdownMade(borrower, amount);
   }
 
