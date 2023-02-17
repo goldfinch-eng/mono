@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
+import { Icon, IconNameType } from "../icon";
+
 interface ChipProps {
   children: ReactNode;
   className?: string;
@@ -13,17 +15,19 @@ interface ChipProps {
     | "sand"
     | "transparent"
     | "mint";
+  iconLeft?: IconNameType;
 }
 
 export function Chip({
   children,
   className,
   colorScheme = "white",
+  iconLeft,
 }: ChipProps) {
   return (
     <div
       className={clsx(
-        "inline-block rounded-full border py-1.5 px-3 text-xs font-medium",
+        "inline-flex items-center gap-2 rounded-full border py-1.5 px-3 text-xs font-medium",
         colorScheme === "white"
           ? "border-eggplant-100 bg-white text-eggplant-700"
           : colorScheme === "blue"
@@ -44,6 +48,7 @@ export function Chip({
         className
       )}
     >
+      {iconLeft ? <Icon size="sm" name={iconLeft} /> : null}
       {children}
     </div>
   );

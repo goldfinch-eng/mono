@@ -3,7 +3,7 @@ import { format as formatDate } from "date-fns";
 import { gql } from "graphql-request";
 import Image from "next/future/image";
 
-import { Button, Chip, Icon } from "@/components/design-system";
+import { Button, Chip } from "@/components/design-system";
 import { CreditMemoFieldsFragment } from "@/lib/graphql/generated";
 
 export const CREDIT_MEMO_FIELDS = gql`
@@ -66,8 +66,11 @@ export function CreditMemoAnalysisCard({
             <div className="text-xs text-sand-500">{subtitle}</div>
           </div>
         </div>
-        <Chip colorScheme="mint" className="flex h-8 min-w-fit items-center">
-          <Icon name="Checkmark" size="sm" className="mr-2.5" />
+        <Chip
+          iconLeft="Checkmark"
+          colorScheme="mint"
+          className="flex h-8 min-w-fit items-center"
+        >
           Vetted reviewer
         </Chip>
       </div>
