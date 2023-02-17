@@ -5,10 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
-import {Waterfall, WaterfallLogic, Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
-
-using WaterfallLogic for Waterfall;
-using TrancheLogic for Tranche;
+import {Tranche} from "../../../../protocol/core/callable/structs/Tranche.sol";
+import {Waterfall} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 
 contract TestWaterfall is Test {
   Waterfall internal w;

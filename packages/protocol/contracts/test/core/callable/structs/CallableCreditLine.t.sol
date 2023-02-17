@@ -9,7 +9,6 @@ import {CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/
 // solhint-disable-next-line max-line-length
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/StaleCallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
-import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
@@ -19,8 +18,6 @@ import {BaseTest} from "../../BaseTest.t.sol";
 using StaleCallableCreditLineLogic for StaleCallableCreditLine;
 using CallableCreditLineLogic for CallableCreditLine;
 using PaymentScheduleLogic for PaymentSchedule;
-
-using TrancheLogic for Tranche;
 
 contract TestCallableCreditLine is BaseTest {
   uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
