@@ -20,7 +20,8 @@ import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall, Tranche, WaterfallLogic, TrancheLogic} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic, StaleCallableCreditLine, StaleCallableCreditLineLogic, WaterfallLogic, TrancheLogic} from "./structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic} from "./structs/CallableCreditLine.sol";
+import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
 import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
@@ -126,7 +127,7 @@ contract CallableLoan is
       callAmount,
       poolTokenId,
       cl.uncalledCapitalTrancheIndex(),
-      cl.activeCallSubmissionTranche()
+      cl.activeCallSubmissionTrancheIndex()
     );
     cl.submitCall(callAmount);
     if (totalWithdrawn > 0) {
@@ -140,14 +141,17 @@ contract CallableLoan is
     uint256 callAmount,
     uint256 poolTokenId,
     uint256 uncalledCapitalTrancheIndex,
-    uint256 activeCallSubmissionTranche
+    uint256 activeCallSubmissionTrancheIndex
   ) private returns (uint256 specifiedTokenId, uint256 remainingTokenId) {
     IPoolTokens poolToken = config.getPoolTokens();
     address owner = poolToken.ownerOf(poolTokenId);
     IPoolTokens.TokenInfo memory tokenInfo = poolToken.getTokenInfo(poolTokenId);
     poolToken.burn(poolTokenId);
     specifiedTokenId = poolToken.mint(
-      IPoolTokens.MintParams({principalAmount: callAmount, tranche: activeCallSubmissionTranche}),
+      IPoolTokens.MintParams({
+        principalAmount: callAmount,
+        tranche: activeCallSubmissionTrancheIndex
+      }),
       owner
     );
     remainingTokenId = poolToken.mint(
@@ -369,10 +373,6 @@ contract CallableLoan is
 
   function schedule() public view override returns (ISchedule) {
     return _staleCreditLine.schedule();
-  }
-
-  function scheduleAndTermStartTime() public view returns (ISchedule, uint64) {
-    return (_staleCreditLine.schedule(), _staleCreditLine.termStartTime());
   }
 
   // TODO: Unnecessary now?
