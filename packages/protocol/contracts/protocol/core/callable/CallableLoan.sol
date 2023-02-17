@@ -393,16 +393,13 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint interestAvailable, uint principalAvailable) {
     // TODO: this should account for redemptions being locked for some period of time after and return (0, 0)
-      (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable)
-        = _staleCreditLine.proportionalInterestAndPrincipalAvailable(
-          tokenInfo.tranche,
-          tokenInfo.principalAmount
-        );
-      
-      return (
-        totalInterestWithdrawable - tokenInfo.interestRedeemed,
-        totalPrincipalWithdrawable - tokenInfo.principalRedeemed
-      );
+    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
+      .proportionalInterestAndPrincipalAvailable(tokenInfo.tranche, tokenInfo.principalAmount);
+
+    return (
+      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalPrincipalWithdrawable - tokenInfo.principalRedeemed
+    );
   }
 
   function hasAllowedUID(address sender) public view override returns (bool) {
@@ -502,6 +499,7 @@ contract CallableLoan is
     return (interestToRedeem, principalToRedeem);
   }
 
+  // // ICreditLine Conformance /////////////////////////////////////////////////////
   /**
    * Pass 1
    */
