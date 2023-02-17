@@ -8,7 +8,7 @@ pragma experimental ABIEncoderV2;
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 
-import {Waterfall, WaterfallLogic, TrancheLogic, Tranche} from "./Waterfall.sol";
+import {Waterfall} from "./Waterfall.sol";
 import {CallableCreditLine, CallableCreditLineLogic} from "./CallableCreditLine.sol";
 
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";

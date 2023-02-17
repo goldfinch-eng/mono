@@ -11,7 +11,7 @@ import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {CallableLoanAccountant} from "../CallableLoanAccountant.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
 
-import {Waterfall, WaterfallLogic, TrancheLogic, Tranche} from "./Waterfall.sol";
+import {Waterfall} from "./Waterfall.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
 import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -396,10 +396,8 @@ library CallableCreditLineLogic {
   function earliestPrincipalOutstandingTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint) {
-    Tranche storage tranche;
     for (uint i = 0; i < cl._waterfall.numTranches(); i++) {
-      tranche = cl._waterfall.getTranche(i);
-      if (tranche.principalOutstanding() == 0) {
+      if (cl._waterfall.getTranche(i).principalOutstanding() == 0) {
         return i;
       }
     }

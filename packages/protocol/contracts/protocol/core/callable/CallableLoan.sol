@@ -18,7 +18,7 @@ import {IVersioned} from "../../../interfaces/IVersioned.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
-import {Waterfall, Tranche, WaterfallLogic, TrancheLogic} from "./structs/Waterfall.sol";
+import {Waterfall} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
 import {CallableCreditLine, CallableCreditLineLogic} from "./structs/CallableCreditLine.sol";
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
