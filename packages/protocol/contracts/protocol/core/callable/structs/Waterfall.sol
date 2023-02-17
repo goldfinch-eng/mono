@@ -215,6 +215,17 @@ library WaterfallLogic {
     return sum;
   }
 
+  function totalReservedPrincipalUpToTranche(
+    Waterfall storage w,
+    uint256 trancheIndex
+  ) internal view returns (uint sum) {
+    for (uint i = 0; i < trancheIndex; i++) {
+      // console.log("i", i);
+      // console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
+      sum += w._tranches[i].principalReserved();
+    }
+  }
+
   /**
    *
    * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
@@ -354,6 +365,11 @@ library TrancheLogic {
   /// @notice Returns the amount of principal paid to the tranche
   function principalPaid(Tranche storage t) internal view returns (uint) {
     return t._principalPaid;
+  }
+
+  /// @notice Returns the amount of principal paid to the tranche
+  function principalReserved(Tranche storage t) internal view returns (uint) {
+    return t._principalReserved;
   }
 
   /// @notice Returns the amount of principal paid + principal reserved

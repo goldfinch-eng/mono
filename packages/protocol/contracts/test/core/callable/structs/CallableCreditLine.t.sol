@@ -5,7 +5,9 @@ pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
-import {StaleCallableCreditLine, StaleCallableCreditLineLogic, CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+// solhint-disable-next-line max-line-length
+import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/StaleCallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
 import {Tranche, TrancheLogic} from "../../../../protocol/core/callable/structs/Waterfall.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
