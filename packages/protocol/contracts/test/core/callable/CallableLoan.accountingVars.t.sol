@@ -179,7 +179,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     timestamp = bound(
       timestamp,
       nextDueTime + 5 days,
-      nextDueTime + callableLoan.nextDueTimeAt(nextDueTime + 1) - 1
+      callableLoan.nextDueTimeAt(nextDueTime + 1) - 1
     );
 
     // total interest accrued should include late fees
