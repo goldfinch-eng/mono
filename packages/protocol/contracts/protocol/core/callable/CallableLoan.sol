@@ -31,8 +31,8 @@ import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 
 // import {console2 as console} from "forge-std/console2.sol";
 
-/// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
-///   through this contract. The borrower draws down on and pays back a loan through this contract.
+/// @title CallableLoan
+/// @notice A loan that allows the lenders to call back capital from the borrower.
 /// @author Warbler Labs
 contract CallableLoan is
   BaseUpgradeablePausable,
@@ -145,7 +145,7 @@ contract CallableLoan is
     cl.submitCall(callAmount);
     if (totalWithdrawn > 0) {
       IERC20UpgradeableWithDec usdc = config.getUSDC();
-      usdc.safeTransferFrom(address(this), msg.sender, totalWithdrawn);
+      usdc.safeTransfer(msg.sender, totalWithdrawn);
     }
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
@@ -401,13 +401,14 @@ contract CallableLoan is
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
-    ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
-      amount,
-      cl.totalPrincipalOutstanding(),
-      cl.interestOwed(),
-      cl.interestAccrued(),
-      cl.principalOwed()
-    );
+
+    ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
+      paymentAmount: amount,
+      principalOutstanding: cl.balance(),
+      interestOwed: cl.interestOwed(),
+      interestAccrued: cl.interestAccrued(),
+      principalOwed: cl.principalOwed()
+    });
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
     uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
@@ -426,7 +427,7 @@ contract CallableLoan is
     });
 
     config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
-    config.getUSDC().safeTransferFrom(address(this), config.reserveAddress(), reserveFundsFee);
+    config.getUSDC().safeTransfer(config.reserveAddress(), reserveFundsFee);
     emit ReserveFundsCollected(address(this), reserveFundsFee);
     return pa;
   }
@@ -583,12 +584,12 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
-    _staleCreditLine.totalInterestOwed();
+    return _staleCreditLine.totalInterestOwed();
   }
 
   /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
-    _staleCreditLine.totalInterestOwedAt(timestamp);
+    return _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
@@ -618,12 +619,12 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
-    _staleCreditLine.totalPrincipalOwedAt(timestamp);
+    return _staleCreditLine.totalPrincipalOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
   function totalPrincipalOwed() public view override returns (uint256) {
-    _staleCreditLine.totalPrincipalOwed();
+    return _staleCreditLine.totalPrincipalOwed();
   }
 
   /// @inheritdoc ICreditLine

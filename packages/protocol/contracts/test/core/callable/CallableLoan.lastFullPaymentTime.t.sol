@@ -46,7 +46,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
   function testSetIfInterestAndPrincipalPaidPastTermEndTime(uint256 secondsPastTermEndTime) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, periodInSeconds(callableLoan) * 50);
+    secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, 30 days * 50);
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
@@ -100,7 +100,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
-    secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, periodInSeconds(callableLoan) * 50);
+    secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, 30 days * 50);
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
     pay(callableLoan, cl.principalOwed(), cl.interestOwed());

@@ -35,6 +35,7 @@ contract CallableLoanBaseTest is BaseTest {
   uint256 internal constant UNIT_SHARE_PRICE = 1e18;
   uint256 internal constant DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS = 7 days;
   uint256 internal constant HALF_CENT = 1e6 / 200;
+  uint256 internal constant HUNDREDTH_CENT = 1e6 / 10000;
 
   IGoldfinchConfig internal gfConfig;
   IGoldfinchFactory internal gfFactory;

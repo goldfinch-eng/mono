@@ -35,10 +35,11 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+    uint256 nextDueTime = cl.nextDueTime();
     paymentTime = bound(
       paymentTime,
-      cl.nextDueTime(),
-      cl.nextDueTime() + periodInSeconds(callableLoan) - 1
+      nextDueTime,
+      nextDueTime + callableLoan.nextDueTimeAt(nextDueTime + 1) - 1
     );
     vm.warp(paymentTime);
     paymentAmount = bound(
