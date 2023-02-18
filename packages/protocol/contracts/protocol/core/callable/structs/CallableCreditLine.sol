@@ -257,7 +257,7 @@ library CallableCreditLineLogic {
   function totalInterestOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
-  ) internal view returns (uint totalInterestOwedAt) {
+  ) internal view returns (uint) {
     require(timestamp >= cl._checkpointedAsOf, "IT");
     // After loan maturity there is no concept of additional interest. All interest accrued
     // automatically becomes interest owed.
@@ -265,13 +265,22 @@ library CallableCreditLineLogic {
       return cl.totalInterestAccruedAt(timestamp);
     }
 
-    uint256 lastInterestDueTime = cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp);
-    if (lastInterestDueTime <= cl._checkpointedAsOf) {
+    uint256 lastInterestDueTimeAtTimestamp = cl._paymentSchedule.previousInterestDueTimeAt(
+      timestamp
+    );
+    if (lastInterestDueTimeAtTimestamp <= cl._checkpointedAsOf) {
       return cl._totalInterestOwedAtLastCheckpoint;
     } else {
-      uint256 lastInterestDueTimeAtTimestamp = cl._paymentSchedule.previousInterestDueTimeAt(
-        timestamp
-      );
+      // console.log("lastInterestDueTimeAtTimestamp: ", lastInterestDueTimeAtTimestamp);
+      // console.log(
+      //   "cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp): ",
+      //   cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp)
+      // );
+      // console.log(
+      //   "cl._totalInterestAccruedAtLastCheckpoint: ",
+      //   cl._totalInterestAccruedAtLastCheckpoint
+      // );
+
       return
         cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp) -
         cl._totalInterestAccruedAtLastCheckpoint;
@@ -279,7 +288,7 @@ library CallableCreditLineLogic {
   }
 
   function interestOwed(CallableCreditLine storage cl) internal view returns (uint) {
-    cl.interestOwedAt(block.timestamp);
+    return cl.interestOwedAt(block.timestamp);
   }
 
   /// Calculates total interest owed at a given timestamp.
@@ -295,7 +304,7 @@ library CallableCreditLineLogic {
 
   /// Interest accrued up to `block.timestamp`
   function interestAccrued(CallableCreditLine storage cl) internal view returns (uint) {
-    cl.interestAccruedAt(block.timestamp);
+    return cl.interestAccruedAt(block.timestamp);
   }
 
   /// Interest accrued up to `timestamp`
@@ -409,7 +418,7 @@ library CallableCreditLineLogic {
   }
 
   function isLate(CallableCreditLine storage cl) internal view returns (bool) {
-    cl.isLate(block.timestamp);
+    return cl.isLate(block.timestamp);
   }
 
   function isLate(CallableCreditLine storage cl, uint256 timestamp) internal view returns (bool) {
@@ -484,7 +493,7 @@ library CallableCreditLineLogic {
   }
 
   function totalInterestPaid(CallableCreditLine storage cl) internal view returns (uint) {
-    cl._waterfall.totalInterestPaid();
+    return cl._waterfall.totalInterestPaid();
   }
 
   function balance(CallableCreditLine storage cl) internal view returns (uint256) {

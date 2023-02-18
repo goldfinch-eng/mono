@@ -31,8 +31,8 @@ import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 
 // import {console2 as console} from "forge-std/console2.sol";
 
-/// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
-///   through this contract. The borrower draws down on and pays back a loan through this contract.
+/// @title CallableLoan
+/// @notice A loan that allows the lenders to call back capital from the borrower.
 /// @author Warbler Labs
 contract CallableLoan is
   BaseUpgradeablePausable,
@@ -583,12 +583,12 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
-    _staleCreditLine.totalInterestOwed();
+    return _staleCreditLine.totalInterestOwed();
   }
 
   /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
-    _staleCreditLine.totalInterestOwedAt(timestamp);
+    return _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
@@ -618,12 +618,12 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
-    _staleCreditLine.totalPrincipalOwedAt(timestamp);
+    return _staleCreditLine.totalPrincipalOwedAt(timestamp);
   }
 
   /// @inheritdoc ICreditLine
   function totalPrincipalOwed() public view override returns (uint256) {
-    _staleCreditLine.totalPrincipalOwed();
+    return _staleCreditLine.totalPrincipalOwed();
   }
 
   /// @inheritdoc ICreditLine
