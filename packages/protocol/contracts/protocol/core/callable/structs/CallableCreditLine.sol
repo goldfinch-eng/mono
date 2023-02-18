@@ -262,12 +262,11 @@ library CallableCreditLineLogic {
     uint256 lastInterestDueTimeAtTimestamp = cl._paymentSchedule.previousInterestDueTimeAt(
       timestamp
     );
+
     if (lastInterestDueTimeAtTimestamp <= cl._checkpointedAsOf) {
       return cl._totalInterestOwedAtLastCheckpoint;
     } else {
-      return
-        cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp) -
-        cl._totalInterestAccruedAtLastCheckpoint;
+      return cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp);
     }
   }
 
@@ -362,7 +361,7 @@ library CallableCreditLineLogic {
         MathUpgradeable.min(settleBalancesAt, timestamp),
         timestamp,
         lateFeesStartAt,
-        cl._waterfall.totalPrincipalOutstandingWithoutReserves(),
+        cl._waterfall.totalPrincipalOutstandingWithReserves(),
         cl._interestApr,
         cl._lateAdditionalApr
       );
@@ -502,6 +501,17 @@ library CallableCreditLineLogic {
     uint timestamp
   ) internal view returns (uint) {
     return cl._paymentSchedule.principalPeriodAt(timestamp);
+  }
+
+  function nextPrincipalDueTime(CallableCreditLine storage cl) internal view returns (uint) {
+    return cl.nextPrincipalDueTimeAt(block.timestamp);
+  }
+
+  function nextPrincipalDueTimeAt(
+    CallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint) {
+    return cl._paymentSchedule.nextPrincipalDueTimeAt(timestamp);
   }
 
   function nextInterestDueTimeAt(

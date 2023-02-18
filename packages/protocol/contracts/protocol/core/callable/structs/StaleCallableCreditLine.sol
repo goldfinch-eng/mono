@@ -129,6 +129,17 @@ library StaleCallableCreditLineLogic {
     return cl._cl.nextInterestDueTimeAt(timestamp);
   }
 
+  function nextPrincipalDueTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cl.nextPrincipalDueTime();
+  }
+
+  function nextPrincipalDueTimeAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint) {
+    return cl._cl.nextPrincipalDueTimeAt(timestamp);
+  }
+
   function nextDueTimeAt(
     StaleCallableCreditLine storage cl,
     uint timestamp

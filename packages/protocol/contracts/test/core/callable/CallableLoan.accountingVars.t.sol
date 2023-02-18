@@ -382,7 +382,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
   function testAccountingVarsDoNotAccumulateWhenBalanceIsZero(
     uint256 firstJump,
-    uint256 secondJump
+    uint256 lastJump
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
@@ -391,22 +391,36 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 
-    uint nextDueTime = cl.nextDueTime();
-    pay(callableLoan, cl.interestAccrued() + cl.interestOwed() + cl.balance());
+    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    pay(
+      callableLoan,
+      cl.interestAccruedAt(nextPrincipalDueTime) +
+        cl.interestOwedAt(nextPrincipalDueTime) +
+        cl.balance()
+    );
+    assertZero(cl.balance());
+    assertZero(cl.interestOwed());
+    assertZero(cl.interestAccrued());
+
+    // Advance to next due time - interest or principal
+    uint nextDueTimeJump = callableLoan.nextDueTime();
+    vm.warp(nextDueTimeJump);
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
 
     // Advance to next principal payment period in order for principal payment to process.
-    vm.warp(nextDueTime);
-    // Pay off any remaining interest which has accrued since last payment.
+    uint nextPrincipalDueTimeJump = callableLoan.nextPrincipalDueTime();
+    vm.warp(nextPrincipalDueTimeJump);
+    assertZero(cl.balance());
+    assertZero(cl.interestOwed());
+    assertZero(cl.interestAccrued());
 
-    pay(callableLoan, cl.interestAccrued() + cl.interestOwed());
-    // // Advance to a random time and assert amounts owed have not changed
-    // secondJump = bound(secondJump, firstJump, firstJump + 1000 days);
-    // vm.warp(secondJump);
-    // assertZero(cl.balance());
-    // assertZero(cl.interestOwed());
-    // assertZero(cl.interestAccrued());
+    // // // Advance to a random time and assert amounts owed have not changed
+    lastJump = bound(lastJump, firstJump, firstJump + 1000 days);
+    vm.warp(lastJump);
+    assertZero(cl.balance());
+    assertZero(cl.interestOwed());
+    assertZero(cl.interestAccrued());
   }
 }

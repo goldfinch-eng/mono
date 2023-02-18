@@ -39,7 +39,8 @@ library WaterfallLogic {
   /// @param principalAmount: the amount of principal to apply to the tranches
   /// @param interestAmount: the amount of interest to apply to the tranches
   /// @param reserveTranchesIndexStart: After this index (inclusive), tranches will reserve principal
-  /// @dev op: overpayment
+  /// @dev OP: overpayment
+  /// @dev NB: no balance
   function pay(
     Waterfall storage w,
     uint principalAmount,
@@ -47,6 +48,8 @@ library WaterfallLogic {
     uint reserveTranchesIndexStart
   ) internal {
     uint totalPrincipalOutstandingWithoutReserves = w.totalPrincipalOutstandingWithoutReserves();
+    require(totalPrincipalOutstandingWithoutReserves > 0, "NB");
+
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op

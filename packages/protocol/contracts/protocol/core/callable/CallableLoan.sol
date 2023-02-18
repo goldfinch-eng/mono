@@ -403,11 +403,14 @@ contract CallableLoan is
 
     require(amount > 0, "ZA");
 
+    uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
       balance: cl.totalPrincipalOutstanding(),
       interestOwed: cl.interestOwed(),
       interestAccrued: cl.interestAccrued(),
+      guaranteedFutureInterest: cl.interestAccruedAt(nextPrincipalDueTime) +
+        cl.interestOwedAt(nextPrincipalDueTime),
       principalOwed: cl.principalOwed()
     });
 
@@ -484,6 +487,13 @@ contract CallableLoan is
     });
 
     return (interestToRedeem, principalToRedeem);
+  }
+
+  /*================================================================================
+  PaymentSchedule proxy functions
+  ================================================================================*/
+  function nextPrincipalDueTime() public view returns (uint) {
+    return _staleCreditLine.nextPrincipalDueTime();
   }
 
   /*================================================================================

@@ -21,7 +21,8 @@ library CallableLoanAccountant {
   /// @param paymentAmount amount to allocate
   /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time
-  /// @param interestAccrued interest accrued between the last due time and the present time (unless last due time
+  /// @param interestAccrued interest accrued between the last due time and the present time
+  /// @param guaranteedFutureInterest interest which is guaranteed to accrue by the next time principal is settled
   /// @param principalOwed principal owed on the credit line
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
@@ -29,8 +30,9 @@ library CallableLoanAccountant {
     uint256 balance,
     uint256 interestOwed,
     uint256 interestAccrued,
+    uint256 guaranteedFutureInterest,
     uint256 principalOwed
-  ) internal pure returns (ILoan.PaymentAllocation memory) {
+  ) internal view returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
 
@@ -42,6 +44,12 @@ library CallableLoanAccountant {
     uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
     paymentRemaining = paymentRemaining - principalPayment;
 
+    uint256 guaranteedFutureAccruedInterestPayment = MathUpgradeable.min(
+      guaranteedFutureInterest,
+      paymentRemaining
+    );
+    paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
+
     uint256 balanceRemaining = balance - principalPayment;
     uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
     paymentRemaining = paymentRemaining - additionalBalancePayment;
@@ -49,7 +57,7 @@ library CallableLoanAccountant {
     return
       ILoan.PaymentAllocation({
         owedInterestPayment: owedInterestPayment,
-        accruedInterestPayment: accruedInterestPayment,
+        accruedInterestPayment: accruedInterestPayment + guaranteedFutureAccruedInterestPayment,
         principalPayment: principalPayment,
         additionalBalancePayment: additionalBalancePayment,
         paymentRemaining: paymentRemaining
