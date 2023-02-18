@@ -33,36 +33,28 @@ library WaterfallLogic {
     return w._tranches.length;
   }
 
-  /// @notice apply a payment. Principal payments are only applied to tranches below `trancheIndex`
+  /// @notice apply a payment to tranches in the waterfall.
+  ///         The principal payment is applied to the tranches in order of priority
+  ///         The interest payment is applied to the tranches pro rata
   /// @dev op: overpayment
-  function payUntil(
-    Waterfall storage w,
-    uint interestAmount,
-    uint principalAmount,
-    uint trancheIndex
-  ) internal {
+  function pay(Waterfall storage w, uint principalAmount, uint interestAmount) internal {
     uint totalPrincipalOutstandingWithoutReserves = w.totalPrincipalOutstandingWithoutReserves();
-
-    // console.log("payUntil: interestAmount", interestAmount);
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
-    // always process the last index (make it not part of the array?)
+    console.log("principalAmount", principalAmount);
+    console.log("interestAmount", interestAmount);
+
     for (uint i = 0; i < w._tranches.length; i++) {
-      // console.log("i: ", i);
       Tranche storage tranche = w._tranches[i];
       uint proRataInterestPayment = (interestAmount *
         tranche.principalOutstandingWithoutReserves()) / totalPrincipalOutstandingWithoutReserves;
-      uint principalPayment = i < trancheIndex
-        ? tranche.principalOutstandingWithReserves().min(principalAmount)
-        : 0;
+      uint principalPayment = tranche.principalOutstandingWithReserves().min(principalAmount);
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
-      // console.log("tranche pay");
-      // console.log(proRataInterestPayment);
       tranche.pay(proRataInterestPayment, principalPayment);
     }
-
+    console.log("principalAmount", principalAmount);
     require(principalAmount == 0, "OP");
   }
 

@@ -145,7 +145,7 @@ contract CallableLoan is
     cl.submitCall(callAmount);
     if (totalWithdrawn > 0) {
       IERC20UpgradeableWithDec usdc = config.getUSDC();
-      usdc.safeTransferFrom(address(this), msg.sender, totalWithdrawn);
+      usdc.safeTransfer(msg.sender, totalWithdrawn);
     }
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
@@ -403,7 +403,7 @@ contract CallableLoan is
     require(amount > 0, "ZA");
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
       amount,
-      cl.totalPrincipalOutstanding(),
+      cl.balance(),
       cl.interestOwed(),
       cl.interestAccrued(),
       cl.principalOwed()
@@ -426,7 +426,7 @@ contract CallableLoan is
     });
 
     config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
-    config.getUSDC().safeTransferFrom(address(this), config.reserveAddress(), reserveFundsFee);
+    config.getUSDC().safeTransfer(config.reserveAddress(), reserveFundsFee);
     emit ReserveFundsCollected(address(this), reserveFundsFee);
     return pa;
   }
