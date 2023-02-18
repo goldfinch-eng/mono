@@ -29,6 +29,8 @@ import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
 import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 
+// import {console2 as console} from "forge-std/console2.sol";
+
 /// @title The main contract to faciliate lending. Backers and the Senior Pool fund the loan
 ///   through this contract. The borrower draws down on and pays back a loan through this contract.
 /// @author Warbler Labs
@@ -69,9 +71,7 @@ contract CallableLoan is
   /*================================================================================
   Initialization
   ================================================================================*/
-  /*
-   * Unsupported - only included for compatibility with ICreditLine.
-   */
+  /// Unsupported - only included for compatibility with ICreditLine.
   function initialize(
     address _config,
     address owner,
@@ -151,15 +151,14 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /**
-   * @dev IA: invalid amount - must be greater than 0.
-   * @dev IT: invalid tranche - must be uncalled capital tranche
-   * @dev NA: not authorized. Must have correct UID or be go listed
-   * @notice Supply capital to the loan.
-   * @param tranche *UNSUPPORTED* -
-   * @param amount amount of capital to supply
-   * @return tokenId NFT representing your position in this pool
-   */
+
+  /// @dev IA: invalid amount - must be greater than 0.
+  /// @dev IT: invalid tranche - must be uncalled capital tranche
+  /// @dev NA: not authorized. Must have correct UID or be go listed
+  /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* -
+  /// @param amount amount of capital to supply
+  /// @return tokenId NFT representing your position in this pool
   function deposit(
     uint256 tranche,
     uint256 amount
@@ -182,15 +181,14 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /**
-   * @dev IA: invalid amount - must be greater than 0.
-   * @dev IT: invalid tranche - must be uncalled capital tranche
-   * @dev NA: not authorized. Must have correct UID or be go listed
-   * @notice Supply capital to the loan.
-   * @param tranche *UNSUPPORTED* -
-   * @param amount amount of capital to supply
-   * @return tokenId NFT representing your position in this pool
-   */
+
+  /// @dev IA: invalid amount - must be greater than 0.
+  /// @dev IT: invalid tranche - must be uncalled capital tranche
+  /// @dev NA: not authorized. Must have correct UID or be go listed
+  /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* -
+  /// @param amount amount of capital to supply
+  /// @return tokenId NFT representing your position in this pool
   function depositWithPermit(
     uint256 tranche,
     uint256 amount,
@@ -257,14 +255,11 @@ contract CallableLoan is
     require(!drawdownsPaused, "DP");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
 
-    // TODO: Introduce proper condition for allowing drawdown.
-    require(cl.totalPrincipalPaid() == 0);
     require(amount <= cl.totalPrincipalPaid(), "IF");
 
-    // TODO: must implement locking in the credit line on drawdown
     cl.drawdown(amount);
 
-    config.getUSDC().safeTransferFrom(address(this), borrower, amount);
+    config.getUSDC().safeTransfer(borrower, amount);
     emit DrawdownMade(borrower, amount);
   }
 
@@ -308,10 +303,8 @@ contract CallableLoan is
     emit DrawdownsUnpaused(address(this));
   }
 
-  /**
-   * Set accepted UID types for the loan.
-   * Requires that users have not already begun to deposit.
-   */
+  /// Set accepted UID types for the loan.
+  /// Requires that users have not already begun to deposit.
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
     require(_staleCreditLine.checkpoint().totalPrincipalDeposited() == 0, "AF");
     allowedUIDTypes = ids;
@@ -440,7 +433,7 @@ contract CallableLoan is
 
   /// @dev ZA: Zero amount
   /// @dev IA: Invalid amount - amount too large
-  /// @dev DL: Tranched Locked
+  /// @dev DL: Deposits Locked
   function _withdraw(
     IPoolTokens.TokenInfo memory tokenInfo,
     uint256 tokenId,
@@ -450,10 +443,14 @@ contract CallableLoan is
     IPoolTokens poolTokens = config.getPoolTokens();
     /// @dev NA: not authorized
     require(poolTokens.isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
+
+    // console.log("checkpointing");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     // calculate the amount that will ever be redeemable
     (uint interestWithdrawable, uint principalWithdrawable) = _availableToWithdraw(tokenInfo);
 
+    // console.log("interestWithdrawable", interestWithdrawable);
+    // console.log("principalWithdrawable", principalWithdrawable);
     require(amount <= interestWithdrawable + principalWithdrawable, "IA");
 
     // prefer to withdraw interest first, then principal
@@ -476,11 +473,7 @@ contract CallableLoan is
       }
     }
 
-    config.getUSDC().safeTransferFrom(
-      address(this),
-      msg.sender,
-      interestToRedeem + principalToRedeem
-    );
+    config.getUSDC().safeTransfer(msg.sender, interestToRedeem + principalToRedeem);
 
     emit WithdrawalMade({
       owner: msg.sender,
@@ -648,23 +641,17 @@ contract CallableLoan is
     return _staleCreditLine.lastFullPaymentTime();
   }
 
-  /**
-   * Unsupported in callable loans.
-   */
+  /// Unsupported in callable loans.
   function maxLimit() external view override returns (uint256) {
     revert("US");
   }
 
-  /**
-   * Unsupported in callable loans.
-   */
+  /// Unsupported in callable loans.
   function setMaxLimit(uint256 newAmount) external override {
     revert("US");
   }
 
-  /*
-   * Unsupported ICreditLine method kept for ICreditLine conformance
-   */
+  /// Unsupported ICreditLine method kept for ICreditLine conformance
   function setLimit(uint256 newAmount) external override onlyAdmin {
     revert("US");
   }

@@ -33,6 +33,12 @@ struct CallableCreditLine {
   uint[50] __padding;
 }
 
+enum LoanState {
+  FundingPeriod,
+  DrawdownPeriod,
+  InProgress
+}
+
 /**
  * Handles the accounting of borrower obligations in a callable loan.
  * Allows
@@ -55,6 +61,7 @@ library CallableCreditLineLogic {
     uint _lateAdditionalApr,
     uint _limit
   ) internal {
+    // NOTE: Acts as implicit initializer check - should not be able to reinitialize.
     require(cl._checkpointedAsOf == 0, "NI");
     cl._config = _config;
     cl._limit = _limit;
@@ -64,8 +71,8 @@ library CallableCreditLineLogic {
     cl._lateAdditionalApr = _lateAdditionalApr;
     cl._checkpointedAsOf = block.timestamp;
 
-    // Zero out cumulative/settled values
-    cl._lastFullPaymentTime = 0;
+    // Initialize cumulative/settled values
+    cl._lastFullPaymentTime = block.timestamp;
     cl._totalInterestAccruedAtLastCheckpoint = 0;
     cl._totalInterestOwedAtLastCheckpoint = 0;
     // MT - Waterfall must have at minimum 2 tranches in order to submit call requests
@@ -75,11 +82,21 @@ library CallableCreditLineLogic {
   /*================================================================================
   Main Write Functions
   ================================================================================*/
+  // Scenario to test:
+  // Premise - Before first due date
+  // 1. Make first drawdown = 1/2 of deposits
+  // 2. Some users withdraw portions of their deposits
+  // 3. Borrower makes early interest repayment (also make version of test with early principal repayment)
+  // 4. Some users withdraw interest
+  // 5. When first due date passes, all accounting variables should produce correct values
+  /// @dev ILS - Invalid loan state - Can only pay after first due date.
   function pay(
     CallableCreditLine storage cl,
     uint256 principalPayment,
     uint256 interestPayment
   ) internal {
+    LoanState loanState = cl.loanState();
+    require(loanState == LoanState.InProgress || loanState == LoanState.DrawdownPeriod, "ILS");
     cl._waterfall.payUntil(
       principalPayment,
       interestPayment,
@@ -95,12 +112,21 @@ library CallableCreditLineLogic {
   // 2. Drawdown 1000
   // 3. Submit call request
   // 4. Interest owed, accrued (forced redemption), and principal owed should all be accounted for correctly.
+  /// @dev ILS - Invalid loan state - Can only drawdown before first due date.
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
-    if (!cl._paymentSchedule.isActive()) {
+    LoanState loanState = cl.loanState();
+    if (loanState == LoanState.FundingPeriod) {
       cl._paymentSchedule.startAt(block.timestamp);
+      cl._lastFullPaymentTime = block.timestamp;
+      loanState = cl.loanState();
+      // Scaffolding: TODO: Remove - this invariant should always be true across all tests.
+      require(
+        loanState == LoanState.DrawdownPeriod,
+        "Scaffolding failure: Should be DrawdownPeriod"
+      );
     }
+    require(loanState == LoanState.DrawdownPeriod, "ILS");
 
-    // TODO: COnditions for valid drawdown.
     require(
       amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <= cl._limit,
       "Cannot drawdown more than the limit"
@@ -108,7 +134,11 @@ library CallableCreditLineLogic {
     cl._waterfall.drawdown(amount);
   }
 
+  /// @dev ILS - Invalid loan state - Can only submit call requests after first due date.
   function submitCall(CallableCreditLine storage cl, uint256 amount) internal {
+    LoanState loanState = cl.loanState();
+    require(loanState == LoanState.InProgress, "ILS");
+
     uint256 activeCallTranche = cl._paymentSchedule.currentPrincipalPeriod();
     require(
       activeCallTranche < cl.uncalledCapitalTrancheIndex(),
@@ -118,34 +148,43 @@ library CallableCreditLineLogic {
     cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
 
+  /// @dev ILS - Invalid loan state - Cannot deposit after first drawdown
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {
+    LoanState loanState = cl.loanState();
+    require(loanState == LoanState.FundingPeriod, "ILS");
     cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
   }
 
-  /**
-   * Withdraws funds from the specified tranche.
-   */
+  /// Withdraws funds from the specified tranche.
+  /// @dev ILS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
-    cl._waterfall.withdraw(amount, trancheId);
+    LoanState loanState = cl.loanState();
+    require(loanState == LoanState.FundingPeriod || loanState == LoanState.InProgress, "ILS");
+    cl._waterfall.withdraw({trancheId: trancheId, principalAmount: amount});
   }
 
-  /**
-   *
-   */
+  /// Settles payment reserves and updates the checkpointed values.
   function checkpoint(CallableCreditLine storage cl) internal {
-    if (!cl._paymentSchedule.isActive()) {
+    LoanState loanState = cl.loanState();
+    if (loanState == LoanState.FundingPeriod) {
       return;
     }
 
     uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
+    // console.log("Currently active period: ", currentlyActivePeriod);
     uint256 activePeriodAtLastCheckpoint = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
 
+    // console.log("activePeriodAtLastCheckpoint: ", activePeriodAtLastCheckpoint);
     if (currentlyActivePeriod > activePeriodAtLastCheckpoint) {
       cl._waterfall.settleReserves();
     }
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
+    // console.log(
+    //   "cl.totalInterestOwedAt(block.timestamp): ",
+    //   cl.totalInterestOwedAt(block.timestamp)
+    // );
     cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwedAt(block.timestamp);
     cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
     cl._checkpointedAsOf = block.timestamp;
@@ -154,13 +193,22 @@ library CallableCreditLineLogic {
   /*================================================================================
   Main View Functions
   ================================================================================*/
+  function loanState(CallableCreditLine storage cl) internal view returns (LoanState) {
+    if (cl._paymentSchedule.isActive() && block.timestamp > cl.nextDueTimeAt(cl.termStartTime())) {
+      return LoanState.InProgress;
+    } else if (cl._paymentSchedule.isActive()) {
+      return LoanState.DrawdownPeriod;
+    } else {
+      return LoanState.FundingPeriod;
+    }
+  }
+
   function uncalledCapitalTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint32) {
     return uint32(cl._waterfall.numTranches() - 1);
   }
 
-  // TODO: Should account for end of term.
   function principalOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
@@ -203,10 +251,9 @@ library CallableCreditLineLogic {
     return cl.totalInterestOwedAt(block.timestamp);
   }
 
-  /**
-   * Calculates total interest owed at a given timestamp.
-   * IT: Invalid timestamp - timestamp must be after the last checkpoint.
-   */
+  /// Calculates total interest owed at a given timestamp.
+  /// IT: Invalid timestamp - timestamp must be after the last checkpoint.
+
   function totalInterestOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
@@ -218,19 +265,26 @@ library CallableCreditLineLogic {
       return cl.totalInterestAccruedAt(timestamp);
     }
 
-    return
-      cl.totalInterestAccruedAt(cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp));
+    uint256 lastInterestDueTime = cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp);
+    if (lastInterestDueTime <= cl._checkpointedAsOf) {
+      return cl._totalInterestOwedAtLastCheckpoint;
+    } else {
+      uint256 lastInterestDueTimeAtTimestamp = cl._paymentSchedule.previousInterestDueTimeAt(
+        timestamp
+      );
+      return
+        cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp) -
+        cl._totalInterestAccruedAtLastCheckpoint;
+    }
   }
 
   function interestOwed(CallableCreditLine storage cl) internal view returns (uint) {
     cl.interestOwedAt(block.timestamp);
   }
 
-  /**
-   * Calculates total interest owed at a given timestamp.
-   * Assumes that principal outstanding is constant from now until the given `timestamp`.
-   * @dev IT: Invalid timestamp
-   */
+  /// Calculates total interest owed at a given timestamp.
+  /// Assumes that principal outstanding is constant from now until the given `timestamp`.
+  /// @notice IT: Invalid timestamp
   function interestOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
@@ -239,17 +293,13 @@ library CallableCreditLineLogic {
     return cl.totalInterestOwedAt(timestamp).saturatingSub(cl.totalInterestPaid());
   }
 
-  /**
-   * Interest accrued up to `block.timestamp`
-   */
+  /// Interest accrued up to `block.timestamp`
   function interestAccrued(CallableCreditLine storage cl) internal view returns (uint) {
     cl.interestAccruedAt(block.timestamp);
   }
 
-  /**
-   * Interest accrued up to `timestamp`
-   * IT: Invalid timestamp - timestamp must be now or in the future.
-   */
+  /// Interest accrued up to `timestamp`
+  /// IT: Invalid timestamp - timestamp must be now or in the future.
   function interestAccruedAt(
     CallableCreditLine storage cl,
     uint timestamp
@@ -260,35 +310,32 @@ library CallableCreditLineLogic {
       ((MathUpgradeable.max(cl._waterfall.totalInterestPaid(), cl.totalInterestOwedAt(timestamp))));
   }
 
-  /**
-   * Test cases
-   * S = Start B = Buffer Applied At L = Late Fees Start At E = End
-    SBLE
-    SBEL
-    SLEB
-    SLBE
-    SELB
-    SEBL
+  /* Test cases
+   *S = Start B = Buffer Applied At L = Late Fees Start At E = End
+   *SBLE
+   *SBEL
+   *SLEB
+   *SLBE
+   *SELB
+   *SEBL
 
-    LSEB
-    LSBE
-    LBSE(INVALID)
-    LBES(INVALID)
-    LESB(INVALID)
-    LEBS(INVALID) 
+   *LSEB
+   *LSBE
+   *LBSE(INVALID)
+   *LBES(INVALID)
+   *LESB(INVALID)
+   *LEBS(INVALID) 
 
-    BSLE (INVALID)
-    BSEL (INVALID)
-    BLSE (INVALID)
-    BLES (INVALID)
-    BESL (INVALID)
-    BELS (INVALID)
+   *BSLE (INVALID)
+   *BSEL (INVALID)
+   *BLSE (INVALID)
+   *BLES (INVALID)
+   *BESL (INVALID)
+   *BELS (INVALID)
    */
 
-  /**
-   * Calculates interest accrued over the duration bounded by the `cl._checkpointedAsOf` and `end` timestamps.
-   * Assumes cl._waterfall.totalPrincipalOutstanding() for the principal balance that the interest is applied to.
-   */
+  /// Calculates interest accrued over the duration bounded by the `cl._checkpointedAsOf` and `end` timestamps.
+  /// Assumes cl._waterfall.totalPrincipalOutstanding() for the principal balance that the interest is applied to.
   function totalInterestAccruedAt(
     CallableCreditLine storage cl,
     uint256 timestamp
@@ -342,12 +389,11 @@ library CallableCreditLineLogic {
       activeCallRequestPeriodAtTimestamp
     );
 
-    /**
-     * If we entered a new principal period since checkpoint,
-     * we should settle reserved principal in the uncalled tranche,
-     * UNLESS
-     * Uncalled capital has already been counted due to principalPeriod being the uncalled tranche.
-     */
+    /// If we entered a new principal period since checkpoint,
+    /// we should settle reserved principal in the uncalled tranche,
+    /// UNLESS
+    /// Uncalled capital has already been counted due to principalPeriod being the uncalled tranche.
+
     if (
       activeCallRequestPeriodAtTimestamp > activeCallRequestPeriodAtCheckpoint &&
       activeCallRequestPeriodAtTimestamp <= cl.uncalledCapitalTrancheIndex()
@@ -376,9 +422,7 @@ library CallableCreditLineLogic {
       timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
-  /**
-   * Returns the total amount of principal outstanding - not taking into account unsettled principal.
-   */
+  /// Returns the total amount of principal outstanding - not taking into account unsettled principal.
   function totalPrincipalOutstanding(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {
@@ -415,9 +459,7 @@ library CallableCreditLineLogic {
     return cl._waterfall.getTranche(trancheId).cumulativePrincipalRemaining(principalDeposited);
   }
 
-  /*
-   * Returns the index of the tranche which current call requests should be submitted to.
-   */
+  /// Returns the index of the tranche which current call requests should be submitted to.
   function activeCallSubmissionTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint activeTrancheIndex) {
@@ -429,6 +471,9 @@ library CallableCreditLineLogic {
     uint trancheId,
     uint256 principal
   ) internal view returns (uint, uint) {
+    if (cl.loanState() == LoanState.FundingPeriod) {
+      return cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal);
+    }
     return
       trancheId >= cl.activeCallSubmissionTrancheIndex()
         ? cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal)

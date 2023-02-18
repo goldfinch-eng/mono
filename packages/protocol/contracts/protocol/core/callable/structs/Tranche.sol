@@ -45,12 +45,13 @@ library TrancheLogic {
   }
 
   /**
-   * @notice Withdraw principal from tranche
+   * @notice Withdraw principal from tranche - effectively nullifying the deposit.
    * @dev reverts if interest has been paid to tranche
    */
   function withdraw(Tranche storage t, uint principal) internal {
     assert(t._interestPaid == 0);
     t._principalDeposited -= principal;
+    t._principalPaid -= principal;
   }
 
   /**
