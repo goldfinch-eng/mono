@@ -40,6 +40,7 @@ import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
 import {
   ClaimPanel,
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
+  CLAIM_PANEL_TRANCHED_POOL_FIELDS,
 } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
 import {
@@ -50,6 +51,8 @@ import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
+  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_DEAL_FIELDS,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/invest-and-withdraw-tabs";
 import { LoanSummary } from "./v2-components/loan-summary";
@@ -57,7 +60,9 @@ import { LoanSummary } from "./v2-components/loan-summary";
 gql`
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
+  ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   ${TRANCHED_POOL_FUNDING_STATUS_FIELDS}
@@ -71,8 +76,8 @@ gql`
       __typename
       id
       allowedUidTypes
-      estimatedJuniorApy
-      estimatedJuniorApyFromGfiRaw
+      usdcApy
+      rawGfiApy
       estimatedLeverageRatio
       fundableAt
       isPaused
@@ -101,6 +106,8 @@ gql`
       principalAmountRepaid
       interestAmountRepaid
       ...TranchedPoolFundingStatusFields
+      ...SupplyPanelTranchedPoolFields
+      ...ClaimPanelTranchedPoolFields
     }
     borrowerOtherPools: tranchedPools(
       where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
@@ -148,6 +155,7 @@ const singleDealQuery = gql`
   ${BORROWER_PERFORMANCE_TABLE_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
   ${CREDIT_MEMO_FIELDS}
+  ${SUPPLY_PANEL_DEAL_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -178,6 +186,7 @@ const singleDealQuery = gql`
       creditMemos {
         ...CreditMemoFields
       }
+      ...SupplyPanelDealFields
     }
   }
 `;

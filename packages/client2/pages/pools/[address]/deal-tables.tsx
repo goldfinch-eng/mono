@@ -187,10 +187,7 @@ export function DealTermsTable({
             [
               "Opening date",
               "The date that the Pool will be open for Backer investments.",
-              format(
-                new Date(tranchedPool.fundableAt.toNumber() * 1000),
-                "MMMM d, y"
-              ),
+              format(new Date(tranchedPool.fundableAt * 1000), "MMMM d, y"),
             ],
             [
               "Contract address",

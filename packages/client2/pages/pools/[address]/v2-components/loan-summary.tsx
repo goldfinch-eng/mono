@@ -17,8 +17,8 @@ const secondsPerDay = 86400;
 export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
   fragment LoanSummaryTranchedPoolFields on TranchedPool {
     id
-    estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
+    usdcApy
+    rawGfiApy
     creditLine {
       termInDays
     }
@@ -80,17 +80,14 @@ export function LoanSummary({
         <div className="text-left">
           <div className="mb-2 text-sm">Fixed USDC APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(loan.estimatedJuniorApy)}
+            {formatPercent(loan.usdcApy)}
           </div>
         </div>
         <div className="text-right">
           <div className="mb-2 text-sm">Variable GFI APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
             {formatPercent(
-              computeApyFromGfiInFiat(
-                loan.estimatedJuniorApyFromGfiRaw,
-                fiatPerGfi
-              ).addUnsafe(
+              computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
                 computeApyFromGfiInFiat(
                   seniorPoolEstimatedApyFromGfiRaw,
                   fiatPerGfi

@@ -48,9 +48,7 @@ export const CLAIM_PANEL_VAULTED_POOL_TOKEN_FIELDS = gql`
 export const CLAIM_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment ClaimPanelTranchedPoolFields on TranchedPool {
     id
-    creditLine {
-      isLate @client
-    }
+    isLate @client
   }
 `;
 
@@ -71,7 +69,7 @@ export function ClaimPanel({
   fiatPerGfi,
   tranchedPool,
 }: ClaimPanelProps) {
-  const canClaimGfi = !tranchedPool.creditLine.isLate;
+  const canClaimGfi = !tranchedPool.isLate;
 
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)

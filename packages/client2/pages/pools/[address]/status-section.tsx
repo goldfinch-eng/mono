@@ -13,8 +13,8 @@ import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
 // The fragments here are just used for the purpose of typechecking. They don't get sent to the top-level query because of the fragment overlap bug
 export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
   fragment TranchedPoolStatGridFields on TranchedPool {
-    estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
+    usdcApy
+    rawGfiApy
     creditLine {
       id
       isLate @client
@@ -45,17 +45,17 @@ export function StatusSection({
   className,
 }: StatGridProps) {
   const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-    tranchedPool.estimatedJuniorApyFromGfiRaw,
+    tranchedPool.rawGfiApy,
     fiatPerGfi
   );
   const seniorPoolApyFromGfi = computeApyFromGfiInFiat(
     seniorPoolApyFromGfiRaw,
     fiatPerGfi
   );
-  const apyFromGfi = tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
-    ? tranchedPool.estimatedJuniorApyFromGfiRaw
+  const apyFromGfi = tranchedPool.rawGfiApy.isZero()
+    ? tranchedPool.rawGfiApy
     : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
-  const totalEstApy = tranchedPool.estimatedJuniorApy.addUnsafe(apyFromGfi);
+  const totalEstApy = tranchedPool.usdcApy.addUnsafe(apyFromGfi);
 
   const totalEstApyStat = (
     <Stat
@@ -69,7 +69,7 @@ export function StatusSection({
     <Stat
       key="usdcApyStat"
       label="USDC APY"
-      value={formatPercent(tranchedPool.estimatedJuniorApy)}
+      value={formatPercent(tranchedPool.usdcApy)}
       tooltip="The fixed-rate USDC APY defined by the Borrower Pool's financing terms and interest allocation from the Senior Tranche."
     />
   );

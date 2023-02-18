@@ -40,8 +40,8 @@ gql`
     }
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
-      estimatedJuniorApy
-      estimatedJuniorApyFromGfiRaw
+      usdcApy
+      rawGfiApy
       fundableAt
       remainingCapacity
       creditLine {
@@ -194,7 +194,7 @@ export default function EarnPage({
               const dealDetails = dealMetadata[tranchedPool.id];
 
               const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-                tranchedPool.estimatedJuniorApyFromGfiRaw,
+                tranchedPool.rawGfiApy,
                 fiatPerGfi
               );
 
@@ -203,10 +203,9 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const apyFromGfi =
-                tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
-                  ? tranchedPool.estimatedJuniorApyFromGfiRaw
-                  : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+              const apyFromGfi = tranchedPool.rawGfiApy.isZero()
+                ? tranchedPool.rawGfiApy
+                : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
               const termLengthInMonths = Math.floor(
                 tranchedPool.creditLine.termInDays.toNumber() / 30
@@ -218,7 +217,7 @@ export default function EarnPage({
                   icon={dealDetails.borrower.logo?.url}
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
-                  usdcApy={tranchedPool.estimatedJuniorApy}
+                  usdcApy={tranchedPool.usdcApy}
                   gfiApy={apyFromGfi}
                   gfiApyTooltip={
                     <div>
@@ -246,7 +245,7 @@ export default function EarnPage({
                           <div>LP rewards match GFI APY</div>
                           <div>
                             {formatPercent(
-                              tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                              tranchedPool.rawGfiApy.isZero()
                                 ? 0
                                 : seniorPoolApyFromGfi
                             )}

@@ -158,7 +158,7 @@ export function getTranchedPoolFundingStatus(
     return TranchedPoolFundingStatus.Closed;
   } else if (
     tranchedPool.creditLine.termEndTime.isZero() &&
-    Date.now() / 1000 < tranchedPool.fundableAt.toNumber()
+    Date.now() / 1000 < tranchedPool.fundableAt
   ) {
     return TranchedPoolFundingStatus.ComingSoon;
   } else if (tranchedPool.remainingCapacity.isZero()) {

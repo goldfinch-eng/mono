@@ -34,14 +34,12 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment SupplyPanelTranchedPoolFields on TranchedPool {
     id
-    estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
+    usdcApy
+    rawGfiApy
     juniorDeposited
     estimatedLeverageRatio
     allowedUidTypes
-    creditLine {
-      maxLimit
-    }
+    fundingLimit
   }
 `;
 
@@ -82,7 +80,7 @@ export function SupplyPanel({
     juniorDeposited,
     estimatedLeverageRatio,
     allowedUidTypes,
-    creditLine: { maxLimit },
+    fundingLimit,
   },
   user,
   deal,
@@ -107,8 +105,8 @@ export function SupplyPanel({
 
   const remainingJuniorCapacity =
     deal.dealType === "unitranche" || !estimatedLeverageRatio
-      ? maxLimit.sub(juniorDeposited)
-      : maxLimit
+      ? fundingLimit.sub(juniorDeposited)
+      : fundingLimit
           .sub(
             juniorDeposited.mul(
               utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1)

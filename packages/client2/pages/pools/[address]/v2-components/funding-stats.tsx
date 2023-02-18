@@ -56,9 +56,7 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(
-    fundableAt.toNumber() * 1000 + twoWeeksMs
-  );
+  const estimatedCloseDate = new Date(fundableAt * 1000 + twoWeeksMs);
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>
