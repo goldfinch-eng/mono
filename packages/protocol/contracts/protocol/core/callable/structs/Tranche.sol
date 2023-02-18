@@ -72,13 +72,11 @@ library TrancheLogic {
     uint principal
   ) internal returns (uint principalPaid, uint principalReserved, uint interestTaken) {
     require(t._principalDeposited > 0, "IT");
-    // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
+
     interestTaken = (t._interestPaid * principal) / t._principalDeposited;
-    // console.log("interestTaken", interestTaken);
 
     // Take pro rata portion of paid principal
-    // console.log("t", t._principalDeposited, t._principalPaid, t._interestPaid);
-    // console.log("principalPaid", principalPaid);
+
     principalReserved = (t._principalReserved * principal) / t._principalDeposited;
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;

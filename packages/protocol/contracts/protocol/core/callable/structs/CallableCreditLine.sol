@@ -171,20 +171,14 @@ library CallableCreditLineLogic {
     }
 
     uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
-    // console.log("Currently active period: ", currentlyActivePeriod);
     uint256 activePeriodAtLastCheckpoint = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
 
-    // console.log("activePeriodAtLastCheckpoint: ", activePeriodAtLastCheckpoint);
     if (currentlyActivePeriod > activePeriodAtLastCheckpoint) {
       cl._waterfall.settleReserves();
     }
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    // console.log(
-    //   "cl.totalInterestOwedAt(block.timestamp): ",
-    //   cl.totalInterestOwedAt(block.timestamp)
-    // );
     cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwedAt(block.timestamp);
     cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
     cl._checkpointedAsOf = block.timestamp;
@@ -271,16 +265,6 @@ library CallableCreditLineLogic {
     if (lastInterestDueTimeAtTimestamp <= cl._checkpointedAsOf) {
       return cl._totalInterestOwedAtLastCheckpoint;
     } else {
-      // console.log("lastInterestDueTimeAtTimestamp: ", lastInterestDueTimeAtTimestamp);
-      // console.log(
-      //   "cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp): ",
-      //   cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp)
-      // );
-      // console.log(
-      //   "cl._totalInterestAccruedAtLastCheckpoint: ",
-      //   cl._totalInterestAccruedAtLastCheckpoint
-      // );
-
       return
         cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp) -
         cl._totalInterestAccruedAtLastCheckpoint;
@@ -495,10 +479,6 @@ library CallableCreditLineLogic {
 
   function totalInterestPaid(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._waterfall.totalInterestPaid();
-  }
-
-  function balance(CallableCreditLine storage cl) internal view returns (uint256) {
-    return cl.interestOwed() + cl.principalOwed();
   }
 
   function totalPrincipalDeposited(CallableCreditLine storage cl) internal view returns (uint256) {

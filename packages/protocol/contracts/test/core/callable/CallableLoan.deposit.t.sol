@@ -60,15 +60,10 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
   function testDepositRevertsIfPoolLocked() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    console.log("1");
     usdc.approve(address(callableLoan), type(uint256).max);
-    console.log("2");
     callableLoan.deposit(1, usdcVal(100));
-    console.log("3");
     // TODO: Drawdown to lock pool
-    console.log("4");
     vm.expectRevert(bytes("TL"));
-    console.log("5");
     callableLoan.deposit(1, usdcVal(100));
   }
 
