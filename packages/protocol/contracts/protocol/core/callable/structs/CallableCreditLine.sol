@@ -265,8 +265,17 @@ library CallableCreditLineLogic {
       return cl.totalInterestAccruedAt(timestamp);
     }
 
-    return
-      cl.totalInterestAccruedAt(cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp));
+    uint256 lastInterestDueTime = cl._paymentSchedule.previousInterestDueTimeAt(block.timestamp);
+    if (lastInterestDueTime <= cl._checkpointedAsOf) {
+      return cl._totalInterestOwedAtLastCheckpoint;
+    } else {
+      uint256 lastInterestDueTimeAtTimestamp = cl._paymentSchedule.previousInterestDueTimeAt(
+        timestamp
+      );
+      return
+        cl.totalInterestAccruedAt(lastInterestDueTimeAtTimestamp) -
+        cl._totalInterestAccruedAtLastCheckpoint;
+    }
   }
 
   function interestOwed(CallableCreditLine storage cl) internal view returns (uint) {
