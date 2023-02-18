@@ -97,7 +97,11 @@ library CallableCreditLineLogic {
   ) internal {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.InProgress || loanState == LoanState.DrawdownPeriod, "ILS");
-    cl._waterfall.pay({principalAmount: principalPayment, interestAmount: interestPayment});
+    cl._waterfall.pay({
+      principalAmount: principalPayment,
+      interestAmount: interestPayment,
+      reserveTranchesIndexStart: cl._paymentSchedule.currentPrincipalPeriod()
+    });
     if (cl.principalOwed() == 0 && cl.interestOwed() == 0) {
       cl._lastFullPaymentTime = block.timestamp;
     }
@@ -209,7 +213,7 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint timestamp
   ) internal view returns (uint returnedPrincipalOwed) {
-    return cl.totalPrincipalOwedAt(timestamp) - cl.totalPrincipalPaidAt(timestamp);
+    return cl.totalPrincipalOwedAt(timestamp).saturatingSub(cl.totalPrincipalPaidAt(timestamp));
   }
 
   function principalOwed(CallableCreditLine storage cl) internal view returns (uint) {

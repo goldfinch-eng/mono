@@ -20,9 +20,19 @@ library TrancheLogic {
     t._principalReserved = 0;
   }
 
-  function pay(Tranche storage t, uint interestAmount, uint principalAmount) internal {
+  function pay(Tranche storage t, uint principalAmount, uint interestAmount) internal {
     assert(
-      t._principalPaid + principalAmount + t._principalReserved <=
+      t._principalPaid + t._principalReserved + principalAmount <=
+        t.principalOutstandingWithReserves()
+    );
+
+    t._interestPaid += interestAmount;
+    t._principalPaid += principalAmount;
+  }
+
+  function reserve(Tranche storage t, uint principalAmount, uint interestAmount) internal {
+    assert(
+      t._principalPaid + t._principalReserved + principalAmount <=
         t.principalOutstandingWithReserves()
     );
 

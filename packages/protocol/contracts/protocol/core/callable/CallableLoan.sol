@@ -401,13 +401,14 @@ contract CallableLoan is
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
-    ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment(
-      amount,
-      cl.balance(),
-      cl.interestOwed(),
-      cl.interestAccrued(),
-      cl.principalOwed()
-    );
+
+    ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
+      paymentAmount: amount,
+      principalOutstanding: cl.balance(),
+      interestOwed: cl.interestOwed(),
+      interestAccrued: cl.interestAccrued(),
+      principalOwed: cl.principalOwed()
+    });
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
     uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
