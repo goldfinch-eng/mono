@@ -50,8 +50,6 @@ library WaterfallLogic {
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
-    // console.log("principalAmount", principalAmount);
-    // console.log("interestAmount", interestAmount);
 
     for (uint i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
@@ -69,7 +67,6 @@ library WaterfallLogic {
         });
       }
     }
-    // console.log("principalAmount", principalAmount);
     require(principalAmount == 0, "OP");
   }
 
@@ -100,11 +97,10 @@ library WaterfallLogic {
     uint fromTrancheId,
     uint toTrancheId
   ) internal {
-    // console.log("move1");
     (uint principalTaken, uint principalReserved, uint interestTaken) = w
       .getTranche(fromTrancheId)
       .take(principalAmount);
-    // console.log("move2");
+
     return
       w.getTranche(toTrancheId).addToBalances(
         principalAmount,
@@ -224,8 +220,6 @@ library WaterfallLogic {
     uint256 trancheIndex
   ) internal view returns (uint sum) {
     for (uint i = 0; i < trancheIndex; i++) {
-      // console.log("i", i);
-      // console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
       sum += w._tranches[i].principalReserved();
     }
   }
@@ -238,10 +232,7 @@ library WaterfallLogic {
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint sum) {
-    // console.log("totalPrincipalOwedUpToTranche");
     for (uint i = 0; i < trancheIndex; i++) {
-      // console.log("i", i);
-      // console.log("w._tranches[i].principalOutstanding()", w._tranches[i].principalOutstanding());
       sum += w._tranches[i].principalOutstandingWithReserves();
     }
   }

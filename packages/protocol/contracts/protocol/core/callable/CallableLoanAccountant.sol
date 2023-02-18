@@ -19,21 +19,21 @@ library CallableLoanAccountant {
 
   /// @notice Allocate a payment to proper balances according to the payment waterfall.
   /// @param paymentAmount amount to allocate
-  /// @param principalOutstanding Remaining principal outstanding
-  ///                                              - similar to balance for v1 + v2 pools.
+  /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time
   /// @param interestAccrued interest accrued between the last due time and the present time (unless last due time
   /// @param principalOwed principal owed on the credit line
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
     uint256 paymentAmount,
-    uint256 principalOutstanding,
+    uint256 balance,
     uint256 interestOwed,
     uint256 interestAccrued,
     uint256 principalOwed
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
+
     paymentRemaining = paymentRemaining - owedInterestPayment;
 
     uint256 accruedInterestPayment = MathUpgradeable.min(interestAccrued, paymentRemaining);
@@ -42,7 +42,7 @@ library CallableLoanAccountant {
     uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
     paymentRemaining = paymentRemaining - principalPayment;
 
-    uint256 balanceRemaining = principalOutstanding - principalPayment;
+    uint256 balanceRemaining = balance - principalPayment;
     uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
     paymentRemaining = paymentRemaining - additionalBalancePayment;
 

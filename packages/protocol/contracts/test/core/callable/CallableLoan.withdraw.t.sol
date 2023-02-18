@@ -48,21 +48,15 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       assertZero(principalRedeemable2);
     }
 
-    console.log("Before locking pool second time setting limit");
     setMaxLimit(callableLoan, amount1 + amount2);
     setLimit(callableLoan, amount1 + amount2);
-    console.log("After setting limit");
     drawdown(callableLoan, amount1 + amount2);
-    console.log("After drawdown.");
     vm.warp(cl.termEndTime());
 
     uint256 interestOwed = callableLoan.creditLine().interestOwed();
     pay(callableLoan, cl.interestOwed() + cl.principalOwed());
-    console.log("1");
     assertZero(cl.interestOwed());
-    console.log("2");
     assertZero(cl.principalOwed());
-    console.log("3");
 
     // Total interest owed to junior:
     //  interest_accrued = amount1 + amount2 * 0.05

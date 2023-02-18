@@ -104,15 +104,12 @@ contract TestCallableCreditLine is BaseTest {
     interest = boundUint128(interest, 0, depositAmount);
     principal = boundUint128(principal, 0, depositAmount - interest);
     CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
-    console.log("1");
     cpcl.pay(uint256(interest), uint256(principal));
-    console.log("2");
     // TODO: Assert that principal is buffered
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), 0);
     assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
 
-    console.log("3");
     // TODO: Assert that interest is buffered
     assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
@@ -124,19 +121,14 @@ contract TestCallableCreditLine is BaseTest {
     calledAmount = boundUint128(calledAmount, 1, depositAmount);
     setupFullyFundedAndDrawndown(depositAmount);
     CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
-    console.log("1");
     vm.warp(cpcl._paymentSchedule.startTime);
     cpcl.submitCall(calledAmount);
-    console.log("2");
 
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), 0);
     assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
 
-    console.log("3");
-
     assertEq(cpcl.totalInterestAccrued(), 0);
-    console.log("4");
     assertEq(cpcl.interestOwed(), 0);
     assertEq(
       cpcl.totalPrincipalOwedAt(cpcl._paymentSchedule.startTime + atLeast6Months),

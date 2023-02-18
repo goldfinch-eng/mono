@@ -400,15 +400,17 @@ contract CallableLoan is
 
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+
     require(amount > 0, "ZA");
 
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
-      principalOutstanding: cl.balance(),
+      balance: cl.totalPrincipalOutstanding(),
       interestOwed: cl.interestOwed(),
       interestAccrued: cl.interestAccrued(),
       principalOwed: cl.principalOwed()
     });
+
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
     uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
@@ -445,13 +447,10 @@ contract CallableLoan is
     /// @dev NA: not authorized
     require(poolTokens.isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
 
-    // console.log("checkpointing");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     // calculate the amount that will ever be redeemable
     (uint interestWithdrawable, uint principalWithdrawable) = _availableToWithdraw(tokenInfo);
 
-    // console.log("interestWithdrawable", interestWithdrawable);
-    // console.log("principalWithdrawable", principalWithdrawable);
     require(amount <= interestWithdrawable + principalWithdrawable, "IA");
 
     // prefer to withdraw interest first, then principal

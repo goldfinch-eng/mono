@@ -392,24 +392,17 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     vm.warp(firstJump);
 
     uint nextDueTime = cl.nextDueTime();
-    // console.log("cl.interestAccrued()", cl.interestAccrued());
-    // console.log("cl.interestOwed()", cl.interestOwed());
-    // console.log("cl.balance()", cl.balance());
     pay(callableLoan, cl.interestAccrued() + cl.interestOwed() + cl.balance());
-    // assertEq(cl.balance(), usdcVal(1000));
-    // assertZero(cl.balance());
+    assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
 
     // Advance to next principal payment period in order for principal payment to process.
     vm.warp(nextDueTime);
     // Pay off any remaining interest which has accrued since last payment.
-    // pay(callableLoan, cl.interestAccrued());
-    // assertZero(cl.balance());
-    // assertZero(cl.interestOwed());
-    // assertZero(cl.interestAccrued());
 
-    // Advance to a random time and assert amounts owed have not changed
+    pay(callableLoan, cl.interestAccrued() + cl.interestOwed());
+    // // Advance to a random time and assert amounts owed have not changed
     // secondJump = bound(secondJump, firstJump, firstJump + 1000 days);
     // vm.warp(secondJump);
     // assertZero(cl.balance());
