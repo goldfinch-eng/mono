@@ -356,7 +356,6 @@ library CallableCreditLineLogic {
     totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
     uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
 
-    // TODO: Late fees must be recalculated for every balance settlement.
     uint256 lateFeesStartAt = MathUpgradeable.max(
       cl._checkpointedAsOf,
       cl._paymentSchedule.nextDueTimeAt(cl._lastFullPaymentTime) +
