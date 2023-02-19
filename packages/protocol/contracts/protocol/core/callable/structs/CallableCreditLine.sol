@@ -424,8 +424,7 @@ library CallableCreditLineLogic {
     uint256 oldestUnpaidDueTime = cl._paymentSchedule.nextDueTimeAt(cl.lastFullPaymentTime());
 
     return
-      cl.totalPrincipalOwedAt(timestamp) > 0 &&
-      cl.totalInterestOwedAt(timestamp) > 0 &&
+      (cl.totalPrincipalOwedAt(timestamp) > 0 || cl.totalInterestOwedAt(timestamp) > 0) &&
       timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
