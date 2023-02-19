@@ -25,7 +25,10 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     depositAndDrawdown(callableLoan, limit);
 
-    pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());
+    pay(
+      callableLoan,
+      cl.principalOwed() + cl.balance() + cl.interestOwedAt(callableLoan.nextPrincipalDueTime())
+    );
 
     vm.warp(cl.termEndTime());
 

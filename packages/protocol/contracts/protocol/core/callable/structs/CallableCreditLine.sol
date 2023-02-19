@@ -420,9 +420,11 @@ library CallableCreditLineLogic {
   }
 
   function isLate(CallableCreditLine storage cl, uint256 timestamp) internal view returns (bool) {
+    if (cl.loanState() != LoanState.InProgress) {
+      return false;
+    }
     uint256 gracePeriodInSeconds = cl._config.getLatenessGracePeriodInDays() * SECONDS_PER_DAY;
     uint256 oldestUnpaidDueTime = cl._paymentSchedule.nextDueTimeAt(cl.lastFullPaymentTime());
-
     return
       (cl.totalPrincipalOwedAt(timestamp) > 0 || cl.totalInterestOwedAt(timestamp) > 0) &&
       timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
@@ -443,11 +445,16 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl
   ) internal view returns (uint fullPaymentTime) {
     fullPaymentTime = cl._lastFullPaymentTime;
+    // Similarly if !isActive(), we should bail out early since paymentSchedule calls will revert.
+    if (cl.loanState() == LoanState.FundingPeriod) {
+      return block.timestamp;
+    }
     uint256 startPeriod = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
     uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
 
     for (uint256 periodIndex = startPeriod; periodIndex < currentlyActivePeriod; periodIndex++) {
       uint256 periodEndTime = cl._paymentSchedule.periodEndTime(periodIndex);
+
       if (cl.principalOwedAt(periodEndTime) == 0 && cl.interestOwedAt(periodEndTime) == 0) {
         fullPaymentTime = periodEndTime;
       } else {
