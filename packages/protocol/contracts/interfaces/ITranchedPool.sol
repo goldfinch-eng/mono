@@ -48,6 +48,17 @@ interface ITranchedPool is ILoan {
     uint256[] calldata _allowedUIDTypes
   ) external;
 
+  /// @notice Pay down the credit line, separating the principal and interest payments. You must pay back all interest
+  ///   before paying back principal. Excess payments are refunded to the caller
+  /// @param principalPayment USDC amount to pay down principal
+  /// @param interestPayment USDC amount to pay down interest
+  /// @return PaymentAllocation info on how the payment was allocated
+  /// @dev {this} must be approved by msg.sender to transfer {principalPayment} + {interestPayment} of USDC
+  function pay(
+    uint256 principalPayment,
+    uint256 interestPayment
+  ) external returns (PaymentAllocation memory);
+
   /// @notice TrancheInfo for tranche with id `trancheId`. The senior tranche of slice i has id 2*(i-1)+1. The
   ///   junior tranche of slice i has id 2*i. Slice indices start at 1.
   /// @param trancheId id of tranche. Valid ids are in the range [1, 2*numSlices]

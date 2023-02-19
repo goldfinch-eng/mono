@@ -270,26 +270,6 @@ contract CallableLoan is
     return _pay(amount);
   }
 
-  /// @inheritdoc ILoan
-  /// @dev ZA: zero amount
-  /// @dev IPP: Insufficient principal payment - Amount of principal paid violates payment waterfall
-  /// @dev IIP: Insufficient interest payment - Amount of interest paid violates payment waterfall
-  function pay(
-    uint256 principalPayment,
-    uint256 interestPayment
-  )
-    external
-    override(ICreditLine, ILoan)
-    nonReentrant
-    whenNotPaused
-    returns (PaymentAllocation memory)
-  {
-    ILoan.PaymentAllocation memory pa = _pay(principalPayment + interestPayment);
-    require(principalPayment >= pa.principalPayment + pa.additionalBalancePayment, "OPP");
-    require(interestPayment >= pa.owedInterestPayment + pa.accruedInterestPayment, "IP");
-    return pa;
-  }
-
   /// @notice Pauses all drawdowns (but not deposits/withdraws)
   function pauseDrawdowns() public onlyAdmin {
     drawdownsPaused = true;
@@ -675,6 +655,14 @@ contract CallableLoan is
   /// @inheritdoc ICreditLine
   function lastFullPaymentTime() public view override returns (uint256) {
     return _staleCreditLine.lastFullPaymentTime();
+  }
+
+  /// Unsupported in callable loans.
+  function pay(
+    uint256 principalPayment,
+    uint256 interestPayment
+  ) external override(ICreditLine) nonReentrant whenNotPaused returns (PaymentAllocation memory) {
+    revert("US");
   }
 
   /// Unsupported in callable loans.

@@ -501,7 +501,6 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint trancheId
   ) internal view returns (SettledTrancheInfo memory settledTrancheInfo) {
-    console.log("trancheId", trancheId);
     Tranche storage tranche = cl._waterfall.getTranche(trancheId);
     settledTrancheInfo.interestPaid = tranche.interestPaid();
     settledTrancheInfo.principalDeposited = tranche.principalDeposited();
