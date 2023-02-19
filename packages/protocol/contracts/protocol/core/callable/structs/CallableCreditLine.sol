@@ -193,8 +193,8 @@ library CallableCreditLineLogic {
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwedAt(block.timestamp);
     cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
+    cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwedAt(block.timestamp);
     cl._checkpointedAsOf = block.timestamp;
   }
 
@@ -351,7 +351,10 @@ library CallableCreditLineLogic {
     if (!cl._paymentSchedule.isActive()) {
       return 0;
     }
+    totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
     uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
+
+    // TODO: Late fees must be recalculated for every balance settlement.
     uint256 lateFeesStartAt = MathUpgradeable.max(
       cl._checkpointedAsOf,
       cl._paymentSchedule.nextDueTimeAt(cl._lastFullPaymentTime) +
@@ -359,7 +362,7 @@ library CallableCreditLineLogic {
     );
 
     // Calculate interest accrued before balances are settled.
-    totalInterestAccruedReturned = CallableLoanAccountant.calculateInterest(
+    totalInterestAccruedReturned += CallableLoanAccountant.calculateInterest(
       cl._checkpointedAsOf,
       MathUpgradeable.min(settleBalancesAt, timestamp),
       lateFeesStartAt,

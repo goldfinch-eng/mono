@@ -22,16 +22,17 @@ library CallableLoanAccountant {
   /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time
   /// @param interestAccrued interest accrued between the last due time and the present time
-  /// @param guaranteedFutureInterest interest which is guaranteed to accrue by the next time principal is settled
+  /// @param guaranteedFutureInterest interest which is guaranteed to accrue between now and
+  ///                                 the next time principal is settled
   /// @param principalOwed principal owed on the credit line
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
     uint256 paymentAmount,
-    uint256 balance,
     uint256 interestOwed,
     uint256 interestAccrued,
+    uint256 principalOwed,
     uint256 guaranteedFutureInterest,
-    uint256 principalOwed
+    uint256 balance
   ) internal view returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);

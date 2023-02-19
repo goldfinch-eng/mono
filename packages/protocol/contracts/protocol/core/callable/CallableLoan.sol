@@ -398,14 +398,17 @@ contract CallableLoan is
     require(amount > 0, "ZA");
 
     uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
+    uint interestOwed = cl.interestOwed();
+    uint interestAccrued = cl.interestAccrued();
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
-      balance: cl.totalPrincipalOutstanding(),
-      interestOwed: cl.interestOwed(),
-      interestAccrued: cl.interestAccrued(),
+      interestOwed: interestOwed,
+      interestAccrued: interestAccrued,
+      principalOwed: cl.principalOwed(),
       guaranteedFutureInterest: cl.interestAccruedAt(nextPrincipalDueTime) +
-        cl.interestOwedAt(nextPrincipalDueTime),
-      principalOwed: cl.principalOwed()
+        cl.interestOwedAt(nextPrincipalDueTime) -
+        (interestOwed + interestAccrued),
+      balance: cl.totalPrincipalOutstanding()
     });
 
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
