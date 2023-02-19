@@ -193,8 +193,10 @@ library CallableCreditLineLogic {
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccruedAt(block.timestamp);
-    cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwedAt(block.timestamp);
+    uint totalInterestAccrued = cl.totalInterestAccrued();
+    uint totalInterestOwed = cl.totalInterestOwed();
+    cl._totalInterestAccruedAtLastCheckpoint = totalInterestAccrued;
+    cl._totalInterestOwedAtLastCheckpoint = totalInterestOwed;
     cl._checkpointedAsOf = block.timestamp;
   }
 

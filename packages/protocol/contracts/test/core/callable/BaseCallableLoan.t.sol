@@ -276,17 +276,6 @@ contract CallableLoanBaseTest is BaseTest {
     callableLoan.drawdown(amount);
   }
 
-  function setLimit(CallableLoan callableLoan, uint256 limit) internal impersonating(GF_OWNER) {
-    callableLoan.setLimit(limit);
-  }
-
-  function setMaxLimit(
-    CallableLoan callableLoan,
-    uint256 maxLimit
-  ) internal impersonating(GF_OWNER) {
-    callableLoan.setMaxLimit(maxLimit);
-  }
-
   function pause(CallableLoan callableLoan) internal impersonating(GF_OWNER) {
     callableLoan.pause();
   }

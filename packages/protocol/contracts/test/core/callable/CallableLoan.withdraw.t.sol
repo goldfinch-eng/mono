@@ -48,8 +48,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       assertZero(principalRedeemable2);
     }
 
-    setMaxLimit(callableLoan, amount1 + amount2);
-    setLimit(callableLoan, amount1 + amount2);
+    // TODO: setLimit(callableLoan, amount1 + amount2);
     drawdown(callableLoan, amount1 + amount2);
     vm.warp(cl.termEndTime());
 
@@ -255,8 +254,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 token1 = deposit(callableLoan, 3, amount1, user1);
     uint256 token2 = deposit(callableLoan, 3, amount2, user2);
 
-    setMaxLimit(callableLoan, amount1 + amount2);
-    setLimit(callableLoan, amount1 + amount2);
+    // TODO: setLimit(callableLoan, amount1 + amount2);
     drawdown(callableLoan, amount1 + amount2);
 
     vm.warp(cl.termEndTime());
@@ -526,8 +524,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     limit = bound(limit, usdcVal(100), usdcVal(10_000_000));
-    setMaxLimit(callableLoan, limit);
-    setLimit(callableLoan, limit);
+    // TODO: setLimit(callableLoan, limit);
     uid._mintForTest(user, 1, 1, "");
     uint256 overLimitDepositAmount = limit * 4;
     uint256 token = deposit(callableLoan, 3, overLimitDepositAmount, user);
