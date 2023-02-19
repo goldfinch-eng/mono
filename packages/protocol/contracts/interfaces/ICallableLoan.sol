@@ -1,9 +1,24 @@
 pragma solidity >=0.6.12;
+pragma experimental ABIEncoderV2;
 
 import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
 
 interface ICallableLoan is ILoan {
+  struct CallRequestPeriod {
+    uint256 principalDeposited;
+    uint256 principalPaid;
+    uint256 principalReserved;
+    uint256 interestPaid;
+  }
+
+  struct UncalledCapitalInfo {
+    uint256 principalDeposited;
+    uint256 principalPaid;
+    uint256 principalReserved;
+    uint256 interestPaid;
+  }
+
   // TODO: Update with final `initialize` interface once CallableLoan removes ITranchedPool conformance
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
   ///   contract creation to avoid initialization front-running
@@ -26,17 +41,6 @@ interface ICallableLoan is ILoan {
     uint256[] calldata _allowedUIDTypes
   ) external;
 
-  // function initialize(
-  //   address _config,
-  //   address _borrower,
-  //   uint256 _limit,
-  //   uint256 _interestApr,
-  //   ISchedule _schedule,
-  //   uint256 _lateFeeApr,
-  //   uint256 _fundableAt,
-  //   uint256[] calldata _allowedUIDTypes
-  // ) public;
-
   /// @notice Submits a call request for the specified pool token and amount
   ///         Mints a new, called pool token of the called amount.
   ///         Splits off any uncalled amount as a new uncalled pool token.
@@ -47,6 +51,12 @@ interface ICallableLoan is ILoan {
   function schedule() external view returns (ISchedule);
 
   function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
+
+  function getUncalledCapitalInfo() external view returns (UncalledCapitalInfo memory);
+
+  function getCallRequestPeriod(
+    uint callRequestPeriodIndex
+  ) external view returns (CallRequestPeriod memory);
 
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,

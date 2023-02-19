@@ -12,13 +12,13 @@ import {IMonthlyScheduleRepo} from "../../interfaces/IMonthlyScheduleRepo.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
 
 contract CallableLoanBuilder {
-  uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000 * 1e6;
+  uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_APR = 0;
 
   IGoldfinchFactory private gfFactory;
   IMonthlyScheduleRepo private monthlyScheduleRepo;
-  uint256 private maxLimit;
+  uint256 private limit;
   uint256 private apr;
   uint256 private lateFeeApr;
   uint256 private fundableAt;
@@ -27,7 +27,7 @@ contract CallableLoanBuilder {
   constructor(IGoldfinchFactory _gfFactory, IMonthlyScheduleRepo _monthlyScheduleRepo) public {
     gfFactory = _gfFactory;
     monthlyScheduleRepo = _monthlyScheduleRepo;
-    maxLimit = DEFAULT_MAX_LIMIT;
+    limit = DEFAULT_LIMIT;
     apr = DEFAULT_APR;
     lateFeeApr = DEFAULT_LATE_APR;
     fundableAt = block.timestamp;
@@ -48,7 +48,7 @@ contract CallableLoanBuilder {
       address(
         gfFactory.createCallableLoan(
           borrower,
-          maxLimit,
+          limit,
           apr,
           defaultSchedule(),
           lateFeeApr,
@@ -60,8 +60,8 @@ contract CallableLoanBuilder {
     return (callableLoan, ICreditLine(callableLoan.creditLine()));
   }
 
-  function withMaxLimit(uint256 _maxLimit) external returns (CallableLoanBuilder) {
-    maxLimit = _maxLimit;
+  function withLimit(uint256 _limit) external returns (CallableLoanBuilder) {
+    limit = _limit;
     return this;
   }
 

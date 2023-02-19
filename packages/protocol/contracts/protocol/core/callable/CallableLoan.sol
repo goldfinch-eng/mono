@@ -23,7 +23,7 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic} from "./structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo} from "./structs/CallableCreditLine.sol";
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
@@ -151,12 +151,11 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-
-  /// @dev IA: invalid amount - must be greater than 0.
+  /// @dev ZA: zero amount - must be greater than 0.
   /// @dev IT: invalid tranche - must be uncalled capital tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* -
+  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
   function deposit(
@@ -164,7 +163,7 @@ contract CallableLoan is
     uint256 amount
   ) public override nonReentrant whenNotPaused returns (uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    require(amount > 0, "IA");
+    require(amount > 0, "ZA");
     require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
     require(hasAllowedUID(msg.sender), "NA");
     require(block.timestamp >= fundableAt, "Not open for funding");
@@ -348,16 +347,31 @@ contract CallableLoan is
     return _staleCreditLine.uncalledCapitalTrancheIndex();
   }
 
-  function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
-    return _staleCreditLine.nextDueTimeAt(timestamp);
+  function getUncalledCapitalInfo() external view returns (UncalledCapitalInfo memory) {
+    SettledTrancheInfo memory info = _staleCreditLine.getSettledTrancheInfo(
+      uncalledCapitalTrancheIndex()
+    );
+    return
+      UncalledCapitalInfo({
+        interestPaid: info.interestPaid,
+        principalDeposited: info.principalDeposited,
+        principalPaid: info.principalPaid,
+        principalReserved: info.principalReserved
+      });
   }
 
-  function nextInterestDueTimeAt(uint256 timestamp) public view returns (uint256) {
-    return _staleCreditLine.nextInterestDueTimeAt(timestamp);
-  }
-
-  function schedule() public view override returns (ISchedule) {
-    return _staleCreditLine.schedule();
+  function getCallRequestPeriod(
+    uint callRequestPeriodIndex
+  ) external view returns (CallRequestPeriod memory) {
+    require(callRequestPeriodIndex < uncalledCapitalTrancheIndex());
+    SettledTrancheInfo memory info = _staleCreditLine.getSettledTrancheInfo(callRequestPeriodIndex);
+    return
+      CallRequestPeriod({
+        interestPaid: info.interestPaid,
+        principalDeposited: info.principalDeposited,
+        principalPaid: info.principalPaid,
+        principalReserved: info.principalReserved
+      });
   }
 
   /// @inheritdoc ILoan
@@ -494,6 +508,18 @@ contract CallableLoan is
   ================================================================================*/
   function nextPrincipalDueTime() public view returns (uint) {
     return _staleCreditLine.nextPrincipalDueTime();
+  }
+
+  function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
+    return _staleCreditLine.nextDueTimeAt(timestamp);
+  }
+
+  function nextInterestDueTimeAt(uint256 timestamp) public view returns (uint256) {
+    return _staleCreditLine.nextInterestDueTimeAt(timestamp);
+  }
+
+  function schedule() public view override returns (ISchedule) {
+    return _staleCreditLine.schedule();
   }
 
   /*================================================================================

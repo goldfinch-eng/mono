@@ -11,6 +11,7 @@ import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {CallableLoanAccountant} from "../CallableLoanAccountant.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
 
+import {Tranche} from "./Tranche.sol";
 import {Waterfall} from "./Waterfall.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
 import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
@@ -31,6 +32,13 @@ struct CallableCreditLine {
   Waterfall _waterfall;
   PaymentSchedule _paymentSchedule;
   uint[50] __padding;
+}
+
+struct SettledTrancheInfo {
+  uint principalDeposited;
+  uint principalPaid;
+  uint principalReserved;
+  uint interestPaid;
 }
 
 enum LoanState {
@@ -113,12 +121,15 @@ library CallableCreditLineLogic {
   // 3. Submit call request
   // 4. Interest owed, accrued (forced redemption), and principal owed should all be accounted for correctly.
   /// @dev ILS - Invalid loan state - Can only drawdown before first due date.
+  /// @dev ED - Exceeds deposits - Can only drawdown as much as has been deposited.
+
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     if (loanState == LoanState.FundingPeriod) {
       cl._paymentSchedule.startAt(block.timestamp);
       cl._lastFullPaymentTime = block.timestamp;
       loanState = cl.loanState();
+      emit DepositsLocked(address(this));
       // Scaffolding: TODO: Remove - this invariant should always be true across all tests.
       require(
         loanState == LoanState.DrawdownPeriod,
@@ -128,8 +139,9 @@ library CallableCreditLineLogic {
     require(loanState == LoanState.DrawdownPeriod, "ILS");
 
     require(
-      amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <= cl._limit,
-      "Cannot drawdown more than the limit"
+      amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <=
+        cl.totalPrincipalDeposited(),
+      "ED"
     );
     cl._waterfall.drawdown(amount);
   }
@@ -149,9 +161,11 @@ library CallableCreditLineLogic {
   }
 
   /// @dev ILS - Invalid loan state - Cannot deposit after first drawdown
+  /// @dev EL - Exceeds limit - Total deposit cumulative amount more than limit
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.FundingPeriod, "ILS");
+    require(amount + cl._waterfall.totalPrincipalDeposited() <= cl.limit(), "EL");
     cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
   }
 
@@ -476,6 +490,25 @@ library CallableCreditLineLogic {
         );
   }
 
+  /// Returns the balances of the given tranche - only settling principal if the tranche should be settled.
+  function getSettledTrancheInfo(
+    CallableCreditLine storage cl,
+    uint trancheId
+  ) internal view returns (SettledTrancheInfo memory settledTrancheInfo) {
+    console.log("trancheId", trancheId);
+    Tranche storage tranche = cl._waterfall.getTranche(trancheId);
+    settledTrancheInfo.interestPaid = tranche.interestPaid();
+    settledTrancheInfo.principalDeposited = tranche.principalDeposited();
+
+    if (cl.isActive() && trancheId < cl._paymentSchedule.currentPrincipalPeriod()) {
+      settledTrancheInfo.principalPaid = tranche.principalPaid() + tranche.principalReserved();
+      settledTrancheInfo.principalReserved = 0;
+    } else {
+      settledTrancheInfo.principalPaid = tranche.principalPaid();
+      settledTrancheInfo.principalReserved = tranche.principalReserved();
+    }
+  }
+
   function totalInterestPaid(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._waterfall.totalInterestPaid();
   }
@@ -562,4 +595,6 @@ library CallableCreditLineLogic {
   function lateFeeApr(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._lateAdditionalApr;
   }
+
+  event DepositsLocked(address indexed loan);
 }
