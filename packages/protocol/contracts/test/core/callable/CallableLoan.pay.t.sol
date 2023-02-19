@@ -11,6 +11,8 @@ import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 
+import {console2 as console} from "forge-std/console2.sol";
+
 contract CallableLoanPayTest is CallableLoanBaseTest {
   using SaturatingSub for uint256;
 
@@ -24,21 +26,29 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
 
   function testOnlyTakesWhatsNeededForExcessPayment(uint256 amount, uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400000));
 
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 
-    uint256 totalOwed = cl.interestOwed() + cl.interestAccrued() + cl.balance();
-    amount = bound(amount, totalOwed, totalOwed * 10);
+    uint256 totalOwed = cl.interestOwed() + cl.balance();
+    uint256 guaranteedFutureInterest = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+      cl.interestAccruedAt(callableLoan.nextPrincipalDueTime()) -
+      cl.interestOwed();
+    uint256 maxAcceptedUsdc = totalOwed + guaranteedFutureInterest;
+    amount = bound(amount, maxAcceptedUsdc, maxAcceptedUsdc * 10);
 
     fundAddress(address(this), amount);
     uint256 balanceBefore = usdc.balanceOf(address(this));
-    usdc.approve(address(callableLoan), amount);
-    callableLoan.pay(amount);
 
-    // Balance should only decrease by the totalOwed, even if amount > totalOwed
-    assertEq(usdc.balanceOf(address(this)), balanceBefore - totalOwed);
+    usdc.approve(address(callableLoan), amount);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(amount);
+    // Balance should only decrease by the maxAcceptedUsdc, even if amount > totalOwed
+    assertApproxEqAbs(
+      usdc.balanceOf(address(this)),
+      balanceBefore - maxAcceptedUsdc,
+      HUNDREDTH_CENT
+    );
   }
 
   function testRevertsIfStillInFundingStage() public {
@@ -52,7 +62,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
 
   function testAcceptsPayment(uint256 amount, uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
+    depositAndDrawdown(callableLoan, usdcVal(400000));
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 

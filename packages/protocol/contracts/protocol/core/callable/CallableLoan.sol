@@ -405,9 +405,8 @@ contract CallableLoan is
       interestOwed: interestOwed,
       interestAccrued: interestAccrued,
       principalOwed: cl.principalOwed(),
-      guaranteedFutureInterest: cl.interestAccruedAt(nextPrincipalDueTime) +
-        cl.interestOwedAt(nextPrincipalDueTime) -
-        (interestOwed + interestAccrued),
+      guaranteedFutureInterest: (cl.interestAccruedAt(nextPrincipalDueTime) +
+        cl.interestOwedAt(nextPrincipalDueTime)) - (interestOwed + interestAccrued),
       balance: cl.totalPrincipalOutstanding()
     });
 
