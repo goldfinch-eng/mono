@@ -26,18 +26,6 @@ import {
 import { useWallet } from "@/lib/wallet";
 
 import {
-  BORROWER_PROFILE_FIELDS,
-  BORROWER_OTHER_POOL_FIELDS,
-} from "./borrower-profile";
-import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import {
-  SECURITIES_RECOURSE_TABLE_FIELDS,
-  BORROWER_FINANCIALS_TABLE_FIELDS,
-  BORROWER_PERFORMANCE_TABLE_FIELDS,
-} from "./deal-tables";
-import { DOCUMENT_FIELDS } from "./documents-list";
-import { TRANCHED_POOL_STAT_GRID_FIELDS } from "./status-section";
-import {
   ClaimPanel,
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
   CLAIM_PANEL_TRANCHED_POOL_FIELDS,
@@ -55,16 +43,19 @@ import {
   SUPPLY_PANEL_DEAL_FIELDS,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/invest-and-withdraw-tabs";
-import { LoanSummary } from "./v2-components/loan-summary";
+import {
+  LoanSummary,
+  LOAN_SUMMARY_BORROWER_FIELDS,
+  LOAN_SUMMARY_TRANCHED_POOL_FIELDS,
+} from "./v2-components/loan-summary";
 
 gql`
-  ${TRANCHED_POOL_STAT_GRID_FIELDS}
+  ${LOAN_SUMMARY_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
-  ${BORROWER_OTHER_POOL_FIELDS}
   ${TRANCHED_POOL_FUNDING_STATUS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -86,25 +77,10 @@ gql`
         lockedUntil
       }
       juniorDeposited
-      creditLine {
-        id
-        limit
-        maxLimit
-        id
-        isLate @client
-        isInDefault @client
-        termInDays
-        paymentPeriodInDays
-        nextDueTime
-        interestAprDecimal
-        borrowerContract {
-          id
-        }
-        lateFeeApr
-      }
       initialInterestOwed
       principalAmountRepaid
       interestAmountRepaid
+      ...LoanSummaryTranchedPoolFields
       ...TranchedPoolFundingStatusFields
       ...SupplyPanelTranchedPoolFields
       ...ClaimPanelTranchedPoolFields
@@ -112,7 +88,7 @@ gql`
     borrowerOtherPools: tranchedPools(
       where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
     ) {
-      ...BorrowerOtherPoolFields
+      id
     }
     seniorPools(first: 1) {
       id
@@ -148,14 +124,9 @@ gql`
 `;
 
 const singleDealQuery = gql`
-  ${DOCUMENT_FIELDS}
-  ${CMS_TEAM_MEMBER_FIELDS}
-  ${SECURITIES_RECOURSE_TABLE_FIELDS}
-  ${BORROWER_FINANCIALS_TABLE_FIELDS}
-  ${BORROWER_PERFORMANCE_TABLE_FIELDS}
-  ${BORROWER_PROFILE_FIELDS}
   ${CREDIT_MEMO_FIELDS}
   ${SUPPLY_PANEL_DEAL_FIELDS}
+  ${LOAN_SUMMARY_BORROWER_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -163,15 +134,15 @@ const singleDealQuery = gql`
       dealType
       category
       borrower {
-        ...BorrowerProfileFields
+        ...LoanSummaryBorrowerFields
+        deals {
+          id
+        }
       }
       overview
       details
       agreement
       dataroom
-      securitiesAndRecourse {
-        ...SecuritiesRecourseTableFields
-      }
       defaultInterestRate
       transactionStructure {
         filename
@@ -179,9 +150,6 @@ const singleDealQuery = gql`
         alt
         url
         mimeType
-      }
-      documents {
-        ...DocumentFields
       }
       creditMemos {
         ...CreditMemoFields
@@ -368,6 +336,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     <LoanSummary
                       loan={tranchedPool}
                       deal={dealDetails}
+                      borrower={borrower}
                       seniorPoolEstimatedApyFromGfiRaw={
                         seniorPool.estimatedApyFromGfiRaw
                       }

@@ -9,6 +9,7 @@ import { formatPercent } from "@/lib/format";
 import {
   LoanSummaryDealFieldsFragment,
   LoanSummaryTranchedPoolFieldsFragment,
+  LoanSummaryBorrowerFieldsFragment,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
@@ -19,8 +20,16 @@ export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
     id
     usdcApy
     rawGfiApy
-    creditLine {
-      termInDays
+    termInDays
+  }
+`;
+
+export const LOAN_SUMMARY_BORROWER_FIELDS = gql`
+  fragment LoanSummaryBorrowerFields on Borrower {
+    id
+    name
+    logo {
+      url
     }
   }
 `;
@@ -30,13 +39,6 @@ export const LOAN_SUMMARY_DEAL_FIELDS = gql`
     id
     name
     overview
-    borrower {
-      id
-      name
-      logo {
-        url
-      }
-    }
   }
 `;
 
@@ -44,6 +46,7 @@ interface LoanSummaryProps {
   className?: string;
   loan: LoanSummaryTranchedPoolFieldsFragment;
   deal: LoanSummaryDealFieldsFragment;
+  borrower: LoanSummaryBorrowerFieldsFragment;
   seniorPoolEstimatedApyFromGfiRaw: FixedNumber;
   fiatPerGfi: number;
 }
@@ -52,6 +55,7 @@ export function LoanSummary({
   className,
   loan,
   deal,
+  borrower,
   seniorPoolEstimatedApyFromGfiRaw,
   fiatPerGfi,
 }: LoanSummaryProps) {
@@ -59,16 +63,16 @@ export function LoanSummary({
     <div className={className}>
       <div className="mb-4 flex items-center gap-2">
         <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200">
-          {deal.borrower.logo?.url ? (
+          {borrower.logo?.url ? (
             <Image
               fill
               sizes="20px"
-              src={deal.borrower.logo.url}
-              alt={`${deal.borrower.name} logo`}
+              src={borrower.logo.url}
+              alt={`${borrower.name} logo`}
             />
           ) : null}
         </div>
-        <span className="text-sm">{deal.borrower.name}</span>
+        <span className="text-sm">{borrower.name}</span>
       </div>
       <div className="mb-8">
         <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
@@ -103,7 +107,7 @@ export function LoanSummary({
           tooltip="Length of the loan term up until the principal is due."
           value={formatDistanceStrict(
             0,
-            loan.creditLine.termInDays.toNumber() * secondsPerDay * 1000,
+            loan.termInDays * secondsPerDay * 1000,
             { unit: "month", roundingMethod: "ceil" }
           )}
         />

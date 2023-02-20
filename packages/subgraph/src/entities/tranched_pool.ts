@@ -182,6 +182,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.nextDueTime = creditLine.nextDueTime
   tranchedPool.termEndTime = creditLine.termEndTime
   tranchedPool.termStartTime = creditLine.termStartTime
+  tranchedPool.termInDays = creditLine.termInDays.toI32()
   tranchedPool.interestRate = creditLine.interestAprDecimal
   tranchedPool.lateFeeRate = creditLine.lateFeeApr
   tranchedPool.borrowerContract = creditLine.borrowerContract

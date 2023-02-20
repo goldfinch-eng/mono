@@ -17,10 +17,7 @@ export const FUNDING_STATS_LOAN_FIELDS = gql`
     juniorDeposited
     estimatedLeverageRatio
     fundableAt
-    creditLine {
-      id
-      maxLimit
-    }
+    fundingLimit
   }
 `;
 
@@ -50,7 +47,7 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           )
         )
       : juniorDeposited;
-  const maxFundingAmount = loan.creditLine.maxLimit;
+  const maxFundingAmount = loan.fundingLimit;
 
   const fillRatio = FixedNumber.from(fundedAmount).divUnsafe(
     FixedNumber.from(maxFundingAmount)
