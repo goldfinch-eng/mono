@@ -16,7 +16,7 @@ import { computeApyFromGfiInFiat } from "@/lib/pools";
 const secondsPerDay = 86400;
 
 export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
-  fragment LoanSummaryTranchedPoolFields on TranchedPool {
+  fragment LoanSummaryTranchedPoolFields on Loan {
     id
     usdcApy
     rawGfiApy

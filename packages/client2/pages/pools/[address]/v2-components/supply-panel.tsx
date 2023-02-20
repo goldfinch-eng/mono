@@ -17,7 +17,7 @@ import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
-  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelLoanFieldsFragment,
   SupplyPanelUserFieldsFragment,
   SupplyPanelDealFieldsFragment,
 } from "@/lib/graphql/generated";
@@ -31,13 +31,15 @@ import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
 
-export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
-  fragment SupplyPanelTranchedPoolFields on TranchedPool {
+export const SUPPLY_PANEL_LOAN_FIELDS = gql`
+  fragment SupplyPanelLoanFields on Loan {
     id
     usdcApy
     rawGfiApy
-    juniorDeposited
-    estimatedLeverageRatio
+    ... on TranchedPool {
+      juniorDeposited
+      estimatedLeverageRatio
+    }
     allowedUidTypes
     fundingLimit
   }
@@ -64,7 +66,7 @@ export const SUPPLY_PANEL_DEAL_FIELDS = gql`
 `;
 
 interface SupplyPanelProps {
-  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  tranchedPool: SupplyPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   deal: SupplyPanelDealFieldsFragment;
 }

@@ -12,10 +12,12 @@ import {
 const twoWeeksMs = 1.21e9;
 
 export const FUNDING_STATS_LOAN_FIELDS = gql`
-  fragment FundingStatsLoanFields on TranchedPool {
+  fragment FundingStatsLoanFields on Loan {
     __typename
-    juniorDeposited
-    estimatedLeverageRatio
+    ... on TranchedPool {
+      juniorDeposited
+      estimatedLeverageRatio
+    }
     fundableAt
     fundingLimit
   }

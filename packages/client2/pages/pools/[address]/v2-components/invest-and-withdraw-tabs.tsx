@@ -8,7 +8,7 @@ import {
 import { formatCrypto } from "@/lib/format";
 import {
   SupplyPanelDealFieldsFragment,
-  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelLoanFieldsFragment,
   SupplyPanelUserFieldsFragment,
   WithdrawalPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
@@ -18,14 +18,14 @@ import { SupplyPanel } from "./supply-panel";
 import { WithdrawalPanel } from "./withdrawal-form";
 
 export {
-  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_LOAN_FIELDS,
   SUPPLY_PANEL_DEAL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
 } from "./supply-panel";
 export { WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS } from "./withdrawal-form";
 
 interface Props {
-  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  tranchedPool: SupplyPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   deal: SupplyPanelDealFieldsFragment;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];

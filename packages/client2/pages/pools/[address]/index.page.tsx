@@ -39,7 +39,7 @@ import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
-  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_LOAN_FIELDS,
   SUPPLY_PANEL_DEAL_FIELDS,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
 } from "./v2-components/invest-and-withdraw-tabs";
@@ -52,7 +52,7 @@ import {
 gql`
   ${LOAN_SUMMARY_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
-  ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
+  ${SUPPLY_PANEL_LOAN_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
@@ -63,26 +63,16 @@ gql`
     $userId: ID!
     $borrowerOtherPools: [ID!]
   ) {
-    tranchedPool(id: $tranchedPoolId) {
+    loan(id: $tranchedPoolId) {
       __typename
       id
       allowedUidTypes
       usdcApy
       rawGfiApy
-      estimatedLeverageRatio
       fundableAt
-      isPaused
-      numBackers
-      juniorTranches {
-        lockedUntil
-      }
-      juniorDeposited
-      initialInterestOwed
-      principalAmountRepaid
-      interestAmountRepaid
       ...LoanSummaryTranchedPoolFields
       ...TranchedPoolFundingStatusFields
-      ...SupplyPanelTranchedPoolFields
+      ...SupplyPanelLoanFields
       ...ClaimPanelTranchedPoolFields
     }
     borrowerOtherPools: tranchedPools(
@@ -182,7 +172,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
     returnPartialData: true,
   });
 
-  const tranchedPool = data?.tranchedPool;
+  const tranchedPool = data?.loan;
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;

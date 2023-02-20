@@ -141,6 +141,9 @@ interface Loan {
   totalDeposited: BigInt!
   fundableAt: Int!
   createdAt: Int!
+  allowedUidTypes: [UidType!]!
+  backers: [User!]!
+  numBackers: Int!
 
   # "Credit line" fields
   balance: BigInt!
@@ -163,6 +166,9 @@ type TranchedPool implements Loan @entity {
   totalDeposited: BigInt!
   fundableAt: Int!
   createdAt: Int!
+  allowedUidTypes: [UidType!]!
+  backers: [User!]!
+  numBackers: Int!
 
   balance: BigInt!
   paymentPeriodInDays: BigInt!
@@ -190,13 +196,10 @@ type TranchedPool implements Loan @entity {
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  backers: [User!]!
-  numBackers: Int!
   tokens: [TranchedPoolToken!]!
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
-  allowedUidTypes: [UidType!]!
 
   transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
 
