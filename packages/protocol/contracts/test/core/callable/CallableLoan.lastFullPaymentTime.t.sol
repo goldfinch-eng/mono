@@ -59,7 +59,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     vm.warp(cl.nextDueTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
     interestPayment = bound(interestPayment, 1, cl.interestOwed() - 1);
-    pay(callableLoan, 0, interestPayment);
+    pay(callableLoan, interestPayment);
     uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter, "lastFullPaymentTime unchanged");
   }
@@ -75,7 +75,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
       vm.warp(cl.nextDueTime());
     }
     interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
-    pay(callableLoan, 0, interestPayment);
+    pay(callableLoan, interestPayment);
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
@@ -89,7 +89,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
     interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
     principalPayment = bound(principalPayment, 0, cl.principalOwed() - 1);
-    pay(callableLoan, principalPayment, interestPayment);
+    pay(callableLoan, principalPayment + interestPayment);
     uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
     assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter);
   }
@@ -103,7 +103,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, 30 days * 50);
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
-    pay(callableLoan, cl.principalOwed(), cl.interestOwed());
+    pay(callableLoan, cl.principalOwed() + cl.interestOwed());
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
