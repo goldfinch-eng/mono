@@ -351,10 +351,6 @@ contract CallableLoan is
       });
   }
 
-  function guaranteedFutureInterest() public view returns (uint256) {
-    return _staleCreditLine.guaranteedFutureInterest();
-  }
-
   /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
     return _availableToWithdraw(config.getPoolTokens().getTokenInfo(tokenId));
@@ -395,19 +391,21 @@ contract CallableLoan is
 
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-
     require(amount > 0, "ZA");
 
     uint interestOwed = cl.interestOwed();
     uint interestAccrued = cl.interestAccrued();
-    uint256 guaranteedFutureInterest = cl.guaranteedFutureInterest();
 
+    uint timeUntilNextPrincipalSettlemenet = cl
+      .nextPrincipalDueTimeAt(block.timestamp)
+      .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
       interestOwed: interestOwed,
       interestAccrued: interestAccrued,
       principalOwed: cl.principalOwed(),
-      guaranteedFutureInterest: guaranteedFutureInterest,
+      interestRate: cl.interestApr(),
+      timeUntilNextPrincipalSettlemenet: timeUntilNextPrincipalSettlemenet,
       balance: cl.totalPrincipalOutstanding()
     });
 

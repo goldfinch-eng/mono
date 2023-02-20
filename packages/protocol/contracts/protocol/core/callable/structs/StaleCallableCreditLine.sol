@@ -43,12 +43,6 @@ library StaleCallableCreditLineLogic {
     return cl._cl._paymentSchedule.schedule;
   }
 
-  function guaranteedFutureInterest(
-    StaleCallableCreditLine storage cl
-  ) public view returns (uint256) {
-    return cl._cl.guaranteedFutureInterest();
-  }
-
   function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint64) {
     return cl._cl.termStartTime();
   }

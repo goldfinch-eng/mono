@@ -219,17 +219,6 @@ library CallableCreditLineLogic {
     return uint32(cl._waterfall.numTranches() - 1);
   }
 
-  function guaranteedFutureInterest(CallableCreditLine storage cl) internal view returns (uint) {
-    if (block.timestamp < cl.termEndTime()) {
-      uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
-      return
-        (cl.interestAccruedAt(nextPrincipalDueTime) + cl.interestOwedAt(nextPrincipalDueTime)) -
-        (cl.interestOwed() + cl.interestAccrued());
-    } else {
-      return 0;
-    }
-  }
-
   function principalOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
