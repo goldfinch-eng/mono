@@ -11,14 +11,6 @@ import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
-  function testRevertsIfPaymentEq0() public {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
-
-    vm.expectRevert(bytes("ZA"));
-    callableLoan.pay(0, 0);
-  }
-
   function testOnlyTakesWhatsNeededForExcessInterestPayment(
     uint256 interestAmount,
     uint256 timestamp
@@ -35,7 +27,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     fundAddress(address(this), interestAmount);
     uint256 balanceBefore = usdc.balanceOf(address(this));
     usdc.approve(address(callableLoan), interestAmount);
-    callableLoan.pay(0, interestAmount);
+    callableLoan.pay(interestAmount);
 
     // Balance should only decrease by total interest owed even if that is less than the amount paid
     assertEq(usdc.balanceOf(address(this)), balanceBefore - totalIntOwed);
@@ -63,40 +55,10 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     fundAddress(address(this), totalOwed);
     uint256 balanceBefore = usdc.balanceOf(address(this));
     usdc.approve(address(callableLoan), totalOwed);
-    callableLoan.pay(principalAmount, interestAmount);
+    callableLoan.pay(principalAmount + interestAmount);
 
     // Balance should only decrease by total  owed even if that is less than the amount paid
     assertEq(usdc.balanceOf(address(this)), balanceBefore - totalOwed);
-  }
-
-  function testRevertsIfPoolIsUnlocked() public {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    fundAddress(address(this), usdcVal(1));
-    usdc.approve(address(callableLoan), usdcVal(1));
-    vm.expectRevert(bytes("NL"));
-    callableLoan.pay(0, usdcVal(1));
-  }
-
-  function testRevertsIfPrincipalAmountGt0AndInterstAmountLtTotalInterestOwed(
-    uint256 interestAmount,
-    uint256 principalAmount,
-    uint256 timestamp
-  ) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
-
-    timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
-    vm.warp(timestamp);
-
-    interestAmount = bound(interestAmount, 1, cl.interestOwed() + cl.interestAccrued() - 1);
-    principalAmount = bound(principalAmount, 1, cl.balance());
-
-    fundAddress(address(this), interestAmount + principalAmount);
-    usdc.approve(address(callableLoan), interestAmount + principalAmount);
-
-    vm.expectRevert(bytes("II"));
-    callableLoan.pay(principalAmount, interestAmount);
   }
 
   function testAcceptsPaymentUpToTotalInterestOwed(
@@ -117,13 +79,13 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
 
     fundAddress(address(this), interestAmount);
     usdc.approve(address(callableLoan), interestAmount);
-    ILoan.PaymentAllocation memory pa = callableLoan.pay(0, interestAmount);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(interestAmount);
 
     assertEq(cl.interestAccrued(), interestAccruedBefore - pa.accruedInterestPayment);
     assertEq(cl.interestOwed(), interestOwedBefore - pa.owedInterestPayment);
   }
 
-  function testAcceptsPaymentUpToTotalInterestAndPrincipalOwed(
+  function testAcceptsPaymentUpToFutureGuaranteedInterestAndPrincipalOwed(
     uint256 principalAmount,
     uint256 timestamp
   ) public {
@@ -133,7 +95,8 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
-    uint256 totalIntOwed = cl.interestOwed() + cl.interestAccrued();
+    uint256 totalIntOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+      cl.interestAccruedAt(callableLoan.nextPrincipalDueTime());
     principalAmount = bound(principalAmount, 0, cl.balance());
 
     uint256 interestAccruedBefore = cl.interestAccrued();
@@ -142,7 +105,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
 
     fundAddress(address(this), totalIntOwed + principalAmount);
     usdc.approve(address(callableLoan), totalIntOwed + principalAmount);
-    ILoan.PaymentAllocation memory pa = callableLoan.pay(principalAmount, totalIntOwed);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(principalAmount + totalIntOwed);
 
     assertEq(cl.interestAccrued(), interestAccruedBefore - pa.accruedInterestPayment);
     assertEq(cl.interestOwed(), interestOwedBefore - pa.owedInterestPayment);

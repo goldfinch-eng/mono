@@ -12,7 +12,6 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   function testTermEndTimeIsSetOnFirstDrawdown(uint256 amount) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
-    setMaxLimit(callableLoan, amount * 5);
 
     assertZero(cl.termEndTime());
     depositAndDrawdown(callableLoan, amount, GF_OWNER);
@@ -24,7 +23,6 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 drawdownAmount) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
-    setMaxLimit(callableLoan, drawdownAmount * 2);
 
     deposit(callableLoan, 3, drawdownAmount * 2, DEPOSITOR);
     // TODO: Drawdown to lock pool

@@ -25,7 +25,13 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     depositAndDrawdown(callableLoan, limit);
 
-    pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());
+    pay(
+      callableLoan,
+      cl.principalOwed() +
+        cl.balance() +
+        cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+        cl.interestAccruedAt(callableLoan.nextPrincipalDueTime())
+    );
 
     vm.warp(cl.termEndTime());
 
@@ -77,7 +83,9 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
-      pay(callableLoan, cl.interestOwed());
+      if (cl.interestOwed() > 0) {
+        pay(callableLoan, cl.interestOwed());
+      }
     }
 
     assertEq(cl.nextDueTime(), cl.termEndTime());
@@ -98,7 +106,9 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
-      pay(callableLoan, cl.interestOwed());
+      if (cl.interestOwed() > 0) {
+        pay(callableLoan, cl.interestOwed());
+      }
     }
 
     assertEq(cl.nextDueTime(), cl.termEndTime());

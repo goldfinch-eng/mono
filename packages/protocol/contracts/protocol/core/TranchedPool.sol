@@ -334,7 +334,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     return pa;
   }
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ITranchedPool
   /// @dev ZA: zero amount
   function pay(
     uint256 principalAmount,

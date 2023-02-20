@@ -10,11 +10,13 @@ import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 // solhint-disable-next-line max-line-length
 import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 
+import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanDepositTest is CallableLoanBaseTest {
+  using SaturatingSub for uint256;
   event DepositMade(
     address indexed owner,
     uint256 indexed tranche,
@@ -27,7 +29,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
     vm.expectRevert(bytes("NA"));
-    callableLoan.deposit(1, 1);
+    callableLoan.deposit(3, 1);
   }
 
   function testDepositWorksIfGolistedAndWithoutAllowedUid() public impersonating(DEPOSITOR) {
@@ -39,14 +41,14 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     _stopImpersonation();
     addToGoList(DEPOSITOR);
     usdc.approve(address(callableLoan), type(uint256).max);
-    uint256 poolToken = callableLoan.deposit(1, usdcVal(10));
+    uint256 poolToken = callableLoan.deposit(3, usdcVal(10));
     assertEq(poolToken, 1);
   }
 
   function testDepositWorksIfAllowedUidButNotGoListed() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
-    uint256 poolToken = callableLoan.deposit(1, usdcVal(100));
+    uint256 poolToken = callableLoan.deposit(3, usdcVal(100));
     assertEq(poolToken, 1);
   }
 
@@ -54,17 +56,16 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("IA"));
+    vm.expectRevert(bytes("ZA"));
     callableLoan.deposit(1, usdcVal(0));
   }
 
   function testDepositRevertsIfPoolLocked() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
-    callableLoan.deposit(1, usdcVal(100));
-    // TODO: Drawdown to lock pool
-    vm.expectRevert(bytes("TL"));
-    callableLoan.deposit(1, usdcVal(100));
+    depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
+    vm.expectRevert(bytes("ILS"));
+    callableLoan.deposit(3, usdcVal(100));
   }
 
   function testDepositRevertsForInvalidTranche() public impersonating(DEPOSITOR) {
@@ -75,30 +76,49 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     callableLoan.deposit(2, usdcVal(100));
   }
 
-  function testDepositUpdatesTrancheInfoAndMintsToken() public impersonating(DEPOSITOR) {
+  function testDepositUpdatesTrancheInfoAndMintsToken(
+    uint depositAmount
+  ) public impersonating(DEPOSITOR) {
+    vm.assume(
+      depositAmount <= usdc.balanceOf(DEPOSITOR) &&
+        depositAmount < callableLoanBuilder.DEFAULT_LIMIT() &&
+        depositAmount > 0
+    );
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
 
     // Event should be emitted for deposit
     vm.expectEmit(true, true, true, true);
-    emit DepositMade(DEPOSITOR, 1, 1, usdcVal(100));
+    emit DepositMade(DEPOSITOR, 3, 1, depositAmount);
 
-    uint256 poolToken = callableLoan.deposit(1, usdcVal(100));
+    uint256 poolToken = callableLoan.deposit(3, depositAmount);
 
-    // TODO: Uncalled capital tranche info has principal deposited
-    // ITranchedPool.TrancheInfo memory uncalledCapital = callableLoan.getTranche(1);
-    // assertEq(uncalledCapital.principalDeposited, usdcVal(100));
+    ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
+      .getUncalledCapitalInfo();
+
+    assertEq(
+      uncalledCapital.principalDeposited,
+      depositAmount,
+      "Uncalled capital has the deposits"
+    );
+    assertEq(
+      uncalledCapital.principalPaid,
+      depositAmount,
+      "Haven't drawndown yet - principalPaid should equal principalDeposited"
+    );
+    assertEq(uncalledCapital.interestPaid, 0, "No payments have come in");
+    assertEq(uncalledCapital.principalReserved, 0, "No payments have come in");
 
     // Token info is correct
     assertEq(poolTokens.ownerOf(poolToken), address(DEPOSITOR));
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolToken);
-    assertEq(tokenInfo.principalAmount, usdcVal(100));
-    assertEq(tokenInfo.tranche, 1);
+    assertEq(tokenInfo.principalAmount, depositAmount);
+    assertEq(tokenInfo.tranche, 3);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
 
     // Pool has a balance
-    assertEq(usdc.balanceOf(address(callableLoan)), usdcVal(100));
+    assertEq(usdc.balanceOf(address(callableLoan)), depositAmount);
   }
 
   function testDepositTrancheInfoUpdatedForTwoDeposits(
@@ -106,35 +126,49 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uint256 amount2
   ) public impersonating(DEPOSITOR) {
     vm.assume(amount1 > 0 && amount2 > 0);
-    uint256 total = amount1 + amount2; // Check for underflow
-    vm.assume(amount2 < total && total <= usdc.balanceOf(DEPOSITOR));
+    vm.assume(
+      callableLoanBuilder.DEFAULT_LIMIT().saturatingSub(amount1).saturatingSub(amount2) > 0
+    );
+    uint256 total = amount1 + amount2;
+    vm.assume(total <= usdc.balanceOf(DEPOSITOR));
 
     (CallableLoan callableLoan, ) = defaultCallableLoan();
+
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
 
-    callableLoan.deposit(1, amount1);
-    callableLoan.deposit(1, amount2);
+    callableLoan.deposit(3, amount1);
+    callableLoan.deposit(3, amount2);
 
-    // TODO: Uncalled capital tranche info has principal deposited
-    // ITranchedPool.TrancheInfo memory uncalledCapital = callableLoan.getTranche(1);
+    ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
+      .getUncalledCapitalInfo();
 
-    // assertEq(uncalledCapital.principalDeposited, amount1 + amount2, "junior tranche has deposits");
-    // assertEq(usdc.balanceOf(address(callableLoan)), amount1 + amount2, "pool has balance");
-    // // TODO: Eventually should just be a single NFT
-    // assertEq(poolTokens.balanceOf(DEPOSITOR), 2, "depositor has two pool tokens");
+    assertEq(
+      uncalledCapital.principalDeposited,
+      amount1 + amount2,
+      "Uncalled capital has the deposits"
+    );
+    assertEq(
+      uncalledCapital.principalPaid,
+      amount1 + amount2,
+      "Haven't drawndown yet - principalPaid should equal principalDeposited"
+    );
+    assertEq(uncalledCapital.interestPaid, 0, "No payments have come in");
+    assertEq(uncalledCapital.principalReserved, 0, "No payments have come in");
+
+    assertEq(usdc.balanceOf(address(callableLoan)), amount1 + amount2, "pool has balance");
+    assertEq(poolTokens.balanceOf(DEPOSITOR), 2, "depositor has two pool tokens");
   }
 
   function testLockPoolEmitsEvent() public impersonating(BORROWER) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    vm.expectEmit(true, false, false, true);
-    // TODO: Should emit pool locked instead of tranche locked.
+    vm.expectEmit(true, true, true, true);
     emit DepositsLocked(address(callableLoan));
-    // TODO: Drawdown to lock pool
+    depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
   }
 
   function testDepositFailsForInvalidTranches(uint256 trancheId) public {
-    vm.assume(trancheId > 2);
+    vm.assume(trancheId < 3);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
 
     _startImpersonation(DEPOSITOR);
@@ -144,7 +178,12 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     _stopImpersonation();
   }
 
-  function testDepositUsingPermit(uint256 userPrivateKey) public {
+  function testDepositUsingPermit(uint256 userPrivateKey, uint256 depositAmount) public {
+    vm.assume(
+      depositAmount <= usdc.balanceOf(DEPOSITOR) &&
+        depositAmount < callableLoanBuilder.DEFAULT_LIMIT() &&
+        depositAmount > 0
+    );
     vm.assume(userPrivateKey != 0);
     // valid private key space is from [1, secp256k1n − 1]
     vm.assume(
@@ -152,7 +191,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     );
     address user = vm.addr(userPrivateKey);
 
-    fundAddress(user, usdcVal(100));
+    fundAddress(user, depositAmount);
 
     (CallableLoan callableLoan, ) = defaultCallableLoan();
 
@@ -163,45 +202,60 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
       usdc,
       user,
       address(callableLoan),
-      usdcVal(100),
+      depositAmount,
       nonce,
       deadline
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
 
     vm.expectEmit(true, true, true, true);
-    emit DepositMade(user, 1, 1, usdcVal(100));
+    emit DepositMade(user, 3, 1, depositAmount);
 
-    uid._mintForTest(user, 1, usdcVal(100), "");
+    uid._mintForTest(user, 1, depositAmount, "");
     // Deposit with permit
     _startImpersonation(user);
-    uint256 poolTokenId = callableLoan.depositWithPermit(1, usdcVal(100), deadline, v, r, s);
+    uint256 poolTokenId = callableLoan.depositWithPermit(3, depositAmount, deadline, v, r, s);
     _stopImpersonation();
 
-    // TODO:
-    // ITranchedPool.TrancheInfo memory uncalledCapital = callableLoan.getTranche(1);
-    // assertEq(uncalledCapital.principalDeposited, usdcVal(100));
+    ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
+      .getUncalledCapitalInfo();
+
+    assertEq(
+      uncalledCapital.principalDeposited,
+      depositAmount,
+      "Uncalled capital has the deposits"
+    );
+    assertEq(
+      uncalledCapital.principalPaid,
+      depositAmount,
+      "Haven't drawndown yet - principalPaid should equal principalDeposited"
+    );
+    assertEq(uncalledCapital.interestPaid, 0, "No payments have come in");
+    assertEq(uncalledCapital.principalReserved, 0, "No payments have come in");
+
+    assertEq(usdc.balanceOf(address(callableLoan)), depositAmount, "pool has balance");
+    assertEq(poolTokens.balanceOf(user), 1, "user has two pool tokens");
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
-    assertEq(tokenInfo.principalAmount, usdcVal(100));
-    assertEq(tokenInfo.tranche, 1);
+    assertEq(tokenInfo.principalAmount, depositAmount);
+    assertEq(tokenInfo.tranche, 3);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
     assertZero(usdc.allowance(user, address(callableLoan)));
   }
 
-  function testLimitDoesNotIncreaseWhenDepositsExceedLimit(
+  function testLimitDoesNotAllowDepositThatExceedsLimit(
     uint256 limit,
     uint256 depositAmount
-  ) public {
-    limit = bound(limit, usdcVal(1), usdcVal(10_000_000));
-    depositAmount = bound(depositAmount, limit, limit * 10);
+  ) public impersonating(DEPOSITOR) {
+    limit = bound(limit, usdcVal(1), usdcVal(100_000_000));
+    depositAmount = bound(depositAmount, limit + 1, limit * 10);
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.withLimit(limit).build(
+      BORROWER
+    );
 
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    setMaxLimit(callableLoan, limit);
-
-    deposit(callableLoan, 3, depositAmount, DEPOSITOR);
-    // TODO: Drawdown to lock pool
-    assertEq(cl.limit(), limit);
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    vm.expectRevert(bytes("EL"));
+    callableLoan.deposit(3, depositAmount);
   }
 }

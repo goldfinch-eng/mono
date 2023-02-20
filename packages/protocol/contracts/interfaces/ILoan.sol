@@ -17,17 +17,6 @@ interface ILoan {
   /// @dev {this} must be approved by msg.sender to transfer {amount} of USDC
   function pay(uint256 amount) external returns (PaymentAllocation memory);
 
-  /// @notice Pay down the credit line, separating the principal and interest payments. You must pay back all interest
-  ///   before paying back principal. Excess payments are refunded to the caller
-  /// @param principalPayment USDC amount to pay down principal
-  /// @param interestPayment USDC amount to pay down interest
-  /// @return PaymentAllocation info on how the payment was allocated
-  /// @dev {this} must be approved by msg.sender to transfer {principalPayment} + {interestPayment} of USDC
-  function pay(
-    uint256 principalPayment,
-    uint256 interestPayment
-  ) external returns (PaymentAllocation memory);
-
   /// @notice Compute interest and principal owed on the current balance at a future timestamp
   /// @param timestamp time to calculate up to
   /// @return interestOwed amount of obligated interest owed at `timestamp`

@@ -13,7 +13,7 @@ contract CallableLoanImplementationRepositoryTest is Test {
   address internal constant OWNER = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
 
   CallableLoan internal callableLoanImpl = new CallableLoan();
-  IRepo internal repo = IRepo(deployCode("CallableLoanImplementationRepositoryTest.sol"));
+  IRepo internal repo = IRepo(deployCode("CallableLoanImplementationRepository.sol"));
 
   function testCanInitializeWithCurrentImpl() public {
     (bool success, ) = address(repo).call(

@@ -7,8 +7,7 @@ import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 
 import {Waterfall} from "./Waterfall.sol";
-import {CallableCreditLine, CallableCreditLineLogic} from "./CallableCreditLine.sol";
-
+import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo} from "./CallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
 
 struct StaleCallableCreditLine {
@@ -129,6 +128,17 @@ library StaleCallableCreditLineLogic {
     return cl._cl.nextInterestDueTimeAt(timestamp);
   }
 
+  function nextPrincipalDueTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+    return cl._cl.nextPrincipalDueTime();
+  }
+
+  function nextPrincipalDueTimeAt(
+    StaleCallableCreditLine storage cl,
+    uint timestamp
+  ) internal view returns (uint) {
+    return cl._cl.nextPrincipalDueTimeAt(timestamp);
+  }
+
   function nextDueTimeAt(
     StaleCallableCreditLine storage cl,
     uint timestamp
@@ -201,5 +211,12 @@ library StaleCallableCreditLineLogic {
     StaleCallableCreditLine storage cl
   ) internal view returns (uint256) {
     return cl._cl.uncalledCapitalTrancheIndex();
+  }
+
+  function getSettledTrancheInfo(
+    StaleCallableCreditLine storage cl,
+    uint256 trancheId
+  ) internal view returns (SettledTrancheInfo memory) {
+    return cl._cl.getSettledTrancheInfo(trancheId);
   }
 }
