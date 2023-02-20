@@ -219,6 +219,17 @@ library CallableCreditLineLogic {
     return uint32(cl._waterfall.numTranches() - 1);
   }
 
+  function guaranteedFutureInterest(CallableCreditLine storage cl) internal view returns (uint) {
+    if (block.timestamp < cl.termEndTime()) {
+      uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
+      return
+        (cl.interestAccruedAt(nextPrincipalDueTime) + cl.interestOwedAt(nextPrincipalDueTime)) -
+        (cl.interestOwed() + cl.interestAccrued());
+    } else {
+      return 0;
+    }
+  }
+
   function principalOwedAt(
     CallableCreditLine storage cl,
     uint timestamp
@@ -239,22 +250,13 @@ library CallableCreditLineLogic {
     uint timestamp
   ) internal view returns (uint) {
     return
-      cl._waterfall.totalPrincipalOutstandingWithReservesUpToTranche(
+      cl._waterfall.totalPrincipalDepositedUpToTranche(
         cl._paymentSchedule.principalPeriodAt(timestamp)
       );
   }
 
   function totalPrincipalPaid(CallableCreditLine storage cl) internal view returns (uint) {
     return cl._waterfall.totalPrincipalPaid();
-  }
-
-  function totalPrincipalOwedBeforeTranche(
-    CallableCreditLine storage cl,
-    uint trancheIndex
-  ) internal view returns (uint principalDeposited) {
-    for (uint i = 0; i < trancheIndex; i++) {
-      principalDeposited += cl._waterfall.getTranche(i).principalDeposited();
-    }
   }
 
   function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint) {
@@ -354,8 +356,13 @@ library CallableCreditLineLogic {
       return 0;
     }
     totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
-    uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
+    uint firstInterestEndPoint = timestamp;
+    if (cl._checkpointedAsOf > cl.termEndTime()) {} else {
+      uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
+      firstInterestEndPoint = MathUpgradeable.min(settleBalancesAt, timestamp);
+    }
 
+    // TODO: Test scenario where cl._lastFullPaymentTime falls on due date.
     uint256 lateFeesStartAt = MathUpgradeable.max(
       cl._checkpointedAsOf,
       cl._paymentSchedule.nextDueTimeAt(cl._lastFullPaymentTime) +
@@ -365,7 +372,7 @@ library CallableCreditLineLogic {
     // Calculate interest accrued before balances are settled.
     totalInterestAccruedReturned += CallableLoanAccountant.calculateInterest(
       cl._checkpointedAsOf,
-      MathUpgradeable.min(settleBalancesAt, timestamp),
+      firstInterestEndPoint,
       lateFeesStartAt,
       cl._waterfall.totalPrincipalOutstandingWithoutReserves(),
       cl._interestApr,
@@ -373,10 +380,10 @@ library CallableCreditLineLogic {
     );
 
     // TODO: Actually need to iterate over all possible balance settlements.
-    if (settleBalancesAt < timestamp) {
+    if (firstInterestEndPoint < timestamp) {
       // Calculate interest accrued after balances are settled.
       totalInterestAccruedReturned += CallableLoanAccountant.calculateInterest(
-        MathUpgradeable.min(settleBalancesAt, timestamp),
+        firstInterestEndPoint,
         timestamp,
         lateFeesStartAt,
         cl._waterfall.totalPrincipalOutstandingWithReserves(),
@@ -449,7 +456,8 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl
   ) internal view returns (uint fullPaymentTime) {
     fullPaymentTime = cl._lastFullPaymentTime;
-    // Similarly if !isActive(), we should bail out early since paymentSchedule calls will revert.
+    // Similarly if !isActive(), we should bail out early since loan has not begun &&
+    // paymentSchedule calls will revert.
     if (cl.loanState() == LoanState.FundingPeriod) {
       return block.timestamp;
     }

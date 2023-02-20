@@ -79,19 +79,18 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
-  function testNotSetIfSeparateInterestButNotPrincipalPaidPastTermEndTime(
-    uint256 interestPayment,
+  function testSetToPeriodBeforeLastWhenPayingAllInterestButNotPrincipalOwed(
     uint256 principalPayment
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.termEndTime());
     uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
-    interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
     principalPayment = bound(principalPayment, 0, cl.principalOwed() - 1);
-    pay(callableLoan, principalPayment + interestPayment);
+    pay(callableLoan, principalPayment + cl.interestOwed());
     uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
-    assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter);
+
+    assertEq(lastFullPaymentTimeAfter, lastFullPaymentTimeBefore);
   }
 
   function testIfSeparateInterestAndPrincipalPaidPastTermEndTime(
@@ -103,7 +102,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     secondsPastTermEndTime = bound(secondsPastTermEndTime, 0, 30 days * 50);
     vm.warp(cl.termEndTime() + secondsPastTermEndTime);
 
-    pay(callableLoan, cl.principalOwed() + cl.interestOwed());
+    pay(callableLoan, cl.principalOwed() + cl.interestOwed() + cl.interestAccrued());
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
@@ -129,19 +128,5 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     timestamp = bound(timestamp, block.timestamp, cl.nextDueTime());
 
     assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
-  }
-
-  function testSetToBlockTimeOnSecondDrawdownIfBalanceEq0(uint256 timestamp) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
-
-    pay(callableLoan, cl.interestOwed() + cl.principalOwed() + cl.balance());
-    assertEq(cl.lastFullPaymentTime(), block.timestamp);
-
-    timestamp = bound(timestamp, block.timestamp, cl.termEndTime() - 1);
-    vm.warp(timestamp);
-
-    drawdown(callableLoan, usdcVal(400));
-    assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 }

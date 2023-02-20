@@ -218,6 +218,10 @@ library WaterfallLogic {
     return sum;
   }
 
+  /**
+   *
+   * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
+   */
   function totalPrincipalReservedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
@@ -231,12 +235,12 @@ library WaterfallLogic {
    *
    * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
    */
-  function totalPrincipalOutstandingWithReservesUpToTranche(
+  function totalPrincipalDepositedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint sum) {
     for (uint i = 0; i < trancheIndex; i++) {
-      sum += w._tranches[i].principalOutstandingWithReserves();
+      sum += w._tranches[i].principalDeposited();
     }
   }
 }

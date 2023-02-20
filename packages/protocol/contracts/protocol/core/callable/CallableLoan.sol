@@ -249,12 +249,9 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
-  /// @dev IF: insufficient funds
   function drawdown(uint256 amount) external override(ICreditLine, ILoan) onlyLocker whenNotPaused {
     require(!drawdownsPaused, "DP");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-
-    require(amount <= cl.totalPrincipalPaid(), "IF");
 
     cl.drawdown(amount);
 
@@ -354,6 +351,10 @@ contract CallableLoan is
       });
   }
 
+  function guaranteedFutureInterest() public view returns (uint256) {
+    return _staleCreditLine.guaranteedFutureInterest();
+  }
+
   /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
     return _availableToWithdraw(config.getPoolTokens().getTokenInfo(tokenId));
@@ -399,14 +400,7 @@ contract CallableLoan is
 
     uint interestOwed = cl.interestOwed();
     uint interestAccrued = cl.interestAccrued();
-    uint256 guaranteedFutureInterest = 0;
-
-    if (block.timestamp < cl.termEndTime()) {
-      uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
-      guaranteedFutureInterest =
-        (cl.interestAccruedAt(nextPrincipalDueTime) + cl.interestOwedAt(nextPrincipalDueTime)) -
-        (interestOwed + interestAccrued);
-    }
+    uint256 guaranteedFutureInterest = cl.guaranteedFutureInterest();
 
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
