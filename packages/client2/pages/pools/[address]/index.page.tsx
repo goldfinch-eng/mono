@@ -19,9 +19,9 @@ import {
   SingleDealQueryVariables,
 } from "@/lib/graphql/generated";
 import {
-  getTranchedPoolFundingStatus,
-  TranchedPoolFundingStatus,
-  TRANCHED_POOL_FUNDING_STATUS_FIELDS,
+  getLoanFundingStatus,
+  LoanFundingStatus,
+  FUNDING_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -56,7 +56,7 @@ gql`
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
-  ${TRANCHED_POOL_FUNDING_STATUS_FIELDS}
+  ${FUNDING_STATUS_LOAN_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -71,7 +71,7 @@ gql`
       rawGfiApy
       fundableAt
       ...LoanSummaryTranchedPoolFields
-      ...TranchedPoolFundingStatusFields
+      ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelTranchedPoolFields
     }
@@ -186,7 +186,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   }
 
   const fundingStatus = tranchedPool
-    ? getTranchedPoolFundingStatus(tranchedPool)
+    ? getLoanFundingStatus(tranchedPool)
     : null;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
@@ -332,15 +332,15 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                       }
                       fiatPerGfi={fiatPerGfi}
                     />
-                    {fundingStatus === TranchedPoolFundingStatus.Open ||
-                    fundingStatus === TranchedPoolFundingStatus.Cancelled ? (
+                    {fundingStatus === LoanFundingStatus.Open ||
+                    fundingStatus === LoanFundingStatus.Cancelled ? (
                       <InvestAndWithdrawTabs
                         tranchedPool={tranchedPool}
                         user={user}
                         deal={dealDetails}
                         poolTokens={user?.tranchedPoolTokens ?? []}
                       />
-                    ) : fundingStatus === TranchedPoolFundingStatus.Closed &&
+                    ) : fundingStatus === LoanFundingStatus.Closed &&
                       user &&
                       (user.tranchedPoolTokens.length > 0 ||
                         user.vaultedPoolTokens.length > 0) ? (
@@ -350,8 +350,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                         fiatPerGfi={fiatPerGfi}
                         tranchedPool={tranchedPool}
                       />
-                    ) : fundingStatus ===
-                      TranchedPoolFundingStatus.ComingSoon ? (
+                    ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
                       <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
                     ) : null}
                   </>

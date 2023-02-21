@@ -10,9 +10,8 @@ import {
 } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
-  TranchedPoolStatusFieldsFragment,
-  TranchedPoolRepaymentStatusFieldsFragment,
-  TranchedPoolFundingStatusFieldsFragment,
+  RepaymentStatusLoanFieldsFragment,
+  FundingStatusLoanFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
   TransactionCategory,
@@ -25,65 +24,7 @@ import { toastTransaction } from "../toast";
 
 const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
 
-/**
- * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
- */
-export const TRANCHED_POOL_STATUS_FIELDS = gql`
-  fragment TranchedPoolStatusFields on TranchedPool {
-    id
-    isPaused
-    remainingCapacity
-    fundableAt
-    creditLine {
-      id
-      balance
-      termEndTime
-      isLate @client
-    }
-  }
-`;
-
-export enum PoolStatus {
-  Closed,
-  Paused,
-  Repaid,
-  Full,
-  ComingSoon,
-  Open,
-  Default,
-}
-
-/**
- * Get the current status of the tranched pool
- * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
- * @returns the status of the pool
- * @deprecated Deprecated in favor of getTranchedPoolRepaymentStatus and getTranchedPoolFundingStatus
- */
-export function getTranchedPoolStatus(
-  pool: TranchedPoolStatusFieldsFragment
-): PoolStatus {
-  if (pool.id === CAURIS_POOL_ID) {
-    return PoolStatus.Closed;
-  } else if (pool.isPaused) {
-    return PoolStatus.Paused;
-  } else if (
-    pool.creditLine.balance.isZero() &&
-    pool.creditLine.termEndTime.gt(0)
-  ) {
-    return PoolStatus.Repaid;
-  } else if (pool.remainingCapacity.isZero()) {
-    return PoolStatus.Full;
-  } else if (
-    pool.creditLine.termEndTime.isZero() &&
-    Date.now() / 1000 < parseInt(pool.fundableAt.toString())
-  ) {
-    return PoolStatus.ComingSoon;
-  } else {
-    return PoolStatus.Open;
-  }
-}
-
-export enum PoolRepaymentStatus {
+export enum LoanRepaymentStatus {
   NotDrawnDown,
   Current,
   Late,
@@ -92,41 +33,35 @@ export enum PoolRepaymentStatus {
 }
 
 /**
- * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolRepaymentStatus
+ * Include this graphQL fragment on a query for Loan to ensure it has the correct fields for computing LoanRepaymentStatus
  */
-export const TRANCHED_POOL_REPAYMENT_STATUS_FIELDS = gql`
-  fragment TranchedPoolRepaymentStatusFields on TranchedPool {
+export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
+  fragment RepaymentStatusLoanFields on Loan {
     id
-    creditLine {
-      id
-      balance
-      termEndTime
-      isLate @client
-      isInDefault @client
-    }
+    balance
+    termEndTime
+    isLate @client
+    isInDefault @client
   }
 `;
 
-export function getTranchedPoolRepaymentStatus(
-  tranchedPool: TranchedPoolRepaymentStatusFieldsFragment
+export function getLoanRepaymentStatus(
+  loan: RepaymentStatusLoanFieldsFragment
 ) {
-  if (
-    tranchedPool.creditLine.balance.isZero() &&
-    tranchedPool.creditLine.termEndTime.gt(0)
-  ) {
-    return PoolRepaymentStatus.Repaid;
-  } else if (tranchedPool.creditLine.balance.isZero()) {
-    return PoolRepaymentStatus.NotDrawnDown;
-  } else if (tranchedPool.creditLine.isInDefault) {
-    return PoolRepaymentStatus.Default;
-  } else if (tranchedPool.creditLine.isLate) {
-    return PoolRepaymentStatus.Late;
+  if (loan.balance.isZero() && loan.termEndTime.gt(0)) {
+    return LoanRepaymentStatus.Repaid;
+  } else if (loan.balance.isZero()) {
+    return LoanRepaymentStatus.NotDrawnDown;
+  } else if (loan.isInDefault) {
+    return LoanRepaymentStatus.Default;
+  } else if (loan.isLate) {
+    return LoanRepaymentStatus.Late;
   } else {
-    return PoolRepaymentStatus.Current;
+    return LoanRepaymentStatus.Current;
   }
 }
 
-export enum TranchedPoolFundingStatus {
+export enum LoanFundingStatus {
   ComingSoon,
   Open,
   Closed,
@@ -134,37 +69,27 @@ export enum TranchedPoolFundingStatus {
   Cancelled,
 }
 
-export const TRANCHED_POOL_FUNDING_STATUS_FIELDS = gql`
-  fragment TranchedPoolFundingStatusFields on TranchedPool {
+export const FUNDING_STATUS_LOAN_FIELDS = gql`
+  fragment FundingStatusLoanFields on Loan {
     id
     remainingCapacity
     fundableAt
-    creditLine {
-      balance
-      termEndTime
-    }
+    balance
+    termEndTime
   }
 `;
 
-export function getTranchedPoolFundingStatus(
-  tranchedPool: TranchedPoolFundingStatusFieldsFragment
-) {
-  if (tranchedPool.id === CAURIS_POOL_ID) {
-    return TranchedPoolFundingStatus.Cancelled;
-  } else if (
-    !tranchedPool.creditLine.balance.isZero() ||
-    !tranchedPool.creditLine.termEndTime.isZero()
-  ) {
-    return TranchedPoolFundingStatus.Closed;
-  } else if (
-    tranchedPool.creditLine.termEndTime.isZero() &&
-    Date.now() / 1000 < tranchedPool.fundableAt
-  ) {
-    return TranchedPoolFundingStatus.ComingSoon;
-  } else if (tranchedPool.remainingCapacity.isZero()) {
-    return TranchedPoolFundingStatus.Full;
+export function getLoanFundingStatus(loan: FundingStatusLoanFieldsFragment) {
+  if (loan.id === CAURIS_POOL_ID) {
+    return LoanFundingStatus.Cancelled;
+  } else if (!loan.balance.isZero() || !loan.termEndTime.isZero()) {
+    return LoanFundingStatus.Closed;
+  } else if (loan.termEndTime.isZero() && Date.now() / 1000 < loan.fundableAt) {
+    return LoanFundingStatus.ComingSoon;
+  } else if (loan.remainingCapacity.isZero()) {
+    return LoanFundingStatus.Full;
   } else {
-    return TranchedPoolFundingStatus.Open;
+    return LoanFundingStatus.Open;
   }
 }
 

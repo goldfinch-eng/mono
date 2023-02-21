@@ -139,6 +139,7 @@ interface Loan {
   usdcApy: BigDecimal!
   rawGfiApy: BigDecimal!
   totalDeposited: BigInt!
+  remainingCapacity: BigInt!
   fundableAt: Int!
   createdAt: Int!
   allowedUidTypes: [UidType!]!
@@ -164,6 +165,7 @@ type TranchedPool implements Loan @entity {
   usdcApy: BigDecimal!
   rawGfiApy: BigDecimal!
   totalDeposited: BigInt!
+  remainingCapacity: BigInt!
   fundableAt: Int!
   createdAt: Int!
   allowedUidTypes: [UidType!]!
@@ -181,7 +183,6 @@ type TranchedPool implements Loan @entity {
 
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigDecimal
-  remainingCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
   drawdownsPaused: Boolean!
