@@ -37,17 +37,6 @@ const data = [
   { paymentPeriod: "22", principal: 0, interest: 24000 },
   { paymentPeriod: "23", principal: 0, interest: 24000 },
   { paymentPeriod: "24", principal: 2130000, interest: 24000 },
-  //   { paymentPeriod: "25", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "26", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "27", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "28", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "29", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "30", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "32", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "33", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "34", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "35", principal: 0, interest: 24000 },
-  //   { paymentPeriod: "36", principal: 0, interest: 24000 },
 ];
 
 const numberFormatter = new Intl.NumberFormat("en-US", {
@@ -58,7 +47,7 @@ const numberFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
-const RepaymentScheduleLegend: ContentType = ({ payload }) => (
+const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
   <div className="flex justify-between">
     <div className="text-sm font-normal text-sand-600">Repayment schedule</div>
     <div className="flex">
@@ -74,12 +63,12 @@ const RepaymentScheduleLegend: ContentType = ({ payload }) => (
   </div>
 );
 
-const StackedBarChart = () => {
+const RepaymentScheduleBarChart = () => {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
         <Legend
-          content={RepaymentScheduleLegend}
+          content={RepaymentScheduleBarChartLegend}
           align="right"
           verticalAlign="top"
           wrapperStyle={{ paddingBottom: 32 }}
@@ -92,7 +81,7 @@ const StackedBarChart = () => {
           tickFormatter={(value: number) => numberFormatter.format(value)}
           tick={{ fontSize: "10px", dx: -50, dy: -8, textAnchor: "start" }}
         />
-        <CartesianGrid vertical={false} x={0} width={800} />
+        <CartesianGrid vertical={false} x={0} width={650} />
         <Tooltip />
         <Bar dataKey="principal" stackId="a" fill="#564928" />
         <Bar dataKey="interest" stackId="a" fill="#D7BD7A" />
@@ -101,4 +90,4 @@ const StackedBarChart = () => {
   );
 };
 
-export default StackedBarChart;
+export default RepaymentScheduleBarChart;
