@@ -24,9 +24,8 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     depositAndDrawdown(callableLoan, usdcVal(1), GF_OWNER);
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
 
-    assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
+    assertEq(cl.nextDueTime(), s.nextDueTimeAt(block.timestamp, block.timestamp));
   }
 
   function testNextDueTimeShouldNotUpdateAsTheResultOfAPayment(
@@ -68,8 +67,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     uint256 oldNextDueTime = cl.nextDueTime();
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
-    uint256 newNextDueTime = s.nextDueTimeAt(startTime, timestamp);
+    uint256 newNextDueTime = s.nextDueTimeAt(block.timestamp, timestamp);
 
     vm.warp(timestamp);
 
@@ -80,7 +78,15 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
-    pay(callableLoan, cl.balance() + cl.interestOwed() + cl.interestAccrued());
+    uint timeOfDrawdown = block.timestamp;
+    goToAfterDrawdownPeriod(callableLoan);
+    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    pay(
+      callableLoan,
+      cl.balance() +
+        cl.interestAccruedAt(nextPrincipalDueTime) +
+        cl.interestOwedAt(nextPrincipalDueTime)
+    );
     assertZero(cl.balance(), "balance not zero");
 
     timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
@@ -88,20 +94,6 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     vm.warp(timestamp);
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
-    assertEq(cl.nextDueTime(), s.nextDueTimeAt(startTime, block.timestamp));
-  }
-
-  function testNextDueTimeUnchangedWhenIDrawdownOnZeroBalanceInSamePeriod(
-    uint256 timestamp
-  ) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
-    uint256 oldNextDueTime = cl.nextDueTime();
-    pay(callableLoan, cl.balance() + cl.interestAccrued() + cl.interestOwed());
-    timestamp = bound(timestamp, block.timestamp + 1, cl.nextDueTime() - 1);
-    vm.warp(timestamp);
-    drawdown(callableLoan, usdcVal(1000));
-    assertEq(oldNextDueTime, cl.nextDueTime());
+    assertEq(cl.nextDueTime(), s.nextDueTimeAt(timeOfDrawdown, block.timestamp));
   }
 }

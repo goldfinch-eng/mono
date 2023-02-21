@@ -23,7 +23,15 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     uint256[] memory uidTypes = new uint256[](1);
     ISchedule s = defaultSchedule();
     vm.expectRevert("Initializable: contract is already initialized");
-    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, s, 0, block.timestamp, uidTypes);
+    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, 2, s, 0, block.timestamp, uidTypes);
+  }
+
+  function testInitializationCantHappenViaCreditLine() public {
+    ICreditLine cl = ICreditLine(new CallableLoan());
+
+    ISchedule s = defaultSchedule();
+    vm.expectRevert(bytes("US"));
+    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
   }
 
   function testInitializationCantHappenTwiceViaCreditLine() public {

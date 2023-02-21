@@ -26,6 +26,8 @@ interface ICallableLoan is ILoan {
   /// @param _borrower address of borrower, a non-transferrable role for performing privileged actions like
   ///   drawdown
   /// @param _limit the max USDC amount that can be drawn down across all pool slices
+  /// @param _limit the number of periods at the tail end of a principal period during which call requests rollover
+  ///   to the next principal period.
   /// @param _interestApr interest rate for the loan
   /// @param _lateFeeApr late fee interest rate for the loan, which kicks in `LatenessGracePeriodInDays` days after a
   ///   payment becomes late
@@ -35,6 +37,7 @@ interface ICallableLoan is ILoan {
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
+    uint256 _numLockupPeriods,
     ISchedule _schedule,
     uint256 _lateFeeApr,
     uint256 _fundableAt,

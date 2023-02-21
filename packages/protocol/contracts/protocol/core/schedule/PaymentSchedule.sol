@@ -96,6 +96,10 @@ library PaymentScheduleLogic {
     return s.isActive() ? s.schedule.termEndTime(s.startTime) : 0;
   }
 
+  function termStartTime(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.termStartTime(s.startTime) : 0;
+  }
+
   function nextDueTimeAt(
     PaymentSchedule storage s,
     uint256 timestamp

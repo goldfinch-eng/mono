@@ -128,6 +128,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     withdraw(callableLoan, 1, usdcVal(1), user);
     withdrawMax(callableLoan, 2, user);
     drawdown(callableLoan, usdcVal(99));
+    goToAfterDrawdownPeriod(callableLoan);
     pay(callableLoan, usdcVal(99));
   }
 

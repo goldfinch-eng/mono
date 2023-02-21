@@ -75,8 +75,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 expectedPrincipalOwed = cl.principalOwed();
     // Interest owed should be up to the most recently past next due time
     ISchedule schedule = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
-    uint256 previousDueTime = schedule.previousInterestDueTimeAt(startTime, timestamp);
+    uint256 previousDueTime = schedule.previousInterestDueTimeAt(block.timestamp, timestamp);
     uint256 expectedInterestOwed = getInterestAccrued(
       block.timestamp,
       previousDueTime,
@@ -232,15 +231,14 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     );
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
 
     uint256 totalRegIntAccrued = getInterestAccrued(
-      startTime,
+      block.timestamp,
       timestamp,
       cl.balance(),
       cl.interestApr()
     );
-    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime()) +
+    uint256 lateFeesStartAt = s.nextDueTimeAt(block.timestamp, cl.lastFullPaymentTime()) +
       gfConfig.getLatenessGracePeriodInDays() *
       (1 days);
     uint256 totalLateIntAccrued = getInterestAccrued(
@@ -277,20 +275,19 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     );
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
 
     // Calculate regular interest that has accrued in the current period (from last due time
     // until timestamp)
     uint256 regIntAccrued = getInterestAccrued(
-      s.previousInterestDueTimeAt(startTime, timestamp),
+      s.previousInterestDueTimeAt(block.timestamp, timestamp),
       timestamp,
       cl.balance(),
       cl.interestApr()
     );
     // Calculate late fee interest in the current period
-    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime());
-    if (lateFeesStartAt < s.previousInterestDueTimeAt(startTime, timestamp)) {
-      lateFeesStartAt = s.previousInterestDueTimeAt(startTime, timestamp);
+    uint256 lateFeesStartAt = s.nextDueTimeAt(block.timestamp, cl.lastFullPaymentTime());
+    if (lateFeesStartAt < s.previousInterestDueTimeAt(block.timestamp, timestamp)) {
+      lateFeesStartAt = s.previousInterestDueTimeAt(block.timestamp, timestamp);
     }
     uint256 lateIntAccrued;
     if (lateFeesStartAt < timestamp) {
@@ -325,23 +322,22 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     );
 
     ISchedule s = callableLoan.schedule();
-    uint64 startTime = uint64(callableLoan.termStartTime());
 
     uint256 regIntOwed = getInterestAccrued(
-      startTime,
-      s.previousInterestDueTimeAt(startTime, timestamp),
+      block.timestamp,
+      s.previousInterestDueTimeAt(block.timestamp, timestamp),
       cl.balance(),
       cl.interestApr()
     );
 
-    uint256 lateFeesStartAt = s.nextDueTimeAt(startTime, cl.lastFullPaymentTime()) +
+    uint256 lateFeesStartAt = s.nextDueTimeAt(block.timestamp, cl.lastFullPaymentTime()) +
       gfConfig.getLatenessGracePeriodInDays() *
       (1 days);
     uint256 lateIntOwed;
-    if (lateFeesStartAt < s.previousInterestDueTimeAt(startTime, timestamp)) {
+    if (lateFeesStartAt < s.previousInterestDueTimeAt(block.timestamp, timestamp)) {
       lateIntOwed = getInterestAccrued(
         lateFeesStartAt,
-        s.previousInterestDueTimeAt(startTime, timestamp),
+        s.previousInterestDueTimeAt(block.timestamp, timestamp),
         cl.balance(),
         cl.lateFeeApr()
       );
@@ -387,7 +383,8 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
-    // Advance to random time during the loan and pay back everything
+    // Advance to random time after drawdown period and pay back everything
+    goToAfterDrawdownPeriod(callableLoan);
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 

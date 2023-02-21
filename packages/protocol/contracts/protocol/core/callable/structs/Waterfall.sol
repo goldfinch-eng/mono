@@ -136,11 +136,13 @@ library WaterfallLogic {
   function proportionalInterestAndPrincipalAvailableAfterApplyReserves(
     Waterfall storage w,
     uint256 trancheId,
-    uint256 principalDeposited
+    uint256 principalDeposited,
+    uint feePercent
   ) internal view returns (uint256, uint) {
     return
       w.getTranche(trancheId).proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
-        principalDeposited
+        principalDeposited,
+        feePercent
       );
   }
 
@@ -150,9 +152,10 @@ library WaterfallLogic {
   function proportionalInterestAndPrincipalAvailable(
     Waterfall storage w,
     uint trancheId,
-    uint256 principal
+    uint256 principal,
+    uint feePercent
   ) internal view returns (uint, uint) {
-    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal);
+    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
@@ -218,6 +221,10 @@ library WaterfallLogic {
     return sum;
   }
 
+  /**
+   *
+   * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
+   */
   function totalPrincipalReservedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
@@ -231,12 +238,12 @@ library WaterfallLogic {
    *
    * @param trancheIndex Exclusive upper bound (i.e. the tranche at this index is not included)
    */
-  function totalPrincipalOutstandingWithReservesUpToTranche(
+  function totalPrincipalDepositedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint sum) {
     for (uint i = 0; i < trancheIndex; i++) {
-      sum += w._tranches[i].principalOutstandingWithReserves();
+      sum += w._tranches[i].principalDeposited();
     }
   }
 }

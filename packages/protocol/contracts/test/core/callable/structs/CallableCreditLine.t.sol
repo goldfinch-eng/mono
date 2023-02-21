@@ -23,7 +23,7 @@ contract TestCallableCreditLine is BaseTest {
   uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_ADDITIONAL_APR = 1 * 1e16;
-
+  uint256 public constant DEFAULT_NUM_LOCKUP_PERIODS = 2;
   StaleCallableCreditLine internal callableCreditLine;
   IGoldfinchConfig internal config;
   IMonthlyScheduleRepo private monthlyScheduleRepo;
@@ -60,6 +60,7 @@ contract TestCallableCreditLine is BaseTest {
     callableCreditLine.initialize(
       config,
       DEFAULT_APR,
+      DEFAULT_NUM_LOCKUP_PERIODS,
       schedule,
       DEFAULT_LATE_ADDITIONAL_APR,
       DEFAULT_LIMIT
@@ -172,7 +173,14 @@ contract TestCallableCreditLine is BaseTest {
   function testIsLate() public {}
 
   function setupDefaultWithLimit(uint128 limit) public {
-    callableCreditLine.initialize(config, defaultInterestApr, schedule, 0, uint256(limit));
+    callableCreditLine.initialize(
+      config,
+      defaultInterestApr,
+      DEFAULT_NUM_LOCKUP_PERIODS,
+      schedule,
+      0,
+      uint256(limit)
+    );
   }
 
   function setupFullyFundedAndDrawndown(uint128 limit) public {

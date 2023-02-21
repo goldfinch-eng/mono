@@ -89,6 +89,7 @@ contract CallableLoan is
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
+    uint256 _numLockupPeriods,
     ISchedule _schedule,
     uint256 _lateFeeApr,
     uint256 _fundableAt,
@@ -99,7 +100,14 @@ contract CallableLoan is
     config = IGoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
     __BaseUpgradeablePausable__init(owner);
-    _staleCreditLine.initialize(config, _interestApr, _schedule, _lateFeeApr, _limit);
+    _staleCreditLine.initialize(
+      config,
+      _interestApr,
+      _numLockupPeriods,
+      _schedule,
+      _lateFeeApr,
+      _limit
+    );
     borrower = _borrower;
     createdAt = block.timestamp;
     if (_allowedUIDTypes.length == 0) {
@@ -249,12 +257,9 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
-  /// @dev IF: insufficient funds
   function drawdown(uint256 amount) external override(ICreditLine, ILoan) onlyLocker whenNotPaused {
     require(!drawdownsPaused, "DP");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-
-    require(amount <= cl.totalPrincipalPaid(), "IF");
 
     cl.drawdown(amount);
 
@@ -394,19 +399,21 @@ contract CallableLoan is
 
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-
     require(amount > 0, "ZA");
 
-    uint nextPrincipalDueTime = cl.nextPrincipalDueTimeAt(block.timestamp);
     uint interestOwed = cl.interestOwed();
     uint interestAccrued = cl.interestAccrued();
+
+    uint timeUntilNextPrincipalSettlemenet = cl
+      .nextPrincipalDueTimeAt(block.timestamp)
+      .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
       interestOwed: interestOwed,
       interestAccrued: interestAccrued,
       principalOwed: cl.principalOwed(),
-      guaranteedFutureInterest: (cl.interestAccruedAt(nextPrincipalDueTime) +
-        cl.interestOwedAt(nextPrincipalDueTime)) - (interestOwed + interestAccrued),
+      interestRate: cl.interestApr(),
+      timeUntilNextPrincipalSettlemenet: timeUntilNextPrincipalSettlemenet,
       balance: cl.totalPrincipalOutstanding()
     });
 
@@ -510,9 +517,15 @@ contract CallableLoan is
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint interestAvailable, uint principalAvailable) {
-    // TODO: this should account for redemptions being locked for some period of time after and return (0, 0)
+    uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
     (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
-      .proportionalInterestAndPrincipalAvailable(tokenInfo.tranche, tokenInfo.principalAmount);
+      .proportionalInterestAndPrincipalAvailable(
+        tokenInfo.tranche,
+        tokenInfo.principalAmount,
+        reserveFundsFeePercent
+      );
+
+    totalInterestWithdrawable = totalInterestWithdrawable - tokenInfo.interestRedeemed;
 
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,

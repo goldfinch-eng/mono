@@ -37,6 +37,7 @@ interface IGoldfinchFactory {
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
+    uint256 _numLockupPeriods,
     ISchedule _schedule,
     uint256 _lateFeeApr,
     uint256 _fundableAt,
