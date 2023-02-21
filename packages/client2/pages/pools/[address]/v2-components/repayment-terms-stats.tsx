@@ -1,4 +1,4 @@
-import { format as formatDate } from "date-fns";
+import { formatDistanceStrict, format as formatDate } from "date-fns";
 import { gql } from "graphql-request";
 import { ReactNode } from "react";
 
@@ -35,7 +35,11 @@ export function RepaymentTermsStats({
       value: loading ? (
         <Shimmer />
       ) : (
-        `${Math.floor(loan.creditLine.termInDays.toNumber() / 30)} months`
+        formatDistanceStrict(
+          loan.creditLine.termEndTime.toNumber() * 1000,
+          loan.creditLine.termStartTime.toNumber() * 1000,
+          { unit: "month" }
+        )
       ),
       tooltip: "TODO: Loan term tooltip",
     },
@@ -53,7 +57,7 @@ export function RepaymentTermsStats({
       value: loading ? (
         <Shimmer />
       ) : (
-        Math.ceil(
+        Math.floor(
           loan.creditLine.termInDays.toNumber() /
             loan.creditLine.paymentPeriodInDays.toNumber()
         )

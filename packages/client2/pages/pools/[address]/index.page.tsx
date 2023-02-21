@@ -24,6 +24,7 @@ import {
   TRANCHED_POOL_FUNDING_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { RepaymentTermsSchedule } from "@/pages/pools/[address]/v2-components/repayment-terms-schedule";
 import { RepaymentTermsStats } from "@/pages/pools/[address]/v2-components/repayment-terms-stats";
 
 import {
@@ -317,9 +318,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 navTitle: "Repayment",
                 title: "Repayment terms",
                 content: (
-                  <div className="h-96">
+                  <>
                     <RepaymentTermsStats loan={tranchedPool} className="mb-6" />
-                  </div>
+                    <RepaymentTermsSchedule loan={tranchedPool} />
+                  </>
                 ),
               },
               {
