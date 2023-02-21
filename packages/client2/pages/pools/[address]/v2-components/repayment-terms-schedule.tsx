@@ -70,7 +70,7 @@ const generateRepaymentScheduleData = (
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM d"),
+      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM, d"),
       principal: BigNumber.from(0),
       interest: expectedInterest,
     });
@@ -91,7 +91,7 @@ const generateRepaymentScheduleData = (
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d"),
+      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM, d"),
       principal: loan.creditLine.limit,
       interest: expectedInterest,
     });

@@ -16,6 +16,8 @@ import { cryptoToFloat } from "@/lib/format";
 
 import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule";
 
+const MAX_X_AXIS_TICKS = 25;
+
 const numberFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -61,7 +63,11 @@ const RepaymentScheduleBarChart = ({
           verticalAlign="top"
           wrapperStyle={{ paddingBottom: 32 }}
         />
-        <XAxis dataKey="paymentPeriod" tick={{ fontSize: "10px" }} />
+        <XAxis
+          dataKey="paymentPeriod"
+          tick={{ fontSize: "10px" }}
+          interval={repaymentScheduleData.length <= MAX_X_AXIS_TICKS ? 0 : 1}
+        />
         <YAxis
           axisLine={false}
           tickLine={false}
@@ -78,7 +84,7 @@ const RepaymentScheduleBarChart = ({
           formatter={(value) =>
             numberFormatter.format(
               cryptoToFloat({
-                // 'ValueType' parameter for Recharts expects a number or string but we're using BigNumbers
+                // 'ValueType' parameter for Recharts expects a number|string but we're using BigNumbers
                 amount: value as unknown as BigNumber,
                 token: "USDC",
               })
