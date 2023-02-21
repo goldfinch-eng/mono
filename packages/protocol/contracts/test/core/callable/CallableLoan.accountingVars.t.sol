@@ -383,7 +383,8 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
-    // Advance to random time during the loan and pay back everything
+    // Advance to random time after drawdown period and pay back everything
+    goToAfterDrawdownPeriod(callableLoan);
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 

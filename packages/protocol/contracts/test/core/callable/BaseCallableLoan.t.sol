@@ -13,6 +13,8 @@ import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IGo} from "../../../interfaces/IGo.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
+
 // solhint-disable-next-line max-line-length
 import {IImplementationRepository} from "../../../interfaces/IImplementationRepository.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
@@ -29,6 +31,7 @@ import {console2 as console} from "forge-std/console2.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 contract CallableLoanBaseTest is BaseTest {
+  using CallableLoanConfigHelper for IGoldfinchConfig;
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
   address public constant DEPOSITOR = 0x89b8CbAeBd6C623a69a4DEBe9EE03131b5F4Ff96; // random address
 
@@ -356,5 +359,9 @@ contract CallableLoanBaseTest is BaseTest {
       callableLoan.interestApr()
     );
     return owedAndAccruedInterest + futureInterestPayable;
+  }
+
+  function goToAfterDrawdownPeriod(CallableLoan callableLoan) internal {
+    vm.warp(callableLoan.termStartTime() + gfConfig.getDrawdownPeriodInSeconds() + 1);
   }
 }

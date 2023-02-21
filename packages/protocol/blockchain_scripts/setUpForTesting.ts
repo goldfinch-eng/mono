@@ -925,12 +925,22 @@ async function createCallableLoanForBorrower({
   const interestApr = String(interestAprAsBN("5.00"))
   const lateFeeApr = String(new BN(0))
   const fundableAt = String(new BN(0))
+  const numLockPeriods = 2
   const underwriterSigner = ethers.provider.getSigner(underwriter)
 
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createCallableLoan(borrower, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
+      .createCallableLoan(
+        borrower,
+        limit,
+        interestApr,
+        numLockPeriods,
+        schedule,
+        lateFeeApr,
+        fundableAt,
+        allowedUIDTypes
+      )
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const loanAddress = lastEventArgs[0]

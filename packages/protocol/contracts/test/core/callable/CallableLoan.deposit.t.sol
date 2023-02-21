@@ -68,12 +68,15 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     callableLoan.deposit(3, usdcVal(100));
   }
 
-  function testDepositRevertsForInvalidTranche() public impersonating(DEPOSITOR) {
+  function testDepositRevertsForInvalidTranche(
+    uint invalidTranche
+  ) public impersonating(DEPOSITOR) {
+    vm.assume(invalidTranche != 3);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
     vm.expectRevert(bytes("IT"));
-    callableLoan.deposit(2, usdcVal(100));
+    callableLoan.deposit(invalidTranche, usdcVal(100));
   }
 
   function testDepositUpdatesTrancheInfoAndMintsToken(

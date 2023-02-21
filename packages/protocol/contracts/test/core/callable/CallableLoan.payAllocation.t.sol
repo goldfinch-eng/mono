@@ -14,7 +14,7 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
-contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
+contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
   using SaturatingSub for uint256;
 
   function testOnlyTakesWhatsNeededForExcessInterestAndPrincipalPayment(
@@ -24,7 +24,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-
+    goToAfterDrawdownPeriod(callableLoan);
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
@@ -57,6 +57,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
+    goToAfterDrawdownPeriod(callableLoan);
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -81,6 +82,7 @@ contract CallableLoanPaySeparateTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
+    goToAfterDrawdownPeriod(callableLoan);
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
