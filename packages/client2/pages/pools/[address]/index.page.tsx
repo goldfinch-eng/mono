@@ -26,6 +26,11 @@ import {
 import { useWallet } from "@/lib/wallet";
 
 import {
+  BorrowerProfile,
+  BORROWER_OTHER_POOL_FIELDS,
+  BORROWER_PROFILE_FIELDS,
+} from "./v2-components/borrower-profile";
+import {
   ClaimPanel,
   CLAIM_PANEL_POOL_TOKEN_FIELDS,
   CLAIM_PANEL_TRANCHED_POOL_FIELDS,
@@ -57,11 +62,12 @@ gql`
   ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${FUNDING_STATUS_LOAN_FIELDS}
+  ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
-    $borrowerOtherPools: [ID!]
+    $borrowerAllPools: [ID!]
   ) {
     loan(id: $tranchedPoolId) {
       __typename
@@ -75,10 +81,12 @@ gql`
       ...SupplyPanelLoanFields
       ...ClaimPanelTranchedPoolFields
     }
-    borrowerOtherPools: tranchedPools(
-      where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
+    borrowerAllPools: tranchedPools(
+      where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
+      orderBy: createdAt
+      orderDirection: desc
     ) {
-      id
+      ...BorrowerAllPoolFields
     }
     seniorPools(first: 1) {
       id
@@ -117,6 +125,7 @@ const singleDealQuery = gql`
   ${CREDIT_MEMO_FIELDS}
   ${SUPPLY_PANEL_DEAL_FIELDS}
   ${LOAN_SUMMARY_BORROWER_FIELDS}
+  ${BORROWER_PROFILE_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -125,6 +134,7 @@ const singleDealQuery = gql`
       category
       borrower {
         ...LoanSummaryBorrowerFields
+        ...BorrowerProfileFields
         deals {
           id
         }
@@ -167,7 +177,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       tranchedPoolId: dealDetails?.id as string,
       tranchedPoolAddress: dealDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
-      borrowerOtherPools: otherPoolsFromThisBorrower,
+      borrowerAllPools: otherPoolsFromThisBorrower,
     },
     returnPartialData: true,
   });
@@ -286,7 +296,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Borrower",
                 title: "Borrower details",
-                content: <div className="h-96" />,
+                content: (
+                  <BorrowerProfile
+                    borrower={borrower}
+                    borrowerAllPools={data?.borrowerAllPools ?? []}
+                    currentPoolAddress={tranchedPool?.id ?? ""}
+                  />
+                ),
               },
               {
                 navTitle: "Risk",
