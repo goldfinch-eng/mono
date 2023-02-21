@@ -76,30 +76,28 @@ const RepaymentScheduleLegend: ContentType = ({ payload }) => (
 
 const StackedBarChart = () => {
   return (
-    <div className="rounded-xl border border-sand-300 p-6">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <Legend
-            content={RepaymentScheduleLegend}
-            align="right"
-            verticalAlign="top"
-            wrapperStyle={{ paddingBottom: 32 }}
-          />
-          <XAxis dataKey="paymentPeriod" tick={{ fontSize: "10px" }} />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tickCount={5}
-            tickFormatter={(value: number) => numberFormatter.format(value)}
-            tick={{ fontSize: "10px", dx: -50, dy: -8, textAnchor: "start" }}
-          />
-          <CartesianGrid vertical={false} x={0} width={800} />
-          <Tooltip />
-          <Bar dataKey="principal" stackId="a" fill="#564928" />
-          <Bar dataKey="interest" stackId="a" fill="#D7BD7A" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+        <Legend
+          content={RepaymentScheduleLegend}
+          align="right"
+          verticalAlign="top"
+          wrapperStyle={{ paddingBottom: 32 }}
+        />
+        <XAxis dataKey="paymentPeriod" tick={{ fontSize: "10px" }} />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tickCount={5}
+          tickFormatter={(value: number) => numberFormatter.format(value)}
+          tick={{ fontSize: "10px", dx: -50, dy: -8, textAnchor: "start" }}
+        />
+        <CartesianGrid vertical={false} x={0} width={800} />
+        <Tooltip />
+        <Bar dataKey="principal" stackId="a" fill="#564928" />
+        <Bar dataKey="interest" stackId="a" fill="#D7BD7A" />
+      </BarChart>
+    </ResponsiveContainer>
   );
 };
 
