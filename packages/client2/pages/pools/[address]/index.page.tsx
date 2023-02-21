@@ -42,6 +42,10 @@ import {
 } from "./v2-components/credit-memo-analysis-card";
 import { FundingStats } from "./v2-components/funding-stats";
 import {
+  HighlightGrid,
+  HIGHLIGHT_GRID_FIELDS,
+} from "./v2-components/highlight-grid";
+import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
   SUPPLY_PANEL_LOAN_FIELDS,
@@ -126,6 +130,7 @@ const singleDealQuery = gql`
   ${SUPPLY_PANEL_DEAL_FIELDS}
   ${LOAN_SUMMARY_BORROWER_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
+  ${HIGHLIGHT_GRID_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -140,6 +145,9 @@ const singleDealQuery = gql`
         }
       }
       overview
+      highlights {
+        ...HighlightGridFields
+      }
       details
       agreement
       dataroom
@@ -266,11 +274,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   </div>
                 ),
               },
-              {
-                navTitle: "Highlights",
-                title: "Highlights",
-                content: <div className="h-96" />,
-              },
+              ...(dealDetails.highlights && dealDetails.highlights.length > 0
+                ? [
+                    {
+                      navTitle: "Highlights",
+                      title: "Highlights",
+                      content: (
+                        <HighlightGrid highlights={dealDetails.highlights} />
+                      ),
+                    },
+                  ]
+                : []),
               ...(dealDetails.creditMemos && dealDetails.creditMemos.length > 0
                 ? [
                     {
