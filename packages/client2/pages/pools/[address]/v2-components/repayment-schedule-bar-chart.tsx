@@ -84,7 +84,7 @@ const RepaymentScheduleBarChart = ({
           formatter={(value) =>
             numberFormatter.format(
               cryptoToFloat({
-                // 'ValueType' parameter for Recharts expects a number|string but we're using BigNumbers
+                // 'ValueType' parameter for Recharts lib expects a number|string but we're using BigNumbers
                 amount: value as unknown as BigNumber,
                 token: "USDC",
               })

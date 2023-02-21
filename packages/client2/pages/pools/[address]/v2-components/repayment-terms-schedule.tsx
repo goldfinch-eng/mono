@@ -47,6 +47,7 @@ const generateRepaymentScheduleData = (
   const termStartTime = loan.creditLine.termStartTime.toNumber();
   const termEndTime = loan.creditLine.termEndTime.toNumber();
 
+  // TODO: Why do some old Repaid pools have `"paymentPeriodInDays": "365"`...?
   // Number of seconds in 'paymentPeriodInDays'
   const paymentPeriodInSeconds =
     loan.creditLine.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
@@ -70,7 +71,7 @@ const generateRepaymentScheduleData = (
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM, d"),
+      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM d, Y"),
       principal: BigNumber.from(0),
       interest: expectedInterest,
     });
@@ -79,7 +80,8 @@ const generateRepaymentScheduleData = (
     periodStartTimestamp = periodEndTimestamp;
   }
 
-  // Catch the remainder of time for the final period
+  // Catch the remainder of time when there's not a perfect diff of 'paymentPeriodInDays' on the last period
+  // i.e startTime Dec 6th 2024, endTime Dec 16th 2024 and paymentPeriodInDays is 30 days
   if (periodStartTimestamp <= termEndTime) {
     const expectedInterest = calculateInterestOwed({
       isLate: false,
@@ -91,7 +93,7 @@ const generateRepaymentScheduleData = (
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM, d"),
+      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d, Y"),
       principal: loan.creditLine.limit,
       interest: expectedInterest,
     });
