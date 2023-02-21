@@ -12,15 +12,14 @@ import {
 const twoWeeksMs = 1.21e9;
 
 export const FUNDING_STATS_LOAN_FIELDS = gql`
-  fragment FundingStatsLoanFields on TranchedPool {
+  fragment FundingStatsLoanFields on Loan {
     __typename
-    juniorDeposited
-    estimatedLeverageRatio
-    fundableAt
-    creditLine {
-      id
-      maxLimit
+    ... on TranchedPool {
+      juniorDeposited
+      estimatedLeverageRatio
     }
+    fundableAt
+    fundingLimit
   }
 `;
 
@@ -50,15 +49,13 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           )
         )
       : juniorDeposited;
-  const maxFundingAmount = loan.creditLine.maxLimit;
+  const maxFundingAmount = loan.fundingLimit;
 
   const fillRatio = FixedNumber.from(fundedAmount).divUnsafe(
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(
-    fundableAt.toNumber() * 1000 + twoWeeksMs
-  );
+  const estimatedCloseDate = new Date(fundableAt * 1000 + twoWeeksMs);
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>

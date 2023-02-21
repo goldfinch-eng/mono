@@ -7,7 +7,7 @@ import { ReactNode, ReactElement } from "react";
 
 import { Shimmer } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { PoolRepaymentStatus } from "@/lib/pools";
+import { LoanRepaymentStatus } from "@/lib/pools";
 import { assertUnreachable } from "@/lib/utils";
 
 interface LayoutProps {
@@ -114,18 +114,18 @@ export function ClosedDealCardPlaceholder() {
 function Status({
   poolRepaymentStatus,
 }: {
-  poolRepaymentStatus: PoolRepaymentStatus;
+  poolRepaymentStatus: LoanRepaymentStatus;
 }) {
   switch (poolRepaymentStatus) {
-    case PoolRepaymentStatus.Late:
+    case LoanRepaymentStatus.Late:
       return <span className="text-mustard-450">Grace Period</span>;
-    case PoolRepaymentStatus.Current:
+    case LoanRepaymentStatus.Current:
       return <span className="text-mint-450">On Time</span>;
-    case PoolRepaymentStatus.Repaid:
+    case LoanRepaymentStatus.Repaid:
       return <span className="text-mint-450">Fully Repaid</span>;
-    case PoolRepaymentStatus.Default:
+    case LoanRepaymentStatus.Default:
       return <span className="text-clay-500">Default</span>;
-    case PoolRepaymentStatus.NotDrawnDown:
+    case LoanRepaymentStatus.NotDrawnDown:
       return <span>Not Drawn Down</span>;
     default:
       assertUnreachable(poolRepaymentStatus);
@@ -139,7 +139,7 @@ interface ClosedDealCardProps {
   dealName: string;
   termEndTime: BigNumber;
   loanAmount: BigNumber;
-  repaymentStatus: PoolRepaymentStatus;
+  repaymentStatus: LoanRepaymentStatus;
   href: string;
 }
 

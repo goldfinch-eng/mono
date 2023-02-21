@@ -8,9 +8,11 @@ import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
-  getTranchedPoolFundingStatus,
-  getTranchedPoolRepaymentStatus,
-  TranchedPoolFundingStatus,
+  FUNDING_STATUS_LOAN_FIELDS,
+  getLoanFundingStatus,
+  getLoanRepaymentStatus,
+  LoanFundingStatus,
+  REPAYMENT_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 import {
   GoldfinchPoolsMetrics,
@@ -28,6 +30,8 @@ const visiblePoolOnFirstLoad = 4;
 
 gql`
   ${PROTOCOL_METRICS_FIELDS}
+  ${FUNDING_STATUS_LOAN_FIELDS}
+  ${REPAYMENT_STATUS_LOAN_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
@@ -40,19 +44,13 @@ gql`
     }
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
-      estimatedJuniorApy
-      estimatedJuniorApyFromGfiRaw
-      fundableAt
-      remainingCapacity
-      creditLine {
-        id
-        limit
-        balance
-        termInDays
-        termEndTime
-        isLate @client
-        isInDefault @client
-      }
+      usdcApy
+      rawGfiApy
+      principalAmount
+      termInDays
+      termEndTime
+      ...FundingStatusLoanFields
+      ...RepaymentStatusLoanFields
     }
     protocols(first: 1) {
       id
@@ -113,16 +111,13 @@ export default function EarnPage({
   const openTranchedPools =
     tranchedPools?.filter(
       (tranchedPool) =>
-        getTranchedPoolFundingStatus(tranchedPool) ===
-        TranchedPoolFundingStatus.Open
+        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open
     ) ?? [];
   const closedTranchedPools =
     tranchedPools?.filter(
       (tranchedPool) =>
-        getTranchedPoolFundingStatus(tranchedPool) ===
-          TranchedPoolFundingStatus.Closed ||
-        getTranchedPoolFundingStatus(tranchedPool) ===
-          TranchedPoolFundingStatus.Full
+        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Closed ||
+        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Full
     ) ?? [];
 
   // +1 for Senior Pool
@@ -194,7 +189,7 @@ export default function EarnPage({
               const dealDetails = dealMetadata[tranchedPool.id];
 
               const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-                tranchedPool.estimatedJuniorApyFromGfiRaw,
+                tranchedPool.rawGfiApy,
                 fiatPerGfi
               );
 
@@ -203,13 +198,12 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const apyFromGfi =
-                tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
-                  ? tranchedPool.estimatedJuniorApyFromGfiRaw
-                  : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+              const apyFromGfi = tranchedPool.rawGfiApy.isZero()
+                ? tranchedPool.rawGfiApy
+                : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
               const termLengthInMonths = Math.floor(
-                tranchedPool.creditLine.termInDays.toNumber() / 30
+                tranchedPool.termInDays / 30
               );
 
               return (
@@ -218,7 +212,7 @@ export default function EarnPage({
                   icon={dealDetails.borrower.logo?.url}
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
-                  usdcApy={tranchedPool.estimatedJuniorApy}
+                  usdcApy={tranchedPool.usdcApy}
                   gfiApy={apyFromGfi}
                   gfiApyTooltip={
                     <div>
@@ -246,7 +240,7 @@ export default function EarnPage({
                           <div>LP rewards match GFI APY</div>
                           <div>
                             {formatPercent(
-                              tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                              tranchedPool.rawGfiApy.isZero()
                                 ? 0
                                 : seniorPoolApyFromGfi
                             )}
@@ -272,8 +266,7 @@ export default function EarnPage({
           <div className="space-y-2">
             {closedTranchedPools.map((tranchedPool, i) => {
               const deal = dealMetadata[tranchedPool.id];
-              const repaymentStatus =
-                getTranchedPoolRepaymentStatus(tranchedPool);
+              const repaymentStatus = getLoanRepaymentStatus(tranchedPool);
               return (
                 <ClosedDealCard
                   key={tranchedPool.id}
@@ -286,8 +279,8 @@ export default function EarnPage({
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}
                   dealName={deal.name}
-                  loanAmount={tranchedPool.creditLine.limit}
-                  termEndTime={tranchedPool.creditLine.termEndTime}
+                  loanAmount={tranchedPool.principalAmount}
+                  termEndTime={tranchedPool.termEndTime}
                   repaymentStatus={repaymentStatus}
                   href={`/pools/${tranchedPool.id}`}
                 />

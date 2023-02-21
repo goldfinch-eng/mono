@@ -68,7 +68,10 @@ const scalarLink = withScalars({ schema, typesMap });
 export const apolloClient = new ApolloClient({
   cache: new InMemoryCache({
     typePolicies,
-    possibleTypes: { GfiGrant: ["IndirectGfiGrant", "DirectGfiGrant"] },
+    possibleTypes: {
+      GfiGrant: ["IndirectGfiGrant", "DirectGfiGrant"],
+      Loan: ["TranchedPool"],
+    },
   }),
   typeDefs: localSchema,
   link: from([scalarLink, nonFatalErrorLink, errorLink, multiHttpLink]),

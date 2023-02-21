@@ -17,7 +17,7 @@ import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
-  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelLoanFieldsFragment,
   SupplyPanelUserFieldsFragment,
   SupplyPanelDealFieldsFragment,
 } from "@/lib/graphql/generated";
@@ -31,17 +31,17 @@ import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
 
-export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
-  fragment SupplyPanelTranchedPoolFields on TranchedPool {
+export const SUPPLY_PANEL_LOAN_FIELDS = gql`
+  fragment SupplyPanelLoanFields on Loan {
     id
-    estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
-    juniorDeposited
-    estimatedLeverageRatio
-    allowedUidTypes
-    creditLine {
-      maxLimit
+    usdcApy
+    rawGfiApy
+    ... on TranchedPool {
+      juniorDeposited
+      estimatedLeverageRatio
     }
+    allowedUidTypes
+    fundingLimit
   }
 `;
 
@@ -66,7 +66,7 @@ export const SUPPLY_PANEL_DEAL_FIELDS = gql`
 `;
 
 interface SupplyPanelProps {
-  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  tranchedPool: SupplyPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   deal: SupplyPanelDealFieldsFragment;
 }
@@ -82,7 +82,7 @@ export function SupplyPanel({
     juniorDeposited,
     estimatedLeverageRatio,
     allowedUidTypes,
-    creditLine: { maxLimit },
+    fundingLimit,
   },
   user,
   deal,
@@ -107,8 +107,8 @@ export function SupplyPanel({
 
   const remainingJuniorCapacity =
     deal.dealType === "unitranche" || !estimatedLeverageRatio
-      ? maxLimit.sub(juniorDeposited)
-      : maxLimit
+      ? fundingLimit.sub(juniorDeposited)
+      : fundingLimit
           .sub(
             juniorDeposited.mul(
               utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1)
