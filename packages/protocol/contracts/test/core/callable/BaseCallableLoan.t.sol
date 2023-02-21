@@ -18,6 +18,7 @@ import {IImplementationRepository} from "../../../interfaces/IImplementationRepo
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {IMonthlyScheduleRepo} from "../../../interfaces/IMonthlyScheduleRepo.sol";
 import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWithDec.sol";
+import {CallableLoanAccountant} from "../../../protocol/core/callable/CallableLoanAccountant.sol";
 
 import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
@@ -25,6 +26,7 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
 import {ITestUSDC} from "../../ITestUSDC.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 contract CallableLoanBaseTest is BaseTest {
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
@@ -337,5 +339,22 @@ contract CallableLoanBaseTest is BaseTest {
 
   function addToGoList(address user) internal impersonating(GF_OWNER) {
     gfConfig.addToGoList(user);
+  }
+
+  function maxPayableInterest(CallableLoan callableLoan) internal returns (uint) {
+    uint latestPaymentSettlementDate = Math.max(
+      block.timestamp,
+      callableLoan.nextPrincipalDueTime()
+    );
+
+    uint owedAndAccruedInterest = callableLoan.interestOwed() + callableLoan.interestAccrued();
+
+    uint256 timeToSettlement = latestPaymentSettlementDate - block.timestamp;
+    uint futureInterestPayable = CallableLoanAccountant.calculateInterest(
+      timeToSettlement,
+      callableLoan.balance() - callableLoan.principalOwed(),
+      callableLoan.interestApr()
+    );
+    return owedAndAccruedInterest + futureInterestPayable;
   }
 }

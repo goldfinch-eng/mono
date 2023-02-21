@@ -28,12 +28,12 @@ contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
     deposit(callableLoan, 3, usdcVal(1), user);
 
     uint256[] memory newIds = new uint256[](0);
-    vm.expectRevert("has balance");
+    vm.expectRevert(bytes("AF"));
     callableLoan.setAllowedUIDTypes(newIds);
 
     // Cannot set uids if there is junior + senior capital
     depositAndDrawdown(callableLoan, usdcVal(4));
-    vm.expectRevert("has balance");
+    vm.expectRevert(bytes("AF"));
     callableLoan.setAllowedUIDTypes(newIds);
   }
 

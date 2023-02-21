@@ -47,18 +47,18 @@ library CallableLoanAccountant {
     uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
     paymentRemaining = paymentRemaining - principalPayment;
 
-    uint256 guaranteedFutureInterest = calculateInterest(
-      timeUntilNextPrincipalSettlemenet,
-      balance,
-      interestRate
-    );
+    uint256 balanceRemaining = balance - principalPayment;
+    uint256 guaranteedFutureInterest = calculateInterest({
+      secondsElapsed: timeUntilNextPrincipalSettlemenet,
+      principal: balanceRemaining,
+      interestApr: interestRate
+    });
     uint256 guaranteedFutureAccruedInterestPayment = MathUpgradeable.min(
       guaranteedFutureInterest,
       paymentRemaining
     );
     paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
 
-    uint256 balanceRemaining = balance - principalPayment;
     uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
     paymentRemaining = paymentRemaining - additionalBalancePayment;
 

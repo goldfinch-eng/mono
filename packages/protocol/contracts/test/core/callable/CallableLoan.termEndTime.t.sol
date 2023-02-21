@@ -10,29 +10,28 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   function testTermEndTimeIsSetOnFirstDrawdown(uint256 amount) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
+    (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(amount).build(BORROWER);
 
-    assertZero(cl.termEndTime());
+    assertZero(callableLoan.termEndTime());
     depositAndDrawdown(callableLoan, amount, GF_OWNER);
     // This is >= because of the creation of the stub period
-    assertGe(cl.termEndTime(), block.timestamp + termInSeconds(cl));
+    assertGe(callableLoan.termEndTime(), block.timestamp + termInSeconds(callableLoan));
   }
 
-  // TODO - bug when you drawdown multiple times!
   function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 drawdownAmount) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
+    (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(drawdownAmount).build(BORROWER);
 
-    deposit(callableLoan, 3, drawdownAmount * 2, DEPOSITOR);
+    deposit(callableLoan, 3, drawdownAmount, DEPOSITOR);
     // TODO: Drawdown to lock pool
-    drawdown(callableLoan, drawdownAmount);
-    uint256 termEndTimeBefore = cl.termEndTime();
-    drawdown(callableLoan, drawdownAmount);
-    assertEq(cl.termEndTime(), termEndTimeBefore);
+    drawdown(callableLoan, drawdownAmount / 2);
+    uint256 termEndTimeBefore = callableLoan.termEndTime();
+    drawdown(callableLoan, drawdownAmount / 2);
+    assertEq(callableLoan.termEndTime(), termEndTimeBefore);
   }
 
-  function termInSeconds(ICreditLine cl) internal returns (uint256) {
-    return cl.termEndTime() - cl.termStartTime();
+  function termInSeconds(CallableLoan callableLoan) internal returns (uint256) {
+    return callableLoan.termEndTime() - callableLoan.termStartTime();
   }
 }
