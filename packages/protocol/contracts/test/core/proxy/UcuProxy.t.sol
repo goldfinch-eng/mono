@@ -155,7 +155,7 @@ contract TestImplementationRepository is Test {
     vm.stopPrank();
     vm.startPrank(PROXY_OWNER);
     vm.expectRevert("failed in proxied call");
-    proxy.upgradeImplementation();
+    newProxy.upgradeImplementation();
   }
 
   function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(REPO_OWNER) {

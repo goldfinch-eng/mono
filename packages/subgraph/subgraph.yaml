@@ -16,7 +16,7 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file: ./src/mappings/senior_pool.ts
+      file: ./src/mappings/senior_pool/senior_pool.ts
       entities:
         - SeniorPool
         - User
@@ -45,8 +45,6 @@ dataSources:
           handler: handlePrincipalCollected
         - event: PrincipalWrittenDown(indexed address,int256)
           handler: handlePrincipalWrittenDown
-        - event: ReserveFundsCollected(indexed address,uint256)
-          handler: handleReserveFundsCollected
         - event: WithdrawalMade(indexed address,uint256,uint256)
           handler: handleWithdrawalMade
         - event: "WithdrawalRequested(indexed uint256,indexed uint256,indexed address,uint256)"
@@ -111,6 +109,8 @@ dataSources:
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address)
           handler: handlePoolCreated
+        - event: BorrowerCreated(indexed address,indexed address)
+          handler: handleBorrowerCreated
 
   - kind: ethereum/contract
     name: PoolTokens
@@ -152,6 +152,52 @@ dataSources:
       file: ./src/mappings/pool_tokens.ts
 
   - kind: ethereum/contract
+    name: Pool
+    network: mainnet
+    source:
+      address: "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
+      abi: Pool
+      startBlock: 11370642
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Pool
+      abis:
+        - name: Pool
+          file: ./abis/Pool.json
+      eventHandlers:
+        - event: PrincipalCollected(indexed address,uint256)
+          handler: handlePrincipalCollected
+        - event: InterestCollected(indexed address,uint256,uint256)
+          handler: handleInterestCollected
+        - event: PrincipalWrittendown(indexed address,int256)
+          handler: handlePrincipalWrittendown
+      file: ./src/mappings/pool.ts
+
+  - kind: ethereum/contract
+    name: CreditDesk
+    network: mainnet
+    source:
+      address: "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+      abi: CreditDesk
+      startBlock: 11370661
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - CreditDesk
+      abis:
+        - name: CreditDesk
+          file: ./abis/CreditDesk.json
+      eventHandlers:
+        - event: DrawdownMade(indexed address,indexed address,uint256)
+          handler: handleDrawdownMade
+      file: ./src/mappings/credit_desk.ts
+
+  - kind: ethereum/contract
     name: StakingRewards
     network: mainnet
     source:
@@ -167,6 +213,8 @@ dataSources:
       abis:
         - name: StakingRewards
           file: ./abis/StakingRewards.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
@@ -241,7 +289,7 @@ dataSources:
       file: ./src/mappings/unique_identity.ts
 
   - kind: ethereum/contract
-    name: GoldfinchConfig
+    name: LegacyGoldfinchConfig
     network: mainnet
     source:
       address: "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
@@ -261,6 +309,27 @@ dataSources:
           handler: handleGoListed
         - event: NoListed(indexed address)
           handler: handleNoListed
+      file: ./src/mappings/legacy_goldfinch_config.ts
+
+  - kind: ethereum/contract
+    name: GoldfinchConfig
+    network: mainnet
+    source:
+      address: "0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1"
+      abi: GoldfinchConfig
+      startBlock: 13941060
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+      eventHandlers:
+        - event: NumberUpdated(address,uint256,uint256,uint256)
+          handler: handleNumberUpdated
       file: ./src/mappings/goldfinch_config.ts
 
   - kind: ethereum/contract
@@ -566,3 +635,5 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
+        - event: TranchedPoolAssessed(indexed address)
+          handler: handleTranchedPoolAssessed

@@ -14,6 +14,9 @@ import {
 import {Address, Deployment} from "hardhat-deploy/dist/types"
 import hre from "hardhat"
 
+// openzeppelin doesn't export the type of these args, so we have to manually reconstruct
+type ValidationErrors = Exclude<Parameters<typeof withValidationDefaults>[0]["unsafeAllow"], undefined>
+
 // Checks the old implementation against the new implementation and
 // ensures that it's valid.
 export const openzeppelin_assertIsValidUpgrade = async (
@@ -38,10 +41,22 @@ export const openzeppelin_assertIsValidUpgrade = async (
 }
 
 // Checks the contract is a valid implementation (e.g. no `constructor` etc.)
-export const openzeppelin_assertIsValidImplementation = async (implementation: {
-  bytecode?: string
-}): Promise<undefined> => {
-  const requiredOpts = withValidationDefaults({unsafeAllow: ["delegatecall", "external-library-linking"]})
+export const openzeppelin_assertIsValidImplementation = async (
+  implementation: {
+    bytecode?: string
+  },
+  options: {hasArgs: boolean}
+): Promise<undefined> => {
+  const requiredOpts = withValidationDefaults({
+    unsafeAllow: [
+      "delegatecall",
+      "external-library-linking",
+      // When using the Cake framework, contracts are constructed with an immutable reference to the
+      // `Context` contract. This is safe for upgrading as it's included in the bytecode, but means
+      // every upgrade we have to set it, which _appears_ as an unsafe upgrade.
+      ...(options.hasArgs ? (["constructor", "state-variable-immutable"] as ValidationErrors) : []),
+    ],
+  })
   const {version, validations} = await getVersionAndValidations(implementation)
 
   // This will throw an error if the implementation is invalid.

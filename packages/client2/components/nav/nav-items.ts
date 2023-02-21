@@ -1,23 +1,37 @@
-const oldClientOrigin =
-  process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
-    ? "https://murmuration.goldfinch.finance"
-    : "https://borrow.app.goldfinch.finance";
+type NavLink = { label: string; href: string; isNew?: boolean };
 
-type NavItem = {
-  label: string;
-  href: string;
-};
+export type NestedNav = { label: string; links: NavLink[] };
 
-export const NAV_ITEMS: NavItem[] = [
-  { label: "Earn", href: "/earn" },
+type Nav = (NavLink | NestedNav)[];
+
+export const DESKTOP_NAV: Nav = [
+  { label: "Deals", href: "/earn" },
+  {
+    label: "Manage",
+    links: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Membership", href: "/membership", isNew: true },
+      { label: "Claim GFI", href: `/gfi` },
+      { label: "Stake", href: `/stake` },
+      { label: "Borrow", href: "/borrow" },
+    ],
+  },
+];
+
+export const MOBILE_NAV: NavLink[] = [
+  { label: "Deals", href: "/earn" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Borrow", href: `${oldClientOrigin}/borrow` },
-  { label: "GFI", href: `/gfi` },
+  { label: "Membership", href: "/membership", isNew: true },
+  { label: "Claim GFI", href: `/gfi` },
   { label: "Stake", href: `/stake` },
-  { label: "Membership", href: "/membership" },
+  { label: "Borrow", href: "/borrow" },
 ];
 
 export const SECONDARY_MENU_ITEMS = [
+  {
+    label: "Getting started",
+    href: "https://docs.goldfinch.finance/goldfinch/guides/getting-started",
+  },
   { label: "Governance", href: "https://gov.goldfinch.finance/" },
   { label: "Docs", href: "https://docs.goldfinch.finance/goldfinch/" },
   {

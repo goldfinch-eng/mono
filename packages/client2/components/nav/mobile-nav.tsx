@@ -1,14 +1,13 @@
 import { Dialog, Transition } from "@headlessui/react";
-import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { Fragment } from "react";
 
-import { GoldfinchLogo, Icon } from "@/components/design-system";
-import { NavLink } from "@/components/nav";
+import { Icon } from "@/components/design-system";
+import { TopLevelNavItem } from "@/components/nav";
 import { WalletButton } from "@/components/nav/wallet-button";
 
-import { NAV_ITEMS } from "./nav-items";
+import { MOBILE_NAV } from "./nav-items";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -63,20 +62,27 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <div className="mb-6 -mt-15">
-            <NextLink href="/" passHref>
-              <a className="flex items-center justify-center p-3">
-                <GoldfinchLogo className="h-7 w-7" />
-              </a>
-            </NextLink>
-          </div>
+        <div className="flex flex-col">
+          {MOBILE_NAV.map(({ label, href }) => {
+            const showNewText = href === "/membership";
 
-          {NAV_ITEMS.map(({ label, href }) => (
-            <NavLink key={`${label}-${href}`} href={href} className="my-3 py-3">
-              {label}
-            </NavLink>
-          ))}
+            return (
+              <div key={`secondary-menu-${label}`} className="flex">
+                <TopLevelNavItem
+                  key={`${label}-${href}`}
+                  href={href}
+                  className="my-3 ml-6 w-fit py-3 px-0 text-3xl"
+                >
+                  {label}
+                </TopLevelNavItem>
+                {showNewText && (
+                  <span className="ml-2 pt-6 text-sm font-semibold text-mustard-500">
+                    NEW
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Dialog>
     </Transition>

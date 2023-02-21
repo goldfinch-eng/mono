@@ -13,14 +13,23 @@ const localhostContracts = devDeployments["31337"][0].contracts
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
-for (let dataSource of subgraphManifest.dataSources) {
+for (const dataSource of subgraphManifest.dataSources) {
   dataSource.network = "localhost"
   delete dataSource.source.startBlock
-  dataSource.source.address =
-    localhostContracts[dataSource.name as ContractName]?.address ?? "0x0000000000000000000000000000000000000000"
+  if (dataSource.name === "CurveFiduUSDC") {
+    dataSource.source.address = "0x0000000000000000000000000000000000000000"
+  } else if (dataSource.name === "LegacyGoldfinchConfig") {
+    dataSource.source.address = localhostContracts["GoldfinchConfig"].address
+  } else if (dataSource.name === "Pool") {
+    dataSource.source.address = "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
+  } else if (dataSource.name === "CreditDesk") {
+    dataSource.source.address = "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+  } else {
+    dataSource.source.address = localhostContracts[dataSource.name as ContractName].address
+  }
 }
 
-for (let dataSource of subgraphManifest.templates) {
+for (const dataSource of subgraphManifest.templates) {
   dataSource.network = "localhost"
 }
 

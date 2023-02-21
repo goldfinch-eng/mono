@@ -59,6 +59,8 @@ interface ITranchedPool {
   /// @param trancheId id of tranche. Valid ids are in the range [1, 2*numSlices]
   function getTranche(uint256 trancheId) external view returns (ITranchedPool.TrancheInfo memory);
 
+  function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
+
   /// @notice Pay down the credit line. Excess payments are refunded to the caller
   /// @param amount USDC amount to pay
   /// @return PaymentAllocation info on how the payment was allocated

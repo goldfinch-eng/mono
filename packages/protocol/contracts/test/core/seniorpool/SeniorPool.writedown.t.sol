@@ -175,7 +175,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownRevertsIfSpNotTokenOwner() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TestTranchedPool tp, ) = defaultTp();
     uint256 juniorToken = depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     vm.expectRevert("Only tokens owned by the senior pool can be written down");
     sp.writedown(juniorToken);

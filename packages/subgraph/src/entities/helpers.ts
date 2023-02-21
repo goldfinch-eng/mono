@@ -1,12 +1,5 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
-import {
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  TranchedPool,
-  CreditLine,
-  Transaction,
-  TranchedPoolRoster,
-} from "../../generated/schema"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
 import {MAINNET_METADATA} from "../metadata"
@@ -103,28 +96,6 @@ export function getCreatedAtOverride(address: Address): BigInt | null {
   return null
 }
 
-export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string): BigDecimal {
-  const tranchedPool = TranchedPool.load(tranchedPoolId)
-  if (!tranchedPool) {
-    return BigDecimal.fromString("0")
-  }
-  const creditLine = CreditLine.load(tranchedPool.creditLine)
-  if (!creditLine) {
-    return BigDecimal.fromString("0")
-  }
-
-  const protocolFee = BigDecimal.fromString("0.1")
-  const leverageRatio = tranchedPool.estimatedLeverageRatio
-  const seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
-  const seniorBalance = creditLine.balance.toBigDecimal().times(seniorFraction)
-  const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
-  const isV1Pool = tranchedPool.isV1StyleDeal
-  const seniorPoolPercentageOfInterest = isV1Pool
-    ? BigDecimal.fromString("1").minus(protocolFee)
-    : BigDecimal.fromString("1").minus(juniorFeePercentage).minus(protocolFee)
-  return seniorBalance.times(creditLine.interestAprDecimal).times(seniorPoolPercentageOfInterest)
-}
-
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   if (!tranchedPool) {
     return BigDecimal.fromString("0")
@@ -186,23 +157,4 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
   return transaction
-}
-
-function getOrInitTranchedPoolRoster(): TranchedPoolRoster {
-  let tranchedPoolRoster = TranchedPoolRoster.load("1")
-  if (!tranchedPoolRoster) {
-    tranchedPoolRoster = new TranchedPoolRoster("1")
-    tranchedPoolRoster.tranchedPools = []
-  }
-  return tranchedPoolRoster
-}
-
-export function getListOfAllTranchedPoolAddresses(): string[] {
-  return getOrInitTranchedPoolRoster().tranchedPools
-}
-
-export function addToListOfAllTranchedPools(tranchedPoolAddress: Address): void {
-  const tranchedPoolRoster = getOrInitTranchedPoolRoster()
-  tranchedPoolRoster.tranchedPools = tranchedPoolRoster.tranchedPools.concat([tranchedPoolAddress.toHexString()])
-  tranchedPoolRoster.save()
 }

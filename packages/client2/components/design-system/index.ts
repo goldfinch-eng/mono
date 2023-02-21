@@ -8,6 +8,7 @@ export * from "./chip";
 export * from "./drawer";
 export * from "./form";
 export * from "./icon";
+export * from "./info-line";
 export * from "./input";
 export * from "./link";
 export * from "./logo";

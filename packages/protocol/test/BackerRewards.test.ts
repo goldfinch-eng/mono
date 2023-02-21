@@ -286,6 +286,34 @@ describe("BackerRewards", function () {
     })
   })
 
+  describe("setBackerAndStakingRewardsTokenInfoOnSplit", () => {
+    // We only test reversion here. The rest of the tests are in PoolTokens.splitToken.t.sol
+    it("reverts for non-PoolTokens caller", async () => {
+      const originalBackerRewardsTokenInfo = {
+        rewardsClaimed: "0",
+        accRewardsPerPrincipalDollarAtMint: "0",
+      }
+      const originalStakingRewardsTokenInfo = {
+        accumulatedRewardsPerTokenAtLastWithdraw: "0",
+      }
+      await expect(
+        backerRewards.setBackerAndStakingRewardsTokenInfoOnSplit(
+          originalBackerRewardsTokenInfo,
+          originalStakingRewardsTokenInfo,
+          "2",
+          "3"
+        )
+      ).to.be.rejectedWith(/Not PoolTokens/)
+    })
+  })
+
+  describe("clearTokenInfo", () => {
+    // We only test reversion here. The rest of the tests are in PoolTokens.splitToken.t.sol
+    it("reverts for non-PoolTokens caller", async () => {
+      await expect(backerRewards.clearTokenInfo("1")).to.be.rejectedWith(/Not PoolTokens/)
+    })
+  })
+
   describe("setTotalRewards()", () => {
     it("emits an event", async () => {
       const totalGFISupply = 100_000_000

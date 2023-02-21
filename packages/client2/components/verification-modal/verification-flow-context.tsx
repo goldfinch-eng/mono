@@ -19,6 +19,8 @@ interface VerificationFlowContextInterface {
   setAccredited: (a: Accredited) => void;
   signature?: Awaited<ReturnType<typeof getSignatureForKyc>>;
   setSignature: (s: Signature) => void;
+  uidVersion?: number;
+  setUidVersion: (v: number) => void;
 }
 
 const noop = () => undefined;
@@ -28,6 +30,7 @@ const Context = createContext<VerificationFlowContextInterface>({
   setIdIssuer: noop,
   setAccredited: noop,
   setSignature: noop,
+  setUidVersion: noop,
 });
 
 export function useVerificationFlowContext() {
@@ -40,6 +43,8 @@ export function VerificationFlowContext({ children }: { children: ReactNode }) {
   const [idIssuer, setIdIssuer] = useState<IdIssuer>();
   const [accredited, setAccredited] = useState<Accredited>();
   const [signature, setSignature] = useState<Signature>();
+  const [uidVersion, setUidVersion] = useState<number>();
+
   return (
     <Context.Provider
       value={{
@@ -53,6 +58,8 @@ export function VerificationFlowContext({ children }: { children: ReactNode }) {
         setAccredited,
         signature,
         setSignature,
+        uidVersion,
+        setUidVersion,
       }}
     >
       {children}

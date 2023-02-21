@@ -31,7 +31,7 @@ export function WalletButton() {
       variant="rounded"
       className="h-10 text-clay-500"
       iconRight="Exclamation"
-      colorScheme="secondary"
+      colorScheme="sand"
       onClick={
         error.name === "ChainIdNotAllowedError"
           ? () => connector.activate(DESIRED_CHAIN_ID)
@@ -50,8 +50,7 @@ export function WalletButton() {
       <Button
         className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
         variant="rounded"
-        colorScheme="secondary"
-        data-id="nav.wallet-connected"
+        colorScheme="sand"
       >
         <span className="hidden md:block">
           {ENSName ? ENSName : abbreviateAddress(account)}
@@ -76,7 +75,6 @@ export function WalletButton() {
       variant="rounded"
       colorScheme="primary"
       onClick={openWalletModal}
-      data-id="nav.connect-wallet"
     >
       Connect Wallet
     </Button>

@@ -1,6 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -11,11 +11,10 @@ import {
   InfoIconTooltip,
   Input,
   Link,
-  Select,
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
@@ -26,13 +25,12 @@ import {
   approveErc20IfRequired,
   canUserParticipateInPool,
   computeApyFromGfiInFiat,
-  sharesToUsdc,
   signAgreement,
   usdcWithinEpsilon,
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { abbreviateAddress, isSmartContract, useWallet } from "@/lib/wallet";
+import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment SupplyPanelTranchedPoolFields on TranchedPool {
@@ -57,11 +55,6 @@ export const SUPPLY_PANEL_USER_FIELDS = gql`
     isUsNonAccreditedIndividual
     isNonUsIndividual
     isGoListed
-    # Need this for zapping
-    seniorPoolStakedPositions {
-      id
-      amount
-    }
   }
 `;
 
@@ -70,10 +63,6 @@ interface SupplyPanelProps {
   user: SupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
   seniorPoolApyFromGfiRaw: FixedNumber;
-  /**
-   * This is necessary for zapping functionality. Senior pool staked position amounts are measured in FIDU, but we need to show the amounts to users in USDC.
-   */
-  seniorPoolSharePrice: BigNumber;
   agreement?: string | null;
   isUnitrancheDeal?: boolean;
 }
@@ -81,7 +70,6 @@ interface SupplyPanelProps {
 interface SupplyForm {
   supply: string;
   backerName: string;
-  source: string;
 }
 
 export default function SupplyPanel({
@@ -97,7 +85,6 @@ export default function SupplyPanel({
   user,
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
-  seniorPoolSharePrice,
   agreement,
   isUnitrancheDeal = false,
 }: SupplyPanelProps) {
@@ -116,9 +103,7 @@ export default function SupplyPanel({
     ? canUserParticipateInPool(allowedUidTypes, user)
     : false;
 
-  const rhfMethods = useForm<SupplyForm>({
-    defaultValues: { source: "wallet" },
-  });
+  const rhfMethods = useForm<SupplyForm>();
   const { control, watch, register } = rhfMethods;
 
   const remainingJuniorCapacity =
@@ -164,86 +149,56 @@ export default function SupplyPanel({
       value = availableBalance;
     }
 
-    if (data.source === "wallet") {
-      const usdcContract = await getContract({ name: "USDC", provider });
-      const tranchedPoolContract = await getContract({
-        name: "TranchedPool",
-        provider,
-        address: tranchedPoolAddress,
-      });
-      if (!tranchedPoolContract) {
-        throw new Error("Wallet not connected properly");
-      }
-      if (await isSmartContract(account, provider)) {
-        await approveErc20IfRequired({
-          account,
-          spender: tranchedPoolAddress,
-          amount: value,
-          erc20Contract: usdcContract,
-        });
-        await toastTransaction({
-          transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
-          pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
-        });
-      } else {
-        const now = (await provider.getBlock("latest")).timestamp;
-        const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
-        const signature = await generateErc20PermitSignature({
-          erc20TokenContract: usdcContract,
-          provider,
-          owner: account,
-          spender: tranchedPoolAddress,
-          value,
-          deadline,
-        });
+    let submittedTransaction;
 
-        const transaction = tranchedPoolContract.depositWithPermit(
-          TRANCHES.Junior,
-          value,
-          deadline,
-          signature.v,
-          signature.r,
-          signature.s
-        );
-        await toastTransaction({
-          transaction,
-          pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
-        });
-      }
-    } else {
-      const zapperContract = await getContract({ name: "Zapper", provider });
-      const stakingRewardsContract = await getContract({
-        name: "StakingRewards",
-        provider,
-      });
-
-      const stakedPositionId = BigNumber.from(data.source.split("-")[1]);
-      const tranche = BigNumber.from(2); // TODO this is really lazy. With multi-sliced pools this needs to be dynamic
-
-      const isAlreadyApproved = await stakingRewardsContract.isApprovedForAll(
+    const usdcContract = await getContract({ name: "USDC", provider });
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      address: tranchedPoolAddress,
+    });
+    if (!tranchedPoolContract) {
+      throw new Error("Wallet not connected properly");
+    }
+    if (await isSmartContract(account, provider)) {
+      await approveErc20IfRequired({
         account,
-        zapperContract.address
+        spender: tranchedPoolAddress,
+        amount: value,
+        erc20Contract: usdcContract,
+      });
+      submittedTransaction = await toastTransaction({
+        transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
+        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+      });
+    } else {
+      const now = (await provider.getBlock("latest")).timestamp;
+      const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+      const signature = await generateErc20PermitSignature({
+        erc20TokenContract: usdcContract,
+        provider,
+        owner: account,
+        spender: tranchedPoolAddress,
+        value,
+        deadline,
+      });
+
+      const transaction = tranchedPoolContract.depositWithPermit(
+        TRANCHES.Junior,
+        value,
+        deadline,
+        signature.v,
+        signature.r,
+        signature.s
       );
-      if (!isAlreadyApproved) {
-        const approval = await stakingRewardsContract.setApprovalForAll(
-          zapperContract.address,
-          true
-        );
-        await approval.wait();
-      }
-      const transaction = zapperContract.zapStakeToTranchedPool(
-        stakedPositionId,
-        tranchedPoolAddress,
-        tranche,
-        value
-      );
-      await toastTransaction({
+      submittedTransaction = await toastTransaction({
         transaction,
-        pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
+        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
       });
     }
 
-    dataLayerPush("DEPOSITED_IN_TRANCHED_POOL", {
+    dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
+      transactionHash: submittedTransaction.transactionHash,
       tranchedPoolAddress,
       usdAmount: parseFloat(data.supply),
     });
@@ -252,35 +207,20 @@ export default function SupplyPanel({
       include: "active",
       updateCache(cache) {
         cache.evict({ fieldName: "tranchedPoolTokens" });
-        cache.evict({ fieldName: "zaps" });
       },
     });
   };
 
   const supplyValue = watch("supply");
-  const selectedSource = watch("source");
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
     if (!account || !provider) {
       return;
     }
-    if (selectedSource === "wallet") {
-      getContract({ name: "USDC", provider })
-        .then((usdcContract) => usdcContract.balanceOf(account))
-        .then((balance) => setAvailableBalance(balance));
-    } else if (selectedSource.startsWith("seniorPool")) {
-      const id = selectedSource.split("-")[1];
-      const seniorPoolPosition = user?.seniorPoolStakedPositions.find(
-        (s) => s.id === id
-      );
-      if (!seniorPoolPosition) {
-        return;
-      }
-      setAvailableBalance(
-        sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice).amount
-      );
-    }
-  }, [selectedSource, account, provider, user, seniorPoolSharePrice]);
+    getContract({ name: "USDC", provider })
+      .then((usdcContract) => usdcContract.balanceOf(account))
+      .then((balance) => setAvailableBalance(balance));
+  }, [account, provider, user]);
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
@@ -291,31 +231,28 @@ export default function SupplyPanel({
   );
   const totalApyFromGfi = fiatApyFromGfi.addUnsafe(seniorPoolApyFromGfiFiat);
 
-  const availableSources = useMemo(() => {
-    const walletOption = [
-      {
-        label: `Wallet \u00b7 ${abbreviateAddress(account ?? "")}`,
-        value: "wallet",
-      },
-    ];
-    const zappableOptions = user?.seniorPoolStakedPositions
-      ? user.seniorPoolStakedPositions.map((s, index) => ({
-          label: `Senior Pool Position ${index + 1} \u00b7 ${formatCrypto(
-            sharesToUsdc(s.amount, seniorPoolSharePrice)
-          )}`,
-          value: `seniorPool-${s.id}`,
-        }))
-      : [];
-    return walletOption.concat(zappableOptions);
-  }, [user, account, seniorPoolSharePrice]);
-
   return (
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
       <div className="mb-3 flex flex-row justify-between">
         <span className="text-sm">Est. APY</span>
         <InfoIconTooltip
           size="sm"
-          content="The pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
+          content={
+            <div className="max-w-xs">
+              The Pool&rsquo;s total current estimated APY, including the
+              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
+              volatile and changes based on several variables including the
+              price of GFI, the total capital deployed on Goldfinch, and Senior
+              Pool&rsquo;s utilization. Learn more in the{" "}
+              <Link
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                openInNewTab
+              >
+                Goldfinch Documentation
+              </Link>
+              .
+            </div>
+          }
         />
       </div>
 
@@ -428,16 +365,6 @@ export default function SupplyPanel({
         </div>
       ) : (
         <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-          <Select
-            control={control}
-            name="source"
-            label="Source"
-            options={availableSources}
-            colorScheme="dark"
-            textSize="xl"
-            labelClassName="!text-sm !mb-3"
-            className={availableSources.length > 1 ? "mb-4" : "hidden"}
-          />
           <DollarInput
             control={control}
             name="supply"

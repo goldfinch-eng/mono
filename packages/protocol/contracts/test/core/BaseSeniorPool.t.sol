@@ -153,6 +153,7 @@ contract SeniorPoolBaseTest is BaseTest {
     // Exclude known addresses from fuzzed inputs. This prevents flakey errors like
     // "Error sent ERC1155 to non-receiver"
     fuzzHelper.exclude(gfConfig.protocolAdminAddress());
+    fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
@@ -295,7 +296,7 @@ contract SeniorPoolBaseTest is BaseTest {
     address user,
     uint256 userPrivateKey,
     uint256 amount
-  ) internal returns (uint8, bytes32, bytes32) {
+  ) internal view returns (uint8, bytes32, bytes32) {
     uint256 nonce = usdc.nonces(user);
     uint256 deadline = type(uint256).max;
     // Get signature for permit
@@ -339,7 +340,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256,
     uint256,
     bytes calldata
-  ) external returns (bytes4) {
+  ) external pure returns (bytes4) {
     return 0xf23a6e61;
   }
 

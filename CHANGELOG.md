@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Protocol v3.1.2
+
+### Updated
+
+- Membership
+  - Add `harvest` function so participants can claim underlying rewards, interest, or other earnings on membership-vaulted assets.
+
+### Updated
+
+- BackerRewards
+  - Return the amount withdrawn when claiming rewards
+
+- StakingRewards
+  - Return the amounts withdrawn when claiming rewards
+
 ## Protocol v3.0.0 - 2022-11-30
 
 ### Updated
@@ -36,7 +51,6 @@ All notable changes to this project will be documented in this file.
   - Public functions _unstakeAndWithdraw_, _unstakeAndWithdrawMultiple_, _unstakeAndWithdrawInFidu_,
     and _unstakeAndWithdrawMultipleInFidu_ have been removed. Events UnstakedAndWithdrew and
     UnstakedAndWithdrewMultiple will no longer be emitted.
-
 
 ### Notes
 

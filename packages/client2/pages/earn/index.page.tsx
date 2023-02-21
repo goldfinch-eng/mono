@@ -1,38 +1,62 @@
 import { gql } from "@apollo/client";
-import { GetStaticProps, InferGetStaticPropsType } from "next";
+import { InferGetStaticPropsType } from "next";
+import { useState } from "react";
 
-import { Heading, HelperText, Paragraph } from "@/components/design-system";
+import { Button, HelperText, Link } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
-
 import {
-  PoolCard,
-  PoolCardPlaceholder,
-  TranchedPoolCard,
-  TRANCHED_POOL_CARD_FIELDS,
-  TRANCHED_POOL_CARD_DEAL_FIELDS,
-} from "./pool-card";
+  computeApyFromGfiInFiat,
+  getTranchedPoolFundingStatus,
+  getTranchedPoolRepaymentStatus,
+  TranchedPoolFundingStatus,
+} from "@/lib/pools";
+import {
+  GoldfinchPoolsMetrics,
+  GoldfinchPoolsMetricsPlaceholder,
+  PROTOCOL_METRICS_FIELDS,
+} from "@/pages/earn/goldfinch-pools-metrics";
+import {
+  OpenDealCard,
+  OpenDealCardPlaceholder,
+} from "@/pages/earn/open-deal-card";
+
+import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
+
+const visiblePoolOnFirstLoad = 4;
 
 gql`
-  ${TRANCHED_POOL_CARD_FIELDS}
+  ${PROTOCOL_METRICS_FIELDS}
   query EarnPage {
     seniorPools(first: 1) {
       id
       name @client
       category @client
       icon @client
-      latestPoolStatus {
-        id
-        estimatedApy
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApy
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
-      ...TranchedPoolCardFields
+      estimatedJuniorApy
+      estimatedJuniorApyFromGfiRaw
+      fundableAt
+      remainingCapacity
+      creditLine {
+        id
+        limit
+        balance
+        termInDays
+        termEndTime
+        isLate @client
+        isInDefault @client
+      }
+    }
+    protocols(first: 1) {
+      id
+      ...ProtocolMetricsFields
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -48,11 +72,20 @@ gql`
 `;
 
 const earnCmsQuery = gql`
-  ${TRANCHED_POOL_CARD_DEAL_FIELDS}
   query EarnPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...TranchedPoolCardDealFields
+        id
+        name
+        category
+        dealType
+        borrower {
+          id
+          name
+          logo {
+            url
+          }
+        }
       }
     }
   }
@@ -63,135 +96,221 @@ export default function EarnPage({
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
-  const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.estimatedApy
+  const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
+
+  const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
   // Only display tranched pools for which we have deal metadata
   const tranchedPools = data?.tranchedPools?.filter(
     (tranchedPool) => !!dealMetadata[tranchedPool.id]
   );
+
+  const protocol = data?.protocols[0];
+
   const fiatPerGfi = data?.gfiPrice?.price.amount;
+
+  const openTranchedPools =
+    tranchedPools?.filter(
+      (tranchedPool) =>
+        getTranchedPoolFundingStatus(tranchedPool) ===
+        TranchedPoolFundingStatus.Open
+    ) ?? [];
+  const closedTranchedPools =
+    tranchedPools?.filter(
+      (tranchedPool) =>
+        getTranchedPoolFundingStatus(tranchedPool) ===
+          TranchedPoolFundingStatus.Closed ||
+        getTranchedPoolFundingStatus(tranchedPool) ===
+          TranchedPoolFundingStatus.Full
+    ) ?? [];
+
+  // +1 for Senior Pool
+  const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
+
+  const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
 
   return (
     <div>
-      <Heading
-        as="h1"
-        level={2}
-        className="mb-12 text-center !text-5xl md:!text-6xl lg:text-left"
-      >
-        Pools
-      </Heading>
       {error ? (
         <HelperText isError className="mb-12">
           There was a problem fetching data on pools. Shown data may be
           outdated.
         </HelperText>
       ) : null}
-      <Heading
-        as="h2"
-        level={4}
-        className="mb-3 !font-serif !text-[2.5rem] !font-bold"
-      >
-        Senior Pool
-      </Heading>
-      <Paragraph className="mb-8 !text-lg">
-        The simple option for automatically diversified yields. Capital is
-        distributed across Borrower Pools, and is protected by Backer capital
-        for lower-risk investment.
-      </Paragraph>
-      <div className="mb-15">
-        {!seniorPool || !fiatPerGfi ? (
-          <PoolCardPlaceholder />
-        ) : (
-          <PoolCard
-            title={seniorPool.name}
-            subtitle={seniorPool.category}
-            icon={seniorPool.icon}
-            apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyWithGfi={seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
-              computeApyFromGfiInFiat(
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+      {loading ? (
+        <>
+          <GoldfinchPoolsMetricsPlaceholder className="mb-20" />
+          <EarnPageHeading>Open Deals</EarnPageHeading>
+          <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <OpenDealCardPlaceholder key={i} />
+            ))}
+          </div>
+          <EarnPageHeading>Closed Deals</EarnPageHeading>
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <ClosedDealCardPlaceholder key={i} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
+          <EarnPageHeading>
+            {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
+          </EarnPageHeading>
+          <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <OpenDealCard
+              icon={seniorPool.icon}
+              title={seniorPool.name}
+              subtitle={seniorPool.category}
+              usdcApy={seniorPool.estimatedApy}
+              gfiApy={computeApyFromGfiInFiat(
+                seniorPool.estimatedApyFromGfiRaw,
                 fiatPerGfi
-              )
-            )}
-            apyTooltipContent={
-              <div>
+              )}
+              gfiApyTooltip={
                 <div className="mb-4">
-                  The Senior Pool&apos;s total current estimated APY, including
-                  the current USDC APY and est. GFI rewards APY.
+                  The Senior Pool&rsquo;s total current estimated APY, including
+                  the current USDC APY and est. GFI rewards APY. The GFI rewards
+                  APY is volatile and changes based on several variables
+                  including the price of GFI, the total capital deployed on
+                  Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
+                  the{" "}
+                  <Link
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                    openInNewTab
+                  >
+                    Goldfinch Documentation
+                  </Link>
+                  .
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <div>Senior Pool APY</div>
+              }
+              liquidity="2 week withdraw requests"
+              href="/pools/senior"
+            />
+            {openTranchedPools?.map((tranchedPool) => {
+              const dealDetails = dealMetadata[tranchedPool.id];
+
+              const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
+                tranchedPool.estimatedJuniorApyFromGfiRaw,
+                fiatPerGfi
+              );
+
+              const seniorPoolApyFromGfi = computeApyFromGfiInFiat(
+                seniorPool.estimatedApyFromGfiRaw,
+                fiatPerGfi
+              );
+
+              const apyFromGfi =
+                tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                  ? tranchedPool.estimatedJuniorApyFromGfiRaw
+                  : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+
+              const termLengthInMonths = Math.floor(
+                tranchedPool.creditLine.termInDays.toNumber() / 30
+              );
+
+              return (
+                <OpenDealCard
+                  key={tranchedPool.id}
+                  icon={dealDetails.borrower.logo?.url}
+                  title={dealDetails.name}
+                  subtitle={dealDetails.category}
+                  usdcApy={tranchedPool.estimatedJuniorApy}
+                  gfiApy={apyFromGfi}
+                  gfiApyTooltip={
                     <div>
-                      {formatPercent(seniorPool.latestPoolStatus.estimatedApy)}
+                      <div className="mb-4">
+                        The Pool&rsquo;s total current estimated APY, including
+                        the current USDC APY and est. GFI rewards APY. The GFI
+                        rewards APY is volatile and changes based on several
+                        variables including the price of GFI, the total capital
+                        deployed on Goldfinch, and Senior Pool&rsquo;s
+                        utilization. Learn more in the{" "}
+                        <Link
+                          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                          openInNewTab
+                        >
+                          Goldfinch Documentation
+                        </Link>
+                        .
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <div>Backer liquidity mining GFI APY</div>
+                          <div>{formatPercent(tranchedPoolApyFromGfi)}</div>
+                        </div>
+                        <div className="flex justify-between">
+                          <div>LP rewards match GFI APY</div>
+                          <div>
+                            {formatPercent(
+                              tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                                ? 0
+                                : seniorPoolApyFromGfi
+                            )}
+                          </div>
+                        </div>
+                        <hr className="border-t border-sand-300" />
+                        <div className="flex justify-between">
+                          <div>Total Est. APY</div>
+                          <div>{formatPercent(apyFromGfi)}</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <div>GFI Distribution APY</div>
-                    <div>
-                      {formatPercent(
-                        computeApyFromGfiInFiat(
-                          seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
-                          fiatPerGfi
-                        )
-                      )}
-                    </div>
-                  </div>
-                  <hr className="my-3 border-t border-sand-300" />
-                  <div className="flex justify-between">
-                    <div>Total Est. APY</div>
-                    <div>
-                      {formatPercent(
-                        seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
-                          computeApyFromGfiInFiat(
-                            seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
-                            fiatPerGfi
-                          )
-                        )
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-            href="/pools/senior"
-            poolStatus={PoolStatus.Open}
-          />
-        )}
-      </div>
-      <Heading level={2} className="mb-3 !font-serif !text-[2.5rem] !font-bold">
-        Borrower Pools
-      </Heading>
-      <Paragraph className="mb-8 !text-lg">
-        The more active option for higher yields. Earn higher APYs by vetting
-        Borrowers and supplying first-loss capital directly to individual Pools.
-      </Paragraph>
-      <div className="flex flex-col space-y-4">
-        {seniorPool && tranchedPools && fiatPerGfi
-          ? tranchedPools.map((tranchedPool) => (
-              <TranchedPoolCard
-                key={tranchedPool.id}
-                details={dealMetadata[tranchedPool.id]}
-                tranchedPool={tranchedPool}
-                href={`/pools/${tranchedPool.id}`}
-                fiatPerGfi={fiatPerGfi}
-                seniorPoolApyFromGfiRaw={
-                  seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                }
-              />
-            ))
-          : !tranchedPools
-          ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
-              <PoolCardPlaceholder key={nonce} />
-            ))
-          : null}
-      </div>
+                  }
+                  termLengthInMonths={termLengthInMonths}
+                  liquidity="End of loan term"
+                  href={`/pools/${tranchedPool.id}`}
+                />
+              );
+            })}
+          </div>
+
+          <EarnPageHeading>{`${closedTranchedPools.length} Closed Deals`}</EarnPageHeading>
+          <div className="space-y-2">
+            {closedTranchedPools.map((tranchedPool, i) => {
+              const deal = dealMetadata[tranchedPool.id];
+              const repaymentStatus =
+                getTranchedPoolRepaymentStatus(tranchedPool);
+              return (
+                <ClosedDealCard
+                  key={tranchedPool.id}
+                  // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
+                  className={
+                    !showMoreClosedPools && i >= visiblePoolOnFirstLoad
+                      ? "hidden"
+                      : undefined
+                  }
+                  borrowerName={deal.borrower.name}
+                  icon={deal.borrower.logo?.url}
+                  dealName={deal.name}
+                  loanAmount={tranchedPool.creditLine.limit}
+                  termEndTime={tranchedPool.creditLine.termEndTime}
+                  repaymentStatus={repaymentStatus}
+                  href={`/pools/${tranchedPool.id}`}
+                />
+              );
+            })}
+          </div>
+          {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
+            <Button
+              onClick={() => setShowMoreClosedPools(true)}
+              className="mt-2 w-full"
+              colorScheme="sand"
+              size="lg"
+            >
+              {`View ${closedTranchedPools?.length - 4} more closed pools`}
+            </Button>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({
     query: earnCmsQuery,
     fetchPolicy: "network-only",
@@ -221,3 +340,7 @@ export const getStaticProps: GetStaticProps = async () => {
     },
   };
 };
+
+function EarnPageHeading({ children }: { children: string }) {
+  return <div className="mb-6 font-medium">{children}</div>;
+}

@@ -2,6 +2,8 @@ import type { Web3Provider } from "@ethersproject/providers";
 
 import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 
+import { User } from "./graphql/generated";
+
 interface IKYCStatus {
   status: "unknown" | "approved" | "failed";
   countryCode: string;
@@ -81,7 +83,7 @@ export enum UIDType {
  * @param type The UID type of the wallet
  * @returns The label to describe the user's UID type
  */
-export function getUIDLabelFromType(type: UIDType): string {
+export function getUIDLabelFromType(type: UIDType) {
   switch (type) {
     case UIDType.NonUSIndividual:
       return "Non-U.S. Individual";
@@ -96,20 +98,59 @@ export function getUIDLabelFromType(type: UIDType): string {
   }
 }
 
+/**
+ * Export the UID title for the user's UID Type
+ * @param type The UID type of the wallet
+ * @returns The label to describe the user's UID type
+ */
+export function getUIDLabelFromGql(
+  user: Pick<
+    User,
+    | "isUsEntity"
+    | "isNonUsEntity"
+    | "isUsAccreditedIndividual"
+    | "isUsNonAccreditedIndividual"
+    | "isNonUsIndividual"
+  >
+): string | undefined {
+  if (user.isUsEntity) {
+    return "U.S. Entity";
+  }
+  if (user.isNonUsEntity) {
+    return "Non-U.S. Entity";
+  }
+  if (user.isUsAccreditedIndividual) {
+    return "U.S. Accredited Individual";
+  }
+  if (user.isUsNonAccreditedIndividual) {
+    return "U.S. Non-Accredited Individual";
+  }
+  if (user.isNonUsIndividual) {
+    return "Non-U.S. Individual";
+  }
+}
+
 export async function fetchUniqueIdentitySigner(
   account: string,
   signature: string,
-  signatureBlockNum: number
+  signatureBlockNum: number,
+  mintToAddress?: string
 ) {
   const url = UNIQUE_IDENTITY_SIGNER_URL;
   const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ auth }),
+    body: JSON.stringify({ auth, mintToAddress }),
     method: "POST",
   });
   if (!res.ok) {
-    throw new Error("Unique indentity signer responded with an error");
+    const message = (await res.json()).message as string;
+    const actualMessage = message?.match(/\"message\"\:\"(.+)\"/);
+    if (actualMessage) {
+      throw new Error(actualMessage[1]);
+    } else {
+      throw new Error("Unique indentity signer responded with an error");
+    }
   }
   const response = await res.json();
   const parsedBody: {

@@ -90,8 +90,8 @@ export function PersonaStep() {
       <div className="flex flex-col items-center">
         <Image
           src={personaLogo}
-          width={110}
           height={110}
+          style={{ width: "auto" }}
           quality={100}
           alt="Persona"
         />

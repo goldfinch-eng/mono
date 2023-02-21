@@ -94,15 +94,15 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
     if (epoch < firstRewardEpoch) return 0;
 
     // Case 3: Epoch has already been finalized
-    uint256 lastFinalizedEpoch = lastFinalizedEpoch();
-    if (epoch <= lastFinalizedEpoch) return rewardsForEpoch[epoch];
+    uint256 _lastFinalizedEpoch = lastFinalizedEpoch();
+    if (epoch <= _lastFinalizedEpoch) return rewardsForEpoch[epoch];
 
     uint256 pendingDistributionUsdc = context.reserveSplitter().pendingDistributionFor(
       address(this)
     );
     uint256 pendingDistribution = context.seniorPool().getNumShares(pendingDistributionUsdc);
 
-    uint256 epochsToFinalize = Epochs.previous() - lastFinalizedEpoch;
+    uint256 epochsToFinalize = Epochs.previous() - _lastFinalizedEpoch;
     if (epochsToFinalize == 0) {
       // Case 4: Epoch is the current epoch and there are none pending finalization
       // Epoch is implicitly current: it's not the future and all previous are finalized
@@ -176,8 +176,8 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
       lastCheckpointAt = Epochs.startOf(currentEpoch);
     }
 
-    uint256 lastFinalizedEpoch = lastFinalizedEpoch();
-    uint256 epochsToFinalize = priorEpoch - lastFinalizedEpoch;
+    uint256 _lastFinalizedEpoch = lastFinalizedEpoch();
+    uint256 epochsToFinalize = priorEpoch - _lastFinalizedEpoch;
 
     // Distribute rewards to epochsToFinalize according to proportion of total elapsed time
     uint256 totalElapsedTime = block.timestamp - lastCheckpointAt;
@@ -186,7 +186,7 @@ contract MembershipCollector is IERC20SplitterReceiver, IMembershipCollector, Ba
 
     if (epochsToFinalize > 0) {
       for (uint256 i = 1; i <= epochsToFinalize; i++) {
-        uint256 epoch = lastFinalizedEpoch + i;
+        uint256 epoch = _lastFinalizedEpoch + i;
 
         uint256 epochStart = Epochs.startOf(epoch);
         uint256 unfinalizedEpochSeconds = Epochs.EPOCH_SECONDS;

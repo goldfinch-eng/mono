@@ -1,6 +1,6 @@
-import { differenceInDays, format } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 
-import { Button } from "@/components/design-system";
+import { Button, Tooltip } from "@/components/design-system";
 import type { TranchedPool } from "@/lib/graphql/generated";
 
 interface ComingSoonPanelProps {
@@ -9,20 +9,22 @@ interface ComingSoonPanelProps {
 
 export default function ComingSoonPanel({ fundableAt }: ComingSoonPanelProps) {
   if (fundableAt.isZero()) {
-    return <></>;
+    return null;
   }
 
   const date = new Date(fundableAt.toNumber() * 1000);
-  const difference = differenceInDays(date, new Date());
+  const difference = differenceInCalendarDays(date, new Date());
 
   return (
-    <div className="flex flex-col rounded-xl border border-sand-200 text-center ">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-sand-200 text-center">
       <div className="px-5 py-10">
         <div className="mb-5 text-xl">
           This pool will open on{" "}
-          <span className="font-semibold text-sky-700">
-            {format(date, "MMMM d, y")}
-          </span>
+          <Tooltip useWrapper content={`at ${format(date, "h:mm aaaa")}`}>
+            <span className="font-semibold text-sky-700">
+              {format(date, "MMMM d, y")}
+            </span>
+          </Tooltip>
         </div>
 
         <div className="text-[7.5rem] font-semibold leading-none text-sky-700">
@@ -40,6 +42,7 @@ export default function ComingSoonPanel({ fundableAt }: ComingSoonPanelProps) {
           as="a"
           iconRight="ArrowTopRight"
           target="_blank"
+          rel="noreferer noopener"
           colorScheme="sky"
           size="xl"
           href="https://bit.ly/backer-updates"

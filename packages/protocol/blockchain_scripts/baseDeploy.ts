@@ -1,4 +1,4 @@
-import {isMainnetForking, assertIsChainId, ContractDeployer, ZAPPER_ROLE} from "./deployHelpers"
+import {isMainnetForking, assertIsChainId, ContractDeployer, ZAPPER_ROLE, getTruffleContract} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
 import {Logger} from "./types"
@@ -27,6 +27,8 @@ import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTra
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
 import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
 import {deployMonthlyScheduleRepo} from "./baseDeploy/deployMonthlyScheduleRepo"
+import {BackerRewardsInstance, CapitalLedgerInstance, RouterInstance} from "../typechain/truffle"
+import {routingIdOf} from "./deployHelpers/routingIdOf"
 
 const logger: Logger = console.log
 
@@ -106,6 +108,14 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   console.log("Set legacy go list")
 
   await deployMonthlyScheduleRepo(deployer, deployEffects, config)
+
+  const router = await getTruffleContract<RouterInstance>("Router")
+  const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
+  await router.setContract(routingIdOf("BackerRewards"), backerRewards.address)
+  await router.setContract(routingIdOf("Go"), go.contract.address)
+
+  const capitalLedger = await getTruffleContract<CapitalLedgerInstance>("CapitalLedger")
+  await config.addToGoList(capitalLedger.address)
 
   await deployEffects.executeDeferred()
 }

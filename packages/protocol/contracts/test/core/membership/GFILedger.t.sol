@@ -13,7 +13,7 @@ import {Test, stdError} from "forge-std/Test.sol";
 import {CakeHelper} from "../../cake/helpers/CakeHelper.t.sol";
 
 contract MockERC20 is ERC20Upgradeable {
-  constructor(uint256 initialSupply) public {
+  constructor(uint256 initialSupply) {
     _mint(msg.sender, initialSupply);
   }
 }

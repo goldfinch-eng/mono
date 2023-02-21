@@ -34,9 +34,7 @@ contract TestFiduUSDCCurveLP is
     // note: defining as an array so we get the same out of bounds behavior
     //        but can't define it at compile time because the addresses
     //        are sourced from goldfinch config
-    address[2] memory coins = [address(getFidu()), address(getUSDC())];
-
-    return coins[index];
+    return [address(getFidu()), address(getUSDC())][index];
   }
 
   function token() public view override returns (address) {
@@ -52,7 +50,7 @@ contract TestFiduUSDCCurveLP is
   function add_liquidity(
     uint256[2] memory amounts,
     uint256 min_mint_amount,
-    bool use_eth,
+    bool,
     address receiver
   ) public override returns (uint256) {
     // Transfer FIDU and USDC from caller to this contract
@@ -98,37 +96,25 @@ contract TestFiduUSDCCurveLP is
 
   /// @notice Mock remove_liquidity function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function remove_liquidity(
-    uint256 _amount,
-    uint256[2] memory min_amounts
-  ) public override returns (uint256) {
+  function remove_liquidity(uint256, uint256[2] memory) public override returns (uint256) {
     return 0;
   }
 
   /// @notice Mock remove_liquidity_one_coin function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function remove_liquidity_one_coin(
-    uint256 token_amount,
-    uint256 i,
-    uint256 min_amount
-  ) public override returns (uint256) {
+  function remove_liquidity_one_coin(uint256, uint256, uint256) public override returns (uint256) {
     return 0;
   }
 
   /// @notice Mock get_dy function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function get_dy(uint256 i, uint256 j, uint256 dx) external view override returns (uint256) {
+  function get_dy(uint256, uint256, uint256) external view override returns (uint256) {
     return 0;
   }
 
   /// @notice Mock exchange function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
-  function exchange(
-    uint256 i,
-    uint256 j,
-    uint256 dx,
-    uint256 min_dy
-  ) public override returns (uint256) {
+  function exchange(uint256, uint256, uint256, uint256) public override returns (uint256) {
     return 0;
   }
 
