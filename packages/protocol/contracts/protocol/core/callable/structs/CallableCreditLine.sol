@@ -571,8 +571,8 @@ library CallableCreditLineLogic {
     return cl._paymentSchedule.nextDueTimeAt(timestamp);
   }
 
-  function termStartTime(CallableCreditLine storage cl) internal view returns (uint64) {
-    return cl._paymentSchedule.startTime;
+  function termStartTime(CallableCreditLine storage cl) internal view returns (uint) {
+    return cl._paymentSchedule.termStartTime();
   }
 
   function termEndTime(CallableCreditLine storage cl) internal view returns (uint) {
