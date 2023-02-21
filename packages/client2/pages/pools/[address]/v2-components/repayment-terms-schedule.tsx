@@ -1,9 +1,10 @@
 import clsx from "clsx";
+import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 
-import { formatCrypto } from "@/lib/format";
 import { RepaymentTermsScheduleFragment } from "@/lib/graphql/generated";
+import { calculateInterestOwed } from "@/pages/borrow/helpers";
 import { RepaymentScheduleTable } from "@/pages/pools/[address]/v2-components/repayment-schedule-table";
 
 import RepaymentScheduleBarChart from "../v2-components/repayment-schedule-bar-chart";
@@ -18,6 +19,8 @@ export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
       termStartTime
       termEndTime
       paymentPeriodInDays
+      interestApr
+      balance
       interestAprDecimal
       limit
     }
@@ -29,6 +32,74 @@ interface RepaymentTermsScheduleProps {
   className?: string;
 }
 
+export interface RepaymentScheduleData {
+  paymentPeriod: string;
+  estimatedPaymentDate: string;
+  principal: BigNumber;
+  interest: BigNumber;
+}
+
+const generateRepaymentScheduleData = (
+  loan: RepaymentTermsScheduleFragment
+) => {
+  const repaymentScheduleData: RepaymentScheduleData[] = [];
+
+  const termStartTime = loan.creditLine.termStartTime.toNumber();
+  const termEndTime = loan.creditLine.termEndTime.toNumber();
+
+  // Number of seconds in 'paymentPeriodInDays'
+  const paymentPeriodInSeconds =
+    loan.creditLine.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
+
+  // Keep track of period start & end and payment period number
+  let periodStartTimestamp = termStartTime;
+  let paymentPeriod = 1;
+
+  for (
+    let periodEndTimestamp = termStartTime + paymentPeriodInSeconds;
+    periodEndTimestamp <= termEndTime;
+    periodEndTimestamp += paymentPeriodInSeconds
+  ) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.creditLine.interestApr,
+      nextDueTime: BigNumber.from(periodEndTimestamp),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: loan.creditLine.balance,
+    });
+    repaymentScheduleData.push({
+      paymentPeriod: paymentPeriod.toString(),
+      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM d"),
+      principal: BigNumber.from(0),
+      interest: expectedInterest,
+    });
+
+    paymentPeriod++;
+    periodStartTimestamp = periodEndTimestamp;
+  }
+
+  // Catch the remainder of time for the final period
+  if (periodStartTimestamp <= termEndTime) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.creditLine.interestApr,
+      nextDueTime: BigNumber.from(termEndTime),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: loan.creditLine.limit,
+    });
+    repaymentScheduleData.push({
+      paymentPeriod: paymentPeriod.toString(),
+      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d"),
+      principal: loan.creditLine.limit,
+      interest: expectedInterest,
+    });
+  }
+
+  return repaymentScheduleData;
+};
+
 export function RepaymentTermsSchedule({
   loan,
   className,
@@ -37,51 +108,16 @@ export function RepaymentTermsSchedule({
     return null;
   }
 
-  const numberOfPayments = Math.floor(
-    loan.creditLine.termInDays.toNumber() /
-      loan.creditLine.paymentPeriodInDays.toNumber()
-  );
-
-  const formattedInitialInterestOwed = formatCrypto({
-    amount: loan.initialInterestOwed,
-    token: "USDC",
-  });
-
-  const instalmentAmount = formatCrypto({
-    amount: loan.initialInterestOwed.div(BigNumber.from(numberOfPayments)),
-    token: "USDC",
-  });
-
-  const formattedLimit = formatCrypto({
-    amount: loan.creditLine.limit,
-    token: "USDC",
-  });
-
-  // eslint-disable-next-line no-console
-  console.log({
-    formattedInitialInterestOwed,
-    instalmentAmount,
-    formattedLimit,
-  });
-
-  // const expctedPayments = new Array(numberOfPayments).map((_, i) => ({
-  //   paymentPeriodNumber: `${i + 1}`, estimatedPaymentDate, principal, interest;
-  // }));
+  const repaymentScheduleData = generateRepaymentScheduleData(loan);
 
   return (
     <div className={clsx(className, "rounded-xl border border-sand-300")}>
       <div className="p-6">
-        <RepaymentScheduleBarChart />
+        <RepaymentScheduleBarChart
+          repaymentScheduleData={repaymentScheduleData}
+        />
       </div>
-      <RepaymentScheduleTable />
-
-      {/* <div>
-        Interest Owed:
-        {formattedInitialInterestOwed}
-      </div>
-      <div>Payment per instalment: {instalmentAmount}</div>
-      <div>Number of payments: {numberOfPayments}</div>
-      <div className="mb-10">Principal: {formattedLimit}</div> */}
+      <RepaymentScheduleTable repaymentScheduleData={repaymentScheduleData} />
     </div>
   );
 }

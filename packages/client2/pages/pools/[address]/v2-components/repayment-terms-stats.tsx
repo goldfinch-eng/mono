@@ -90,7 +90,7 @@ export function RepaymentTermsStats({
   ];
 
   return (
-    <StatGrid className={className}>
+    <StatGrid className={className} borderColor="sand-300">
       {stats.map(({ label, value, tooltip }, i) => (
         <Stat
           key={i}

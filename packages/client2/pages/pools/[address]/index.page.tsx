@@ -94,6 +94,7 @@ gql`
         paymentPeriodInDays
         termStartTime
         nextDueTime
+        interestApr
         interestAprDecimal
         borrowerContract {
           id
