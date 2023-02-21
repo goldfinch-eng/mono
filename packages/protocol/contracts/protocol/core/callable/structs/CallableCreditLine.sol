@@ -10,6 +10,7 @@ import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {CallableLoanAccountant} from "../CallableLoanAccountant.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {Tranche} from "./Tranche.sol";
 import {Waterfall} from "./Waterfall.sol";
@@ -24,6 +25,7 @@ struct CallableCreditLine {
   uint256 _limit;
   uint256 _interestApr;
   uint256 _lateAdditionalApr;
+  uint256 _numLockupPeriods;
   // TODO: Need config properties for when call request periods rollover/lock
   uint256 _checkpointedAsOf;
   uint256 _lastFullPaymentTime;
@@ -65,6 +67,7 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     IGoldfinchConfig _config,
     uint _interestApr,
+    uint _numLockupPeriods,
     ISchedule _schedule,
     uint _lateAdditionalApr,
     uint _limit
@@ -73,6 +76,7 @@ library CallableCreditLineLogic {
     require(cl._checkpointedAsOf == 0, "NI");
     cl._config = _config;
     cl._limit = _limit;
+    cl._numLockupPeriods = _numLockupPeriods;
     cl._paymentSchedule = PaymentSchedule(_schedule, 0);
     cl._waterfall.initialize(_schedule.totalPrincipalPeriods());
     cl._interestApr = _interestApr;
@@ -477,24 +481,36 @@ library CallableCreditLineLogic {
   function activeCallSubmissionTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint activeTrancheIndex) {
-    return cl._paymentSchedule.currentPrincipalPeriod();
+    uint callSubmissionPeriod = cl._paymentSchedule.currentPeriod() + cl._numLockupPeriods;
+    uint callSubmissionPeriodEnd = cl._paymentSchedule.periodEndTime(callSubmissionPeriod) - 1;
+    return cl._paymentSchedule.principalPeriodAt(callSubmissionPeriodEnd);
   }
 
   function proportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,
     uint trancheId,
-    uint256 principal
+    uint256 principal,
+    uint feePercent
   ) internal view returns (uint, uint) {
     if (cl.loanState() == LoanState.FundingPeriod) {
-      return cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal);
+      return
+        cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
     }
+    bool uncalledTrancheAndNeedsSettling = trancheId == cl.uncalledCapitalTrancheIndex() &&
+      cl._paymentSchedule.principalPeriodAt(cl._checkpointedAsOf) <
+      cl._paymentSchedule.currentPrincipalPeriod();
+    bool callRequestTrancheAndNeedsSettling = trancheId < cl.uncalledCapitalTrancheIndex() &&
+      trancheId < cl._paymentSchedule.currentPrincipalPeriod();
+    bool needsSettling = uncalledTrancheAndNeedsSettling || callRequestTrancheAndNeedsSettling;
+
     return
-      trancheId >= cl.activeCallSubmissionTrancheIndex()
-        ? cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal)
-        : cl._waterfall.proportionalInterestAndPrincipalAvailableAfterApplyReserves(
+      needsSettling
+        ? cl._waterfall.proportionalInterestAndPrincipalAvailableAfterApplyReserves(
           trancheId,
-          principal
-        );
+          principal,
+          feePercent
+        )
+        : cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
   }
 
   /// Returns the balances of the given tranche - only settling principal if the tranche should be settled.

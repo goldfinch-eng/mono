@@ -89,6 +89,7 @@ contract CallableLoan is
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
+    uint256 _numLockupPeriods,
     ISchedule _schedule,
     uint256 _lateFeeApr,
     uint256 _fundableAt,
@@ -99,7 +100,14 @@ contract CallableLoan is
     config = IGoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
     __BaseUpgradeablePausable__init(owner);
-    _staleCreditLine.initialize(config, _interestApr, _schedule, _lateFeeApr, _limit);
+    _staleCreditLine.initialize(
+      config,
+      _interestApr,
+      _numLockupPeriods,
+      _schedule,
+      _lateFeeApr,
+      _limit
+    );
     borrower = _borrower;
     createdAt = block.timestamp;
     if (_allowedUIDTypes.length == 0) {
@@ -509,9 +517,15 @@ contract CallableLoan is
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint interestAvailable, uint principalAvailable) {
-    // TODO: this should account for redemptions being locked for some period of time after and return (0, 0)
+    uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
     (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
-      .proportionalInterestAndPrincipalAvailable(tokenInfo.tranche, tokenInfo.principalAmount);
+      .proportionalInterestAndPrincipalAvailable(
+        tokenInfo.tranche,
+        tokenInfo.principalAmount,
+        reserveFundsFeePercent
+      );
+
+    totalInterestWithdrawable = totalInterestWithdrawable - tokenInfo.interestRedeemed;
 
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,

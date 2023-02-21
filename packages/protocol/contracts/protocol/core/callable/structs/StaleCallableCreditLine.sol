@@ -25,11 +25,19 @@ library StaleCallableCreditLineLogic {
     StaleCallableCreditLine storage cl,
     IGoldfinchConfig _config,
     uint _interestApr,
+    uint _numLockupPeriods,
     ISchedule _schedule,
     uint _lateAdditionalApr,
     uint _limit
   ) internal {
-    cl._cl.initialize(_config, _interestApr, _schedule, _lateAdditionalApr, _limit);
+    cl._cl.initialize(
+      _config,
+      _interestApr,
+      _numLockupPeriods,
+      _schedule,
+      _lateAdditionalApr,
+      _limit
+    );
   }
 
   function checkpoint(
@@ -157,9 +165,10 @@ library StaleCallableCreditLineLogic {
   function proportionalInterestAndPrincipalAvailable(
     StaleCallableCreditLine storage cl,
     uint trancheId,
-    uint principal
+    uint principal,
+    uint feePercent
   ) internal view returns (uint, uint) {
-    return cl._cl.proportionalInterestAndPrincipalAvailable(trancheId, principal);
+    return cl._cl.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
   }
 
   function totalInterestAccrued(

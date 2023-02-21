@@ -136,11 +136,13 @@ library WaterfallLogic {
   function proportionalInterestAndPrincipalAvailableAfterApplyReserves(
     Waterfall storage w,
     uint256 trancheId,
-    uint256 principalDeposited
+    uint256 principalDeposited,
+    uint feePercent
   ) internal view returns (uint256, uint) {
     return
       w.getTranche(trancheId).proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
-        principalDeposited
+        principalDeposited,
+        feePercent
       );
   }
 
@@ -150,9 +152,10 @@ library WaterfallLogic {
   function proportionalInterestAndPrincipalAvailable(
     Waterfall storage w,
     uint trancheId,
-    uint256 principal
+    uint256 principal,
+    uint feePercent
   ) internal view returns (uint, uint) {
-    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal);
+    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
