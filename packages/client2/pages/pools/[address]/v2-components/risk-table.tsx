@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { ReactNode } from "react";
 
+import { Icon, Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
@@ -39,111 +40,133 @@ interface RiskTableProps {
 
 export function RiskTable({ deal, loan }: RiskTableProps) {
   return (
-    <table>
-      <tbody className="divide-y divide-sand-200">
-        {deal.securitiesAndRecourse?.value ? (
+    <div>
+      <table>
+        <tbody className="divide-y divide-sand-200">
+          {deal.securitiesAndRecourse?.value ? (
+            <RiskTableRow
+              heading="LTV ratio"
+              boldValue={new Intl.NumberFormat("en-US", {
+                style: "percent",
+              }).format(deal.securitiesAndRecourse.value)}
+              value={
+                deal.securitiesAndRecourse.value > 1
+                  ? "This deal is overcollateralized"
+                  : null
+              }
+            />
+          ) : null}
           <RiskTableRow
-            heading="LTV ratio"
-            boldValue={new Intl.NumberFormat("en-US", {
-              style: "percent",
-            }).format(deal.securitiesAndRecourse.value)}
-            value={
-              deal.securitiesAndRecourse.value > 1
-                ? "This deal is overcollateralized"
+            heading="Deal structure"
+            boldValue={
+              deal.dealType === "multitranche"
+                ? "Tranched"
+                : deal.dealType === "unitranche"
+                ? "Non-tranched"
                 : null
             }
+            value="On-chain capital for this deal comes from multiple sources"
           />
-        ) : null}
-        <RiskTableRow
-          heading="Deal structure"
-          boldValue={
-            deal.dealType === "multitranche"
-              ? "Tranched"
-              : deal.dealType === "unitranche"
-              ? "Non-tranched"
-              : null
-          }
-          value="On-chain capital for this deal comes from multiple sources"
-        />
-        {loan.__typename === "TranchedPool" && loan.estimatedLeverageRatio ? (
-          <RiskTableRow
-            heading="Leverage ratio"
-            boldValue={`${new Intl.NumberFormat("en-US", {
-              maximumFractionDigits: 1,
-            }).format(loan.estimatedLeverageRatio.toUnsafeFloat())}:1`}
-            value={
-              <div>
+          {loan.__typename === "TranchedPool" && loan.estimatedLeverageRatio ? (
+            <RiskTableRow
+              heading="Leverage ratio"
+              boldValue={`${new Intl.NumberFormat("en-US", {
+                maximumFractionDigits: 1,
+              }).format(loan.estimatedLeverageRatio.toUnsafeFloat())}:1`}
+              value={
                 <div>
-                  The ratio of capital supplied from each on-chain source:
+                  <div>
+                    The ratio of capital supplied from each on-chain source:
+                  </div>
+                  <ul className="list-disc pl-5">
+                    <li>
+                      Senior Pool (
+                      {formatPercent(
+                        1 -
+                          1 / (loan.estimatedLeverageRatio.toUnsafeFloat() + 1)
+                      )}
+                      )
+                    </li>
+                    <li>
+                      Direct funding (
+                      {formatPercent(
+                        1 / (loan.estimatedLeverageRatio.toUnsafeFloat() + 1)
+                      )}
+                      )
+                    </li>
+                  </ul>
                 </div>
-                <ul className="list-disc pl-5">
-                  <li>
-                    Senior Pool (
-                    {formatPercent(
-                      1 - 1 / (loan.estimatedLeverageRatio.toUnsafeFloat() + 1)
-                    )}
-                    )
-                  </li>
-                  <li>
-                    Direct funding (
-                    {formatPercent(
-                      1 / (loan.estimatedLeverageRatio.toUnsafeFloat() + 1)
-                    )}
-                    )
-                  </li>
-                </ul>
-              </div>
-            }
-          />
-        ) : null}
-        <RiskTableRow
-          heading="On-chain capital priority"
-          boldValue="Junior"
-          value="First-loss capital"
-        />
-        <RiskTableRow
-          heading="Off-chain capital priority"
-          boldValue="Senior"
-          value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
-        />
-        {deal.securitiesAndRecourse &&
-        deal.securitiesAndRecourse.secured !== null ? (
+              }
+            />
+          ) : null}
           <RiskTableRow
-            heading="Securitization"
-            boldValue={
-              deal.securitiesAndRecourse.secured
-                ? `Yes${
-                    deal.securitiesAndRecourse.type
-                      ? ` (${deal.securitiesAndRecourse.type})`
-                      : ""
-                  }`
-                : "No"
-            }
-            value={
-              <RichText content={deal.securitiesAndRecourse.description} />
-            }
+            heading="On-chain capital priority"
+            boldValue="Junior"
+            value="First-loss capital"
           />
-        ) : null}
-        {deal.securitiesAndRecourse &&
-        deal.securitiesAndRecourse.recourse !== null ? (
           <RiskTableRow
-            heading="Recourse to borrower"
-            boldValue={deal.securitiesAndRecourse.recourse ? "Yes" : "No"}
-            value={
-              <RichText
-                content={deal.securitiesAndRecourse.recourseDescription}
-              />
-            }
+            heading="Off-chain capital priority"
+            boldValue="Senior"
+            value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
           />
-        ) : null}
-        {deal.securitiesAndRecourse && deal.securitiesAndRecourse.covenants ? (
-          <RiskTableRow
-            heading="Covenants"
-            value={<RichText content={deal.securitiesAndRecourse.covenants} />}
-          />
-        ) : null}
-      </tbody>
-    </table>
+          {deal.securitiesAndRecourse &&
+          deal.securitiesAndRecourse.secured !== null ? (
+            <RiskTableRow
+              heading="Securitization"
+              boldValue={
+                deal.securitiesAndRecourse.secured
+                  ? `Yes${
+                      deal.securitiesAndRecourse.type
+                        ? ` (${deal.securitiesAndRecourse.type})`
+                        : ""
+                    }`
+                  : "No"
+              }
+              value={
+                <RichText content={deal.securitiesAndRecourse.description} />
+              }
+            />
+          ) : null}
+          {deal.securitiesAndRecourse &&
+          deal.securitiesAndRecourse.recourse !== null ? (
+            <RiskTableRow
+              heading="Recourse to borrower"
+              boldValue={deal.securitiesAndRecourse.recourse ? "Yes" : "No"}
+              value={
+                <RichText
+                  content={deal.securitiesAndRecourse.recourseDescription}
+                />
+              }
+            />
+          ) : null}
+          {deal.securitiesAndRecourse &&
+          deal.securitiesAndRecourse.covenants ? (
+            <RiskTableRow
+              heading="Covenants"
+              value={
+                <RichText content={deal.securitiesAndRecourse.covenants} />
+              }
+            />
+          ) : null}
+        </tbody>
+      </table>
+      <div className="flex justify-between gap-2 rounded-lg bg-mustard-200 p-3 text-xs text-mustard-800">
+        <div className="flex items-center gap-2">
+          <Icon name="DollarSolid" className="text-mustard-500" size="sm" />
+          <div>
+            Investors depositing <span className="font-medium">$250,000+</span>{" "}
+            should get in touch for additional information
+          </div>
+        </div>
+        <Link
+          href="mailto:hi@goldfinch.finance"
+          iconRight="ArrowTopRight"
+          className="whitespace-nowrap"
+        >
+          Learn more
+        </Link>
+      </div>
+    </div>
   );
 }
 

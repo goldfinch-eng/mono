@@ -16,6 +16,7 @@ import ChevronDown from "./svg/chevron-down.svg";
 import Clock from "./svg/clock.svg";
 import Copy from "./svg/copy.svg";
 import Discord from "./svg/discord.svg";
+import DollarSolid from "./svg/dollar-solid.svg";
 import DotsHorizontal from "./svg/dots-horizontal.svg";
 import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
@@ -46,6 +47,7 @@ export const iconManifest = {
   Copy,
   Curve,
   Discord,
+  DollarSolid,
   DotsHorizontal,
   Exclamation,
   ExclamationCircleSolid,
