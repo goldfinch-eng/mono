@@ -3,15 +3,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {BaseTest} from "../../core/BaseTest.t.sol";
 
 contract AccountantBaseTest is BaseTest {
-  uint constant MAX_BALANCE = 100_000_000e6;
-  uint constant MIN_BALANCE = 1;
-  uint constant MAX_INTEREST = 100_000_000_000e6;
+  uint private constant MAX_BALANCE = 100_000_000e6;
+  uint private constant MIN_BALANCE = 1;
+  uint private constant MAX_INTEREST = 100_000_000_000e6;
 
   struct Params {
     uint principalPayment;

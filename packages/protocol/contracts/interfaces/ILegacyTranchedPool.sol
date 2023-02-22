@@ -6,6 +6,9 @@ pragma experimental ABIEncoderV2;
 import {ILegacyCreditLine} from "./ILegacyCreditLine.sol";
 import {ISchedule} from "./ISchedule.sol";
 
+/**
+ * @notice Kept around so the frontend still has the ABI for the old TranchedPool
+ */
 abstract contract ILegacyTranchedPool {
   ILegacyCreditLine public creditLine;
   uint256 public createdAt;

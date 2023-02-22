@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
@@ -212,9 +213,6 @@ contract ConcreteScheduleTest is Test {
       uint256 periodEndTime = nextExpectation.startTime - 1;
       uint256 periodDuration = periodEndTime - periodStartTime;
       uint256 periodMidPoint = periodStartTime + periodDuration / 2;
-      console2.log("P", period);
-      console2.log("C", expectation.startTime);
-      console2.log("N", nextExpectation.startTime);
 
       assertEq(s.periodAt(startTime, periodStartTime), expectation.period, "SP");
       assertEq(s.periodAt(startTime, periodMidPoint), expectation.period, "MP");

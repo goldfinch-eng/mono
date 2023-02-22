@@ -3,8 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "forge-std/InvariantTest.sol";
-import "forge-std/Test.sol";
+import {InvariantTest} from "forge-std/InvariantTest.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 

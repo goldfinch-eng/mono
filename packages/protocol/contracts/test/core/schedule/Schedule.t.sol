@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
@@ -11,13 +12,13 @@ import {ISchedule} from "../../../interfaces/ISchedule.sol";
 contract ScheduleTest is Test {
   IPeriodMapper internal m = new MonthlyPeriodMapper();
   Schedule internal s;
-  uint256 internal constant startTime = 2051222400;
+  uint256 internal constant START_TIME = 2051222400;
 
   function testTermEndTimeGtTermStartTime(ScheduleParams memory p) public initWithValidParams(p) {
-    uint256 termStartTime = s.termStartTime(startTime);
-    uint256 termEndTime = s.termEndTime(startTime);
+    uint256 termStartTime = s.termStartTime(START_TIME);
+    uint256 termEndTime = s.termEndTime(START_TIME);
 
-    assertGe(termStartTime, startTime, "startTime > termStartTime");
+    assertGe(termStartTime, START_TIME, "startTime > termStartTime");
     assertGt(termEndTime, termStartTime, "termEndTime < termStartTime");
   }
 
@@ -25,28 +26,28 @@ contract ScheduleTest is Test {
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertGe(s.nextDueTimeAt(startTime, t), s.termStartTime(startTime));
+    assertGe(s.nextDueTimeAt(START_TIME, t), s.termStartTime(START_TIME));
   }
 
   function testNextDueTimeLeTermEnd(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertLe(s.nextDueTimeAt(startTime, t), s.termEndTime(startTime));
+    assertLe(s.nextDueTimeAt(START_TIME, t), s.termEndTime(START_TIME));
   }
 
   function testPreviousDueTimeLeTermEnd(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertLe(s.previousDueTimeAt(startTime, t), s.termEndTime(startTime));
+    assertLe(s.previousDueTimeAt(START_TIME, t), s.termEndTime(START_TIME));
   }
 
   function testPeriodAtLePeriodsInTerm(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertLe(s.periodAt(startTime, t), s.periodsInTerm());
+    assertLe(s.periodAt(START_TIME, t), s.periodsInTerm());
   }
 
   function testTotalPrincipalPeriodsGe1(ScheduleParams memory p) public initWithValidParams(p) {
@@ -61,45 +62,45 @@ contract ScheduleTest is Test {
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertLe(s.interestPeriodAt(startTime, t), s.totalInterestPeriods());
+    assertLe(s.interestPeriodAt(START_TIME, t), s.totalInterestPeriods());
   }
 
   function testPrincipalPeriodAtLeTotalPrincipalPeriods(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    assertLe(s.principalPeriodAt(startTime, t), s.totalPrincipalPeriods());
+    assertLe(s.principalPeriodAt(START_TIME, t), s.totalPrincipalPeriods());
   }
 
   function testNextDueTimeAtGtNowBeforeTermEnd(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    uint256 termEndTime = s.termEndTime(startTime);
+    uint256 termEndTime = s.termEndTime(START_TIME);
     t = bound(t, 0, termEndTime - 1);
 
-    assertGe(s.nextDueTimeAt(startTime, t), t);
+    assertGe(s.nextDueTimeAt(START_TIME, t), t);
   }
 
   function tesPreviousPrincipalDueTimeGtNowBeforeTermEnd(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    uint256 termEndTime = s.termEndTime(startTime);
-    vm.assume(t > s.termStartTime(startTime));
+    uint256 termEndTime = s.termEndTime(START_TIME);
+    vm.assume(t > s.termStartTime(START_TIME));
     vm.assume(t < termEndTime);
 
-    assertLe(s.previousPrincipalDueTimeAt(startTime, t), t);
+    assertLe(s.previousPrincipalDueTimeAt(START_TIME, t), t);
   }
 
   function testNextDueTimeEqTermEndAfterTermEnd(
     ScheduleParams memory p,
     uint256 t
   ) public initWithValidParams(p) {
-    uint256 termEndTime = s.termEndTime(startTime);
+    uint256 termEndTime = s.termEndTime(START_TIME);
     t = bound(t, termEndTime + 1, type(uint256).max);
 
-    assertEq(s.nextDueTimeAt(startTime, t), termEndTime);
+    assertEq(s.nextDueTimeAt(START_TIME, t), termEndTime);
   }
 
   modifier initWithValidParams(ScheduleParams memory p) {

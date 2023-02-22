@@ -59,7 +59,7 @@ library SafeMath {
     return OzSafeMath.sub(a, b, errorMessage);
   }
 
-  /// @notice Do a - b but if that would result in overflow then just return 0
+  /// @notice Do a - b. If that would result in overflow then return 0
   function saturatingSub(uint256 a, uint256 b) internal pure returns (uint256) {
     return b > a ? 0 : a - b;
   }

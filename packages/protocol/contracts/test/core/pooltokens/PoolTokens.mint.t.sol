@@ -80,7 +80,7 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
   }
 
   function testUsesCurrentAccRewardsPerPrincipalDollarAtMintOnSecondDrawdown() public {
-    // For this test use a tp that has a non-zero principalGrace period, so we can initialize the next slice
+    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
     (tp, cl) = tpWithSchedule(12, 1, 6, 1);
     fundAddress(address(this), usdcVal(2_000_000));
     usdc.approve(address(tp), uint256(-1));

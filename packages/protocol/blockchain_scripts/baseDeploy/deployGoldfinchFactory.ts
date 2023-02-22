@@ -2,7 +2,7 @@ import {GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {getNamedAccounts} from "hardhat"
 import {CONFIG_KEYS} from "../configKeys"
-import {ContractDeployer, getProtocolOwner, isTestEnv, updateConfig} from "../deployHelpers"
+import {ContractDeployer, getProtocolOwner, updateConfig} from "../deployHelpers"
 import {DeployOpts} from "../types"
 
 const logger = console.log

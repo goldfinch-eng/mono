@@ -143,6 +143,9 @@ contract GoldfinchFactoryTest is BaseTest {
     gfFactory.grantRole(TestConstants.BORROWER_ROLE, newBorrower);
   }
 
+  /**
+   * @notice Create a standard 1 yr bullet loan with a monthly period mapper
+   */
   function defaultSchedule() public returns (ISchedule) {
     return
       createMonthlySchedule({
@@ -153,6 +156,9 @@ contract GoldfinchFactoryTest is BaseTest {
       });
   }
 
+  /**
+   * @notice Create an arbitrary schedule with a monthly period mapper
+   */
   function createMonthlySchedule(
     uint periodsInTerm,
     uint periodsPerPrincipalPeriod,

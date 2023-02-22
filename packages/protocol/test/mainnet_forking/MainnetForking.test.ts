@@ -55,7 +55,6 @@ import {
   protocolFee,
   usdcFromShares,
   getCurrentTimestamp,
-  getDefaultMonthlySchedule,
   getTruffleContractAtAddress,
   SECONDS_PER_DAY,
   getMonthlySchedule,
