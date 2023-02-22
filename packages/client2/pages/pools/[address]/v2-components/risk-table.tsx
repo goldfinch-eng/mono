@@ -15,6 +15,8 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
       secured
       type
       description
+      recourse
+      recourseDescription
     }
     dealType
   }
@@ -118,6 +120,18 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             }
             value={
               <RichText content={deal.securitiesAndRecourse.description} />
+            }
+          />
+        ) : null}
+        {deal.securitiesAndRecourse &&
+        deal.securitiesAndRecourse.recourse !== null ? (
+          <RiskTableRow
+            heading="Recourse to borrower"
+            boldValue={deal.securitiesAndRecourse.recourse ? "Yes" : "No"}
+            value={
+              <RichText
+                content={deal.securitiesAndRecourse.recourseDescription}
+              />
             }
           />
         ) : null}
