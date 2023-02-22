@@ -41,7 +41,6 @@ import {
   getFirstLog,
   toEthers,
   mineInSameBlock,
-  mineBlock,
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
@@ -526,18 +525,17 @@ describe("mainnet forking tests", async function () {
       }
 
       // Verify claim sends udsc to all the right places
-      for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        const request = withdrawalRequestsByEpoch[3][i]
+      for (let requestId = 0; requestId < stakedFiduHolders.length; ++requestId) {
+        const request = withdrawalRequestsByEpoch[3][requestId]
         const userUsdc = amountLessProtocolFee(new BN(request.usdcWithdrawable))
         const reserveUsdc = protocolFee(new BN(request.usdcWithdrawable))
 
-        const tokenId = requestIds[i]!
         await expectAction(() =>
           seniorPool.claimWithdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1, {
             from: stakedFiduHolders[requestId]!.address,
           })
         ).toChange([
-          [() => usdc.balanceOf(stakedFiduHolders[i]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
+          [() => usdc.balanceOf(stakedFiduHolders[requestId]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
           [() => usdc.balanceOf(reserveAddress), {by: reserveUsdc}],
           [
             () => usdc.balanceOf(seniorPool.address),
@@ -554,7 +552,7 @@ describe("mainnet forking tests", async function () {
       }
     })
 
-    it("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
+    it("takes cancellation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
       const {address: stakedFiduHolder, stakingRewardsTokenId} = stakedFiduHolders[1]!
       await impersonateAccount(hre, stakedFiduHolder)
       await stakingRewards.unstake(stakingRewardsTokenId, fiduVal(10_000), {from: stakedFiduHolder})
@@ -569,8 +567,8 @@ describe("mainnet forking tests", async function () {
 
       const totalSupply = await requestTokens._tokenIdTracker()
 
-      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: fiduHolder.address})).toChange([
-        [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
+      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: stakedFiduHolder})).toChange([
+        [() => fidu.balanceOf(stakedFiduHolder), {by: expectedFiduReturnedToUser}],
         [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
       ])
