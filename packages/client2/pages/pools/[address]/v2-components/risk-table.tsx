@@ -119,6 +119,17 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               </div>
             }
           />
+          {deal.agreement ? (
+            <RiskTableRow
+              heading="Legal recourse"
+              boldValue={
+                <Link href={deal.agreement} openInNewTab>
+                  Loan agreement
+                </Link>
+              }
+              value="Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain"
+            />
+          ) : null}
           {deal.securitiesAndRecourse &&
           deal.securitiesAndRecourse.secured !== null ? (
             <RiskTableRow
