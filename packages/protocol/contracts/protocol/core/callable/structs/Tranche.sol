@@ -75,7 +75,7 @@ library TrancheLogic {
     principalPaid = (t._principalPaid * principal) / t._principalDeposited;
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principal;
-    t._principalReserved -= principal;
+    t._principalReserved -= principalReserved;
     t._principalPaid -= principalPaid;
   }
 

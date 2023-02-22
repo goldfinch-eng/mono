@@ -22,6 +22,7 @@ using PaymentScheduleLogic for PaymentSchedule;
 using CallableLoanConfigHelper for IGoldfinchConfig;
 
 contract TestCallableCreditLine is BaseTest {
+  uint256 internal constant HUNDREDTH_CENT = 1e6 / 10000;
   uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_ADDITIONAL_APR = 1 * 1e16;
@@ -106,16 +107,26 @@ contract TestCallableCreditLine is BaseTest {
     principal = boundUint128(principal, 0, depositAmount - interest);
     CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     vm.warp(cpcl.termStartTime() + config.getDrawdownPeriodInSeconds() + 1);
-    cpcl.pay(uint256(interest), uint256(principal));
+    cpcl.pay({principalPayment: uint256(principal), interestPayment: uint256(interest)});
 
-    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
-    assertEq(cpcl.totalPrincipalPaid(), 0);
-    assertEq(cpcl.totalPrincipalOutstanding(), depositAmount - principal);
-
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount, "principal deposited");
+    // Principal should be reserved not paid yet
+    assertEq(cpcl.totalPrincipalPaid(), 0, "principal paid");
+    assertEq(cpcl.totalPrincipalOutstanding(), depositAmount - principal, "principal outstanding");
     assertEq(cpcl.totalInterestPaid(), interest, "interest paid");
+
+    vm.warp(cpcl.nextPrincipalDueTime());
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount, "principal deposited  after settling");
+    // Principal should be now paid
+    assertEq(
+      cpcl.totalPrincipalOutstanding(),
+      depositAmount - principal,
+      "principal outstanding  after settling"
+    );
+    assertEq(cpcl.totalInterestPaid(), interest, "interest paid  after settling");
   }
 
-  function testCall(uint128 depositAmount, uint128 calledAmount) public {
+  function testSubmitCall(uint128 depositAmount, uint128 calledAmount) public {
     depositAmount = boundUint128(depositAmount, 1, type(uint128).max);
     calledAmount = boundUint128(calledAmount, 1, depositAmount);
     setupFullyFundedAndDrawndown(depositAmount);

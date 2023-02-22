@@ -241,7 +241,7 @@ library CallableCreditLineLogic {
   }
 
   function totalPrincipalPaid(CallableCreditLine storage cl) internal view returns (uint) {
-    return cl._waterfall.totalPrincipalPaid();
+    return cl.totalPrincipalPaidAt(block.timestamp);
   }
 
   function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint) {
@@ -382,6 +382,11 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint timestamp
   ) internal view returns (uint) {
+    uint alreadyPaidPrincipal = cl._waterfall.totalPrincipalPaid();
+    if (!cl.isActive()) {
+      return alreadyPaidPrincipal;
+    }
+
     uint activeCallRequestPeriodAtTimestamp = cl._paymentSchedule.principalPeriodAt(timestamp);
     uint activeCallRequestPeriodAtCheckpoint = cl._paymentSchedule.principalPeriodAt(
       cl._checkpointedAsOf
@@ -407,7 +412,6 @@ library CallableCreditLineLogic {
         .principalReserved();
     }
 
-    uint alreadyPaidPrincipal = cl._waterfall.totalPrincipalPaid();
     return alreadyPaidPrincipal + reservedPrincipalWhichWillSettle;
   }
 
