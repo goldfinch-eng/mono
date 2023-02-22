@@ -22,6 +22,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
     }
     dealType
     agreement
+    dataroom
   }
 `;
 
@@ -166,6 +167,21 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               heading="Covenants"
               value={
                 <RichText content={deal.securitiesAndRecourse.covenants} />
+              }
+            />
+          ) : null}
+          {deal.dataroom ? (
+            <RiskTableRow
+              heading="Due diligence"
+              value={
+                <div>
+                  Additional due diligence information can be viewed in the{" "}
+                  <Link href={deal.dataroom} openInNewTab>
+                    data room
+                  </Link>{" "}
+                  or by contacting the borrower directly using a KYC-gated
+                  Discord channel
+                </div>
               }
             />
           ) : null}
