@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { ReactNode } from "react";
 
+import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
   RiskTableDealFieldsFragment,
@@ -102,6 +103,24 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           boldValue="Senior"
           value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
         />
+        {deal.securitiesAndRecourse &&
+        deal.securitiesAndRecourse.secured !== null ? (
+          <RiskTableRow
+            heading="Securitization"
+            boldValue={
+              deal.securitiesAndRecourse.secured
+                ? `Yes${
+                    deal.securitiesAndRecourse.type
+                      ? ` (${deal.securitiesAndRecourse.type})`
+                      : ""
+                  }`
+                : "No"
+            }
+            value={
+              <RichText content={deal.securitiesAndRecourse.description} />
+            }
+          />
+        ) : null}
       </tbody>
     </table>
   );
