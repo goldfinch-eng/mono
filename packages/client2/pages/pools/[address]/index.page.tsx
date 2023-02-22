@@ -57,6 +57,7 @@ import {
   LOAN_SUMMARY_BORROWER_FIELDS,
   LOAN_SUMMARY_TRANCHED_POOL_FIELDS,
 } from "./v2-components/loan-summary";
+import { RiskTable, RISK_TABLE_DEAL_FIELDS } from "./v2-components/risk-table";
 
 gql`
   ${LOAN_SUMMARY_TRANCHED_POOL_FIELDS}
@@ -131,6 +132,7 @@ const singleDealQuery = gql`
   ${LOAN_SUMMARY_BORROWER_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
   ${HIGHLIGHT_GRID_FIELDS}
+  ${RISK_TABLE_DEAL_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -163,6 +165,7 @@ const singleDealQuery = gql`
         ...CreditMemoFields
       }
       ...SupplyPanelDealFields
+      ...RiskTableDealFields
     }
   }
 `;
@@ -321,7 +324,9 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Risk",
                 title: "Risk mitigation",
-                content: <div className="h-96" />,
+                subtitle:
+                  "Information on deal structure, collateral used to secure this loan, and options in the case of a default on repayment by the borrower",
+                content: <RiskTable deal={dealDetails} />,
               },
             ]}
             navAddons={
