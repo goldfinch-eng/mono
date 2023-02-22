@@ -28,15 +28,12 @@ export async function deployClImplementation(
   assertIsString(gf_deployer)
   const accountant = await deployer.deployLibrary("Accountant", {from: gf_deployer, args: []})
 
-  // Deploy all impls
   const contractName = getClContractName()
   const clDeployResult = await deployer.deploy(contractName, {
     from: gf_deployer,
     libraries: {["Accountant"]: accountant.address},
   })
 
-  // The config will point to v0.1.0. If you'd like to run tests on different versions than
-  // you can change this in your test setup
   if (deployEffects !== undefined) {
     await deployEffects.add({
       deferred: [await config.populateTransaction.setCreditLineImplementation(clDeployResult.address)],

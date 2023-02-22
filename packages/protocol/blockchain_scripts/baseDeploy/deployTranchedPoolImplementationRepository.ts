@@ -15,7 +15,7 @@ export async function deployTranchedPoolImplementationRepository(
   assertIsString(gf_deployer)
   const protocolOwner = await getProtocolOwner()
 
-  const tranchedPoolImpl = await deployTranchedPool(deployer, {config, deployEffects})
+  const tranchedPoolImpl = await deployTranchedPool(deployer)
 
   const contractName = "TranchedPoolImplementationRepository"
   logger(`About to deploy ${contractName}...`)

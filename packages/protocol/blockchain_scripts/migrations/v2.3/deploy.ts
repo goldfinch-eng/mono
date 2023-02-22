@@ -25,7 +25,7 @@ export async function deploy(deployEffects: DeployEffects) {
 
   // 2.
   // Deploy TranchedPool & set TranchedPoolImplementation
-  const tranchedPool = await deployTranchedPool(deployer, {config: existingConfig, deployEffects})
+  const tranchedPool = await deployTranchedPool(deployer)
 
   // 4.
   // Deploy CreditLine & set CreditLineImplementation
