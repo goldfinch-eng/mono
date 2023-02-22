@@ -64,7 +64,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
-    vm.expectRevert(bytes("ILS"));
+    vm.expectRevert(bytes("IS"));
     callableLoan.deposit(3, usdcVal(100));
   }
 

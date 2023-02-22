@@ -25,7 +25,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     depositAndDrawdown(callableLoan, limit);
 
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     pay(
       callableLoan,
       cl.principalOwed() +
@@ -80,7 +80,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {
@@ -104,7 +104,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     uid._mintForTest(GF_OWNER, 1, 1, "");
     depositAndDrawdown(callableLoan, limit);
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
 
     // Advance to the last payment period and pay back interes
     for (uint i = 0; i < 11; ++i) {

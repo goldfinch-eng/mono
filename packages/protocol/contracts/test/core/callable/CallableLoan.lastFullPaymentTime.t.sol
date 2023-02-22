@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 

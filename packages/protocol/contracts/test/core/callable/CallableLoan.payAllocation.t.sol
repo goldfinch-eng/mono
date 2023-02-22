@@ -24,7 +24,7 @@ contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
@@ -57,7 +57,7 @@ contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
@@ -82,7 +82,7 @@ contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
 
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
