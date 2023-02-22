@@ -21,6 +21,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
       covenants
     }
     dealType
+    agreement
   }
 `;
 
@@ -108,6 +109,15 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             heading="Off-chain capital priority"
             boldValue="Senior"
             value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
+          />
+          <RiskTableRow
+            heading="Post-close reporting"
+            value={
+              <div>
+                Investors can access borrower-related updated via
+                investment-gated Discord Channel
+              </div>
+            }
           />
           {deal.securitiesAndRecourse &&
           deal.securitiesAndRecourse.secured !== null ? (
