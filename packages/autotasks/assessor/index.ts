@@ -14,7 +14,7 @@ const CONFIG = {
     usdcAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     etherscanApi: "https://api.etherscan.io/api",
   },
-}
+} as const
 
 // Entrypoint for the Autotask
 exports.handler = baseHandler("assessor", async function (credentials) {
@@ -26,7 +26,7 @@ exports.handler = baseHandler("assessor", async function (credentials) {
   const relayerInfo = await relayer.getRelayer()
   console.log(`Assessing using ${relayerInfo.name} on ${relayerInfo.network} `)
 
-  const config = CONFIG[relayerInfo.network]
+  const config: typeof CONFIG.mainnet = CONFIG[relayerInfo.network]
   if (!config) {
     throw new Error(`Unsupported network: ${relayerInfo.network}`)
   }
@@ -40,7 +40,7 @@ exports.handler = baseHandler("assessor", async function (credentials) {
   const seniorPoolAbi = await getAbifor(config.etherscanApi, config.seniorPoolAddress, provider, etherscanApiKey)
   const seniorPool = new ethers.Contract(config.seniorPoolAddress, seniorPoolAbi, signer) as SeniorPool
   const usdcAbi = await getAbifor(config.etherscanApi, config.usdcAddress, provider, etherscanApiKey)
-  const usdc = new ethers.Contract(config.usdc, usdcAbi, signer) as ERC20
+  const usdc = new ethers.Contract(config.usdcAddress, usdcAbi, signer) as ERC20
 
   const filter = asNonNullable(factory.filters.PoolCreated)
   const result = await factory.queryFilter(filter(null, null))
