@@ -1,3 +1,5 @@
+import clsx from "clsx";
+import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -12,8 +14,17 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { pathname } = useRouter();
+  const isMustardBackgroundColor =
+    pathname === "/earn" ||
+    (pathname.startsWith("/pools") && !(pathname === "/pools/senior"));
   return (
-    <div className="flex min-h-full flex-col bg-mustard-50">
+    <div
+      className={clsx(
+        "flex min-h-full flex-col",
+        isMustardBackgroundColor ? "bg-mustard-50" : "bg-white"
+      )}
+    >
       <Nav />
       <div className="relative flex-grow">
         <div id={bannerId} />
