@@ -18,7 +18,7 @@ import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 
-interface RepaymentScheduleBarChartLegendProps {
+interface RepaymentScheduleBarChartProps {
   className?: string;
   repaymentScheduleData: RepaymentScheduleData[];
 }
@@ -42,7 +42,7 @@ const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
 const RepaymentScheduleBarChart = ({
   className,
   repaymentScheduleData,
-}: RepaymentScheduleBarChartLegendProps) => {
+}: RepaymentScheduleBarChartProps) => {
   const repaymentScheduleDataFloat = repaymentScheduleData.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),

@@ -47,7 +47,6 @@ const generateRepaymentScheduleData = (
   const termStartTime = loan.creditLine.termStartTime.toNumber();
   const termEndTime = loan.creditLine.termEndTime.toNumber();
 
-  // TODO: Why do some old Repaid pools have `"paymentPeriodInDays": "365"`...?
   // Number of seconds in 'paymentPeriodInDays'
   const paymentPeriodInSeconds =
     loan.creditLine.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
