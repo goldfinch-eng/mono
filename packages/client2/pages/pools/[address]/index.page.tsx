@@ -326,7 +326,12 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 title: "Risk mitigation",
                 subtitle:
                   "Information on deal structure, collateral used to secure this loan, and options in the case of a default on repayment by the borrower",
-                content: <RiskTable deal={dealDetails} />,
+                content:
+                  dealDetails && tranchedPool ? (
+                    <RiskTable deal={dealDetails} loan={tranchedPool} />
+                  ) : (
+                    <div className="h-96" />
+                  ),
               },
             ]}
             navAddons={
