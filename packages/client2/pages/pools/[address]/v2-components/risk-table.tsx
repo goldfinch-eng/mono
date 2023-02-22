@@ -17,6 +17,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
       description
       recourse
       recourseDescription
+      covenants
     }
     dealType
   }
@@ -133,6 +134,12 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
                 content={deal.securitiesAndRecourse.recourseDescription}
               />
             }
+          />
+        ) : null}
+        {deal.securitiesAndRecourse && deal.securitiesAndRecourse.covenants ? (
+          <RiskTableRow
+            heading="Covenants"
+            value={<RichText content={deal.securitiesAndRecourse.covenants} />}
           />
         ) : null}
       </tbody>
