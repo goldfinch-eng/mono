@@ -502,7 +502,7 @@ export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddres
 }
 
 const getDefaultMonthlySchedule = async (goldfinchConfig: GoldfinchConfigInstance) => {
-  return getMonthlySchedule(goldfinchConfig, "12", "12", "1", "0")
+  return getMonthlySchedule(goldfinchConfig, "12", "1", "12", "0")
 }
 
 const getMonthlySchedule = async (
@@ -575,32 +575,17 @@ const createPoolWithCreditLine = async ({
   const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
   const scheduleAddress = await getDefaultMonthlySchedule(goldfinchConfig)
 
-  let result: $TSFixMe
-  if (isMainnetForking()) {
-    result = await goldfinchFactory.createPool(
-      thisBorrower,
-      juniorFeePercent,
-      limit,
-      interestApr,
-      scheduleAddress,
-      lateFeeApr,
-      fundableAt,
-      allowedUIDTypes,
-      {from: thisOwner}
-    )
-  } else {
-    result = await goldfinchFactory.createPool(
-      thisBorrower,
-      juniorFeePercent,
-      limit,
-      interestApr,
-      scheduleAddress,
-      lateFeeApr,
-      fundableAt,
-      allowedUIDTypes,
-      {from: thisOwner}
-    )
-  }
+  const result = await goldfinchFactory.createPool(
+    thisBorrower,
+    juniorFeePercent,
+    limit,
+    interestApr,
+    scheduleAddress,
+    lateFeeApr,
+    fundableAt,
+    allowedUIDTypes,
+    {from: thisOwner}
+  )
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)

@@ -1176,8 +1176,6 @@ describe("mainnet forking tests", async function () {
       const interestOwed = await creditLine.interestOwedAt(`${(await getCurrentTimestamp()).add(new BN(1))}`)
       const totalOwed = principalOwed.add(interestOwed)
 
-      console.log("ts")
-      console.log(`totalOwed at ${await getCurrentTimestamp()} is ${totalOwed}`)
       const paymentTx = await tranchedPool["pay(uint256)"](totalOwed)
 
       const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
@@ -1234,8 +1232,6 @@ describe("mainnet forking tests", async function () {
       const thirtyDaysAfterTermEndTime = termEndTime.add("2592000") // 30 days in seconds
       await advanceAndMineBlock({toSecond: thirtyDaysAfterTermEndTime.toString()})
       // Going to fully repay tranched pool
-      console.log("")
-      console.log("PAY AFTER TERM END TIME")
       const paymentTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
 
       const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerStakingRewardsForToken(
