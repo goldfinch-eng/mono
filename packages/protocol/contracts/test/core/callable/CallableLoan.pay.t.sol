@@ -28,7 +28,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400000));
 
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 
@@ -67,14 +67,14 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
 
     fundAddress(address(this), usdcVal(1));
     usdc.approve(address(callableLoan), usdcVal(1));
-    vm.expectRevert(bytes("ILS"));
+    vm.expectRevert(bytes("IS"));
     callableLoan.pay(usdcVal(1));
   }
 
   function testAcceptsPayment(uint256 amount, uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400000));
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(timestamp);
 

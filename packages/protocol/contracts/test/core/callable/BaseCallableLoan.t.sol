@@ -41,6 +41,7 @@ contract CallableLoanBaseTest is BaseTest {
   uint256 internal constant DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS = 7 days;
   uint256 internal constant HALF_CENT = 1e6 / 200;
   uint256 internal constant HUNDREDTH_CENT = 1e6 / 10000;
+  uint256 internal constant DEFAULT_RESERVE_FEE_DENOMINATOR = 10;
 
   IGoldfinchConfig internal gfConfig;
   IGoldfinchFactory internal gfFactory;
@@ -151,7 +152,10 @@ contract CallableLoanBaseTest is BaseTest {
     require(grantRoleSuccess, "Failed to grant role to callableLoanBuilder");
 
     // Other config numbers
-    gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 0.1%
+    gfConfig.setNumber(
+      uint256(ConfigOptions.Numbers.ReserveDenominator),
+      DEFAULT_RESERVE_FEE_DENOMINATOR
+    ); // 10%
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds),
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
@@ -192,10 +196,23 @@ contract CallableLoanBaseTest is BaseTest {
       .build(BORROWER);
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
+    ISchedule schedule = callableLoan.schedule();
+    fuzzHelper.exclude(address(schedule));
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays),
       lateFeeGracePeriodInDays
     );
+    return (callableLoan, cl);
+  }
+
+  function callableLoanWithLimit(uint256 amount) internal returns (CallableLoan, ICreditLine) {
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.withLimit(amount).build(
+      BORROWER
+    );
+    fuzzHelper.exclude(address(callableLoan));
+    fuzzHelper.exclude(address(cl));
+    ISchedule schedule = callableLoan.schedule();
+    fuzzHelper.exclude(address(schedule));
     return (callableLoan, cl);
   }
 
@@ -361,7 +378,7 @@ contract CallableLoanBaseTest is BaseTest {
     return owedAndAccruedInterest + futureInterestPayable;
   }
 
-  function goToAfterDrawdownPeriod(CallableLoan callableLoan) internal {
+  function warpToAfterDrawdownPeriod(CallableLoan callableLoan) internal {
     vm.warp(callableLoan.termStartTime() + gfConfig.getDrawdownPeriodInSeconds() + 1);
   }
 }

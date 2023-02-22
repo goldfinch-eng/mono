@@ -23,7 +23,7 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo} from "./structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo, LoanState} from "./structs/CallableCreditLine.sol";
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
@@ -125,6 +125,13 @@ contract CallableLoan is
   /*================================================================================
   Main Public/External Write functions
   ================================================================================*/
+  /// @inheritdoc ICallableLoan
+  /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
+  /// @dev IT: invalid tranche - must be uncalled capital tranche
+  /// @dev NA: not authorized. Must have correct UID or be go listed
+  /// @notice Supply capital to the loan.
+  /// @param callAmount Amount of capital to call back
+  /// @param poolTokenId Pool token id to be called back.
   function submitCall(uint256 callAmount, uint256 poolTokenId) external override {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -257,8 +264,10 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
+  /// @dev ZA: Zero amount - must be greater than 0
   function drawdown(uint256 amount) external override(ICreditLine, ILoan) onlyLocker whenNotPaused {
     require(!drawdownsPaused, "DP");
+    require(amount > 0, "ZA");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
 
     cl.drawdown(amount);
@@ -466,16 +475,20 @@ contract CallableLoan is
 
     // if the pool is locked, we need to decrease the deposit rather than the amount redeemed
     {
-      if (cl.isActive()) {
+      if (cl.loanState() == LoanState.InProgress) {
         poolTokens.redeem({
           tokenId: tokenId,
           principalRedeemed: principalToRedeem,
           interestRedeemed: interestToRedeem
         });
-      } else {
+      } else if (cl.loanState() == LoanState.FundingPeriod) {
         assert(interestToRedeem == 0);
         cl.withdraw(tokenInfo.tranche, principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
+      } else if (cl.loanState() == LoanState.DrawdownPeriod) {
+        // Could currently just use a else statement, but this is more explicit and future-proof.
+        // Since it's a revert scenario gas cost should not be consideration.
+        revert("IS");
       }
     }
 
@@ -518,15 +531,17 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint interestAvailable, uint principalAvailable) {
     uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
+    if (tokenInfo.principalAmount == 0) {
+      // Bail out early to account for proportion of zero.
+      return (0, 0);
+    }
+
     (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
       .proportionalInterestAndPrincipalAvailable(
         tokenInfo.tranche,
         tokenInfo.principalAmount,
         reserveFundsFeePercent
       );
-
-    totalInterestWithdrawable = totalInterestWithdrawable - tokenInfo.interestRedeemed;
-
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
       totalPrincipalWithdrawable - tokenInfo.principalRedeemed

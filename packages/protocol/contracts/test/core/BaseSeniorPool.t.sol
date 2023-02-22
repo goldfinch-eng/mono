@@ -13,7 +13,6 @@ import {DepositWithPermitHelpers} from "../helpers/DepositWithPermitHelpers.t.so
 import {Fidu} from "../../protocol/core/Fidu.sol";
 import {FixedLeverageRatioStrategy} from "../../protocol/core/FixedLeverageRatioStrategy.sol";
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
-import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {Go} from "../../protocol/core/Go.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";

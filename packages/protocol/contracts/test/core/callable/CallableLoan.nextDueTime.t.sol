@@ -79,7 +79,7 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     uint timeOfDrawdown = block.timestamp;
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
     pay(
       callableLoan,

@@ -101,14 +101,14 @@ library CallableCreditLineLogic {
   // 3. Borrower makes early interest repayment (also make version of test with early principal repayment)
   // 4. Some users withdraw interest
   // 5. When first due date passes, all accounting variables should produce correct values
-  /// @dev ILS - Invalid loan state - Can only pay after drawdowns are disabled.
+  /// @dev IS - Invalid loan state - Can only pay after drawdowns are disabled.
   function pay(
     CallableCreditLine storage cl,
     uint256 principalPayment,
     uint256 interestPayment
   ) internal {
     LoanState loanState = cl.loanState();
-    require(loanState == LoanState.InProgress, "ILS");
+    require(loanState == LoanState.InProgress, "IS");
 
     cl._waterfall.pay({
       principalAmount: principalPayment,
@@ -126,9 +126,8 @@ library CallableCreditLineLogic {
   // 2. Drawdown 1000
   // 3. Submit call request
   // 4. Interest owed, accrued (forced redemption), and principal owed should all be accounted for correctly.
-  /// @dev ILS - Invalid loan state - Can only drawdown before first due date.
+  /// @dev IS - Invalid loan state - Can only drawdown before first due date.
   /// @dev ED - Exceeds deposits - Can only drawdown as much as has been deposited.
-
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     if (loanState == LoanState.FundingPeriod) {
@@ -142,7 +141,7 @@ library CallableCreditLineLogic {
         "Scaffolding failure: Should be DrawdownPeriod"
       );
     }
-    require(loanState == LoanState.DrawdownPeriod, "ILS");
+    require(loanState == LoanState.DrawdownPeriod, "IS");
 
     require(
       amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <=
@@ -152,12 +151,12 @@ library CallableCreditLineLogic {
     cl._waterfall.drawdown(amount);
   }
 
-  /// @dev ILS - Invalid loan state - Can only submit call requests after drawdown period has ended.
+  /// @dev IS - Invalid loan state - Can only submit call requests after drawdown period has ended.
   function submitCall(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
-    require(loanState == LoanState.InProgress, "ILS");
+    require(loanState == LoanState.InProgress, "IS");
 
-    uint256 activeCallTranche = cl._paymentSchedule.currentPrincipalPeriod();
+    uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
     require(
       activeCallTranche < cl.uncalledCapitalTrancheIndex(),
       "Cannot call during the last call request period"
@@ -166,17 +165,17 @@ library CallableCreditLineLogic {
     cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
 
-  /// @dev ILS - Invalid loan state - Cannot deposit after first drawdown
+  /// @dev IS - Invalid loan state - Cannot deposit after first drawdown
   /// @dev EL - Exceeds limit - Total deposit cumulative amount more than limit
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
-    require(loanState == LoanState.FundingPeriod, "ILS");
+    require(loanState == LoanState.FundingPeriod, "IS");
     require(amount + cl._waterfall.totalPrincipalDeposited() <= cl.limit(), "EL");
     cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
   }
 
   /// Withdraws funds from the specified tranche.
-  /// @dev ILS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
+  /// @dev IS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.FundingPeriod);
@@ -201,6 +200,7 @@ library CallableCreditLineLogic {
 
     uint totalInterestAccrued = cl.totalInterestAccrued();
     uint totalInterestOwed = cl.totalInterestOwed();
+
     cl._totalInterestAccruedAtLastCheckpoint = totalInterestAccrued;
     cl._totalInterestOwedAtLastCheckpoint = totalInterestOwed;
     cl._checkpointedAsOf = block.timestamp;
@@ -307,12 +307,12 @@ library CallableCreditLineLogic {
   }
 
   /// Interest accrued up to `timestamp`
-  /// IT: Invalid timestamp - timestamp must be now or in the future.
+  /// PT: Past timestamp - timestamp must be now or in the future.
   function interestAccruedAt(
     CallableCreditLine storage cl,
     uint timestamp
   ) internal view returns (uint) {
-    require(timestamp >= block.timestamp, "IT");
+    require(timestamp >= block.timestamp, "PT");
     return
       cl.totalInterestAccruedAt(timestamp).saturatingSub(
         MathUpgradeable.max(cl._waterfall.totalInterestPaid(), cl.totalInterestOwedAt(timestamp))

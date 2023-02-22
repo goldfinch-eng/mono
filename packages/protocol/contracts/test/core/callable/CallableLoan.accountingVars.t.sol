@@ -26,7 +26,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     vm.expectRevert(bytes("IT"));
     cl.interestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(bytes("PT"));
     cl.interestAccruedAt(timestamp);
 
     vm.expectRevert(bytes("IT"));
@@ -384,7 +384,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
 
     // Advance to random time after drawdown period and pay back everything
-    goToAfterDrawdownPeriod(callableLoan);
+    warpToAfterDrawdownPeriod(callableLoan);
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 
