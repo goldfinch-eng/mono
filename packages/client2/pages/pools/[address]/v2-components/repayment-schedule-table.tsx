@@ -14,7 +14,7 @@ export function RepaymentScheduleTable({
   repaymentScheduleData,
 }: RepaymentScheduleTableProps) {
   return (
-    <div className={clsx(className, "max-h-[20rem] overflow-y-auto")}>
+    <div className={clsx(className, "max-h-[18rem] overflow-y-auto")}>
       <table className="w-full">
         <thead className="sticky top-0">
           <tr>
@@ -30,7 +30,7 @@ export function RepaymentScheduleTable({
             </td>
           </tr>
         </thead>
-        <tbody className="max-h-[20rem] overflow-y-auto">
+        <tbody className="max-h-[18rem] overflow-y-auto">
           {repaymentScheduleData.map(
             ({ paymentPeriod, estimatedPaymentDate, interest, principal }) => (
               <tr

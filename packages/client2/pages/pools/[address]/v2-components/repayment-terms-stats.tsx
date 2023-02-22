@@ -27,25 +27,25 @@ export function RepaymentTermsStats({
   loan,
   className,
 }: RepaymentTermsStatsProps) {
-  const loading = !loan?.creditLine;
+  const showLoadingState = !loan?.creditLine;
 
   const stats: { label: string; value: ReactNode; tooltip: string }[] = [
     {
       label: "Loan term",
-      value: loading ? (
+      value: showLoadingState ? (
         <Shimmer />
       ) : (
         formatDistanceStrict(
           loan.creditLine.termEndTime.toNumber() * 1000,
           loan.creditLine.termStartTime.toNumber() * 1000,
-          { unit: "month" }
+          { unit: "month", roundingMethod: "ceil" }
         )
       ),
       tooltip: "TODO: Loan term tooltip",
     },
     {
       label: "Payment frequency",
-      value: loading ? (
+      value: showLoadingState ? (
         <Shimmer />
       ) : (
         `${loan.creditLine.paymentPeriodInDays.toString()} days`
@@ -54,10 +54,10 @@ export function RepaymentTermsStats({
     },
     {
       label: "Total payments",
-      value: loading ? (
+      value: showLoadingState ? (
         <Shimmer />
       ) : (
-        Math.floor(
+        Math.ceil(
           loan.creditLine.termInDays.toNumber() /
             loan.creditLine.paymentPeriodInDays.toNumber()
         )
@@ -66,12 +66,13 @@ export function RepaymentTermsStats({
     },
     {
       label: "Repayment structure",
-      value: loading ? <Shimmer /> : "Bullet",
+      // Eventually we'll have more loan types than just 'Bullet'
+      value: showLoadingState ? <Shimmer /> : "Bullet",
       tooltip: "TODO: Repayment structure tooltip",
     },
     {
       label: "Est. repayment start date",
-      value: loading ? (
+      value: showLoadingState ? (
         <Shimmer />
       ) : (
         formatDate(loan.creditLine.termStartTime.toNumber() * 1000, "MMM d, y")
@@ -80,7 +81,7 @@ export function RepaymentTermsStats({
     },
     {
       label: "Est. loan maturity date",
-      value: loading ? (
+      value: showLoadingState ? (
         <Shimmer />
       ) : (
         formatDate(loan.creditLine.termEndTime.toNumber() * 1000, "MMM d, y")

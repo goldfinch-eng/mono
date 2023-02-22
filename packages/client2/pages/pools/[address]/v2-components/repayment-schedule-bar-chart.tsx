@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers/lib/ethers";
 import React from "react";
 import {
   BarChart,
@@ -6,7 +5,7 @@ import {
   XAxis,
   YAxis,
   Legend,
-  Tooltip,
+  // Tooltip,
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
@@ -16,15 +15,8 @@ import { cryptoToFloat } from "@/lib/format";
 
 import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule";
 
-const MAX_X_AXIS_TICKS = 25;
-
-const numberFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-  notation: "compact",
-  style: "currency",
-  currency: "USD",
-});
+const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
+const Y_AXIS_ROUNDING_INTERVAL = 100000;
 
 interface RepaymentScheduleBarChartLegendProps {
   className?: string;
@@ -51,10 +43,38 @@ const RepaymentScheduleBarChart = ({
   className,
   repaymentScheduleData,
 }: RepaymentScheduleBarChartLegendProps) => {
+  const repaymentScheduleDataFloat = repaymentScheduleData.map((data) => ({
+    ...data,
+    interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
+    principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
+  }));
+
+  const maxYValue = cryptoToFloat({
+    amount: repaymentScheduleData[
+      repaymentScheduleData.length - 1
+    ].principal.add(
+      repaymentScheduleData[repaymentScheduleData.length - 1].interest
+    ),
+    token: "USDC",
+  });
+
+  const yAxisTicks = [
+    0,
+    maxYValue / 4,
+    maxYValue / 2,
+    (3 * maxYValue) / 4,
+    // We don't want the tip of the final bar touching the top - add a bit of padding i.e 2% of the max
+    maxYValue + maxYValue * 0.02,
+  ].map((tick) =>
+    tick > Y_AXIS_ROUNDING_INTERVAL
+      ? Math.round(tick / Y_AXIS_ROUNDING_INTERVAL) * Y_AXIS_ROUNDING_INTERVAL
+      : Math.trunc(tick)
+  );
+
   return (
-    <ResponsiveContainer width="100%" height={300} className={className}>
+    <ResponsiveContainer width="100%" height={225} className={className}>
       <BarChart
-        data={repaymentScheduleData}
+        data={repaymentScheduleDataFloat}
         margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
       >
         <Legend
@@ -65,34 +85,28 @@ const RepaymentScheduleBarChart = ({
         />
         <XAxis
           dataKey="paymentPeriod"
-          tick={{ fontSize: "10px" }}
-          interval={repaymentScheduleData.length <= MAX_X_AXIS_TICKS ? 0 : 1}
+          tick={{ fontSize: "8px" }}
+          interval={
+            repaymentScheduleDataFloat.length <=
+            MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
+              ? 0
+              : 1
+          }
         />
         <YAxis
           axisLine={false}
           tickLine={false}
+          tick={{ fontSize: "8px", dx: -30, dy: -8, textAnchor: "start" }}
+          domain={[0, maxYValue]}
+          ticks={yAxisTicks}
           tickCount={5}
-          tickFormatter={(value: BigNumber) =>
-            numberFormatter.format(
-              cryptoToFloat({ amount: value, token: "USDC" })
-            )
-          }
-          tick={{ fontSize: "10px", dx: -50, dy: -8, textAnchor: "start" }}
+          width={40}
         />
         <CartesianGrid vertical={false} x={0} width={650} />
-        <Tooltip
-          formatter={(value) =>
-            numberFormatter.format(
-              cryptoToFloat({
-                // 'ValueType' parameter for Recharts lib expects a number|string but we're using BigNumbers
-                amount: value as unknown as BigNumber,
-                token: "USDC",
-              })
-            )
-          }
-        />
-        <Bar dataKey="principal" stackId="a" fill="#564928" />
-        <Bar dataKey="interest" stackId="a" fill="#D7BD7A" />
+        {/* TODO: Confirm with Chico - do we want a tooltip? */}
+        {/* <Tooltip /> */}
+        <Bar dataKey="principal" stackId="a" fill="#3D755B" />
+        <Bar dataKey="interest" stackId="a" fill="#65C397" />
       </BarChart>
     </ResponsiveContainer>
   );
