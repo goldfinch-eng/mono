@@ -331,7 +331,7 @@ contract CallableLoan is
     )
   {
     require(timestamp >= block.timestamp, "IT");
-    // TODO: Is this the proper condition for a loan being inactive?
+    // TODO: Determine correct loan inactive conditions.
     require(termEndTime() > 0, "LI");
 
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));

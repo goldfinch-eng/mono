@@ -26,7 +26,6 @@ struct CallableCreditLine {
   uint256 _interestApr;
   uint256 _lateAdditionalApr;
   uint256 _numLockupPeriods;
-  // TODO: Need config properties for when call request periods rollover/lock
   uint256 _checkpointedAsOf;
   uint256 _lastFullPaymentTime;
   uint256 _totalInterestOwedAtLastCheckpoint;
@@ -94,13 +93,6 @@ library CallableCreditLineLogic {
   /*================================================================================
   Main Write Functions
   ================================================================================*/
-  // Scenario to test:
-  // Premise - Before first due date
-  // 1. Make first drawdown = 1/2 of deposits
-  // 2. Some users withdraw portions of their deposits
-  // 3. Borrower makes early interest repayment (also make version of test with early principal repayment)
-  // 4. Some users withdraw interest
-  // 5. When first due date passes, all accounting variables should produce correct values
   /// @dev IS - Invalid loan state - Can only pay after drawdowns are disabled.
   function pay(
     CallableCreditLine storage cl,
@@ -121,11 +113,6 @@ library CallableCreditLineLogic {
     }
   }
 
-  // Scenario to test:
-  // 1. Checkpoint behavior (e.g. pay)
-  // 2. Drawdown 1000
-  // 3. Submit call request
-  // 4. Interest owed, accrued (forced redemption), and principal owed should all be accounted for correctly.
   /// @dev IS - Invalid loan state - Can only drawdown before first due date.
   /// @dev ED - Exceeds deposits - Can only drawdown as much as has been deposited.
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
