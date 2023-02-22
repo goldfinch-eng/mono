@@ -502,14 +502,33 @@ export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddres
 }
 
 const getDefaultMonthlySchedule = async (goldfinchConfig: GoldfinchConfigInstance) => {
+  return getMonthlySchedule(goldfinchConfig, "12", "12", "1", "0")
+}
+
+const getMonthlySchedule = async (
+  goldfinchConfig: GoldfinchConfigInstance,
+  periodsInTerm: Numberish,
+  periodsPerInterestPeriod: Numberish,
+  periodsPerPrincipalPeriod: Numberish,
+  gracePrincipalPeriods: Numberish
+) => {
   const scheduleRepoAddress = await goldfinchConfig.getAddress(CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo)
   const scheduleRepo = await getTruffleContractAtAddress<MonthlyScheduleRepoInstance>(
     "MonthlyScheduleRepo",
     scheduleRepoAddress
   )
-  // Create a 1 year bullet loan
-  await scheduleRepo.createSchedule("12", "12", "1", "0")
-  return await scheduleRepo.getSchedule("12", "12", "1", "0")
+  await scheduleRepo.createSchedule(
+    periodsInTerm,
+    periodsPerPrincipalPeriod,
+    periodsPerInterestPeriod,
+    gracePrincipalPeriods
+  )
+  return await scheduleRepo.getSchedule(
+    periodsInTerm,
+    periodsPerPrincipalPeriod,
+    periodsPerInterestPeriod,
+    gracePrincipalPeriods
+  )
 }
 
 const createPoolWithCreditLine = async ({
@@ -829,5 +848,6 @@ export {
   toEthers,
   fundWithEthFromLocalWhale,
   setupBackerRewards,
+  getMonthlySchedule,
   getDefaultMonthlySchedule,
 }

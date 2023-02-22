@@ -58,6 +58,7 @@ import {
   getDefaultMonthlySchedule,
   getTruffleContractAtAddress,
   SECONDS_PER_DAY,
+  getMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -1038,8 +1039,6 @@ describe("mainnet forking tests", async function () {
     let tranchedPoolWithOwnerConnected: TranchedPool
     let backerStakingTokenId: string
     let creditLine: CreditLine
-    const paymentPeriodInDays = new BigNumber("30")
-    const termInDays = new BigNumber("365")
     const trackedStakedAmount = usdcVal(2500)
     const untrackedStakedAmount = usdcVal(1000)
     const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("5"))
@@ -1049,7 +1048,7 @@ describe("mainnet forking tests", async function () {
         "20",
         limit.toString(),
         "100000000000000000",
-        await getDefaultMonthlySchedule(goldfinchConfig),
+        await getMonthlySchedule(goldfinchConfig, "12", "1", "6", "1"),
         "0",
         "0",
         ["0"],
@@ -1164,7 +1163,6 @@ describe("mainnet forking tests", async function () {
     }
 
     async function payOffTranchedPoolInterest(tranchedPool: TranchedPool): Promise<ContractReceipt> {
-      await (await tranchedPool.assess()).wait()
       const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
       const interestOwed = await creditLine.interestOwed()
       return (await tranchedPool["pay(uint256)"](interestOwed.toString())).wait()
@@ -1220,7 +1218,7 @@ describe("mainnet forking tests", async function () {
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
 
       for (let i = 0; new BN(`${await getCurrentTimestamp()}`).lt(new BN(`${await creditLine.termEndTime()}`)); i++) {
-        await advanceTime({toSecond: (await creditLine.nextDueTime()).toString()})
+        await advanceAndMineBlock({toSecond: (await creditLine.nextDueTime()).toString()})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         await expectRewardsAreEqualForTokens(stakingRewardsTokenId, backerStakingTokenId, payTx.blockNumber)
@@ -1292,7 +1290,7 @@ describe("mainnet forking tests", async function () {
 
       // Run through the first half of payments normally
       for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)
@@ -1326,7 +1324,7 @@ describe("mainnet forking tests", async function () {
 
       // second half of the payments
       for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw to make sure that the backer originally backer wont have less rewards
         // when their unutilized capital is removed from the pool
@@ -1384,8 +1382,8 @@ describe("mainnet forking tests", async function () {
       )
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
 
-      for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+      for (let i = 0; i < 5; i++) {
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         expect((await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)).gt(new BN(0)))
@@ -1447,8 +1445,8 @@ describe("mainnet forking tests", async function () {
         await backerRewards.stakingRewardsEarnedSinceLastWithdraw(secondSliceDepositTokenId.toString())
       ).to.bignumber.eq("0")
 
-      for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+      for (let i = 0; i < 7; i++) {
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw, as a way of establishing that a backer who removed their unutilized capital
         // would not receive less rewards as a consequence
