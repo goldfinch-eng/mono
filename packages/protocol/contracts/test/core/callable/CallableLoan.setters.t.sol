@@ -4,11 +4,24 @@ pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
-contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
+contract CallableLoanSetters is CallableLoanBaseTest {
+  function testSetLimitReverts(uint256 limit) public impersonating(GF_OWNER) {
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    vm.expectRevert(bytes("US"));
+    callableLoan.setLimit(limit);
+  }
+
+  function testSetMaxLimitReverts(uint256 limit) public impersonating(GF_OWNER) {
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    vm.expectRevert(bytes("US"));
+    callableLoan.setMaxLimit(limit);
+  }
+
   function testSetAllowedUidTypesRevertsForNonLocker(address user) public impersonating(user) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
@@ -46,4 +59,10 @@ contract CallableLoanSetAllowedUIDTypesTest is CallableLoanBaseTest {
       assertEq(ids[i], callableLoan.allowedUIDTypes(i));
     }
   }
+
+  // TODO
+  function testPauseDrawdowns() public impersonating(BORROWER) {}
+
+  // TODO
+  function testSetFundableAt() public impersonating(BORROWER) {}
 }

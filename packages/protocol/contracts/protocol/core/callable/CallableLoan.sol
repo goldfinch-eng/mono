@@ -94,7 +94,7 @@ contract CallableLoan is
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) public initializer {
+  ) external initializer {
     require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
 
     config = IGoldfinchConfig(_config);
@@ -132,7 +132,10 @@ contract CallableLoan is
   /// @notice Supply capital to the loan.
   /// @param callAmount Amount of capital to call back
   /// @param poolTokenId Pool token id to be called back.
-  function submitCall(uint256 callAmount, uint256 poolTokenId) external override {
+  function submitCall(
+    uint256 callAmount,
+    uint256 poolTokenId
+  ) external override nonReentrant whenNotPaused {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
@@ -143,7 +146,7 @@ contract CallableLoan is
       "NA"
     );
 
-    (uint256 interestWithdrawn, uint256 principalWithdrawn) = withdrawMax(poolTokenId);
+    (uint256 interestWithdrawn, uint256 principalWithdrawn) = _withdrawMax(poolTokenId);
     uint256 totalWithdrawn = interestWithdrawn + principalWithdrawn;
     uint256 principalRemaining = cl.proportionalPrincipalOutstanding({
       trancheId: tokenInfo.tranche,
@@ -166,9 +169,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev ZA: zero amount - must be greater than 0.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
   /// @notice Supply capital to the loan.
   /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
@@ -176,32 +176,18 @@ contract CallableLoan is
   function deposit(
     uint256 tranche,
     uint256 amount
-  ) public override nonReentrant whenNotPaused returns (uint256) {
-    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    require(amount > 0, "ZA");
-    require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
-    require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp >= fundableAt, "Not open for funding");
-
-    cl.deposit(amount);
-    uint256 tokenId = config.getPoolTokens().mint(
-      IPoolTokens.MintParams({tranche: tranche, principalAmount: amount}),
-      msg.sender
-    );
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), amount);
-
-    emit DepositMade(msg.sender, tranche, tokenId, amount);
-    return tokenId;
+  ) external override nonReentrant whenNotPaused returns (uint256) {
+    return _deposit(tranche, amount);
   }
 
   /// @inheritdoc ILoan
-
-  /// @dev IA: invalid amount - must be greater than 0.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
   /// @notice Supply capital to the loan.
   /// @param tranche *UNSUPPORTED* -
   /// @param amount amount of capital to supply
+  /// @param deadline deadline of permit operation
+  /// @param v v portion of signature
+  /// @param r r portion of signature
+  /// @param s s portion of signature
   /// @return tokenId NFT representing your position in this pool
   function depositWithPermit(
     uint256 tranche,
@@ -210,7 +196,7 @@ contract CallableLoan is
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public override whenNotPaused returns (uint256 tokenId) {
+  ) external override nonReentrant whenNotPaused returns (uint256 tokenId) {
     IERC20PermitUpgradeable(config.usdcAddress()).permit(
       msg.sender,
       address(this),
@@ -220,14 +206,14 @@ contract CallableLoan is
       r,
       s
     );
-    return deposit(tranche, amount);
+    return _deposit(tranche, amount);
   }
 
   /// @inheritdoc ILoan
   function withdraw(
     uint256 tokenId,
     uint256 amount
-  ) public override nonReentrant whenNotPaused returns (uint256, uint256) {
+  ) external override nonReentrant whenNotPaused returns (uint256, uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     return _withdraw(tokenInfo, tokenId, amount);
   }
@@ -237,11 +223,12 @@ contract CallableLoan is
   function withdrawMultiple(
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
-  ) public override {
+  ) external override nonReentrant whenNotPaused {
     require(tokenIds.length == amounts.length, "LEN");
 
     for (uint256 i = 0; i < amounts.length; i++) {
-      withdraw(tokenIds[i], amounts[i]);
+      IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenIds[i]);
+      _withdraw(tokenInfo, tokenIds[i], amounts[i]);
     }
   }
 
@@ -249,23 +236,21 @@ contract CallableLoan is
   function withdrawMax(
     uint256 tokenId
   )
-    public
+    external
     override
     nonReentrant
     whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
-    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
-    uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
-    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
+    return _withdrawMax(tokenId);
   }
 
   /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
   /// @dev ZA: Zero amount - must be greater than 0
-  function drawdown(uint256 amount) external override(ICreditLine, ILoan) onlyLocker whenNotPaused {
+  function drawdown(
+    uint256 amount
+  ) external override(ICreditLine, ILoan) nonReentrant onlyLocker whenNotPaused {
     require(!drawdownsPaused, "DP");
     require(amount > 0, "ZA");
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
@@ -285,13 +270,13 @@ contract CallableLoan is
   }
 
   /// @notice Pauses all drawdowns (but not deposits/withdraws)
-  function pauseDrawdowns() public onlyAdmin {
+  function pauseDrawdowns() external onlyAdmin {
     drawdownsPaused = true;
     emit DrawdownsPaused(address(this));
   }
 
   /// @notice Unpause drawdowns
-  function unpauseDrawdowns() public onlyAdmin {
+  function unpauseDrawdowns() external onlyAdmin {
     drawdownsPaused = false;
     emit DrawdownsUnpaused(address(this));
   }
@@ -449,6 +434,31 @@ contract CallableLoan is
     return pa;
   }
 
+  /// @dev ZA: zero amount - must be greater than 0.
+  /// @dev IT: invalid tranche - must be uncalled capital tranche
+  /// @dev NA: not authorized. Must have correct UID or be go listed
+  /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
+  /// @param amount amount of capital to supply
+  /// @return tokenId NFT representing your position in this pool
+  function _deposit(uint256 tranche, uint256 amount) internal returns (uint256) {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    require(amount > 0, "ZA");
+    require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
+    require(hasAllowedUID(msg.sender), "NA");
+    require(block.timestamp >= fundableAt, "Not open for funding");
+
+    cl.deposit(amount);
+    uint256 tokenId = config.getPoolTokens().mint(
+      IPoolTokens.MintParams({tranche: tranche, principalAmount: amount}),
+      msg.sender
+    );
+    config.getUSDC().safeTransferFrom(msg.sender, address(this), amount);
+
+    emit DepositMade(msg.sender, tranche, tokenId, amount);
+    return tokenId;
+  }
+
   /// @dev ZA: Zero amount
   /// @dev IA: Invalid amount - amount too large
   /// @dev DL: Deposits Locked
@@ -503,6 +513,14 @@ contract CallableLoan is
     });
 
     return (interestToRedeem, principalToRedeem);
+  }
+
+  function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
+    uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
+    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
   }
 
   /*================================================================================
@@ -701,7 +719,7 @@ contract CallableLoan is
   }
 
   /// Unsupported in callable loans.
-  function setMaxLimit(uint256 newAmount) external override {
+  function setMaxLimit(uint256 newAmount) external override onlyAdmin {
     revert("US");
   }
 
