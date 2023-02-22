@@ -179,6 +179,25 @@ contract TranchedPoolBaseTest is BaseTest {
     _stopImpersonation();
   }
 
+  function tranchedPoolWithMonthlyPrincipalSchedule()
+    internal
+    impersonating(GF_OWNER)
+    returns (TranchedPool, CreditLine)
+  {
+    (TranchedPool pool, CreditLine cl) = poolBuilder.buildWithMonthlySchedule({
+      borrower: BORROWER,
+      monthsInTerm: 12,
+      monthsPerInterestPeriod: 1,
+      monthsPerPrincipalPeriod: 1
+    });
+    fuzzHelper.exclude(address(pool));
+    fuzzHelper.exclude(address(cl));
+    (ISchedule schedule, ) = cl.schedule();
+    fuzzHelper.exclude(address(schedule));
+    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
+    return (pool, cl);
+  }
+
   function defaultTranchedPool()
     internal
     impersonating(GF_OWNER)
@@ -375,7 +394,7 @@ contract TranchedPoolBaseTest is BaseTest {
   // TODO - remove this function because it doesn't make sense with a monthly schedule
   function periodInSeconds(TranchedPool pool) internal returns (uint256) {
     // return pool.creditLine().nextDueTime().sub(pool.creditLine().previousDueTime());
-    return 30 days;
+    return 28 days;
   }
 
   function addToGoList(address user) internal impersonating(GF_OWNER) {

@@ -12,6 +12,7 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 
 contract AccountantCalculateWritedownForTest is AccountantBaseTest {
+  // TODO(will)
   /*
   If we are past the termEndTime, owe interest and/or balance, and past the writedown gracePeriod,
   then the principal should be written down proportionally to how close we are to maxDaysLate

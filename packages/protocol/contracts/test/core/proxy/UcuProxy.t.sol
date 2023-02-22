@@ -144,7 +144,7 @@ contract TestImplementationRepository is Test {
     public
     impersonating(REPO_OWNER)
   {
-    UcuProxy proxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
+    UcuProxy newProxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
 
     repo.append(address(failingImpl));
     repo.setUpgradeDataFor(

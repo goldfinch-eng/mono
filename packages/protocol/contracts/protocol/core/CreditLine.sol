@@ -97,6 +97,20 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     assert(config.getUSDC().approve(owner, uint256(-1)));
   }
 
+  function pay(
+    uint paymentAmount
+  ) external override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
+    (uint interestAmount, uint principalAmount) = Accountant.splitPayment(
+      paymentAmount,
+      balance,
+      interestOwed(),
+      interestAccrued(),
+      principalOwed()
+    );
+
+    return pay(principalAmount, interestAmount);
+  }
+
   /// @inheritdoc ICreditLine
   /// @dev II: insufficient interest
   function pay(
@@ -106,45 +120,28 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     // The balance might change here.. Checkpoint amounts owed!
     _checkpoint();
 
-    // You must pay off all interest before paying off any principal, therefore we reject a payment
-    // if your principalAmount is non-zero and your interestAmount is insufficient to cover
-    // obligated + additional interest.
-    bool isFullInterestPayment = interestPayment >= interestOwed().add(interestAccrued());
-    require(principalPayment == 0 || isFullInterestPayment, "II");
-
     // Allocate payments
-    Accountant.PrincipalPaymentAllocation memory ppa = Accountant.allocatePrincipalPayment(
-      principalPayment,
-      balance,
-      principalOwed()
-    );
-    Accountant.InterestPaymentAllocation memory ipa = Accountant.allocateInterestPayment(
-      interestPayment,
-      interestOwed(),
-      interestAccrued()
-    );
+    ITranchedPool.PaymentAllocation memory pa = Accountant.allocatePayment({
+      principalPayment: principalPayment,
+      interestPayment: interestPayment,
+      balance: balance,
+      interestOwed: interestOwed(),
+      interestAccrued: interestAccrued(),
+      principalOwed: principalOwed()
+    });
 
-    // Update accounting vars
-    uint256 newTotalInterestPaid = totalInterestPaid.add(ipa.owedInterestPayment).add(
-      ipa.accruedInterestPayment
-    );
-    uint256 newBalance = balance.sub(ppa.principalPayment).sub(ppa.additionalBalancePayment);
-    totalInterestPaid = newTotalInterestPaid;
-    balance = newBalance;
+    uint totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
+    uint totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
+
+    totalInterestPaid = totalInterestPaid.add(totalInterestPayment);
+    balance = balance.sub(totalPrincipalPayment);
 
     // If no new interest or principal owed than it was a full payment
     if (interestOwed() == 0 && principalOwed() == 0) {
       lastFullPaymentTime = block.timestamp;
     }
 
-    return
-      ITranchedPool.PaymentAllocation(
-        ipa.owedInterestPayment,
-        ipa.accruedInterestPayment,
-        ppa.principalPayment,
-        ppa.additionalBalancePayment,
-        ipa.paymentRemaining + ppa.paymentRemaining
-      );
+    return pa;
   }
 
   /// @inheritdoc ICreditLine

@@ -320,14 +320,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 amountToPay = Math.min(amount, maxPayableAmount);
     config.getUSDC().safeERC20TransferFrom(msg.sender, address(this), amountToPay);
 
-    // pay interest first, then principal
-    uint256 interestAmount = Math.min(
-      amountToPay,
-      creditLine.interestOwed().add(creditLine.interestAccrued())
-    );
-    uint256 principalAmount = amountToPay.saturatingSub(interestAmount);
-
-    PaymentAllocation memory pa = _pay(principalAmount, interestAmount);
+    PaymentAllocation memory pa = _pay(amount);
 
     // Payment remaining should always be 0 because we don't take excess usdc
     assert(pa.paymentRemaining == 0);
@@ -456,6 +449,20 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
 
     uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
     PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
+    interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
+
+    distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
+    return pa;
+  }
+
+  function _pay(uint256 paymentAmount) internal returns (PaymentAllocation memory) {
+    // We need to make sure the pool is locked before we allocate rewards to ensure it's not
+    // possible to game rewards by sandwiching an interest payment to an unlocked pool
+    // It also causes issues trying to allocate payments to an empty slice (divide by zero)
+    require(_locked(), "NL");
+
+    uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
+    PaymentAllocation memory pa = creditLine.pay(paymentAmount);
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
 
     distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);

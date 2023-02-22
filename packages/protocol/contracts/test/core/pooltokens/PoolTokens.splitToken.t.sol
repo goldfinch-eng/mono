@@ -337,6 +337,14 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testUsesAccRewardsPerPrincipalDollarAtMintForSplitTokens() public {
+    // For this test use a tp that has a non-zero principalGrace period, so we can initialize the next slice
+    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
+    fundAddress(address(this), usdcVal(10_000));
+    usdc.approve(address(tp), uint256(-1));
+    tokenId = tp.deposit(2, usdcVal(5));
+    tokenInfo = poolTokens.getTokenInfo(tokenId);
+    grantRole(address(tp), TestConstants.SENIOR_ROLE, GF_OWNER);
+
     _startImpersonation(GF_OWNER);
     tp.lockJuniorCapital();
     usdc.approve(address(tp), usdcVal(20));

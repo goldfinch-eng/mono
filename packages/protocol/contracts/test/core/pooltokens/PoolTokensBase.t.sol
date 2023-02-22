@@ -24,6 +24,7 @@ import {Go} from "../../../protocol/core/Go.sol";
 import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 contract PoolTokensBaseTest is BaseTest {
   GFI internal gfi;
@@ -79,7 +80,20 @@ contract PoolTokensBaseTest is BaseTest {
 
     stakingRewards = StakingRewards(address(protocol.stakingRewards()));
 
-    tpBuilder = new TranchedPoolBuilder(address(gfFactory), address(sp));
+    // MonthlyScheduleRepository setup
+    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(monthlyScheduleRepo)
+    );
+    fuzzHelper.exclude(address(monthlyScheduleRepo));
+    fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
+
+    tpBuilder = new TranchedPoolBuilder({
+      _gfFactory: gfFactory,
+      _seniorPool: sp,
+      _monthlyScheduleRepo: monthlyScheduleRepo
+    });
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
 
     uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
@@ -121,6 +135,26 @@ contract PoolTokensBaseTest is BaseTest {
 
   function defaultTp() internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
     (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
+    fuzzHelper.exclude(address(tp));
+    fuzzHelper.exclude(address(tp.creditLine()));
+    tp.grantRole(tp.SENIOR_ROLE(), address(sp));
+    return (tp, cl);
+  }
+
+  function tpWithSchedule(
+    uint256 periodsInTerm,
+    uint256 periodsPerInterestPeriod,
+    uint256 periodsPerPrincipalPeriod,
+    uint256 gracePrincipalPeriods
+  ) internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
+    (TestTranchedPool tp, CreditLine cl) = tpBuilder
+      .withScheduleParams(
+        periodsInTerm,
+        periodsPerInterestPeriod,
+        periodsPerPrincipalPeriod,
+        gracePrincipalPeriods
+      )
+      .build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));

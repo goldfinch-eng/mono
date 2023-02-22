@@ -31,10 +31,8 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
       _juniorFeePercent: 20,
       _limit: usdcVal(1000),
       _interestApr: 15000,
-      _paymentPeriodInDays: 30,
-      _termInDays: 360,
+      _schedule: tpBuilder.defaultSchedule(),
       _lateFeeApr: 350,
-      _principalGracePeriodInDays: 180,
       _fundableAt: 0,
       _allowedUIDTypes: uidTypes
     });
@@ -82,6 +80,11 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
   }
 
   function testUsesCurrentAccRewardsPerPrincipalDollarAtMintOnSecondDrawdown() public {
+    // For this test use a tp that has a non-zero principalGrace period, so we can initialize the next slice
+    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
+    fundAddress(address(this), usdcVal(2_000_000));
+    usdc.approve(address(tp), uint256(-1));
+
     _startImpersonation(GF_OWNER);
     // Setup backer rewards
     gfi.setCap(100_000_000 * 1e18);
