@@ -7,9 +7,7 @@ import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
 
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
   fragment RepaymentTermsStatsFields on TranchedPool {
-    id
     creditLine {
-      id
       termInDays
       paymentPeriodInDays
       termStartTime

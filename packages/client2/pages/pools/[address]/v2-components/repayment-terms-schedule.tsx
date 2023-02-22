@@ -11,17 +11,11 @@ import RepaymentScheduleBarChart from "../v2-components/repayment-schedule-bar-c
 
 export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
   fragment RepaymentTermsSchedule on TranchedPool {
-    id
-    initialInterestOwed
     creditLine {
-      id
-      termInDays
       termStartTime
       termEndTime
       paymentPeriodInDays
       interestApr
-      balance
-      interestAprDecimal
       limit
     }
   }
@@ -66,7 +60,7 @@ const generateRepaymentScheduleData = (
       interestApr: loan.creditLine.interestApr,
       nextDueTime: BigNumber.from(periodEndTimestamp),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: loan.creditLine.balance,
+      balance: loan.creditLine.limit,
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
