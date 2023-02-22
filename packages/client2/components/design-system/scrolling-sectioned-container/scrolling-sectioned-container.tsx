@@ -141,7 +141,7 @@ export function AddonNavLink({
     <NextLink passHref href={href}>
       <Button
         as="a"
-        colorScheme="secondary"
+        colorScheme="sand"
         variant="rounded"
         iconRight="ArrowTopRight"
       >
