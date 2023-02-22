@@ -89,6 +89,18 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             }
           />
         ) : null}
+        <>
+          <RiskTableRow
+            heading="On-chain capital priority"
+            boldValue="Junior"
+            value="First-loss capital"
+          />
+          <RiskTableRow
+            heading="Off-chain capital priority"
+            boldValue="Senior"
+            value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
+          />
+        </>
       </tbody>
     </table>
   );
