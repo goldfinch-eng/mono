@@ -470,7 +470,10 @@ library CallableCreditLineLogic {
     uint256 trancheId,
     uint256 principalDeposited
   ) internal view returns (uint256) {
-    return cl._waterfall.getTranche(trancheId).cumulativePrincipalRemaining(principalDeposited);
+    return
+      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(
+        principalDeposited
+      );
   }
 
   /// Returns the index of the tranche which current call requests should be submitted to.

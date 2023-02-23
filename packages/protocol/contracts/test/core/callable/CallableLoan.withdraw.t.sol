@@ -368,7 +368,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
   ) public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(tokens.length != amounts.length);
-    vm.expectRevert(bytes("LEN"));
+    vm.expectRevert(bytes("LN"));
     withdrawMultiple(callableLoan, tokens, amounts, GF_OWNER);
   }
 

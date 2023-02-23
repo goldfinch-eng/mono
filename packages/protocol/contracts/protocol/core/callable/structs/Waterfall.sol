@@ -83,12 +83,12 @@ library WaterfallLogic {
     }
   }
 
-  function proportionalPrincipalOutstanding(
+  function proportionalPrincipalOutstandingWithReserves(
     Waterfall storage w,
     uint256 trancheId,
     uint256 principalDeposited
   ) internal view returns (uint256) {
-    return w.getTranche(trancheId).cumulativePrincipalRemaining(principalDeposited);
+    return w.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(principalDeposited);
   }
 
   /**

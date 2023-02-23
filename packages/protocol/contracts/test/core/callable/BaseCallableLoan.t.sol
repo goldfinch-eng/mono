@@ -216,6 +216,15 @@ contract CallableLoanBaseTest is BaseTest {
     return (callableLoan, cl);
   }
 
+  function submitCall(
+    CallableLoan callableLoan,
+    uint256 amount,
+    uint256 poolTokenId,
+    address caller
+  ) internal impersonating(caller) returns (uint256, uint256) {
+    return callableLoan.submitCall(amount, poolTokenId);
+  }
+
   function deposit(
     CallableLoan callableLoan,
     uint256 tranche,

@@ -49,7 +49,12 @@ interface ICallableLoan is ILoan {
   ///         Splits off any uncalled amount as a new uncalled pool token.
   /// @param amountToCall The amount of the pool token that should be called.
   /// @param poolTokenId The id of the pool token that should be called.
-  function submitCall(uint256 amountToCall, uint256 poolTokenId) external;
+  /// @return callRequestedTokenId  Token id of the call requested token.
+  /// @return remainingTokenId Token id of the remaining token.
+  function submitCall(
+    uint256 amountToCall,
+    uint256 poolTokenId
+  ) external returns (uint256, uint256);
 
   function schedule() external view returns (ISchedule);
 

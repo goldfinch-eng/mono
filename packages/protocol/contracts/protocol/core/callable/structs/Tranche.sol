@@ -131,7 +131,7 @@ library TrancheLogic {
     uint feePercent
   ) internal view returns (uint, uint) {
     return (
-      t.cumulativeInterestWithdrawable(principalAmount, feePercent),
+      t.proportionalInterestWithdrawable(principalAmount, feePercent),
       t.proportionalPrincipalAvailableAfterApplyingReserves(principalAmount)
     );
   }
@@ -142,8 +142,8 @@ library TrancheLogic {
     uint feePercent
   ) internal view returns (uint, uint) {
     return (
-      t.cumulativeInterestWithdrawable(principalAmount, feePercent),
-      t.cumulativePrincipalWithdrawable(principalAmount)
+      t.proportionalInterestWithdrawable(principalAmount, feePercent),
+      t.proportionalPrincipalWithdrawable(principalAmount)
     );
   }
 
@@ -154,22 +154,21 @@ library TrancheLogic {
     return ((t.principalPaid() + t._principalReserved) * principalAmount) / t.principalDeposited();
   }
 
-  function cumulativePrincipalWithdrawable(
+  function proportionalPrincipalWithdrawable(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint) {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
-  function cumulativePrincipalRemaining(
+  function proportionalPrincipalOutstandingWithReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint) {
-    return
-      ((t.principalDeposited() - t.principalPaid()) * principalAmount) / t.principalDeposited();
+    return (t.principalOutstandingWithReserves() * principalAmount) / t.principalDeposited();
   }
 
-  function cumulativeInterestWithdrawable(
+  function proportionalInterestWithdrawable(
     Tranche storage t,
     uint256 principalAmount,
     uint feePercent

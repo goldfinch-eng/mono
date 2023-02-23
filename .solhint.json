@@ -102,21 +102,16 @@
           "transferOwnership": ["onlyOwner"]
         },
         "**/CallableLoan.sol:CallableLoan": {
+          "submitCall": ["whenNotPaused", "nonReentrant"],
+          "deposit": ["whenNotPaused",  "nonReentrant"],
+          "depositWithPermit": ["whenNotPaused",  "nonReentrant"],
+          "withdraw": ["whenNotPaused",  "nonReentrant"],
+          "withdrawMax": ["whenNotPaused",  "nonReentrant"],
+          "withdrawMultiple": ["whenNotPaused", "nonReentrant"],
+          "pay": ["whenNotPaused", "nonReentrant"],
+          "drawdown": ["onlyLocker", "whenNotPaused", "nonReentrant"],
           "setAllowedUIDTypes": ["onlyLocker"],
-          "submitCall": [],
-          "deposit": ["whenNotPaused"],
-          "depositWithPermit": [],
-          "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
-          "lockPool": ["whenNotPaused", "onlyLocker"],
-          "setFundableAt": ["onlyLocker"],
-          "withdraw": ["whenNotPaused"],
-          "withdrawMax": ["whenNotPaused"],
-          "withdrawMultiple": [],
-          "drawdown": ["whenNotPaused"],
-          "assess": ["whenNotPaused"],
-          "pay": ["whenNotPaused"],
-          "initializeNextSlice": [],
-          "setMaxLimit": []
+          "setFundableAt": ["onlyLocker"]
         },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],

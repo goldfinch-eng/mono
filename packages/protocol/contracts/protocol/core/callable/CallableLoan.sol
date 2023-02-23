@@ -95,7 +95,9 @@ contract CallableLoan is
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
   ) external initializer {
-    require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
+    // NOTE: This check can be replaced with an after deploy verification rather than
+    //       a require statement which increases bytecode size.
+    // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
 
     config = IGoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
@@ -135,7 +137,13 @@ contract CallableLoan is
   function submitCall(
     uint256 callAmount,
     uint256 poolTokenId
-  ) external override nonReentrant whenNotPaused {
+  )
+    external
+    override
+    nonReentrant
+    whenNotPaused
+    returns (uint256 callRequestedTokenId, uint256 remainingTokenId)
+  {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
@@ -154,17 +162,13 @@ contract CallableLoan is
     });
     require(callAmount > 0 && principalRemaining >= callAmount, "IA");
 
-    (uint256 callRequestedTokenId, uint256 remainingTokenId) = _splitForCall(
+    (callRequestedTokenId, remainingTokenId) = _splitForCall(
       callAmount,
       poolTokenId,
       cl.uncalledCapitalTrancheIndex(),
       cl.activeCallSubmissionTrancheIndex()
     );
     cl.submitCall(callAmount);
-    if (totalWithdrawn > 0) {
-      IERC20UpgradeableWithDec usdc = config.getUSDC();
-      usdc.safeTransfer(msg.sender, totalWithdrawn);
-    }
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 
@@ -224,7 +228,7 @@ contract CallableLoan is
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
   ) external override nonReentrant whenNotPaused {
-    require(tokenIds.length == amounts.length, "LEN");
+    require(tokenIds.length == amounts.length, "LN");
 
     for (uint256 i = 0; i < amounts.length; i++) {
       IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenIds[i]);
@@ -370,25 +374,30 @@ contract CallableLoan is
     uint256 poolTokenId,
     uint256 uncalledCapitalTrancheIndex,
     uint256 activeCallSubmissionTrancheIndex
-  ) private returns (uint256 specifiedTokenId, uint256 remainingTokenId) {
+  ) private returns (uint256 calledTokenId, uint256 remainingTokenId) {
     IPoolTokens poolToken = config.getPoolTokens();
     address owner = poolToken.ownerOf(poolTokenId);
     IPoolTokens.TokenInfo memory tokenInfo = poolToken.getTokenInfo(poolTokenId);
-    poolToken.burn(poolTokenId);
-    specifiedTokenId = poolToken.mint(
+    calledTokenId = poolToken.mint(
       IPoolTokens.MintParams({
         principalAmount: callAmount,
         tranche: activeCallSubmissionTrancheIndex
       }),
       owner
     );
-    remainingTokenId = poolToken.mint(
-      IPoolTokens.MintParams({
-        principalAmount: tokenInfo.principalAmount - callAmount,
-        tranche: uncalledCapitalTrancheIndex
-      }),
-      owner
-    );
+    if (tokenInfo.principalAmount - callAmount > 0) {
+      remainingTokenId = poolToken.mint(
+        IPoolTokens.MintParams({
+          principalAmount: tokenInfo.principalAmount - callAmount,
+          tranche: uncalledCapitalTrancheIndex
+        }),
+        owner
+      );
+    } else {
+      remainingTokenId = 0;
+    }
+    poolToken.redeem(poolTokenId, tokenInfo.principalAmount - tokenInfo.principalRedeemed, 0);
+    poolToken.burn(poolTokenId);
   }
 
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
@@ -520,6 +529,9 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
+    if (totalWithdrawable == 0) {
+      return (0, 0);
+    }
     return _withdraw(tokenInfo, tokenId, totalWithdrawable);
   }
 
