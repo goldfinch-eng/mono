@@ -3,13 +3,11 @@ import { BigNumber } from "ethers";
 
 import {
   Banner,
-  Breadcrumb,
-  Heading,
   HelperText,
   Button,
-  goldfinchLogoWhiteBgPngUrl,
   Link,
   HeavyTable,
+  ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -140,35 +138,10 @@ export default function SeniorPoolPage() {
             initialContent={initialBannerContent}
             expandedContent={expandedBannerContent}
           />
-          {/* gives the illusion of rounded corners on the page */}
-          <div className="bg-sky-500">
-            <div className="h-3 rounded-t-xl bg-white" />
-          </div>
         </BannerPortal>
       ) : null}
 
       <div className="pool-layout">
-        <div style={{ gridArea: "heading" }}>
-          <div className="mb-8 flex flex-wrap justify-between gap-2">
-            <Breadcrumb label="Goldfinch" image={goldfinchLogoWhiteBgPngUrl} />
-            {seniorPool ? (
-              <Button
-                variant="rounded"
-                colorScheme="secondary"
-                iconRight="ArrowTopRight"
-                as="a"
-                href={`https://etherscan.io/address/${seniorPool.address}`}
-                target="_blank"
-                rel="noopener"
-              >
-                Contract
-              </Button>
-            ) : null}
-          </div>
-          <Heading className="text-center lg:text-left" level={1}>
-            Goldfinch Senior Pool
-          </Heading>
-        </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
           <div className="flex flex-col items-stretch gap-3">
             {seniorPool && fiatPerGfi && data?.viewer ? (
@@ -209,6 +182,35 @@ export default function SeniorPoolPage() {
           </div>
         </div>
         <div style={{ gridArea: "info" }}>
+          <ScrollingSectionedContainer
+            sections={[
+              {
+                navTitle: "Overview",
+                title: "Overview",
+                content: <div className="h-96" />,
+              },
+              {
+                navTitle: "Highlights",
+                title: "Highlights",
+                content: <div className="h-96" />,
+              },
+              {
+                navTitle: "Repayment",
+                title: "Repayments",
+                content: <div className="h-96" />,
+              },
+              {
+                navTitle: "Portfolio",
+                title: "Portfolio",
+                content: <div className="h-96" />,
+              },
+              {
+                navTitle: "Risk",
+                title: "Risk",
+                content: <div className="h-96" />,
+              },
+            ]}
+          />
           {error ? (
             <HelperText isError>
               There was a problem fetching data on the senior pool. Shown data

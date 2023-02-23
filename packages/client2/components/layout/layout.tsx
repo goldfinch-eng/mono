@@ -16,8 +16,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useRouter();
   const isMustardBackgroundColor =
-    pathname === "/earn" ||
-    (pathname.startsWith("/pools") && !(pathname === "/pools/senior"));
+    pathname === "/earn" || pathname.startsWith("/pools");
   return (
     <div
       className={clsx(
