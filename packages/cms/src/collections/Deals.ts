@@ -89,6 +89,27 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "highlights",
+      type: "array",
+      minRows: 0,
+      fields: [
+        {
+          name: "heading",
+          type: "text",
+          required: true,
+        },
+        {
+          name: "body",
+          type: "richText",
+          required: true,
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
+        },
+      ],
+    },
+    {
       name: "defaultInterestRate",
       label: "Default Interest Rate",
       type: "number",

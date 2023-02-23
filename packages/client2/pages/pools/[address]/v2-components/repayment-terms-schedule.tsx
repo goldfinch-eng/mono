@@ -3,26 +3,24 @@ import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 
-import { RepaymentTermsScheduleFragment } from "@/lib/graphql/generated";
+import { RepaymentTermsScheduleFieldsFragment } from "@/lib/graphql/generated";
 import { calculateInterestOwed } from "@/pages/borrow/helpers";
 import { RepaymentScheduleTable } from "@/pages/pools/[address]/v2-components/repayment-schedule-table";
 
 import RepaymentScheduleBarChart from "../v2-components/repayment-schedule-bar-chart";
 
 export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
-  fragment RepaymentTermsSchedule on TranchedPool {
-    creditLine {
-      termStartTime
-      termEndTime
-      paymentPeriodInDays
-      interestApr
-      limit
-    }
+  fragment RepaymentTermsScheduleFields on Loan {
+    termStartTime
+    termEndTime
+    paymentPeriodInDays
+    interestRateBigInt
+    principalAmount
   }
 `;
 
 interface RepaymentTermsScheduleProps {
-  loan?: RepaymentTermsScheduleFragment | null;
+  loan?: RepaymentTermsScheduleFieldsFragment | null;
   className?: string;
 }
 
@@ -34,16 +32,16 @@ export interface RepaymentScheduleData {
 }
 
 const generateRepaymentScheduleData = (
-  loan: RepaymentTermsScheduleFragment
+  loan: RepaymentTermsScheduleFieldsFragment
 ) => {
   const repaymentScheduleData: RepaymentScheduleData[] = [];
 
-  const termStartTime = loan.creditLine.termStartTime.toNumber();
-  const termEndTime = loan.creditLine.termEndTime.toNumber();
+  const termStartTime = loan.termStartTime.toNumber();
+  const termEndTime = loan.termEndTime.toNumber();
 
   // Number of seconds in 'paymentPeriodInDays'
   const paymentPeriodInSeconds =
-    loan.creditLine.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
+    loan.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
 
   // Keep track of period start & end and payment period number
   let periodStartTimestamp = termStartTime;
@@ -57,10 +55,10 @@ const generateRepaymentScheduleData = (
     const expectedInterest = calculateInterestOwed({
       isLate: false,
       interestOwed: BigNumber.from(0),
-      interestApr: loan.creditLine.interestApr,
+      interestApr: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(periodEndTimestamp),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: loan.creditLine.limit,
+      balance: loan.principalAmount,
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
@@ -79,15 +77,15 @@ const generateRepaymentScheduleData = (
     const expectedInterest = calculateInterestOwed({
       isLate: false,
       interestOwed: BigNumber.from(0),
-      interestApr: loan.creditLine.interestApr,
+      interestApr: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(termEndTime),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: loan.creditLine.limit,
+      balance: loan.principalAmount,
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
       estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d, Y"),
-      principal: loan.creditLine.limit,
+      principal: loan.principalAmount,
       interest: expectedInterest,
     });
   }
@@ -99,7 +97,7 @@ export function RepaymentTermsSchedule({
   loan,
   className,
 }: RepaymentTermsScheduleProps) {
-  if (!loan || !loan.creditLine) {
+  if (!loan) {
     return null;
   }
 

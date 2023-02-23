@@ -131,13 +131,60 @@ enum UidType {
   NON_US_ENTITY
 }
 
-type TranchedPool @entity {
+interface Loan {
   id: ID!
-  estimatedJuniorApy: BigDecimal!
-  estimatedJuniorApyFromGfiRaw: BigDecimal!
+  address: Bytes!
+  fundingLimit: BigInt!
+  principalAmount: BigInt!
+  usdcApy: BigDecimal!
+  rawGfiApy: BigDecimal!
+  totalDeposited: BigInt!
+  remainingCapacity: BigInt!
+  fundableAt: Int!
+  createdAt: Int!
+  allowedUidTypes: [UidType!]!
+  backers: [User!]!
+  numBackers: Int!
+
+  # "Credit line" fields
+  balance: BigInt!
+  paymentPeriodInDays: BigInt!
+  nextDueTime: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  termInDays: Int!
+  interestRate: BigDecimal!
+  interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
+  lateFeeRate: BigDecimal!
+}
+
+type TranchedPool implements Loan @entity {
+  id: ID!
+  address: Bytes!
+  principalAmount: BigInt!
+  fundingLimit: BigInt!
+  usdcApy: BigDecimal!
+  rawGfiApy: BigDecimal!
+  totalDeposited: BigInt!
+  remainingCapacity: BigInt!
+  fundableAt: Int!
+  createdAt: Int!
+  allowedUidTypes: [UidType!]!
+  backers: [User!]!
+  numBackers: Int!
+
+  balance: BigInt!
+  paymentPeriodInDays: BigInt!
+  nextDueTime: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  termInDays: Int!
+  interestRate: BigDecimal!
+  interestRateBigInt: BigInt!
+  lateFeeRate: BigDecimal!
+
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigDecimal
-  remainingCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
   drawdownsPaused: Boolean!
@@ -147,22 +194,15 @@ type TranchedPool @entity {
   isV1StyleDeal: Boolean!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
-  totalDeposited: BigInt!
   juniorDeposited: BigInt!
-  totalDeployed: BigInt!
-  fundableAt: BigInt!
   """
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  backers: [User!]!
-  numBackers: Int!
   tokens: [TranchedPoolToken!]!
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
-  createdAt: BigInt!
-  allowedUidTypes: [UidType!]!
 
   transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
 
@@ -315,6 +355,7 @@ type Transaction @entity(immutable: true) {
   receivedNftId: String
   receivedNftType: SupportedNft
 
+  # TODO change this to a Loan reference
   tranchedPool: TranchedPool
 
   fiduPrice: BigInt

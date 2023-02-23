@@ -53,19 +53,25 @@ export function ScrollingSectionedContainer({
       <Sentinel onVisibilityChange={setIsTopScrolled} />
       <div
         className={clsx(
-          "sticky top-0 flex max-w-max flex-wrap gap-1 rounded-full bg-mustard-50 text-sm transition-shadow",
-          !isTopScrolled ? "shadow-md" : null
+          "sticky top-0 isolate z-10 flex flex-wrap justify-between gap-2 bg-mustard-50 px-2 pb-4 pt-1 text-sm transition-shadow"
         )}
+        style={{
+          boxShadow: !isTopScrolled
+            ? "0px 20px 15px -18px rgba(0, 0, 0, 0.25)"
+            : "none",
+        }}
       >
-        {sections.map(({ navTitle }, index) => (
-          <ScrollNavLink
-            key={navTitle}
-            href={`#${kebabCaseify(navTitle)}`}
-            isScrolled={scrolledNavIndex === index}
-          >
-            {navTitle}
-          </ScrollNavLink>
-        ))}
+        <div className="flex flex-wrap gap-1">
+          {sections.map(({ navTitle }, index) => (
+            <ScrollNavLink
+              key={navTitle}
+              href={`#${kebabCaseify(navTitle)}`}
+              isScrolled={scrolledNavIndex === index}
+            >
+              {navTitle}
+            </ScrollNavLink>
+          ))}
+        </div>
         {navAddons?.map(({ href, text }) => (
           <AddonNavLink href={href} key={href}>
             {text}
@@ -121,7 +127,9 @@ function ScrollNavLink({
     <a
       className={clsx(
         "rounded-full px-4 py-2.5",
-        isScrolled ? "bg-mustard-100 font-medium" : "font-normal"
+        isScrolled
+          ? "bg-mustard-100 font-medium"
+          : "font-normal hover:bg-sand-200"
       )}
       href={href}
     >
@@ -141,7 +149,7 @@ export function AddonNavLink({
     <NextLink passHref href={href}>
       <Button
         as="a"
-        colorScheme="secondary"
+        colorScheme="sand"
         variant="rounded"
         iconRight="ArrowTopRight"
       >

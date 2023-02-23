@@ -3,7 +3,7 @@ import { format as formatDate } from "date-fns";
 import { gql } from "graphql-request";
 import Image from "next/future/image";
 
-import { Button, Chip, Icon } from "@/components/design-system";
+import { Button, Chip } from "@/components/design-system";
 import { CreditMemoFieldsFragment } from "@/lib/graphql/generated";
 
 export const CREDIT_MEMO_FIELDS = gql`
@@ -48,8 +48,8 @@ export function CreditMemoAnalysisCard({
 
   return (
     <div className={clsx(className, "rounded-xl bg-mustard-100 p-6")}>
-      <div className="mb-5 flex justify-between">
-        <div className="flex items-center pr-8">
+      <div className="mb-5 flex flex-col items-start justify-between gap-2 md:flex-row">
+        <div className="flex items-start pr-8">
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sand-200">
             {thumbnail?.url ? (
               <Image
@@ -66,14 +66,17 @@ export function CreditMemoAnalysisCard({
             <div className="text-xs text-sand-500">{subtitle}</div>
           </div>
         </div>
-        <Chip colorScheme="mint" className="flex h-8 min-w-fit items-center">
-          <Icon name="Checkmark" size="sm" className="mr-2.5" />
+        <Chip
+          iconLeft="Checkmark"
+          colorScheme="mint"
+          className="flex h-8 min-w-fit items-center"
+        >
           Vetted reviewer
         </Chip>
       </div>
       <div className="mb-5 text-sm">{content}</div>
-      <div className="flex items-center justify-between">
-        <div className="flex">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex gap-2">
           {executiveSummaryUrl && (
             <Button
               as="a"

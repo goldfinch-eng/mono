@@ -6,13 +6,12 @@ import { Shimmer, Stat, StatGrid } from "@/components/design-system";
 import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
 
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
-  fragment RepaymentTermsStatsFields on TranchedPool {
-    creditLine {
-      termInDays
-      paymentPeriodInDays
-      termStartTime
-      termEndTime
-    }
+  fragment RepaymentTermsStatsFields on Loan {
+    fundableAt
+    termInDays
+    paymentPeriodInDays
+    termStartTime
+    termEndTime
   }
 `;
 
@@ -25,7 +24,7 @@ export function RepaymentTermsStats({
   loan,
   className,
 }: RepaymentTermsStatsProps) {
-  const showLoadingState = !loan?.creditLine;
+  const showLoadingState = !loan;
 
   const stats: { label: string; value: ReactNode; tooltip: string }[] = [
     {
@@ -33,11 +32,10 @@ export function RepaymentTermsStats({
       value: showLoadingState ? (
         <Shimmer />
       ) : (
-        formatDistanceStrict(
-          loan.creditLine.termEndTime.toNumber() * 1000,
-          loan.creditLine.termStartTime.toNumber() * 1000,
-          { unit: "month", roundingMethod: "ceil" }
-        )
+        formatDistanceStrict(0, loan.termInDays * 86400 * 1000, {
+          unit: "month",
+          roundingMethod: "ceil",
+        })
       ),
       tooltip: "TODO: Loan term tooltip",
     },
@@ -46,7 +44,7 @@ export function RepaymentTermsStats({
       value: showLoadingState ? (
         <Shimmer />
       ) : (
-        `${loan.creditLine.paymentPeriodInDays.toString()} days`
+        `${loan.paymentPeriodInDays.toString()} days`
       ),
       tooltip: "TODO: Payment frequency tooltip",
     },
@@ -55,10 +53,7 @@ export function RepaymentTermsStats({
       value: showLoadingState ? (
         <Shimmer />
       ) : (
-        Math.ceil(
-          loan.creditLine.termInDays.toNumber() /
-            loan.creditLine.paymentPeriodInDays.toNumber()
-        )
+        Math.ceil(loan.termInDays / loan.paymentPeriodInDays.toNumber())
       ),
       tooltip: "TODO: Total payments tooltip",
     },
@@ -73,7 +68,12 @@ export function RepaymentTermsStats({
       value: showLoadingState ? (
         <Shimmer />
       ) : (
-        formatDate(loan.creditLine.termStartTime.toNumber() * 1000, "MMM d, y")
+        formatDate(
+          !loan.termStartTime.isZero()
+            ? loan.termStartTime.toNumber() * 1000
+            : (loan.fundableAt + 86400 * 14) * 1000,
+          "MMM d, y"
+        )
       ),
       tooltip: "TODO: Est. repayment start date tooltip",
     },
@@ -82,7 +82,7 @@ export function RepaymentTermsStats({
       value: showLoadingState ? (
         <Shimmer />
       ) : (
-        formatDate(loan.creditLine.termEndTime.toNumber() * 1000, "MMM d, y")
+        formatDate(loan.termEndTime.toNumber() * 1000, "MMM d, y")
       ),
       tooltip: "TODO: Est. loan maturity date tooltip",
     },

@@ -1,18 +1,20 @@
 import { differenceInCalendarDays, format } from "date-fns";
-import { BigNumber } from "ethers";
 
 import { Button, Tooltip } from "@/components/design-system";
 
 interface ComingSoonPanelProps {
-  fundableAt: BigNumber;
+  /**
+   * This should be a timestamp is seconds, not ms
+   */
+  fundableAt: number;
 }
 
 export function ComingSoonPanel({ fundableAt }: ComingSoonPanelProps) {
-  if (fundableAt.isZero()) {
+  if (fundableAt === 0) {
     return null;
   }
 
-  const date = new Date(fundableAt.toNumber() * 1000);
+  const date = new Date(fundableAt * 1000);
   const difference = differenceInCalendarDays(date, new Date());
 
   return (
