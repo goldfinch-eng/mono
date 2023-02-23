@@ -8,8 +8,6 @@ import {Test, console} from "forge-std/Test.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 
-import {AccountantBaseTest} from "./BaseAccountant.t.sol";
-
 contract AccountantAllocatePaymentTest is Test, InvariantTest {
   AccountantHandler public accountantHandler = new AccountantHandler();
 
