@@ -3,15 +3,121 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {FixedPoint} from "../../../external/FixedPoint.sol";
 import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {AccountantBaseTest} from "./BaseAccountant.t.sol";
-import {TestCreditLine} from "../../../test/TestCreditLine.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {ITranchedPool} from "../../../interfaces/ICreditLine.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+
+contract MockCreditLine is ICreditLine {
+  uint256 private _balance;
+  uint256 private _interestOwed;
+  uint256 private _principalOwed;
+  uint256 private _termEndTime;
+  uint256 private _nextDueTime;
+  uint256 private _interestAccruedAsOf;
+  uint256 private _lastFullPaymentTime;
+  address private _borrower;
+  uint256 private _limit;
+  uint256 private _interestApr;
+  uint256 private _lateFeeApr;
+  bool private _isLate;
+  bool private _withinPrincipalGracePeriod;
+  uint256 private _totalInterestAccrued;
+  uint256 private _totalInterestAccruedAt;
+  uint256 private _totalInterestPaid;
+  uint256 private _totalInterestOwed;
+  uint256 private _totalInterestOwedAt;
+  uint256 private _interestOwedAt;
+  uint256 private _interestAccrued;
+  uint256 private _interestAccruedAt;
+  uint256 private _principalOwedAt;
+  uint256 private _totalPrincipalPaid;
+  uint256 private _totalPrincipalOwedAt;
+  uint256 private _totalPrincipalOwed;
+  uint256 private _termStartTime;
+
+  function balance() external view override returns (uint256) { return _balance; }
+  function interestOwed() external view override returns (uint256) { return _interestOwed; }
+  function principalOwed() external view override returns (uint256) { return _principalOwed; }
+  function termEndTime() external view override returns (uint256) { return _termEndTime; }
+  function nextDueTime() external view override returns (uint256) { return _nextDueTime; }
+  function interestAccruedAsOf() external view override returns (uint256) { return _interestAccruedAsOf; }
+  function lastFullPaymentTime() external view override returns (uint256) { return _lastFullPaymentTime; }
+  function borrower() external view override returns (address) { return _borrower; }
+  function currentLimit() external view override returns (uint256) { return _limit; }
+  function limit() external view override returns (uint256) { return _limit; }
+  function maxLimit() external view override returns (uint256) { return _interestApr; }
+  function interestApr() external view override returns (uint256) { return _interestApr; }
+  function lateFeeApr() external view override returns (uint256) { return _lateFeeApr; }
+  function isLate() external view override returns (bool) { return _isLate; }
+  function withinPrincipalGracePeriod() external view override returns (bool) { return _withinPrincipalGracePeriod; }
+  function totalInterestAccrued() external view override returns (uint256) { return _totalInterestAccrued; }
+  function totalInterestAccruedAt(uint256) external view override returns (uint256) { return _totalInterestAccruedAt; }
+  function totalInterestPaid() external view override returns (uint256) { return _totalInterestPaid; }
+  function totalInterestOwed() external view override returns (uint256) { return _totalInterestOwed; }
+  function totalInterestOwedAt(uint256) external view override returns (uint256) { return _totalInterestOwedAt; }
+  function interestOwedAt(uint256) external view override returns (uint256) { return _interestOwedAt; }
+  function interestAccrued() external view override returns (uint256) { return _interestAccrued; }
+  function interestAccruedAt(uint256) external view override returns (uint256) { return _interestAccruedAt; }
+  function principalOwedAt(uint256) external view override returns (uint256) { return _principalOwedAt; }
+  function totalPrincipalPaid() external view override returns (uint256) { return _totalPrincipalPaid; }
+  function totalPrincipalOwedAt(uint256) external view override returns (uint256) { return _totalPrincipalOwedAt; }
+  function totalPrincipalOwed() external view override returns (uint256) { return _totalPrincipalOwed; }
+  function termStartTime() external view override returns (uint256) { return _termStartTime; }
+  function setLimit(uint256) external override {}
+  function setMaxLimit(uint256) external override {}
+  function initialize(
+    address _config,
+    address owner,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    ISchedule _schedule,
+    uint256 _lateFeeApr
+  ) external override {}
+  function pay(uint paymentAmount) external override returns (ITranchedPool.PaymentAllocation memory) {}
+  function pay(
+    uint256 principalPayment,
+    uint256 interestPaymen
+  ) external override returns (ITranchedPool.PaymentAllocation memory) {}
+  function drawdown(uint256 amount) external override {}
+
+  function setTermEndTime(uint256 __termEndTime) external {
+    _termEndTime = __termEndTime;
+  }
+
+  function setBalance(uint256 __balance) external {
+    _balance = __balance;
+  }
+
+  function setInterestOwed(uint256 __interestOwed) external {
+    _interestOwed = __interestOwed;
+  }
+
+  function setPrincipalOwed(uint256 __principalOwed) external {
+    _principalOwed = __principalOwed;
+  }
+
+  function setInterestApr(uint256 __interestApr) external {
+    _interestApr = __interestApr;
+  }
+}
 
 contract AccountantCalculateWritedownForTest is AccountantBaseTest {
+  using FixedPoint for FixedPoint.Unsigned;
+
+  MockCreditLine private cl;
+
+  function setUp() public override {
+    super.setUp();
+    cl = new MockCreditLine();
+  }
+
   // TODO(will)
   /*
   If we are past the termEndTime, owe interest and/or balance, and past the writedown gracePeriod,
@@ -267,107 +373,151 @@ contract AccountantCalculateWritedownForTest is AccountantBaseTest {
   //     "writedownAmount should still be 25% of balance"
   //   );
   // }
-  // /*
-  // We should have proportional writedowns after termEndTime, same as before. The
-  // main difference here is that daysLate will include the seconds elapsed after termEndTime.
-  // */
-  // function testWritedownPastTermEndTimeUsesTimestampToWritedownLinearly(
-  //   uint256 daysAfterTermEndTime
-  // )
-  //   public
-  //   impersonating(GF_OWNER)
-  //   withTermEndTime(cl, block.timestamp)
-  //   withInterestOwed(
-  //     cl,
-  //     getInterestAccrued(
-  //       0,
-  //       PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY + 10,
-  //       cl.balance(),
-  //       cl.interestApr()
-  //     )
-  //   )
-  // {
-  //   uint256 gracePeriodInDays = 30;
-  //   uint256 maxDaysLate = 120;
-  //   // daysLate = 30 (from interest owed) + daysAfterTermEndTime
-  //   // we want days late to fall in the range [gracePeriodInDays, maxDaysLate]
-  //   // to test writedown proportionality, so
-  //   // 30 + daysAfterTermEndTime > gracePeriodInDays && 30 + daysAfterTermEndTime < maxDaysLate
-  //   // => daysAfterTermEndTime > 0 && daysAfterTermEndTime < 90
-  //   vm.assume(daysAfterTermEndTime > 0 && daysAfterTermEndTime < 90);
-  //   skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
-  //   (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-  //     cl,
-  //     block.timestamp,
-  //     gracePeriodInDays,
-  //     maxDaysLate
-  //   );
-  //   FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(
-  //     cl,
-  //     gracePeriodInDays,
-  //     maxDaysLate
-  //   );
-  //   assertEq(
-  //     writedownPercent,
-  //     expectedWritedownPercent.mul(100).div(10 ** 18).rawValue,
-  //     "writedownPercent should be proportional"
-  //   );
-  //   uint256 expectedWritedownAmount = expectedWritedownPercent
-  //     .mul(cl.balance())
-  //     .div(10 ** 18)
-  //     .rawValue;
-  //   assertEq(writedownAmount, expectedWritedownAmount, "writedownAmount should be proportional");
-  // }
-  // /*
-  // Just like before termEndTime, the writedown percent should not exceed 100% under
-  // any circumstances
-  // */
-  // function testWritedownPastTermEndTimeCapsAt100Percent(
-  //   uint256 daysAfterTermEndTime
-  // )
-  //   public
-  //   impersonating(GF_OWNER)
-  //   withTermEndTime(cl, block.timestamp)
-  //   withInterestOwed(
-  //     cl,
-  //     getInterestAccrued(
-  //       0,
-  //       PAYMENT_PERIOD_IN_DAYS * TestConstants.SECONDS_PER_DAY,
-  //       cl.balance(),
-  //       cl.interestApr()
-  //     )
-  //   )
-  // {
-  //   uint256 gracePeriodInDays = 30;
-  //   uint256 maxDaysLate = 120;
-  //   daysAfterTermEndTime = bound(daysAfterTermEndTime, 150, 500);
-  //   skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
-  //   (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-  //     cl,
-  //     block.timestamp,
-  //     gracePeriodInDays,
-  //     maxDaysLate
-  //   );
-  //   assertEq(writedownPercent, 100, "writedownPercent should be 100");
-  //   assertEq(writedownAmount, cl.balance(), "writedownAmount should be full balance");
-  // }
-  // /*
-  // Past termEndTime nothing should be written down if the credit line has no balance
-  // */
-  // function testNoWritedownForZeroBalancePastTermEndTime(
-  //   uint256 daysAfterTermEndTime
-  // ) public impersonating(GF_OWNER) withTermEndTime(cl, block.timestamp) withBalance(cl, 0) {
-  //   uint256 gracePeriodInDays = 30;
-  //   uint256 maxDaysLate = 120;
-  //   daysAfterTermEndTime = bound(daysAfterTermEndTime, gracePeriodInDays, 500);
-  //   skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
-  //   (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-  //     cl,
-  //     block.timestamp,
-  //     gracePeriodInDays,
-  //     maxDaysLate
-  //   );
-  //   assertEq(writedownPercent, 0, "writedownPercent should be 0");
-  //   assertEq(writedownAmount, 0, "writedownAmount should be 0");
-  // }
+
+  /*
+  We should have proportional writedowns after termEndTime, same as before. The
+  main difference here is that daysLate will include the seconds elapsed after termEndTime.
+  */
+  function testWritedownPastTermEndTimeUsesTimestampToWritedownLinearly(uint256 daysAfterTermEndTime) public {
+    cl.setTermEndTime(block.timestamp);
+    cl.setBalance(usdcVal(100));
+    cl.setInterestApr(usdcVal(30000000000000000));
+    cl.setInterestOwed(getInterestAccrued({
+      start: 0,
+      end: 30 days + 10,
+      amount: cl.balance(),
+      apr: cl.interestApr() 
+    }));
+
+    uint256 gracePeriodInDays = 30;
+    uint256 maxDaysLate = 120;
+
+    // daysLate = 30 (from interest owed) + daysAfterTermEndTime
+    // we want days late to fall in the range [gracePeriodInDays, maxDaysLate]
+    // to test writedown proportionality, so
+    // 30 + daysAfterTermEndTime > gracePeriodInDays && 30 + daysAfterTermEndTime < maxDaysLate
+    // => daysAfterTermEndTime > 0 && daysAfterTermEndTime < 90
+    vm.assume(daysAfterTermEndTime > 0 && daysAfterTermEndTime < 90);
+    skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      block.timestamp,
+      gracePeriodInDays,
+      maxDaysLate
+    );
+
+    FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(
+      cl,
+      gracePeriodInDays,
+      maxDaysLate
+    );
+
+    assertEq(
+      writedownPercent,
+      expectedWritedownPercent.mul(100).div(10 ** 18).rawValue,
+      "writedownPercent should be proportional"
+    );
+
+    uint256 expectedWritedownAmount = expectedWritedownPercent
+      .mul(cl.balance())
+      .div(10 ** 18)
+      .rawValue;
+
+    assertEq(writedownAmount, expectedWritedownAmount, "writedownAmount should be proportional");
+  }
+
+  /*
+  Just like before termEndTime, the writedown percent should not exceed 100% under
+  any circumstances
+  */
+  function testWritedownPastTermEndTimeCapsAt100Percent(uint256 daysAfterTermEndTime) public {
+    cl.setTermEndTime(block.timestamp);
+    cl.setInterestOwed(getInterestAccrued({
+      start: 0,
+      end: 30 days,
+      amount: usdcVal(10),
+      apr: 30000000000000000
+    }));
+    cl.setBalance(usdcVal(100));
+    cl.setPrincipalOwed(usdcVal(100));
+
+    uint256 gracePeriodInDays = 30;
+    uint256 maxDaysLate = 120;
+    daysAfterTermEndTime = bound(daysAfterTermEndTime, 150, 500);
+    skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      block.timestamp,
+      gracePeriodInDays,
+      maxDaysLate
+    );
+    assertEq(writedownPercent, 100, "writedownPercent should be 100");
+    assertEq(writedownAmount, cl.balance(), "writedownAmount should be full balance");
+  }
+
+  /*
+  Past termEndTime nothing should be written down if the credit line has no balance
+  */
+  function testNoWritedownForZeroBalancePastTermEndTime(
+    uint256 daysAfterTermEndTime
+  ) public impersonating(GF_OWNER) withTermEndTime(cl, block.timestamp) withBalance(cl, 0) {
+    uint256 gracePeriodInDays = 30;
+    uint256 maxDaysLate = 120;
+    daysAfterTermEndTime = bound(daysAfterTermEndTime, gracePeriodInDays, 500);
+    skip(block.timestamp + daysAfterTermEndTime * TestConstants.SECONDS_PER_DAY);
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      block.timestamp,
+      gracePeriodInDays,
+      maxDaysLate
+    );
+    assertEq(writedownPercent, 0, "writedownPercent should be 0");
+    assertEq(writedownAmount, 0, "writedownAmount should be 0");
+  }
+
+  modifier withTermEndTime(MockCreditLine cl, uint256 _termEndTime) {
+    cl.setTermEndTime(_termEndTime);
+    _;
+  }
+
+  modifier withBalance(MockCreditLine cl, uint256 _balance) {
+    cl.setBalance(_balance);
+    _;
+  }
+
+  function getInterestAccrued(
+    uint256 start,
+    uint256 end,
+    uint256 amount,
+    uint256 apr
+  ) internal pure returns (uint256) {
+    uint256 secondsElapsed = end - start;
+    uint256 totalIntPerYear = (amount * apr) / TestConstants.INTEREST_DECIMALS;
+    return (totalIntPerYear * secondsElapsed) / TestConstants.SECONDS_PER_YEAR;
+  }
+
+   function getPercentage(
+    MockCreditLine cl,
+    uint256 gracePeriodInDays,
+    uint256 maxDaysLate
+  ) internal view returns (FixedPoint.Unsigned memory) {
+    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriodInDays);
+    FixedPoint.Unsigned memory fpMaxDaysLate = FixedPoint.fromUnscaledUint(maxDaysLate);
+
+    FixedPoint.Unsigned memory amountOwedForOneDay = Accountant.calculateAmountOwedForOneDay(cl);
+    uint256 totalOwed = cl.interestOwed() + cl.principalOwed();
+    FixedPoint.Unsigned memory fpDaysLate = FixedPoint.fromUnscaledUint(totalOwed).div(
+      amountOwedForOneDay
+    );
+    if (block.timestamp > cl.termEndTime()) {
+      uint256 secondsLate = block.timestamp - cl.termEndTime();
+      fpDaysLate = fpDaysLate.add(
+        FixedPoint.fromUnscaledUint(secondsLate).div(TestConstants.SECONDS_PER_DAY)
+      );
+    }
+    FixedPoint.Unsigned memory expectedWritedownPercent = fpDaysLate.sub(fpGracePeriod).div(
+      fpMaxDaysLate
+    );
+    return expectedWritedownPercent;
+  }
 }
