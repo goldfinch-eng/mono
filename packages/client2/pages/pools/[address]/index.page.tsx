@@ -26,6 +26,7 @@ import {
 import { useWallet } from "@/lib/wallet";
 import {
   RepaymentTermsSchedule,
+  RepaymentTermsSchedulePlaceholder,
   REPAYMENT_TERMS_SCHEDULE_FIELDS,
 } from "@/pages/pools/[address]/v2-components/repayment-terms-schedule";
 import {
@@ -324,11 +325,16 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 content: (
                   <div className="space-y-6">
                     {tranchedPool ? (
-                      <RepaymentTermsStats loan={tranchedPool} />
+                      <>
+                        <RepaymentTermsStats loan={tranchedPool} />
+                        <RepaymentTermsSchedule loan={tranchedPool} />
+                      </>
                     ) : (
-                      <RepaymentTermsStatsPlaceholder />
+                      <>
+                        <RepaymentTermsStatsPlaceholder />
+                        <RepaymentTermsSchedulePlaceholder />
+                      </>
                     )}
-                    <RepaymentTermsSchedule loan={tranchedPool} />
                   </div>
                 ),
               },

@@ -23,7 +23,7 @@ export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
 `;
 
 interface RepaymentTermsScheduleProps {
-  loan?: RepaymentTermsScheduleFieldsFragment | null;
+  loan: RepaymentTermsScheduleFieldsFragment;
   className?: string;
 }
 
@@ -109,10 +109,6 @@ export function RepaymentTermsSchedule({
   loan,
   className,
 }: RepaymentTermsScheduleProps) {
-  if (!loan) {
-    return null;
-  }
-
   const repaymentScheduleData = generateRepaymentScheduleData(loan);
 
   return (
@@ -125,4 +121,8 @@ export function RepaymentTermsSchedule({
       <RepaymentScheduleTable repaymentScheduleData={repaymentScheduleData} />
     </div>
   );
+}
+
+export function RepaymentTermsSchedulePlaceholder() {
+  return <div className="h-96 rounded-xl border border-sand-300"></div>;
 }
