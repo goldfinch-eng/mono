@@ -136,6 +136,10 @@ interface Loan {
   address: Bytes!
   fundingLimit: BigInt!
   principalAmount: BigInt!
+  """
+  The amount of interest determined to be owed to this pool, calculated at the very beginning
+  """
+  initialInterestOwed: BigInt!
   usdcApy: BigDecimal!
   rawGfiApy: BigDecimal!
   totalDeposited: BigInt!
@@ -162,6 +166,10 @@ type TranchedPool implements Loan @entity {
   id: ID!
   address: Bytes!
   principalAmount: BigInt!
+  """
+  The amount of interest determined to be owed to this pool, calculated at the very beginning
+  """
+  initialInterestOwed: BigInt!
   fundingLimit: BigInt!
   usdcApy: BigDecimal!
   rawGfiApy: BigDecimal!
@@ -208,10 +216,6 @@ type TranchedPool implements Loan @entity {
 
   principalAmountRepaid: BigInt!
   interestAmountRepaid: BigInt!
-  """
-  The amount of interest determined to be owed to this pool, calculated at the very beginning
-  """
-  initialInterestOwed: BigInt!
 
   borrowerContract: BorrowerContract!
 }

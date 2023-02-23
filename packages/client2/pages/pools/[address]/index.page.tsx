@@ -25,6 +25,7 @@ import {
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { AmountStats, AMOUNT_STATS_FIELDS } from "./v2-components/amount-stats";
 import {
   BorrowerProfile,
   BORROWER_OTHER_POOL_FIELDS,
@@ -80,6 +81,7 @@ gql`
   ${BORROWER_OTHER_POOL_FIELDS}
   ${REPAYMENT_TERMS_SCHEDULE_FIELDS}
   ${REPAYMENT_TERMS_STATS_FIELDS}
+  ${AMOUNT_STATS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -99,6 +101,7 @@ gql`
       ...ClaimPanelTranchedPoolFields
       ...RepaymentTermsScheduleFields
       ...RepaymentTermsStatsFields
+      ...AmountStatsFields
     }
     borrowerAllPools: tranchedPools(
       where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
@@ -283,12 +286,12 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: (
-                  <div>
-                    {tranchedPool ? (
-                      <FundingStats loan={tranchedPool} deal={dealDetails} />
-                    ) : null}
-                  </div>
+                content: !tranchedPool ? (
+                  <div className="h-60 rounded-xl border border-sand-200" />
+                ) : fundingStatus === LoanFundingStatus.Open ? (
+                  <FundingStats loan={tranchedPool} deal={dealDetails} />
+                ) : (
+                  <AmountStats loan={tranchedPool} />
                 ),
               },
               ...(dealDetails.highlights && dealDetails.highlights.length > 0
