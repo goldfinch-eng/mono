@@ -543,7 +543,7 @@ export const getStaticProps: GetStaticProps<
   >({
     query: singleDealQuery,
     variables: {
-      id: address,
+      id: address.toLowerCase(),
     },
     fetchPolicy: "network-only",
   });
