@@ -14,6 +14,7 @@ import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { SeniorPoolHighlights } from "./senior-pool-highlights";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
@@ -192,7 +193,7 @@ export default function SeniorPoolPage() {
               {
                 navTitle: "Highlights",
                 title: "Highlights",
-                content: <div className="h-96" />,
+                content: <SeniorPoolHighlights />,
               },
               {
                 navTitle: "Repayment",
