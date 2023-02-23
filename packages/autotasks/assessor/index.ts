@@ -16,6 +16,14 @@ const CONFIG = {
   },
 } as const
 
+const PROXY_IMPLEMENTATION_SLOTS = {
+  // USDC uses a very old proxy implementation
+  // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/release/2.0/packages/lib/contracts/upgradeability/UpgradeabilityProxy.sol
+  [CONFIG.mainnet.usdcAddress]: "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3",
+  // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
+  default: "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+}
+
 // Entrypoint for the Autotask
 exports.handler = baseHandler("assessor", async function (credentials) {
   const {etherscanApiKey} = credentials.secrets
@@ -57,7 +65,7 @@ exports.handler = baseHandler("assessor", async function (credentials) {
     pools = pools.concat(poolAddress)
   }
 
-  if (pools.length === 0) {
+  if (pools.length === 0 || pools[0] == undefined) {
     console.log("No pools to assess")
     return
   }
@@ -91,14 +99,14 @@ exports.handler = baseHandler("assessor", async function (credentials) {
 const assessIfRequired = async function assessIfRequired(
   tranchedPool: TranchedPool,
   creditLineContract: CreditLine,
-  provider,
+  provider: DefenderRelayProvider,
   seniorPool: SeniorPool,
   poolTokens: PoolTokens,
   usdc: ERC20
 ): Promise<boolean> {
   const creditLineAddress = await tranchedPool.creditLine()
   const creditLine = creditLineContract.attach(creditLineAddress)
-  const {timestamp: currentTime} = await provider.getBlock("latest")
+  const currentTime = BigNumber.from((await provider.getBlock("latest")).timestamp)
   const nextDueTime = await creditLine.nextDueTime()
   const termEndTime = await creditLine.termEndTime()
   const balance = await creditLine.balance()
@@ -180,7 +188,7 @@ async function isLate(creditLine: CreditLine, balance: BigNumber, timestamp: Big
   }
 }
 
-async function assessAndRedeem(tranchedPool, seniorPool, poolTokens) {
+async function assessAndRedeem(tranchedPool: TranchedPool, seniorPool: SeniorPool, poolTokens: PoolTokens) {
   await tranchedPool.assess()
 
   // Now get the tokenId for the senior pool so we can redeem (or writedown if required)
@@ -202,10 +210,13 @@ async function assessAndRedeem(tranchedPool, seniorPool, poolTokens) {
   }
 }
 
-async function getAbifor(etherscanApiUrl, address, provider, etherscanApiKey: string) {
-  // De-reference the proxy to the implementation if it is a proxy
-  // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
-  const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+async function getAbifor(
+  etherscanApiUrl: string,
+  address: string,
+  provider: DefenderRelayProvider,
+  etherscanApiKey: string
+) {
+  const implStorageLocation = PROXY_IMPLEMENTATION_SLOTS[address] || PROXY_IMPLEMENTATION_SLOTS.default
   let implementationAddress = await provider.getStorageAt(address, implStorageLocation)
   implementationAddress = ethers.utils.hexStripZeros(implementationAddress)
   if (implementationAddress !== "0x") {

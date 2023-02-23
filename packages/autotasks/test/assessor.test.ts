@@ -18,6 +18,7 @@ import {
   TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {DefenderRelayProvider} from "defender-relay-client/lib/ethers"
 import {BigNumber} from "ethers/lib/ethers"
 import {assessIfRequired} from "../assessor"
 
@@ -110,7 +111,7 @@ describe("assessor", () => {
       assessIfRequired(
         tranchedPoolAsEthers,
         proxiedCreditLine,
-        provider,
+        provider as unknown as DefenderRelayProvider,
         seniorPoolAsEthers,
         poolTokensAsEthers,
         usdcAsEthers
