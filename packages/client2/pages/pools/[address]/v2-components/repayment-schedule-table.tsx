@@ -14,40 +14,35 @@ export function RepaymentScheduleTable({
   repaymentScheduleData,
 }: RepaymentScheduleTableProps) {
   return (
-    <div className={clsx(className, "max-h-[18rem] overflow-y-auto")}>
-      <table className="w-full">
-        <thead className="sticky top-0">
-          <tr>
-            <td className="grid w-full grid-cols-12 border-y border-sand-300 bg-mustard-100 text-xs">
-              <div className="col-span-1 px-3.5 py-2">No.</div>
-              <div className="col-span-4 px-3.5 py-2">Est. payment date</div>
-              <div className="col-span-2 px-3.5 py-2 text-right">
-                Principal due
-              </div>
-              <div className="col-span-5 px-3.5 py-2 text-right">
-                Interest due
-              </div>
-            </td>
+    <div className={clsx(className, "max-h-80 overflow-y-auto")}>
+      <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
+        <thead>
+          <tr className="sticky top-0 bg-mustard-100">
+            <th scope="col" className="w-1/12 text-left">
+              No.
+            </th>
+            <th scope="col" className="w-4/12 text-left">
+              Est. payment date
+            </th>
+            <th scope="col" className="w-2/12 text-right">
+              Principal due
+            </th>
+            <th scope="col" className="w/5-12 text-right">
+              Interest due
+            </th>
           </tr>
         </thead>
-        <tbody className="max-h-[18rem] overflow-y-auto">
+        <tbody className="divide-y divide-sand-300">
           {repaymentScheduleData.map(
             ({ paymentPeriod, estimatedPaymentDate, interest, principal }) => (
-              <tr
-                key={paymentPeriod}
-                className="border-y border-sand-300 first:border-t-0 last:border-b-0"
-              >
-                <td className="grid w-full grid-cols-12 text-xs">
-                  <div className="col-span-1 px-3.5 py-3">{paymentPeriod}</div>
-                  <div className="col-span-4 px-3.5 py-3">
-                    {estimatedPaymentDate}
-                  </div>
-                  <div className="col-span-2 px-3.5 py-3 text-right">
-                    {formatCrypto({ amount: principal, token: "USDC" })}
-                  </div>
-                  <div className="col-span-5 px-3.5 py-3 text-right">
-                    {formatCrypto({ amount: interest, token: "USDC" })}
-                  </div>
+              <tr key={paymentPeriod}>
+                <td className="text-left">{paymentPeriod}</td>
+                <td className="text-left">{estimatedPaymentDate}</td>
+                <td className="text-right">
+                  {formatCrypto({ amount: principal, token: "USDC" })}
+                </td>
+                <td className="text-right">
+                  {formatCrypto({ amount: interest, token: "USDC" })}
                 </td>
               </tr>
             )
