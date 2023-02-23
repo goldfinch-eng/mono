@@ -5,13 +5,18 @@ import {
   XAxis,
   YAxis,
   Legend,
-  // Tooltip,
+  Tooltip,
   CartesianGrid,
   ResponsiveContainer,
+  TooltipProps,
 } from "recharts";
 import type { ContentType } from "recharts/types/component/DefaultLegendContent";
+import {
+  NameType,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
-import { cryptoToFloat } from "@/lib/format";
+import { cryptoToFloat, formatFiat } from "@/lib/format";
 
 import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule";
 
@@ -39,6 +44,39 @@ const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
   </div>
 );
 
+const RepaymentScheduleBarChartTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<ValueType, NameType>) => {
+  if (active && payload) {
+    const interestDataPoint = payload[0];
+    const principalDataPoint = payload[1];
+
+    return (
+      <div className="rounded-xl border-sand-300 bg-white p-6 outline-none">
+        <div className="text-xs outline-none">
+          <div className="mb-2">No.: {label}</div>
+          <div style={{ color: principalDataPoint.color }} className="mb-1">
+            {`Principal: ${formatFiat({
+              amount: principalDataPoint.payload.principal,
+              symbol: "USD",
+            })}`}
+          </div>
+          <div style={{ color: interestDataPoint.color }}>
+            {`Interest: ${formatFiat({
+              amount: interestDataPoint.payload.interest,
+              symbol: "USD",
+            })}`}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 const RepaymentScheduleBarChart = ({
   className,
   repaymentScheduleData,
@@ -49,26 +87,23 @@ const RepaymentScheduleBarChart = ({
     principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
   }));
 
-  const maxYValue = cryptoToFloat({
-    amount: repaymentScheduleData[
-      repaymentScheduleData.length - 1
-    ].principal.add(
-      repaymentScheduleData[repaymentScheduleData.length - 1].interest
-    ),
-    token: "USDC",
-  });
+  const maxYValue =
+    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1]
+      .principal +
+    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1].interest;
 
   const yAxisTicks = [
     0,
     maxYValue / 4,
     maxYValue / 2,
     (3 * maxYValue) / 4,
-    // We don't want the tip of the final bar touching the top - add a bit of padding i.e 2% of the max
+    // Add a bit to the max Y domain i.e 2% of the max
     maxYValue + maxYValue * 0.02,
-  ].map((tick) =>
-    tick > Y_AXIS_ROUNDING_INTERVAL
-      ? Math.round(tick / Y_AXIS_ROUNDING_INTERVAL) * Y_AXIS_ROUNDING_INTERVAL
-      : Math.trunc(tick)
+  ].map((yAxisTick) =>
+    yAxisTick > Y_AXIS_ROUNDING_INTERVAL
+      ? Math.round(yAxisTick / Y_AXIS_ROUNDING_INTERVAL) *
+        Y_AXIS_ROUNDING_INTERVAL
+      : Math.trunc(yAxisTick)
   );
 
   return (
@@ -103,8 +138,13 @@ const RepaymentScheduleBarChart = ({
           width={40}
         />
         <CartesianGrid vertical={false} x={0} width={650} />
-        {/* TODO: Confirm with Chico - do we want a tooltip? */}
-        {/* <Tooltip /> */}
+        {/* TODO: Waiting on official Tooltip UI design */}
+        <Tooltip
+          content={RepaymentScheduleBarChartTooltip}
+          offset={15}
+          // This removes the purple outline applied to the currently active tooltip
+          wrapperStyle={{ boxShadow: "none" }}
+        />
         <Bar dataKey="principal" stackId="a" fill="#3D755B" />
         <Bar dataKey="interest" stackId="a" fill="#65C397" />
       </BarChart>

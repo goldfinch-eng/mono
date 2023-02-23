@@ -18,7 +18,7 @@ export function RepaymentScheduleTable({
       <table className="w-full">
         <thead className="sticky top-0">
           <tr>
-            <td className="grid w-full grid-cols-12 border-y border-sand-300 bg-sand-50 text-xs">
+            <td className="grid w-full grid-cols-12 border-y border-sand-300 bg-mustard-100 text-xs">
               <div className="col-span-1 px-3.5 py-2">No.</div>
               <div className="col-span-4 px-3.5 py-2">Est. payment date</div>
               <div className="col-span-2 px-3.5 py-2 text-right">
