@@ -60,7 +60,7 @@
       "prettier --write",
       "eslint --resolve-plugins-relative-to=. --fix"
     ],
-    "*.sol": [
+    "*[^.t].sol": [
       "prettier --write",
       "solhint --fix --ignore-path 'contracts/test/'"
     ]
