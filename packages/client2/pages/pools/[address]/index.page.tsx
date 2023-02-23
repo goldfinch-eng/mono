@@ -40,11 +40,11 @@ import {
   CreditMemoAnalysisCard,
   CREDIT_MEMO_FIELDS,
 } from "./v2-components/credit-memo-analysis-card";
-import { FundingStats } from "./v2-components/funding-stats";
 import {
-  HighlightGrid,
-  HIGHLIGHT_GRID_FIELDS,
-} from "./v2-components/highlight-grid";
+  DealHighlights,
+  DEAL_HIGHLIGHT_FIELDS,
+} from "./v2-components/deal-highlights";
+import { FundingStats } from "./v2-components/funding-stats";
 import {
   InvestAndWithdrawTabs,
   SUPPLY_PANEL_USER_FIELDS,
@@ -145,7 +145,7 @@ const singleDealQuery = gql`
   ${SUPPLY_PANEL_DEAL_FIELDS}
   ${LOAN_SUMMARY_BORROWER_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
-  ${HIGHLIGHT_GRID_FIELDS}
+  ${DEAL_HIGHLIGHT_FIELDS}
   ${RISK_TABLE_DEAL_FIELDS}
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
@@ -162,7 +162,7 @@ const singleDealQuery = gql`
       }
       overview
       highlights {
-        ...HighlightGridFields
+        ...DealHighlightFields
       }
       details
       agreement
@@ -297,7 +297,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                       navTitle: "Highlights",
                       title: "Highlights",
                       content: (
-                        <HighlightGrid highlights={dealDetails.highlights} />
+                        <DealHighlights highlights={dealDetails.highlights} />
                       ),
                     },
                   ]

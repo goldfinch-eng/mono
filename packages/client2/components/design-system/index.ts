@@ -7,6 +7,7 @@ export * from "./button";
 export * from "./chip";
 export * from "./drawer";
 export * from "./form";
+export * from "./highlight-grid";
 export * from "./icon";
 export * from "./info-line";
 export * from "./input";
