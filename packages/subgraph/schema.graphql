@@ -154,6 +154,7 @@ interface Loan {
   termStartTime: BigInt!
   termInDays: Int!
   interestRate: BigDecimal!
+  interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
 }
 
@@ -179,6 +180,7 @@ type TranchedPool implements Loan @entity {
   termStartTime: BigInt!
   termInDays: Int!
   interestRate: BigDecimal!
+  interestRateBigInt: BigInt!
   lateFeeRate: BigDecimal!
 
   estimatedTotalAssets: BigInt!

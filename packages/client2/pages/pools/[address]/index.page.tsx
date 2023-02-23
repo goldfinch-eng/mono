@@ -24,6 +24,16 @@ import {
   FUNDING_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import {
+  RepaymentTermsSchedule,
+  RepaymentTermsSchedulePlaceholder,
+  REPAYMENT_TERMS_SCHEDULE_FIELDS,
+} from "@/pages/pools/[address]/v2-components/repayment-terms-schedule";
+import {
+  RepaymentTermsStats,
+  RepaymentTermsStatsPlaceholder,
+  REPAYMENT_TERMS_STATS_FIELDS,
+} from "@/pages/pools/[address]/v2-components/repayment-terms-stats";
 
 import {
   BorrowerProfile,
@@ -68,6 +78,8 @@ gql`
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${FUNDING_STATUS_LOAN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
+  ${REPAYMENT_TERMS_SCHEDULE_FIELDS}
+  ${REPAYMENT_TERMS_STATS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -85,6 +97,8 @@ gql`
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelTranchedPoolFields
+      ...RepaymentTermsScheduleFields
+      ...RepaymentTermsStatsFields
     }
     borrowerAllPools: tranchedPools(
       where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
@@ -308,7 +322,21 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               {
                 navTitle: "Repayment",
                 title: "Repayment terms",
-                content: <div className="h-96" />,
+                content: (
+                  <div className="space-y-6">
+                    {tranchedPool ? (
+                      <>
+                        <RepaymentTermsStats loan={tranchedPool} />
+                        <RepaymentTermsSchedule loan={tranchedPool} />
+                      </>
+                    ) : (
+                      <>
+                        <RepaymentTermsStatsPlaceholder />
+                        <RepaymentTermsSchedulePlaceholder />
+                      </>
+                    )}
+                  </div>
+                ),
               },
               {
                 navTitle: "Borrower",

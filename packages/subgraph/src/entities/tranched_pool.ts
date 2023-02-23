@@ -184,6 +184,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.termStartTime = creditLine.termStartTime
   tranchedPool.termInDays = creditLine.termInDays.toI32()
   tranchedPool.interestRate = creditLine.interestAprDecimal
+  tranchedPool.interestRateBigInt = creditLine.interestApr
   tranchedPool.lateFeeRate = creditLine.lateFeeApr
   tranchedPool.borrowerContract = creditLine.borrowerContract
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
