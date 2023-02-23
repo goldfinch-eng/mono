@@ -18,7 +18,7 @@ import {
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
 
-import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule";
+import { RepaymentScheduleData } from "./repayment-terms-schedule";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
@@ -77,10 +77,10 @@ const RepaymentScheduleBarChartTooltip = ({
   return null;
 };
 
-const RepaymentScheduleBarChart = ({
+export function RepaymentScheduleBarChart({
   className,
   repaymentScheduleData,
-}: RepaymentScheduleBarChartProps) => {
+}: RepaymentScheduleBarChartProps) {
   const repaymentScheduleDataFloat = repaymentScheduleData.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
@@ -150,6 +150,4 @@ const RepaymentScheduleBarChart = ({
       </BarChart>
     </ResponsiveContainer>
   );
-};
-
-export default RepaymentScheduleBarChart;
+}

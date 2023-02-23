@@ -24,16 +24,6 @@ import {
   FUNDING_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
-import {
-  RepaymentTermsSchedule,
-  RepaymentTermsSchedulePlaceholder,
-  REPAYMENT_TERMS_SCHEDULE_FIELDS,
-} from "@/pages/pools/[address]/v2-components/repayment-terms-schedule";
-import {
-  RepaymentTermsStats,
-  RepaymentTermsStatsPlaceholder,
-  REPAYMENT_TERMS_STATS_FIELDS,
-} from "@/pages/pools/[address]/v2-components/repayment-terms-stats";
 
 import {
   BorrowerProfile,
@@ -67,6 +57,16 @@ import {
   LOAN_SUMMARY_BORROWER_FIELDS,
   LOAN_SUMMARY_TRANCHED_POOL_FIELDS,
 } from "./v2-components/loan-summary";
+import {
+  RepaymentTermsSchedule,
+  RepaymentTermsSchedulePlaceholder,
+  REPAYMENT_TERMS_SCHEDULE_FIELDS,
+} from "./v2-components/repayment-terms/repayment-terms-schedule";
+import {
+  RepaymentTermsStats,
+  RepaymentTermsStatsPlaceholder,
+  REPAYMENT_TERMS_STATS_FIELDS,
+} from "./v2-components/repayment-terms/repayment-terms-stats";
 import { RiskTable, RISK_TABLE_DEAL_FIELDS } from "./v2-components/risk-table";
 
 gql`

@@ -5,9 +5,9 @@ import { gql } from "graphql-request";
 
 import { RepaymentTermsScheduleFieldsFragment } from "@/lib/graphql/generated";
 import { calculateInterestOwed } from "@/pages/borrow/helpers";
-import { RepaymentScheduleTable } from "@/pages/pools/[address]/v2-components/repayment-schedule-table";
 
-import RepaymentScheduleBarChart from "../v2-components/repayment-schedule-bar-chart";
+import { RepaymentScheduleBarChart } from "./repayment-schedule-bar-chart";
+import { RepaymentScheduleTable } from "./repayment-schedule-table";
 
 export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
   fragment RepaymentTermsScheduleFields on Loan {

@@ -2,7 +2,7 @@ import clsx from "clsx";
 
 import { formatCrypto } from "@/lib/format";
 
-import { RepaymentScheduleData } from "../v2-components/repayment-terms-schedule";
+import { RepaymentScheduleData } from "./repayment-terms-schedule";
 
 interface RepaymentScheduleTableProps {
   className?: string;
