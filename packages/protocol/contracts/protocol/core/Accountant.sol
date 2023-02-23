@@ -22,8 +22,6 @@ library Accountant {
   using FixedPoint for int256;
   using FixedPoint for uint256;
 
-  // Test to see if it will lint
-
   // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
   uint256 private constant FP_SCALING_FACTOR = 10 ** 18;
   uint256 private constant INTEREST_DECIMALS = 1e18;
