@@ -11,11 +11,14 @@ import RepaymentScheduleBarChart from "../v2-components/repayment-schedule-bar-c
 
 export const REPAYMENT_TERMS_SCHEDULE_FIELDS = gql`
   fragment RepaymentTermsScheduleFields on Loan {
+    fundableAt
     termStartTime
     termEndTime
     paymentPeriodInDays
+    termInDays
     interestRateBigInt
     principalAmount
+    fundingLimit
   }
 `;
 
@@ -35,9 +38,18 @@ const generateRepaymentScheduleData = (
   loan: RepaymentTermsScheduleFieldsFragment
 ) => {
   const repaymentScheduleData: RepaymentScheduleData[] = [];
+  const secondsPerDay = 24 * 60 * 60;
 
-  const termStartTime = loan.termStartTime.toNumber();
-  const termEndTime = loan.termEndTime.toNumber();
+  const termStartTime = !loan.termStartTime.isZero()
+    ? loan.termStartTime.toNumber()
+    : loan.fundableAt + secondsPerDay * 14;
+  const termEndTime = !loan.termEndTime.isZero()
+    ? loan.termEndTime.toNumber()
+    : termStartTime + loan.termInDays * secondsPerDay;
+
+  const principal = !loan.principalAmount.isZero()
+    ? loan.principalAmount
+    : loan.fundingLimit;
 
   // Number of seconds in 'paymentPeriodInDays'
   const paymentPeriodInSeconds =
@@ -58,7 +70,7 @@ const generateRepaymentScheduleData = (
       interestApr: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(periodEndTimestamp),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: loan.principalAmount,
+      balance: principal,
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
@@ -80,12 +92,12 @@ const generateRepaymentScheduleData = (
       interestApr: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(termEndTime),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: loan.principalAmount,
+      balance: principal,
     });
     repaymentScheduleData.push({
       paymentPeriod: paymentPeriod.toString(),
       estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d, Y"),
-      principal: loan.principalAmount,
+      principal: principal,
       interest: expectedInterest,
     });
   }

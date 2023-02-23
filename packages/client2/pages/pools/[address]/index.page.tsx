@@ -30,6 +30,7 @@ import {
 } from "@/pages/pools/[address]/v2-components/repayment-terms-schedule";
 import {
   RepaymentTermsStats,
+  RepaymentTermsStatsPlaceholder,
   REPAYMENT_TERMS_STATS_FIELDS,
 } from "@/pages/pools/[address]/v2-components/repayment-terms-stats";
 
@@ -321,10 +322,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 navTitle: "Repayment",
                 title: "Repayment terms",
                 content: (
-                  <>
-                    <RepaymentTermsStats loan={tranchedPool} className="mb-6" />
+                  <div className="space-y-6">
+                    {tranchedPool ? (
+                      <RepaymentTermsStats loan={tranchedPool} />
+                    ) : (
+                      <RepaymentTermsStatsPlaceholder />
+                    )}
                     <RepaymentTermsSchedule loan={tranchedPool} />
-                  </>
+                  </div>
                 ),
               },
               {

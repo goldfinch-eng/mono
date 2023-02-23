@@ -1,8 +1,7 @@
 import { formatDistanceStrict, format as formatDate } from "date-fns";
 import { gql } from "graphql-request";
-import { ReactNode } from "react";
 
-import { Shimmer, Stat, StatGrid } from "@/components/design-system";
+import { Stat, StatGrid } from "@/components/design-system";
 import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
 
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
@@ -10,95 +9,73 @@ export const REPAYMENT_TERMS_STATS_FIELDS = gql`
     fundableAt
     termInDays
     paymentPeriodInDays
+    termInDays
     termStartTime
     termEndTime
   }
 `;
 
 interface RepaymentTermsStatsProps {
-  loan?: RepaymentTermsStatsFieldsFragment | null;
-  className?: string;
+  loan: RepaymentTermsStatsFieldsFragment;
 }
 
-export function RepaymentTermsStats({
-  loan,
-  className,
-}: RepaymentTermsStatsProps) {
-  const showLoadingState = !loan;
-
-  const stats: { label: string; value: ReactNode; tooltip: string }[] = [
-    {
-      label: "Loan term",
-      value: showLoadingState ? (
-        <Shimmer />
-      ) : (
-        formatDistanceStrict(0, loan.termInDays * 86400 * 1000, {
-          unit: "month",
-          roundingMethod: "ceil",
-        })
-      ),
-      tooltip: "TODO: Loan term tooltip",
-    },
-    {
-      label: "Payment frequency",
-      value: showLoadingState ? (
-        <Shimmer />
-      ) : (
-        `${loan.paymentPeriodInDays.toString()} days`
-      ),
-      tooltip: "TODO: Payment frequency tooltip",
-    },
-    {
-      label: "Total payments",
-      value: showLoadingState ? (
-        <Shimmer />
-      ) : (
-        Math.ceil(loan.termInDays / loan.paymentPeriodInDays.toNumber())
-      ),
-      tooltip: "TODO: Total payments tooltip",
-    },
-    {
-      label: "Repayment structure",
-      // Eventually we'll have more loan types than just 'Bullet'
-      value: showLoadingState ? <Shimmer /> : "Bullet",
-      tooltip: "TODO: Repayment structure tooltip",
-    },
-    {
-      label: "Est. repayment start date",
-      value: showLoadingState ? (
-        <Shimmer />
-      ) : (
-        formatDate(
-          !loan.termStartTime.isZero()
-            ? loan.termStartTime.toNumber() * 1000
-            : (loan.fundableAt + 86400 * 14) * 1000,
-          "MMM d, y"
-        )
-      ),
-      tooltip: "TODO: Est. repayment start date tooltip",
-    },
-    {
-      label: "Est. loan maturity date",
-      value: showLoadingState ? (
-        <Shimmer />
-      ) : (
-        formatDate(loan.termEndTime.toNumber() * 1000, "MMM d, y")
-      ),
-      tooltip: "TODO: Est. loan maturity date tooltip",
-    },
-  ];
+export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
+  const secondsPerDay = 24 * 60 * 60;
+  const termStartTime = !loan.termStartTime.isZero()
+    ? loan.termStartTime.toNumber()
+    : loan.fundableAt + secondsPerDay * 14;
+  const termEndTime = !loan.termEndTime.isZero()
+    ? loan.termEndTime.toNumber()
+    : termStartTime + loan.termInDays * secondsPerDay;
 
   return (
-    <StatGrid className={className} borderColor="sand-300">
-      {stats.map(({ label, value, tooltip }, i) => (
-        <Stat
-          key={i}
-          className="bg-mustard-50"
-          label={label}
-          value={value}
-          tooltip={tooltip}
-        />
-      ))}
+    <StatGrid bgColor="mustard-50">
+      <Stat
+        label="Loan term"
+        tooltip="TODO: Loan term tooltip"
+        value={formatDistanceStrict(0, loan.termInDays * secondsPerDay * 1000, {
+          unit: "month",
+          roundingMethod: "ceil",
+        })}
+      />
+      <Stat
+        label="Payment frequency"
+        tooltip="TODO: Payment frequency tooltip"
+        value={`${loan.paymentPeriodInDays.toString()} days`}
+      />
+      <Stat
+        label="Total payments"
+        tooltip="TODO: Total payments tooltip"
+        value={Math.ceil(loan.termInDays / loan.paymentPeriodInDays.toNumber())}
+      />
+      <Stat
+        label="Repayment structure"
+        tooltip="TODO: Repayment structure tooltip"
+        value="Bullet"
+      />
+      <Stat
+        label="Est. repayment start date"
+        tooltip="TODO: Start date tooltip"
+        value={formatDate(termStartTime * 1000, "MMM d, y")}
+      />
+      <Stat
+        label="Est. loan maturity date"
+        tooltip="TODO: Loan maturity tooltip"
+        value={formatDate(termEndTime * 1000, "MMM d, y")}
+      />
+    </StatGrid>
+  );
+}
+
+export function RepaymentTermsStatsPlaceholder() {
+  return (
+    <StatGrid bgColor="mustard-50">
+      <Stat label="Loan term" />
+      <Stat label="Payment frequency" />
+      <Stat label="Total payments" />
+      <Stat label="Repayment structure" />
+      <Stat label="Est. repayment start date" />
+      <Stat label="Est. loan maturity date" />
     </StatGrid>
   );
 }
