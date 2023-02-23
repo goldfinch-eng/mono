@@ -1,6 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { GetStaticPaths, GetStaticProps } from "next";
 import NextLink from "next/link";
 
@@ -391,7 +392,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
             <div className="grow" />
             <div className="sticky bottom-10">
-              <div className="divide-y divide-mustard-200 self-stretch rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
+              <div
+                className={clsx(
+                  "divide-y divide-mustard-200 self-stretch rounded-3xl border [&>*]:p-5 [&>*]:lg:p-10",
+                  fundingStatus === LoanFundingStatus.Closed
+                    ? "border-sand-200 bg-white"
+                    : "border-transparent bg-mustard-100"
+                )}
+              >
                 {tranchedPool && seniorPool && fiatPerGfi ? (
                   <>
                     <LoanSummary
