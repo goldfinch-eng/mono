@@ -61,7 +61,6 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondTranchedPool,
     goldfinchConfig,
     borrower,
-    schedule,
   } = await baseSetupTest()
   const firstPoolFiduAmounts = [fiduAmount.div(new BN(4)), fiduAmount.div(new BN(4))]
   const secondPoolFiduAmounts = [fiduAmount.div(new BN(2))]
@@ -127,7 +126,6 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondPoolStakedTokenIds,
     firstPoolTokenIds,
     secondPoolTokenIds,
-    schedule,
   }
 })
 
@@ -150,7 +148,6 @@ const baseSetupTest = deployments.createFixture(async () => {
     fiduUSDCCurveLP,
     usdc,
     zapper,
-    schedule,
     ...others
   } = await deployBaseFixture()
 
@@ -247,7 +244,6 @@ const baseSetupTest = deployments.createFixture(async () => {
     secondTranchedPool,
     fiduUSDCCurveLP,
     maxRate,
-    schedule,
   }
 })
 
@@ -294,7 +290,6 @@ describe("Zapper", async () => {
       fiduUSDCCurveLP,
       uniqueIdentity: uid,
       maxRate: stakingRewardsMaxRate,
-      schedule,
     } = await baseSetupTest())
   })
 

@@ -16,7 +16,7 @@ import {
   TestBackerRewardsInstance,
   TranchedPoolInstance,
 } from "../typechain/truffle"
-import {DepositMade} from "../typechain/truffle/TranchedPool"
+import {DepositMade} from "../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {
   advanceTime,
   bigVal,
