@@ -18,7 +18,7 @@ import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {BackerRewards} from "../../../rewards/BackerRewards.sol";
 import {StakingRewards} from "../../../rewards/StakingRewards.sol";
 import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
@@ -111,7 +111,7 @@ contract PoolTokensBaseTest is BaseTest {
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
 
     // TranchedPool and CreditLine setup
-    TestTranchedPool tpImpl = new TestTranchedPool();
+    TranchedPool tpImpl = new TranchedPool();
     TranchedPoolImplementationRepository tpImplRepo = new TranchedPoolImplementationRepository();
     tpImplRepo.initialize(GF_OWNER, address(tpImpl));
     gfConfig.setAddress(
@@ -133,8 +133,8 @@ contract PoolTokensBaseTest is BaseTest {
     return x * 1e18;
   }
 
-  function defaultTp() internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
-    (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
+  function defaultTp() internal impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
+    (TranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));
@@ -146,8 +146,8 @@ contract PoolTokensBaseTest is BaseTest {
     uint256 periodsPerInterestPeriod,
     uint256 periodsPerPrincipalPeriod,
     uint256 gracePrincipalPeriods
-  ) internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
-    (TestTranchedPool tp, CreditLine cl) = tpBuilder
+  ) internal impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
+    (TranchedPool tp, CreditLine cl) = tpBuilder
       .withScheduleParams(
         periodsInTerm,
         periodsPerInterestPeriod,

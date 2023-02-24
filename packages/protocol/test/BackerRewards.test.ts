@@ -13,8 +13,7 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
-  TestCreditLineInstance,
-  TestTranchedPoolInstance,
+  TranchedPoolInstance,
 } from "../typechain/truffle"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 import {DepositMade} from "../typechain/truffle/TranchedPool"
@@ -57,7 +56,7 @@ describe("BackerRewards", function () {
     backerRewards: TestBackerRewardsInstance,
     seniorPool: SeniorPoolInstance,
     stakingRewards: StakingRewardsInstance,
-    tranchedPool: TestTranchedPoolInstance,
+    tranchedPool: TranchedPoolInstance,
     creditLine: CreditLineInstance,
     poolTokens: PoolTokensInstance
 
@@ -70,7 +69,7 @@ describe("BackerRewards", function () {
     })
   }
 
-  async function pay(pool: TestTranchedPoolInstance, amount: BN) {
+  async function pay(pool: TranchedPoolInstance, amount: BN) {
     return pool.methods["pay(uint256)"](amount, {from: borrower})
   }
 
@@ -212,8 +211,8 @@ describe("BackerRewards", function () {
   })
 
   describe("perverse scenario in which borrower would drawdown interest they'd previously repaid, to get duplicative rewards from their next repayment", () => {
-    let pool: TestTranchedPoolInstance
-    let cl: TestCreditLineInstance
+    let pool: TranchedPoolInstance
+    let cl: CreditLineInstance
 
     beforeEach(async () => {
       const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("1.0.0 only tests")({
@@ -225,8 +224,8 @@ describe("BackerRewards", function () {
         lateFeeApr: new BN(0),
       })
       const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
-      pool = contracts.tranchedPool as TestTranchedPoolInstance
-      cl = contracts.creditLine as TestCreditLineInstance
+      pool = contracts.tranchedPool as TranchedPoolInstance
+      cl = contracts.creditLine as CreditLineInstance
     })
 
     it("should be impossible", async () => {
@@ -1193,7 +1192,7 @@ describe("BackerRewards", function () {
       const maxInterestDollarsEligible = 100_000
       const totalRewards = 3_000_000
 
-      let pool: TestTranchedPoolInstance
+      let pool: TranchedPoolInstance
 
       beforeEach(async () => {
         await setupBackerRewardsContract({
@@ -1213,7 +1212,7 @@ describe("BackerRewards", function () {
           lateFeeApr: new BN(0),
         })
         const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
-        pool = contracts.tranchedPool as TestTranchedPoolInstance
+        pool = contracts.tranchedPool as TranchedPoolInstance
       })
 
       context("total junior deposits are greater than or equal to 1", () => {
@@ -1265,7 +1264,7 @@ describe("BackerRewards", function () {
       const maxInterestDollarsEligible = 100_000
       const totalRewards = 3_000_000
 
-      let pool: TestTranchedPoolInstance
+      let pool: TranchedPoolInstance
 
       beforeEach(async () => {
         await setupBackerRewardsContract({
@@ -1285,7 +1284,7 @@ describe("BackerRewards", function () {
           lateFeeApr: new BN(0),
         })
         const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
-        pool = contracts.tranchedPool as TestTranchedPoolInstance
+        pool = contracts.tranchedPool as TranchedPoolInstance
       })
 
       context("backer withdraws before pool is locked", () => {

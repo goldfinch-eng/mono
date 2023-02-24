@@ -45,7 +45,6 @@ import {
   MembershipCollectorInstance,
   ERC20SplitterInstance,
   TestGoldfinchConfigInstance,
-  TestTranchedPoolInstance,
   MonthlyScheduleRepoInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -62,8 +61,6 @@ const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
-import {getTranchedPoolImplName} from "../blockchain_scripts/baseDeploy/deployTranchedPool"
-import {getClContractName} from "../blockchain_scripts/baseDeploy/deployClImplementation"
 import {getDeploymentFor} from "./util/fixtures"
 import {CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
 chai.use(ChaiBN(BN))
@@ -496,8 +493,8 @@ async function getBalance(address, erc20) {
 }
 
 export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddress: string) {
-  const tranchedPool = await getTruffleContract<TestTranchedPoolInstance>(getTranchedPoolImplName(), {at: poolAddress})
-  const creditLine = await getTruffleContract<CreditLineInstance>(getClContractName(), {at: clAddress})
+  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: poolAddress})
+  const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
   return {tranchedPool, creditLine}
 }
 
@@ -588,17 +585,19 @@ const createPoolWithCreditLine = async ({
   )
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
-  const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
-  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
+  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
+  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
+    "CreditLine",
+    await tranchedPool.creditLine()
+  )
 
-  await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
+  await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [thisOwner])
 
   // Only approve if borrower is an EOA (could be a borrower contract)
   if ((await web3.eth.getCode(thisBorrower)) === "0x") {
-    await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
+    await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [thisBorrower])
   }
 
-  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TestTranchedPool", pool.address)
   return {tranchedPool, creditLine}
 }
 

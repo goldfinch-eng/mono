@@ -6,8 +6,8 @@ pragma experimental ABIEncoderV2;
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
   function testClaimWithdrawalEoaWorksGoListed(address user) public {
@@ -163,7 +163,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -256,7 +256,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     address user1,
     address user2
   ) public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -343,7 +343,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public {
     vm.warp(1672513372); // December 31st. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -434,7 +434,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
   ) public {
     vm.warp(1672513372); // December 31st. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);

@@ -5,14 +5,14 @@ pragma experimental ABIEncoderV2;
 
 import {FixedLeverageRatioStrategyBaseTest} from "./FixedLeverageRatioStrategyBase.t.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 
 contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseTest {
   function testLeversJuniorAmountUsingRatio(uint256 juniorAmount) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
 
@@ -23,7 +23,7 @@ contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseT
     uint256 juniorAmount
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
 
     // Set leverage ratio to 3.5
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), (1e18 * 3) / 2);
@@ -39,14 +39,14 @@ contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseT
     uint256 juniorAmount
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     assertZero(fixedStrat.invest(sp, tp));
   }
 
   function testInvestsIfJuniorTrancheIsLocked(uint256 juniorAmount) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
 
@@ -59,7 +59,7 @@ contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseT
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, usdcVal(1), juniorAmount * 4);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch
@@ -77,7 +77,7 @@ contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseT
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, usdcVal(1), juniorAmount * 4);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch
@@ -95,7 +95,7 @@ contract FixedLeverageRatioStrategyInvestTest is FixedLeverageRatioStrategyBaseT
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, juniorAmount * 4, juniorAmount * 10);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch

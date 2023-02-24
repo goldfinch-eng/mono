@@ -16,7 +16,7 @@ import {
   getTranchedPoolAndCreditLine,
 } from "./testHelpers"
 import {deployBaseFixture, deployBorrowerWithGoldfinchFactoryFixture, deployFundedTranchedPool} from "./util/fixtures"
-import {BorrowerInstance, ERC20Instance, TestTranchedPoolInstance} from "../typechain/truffle"
+import {BorrowerInstance, ERC20Instance} from "../typechain/truffle"
 
 describe("Borrower", async () => {
   let owner,

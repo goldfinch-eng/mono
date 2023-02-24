@@ -1,23 +1,10 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {CONFIG_KEYS} from "../configKeys"
-import {ContractDeployer, isMainnetForking, isTestEnv, updateConfig} from "../deployHelpers"
+import {ContractDeployer, updateConfig} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 
 const logger = console.log
-
-const PROD_CONTRACT = "CreditLine"
-const TEST_CONTRACT = "TestCreditLine"
-
-export function getClContractName() {
-  if (isTestEnv() && isMainnetForking()) {
-    return PROD_CONTRACT
-  } else if (isTestEnv()) {
-    return TEST_CONTRACT
-  } else {
-    return PROD_CONTRACT
-  }
-}
 
 export async function deployClImplementation(
   deployer: ContractDeployer,
@@ -28,8 +15,7 @@ export async function deployClImplementation(
   assertIsString(gf_deployer)
   const accountant = await deployer.deployLibrary("Accountant", {from: gf_deployer, args: []})
 
-  const contractName = getClContractName()
-  const clDeployResult = await deployer.deploy(contractName, {
+  const clDeployResult = await deployer.deploy("CreditLine", {
     from: gf_deployer,
     libraries: {["Accountant"]: accountant.address},
   })

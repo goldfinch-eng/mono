@@ -8,7 +8,6 @@ import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
-import {TestCreditLine} from "../../TestCreditLine.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 

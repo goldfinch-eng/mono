@@ -3,7 +3,6 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
@@ -12,7 +11,7 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 
 contract PoolTokensMintTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
 
   function setUp() public override {

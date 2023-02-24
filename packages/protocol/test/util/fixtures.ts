@@ -1,4 +1,3 @@
-import {getClContractName} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployClImplementation"
 import {
   getTruffleContract,
   interestAprAsBN,
@@ -186,8 +185,7 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
 
       // Set the credit line implementation to point to the correct version
       const goldfinchConfig = await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
-      const creditLineContractName = getClContractName()
-      const creditLineDeployment = await deployments.get(creditLineContractName)
+      const creditLineDeployment = await deployments.get("CreditLine")
       await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
       const result = await goldfinchFactory.createPool(
@@ -205,20 +203,19 @@ export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string
       const event = result.logs[result.logs.length - 1] as $TSFixMe
       const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: event.args.pool})
       const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: await pool.creditLine()})
-      const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", {at: pool.address})
 
       expect(await pool.creditLine()).to.be.eq(creditLine.address)
 
-      await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [owner])
+      await erc20Approve(usdc, pool.address, MAX_UINT, [owner])
 
       // Only approve if borrower is an EOA (could be a borrower contract)
       if ((await web3.eth.getCode(borrower)) === "0x") {
-        await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [borrower])
+        await erc20Approve(usdc, pool.address, MAX_UINT, [borrower])
       }
 
       // Return the addresses. It's up to the caller to cast to the type that corresponds to the
       // version
-      return {poolAddress: tranchedPool.address, clAddress: creditLine.address}
+      return {poolAddress: pool.address, clAddress: creditLine.address}
     },
     fixtureId
   )
@@ -241,10 +238,7 @@ export const deployUninitializedV2TranchedPoolFixture = deployments.createFixtur
       ["Accountant"]: accountant.address,
     },
   })
-  const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: tranchedPoolResult.address})
-  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", {
-    at: pool.address,
-  })
+  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: tranchedPoolResult.address})
 
   return {
     tranchedPool,

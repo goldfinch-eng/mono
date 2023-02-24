@@ -10,7 +10,7 @@ import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
-import {TestTranchedPool} from "../TestTranchedPool.sol";
+import {TranchedPool} from "../../protocol/core/TranchedPool.sol";
 
 contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;
@@ -57,7 +57,7 @@ contract TranchedPoolBuilder {
       });
   }
 
-  function build(address borrower) external returns (TestTranchedPool, CreditLine) {
+  function build(address borrower) external returns (TranchedPool, CreditLine) {
     ITranchedPool created = gfFactory.createPool(
       borrower,
       juniorFeePercent,
@@ -73,7 +73,7 @@ contract TranchedPoolBuilder {
       fundableAt,
       allowedUIDTypes
     );
-    TestTranchedPool pool = TestTranchedPool(address(created));
+    TranchedPool pool = TranchedPool(address(created));
     return (pool, CreditLine(address(pool.creditLine())));
   }
 
@@ -82,7 +82,7 @@ contract TranchedPoolBuilder {
     uint256 monthsInTerm,
     uint256 monthsPerInterestPeriod,
     uint256 monthsPerPrincipalPeriod
-  ) external returns (TestTranchedPool, CreditLine) {
+  ) external returns (TranchedPool, CreditLine) {
     ITranchedPool created = gfFactory.createPool({
       _borrower: borrower,
       _juniorFeePercent: juniorFeePercent,
@@ -98,7 +98,7 @@ contract TranchedPoolBuilder {
       _fundableAt: fundableAt,
       _allowedUIDTypes: allowedUIDTypes
     });
-    TestTranchedPool pool = TestTranchedPool(address(created));
+    TranchedPool pool = TranchedPool(address(created));
     return (pool, CreditLine(address(pool.creditLine())));
   }
 

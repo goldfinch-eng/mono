@@ -4,13 +4,13 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
   uint256 private tokenId;
   IPoolTokens.TokenInfo private tokenInfo;

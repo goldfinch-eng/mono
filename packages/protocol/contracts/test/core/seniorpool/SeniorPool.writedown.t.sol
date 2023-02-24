@@ -4,8 +4,8 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
@@ -14,7 +14,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   function testWritedownCallableByNonGovernance(
     address user
   ) public goListed(user) impersonating(user) {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
@@ -29,7 +29,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   function testWritedownBeforeLoanEndsWritesDownPrincipalAndDistributesLosses() public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -70,7 +70,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   function testWritedownShouldDecreaseWritedownAmountForPartialRepayments() public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -130,7 +130,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownShouldResetTo0IfFullyPaidBack() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -155,7 +155,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   function testWritedownEmitsEvent() public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -175,7 +175,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownRevertsIfSpNotTokenOwner() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     uint256 juniorToken = depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     vm.expectRevert("Only tokens owned by the senior pool can be written down");
     sp.writedown(juniorToken);
@@ -185,7 +185,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
     // Should be proportional to seconds after termEndTime + totalOwed / totalOwedPerDay
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -217,7 +217,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     uint256 shares = depositToSpFrom(GF_OWNER, usdcVal(10_000));
     uint256 requestToken = requestWithdrawalFrom(GF_OWNER, shares);
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(80));
@@ -245,7 +245,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   function testCalculateWritedownReturnsWritedownAmount() public {
     vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));

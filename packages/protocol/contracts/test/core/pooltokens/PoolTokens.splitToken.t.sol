@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 
 contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
   uint256 private tokenId;
   IPoolTokens.TokenInfo private tokenInfo;

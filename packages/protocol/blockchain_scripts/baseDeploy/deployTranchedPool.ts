@@ -1,17 +1,5 @@
 import {assertIsString} from "@goldfinch-eng/utils"
-import {ContractDeployer, isMainnetForking, isTestEnv} from "../deployHelpers"
-
-export function getTranchedPoolImplName() {
-  const prodContractName = "TranchedPool"
-  const testContractName = "TestTranchedPool"
-  if (isTestEnv() && isMainnetForking()) {
-    return prodContractName
-  } else if (isTestEnv()) {
-    return testContractName
-  } else {
-    return prodContractName
-  }
-}
+import {ContractDeployer} from "../deployHelpers"
 
 export async function deployTranchedPool(deployer: ContractDeployer) {
   const {gf_deployer} = await deployer.getNamedAccounts()
@@ -19,8 +7,7 @@ export async function deployTranchedPool(deployer: ContractDeployer) {
 
   const tranchingLogic = await deployer.deployLibrary("TranchingLogic", {from: gf_deployer, args: []})
 
-  const contractName = getTranchedPoolImplName()
-  const tranchedPoolImpl = await deployer.deploy(contractName, {
+  const tranchedPoolImpl = await deployer.deploy("TranchedPool", {
     from: gf_deployer,
     libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
