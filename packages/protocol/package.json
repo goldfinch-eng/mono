@@ -62,7 +62,7 @@
     ],
     "*.sol": [
       "prettier --write",
-      "solhint --fix'"
+      "solhint --fix"
     ]
   },
   "repository": {
