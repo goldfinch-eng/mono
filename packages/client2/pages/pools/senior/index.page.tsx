@@ -173,7 +173,7 @@ export default function SeniorPoolPage() {
                   fiatPerGfi={fiatPerGfi}
                 />
 
-                {seniorPool && fiatPerGfi && data?.viewer ? (
+                {seniorPool && fiatPerGfi ? (
                   <SeniorPoolSupplyPanel
                     seniorPool={seniorPool}
                     user={user}
