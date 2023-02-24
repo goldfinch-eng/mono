@@ -17,7 +17,7 @@ import {
   MAINNET_TRUSTED_SIGNER_ADDRESS,
 } from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 
 const {deployments, ethers, artifacts, web3} = hre
@@ -75,6 +75,7 @@ import {
   ICurveLPInstance,
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
+  MonthlyScheduleRepoInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
@@ -112,6 +113,8 @@ import {
   TranchedPool,
   UniqueIdentity,
   Borrower as EthersBorrower,
+  GoldfinchFactory,
+  ERC20,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
@@ -346,6 +349,84 @@ describe("mainnet forking tests", async function () {
       await expect(
         go.initialize(Wallet.createRandom().address, goldfinchConfig.address, uniqueIdentity.address)
       ).to.be.rejectedWith(/Contract instance has already been initialized/)
+    })
+  })
+
+  describe("daily interest accrual tranched pools", () => {
+    it("initializes a pool with a monthyl scheduel", async () => {
+      // Create a schedule for a 1 yr bullet loan
+      const monthlyScheduleRepoAddress = await goldfinchConfig.getAddress(
+        CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo
+      )
+      expect(monthlyScheduleRepoAddress).to.not.eq(ZERO_ADDRESS)
+      const monthylScheduleRepo = await getTruffleContract<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo", {
+        at: monthlyScheduleRepoAddress,
+      })
+
+      const periodsInTerm = 12
+      const periodsPerPrincipalPeriod = 12
+      const periodsPerInterestPeriod = 1
+      const principalGracePeriods = 0
+      await monthylScheduleRepo.createSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+      const oneYearBulletSchedule = await monthylScheduleRepo.getSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+
+      // Create the pool
+      const borrower = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D" // stratos EOA
+      await impersonateAccount(hre, borrower)
+
+      const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
+      const protocolAdminSigner = await ethers.provider.getSigner(protocolAdminAddress)
+      assertNonNullable(protocolAdminSigner)
+
+      const gfFactoryEthers = await (
+        await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {at: goldfinchFactory.address})
+      ).connect(protocolAdminSigner)
+
+      const poolCreationTx = await (
+        await gfFactoryEthers.createPool(
+          borrower,
+          0,
+          "100000000",
+          "135000000000000000",
+          oneYearBulletSchedule,
+          "0",
+          `${await getCurrentTimestamp()}`,
+          ["0", "1", "2", "3", "4"]
+        )
+      ).wait()
+
+      const event = asNonNullable(poolCreationTx.events![poolCreationTx.events!.length - 1])
+      const poolAddress = event.args!.pool
+      const pool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
+
+      // Drawdown on the pool
+      await fundWithWhales(["USDC"], [protocolAdminAddress])
+      const usdcEthers = await getEthersContract<ERC20>("ERC20", {at: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"})
+      await usdcEthers.connect(protocolAdminSigner).approve(poolAddress, `${usdcVal(10)}`)
+      await pool.connect(protocolAdminSigner).deposit(2, `${usdcVal(10)}`)
+
+      // Now that there's an investment, the borrower drawsdown
+      const borrowerSigner = await ethers.provider.getSigner(borrower)
+      await pool.connect(borrowerSigner).lockJuniorCapital()
+      await pool.connect(borrowerSigner).lockPool()
+      await pool.connect(borrowerSigner).drawdown(`${usdcVal(10)}`)
+
+      // Assert it has a monthly payment schedule as expected
+      const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
+      // Term start time should be March 1st (when the stub period ends)
+      expect(await creditLine.termStartTime()).to.bignumber.eq("1677628800") // Wed Mar 01 2023 00:00:00 GMT+0000
+      // Next due time should be the end of the period after the stub period (Apr 1st)
+      expect(await creditLine.nextDueTime()).to.bignumber.eq("1680307200") // Sat Apr 01 2023 00:00:00 GMT+0000
     })
   })
 
