@@ -565,8 +565,7 @@ const createPoolWithCreditLine = async ({
     ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
     : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
 
-  const creditLineContractName = getClContractName()
-  const creditLineDeployment = await deployments.get(creditLineContractName)
+  const creditLineDeployment = await deployments.get("CreditLine")
   await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
   const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
