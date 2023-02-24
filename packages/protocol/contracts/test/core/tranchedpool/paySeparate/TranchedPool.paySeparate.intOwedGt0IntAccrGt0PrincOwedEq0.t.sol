@@ -132,7 +132,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
 
     uint256 intOwed = cl.interestOwed();
     uint256 intAccr = cl.interestAccrued();
-    intPayment = bound(intPayment, intOwed + intAccr, usdcVal(1000));
+    intPayment = bound(intPayment, intOwed + intAccr, intOwed + intAccr + usdcVal(1000));
     princPayment = bound(princPayment, 0, usdcVal(1000));
 
     ITranchedPool.PaymentAllocation memory pa = tp.pay(princPayment, intPayment);
