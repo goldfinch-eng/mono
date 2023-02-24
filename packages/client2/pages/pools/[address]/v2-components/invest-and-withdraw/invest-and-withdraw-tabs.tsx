@@ -1,10 +1,6 @@
-import {
-  TabButton,
-  TabContent,
-  TabGroup,
-  TabList,
-  TabPanels,
-} from "@/components/design-system";
+import { useState } from "react";
+
+import { Button, Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupplyPanelDealFieldsFragment,
@@ -40,6 +36,9 @@ export function InvestAndWithdrawTabs({
   const totalUserCapitalInvested = sum("principalAmount", poolTokens);
   const didUserInvest =
     totalUserCapitalInvested !== null && !totalUserCapitalInvested.isZero();
+  const [shownPanel, setShownPanel] = useState<"invest" | "withdraw" | null>(
+    null
+  );
   return (
     <div>
       {didUserInvest ? (
@@ -56,27 +55,46 @@ export function InvestAndWithdrawTabs({
         </div>
       ) : null}
       {didUserInvest ? (
-        <TabGroup>
-          <TabList>
-            <TabButton>Invest</TabButton>
-            <TabButton>Withdraw</TabButton>
-          </TabList>
-          <TabPanels>
-            <TabContent>
+        shownPanel === null ? (
+          <div className="flex flex-col items-stretch gap-3">
+            <Button
+              size="xl"
+              colorScheme="mustard"
+              onClick={() => setShownPanel("invest")}
+            >
+              Invest
+            </Button>
+            <Button
+              size="xl"
+              colorScheme="transparent-mustard"
+              onClick={() => setShownPanel("withdraw")}
+            >
+              Withdraw
+            </Button>
+          </div>
+        ) : (
+          <div>
+            <button
+              className="mb-6 flex items-center gap-2 text-2xl"
+              onClick={() => setShownPanel(null)}
+            >
+              <Icon name="ArrowLeft" />
+              {shownPanel === "invest" ? "Invest" : "Withdraw"}
+            </button>
+            {shownPanel === "invest" ? (
               <SupplyPanel
                 tranchedPool={tranchedPool}
                 user={user}
                 deal={deal}
               />
-            </TabContent>
-            <TabContent>
+            ) : shownPanel === "withdraw" ? (
               <WithdrawalPanel
                 tranchedPoolAddress={tranchedPool.id}
                 poolTokens={poolTokens}
               />
-            </TabContent>
-          </TabPanels>
-        </TabGroup>
+            ) : null}
+          </div>
+        )
       ) : (
         <SupplyPanel tranchedPool={tranchedPool} user={user} deal={deal} />
       )}
