@@ -13,9 +13,9 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
+  TestBackerRewardsInstance,
   TranchedPoolInstance,
 } from "../typechain/truffle"
-import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 import {DepositMade} from "../typechain/truffle/TranchedPool"
 import {
   advanceTime,
