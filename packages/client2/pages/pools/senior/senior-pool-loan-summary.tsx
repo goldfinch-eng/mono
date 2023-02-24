@@ -1,6 +1,11 @@
 import { gql } from "@apollo/client";
 
-import { GoldfinchLogo, InfoLine, Link } from "@/components/design-system";
+import {
+  GoldfinchLogo,
+  InfoLine,
+  Link,
+  Shimmer,
+} from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { SeniorPoolLoanSummaryFieldsFragment } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
@@ -14,8 +19,8 @@ export const SENIOR_POOL_LOAN_SUMMARY_FIELDS = gql`
 `;
 
 interface SeniorPoolLoanSummaryProps {
-  seniorPool: SeniorPoolLoanSummaryFieldsFragment;
-  fiatPerGfi: number;
+  seniorPool?: SeniorPoolLoanSummaryFieldsFragment | null;
+  fiatPerGfi?: number | null;
 }
 
 export function SeniorPoolLoanSummary({
@@ -32,7 +37,11 @@ export function SeniorPoolLoanSummary({
           <span className="text-sm">Goldfinch Protocol</span>
         </div>
         <Link
-          href={`https://etherscan.io/contract/${seniorPool.address}`}
+          href={
+            seniorPool
+              ? `https://etherscan.io/contract/${seniorPool.address}`
+              : ""
+          }
           openInNewTab
           iconRight="ArrowTopRight"
           className="text-sm font-medium text-sand-500"
@@ -61,17 +70,25 @@ export function SeniorPoolLoanSummary({
         <div className="text-left">
           <div className="mb-2 text-sm">USDC APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(seniorPool.estimatedApy)}
+            {seniorPool ? (
+              formatPercent(seniorPool.estimatedApy)
+            ) : (
+              <Shimmer style={{ width: "8ch" }} />
+            )}
           </div>
         </div>
         <div className="text-right">
           <div className="mb-2 text-sm">Variable GFI APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(
-              computeApyFromGfiInFiat(
-                seniorPool.estimatedApyFromGfiRaw,
-                fiatPerGfi
+            {seniorPool && fiatPerGfi ? (
+              formatPercent(
+                computeApyFromGfiInFiat(
+                  seniorPool.estimatedApyFromGfiRaw,
+                  fiatPerGfi
+                )
               )
+            ) : (
+              <Shimmer style={{ width: "8ch" }} />
             )}
           </div>
         </div>

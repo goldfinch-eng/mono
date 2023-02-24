@@ -168,12 +168,11 @@ export default function SeniorPoolPage() {
             <div className="grow"></div>
             <div className="sticky bottom-10">
               <div className="divide-y divide-mustard-200 rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
-                {seniorPool && fiatPerGfi && (
-                  <SeniorPoolLoanSummary
-                    seniorPool={seniorPool}
-                    fiatPerGfi={fiatPerGfi}
-                  />
-                )}
+                <SeniorPoolLoanSummary
+                  seniorPool={seniorPool}
+                  fiatPerGfi={fiatPerGfi}
+                />
+
                 {seniorPool && fiatPerGfi && data?.viewer ? (
                   <SeniorPoolSupplyPanel
                     seniorPool={seniorPool}
