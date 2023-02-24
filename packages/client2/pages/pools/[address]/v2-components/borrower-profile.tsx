@@ -125,7 +125,7 @@ export function BorrowerProfile({
         </div>
       </div>
       {numOtherPools > 0 ? (
-        <StatGrid bgColor="mustard-50">
+        <StatGrid bgColor="mustard-50" numColumns={3}>
           <Stat
             label="Other deals"
             tooltip="[TODO] content"

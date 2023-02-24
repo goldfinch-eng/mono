@@ -35,7 +35,7 @@ export function StatGrid({
 }: StatGridProps) {
   const numChildren = Children.count(children);
   const _numColumns =
-    numColumns ?? numChildren === 4 ? 2 : numChildren % 4 === 0 ? 4 : 3;
+    numColumns ?? (numChildren === 4 ? 2 : numChildren % 4 === 0 ? 4 : 3);
 
   return (
     <div
