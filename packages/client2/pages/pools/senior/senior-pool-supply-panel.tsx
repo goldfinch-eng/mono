@@ -11,7 +11,6 @@ import {
   Icon,
   InfoIconTooltip,
   Link,
-  MiniTable,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
@@ -32,7 +31,6 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
-    estimatedApy
     estimatedApyFromGfiRaw
   }
 `;
@@ -65,7 +63,6 @@ export function SeniorPoolSupplyPanel({
   user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
-  const seniorPoolApyUsdc = seniorPool.estimatedApy;
   const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
     seniorPool.estimatedApyFromGfiRaw,
     fiatPerGfi
@@ -235,52 +232,12 @@ export function SeniorPoolSupplyPanel({
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-sm">Total est. APY</span>
-        <InfoIconTooltip
-          className="!text-white/60"
-          content={
-            <div className="max-w-xs">
-              The Senior Pool&rsquo;s total current estimated APY, including the
-              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
-              volatile and changes based on several variables including the
-              price of GFI, the total capital deployed on Goldfinch, and Senior
-              Pool&rsquo;s utilization. Learn more in the{" "}
-              <Link
-                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
-                openInNewTab
-              >
-                Goldfinch Documentation
-              </Link>
-              .
-            </div>
-          }
-        />
-      </div>
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <div className="text-6xl font-medium">
-            {formatPercent(
-              seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat)
-            )}
-          </div>
-        </div>
-        <MiniTable
-          deemphasizeRowHeadings
-          omitVerticalBorders
-          rows={[
-            ["USDC", formatPercent(seniorPoolApyUsdc)],
-            ["GFI", formatPercent(seniorPoolApyFromGfiFiat)],
-          ]}
-        />
-      </div>
-
       {!account ? (
         <Button
           className="block w-full"
           onClick={openWalletModal}
           size="xl"
-          colorScheme="secondary"
+          colorScheme="mustard"
         >
           Connect wallet
         </Button>
@@ -289,7 +246,7 @@ export function SeniorPoolSupplyPanel({
           className="block w-full"
           onClick={openVerificationModal}
           size="xl"
-          colorScheme="secondary"
+          colorScheme="mustard"
         >
           Verify my identity
         </Button>
@@ -299,11 +256,11 @@ export function SeniorPoolSupplyPanel({
             disabled
             className="block w-full"
             size="xl"
-            colorScheme="secondary"
+            colorScheme="mustard"
           >
-            Supply
+            Invest
           </Button>
-          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm">
             <Icon size="md" name="Exclamation" />
             <div>
               Sorry, you are not eligible to participate in the senior pool
@@ -317,8 +274,8 @@ export function SeniorPoolSupplyPanel({
             <DollarInput
               control={control}
               name="supply"
-              label="Supply amount"
-              colorScheme="dark"
+              label="Investment amount"
+              colorScheme="light"
               textSize="xl"
               labelClassName="!text-sm !mb-3"
               labelDecoration={
@@ -346,16 +303,13 @@ export function SeniorPoolSupplyPanel({
                 seniorPoolApyFromGfiFiat
               )})`}
               labelDecoration={
-                <InfoIconTooltip
-                  className="!text-white/60"
-                  content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance."
-                />
+                <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
               }
-              colorScheme="dark"
+              colorScheme="light"
               className="mb-3"
             />
             <div className="mb-4 text-xs">
-              By clicking “Supply” below, I hereby agree to the{" "}
+              By clicking &ldquo;Invest&rdquo; below, I hereby agree to the{" "}
               <Link href="/senior-pool-agreement-interstitial">
                 Senior Pool Agreement
               </Link>
@@ -366,10 +320,10 @@ export function SeniorPoolSupplyPanel({
           <Button
             className="block w-full"
             size="xl"
-            colorScheme="secondary"
+            colorScheme="mustard"
             type="submit"
           >
-            Supply
+            Invest
           </Button>
         </Form>
       )}
