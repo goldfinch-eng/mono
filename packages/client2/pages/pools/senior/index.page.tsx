@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
+import NextLink from "next/link";
 
 import {
   Banner,
@@ -15,6 +16,10 @@ import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { SeniorPoolHighlights } from "./senior-pool-highlights";
+import {
+  SeniorPoolLoanSummary,
+  SENIOR_POOL_LOAN_SUMMARY_FIELDS,
+} from "./senior-pool-loan-summary";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
@@ -38,6 +43,8 @@ gql`
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
+
+  ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -64,6 +71,7 @@ gql`
       epochEndsAt @client
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
+      ...SeniorPoolLoanSummaryFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -143,43 +151,68 @@ export default function SeniorPoolPage() {
       ) : null}
 
       <div className="pool-layout">
-        <div className="relative" style={{ gridArea: "widgets" }}>
-          <div className="flex flex-col items-stretch gap-3">
-            {seniorPool && fiatPerGfi && data?.viewer ? (
-              <SeniorPoolSupplyPanel
-                seniorPool={seniorPool}
-                user={user}
-                fiatPerGfi={fiatPerGfi}
-              />
-            ) : null}
-
-            {seniorPool && shouldShowWithdrawal && (
-              <SeniorPoolWithdrawalPanel
-                canUserParticipate={
-                  user ? canUserParticipateInSeniorPool(user) : false
-                }
-                cancellationFee={seniorPool.withdrawalCancellationFee}
-                epochEndsAt={seniorPool.epochEndsAt}
-                fiduBalance={data.viewer.fiduBalance ?? undefined}
-                seniorPoolSharePrice={seniorPool.sharePrice}
-                stakedPositions={data.seniorPoolStakedPositions}
-                vaultedStakedPositions={data.vaultedStakedPositions.map(
-                  (s) => s.seniorPoolStakedPosition
+        <div className="flex flex-col" style={{ gridArea: "widgets" }}>
+          <NextLink href="/earn" passHref>
+            <Button
+              as="a"
+              variant="rounded"
+              size="lg"
+              colorScheme="sand"
+              iconLeft="ArrowLeft"
+              className="mb-10 self-start"
+            >
+              Back to Open Deals
+            </Button>
+          </NextLink>
+          <div className="relative flex grow flex-col">
+            <div className="grow"></div>
+            <div className="sticky bottom-10">
+              <div className="divide-y divide-mustard-200 rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
+                {seniorPool && fiatPerGfi && (
+                  <SeniorPoolLoanSummary
+                    seniorPool={seniorPool}
+                    fiatPerGfi={fiatPerGfi}
+                  />
                 )}
-                existingWithdrawalRequest={data.seniorPoolWithdrawalRequests[0]}
-              />
-            )}
+                {seniorPool && fiatPerGfi && data?.viewer ? (
+                  <SeniorPoolSupplyPanel
+                    seniorPool={seniorPool}
+                    user={user}
+                    fiatPerGfi={fiatPerGfi}
+                  />
+                ) : null}
 
-            {data?.viewer.fiduBalance?.amount.gt(0) &&
-            seniorPool &&
-            fiatPerGfi ? (
-              <UnstakedFiduBanner
-                fiduBalance={data.viewer.fiduBalance}
-                sharePrice={seniorPool.sharePrice}
-                estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-                fiatPerGfi={fiatPerGfi}
-              />
-            ) : null}
+                {seniorPool && shouldShowWithdrawal && (
+                  <SeniorPoolWithdrawalPanel
+                    canUserParticipate={
+                      user ? canUserParticipateInSeniorPool(user) : false
+                    }
+                    cancellationFee={seniorPool.withdrawalCancellationFee}
+                    epochEndsAt={seniorPool.epochEndsAt}
+                    fiduBalance={data.viewer.fiduBalance ?? undefined}
+                    seniorPoolSharePrice={seniorPool.sharePrice}
+                    stakedPositions={data.seniorPoolStakedPositions}
+                    vaultedStakedPositions={data.vaultedStakedPositions.map(
+                      (s) => s.seniorPoolStakedPosition
+                    )}
+                    existingWithdrawalRequest={
+                      data.seniorPoolWithdrawalRequests[0]
+                    }
+                  />
+                )}
+
+                {data?.viewer.fiduBalance?.amount.gt(0) &&
+                seniorPool &&
+                fiatPerGfi ? (
+                  <UnstakedFiduBanner
+                    fiduBalance={data.viewer.fiduBalance}
+                    sharePrice={seniorPool.sharePrice}
+                    estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
+                    fiatPerGfi={fiatPerGfi}
+                  />
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
         <div style={{ gridArea: "info" }}>

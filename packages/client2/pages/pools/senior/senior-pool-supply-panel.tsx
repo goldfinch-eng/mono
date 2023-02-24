@@ -234,7 +234,7 @@ export function SeniorPoolSupplyPanel({
   }, [account, provider]);
 
   return (
-    <div className="rounded-xl bg-midnight-01 p-5 text-white">
+    <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm">Total est. APY</span>
         <InfoIconTooltip
