@@ -409,13 +409,17 @@ describe("mainnet forking tests", async function () {
       const poolAddress = event.args!.pool
       const pool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
 
-      // Drawdown on the pool
+      // Advance time to august to avoid race conditions in the tests
+      // 	Thu Aug 24 2023 18:21:12 GMT+0000
+      await advanceAndMineBlock({toSecond: 1692901272})
+
+      // Fund the pool and drawdown
       await fundWithWhales(["USDC"], [protocolAdminAddress])
       const usdcEthers = await getEthersContract<ERC20>("ERC20", {at: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"})
       await usdcEthers.connect(protocolAdminSigner).approve(poolAddress, `${usdcVal(10)}`)
       await pool.connect(protocolAdminSigner).deposit(2, `${usdcVal(10)}`)
 
-      // Now that there's an investment, the borrower drawsdown
+      // Now that there's an investment, the borrower draws down
       const borrowerSigner = await ethers.provider.getSigner(borrower)
       await pool.connect(borrowerSigner).lockJuniorCapital()
       await pool.connect(borrowerSigner).lockPool()
@@ -423,11 +427,11 @@ describe("mainnet forking tests", async function () {
 
       // Assert it has a monthly payment schedule as expected
       const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
-      // Term start time should be March 1st (when the stub period ends)
+      // Term start time should be Sept 1st (when the stub period ends)
       console.log(`current time is ${await getCurrentTimestamp()}`)
-      expect(await creditLine.termStartTime()).to.bignumber.eq("1677628800") // Wed Mar 01 2023 00:00:00 GMT+0000
-      // Next due time should be the end of the period after the stub period (Apr 1st)
-      expect(await creditLine.nextDueTime()).to.bignumber.eq("1680307200") // Sat Apr 01 2023 00:00:00 GMT+0000
+      expect(await creditLine.termStartTime()).to.bignumber.eq("1693526400") // Fri Sep 01 2023 00:00:00 GMT+0000
+      // Next due time should be the end of the period after the stub period (Oct 1st)
+      expect(await creditLine.nextDueTime()).to.bignumber.eq("1696118400") // Sun Oct 01 2023 00:00:00 GMT+0000
     })
   })
 
