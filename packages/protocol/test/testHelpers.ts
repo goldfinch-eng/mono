@@ -542,7 +542,6 @@ const createPoolWithCreditLine = async ({
   usdc: ERC20Instance
   juniorFeePercent?: Numberish
   interestApr?: Numberish
-  paymentPeriodInDays?: Numberish
   termInDays?: Numberish
   limit?: Numberish
   lateFeeApr?: Numberish

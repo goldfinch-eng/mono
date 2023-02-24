@@ -204,7 +204,6 @@ const baseSetupTest = deployments.createFixture(async () => {
   // Set up two tranched pools
   const limit = usdcVal(1_000_000)
   const interestApr = interestAprAsBN("5.00")
-  const paymentPeriodInDays = new BN(30)
   const termInDays = new BN(365)
   const lateFeeApr = new BN(0)
   const juniorFeePercent = new BN(20)
@@ -214,7 +213,6 @@ const baseSetupTest = deployments.createFixture(async () => {
       juniorFeePercent,
       limit,
       interestApr,
-      paymentPeriodInDays,
       termInDays,
       lateFeeApr,
       usdc,
