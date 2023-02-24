@@ -353,7 +353,7 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("daily interest accrual tranched pools", () => {
-    it("initializes a pool with a monthyl scheduel", async () => {
+    it("initializes a pool with a monthly schedule", async () => {
       // Create a schedule for a 1 yr bullet loan
       const monthlyScheduleRepoAddress = await goldfinchConfig.getAddress(
         CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo
@@ -424,6 +424,7 @@ describe("mainnet forking tests", async function () {
       // Assert it has a monthly payment schedule as expected
       const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
       // Term start time should be March 1st (when the stub period ends)
+      console.log(`current time is ${await getCurrentTimestamp()}`)
       expect(await creditLine.termStartTime()).to.bignumber.eq("1677628800") // Wed Mar 01 2023 00:00:00 GMT+0000
       // Next due time should be the end of the period after the stub period (Apr 1st)
       expect(await creditLine.nextDueTime()).to.bignumber.eq("1680307200") // Sat Apr 01 2023 00:00:00 GMT+0000
