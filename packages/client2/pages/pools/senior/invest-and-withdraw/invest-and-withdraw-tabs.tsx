@@ -17,11 +17,16 @@ import { useWallet } from "@/lib/wallet";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
-} from "../senior-pool-supply-panel";
+} from "./senior-pool-supply-panel";
 import {
   SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_FIELDS,
-} from "../senior-pool-withdrawal-panel";
+} from "./senior-pool-withdrawal-panel";
+
+export {
+  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
+} from "./senior-pool-withdrawal-panel";
 
 export const INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS = gql`
   ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}

@@ -12,22 +12,20 @@ import {
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
+import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
   InvestAndWithdrawTabs,
   INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./invest-and-withdraw/invest-and-withdraw-tabs";
 import { SeniorPoolHighlights } from "./senior-pool-highlights";
 import {
   SeniorPoolLoanSummary,
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
 } from "./senior-pool-loan-summary";
-import { SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS } from "./senior-pool-supply-panel";
-import {
-  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
-  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
-} from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
@@ -36,7 +34,7 @@ gql`
   ${SENIOR_POOL_STATUS_FIELDS}
 
   ${INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS}
-  ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
+  ${USER_ELIGIBILITY_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
 
@@ -48,7 +46,7 @@ gql`
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
       id
-      ...SeniorPoolSupplyPanelUserFields
+      ...UserEligibilityFields
     }
     seniorPoolStakedPositions(
       where: { user: $user, positionType: Fidu, amount_gt: 0 }

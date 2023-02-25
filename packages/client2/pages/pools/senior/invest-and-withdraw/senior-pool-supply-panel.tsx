@@ -26,18 +26,6 @@ export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   }
 `;
 
-export const SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS = gql`
-  fragment SeniorPoolSupplyPanelUserFields on User {
-    id
-    isUsEntity
-    isNonUsEntity
-    isUsAccreditedIndividual
-    isUsNonAccreditedIndividual
-    isNonUsIndividual
-    isGoListed
-  }
-`;
-
 interface SeniorPoolSupplyPanelProps {
   seniorPool: SeniorPoolSupplyPanelPoolFieldsFragment;
   fiatPerGfi: number;
