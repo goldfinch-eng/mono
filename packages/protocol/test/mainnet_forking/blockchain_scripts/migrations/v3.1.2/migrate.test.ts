@@ -12,7 +12,6 @@ import {
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
   advanceTime,
-  bigVal,
   expectAction,
   getCurrentTimestamp,
   mineBlock,
@@ -159,6 +158,8 @@ describe("v3.1.2", async function () {
     const allSigners = (await hre.ethers.getSigners()) as [SignerWithAddress]
     signer = await allSigners[0].getAddress()
 
+    await fundWithWhales(["ETH"], [MAINNET_WARBLER_LABS_MULTISIG])
+
     impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
     await uniqueIdentity.grantRole(SIGNER_ROLE, signer, {from: MAINNET_WARBLER_LABS_MULTISIG})
 
@@ -284,6 +285,25 @@ describe("v3.1.2", async function () {
       }
 
       await expect(membershipOrchestrator.harvest([poolTokenId], {from: user})).to.be.rejected
+    })
+
+    it("still harvests interest on a late pool", async () => {
+      const {positionId, tranchedPoolAddress} = await poolTokenDeposit(borrower, user, usdcVal(100))
+
+      const tranchedPool = (await getTruffleContract<any>("TranchedPool", {
+        at: tranchedPoolAddress,
+      })) as TranchedPoolInstance
+      await tranchedPool.drawdown(usdcVal(10), {from: borrower})
+      await advanceTime({days: 30})
+      await tranchedPool.pay(usdcVal(5), {from: borrower})
+
+      // Make the pool late
+      await advanceTime({days: 60})
+
+      await expectAction(async () => await membershipOrchestrator.harvest([positionId], {from: user})).toChange([
+        [async () => await gfi.balanceOf(user), {by: new BN("0")}],
+        [async () => await usdc.balanceOf(user), {by: new BN("94987672")}],
+      ])
     })
   })
 
