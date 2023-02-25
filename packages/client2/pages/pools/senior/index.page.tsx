@@ -12,21 +12,19 @@ import {
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
-import { canUserParticipateInSeniorPool } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import {
+  InvestAndWithdrawTabs,
+  INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS,
+} from "./invest-and-withdraw/invest-and-withdraw-tabs";
 import { SeniorPoolHighlights } from "./senior-pool-highlights";
 import {
   SeniorPoolLoanSummary,
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
 } from "./senior-pool-loan-summary";
+import { SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS } from "./senior-pool-supply-panel";
 import {
-  SeniorPoolSupplyPanel,
-  SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
-  SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
-} from "./senior-pool-supply-panel";
-import {
-  SeniorPoolWithdrawalPanel,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
   SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./senior-pool-withdrawal-panel";
@@ -37,7 +35,7 @@ import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
 
-  ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}
+  ${INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS}
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
 
   ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
@@ -72,6 +70,7 @@ gql`
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
+      ...InvestAndWithdrawSeniorPoolFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -100,13 +99,6 @@ export default function SeniorPoolPage() {
   const seniorPool = data?.seniorPools[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice?.price.amount;
-  const shouldShowWithdrawal =
-    account &&
-    seniorPool?.sharePrice &&
-    (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
-      data?.seniorPoolStakedPositions.length !== 0 ||
-      data?.vaultedStakedPositions.length !== 0 ||
-      data?.seniorPoolWithdrawalRequests.length !== 0);
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
@@ -174,31 +166,25 @@ export default function SeniorPoolPage() {
                 />
 
                 {seniorPool && fiatPerGfi ? (
-                  <SeniorPoolSupplyPanel
+                  <InvestAndWithdrawTabs
                     seniorPool={seniorPool}
                     user={user}
-                    fiatPerGfi={fiatPerGfi}
-                  />
-                ) : null}
-
-                {seniorPool && shouldShowWithdrawal && (
-                  <SeniorPoolWithdrawalPanel
-                    canUserParticipate={
-                      user ? canUserParticipateInSeniorPool(user) : false
+                    fiduBalance={
+                      data.viewer.fiduBalance ?? {
+                        token: "FIDU",
+                        amount: BigNumber.from(0),
+                      }
                     }
-                    cancellationFee={seniorPool.withdrawalCancellationFee}
-                    epochEndsAt={seniorPool.epochEndsAt}
-                    fiduBalance={data.viewer.fiduBalance ?? undefined}
-                    seniorPoolSharePrice={seniorPool.sharePrice}
                     stakedPositions={data.seniorPoolStakedPositions}
                     vaultedStakedPositions={data.vaultedStakedPositions.map(
-                      (s) => s.seniorPoolStakedPosition
+                      (vsp) => vsp.seniorPoolStakedPosition
                     )}
                     existingWithdrawalRequest={
                       data.seniorPoolWithdrawalRequests[0]
                     }
+                    fiatPerGfi={fiatPerGfi}
                   />
-                )}
+                ) : null}
 
                 {data?.viewer.fiduBalance?.amount.gt(0) &&
                 seniorPool &&
