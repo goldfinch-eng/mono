@@ -4,13 +4,13 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   function testRedeemRedeemsMaximumFromTranchedPool() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -50,7 +50,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemShouldAdjustSharePriceBasedOnInterestRedeemed() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -79,7 +79,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemEmitsInterestPrincipalCollected() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -108,7 +108,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemIncreasesUsdcAvailableByAmountRedeemed() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));

@@ -10,6 +10,7 @@ import {
 } from "./openzeppelin-upgrade-validation"
 import {ExistingContracts} from "./getExistingContracts"
 import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+import {ProbablyValidContract} from "./contracts"
 
 export type DepList = {[contractName: string]: {[contractName: string]: string}}
 
@@ -24,6 +25,9 @@ export type ContractHolder = {
 export type UpgradedContracts = {
   [contractName: string]: ContractHolder
 }
+
+export type ContractUpgradeData = ProbablyValidContract | {name: ProbablyValidContract; args?: any[]}
+export const getName = (data: ContractUpgradeData) => (typeof data === "string" ? data : data.name)
 
 /**
  * Rewrite a proxy upgrade in the deployments directory. hardhat-deploy creates 3 different deployment files for a proxied contract:
@@ -60,7 +64,7 @@ export async function upgradeContracts({
   proxyOwner,
   logger = console.log,
 }: {
-  contractsToUpgrade: string[]
+  contractsToUpgrade: ContractUpgradeData[]
   contracts: ExistingContracts
   signer: string | Signer
   deployFrom: any
@@ -81,20 +85,25 @@ export async function upgradeContracts({
     GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
   }
 
+  const upgrades: Exclude<ContractUpgradeData, string>[] = contractsToUpgrade.map((upgrade) =>
+    typeof upgrade === "string" ? {name: upgrade, args: undefined} : upgrade
+  )
+
   const upgradedContracts: UpgradedContracts = {}
-  for (const contractName of contractsToUpgrade) {
+  for (const {name: contractName, args} of upgrades) {
     const contract = contracts[contractName]
     assertNonNullable(contract)
 
     let contractToDeploy = contractName
     if (!isMainnetForking() && isTestEnv() && ["GoldfinchConfig"].includes(contractName)) {
-      contractToDeploy = `Test${contractName}`
+      contractToDeploy = `Test${contractName}` as ProbablyValidContract
     }
 
     logger("📡 Trying to deploy", contractToDeploy)
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     await deployer.deploy(contractToDeploy, {
       from: deployFrom,
+      args,
       proxy: {
         owner: proxyOwner || (await getProtocolOwner()),
       },
@@ -104,7 +113,7 @@ export async function upgradeContracts({
     logger("Assert valid implementation and upgrade", contractToDeploy)
     const proxyDeployment = await hre.deployments.get(`${contractToDeploy}`)
     const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
-    await openzeppelin_assertIsValidImplementation(implDeployment)
+    await openzeppelin_assertIsValidImplementation(implDeployment, {hasArgs: !!args})
     // To upgrade the manifest:
     //  1. run `yarn generate-manifest` on main
     //  2. checkout your branch

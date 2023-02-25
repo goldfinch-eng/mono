@@ -31,14 +31,16 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
       limit
       paymentPeriodInDays
       termInDays
-      borrower
+      borrowerContract {
+        id
+      }
       lateFeeApr
     }
   }
 `;
 
 export const SECURITIES_RECOURSE_TABLE_FIELDS = gql`
-  fragment SecuritiesRecourseTableFields on Deal_SecuritiesandRecourse {
+  fragment SecuritiesRecourseTableFields on Deal_SecuritiesAndRecourse {
     secured
     type
     description
@@ -65,7 +67,7 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
 `;
 
 export const BORROWER_PERFORMANCE_TABLE_FIELDS = gql`
-  fragment BorrowerPerformanceTableFields on Borrower_UnderwritingandPerformance {
+  fragment BorrowerPerformanceTableFields on Borrower_UnderwritingPerformance {
     performanceDocument {
       id
       filename
@@ -198,7 +200,7 @@ export function DealTermsTable({
             [
               "Borrower address",
               "The Ethereum address associated with this Borrower.",
-              tranchedPool.creditLine.borrower,
+              tranchedPool.creditLine.borrowerContract.id,
             ],
           ]}
         />

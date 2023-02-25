@@ -7,16 +7,21 @@ extend type SeniorPool {
   name: String!
   category: String!
   icon: String!
+  epochEndsAt: Int!
 }
 
 extend type TranchedPool {
   name: String!
   borrowerName: String!
-  borrowerLogo: String!
+  borrowerLogo: String
 }
 
 extend type CreditLine {
-  isLate: Boolean
+  isLate: Boolean!
+  isInDefault: Boolean!
+  interestOwed: BigInt!
+  collectedPaymentBalance: BigInt!
+  isAfterTermEndTime: Boolean!
 }
 
 extend type SeniorPoolStakedPosition {
@@ -127,7 +132,7 @@ type BlockInfo {
 
 type CurvePool {
   estimatedCurveStakingApyRaw: BigDecimal!
-  usdcPerLpToken: BigDecimal!
+  usdPerLpToken: BigDecimal!
 }
 
 extend type Query {
@@ -148,8 +153,4 @@ extend type SeniorPoolWithdrawalRequest {
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """
   previewFiduRequested: BigInt!
-}
-
-extend type SeniorPoolStatus {
-  epochEndsAt: Int!
 }

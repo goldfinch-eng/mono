@@ -40,10 +40,10 @@ export function ParallelMarketsStep() {
       <div className="flex flex-col items-center">
         <Image
           src={parallelMarketsLogo}
-          width={110}
           height={110}
+          style={{ width: "auto" }}
           quality={100}
-          alt="Persona"
+          alt="Parallel Markets"
         />
 
         <p className="mt-5 text-center text-sm">

@@ -42,7 +42,7 @@ contract CapitalLedger is ICapitalLedger, Base, IERC721ReceiverUpgradeable {
     // Address of the underlying asset represented by the position
     address assetAddress;
     // USDC equivalent value of the position. This is first written
-    // on position deposit but may be updated.
+    // on position deposit but may be updated on harvesting or kicking
     uint256 usdcEquivalent;
     // When the position was deposited
     uint256 depositTimestamp;
@@ -150,6 +150,25 @@ contract CapitalLedger is ICapitalLedger, Base, IERC721ReceiverUpgradeable {
   }
 
   /// @inheritdoc ICapitalLedger
+  function harvest(uint256 positionId) external onlyOperator(Routing.Keys.MembershipOrchestrator) {
+    Position memory position = positions[positionId];
+    CapitalAssetType assetType = CapitalAssets.getSupportedType(context, position.assetAddress);
+
+    if (assetType != CapitalAssetType.ERC721) revert InvalidAssetType(assetType);
+
+    CapitalAssets.harvest(
+      context,
+      position.owner,
+      IERC721Upgradeable(position.assetAddress),
+      erc721Datas[positionId].assetTokenId
+    );
+
+    emit CapitalERC721Harvest({positionId: positionId, assetAddress: position.assetAddress});
+
+    _kick(positionId);
+  }
+
+  /// @inheritdoc ICapitalLedger
   function assetAddressOf(uint256 positionId) public view returns (address) {
     return positions[positionId].assetAddress;
   }
@@ -220,5 +239,36 @@ contract CapitalLedger is ICapitalLedger, Base, IERC721ReceiverUpgradeable {
     });
 
     owners[owner].push(positionId);
+  }
+
+  /**
+   * @notice Update the USDC equivalent value of the position, based on the current,
+   *  point-in-time valuation of the underlying asset.
+   * @param positionId id of the position
+   */
+  function _kick(uint256 positionId) internal {
+    Position memory position = positions[positionId];
+    CapitalAssetType assetType = CapitalAssets.getSupportedType(context, position.assetAddress);
+
+    if (assetType != CapitalAssetType.ERC721) revert InvalidAssetType(assetType);
+
+    // Remove the original USDC equivalent value from the owner's total
+    totals[position.owner].recordDecrease(position.usdcEquivalent, position.depositTimestamp);
+
+    uint256 usdcEquivalent = CapitalAssets.getUsdcEquivalent(
+      context,
+      IERC721Upgradeable(position.assetAddress),
+      erc721Datas[positionId].assetTokenId
+    );
+
+    //  Set the new value & add the new USDC equivalent value back to the owner's total
+    positions[positionId].usdcEquivalent = usdcEquivalent;
+    totals[position.owner].recordInstantIncrease(usdcEquivalent, position.depositTimestamp);
+
+    emit CapitalPositionAdjustment({
+      positionId: positionId,
+      assetAddress: position.assetAddress,
+      usdcEquivalent: usdcEquivalent
+    });
   }
 }

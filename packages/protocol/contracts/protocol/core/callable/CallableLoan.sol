@@ -269,7 +269,13 @@ contract CallableLoan is
   /// @dev ZA: zero amount
   function pay(
     uint256 amount
-  ) external override nonReentrant whenNotPaused returns (PaymentAllocation memory) {
+  )
+    external
+    override(ICreditLine, ILoan)
+    nonReentrant
+    whenNotPaused
+    returns (PaymentAllocation memory)
+  {
     return _pay(amount);
   }
 
@@ -300,7 +306,7 @@ contract CallableLoan is
   /*================================================================================
   Main Public/External View functions
   ================================================================================*/
-  function getAllowedUIDTypes() external view returns (uint256[] memory) {
+  function getAllowedUIDTypes() external view override returns (uint256[] memory) {
     return allowedUIDTypes;
   }
 

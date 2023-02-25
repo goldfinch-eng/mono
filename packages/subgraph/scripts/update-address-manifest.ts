@@ -32,6 +32,8 @@ const code = `
 // Network: ${NETWORK_NAME}
 export const STAKING_REWARDS_ADDRESS = "${getAddress("StakingRewards")}";
 export const POOL_TOKENS_ADDRESS = "${getAddress("PoolTokens")}";
+export const GOLDFINCH_CONFIG_ADDRESS = "${getAddress("GoldfinchConfig")}";
+export const SENIOR_POOL_ADDRESS = "${getAddress("SeniorPool")}";
 `
 fs.writeFileSync(path.resolve(__dirname, "../src/address-manifest.ts"), code)
 

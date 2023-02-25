@@ -126,17 +126,14 @@ contract StakingRewards is
 
   /* ========== VIEWS ========== */
 
+  /// @inheritdoc IStakingRewards
   function getPosition(
     uint256 tokenId
   ) external view override returns (StakedPosition memory position) {
     return positions[tokenId];
   }
 
-  /// @notice Returns the staked balance of a given position token.
-  /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
-  ///   the number of tokens the user has staked for a given position.
-  /// @param tokenId A staking position token ID
-  /// @return Amount of staked tokens denominated in `stakingToken().decimals()`
+  /// @inheritdoc IStakingRewards
   function stakedBalanceOf(uint256 tokenId) external view override returns (uint256) {
     return positions[tokenId].amount;
   }
@@ -424,9 +421,7 @@ contract StakingRewards is
     depositToCurveAndStakeFrom(msg.sender, fiduAmount, usdcAmount);
   }
 
-  /// @notice Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
-  /// @param fiduAmount The amount of FIDU to deposit
-  /// @param usdcAmount The amount of USDC to deposit
+  /// @inheritdoc IStakingRewards
   function depositToCurveAndStakeFrom(
     address nftRecipient,
     uint256 fiduAmount,
@@ -636,11 +631,7 @@ contract StakingRewards is
   // accounted for.
   //==============================================================
 
-  /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
-  ///   Any remaining staked amount will continue to accrue rewards.
-  /// @dev This function checkpoints rewards
-  /// @param tokenId A staking position token ID
-  /// @param amount Amount of `stakingToken()` to be unstaked from the position
+  /// @inheritdoc IStakingRewards
   function unstake(uint256 tokenId, uint256 amount) public override nonReentrant whenNotPaused {
     // Checkpoint rewards
     _updateReward(tokenId);
@@ -722,13 +713,10 @@ contract StakingRewards is
   // END: UNSTAKING FUNCTIONS
   //==============================================================
 
-  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
-  ///   multiplier will be reset to 1x.
-  /// @dev This will also checkpoint their rewards up to the current time.
-  // solhint-disable-next-line no-empty-blocks
+  /// @inheritdoc IStakingRewards
   function kick(
     uint256 tokenId
-  ) external override nonReentrant whenNotPaused updateReward(tokenId) {}
+  ) external override nonReentrant whenNotPaused updateReward(tokenId) {} // solhint-disable-line no-empty-blocks
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake.
@@ -757,9 +745,10 @@ contract StakingRewards is
     totalStakedSupply = totalStakedSupply.sub(prevEffectiveAmount).add(newEffectiveAmount);
   }
 
-  /// @notice Claim rewards for a given staked position
-  /// @param tokenId A staking position token ID
-  function getReward(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {
+  /// @inheritdoc IStakingRewards
+  function getReward(
+    uint256 tokenId
+  ) external override nonReentrant whenNotPaused updateReward(tokenId) returns (uint256) {
     /// @dev AD: Access denied
     require(ownerOf(tokenId) == msg.sender, "AD");
     uint256 reward = claimableRewards(tokenId);
@@ -768,11 +757,11 @@ contract StakingRewards is
       rewardsToken().safeTransfer(msg.sender, reward);
       emit RewardPaid(msg.sender, tokenId, reward);
     }
+
+    return reward;
   }
 
-  /// @notice Add `amount` to an existing FIDU position (`tokenId`)
-  /// @param tokenId A staking position token ID
-  /// @param amount Amount of `stakingToken()` to be added to tokenId's position
+  /// @inheritdoc IStakingRewards
   function addToStake(
     uint256 tokenId,
     uint256 amount

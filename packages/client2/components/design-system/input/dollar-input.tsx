@@ -62,7 +62,7 @@ export function DollarInput({
   ...rest
 }: DollarInputProps) {
   const {
-    field: { onChange: rhfOnChange, ...controllerField },
+    field: { onChange: rhfOnChange, ref, ...controllerField },
   } = useController({
     name,
     rules,
@@ -76,8 +76,17 @@ export function DollarInput({
     callbackOnChange?.(s);
   };
 
+  const refAssigner = (node: { element: HTMLInputElement }) => {
+    if (node) {
+      ref(node.element);
+    }
+  };
+
   return (
     <MaskedInput
+      // this is wack man
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={refAssigner as any}
       mask={unitProperties[unit].mask}
       blocks={{
         amount: {

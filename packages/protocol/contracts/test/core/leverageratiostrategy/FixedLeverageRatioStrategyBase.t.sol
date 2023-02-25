@@ -11,8 +11,8 @@ import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {TestSeniorPool} from "../../../test/TestSeniorPool.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {TranchingLogic} from "../../../protocol/core/TranchingLogic.sol";
@@ -55,7 +55,7 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
     poolTokens.__initialize__(GF_OWNER, gfConfig);
 
     // TranchedPool and CreditLine setup
-    TestTranchedPool tpImpl = new TestTranchedPool();
+    TranchedPool tpImpl = new TranchedPool();
     TranchedPoolImplementationRepository tpImplRepo = new TranchedPoolImplementationRepository();
     tpImplRepo.initialize(GF_OWNER, address(tpImpl));
 
@@ -129,9 +129,9 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
   function defaultTranchedPool()
     internal
     impersonating(GF_OWNER)
-    returns (TestTranchedPool, CreditLine)
+    returns (TranchedPool, CreditLine)
   {
-    (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
+    (TranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));
@@ -139,7 +139,7 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
   }
 
   function depositToTpFrom(
-    TestTranchedPool tp,
+    TranchedPool tp,
     address user,
     uint256 amount
   ) internal impersonating(user) returns (uint256) {
@@ -147,11 +147,11 @@ contract FixedLeverageRatioStrategyBaseTest is BaseTest {
     return tp.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
   }
 
-  function lockJuniorCap(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lockJuniorCap(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockJuniorCapital();
   }
 
-  function lock(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lock(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockPool();
   }
 }

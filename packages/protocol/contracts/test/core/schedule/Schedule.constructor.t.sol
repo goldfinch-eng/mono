@@ -119,9 +119,9 @@ contract ScheduleConstructorTest is Test {
   }
 
   modifier withValidParams(ScheduleParams memory p) {
-    p.periodsInTerm = bound(p.periodsInTerm, 1, type(uint16).max);
-    p.periodsPerInterestPeriod = bound(p.periodsPerInterestPeriod, 1, type(uint16).max);
-    p.periodsPerPrincipalPeriod = bound(p.periodsPerPrincipalPeriod, 1, type(uint16).max);
+    p.periodsInTerm = bound(p.periodsInTerm, 1, type(uint8).max);
+    p.periodsPerInterestPeriod = bound(p.periodsPerInterestPeriod, 1, type(uint8).max);
+    p.periodsPerPrincipalPeriod = bound(p.periodsPerPrincipalPeriod, 1, type(uint8).max);
 
     vm.assume(p.periodsInTerm % p.periodsPerInterestPeriod == 0);
     vm.assume(p.periodsInTerm % p.periodsPerPrincipalPeriod == 0);

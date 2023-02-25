@@ -6,8 +6,8 @@ pragma experimental ABIEncoderV2;
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
   function testCancelWithdrawalRequestEoaGoListedWorks(
@@ -163,8 +163,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
 
   function testCancelWithdrawalRequestCannotBeCalledMoreThanOnce(
     address user,
-    uint256 amount,
-    uint256 investAmount
+    uint256 amount
   ) public onlyAllowListed(user) goListed(user) tokenApproved(user) {
     amount = bound(amount, 1e6, 100_000_000e6);
     fundAddress(user, amount);
@@ -172,7 +171,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, receivedShares);
 
     // Invest in a tranched pool to suck up liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     // this should invest half of the users investment
     depositToTpFrom(GF_OWNER, (amount / 2) / 4, tp);
     lockJuniorCap(tp);
@@ -208,7 +207,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
 
     // Invest in a tranched pool to suck up liquidity so that there is
     // _some_ fidu left in the withdraw request so it can be cancelled
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -229,7 +228,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, shares);
 
     // Invest in a tranched pool to suck up liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -257,7 +256,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, shares);
 
     // Invest in a tranched pool to suck up liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -285,7 +284,7 @@ contract SeniorPoolCancelWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, shares);
 
     // Invest in a tranched pool to suck up liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     sp.invest(tp);

@@ -89,17 +89,25 @@ export default function GfiPage() {
 
   const totalClaimable = sumTotalClaimable(
     grantsWithTokens,
-    data?.tranchedPoolTokens,
-    data?.seniorPoolStakedPositions
+    data?.tranchedPoolTokens.concat(
+      data?.vaultedPoolTokens.map((vpt) => vpt.poolToken)
+    ),
+    data?.seniorPoolStakedPositions.concat(
+      data?.vaultedStakedPositions.map((vst) => vst.seniorPoolStakedPosition)
+    )
   );
   const totalLocked = sumTotalLocked(
     grantsWithTokens,
-    data?.seniorPoolStakedPositions
+    data?.seniorPoolStakedPositions.concat(
+      data?.vaultedStakedPositions.map((vst) => vst.seniorPoolStakedPosition)
+    )
   );
 
   const userHasRewards =
     (data?.seniorPoolStakedPositions.length ?? 0) +
+      (data?.vaultedStakedPositions.length ?? 0) +
       (data?.tranchedPoolTokens.length ?? 0) +
+      (data?.vaultedPoolTokens.length ?? 0) +
       (grantsWithTokens?.length ?? 0) >
     0;
 
@@ -179,14 +187,18 @@ export default function GfiPage() {
                   <StakingCard
                     key={v.id}
                     position={v.seniorPoolStakedPosition}
-                    vaulted
+                    vaultedCapitalPositionId={v.id}
                   />
                 ))}
                 {data.tranchedPoolTokens.map((token) => (
                   <BackerCard key={token.id} token={token} />
                 ))}
                 {data.vaultedPoolTokens.map((v) => (
-                  <BackerCard key={v.id} token={v.poolToken} vaulted />
+                  <BackerCard
+                    key={v.id}
+                    token={v.poolToken}
+                    vaultedCapitalPositionId={v.id}
+                  />
                 ))}
                 {grantsWithTokens?.map(
                   ({ grant, token, claimable, locked }, index) => (

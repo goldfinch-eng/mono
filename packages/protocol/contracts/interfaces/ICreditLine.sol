@@ -99,6 +99,9 @@ interface ICreditLine {
     uint256 _lateFeeApr
   ) external;
 
+  /// @notice Process a bulk payment, allocating the payment amount based on the payment waterfall
+  function pay(uint paymentAmount) external returns (ILoan.PaymentAllocation memory);
+
   /// @notice Process a payment, splitting the payment into two separate waterfalls, one for interest and
   ///   another for principal.
   ///

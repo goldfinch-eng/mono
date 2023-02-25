@@ -14,7 +14,7 @@ import {IAccessControl} from "../../../interfaces/IAccessControl.sol";
 import {CakeHelper} from "../../cake/helpers/CakeHelper.t.sol";
 
 contract TestERC20 is ERC20 {
-  constructor(uint256 initialSupply) public ERC20("TestERC20", "TERC20") {
+  constructor(uint256 initialSupply) ERC20("TestERC20", "TERC20") {
     _mint(msg.sender, initialSupply);
   }
 }
@@ -31,14 +31,13 @@ contract ValidRecipient is IERC20SplitterReceiver {
 contract RevertingRecipient is IERC20SplitterReceiver {
   error ReceiveError();
 
-  function onReceive(uint256) external returns (bytes4) {
+  function onReceive(uint256) external pure returns (bytes4) {
     revert ReceiveError();
-    return IERC20SplitterReceiver.onReceive.selector;
   }
 }
 
 contract InvalidRecipient is IERC20SplitterReceiver {
-  function onReceive(uint256) external returns (bytes4) {
+  function onReceive(uint256) external pure returns (bytes4) {
     return bytes4(keccak256("incorrect"));
   }
 }
@@ -176,11 +175,11 @@ contract ERC20SplitterTest is Test {
 
     address newPayee = address(99);
 
-    address[] memory payees = new address[](2);
+    payees = new address[](2);
     payees[0] = eoaSplitRecipient;
     payees[1] = newPayee;
 
-    uint256[] memory shares = new uint256[](2);
+    shares = new uint256[](2);
     shares[0] = 10;
     shares[1] = 190;
 
@@ -212,10 +211,10 @@ contract ERC20SplitterTest is Test {
 
     vm.prank(caller);
 
-    address[] memory payees = new address[](1);
+    payees = new address[](1);
     payees[0] = address(99);
 
-    uint256[] memory shares = new uint256[](1);
+    shares = new uint256[](1);
     shares[0] = 100;
 
     vm.expectRevert(

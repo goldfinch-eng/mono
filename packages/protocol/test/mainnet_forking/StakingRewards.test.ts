@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import hre, {getNamedAccounts} from "hardhat"
+import hre from "hardhat"
 import {
   ERC20Instance,
   FiduInstance,
@@ -20,62 +20,28 @@ import {
   usdcVal,
 } from "../testHelpers"
 import {
-  ContractDeployer,
-  ContractUpgrader,
   getERC20Address,
   getTruffleContract,
   MAINNET_CHAIN_ID,
   StakedPositionType,
 } from "../../blockchain_scripts/deployHelpers"
-import {UpgradedContracts} from "../../blockchain_scripts/deployHelpers/upgradeContracts"
-import {
-  changeImplementations,
-  getDeployEffects,
-} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/deployEffects"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {time} from "@openzeppelin/test-helpers"
 import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
 import {DepositMade} from "../../typechain/truffle/contracts/protocol/core/SeniorPool"
-import {MAINNET_TRUSTED_SIGNER_ADDRESS} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("baseDeploy", {keepExistingDeployments: true})
 
-  let upgradedContracts: UpgradedContracts
-  {
-    const {gf_deployer} = await getNamedAccounts()
-    fundWithWhales(["ETH"], [gf_deployer!, MAINNET_TRUSTED_SIGNER_ADDRESS])
-    const deployEffects = await getDeployEffects({
-      title: "Test Update Staking Rewards",
-    })
-
-    const deployer = new ContractDeployer(console.log, hre)
-    const upgrader = new ContractUpgrader(deployer)
-
-    upgradedContracts = await upgrader.upgrade({
-      contracts: ["StakingRewards"],
-    })
-
-    deployEffects.add(
-      await changeImplementations({
-        contracts: upgradedContracts,
-      })
-    )
-
-    await deployEffects.executeDeferred()
-  }
-
   return {
     gfi: await getTruffleContract<GFIInstance>("GFI"),
     fidu: await getTruffleContract<FiduInstance>("Fidu"),
     usdc: await getTruffleContract<ERC20Instance>("ERC20", {at: getERC20Address("USDC", MAINNET_CHAIN_ID)}),
     seniorPool: await getTruffleContract<SeniorPoolInstance>("SeniorPool"),
-    stakingRewards: await getTruffleContract<StakingRewardsInstance>("StakingRewards", {
-      at: upgradedContracts.StakingRewards?.ProxyContract.address,
-    }),
+    stakingRewards: await getTruffleContract<StakingRewardsInstance>("StakingRewards"),
   }
 })
 
@@ -88,24 +54,24 @@ describe("StakingRewards", () => {
 
   beforeEach(async () => ({gfi, stakingRewards, fidu, seniorPool, usdc} = await setupTest()))
 
+  const setup = async ({tokenId}: {tokenId: BN}) => {
+    const position = await stakingRewards.getPosition(tokenId)
+    expect(position.amount).to.bignumber.gt(new BN(0))
+    const amount = position.amount
+    const account = await stakingRewards.ownerOf(tokenId)
+    await impersonateAccount(hre, account)
+    await fundWithWhales(["ETH", "USDC"], [account])
+
+    return {account, amount}
+  }
+
   describe("curve lp", () => {
     describe("account with pre-migration position", () => {
       let account
       const tokenId = new BN(1438)
       let amount
 
-      const setup = deployments.createFixture(async () => {
-        const position = await stakingRewards.getPosition(tokenId)
-        expect(position.amount).to.bignumber.gt(new BN(0))
-        amount = position.amount
-        account = await stakingRewards.ownerOf(tokenId)
-        await impersonateAccount(hre, account)
-        await fundWithWhales(["ETH", "USDC"], [account])
-      })
-
-      beforeEach(async () => {
-        await setup()
-      })
+      beforeEach(async () => ({account, amount} = await setup({tokenId})))
 
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {
         // Establish totalUnvested before unstaking, cover slashing case
@@ -171,26 +137,14 @@ describe("StakingRewards", () => {
       const tokenId = new BN(200)
       let amount
 
-      const setup = deployments.createFixture(async () => {
-        const position = await stakingRewards.getPosition(tokenId)
-        expect(position.amount).to.bignumber.gt(new BN(0))
-        amount = position.amount
-        account = await stakingRewards.ownerOf(tokenId)
-        await impersonateAccount(hre, account)
-        await fundWithWhales(["ETH", "USDC"], [account])
-      })
-
-      beforeEach(async () => {
-        await setup()
-      })
+      beforeEach(async () => ({amount, account} = await setup({tokenId})))
 
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {
         // Establish totalUnvested before unstaking, cover slashing case
         await stakingRewards.getReward(tokenId, {from: account})
         const {totalUnvested, endTime} = (await stakingRewards.positions(new BN(tokenId)))[1]
-        const expectedChange = new BN(totalUnvested)
-          .mul(new BN(30).mul(SECONDS_PER_DAY))
-          .div(new BN(endTime).sub(await time.latest()))
+        const secondsToAdvance = BN.min(new BN(30).mul(SECONDS_PER_DAY), new BN(endTime).sub(await time.latest()))
+        const expectedChange = new BN(totalUnvested).mul(secondsToAdvance).div(new BN(endTime).sub(await time.latest()))
 
         await stakingRewards.unstake(tokenId, amount, {from: account})
         await stakingRewards.getReward(tokenId, {from: account})

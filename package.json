@@ -13,7 +13,6 @@
     "start": "HARDHAT_FORK=mainnet yarn workspaces foreach -pvi --include '{@goldfinch-eng/protocol,@goldfinch-eng/server,@goldfinch-eng/functions}' run start",
     "start:local": "yarn workspace @goldfinch-eng/protocol run generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes yarn workspaces foreach -pvi --include '{@goldfinch-eng/protocol,@goldfinch-eng/server,@goldfinch-eng/functions}' run start",
     "test": "NODE_OPTIONS=--unhandled-rejections=strict yarn workspaces foreach run test",
-    "test:client": "yarn workspace @goldfinch-eng/client run test",
     "test:protocol": "yarn workspace @goldfinch-eng/protocol run test",
     "test:autotasks": "yarn workspace @goldfinch-eng/autotasks run test",
     "lint": "yarn stub-dev-deployments && yarn workspaces foreach -pt run lint",

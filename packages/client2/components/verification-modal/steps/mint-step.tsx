@@ -1,13 +1,19 @@
 import { useApolloClient } from "@apollo/client";
 import Image from "next/future/image";
-import { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useWizard } from "react-use-wizard";
 
-import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
+import {
+  Button,
+  Form,
+  InfoIconTooltip,
+  useModalContext,
+} from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
-import { usePoller } from "@/lib/utils";
+import { ApolloClientError, handleApolloClientError } from "@/lib/utils";
 import {
   fetchUniqueIdentitySigner,
   getUIDLabelFromType,
@@ -15,177 +21,132 @@ import {
 } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
-import { ExitFlowButton } from "../exit-flow-button";
+import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
-import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
 import uidLogo2 from "./uid-logo2.png";
 
 export function MintStep() {
-  const { signature } = useVerificationFlowContext();
+  const { useModalTitle } = useModalContext();
+  useModalTitle("Mint your UID");
+
+  const { signature, uidVersion } = useVerificationFlowContext();
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
-  // TODO there's probably a better way to express the local state here
-  const [isMinting, setIsMinting] = useState(false);
-  const [isMinted, setIsMinted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>();
-  const [mintingParameters, setMintingParameters] = useState<{
-    id: number;
-    expiresAt: number;
-    signature: string;
-  }>();
+  const { goToStep } = useWizard();
 
-  const poller = useCallback(async () => {
-    if (!account || !signature) {
-      return "CONTINUE_POLLING";
-    }
-    try {
-      const signer = await fetchUniqueIdentitySigner(
-        account,
-        signature.signature,
-        signature.signatureBlockNum
-      );
-      setMintingParameters({
-        id: signer.idVersion,
-        expiresAt: signer.expiresAt,
-        signature: signer.signature,
-      });
-      return "FINISH_POLLING";
-    } catch (e) {
-      return "CONTINUE_POLLING";
-    }
-  }, [account, signature]);
-  const onMaxPoll = useCallback(
-    () => setErrorMessage("Unable to verify eligibility to mint."),
-    []
-  );
-  const { isPolling } = usePoller({
-    callback: poller,
-    delay: 5000,
-    onMaxPoll,
-  });
-
+  const rhfMethods = useForm();
   const handleMint = async () => {
-    if (!mintingParameters || !provider) {
-      return;
+    if (!account || !signature || !provider) {
+      throw new Error("Unable to verify eligibility to mint.");
     }
+    const signer = await fetchUniqueIdentitySigner(
+      account,
+      signature.signature,
+      signature.signatureBlockNum
+    );
+
+    const uidContract = await getContract({
+      name: "UniqueIdentity",
+      provider,
+    });
+
+    const gasPrice = await provider.getGasPrice();
+
     try {
-      const uidContract = await getContract({
-        name: "UniqueIdentity",
-        provider,
-      });
-      setIsMinting(true);
-      const gasPrice = await provider.getGasPrice();
       const transaction = uidContract.mint(
-        mintingParameters.id,
-        mintingParameters.expiresAt,
-        mintingParameters.signature,
+        signer.idVersion,
+        signer.expiresAt,
+        signer.signature,
         {
           value: UNIQUE_IDENTITY_MINT_PRICE,
           gasPrice: gasPrice,
         }
       );
-      await toastTransaction({
+
+      const submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: "UID mint submitted.",
         successPrompt: "UID mint succeeded.",
       });
+
       await apolloClient.refetchQueries({ include: "active" });
-      setIsMinted(true);
-      dataLayerPush("UID_MINTED");
+      dataLayerPushEvent("UID_MINTED", {
+        transactionHash: submittedTransaction.transactionHash,
+        uidType: getUIDLabelFromType(signer.idVersion),
+      });
+      goToStep(VerificationFlowSteps.MintFinished);
     } catch (e) {
-      setErrorMessage("Error while minting");
-    } finally {
-      setIsMinting(false);
+      handleApolloClientError(e as ApolloClientError);
     }
   };
 
   return (
     <StepTemplate
       includePrivacyStatement={false}
-      heading={
-        !isMinted
-          ? "Goldfinch uses UID for identity management"
-          : "Success! You're all set."
-      }
+      heading="Goldfinch uses UID for identity management"
       headingClassName="font-medium"
       footer={
-        !isMinted ? (
-          <Button
-            disabled={!mintingParameters}
-            isLoading={isMinting}
-            size="lg"
-            onClick={handleMint}
-            iconRight="ArrowSmRight"
+        <div className="w-full">
+          <Form
+            rhfMethods={rhfMethods}
+            onSubmit={handleMint}
             className="w-full"
           >
-            Claim my UID
-          </Button>
-        ) : (
-          <ExitFlowButton>Finish</ExitFlowButton>
-        )
+            <Button
+              type="submit"
+              size="lg"
+              iconRight="ArrowSmRight"
+              className="w-full"
+            >
+              Mint UID
+            </Button>
+          </Form>
+          <button
+            className="m-auto block pt-3 text-center text-sand-500 underline hover:no-underline"
+            onClick={() => goToStep(VerificationFlowSteps.MintToAddress)}
+          >
+            Mint to a smart contract wallet instead
+          </button>
+        </div>
       }
     >
       <div className="flex h-full flex-col items-center justify-between">
-        <div>
-          {errorMessage ? (
-            <div className="text-clay-500">{errorMessage}</div>
-          ) : isPolling ? (
-            <div>
-              <div className="mb-8">
-                <Spinner className="m-auto block !h-20 !w-20" />
-              </div>
-              <div className="text-center">
-                Fetching data for minting your UID, this may take a moment.
-              </div>
+        <div className="text-center">
+          <div className="m-auto w-max">
+            <Image
+              src={uidLogo2}
+              width={110}
+              height={110}
+              quality={100}
+              alt="UID"
+            />
+          </div>
+          <div>
+            <div className="font-medium">
+              {uidVersion ? getUIDLabelFromType(uidVersion) : null}
             </div>
-          ) : mintingParameters ? (
-            <div className="text-center">
-              <div className="relative m-auto w-max">
-                <Image
-                  src={uidLogo2}
-                  width={110}
-                  height={110}
-                  quality={100}
-                  alt="UID"
-                />
-                {isMinted ? (
-                  <Image
-                    src={greenCheckmark}
-                    width={40}
-                    height={40}
-                    alt="Minted"
-                    className="absolute -top-2 -right-2"
+            <div className="mb-5 text-sm text-sand-500">
+              {uidVersion === UIDType.USNonAccreditedIndividual ? (
+                <div className="flex items-center justify-center gap-1">
+                  Limited participation{" "}
+                  <InfoIconTooltip
+                    placement="right"
+                    content="Limited participation means that you may only participate in governance of the protocol, not lending or borrowing."
                   />
-                ) : null}
-              </div>
-              <div>
-                <div className="font-medium">
-                  {getUIDLabelFromType(mintingParameters.id)}
                 </div>
-                <div className="mb-5 text-sm text-sand-500">
-                  {mintingParameters.id ===
-                  UIDType.USNonAccreditedIndividual ? (
-                    <div className="flex items-center justify-center gap-1">
-                      Limited participation{" "}
-                      <InfoIconTooltip
-                        placement="right"
-                        content="Limited participation means that you may only participate in governance of the protocol, not lending or borrowing."
-                      />
-                    </div>
-                  ) : (
-                    "Full participation"
-                  )}
-                </div>
-              </div>
+              ) : (
+                "Full participation"
+              )}
             </div>
-          ) : null}
+          </div>
         </div>
         <div className="text-center text-xs text-sand-400">
-          {!isMinted
-            ? "UID is a non-transferrable NFT representing KYC-verification on-chain. It follows the ERC-1155 standard, and is freely usable by any other protocol. A UID is required to participate in Goldfinch lending pools. No personal information is stored on-chain."
-            : "With your newly minted UID, you can now participate in all the Goldfinch protocol activities you're eligible for. Get to it!"}
+          UID is a non-transferrable NFT representing KYC-verification on-chain.
+          It follows the ERC-1155 standard, and is freely usable by any other
+          protocol. A UID is required to participate in Goldfinch lending pools.
+          No personal information is stored on-chain.
         </div>
       </div>
     </StepTemplate>

@@ -35,10 +35,14 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
 
 interface BackerCardProps {
   token: BackerCardTokenFieldsFragment;
-  vaulted?: boolean;
+  vaultedCapitalPositionId?: string;
 }
 
-export function BackerCard({ token, vaulted = false }: BackerCardProps) {
+export function BackerCard({
+  token,
+  vaultedCapitalPositionId,
+}: BackerCardProps) {
+  const vaulted = !!vaultedCapitalPositionId;
   const { provider } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
@@ -52,19 +56,30 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
     !token.tranchedPool.creditLine.isLate &&
-    !token.tranchedPool.isPaused &&
-    !vaulted;
+    !token.tranchedPool.isPaused;
 
   const handleClaim = async () => {
     if (!provider) {
       return;
     }
-    const backerRewardsContract = await getContract({
-      name: "BackerRewards",
-      provider,
-    });
-    const transaction = backerRewardsContract.withdraw(token.id);
-    await toastTransaction({ transaction });
+    if (vaulted) {
+      const membershipOrchestratorContract = await getContract({
+        name: "MembershipOrchestrator",
+        provider,
+      });
+      const transaction = membershipOrchestratorContract.harvest([
+        vaultedCapitalPositionId,
+      ]);
+      await toastTransaction({ transaction });
+    } else {
+      const backerRewardsContract = await getContract({
+        name: "BackerRewards",
+        provider,
+      });
+      const transaction = backerRewardsContract.withdraw(token.id);
+      await toastTransaction({ transaction });
+    }
+
     await apolloClient.refetchQueries({ include: "active" });
   };
 
@@ -134,7 +149,11 @@ export function BackerCard({ token, vaulted = false }: BackerCardProps) {
           ? "Claiming is disabled because this pool is paused"
           : undefined
       }
-      includeVaultNotice={vaulted}
+      noticeText={
+        vaulted
+          ? "Since this position is in the vault, claiming rewards will result in you receiving both GFI rewards and USDC earned from interest and principal."
+          : undefined
+      }
     />
   );
 }

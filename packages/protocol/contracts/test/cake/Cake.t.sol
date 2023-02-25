@@ -106,19 +106,19 @@ contract TestContract is Base {
     dep.callChainLength2();
   }
 
-  function serviceGet() public {
-    TestContractDependency dep = context.testContractDependency();
+  function serviceGet() public view {
+    context.testContractDependency();
   }
 
-  function serviceGet2() public {
-    TestContractDependency dep = context.testContractDependency();
-    TestContractDependency2 dep2 = context.testContractDependency2();
+  function serviceGet2() public view {
+    context.testContractDependency();
+    context.testContractDependency2();
   }
 
-  function serviceGet3() public {
-    TestContractDependency dep = context.testContractDependency();
-    TestContractDependency2 dep2 = context.testContractDependency2();
-    TestContractDependency3 dep3 = context.testContractDependency3();
+  function serviceGet3() public view {
+    context.testContractDependency();
+    context.testContractDependency2();
+    context.testContractDependency3();
   }
 }
 
@@ -181,15 +181,15 @@ contract CakeTest is Test {
     testContract.callChainLength3();
   }
 
-  function testServiceGet() public {
+  function testServiceGet() public view {
     testContract.serviceGet();
   }
 
-  function testServiceGet2() public {
+  function testServiceGet2() public view {
     testContract.serviceGet2();
   }
 
-  function testServiceGet3() public {
+  function testServiceGet3() public view {
     testContract.serviceGet3();
   }
 }

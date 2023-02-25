@@ -90,34 +90,6 @@ jobs:
         NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
     - run: yarn run lint
 
-  client:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: yarn
-    - run: yarn workspaces focus @goldfinch-eng/client
-    - run: yarn workspaces foreach -ptR --from @goldfinch-eng/client run build
-      env:
-        NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
-        NEXT_PUBLIC_NETWORK_NAME: mainnet
-        NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
-    - run: yarn workspace @goldfinch-eng/client test
-      env:
-        TEST_USER: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
-
   functions:
     runs-on: ubuntu-latest
     strategy:
@@ -180,7 +152,7 @@ jobs:
           environment: dev
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true' 
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

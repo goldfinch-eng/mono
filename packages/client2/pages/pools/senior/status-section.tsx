@@ -6,11 +6,9 @@ import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
 export const SENIOR_POOL_STATUS_FIELDS = gql`
   fragment SeniorPoolStatusFields on SeniorPool {
-    latestPoolStatus {
-      id
-      assets
-      totalLoansOutstanding
-    }
+    assets
+    totalLoansOutstanding
+    defaultRate
   }
 `;
 
@@ -31,7 +29,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           seniorPool
             ? formatCrypto({
                 token: "USDC",
-                amount: seniorPool.latestPoolStatus.assets,
+                amount: seniorPool.assets,
               })
             : null
         }
@@ -43,16 +41,15 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           seniorPool
             ? formatCrypto({
                 token: "USDC",
-                amount: seniorPool.latestPoolStatus.totalLoansOutstanding,
+                amount: seniorPool.totalLoansOutstanding,
               })
             : null
         }
         tooltip="The total value of Senior Pool capital currently deployed in active Borrower Pools across the protocol."
       />
-      {/* TODO use the real default rate. Needs to be properly calculated on subgraph https://linear.app/goldfinch/issue/GFI-765/calculate-senior-pool-default-rate-in-subgraph */}
       <Stat
         label="Default Rate"
-        value={seniorPool ? formatPercent(0) : null}
+        value={seniorPool ? formatPercent(seniorPool.defaultRate) : null}
         tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol, calculated as the current total writedown value divided by the total loan value."
       />
     </StatGrid>

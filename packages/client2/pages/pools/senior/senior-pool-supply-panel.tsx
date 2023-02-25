@@ -11,9 +11,10 @@ import {
   Icon,
   InfoIconTooltip,
   Link,
+  MiniTable,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
@@ -31,11 +32,8 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
-    latestPoolStatus {
-      id
-      estimatedApy
-      estimatedApyFromGfiRaw
-    }
+    estimatedApy
+    estimatedApyFromGfiRaw
   }
 `;
 
@@ -67,9 +65,9 @@ export function SeniorPoolSupplyPanel({
   user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
-  const seniorPoolApyUsdc = seniorPool.latestPoolStatus.estimatedApy;
+  const seniorPoolApyUsdc = seniorPool.estimatedApy;
   const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
-    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+    seniorPool.estimatedApyFromGfiRaw,
     fiatPerGfi
   );
 
@@ -88,6 +86,7 @@ export function SeniorPoolSupplyPanel({
     const usdcContract = await getContract({ name: "USDC", provider });
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    let submittedTransaction;
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
     if (await isSmartContract(account, provider)) {
@@ -102,7 +101,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: stakingRewardsContract.depositAndStake(value),
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
@@ -117,7 +116,7 @@ export function SeniorPoolSupplyPanel({
           amount: value,
           erc20Contract: usdcContract,
         });
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction: seniorPoolContract.deposit(value),
           pendingPrompt: "Deposit into senior pool submitted",
         });
@@ -146,7 +145,7 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit and stake submitted for senior pool.`,
         });
@@ -170,14 +169,15 @@ export function SeniorPoolSupplyPanel({
           signature.r,
           signature.s
         );
-        await toastTransaction({
+        submittedTransaction = await toastTransaction({
           transaction,
           pendingPrompt: `Deposit submitted for senior pool.`,
         });
       }
     }
 
-    dataLayerPush("DEPOSITED_IN_SENIOR_POOL", {
+    dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
+      transactionHash: submittedTransaction.transactionHash,
       usdAmount: parseFloat(data.supply),
     });
 
@@ -239,7 +239,22 @@ export function SeniorPoolSupplyPanel({
         <span className="text-sm">Total est. APY</span>
         <InfoIconTooltip
           className="!text-white/60"
-          content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY."
+          content={
+            <div className="max-w-xs">
+              The Senior Pool&rsquo;s total current estimated APY, including the
+              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
+              volatile and changes based on several variables including the
+              price of GFI, the total capital deployed on Goldfinch, and Senior
+              Pool&rsquo;s utilization. Learn more in the{" "}
+              <Link
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                openInNewTab
+              >
+                Goldfinch Documentation
+              </Link>
+              .
+            </div>
+          }
         />
       </div>
       <div className="mb-8 flex items-start justify-between gap-4">
@@ -250,24 +265,14 @@ export function SeniorPoolSupplyPanel({
             )}
           </div>
         </div>
-        <div className="rounded border border-white/20">
-          <table className="text-xs">
-            <tbody>
-              <tr className="border-b border-white/20">
-                <td className="p-2">USDC</td>
-                <td className="p-2 text-right">
-                  {formatPercent(seniorPoolApyUsdc)}
-                </td>
-              </tr>
-              <tr>
-                <td className="p-2">GFI</td>
-                <td className="p-2 text-right">
-                  {formatPercent(seniorPoolApyFromGfiFiat)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <MiniTable
+          deemphasizeRowHeadings
+          omitVerticalBorders
+          rows={[
+            ["USDC", formatPercent(seniorPoolApyUsdc)],
+            ["GFI", formatPercent(seniorPoolApyFromGfiFiat)],
+          ]}
+        />
       </div>
 
       {!account ? (

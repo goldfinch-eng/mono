@@ -31,7 +31,7 @@ export function Alert({
       {hasIcon ? (
         <Icon
           size="md"
-          name="InfoCircle"
+          name={type === "info" ? "InfoCircle" : "Exclamation"}
           className={
             type === "info"
               ? "text-tidepool-600"

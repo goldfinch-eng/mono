@@ -11,6 +11,7 @@ import {TestConstants} from "./TestConstants.t.sol";
 
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 import {Fidu} from "../../protocol/core/Fidu.sol";
+import {GFI} from "../../protocol/core/GFI.sol";
 import {StakingRewards} from "../../rewards/StakingRewards.sol";
 import {IStakingRewards} from "../../interfaces/IStakingRewards.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
@@ -26,6 +27,7 @@ contract ProtocolHelper is IProtocolHelper, Test {
   GoldfinchConfig internal _gfConfig;
   GoldfinchFactory internal _gfFactory;
   Fidu internal _fidu;
+  GFI internal _gfi;
   StakingRewards internal _stakingRewards;
   IERC20 internal _usdc;
 
@@ -53,6 +55,9 @@ contract ProtocolHelper is IProtocolHelper, Test {
     _fidu.__initialize__(gfOwner, "Fidu", "FIDU", _gfConfig);
     _gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), address(_fidu));
 
+    _gfi = new GFI(gfOwner, "Goldfinch", "GFI", 100000000000000000000000000);
+    _gfConfig.setAddress(uint256(ConfigOptions.Addresses.GFI), address(_gfi));
+
     _stakingRewards = new StakingRewards();
     _stakingRewards.__initialize__(gfOwner, _gfConfig);
     _gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(_stakingRewards));
@@ -66,6 +71,10 @@ contract ProtocolHelper is IProtocolHelper, Test {
 
   function fidu() external override returns (IERC20) {
     return IERC20(address(_fidu));
+  }
+
+  function gfi() external override returns (IERC20) {
+    return IERC20(address(_gfi));
   }
 
   function gfFactory() external override returns (IGoldfinchFactory) {

@@ -2,7 +2,11 @@ import { Story, Meta } from "@storybook/react";
 
 import tailwindConfig from "../tailwind.config";
 
-const colors = tailwindConfig.theme.colors;
+const colors = (
+  tailwindConfig.theme as {
+    colors: Record<string, Record<string, string>>;
+  }
+).colors;
 
 export default {
   title: "Globals/Color",
@@ -13,7 +17,7 @@ export const ColorStory: Story = () => {
     <div className="space-y-10">
       {Object.entries(colors).map(([colorName, colorMap]) =>
         typeof colorMap !== "string" ? (
-          <div>
+          <div key={colorName}>
             <div className="font-bold">{colorName}</div>
             <div className="flex flex-wrap">
               {Object.entries(colorMap).map(([colorKey, colorValue]) => (

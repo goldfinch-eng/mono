@@ -79,7 +79,6 @@ jobs:
             # Some packages choose not to hoist their dependencies
             - ./packages/autotasks/node_modules/
             - ./packages/protocol/node_modules/
-            - ./packages/client/node_modules/
             - ./packages/functions/node_modules/
             - ./packages/server/node_modules/
             - ./packages/subgraph/node_modules/

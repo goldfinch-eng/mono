@@ -1,7 +1,8 @@
-export * from "./contract-addresses";
-export * from "./metadata/borrowers";
+import { BigNumber } from "ethers";
 
-export { default as POOL_METADATA } from "./metadata/index";
+export * from "./contract-addresses";
+export { default as BORROWER_METADATA } from "@/cms-cache/borrowers.json";
+export { default as POOL_METADATA } from "@/cms-cache/deals.json";
 
 const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME as string;
 if (!networkName) {
@@ -11,9 +12,11 @@ export const DESIRED_CHAIN_ID =
   networkName === "mainnet" ? 1 : networkName === "murmuration" ? 31337 : 31337;
 
 export const USDC_DECIMALS = 6;
+export const USDC_MANTISSA = BigNumber.from(10).pow(USDC_DECIMALS);
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
+export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
 export const TRANCHES = {
   Senior: 1,

@@ -18,6 +18,7 @@
           "redeem": ["onlyPool"],
           "withdrawPrincipal": ["onlyPool"],
           "onPoolCreated": ["onlyGoldfinchFactory"],
+          "splitToken": [],
           "burn": [],
           "getTokenInfo": []
         },
@@ -223,6 +224,8 @@
           "onTranchedPoolDrawdown": ["onlyPool", "nonReentrant"],
           "onCallableLoanDrawdown": ["onlyPool", "nonReentrant"],
           "forceIntializeStakingRewardsPoolInfo": ["onlyAdmin"],
+          "setBackerAndStakingRewardsTokenInfoOnSplit": ["onlyPoolTokens"],
+          "clearTokenInfo": ["onlyPoolTokens"],
           "withdraw": ["nonReentrant"],
           "withdrawMultiple": []
         },
@@ -300,8 +303,7 @@
           "depositERC721":  ["onlyOperator"],
           "withdraw":  ["onlyOperator"],
           "withdrawERC20":  ["onlyOperator"],
-          "harvest": ["onlyOperator"],
-          "_mintPosition": []
+          "harvest": ["onlyOperator"]
         },
         "**/GFILedger.sol:*": {
           "deposit":  ["onlyOperator"],
@@ -325,6 +327,9 @@
         "**/MembershipLedger.sol:*": {
           "resetRewards":  ["onlyOperator"],
           "allocateRewardsTo":  ["onlyOperator"]
+        },
+        "**/MockCreditLine.sol:*": {
+          "initialize":  []
         },
         "**/contracts/test/**": {
           "*.*": []

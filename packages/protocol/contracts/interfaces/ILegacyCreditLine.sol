@@ -3,6 +3,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+/**
+ * @notice Kept around so the frontend still has the ABI for old credit lines
+ */
 interface ILegacyCreditLine {
   function borrower() external view returns (address);
 

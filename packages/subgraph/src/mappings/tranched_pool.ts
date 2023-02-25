@@ -1,4 +1,6 @@
-import {TranchedPool} from "../../generated/schema"
+import {Address} from "@graphprotocol/graph-ts"
+
+import {TranchedPool, TranchedPoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,
@@ -12,9 +14,16 @@ import {
   EmergencyShutdown,
   DrawdownMade,
   PaymentApplied,
+  TranchedPoolAssessed,
 } from "../../generated/templates/TranchedPool/TranchedPool"
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
+import {
+  updateTotalDrawdowns,
+  updateTotalInterestCollected,
+  updateTotalPrincipalCollected,
+  updateTotalReserveCollected,
+} from "../entities/protocol"
 import {
   handleDeposit,
   updatePoolCreditLine,
@@ -26,6 +35,7 @@ import {
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 import {getAddressFromConfig} from "../utils"
+import {handleCreditLineBalanceChanged} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -60,11 +70,17 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
   const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  let underlyingOwner = poolToken.user
+  if (poolToken.vaultedAsset) {
+    const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))
+    underlyingOwner = vaultedPoolToken.user
+  }
 
   const transaction = createTransactionFromEvent(
     event,
     event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
-    event.params.owner
+    Address.fromString(underlyingOwner)
   )
   transaction.transactionHash = event.transaction.hash
   transaction.tranchedPool = event.address.toHexString()
@@ -98,6 +114,11 @@ export function handleEmergencyShutdown(event: EmergencyShutdown): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
 }
 
+export function handleTranchedPoolAssessed(event: TranchedPoolAssessed): void {
+  initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  updatePoolCreditLine(event.address, event.block.timestamp)
+}
+
 export function handleDrawdownMade(event: DrawdownMade): void {
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
   getOrInitUser(event.params.borrower) // ensures that a wallet making a drawdown is correctly considered a user
@@ -110,6 +131,10 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "USDC"
   transaction.save()
+
+  handleCreditLineBalanceChanged()
+
+  updateTotalDrawdowns(event.params.amount)
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
@@ -130,4 +155,10 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.sentToken = "USDC"
   transaction.save()
+
+  updateTotalPrincipalCollected(event.params.principalAmount)
+  updateTotalInterestCollected(event.params.interestAmount)
+  updateTotalReserveCollected(event.params.reserveAmount)
+
+  handleCreditLineBalanceChanged()
 }

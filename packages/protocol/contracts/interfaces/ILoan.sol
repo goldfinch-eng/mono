@@ -11,7 +11,7 @@ interface ILoan {
   /// @notice Time when the pool was initialized. Zero if uninitialized
   function createdAt() external view returns (uint256);
 
-  /// @notice Pay down the credit line. Excess payments are refunded to the caller
+  /// @notice Pay down interest + principal. Excess payments are refunded to the caller
   /// @param amount USDC amount to pay
   /// @return PaymentAllocation info on how the payment was allocated
   /// @dev {this} must be approved by msg.sender to transfer {amount} of USDC
@@ -25,6 +25,8 @@ interface ILoan {
   function getAmountsOwed(
     uint256 timestamp
   ) external view returns (uint256 interestOwed, uint256 interestAccrued, uint256 principalOwed);
+
+  function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
 
   /// @notice Drawdown the loan. The credit line's balance should increase by the amount drawn down.
   ///   Junior capital must be locked before this function can be called. If senior capital isn't locked

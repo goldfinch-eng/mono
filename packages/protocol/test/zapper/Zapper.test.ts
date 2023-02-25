@@ -26,18 +26,15 @@ import {
   erc20Approve,
   erc20Transfer,
   fiduToUSDC,
-  getCurrentTimestamp,
   getFirstLog,
-  SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
   usdcVal,
   USDC_DECIMALS,
 } from "../testHelpers"
-import {deployBaseFixture, deployUninitializedV2TranchedPoolFixture, getDeploymentFor} from "../util/fixtures"
+import {deployBaseFixture} from "../util/fixtures"
 import {DepositMade} from "../../typechain/truffle/contracts/protocol/core/SeniorPool"
 import {DepositMade as TranchedPoolDepositMade} from "../../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {Staked} from "../../typechain/truffle/contracts/rewards/StakingRewards"
-import {mint as mintUID} from "../uniqueIdentityHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import {getSum, stake, zapMultiple} from "./zapperTestUtils"
@@ -64,7 +61,6 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondTranchedPool,
     goldfinchConfig,
     borrower,
-    schedule,
   } = await baseSetupTest()
   const firstPoolFiduAmounts = [fiduAmount.div(new BN(4)), fiduAmount.div(new BN(4))]
   const secondPoolFiduAmounts = [fiduAmount.div(new BN(2))]
@@ -130,7 +126,6 @@ const zapFiduSetupTest = deployments.createFixture(async ({deployments}) => {
     secondPoolStakedTokenIds,
     firstPoolTokenIds,
     secondPoolTokenIds,
-    schedule,
   }
 })
 
@@ -153,7 +148,6 @@ const baseSetupTest = deployments.createFixture(async () => {
     fiduUSDCCurveLP,
     usdc,
     zapper,
-    schedule,
     ...others
   } = await deployBaseFixture()
 
@@ -207,7 +201,6 @@ const baseSetupTest = deployments.createFixture(async () => {
   // Set up two tranched pools
   const limit = usdcVal(1_000_000)
   const interestApr = interestAprAsBN("5.00")
-  const paymentPeriodInDays = new BN(30)
   const termInDays = new BN(365)
   const lateFeeApr = new BN(0)
   const juniorFeePercent = new BN(20)
@@ -217,7 +210,6 @@ const baseSetupTest = deployments.createFixture(async () => {
       juniorFeePercent,
       limit,
       interestApr,
-      paymentPeriodInDays,
       termInDays,
       lateFeeApr,
       usdc,
@@ -252,7 +244,6 @@ const baseSetupTest = deployments.createFixture(async () => {
     secondTranchedPool,
     fiduUSDCCurveLP,
     maxRate,
-    schedule,
   }
 })
 
@@ -299,7 +290,6 @@ describe("Zapper", async () => {
       fiduUSDCCurveLP,
       uniqueIdentity: uid,
       maxRate: stakingRewardsMaxRate,
-      schedule,
     } = await baseSetupTest())
   })
 
@@ -715,481 +705,6 @@ describe("Zapper", async () => {
         for (const poolTokenId of firstPoolTokenIds.concat(secondPoolTokenIds)) {
           expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor1)
         }
-      })
-    })
-  })
-
-  describe("zapFiduStakeToTranchedPool", async () => {
-    it("works", async () => {
-      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-      const usdcZapped = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-
-      const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
-
-      await stakingRewards.kick(stakedTokenId)
-      const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
-      const seniorPoolBalanceBefore = await seniorPool.assets()
-
-      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor1})
-
-      const result = await zapper.zapFiduStakeToTranchedPool(
-        stakedTokenId,
-        tranchedPool.address,
-        TRANCHES.Junior,
-        fiduAmount,
-        {
-          from: investor1,
-        }
-      )
-
-      const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
-      const seniorPoolBalanceAfter = await seniorPool.assets()
-
-      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
-        result.receipt.rawLogs,
-        tranchedPool,
-        "DepositMade"
-      )
-      const poolTokenId = depositEvent.args.tokenId
-      const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
-
-      // it maintains investor as owner of staked position
-      expect(await stakingRewards.ownerOf(stakedTokenId)).to.eq(investor1)
-
-      // it unstakes usdcToZap from StakingRewards
-      expect(stakedPositionBefore.amount.sub(stakedPositionAfter.amount)).to.bignumber.eq(fiduAmount)
-      expect(stakedPositionAfter.amount).to.bignumber.eq(new BN(0))
-
-      // it withdraws usdcToZap from SeniorPool
-      expect(seniorPoolBalanceBefore.sub(seniorPoolBalanceAfter)).to.bignumber.eq(usdcZapped)
-
-      // it does not slash unvested rewards
-      expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
-        stakedPositionAfter.rewards.totalUnvested,
-        bigVal(1)
-      )
-
-      // it deposits usdcToZap into the TranchedPool and holds the PoolToken on behalf of the user
-      expect(tokenInfo.principalAmount).to.bignumber.eq(usdcZapped)
-      expect(await poolTokens.ownerOf(poolTokenId)).to.eq(zapper.address)
-      const zap = (await zapper.tranchedPoolZaps(poolTokenId)) as any
-      expect(zap.owner).to.eq(investor1)
-      expect(zap.stakingPositionId).to.bignumber.eq(stakedTokenId)
-    })
-
-    describe("pool is invalid", async () => {
-      it("reverts", async () => {
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-        const fiduToZap = fiduAmount.div(new BN(2))
-        const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-        // Wasn't created through our factory
-        const {tranchedPool: fakePool} = await deployUninitializedV2TranchedPoolFixture()
-        await fakePool.initialize(
-          goldfinchConfig.address,
-          investor1,
-          new BN(20),
-          usdcVal(1000),
-          new BN(15000),
-          schedule.address,
-          new BN(180),
-          new BN(0),
-          []
-        )
-
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(stakedTokenId, fakePool.address, TRANCHES.Junior, fiduToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Invalid pool/)
-      })
-    })
-
-    describe("investor does not own position token", async () => {
-      it("reverts", async () => {
-        // Stake from owner account
-        const fiduAmount = bigVal(100)
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: owner})
-
-        const fiduToZap = fiduAmount.div(new BN(2))
-        const ownerStakedTokenId = await stake(owner, fiduAmount, stakingRewards, fidu)
-
-        // Attempt to zap owner staked position as investor
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(ownerStakedTokenId, tranchedPool.address, TRANCHES.Junior, fiduToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Not token owner/)
-      })
-    })
-
-    describe("investor does not have required UID for tranched pool", async () => {
-      it("reverts", async () => {
-        // Mint UID with type 1
-        await goldfinchConfig.removeFromGoList(investor1)
-        await uid.setSupportedUIDTypes([1, 2, 3], [true, true, true])
-        const uidTokenType = new BN(1)
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mintUID(hre, uid, uidTokenType, expiresAt, new BN(0), owner, undefined, investor1)
-
-        // Require UID with type 2
-        await tranchedPool.setAllowedUIDTypes([2], {from: owner})
-
-        // Stake as investor
-        const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-        await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor1})
-
-        const fiduToZap = fiduAmount.div(new BN(2))
-        // Attempt to zap with UID with wrong type
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, fiduToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Address not go-listed/)
-
-        // Sanity check that it works with the correct UID type
-        await tranchedPool.setAllowedUIDTypes([1], {from: owner})
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, fiduToZap, {
-            from: investor1,
-          })
-        ).to.be.fulfilled
-      })
-    })
-
-    describe("position type is not Fidu", () => {
-      it("reverts", async () => {
-        // Set the effective multiplier for the Curve to 2x
-        await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-        const usdcEquilavent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        await usdc.approve(fiduUSDCCurveLP.address, usdcEquilavent, {from: investor1})
-        await fidu.approve(fiduUSDCCurveLP.address, fiduAmount, {from: investor1})
-        await fiduUSDCCurveLP.add_liquidity([new BN(1), new BN(1)], new BN(0), false, investor1, {from: investor1})
-
-        await fiduUSDCCurveLP.approve(stakingRewards.address, new BN(1000000000001), {from: investor1})
-        const receipt = await stakingRewards.stake(new BN(1), StakedPositionType.CurveLP, {from: investor1})
-        const originalTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
-          .tokenId
-
-        await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
-        await stakingRewards.kick(originalTokenId)
-
-        await stakingRewards.approve(zapper.address, originalTokenId, {from: investor1})
-
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(originalTokenId, tranchedPool.address, fiduAmount, new BN(0), {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Bad positionType/)
-      })
-    })
-
-    describe("paused", async () => {
-      it("reverts", async () => {
-        await zapper.pause({from: owner})
-
-        const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-        const fiduToZap = fiduAmount.div(new BN(2))
-        await expect(
-          zapper.zapFiduStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, fiduToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
-  describe("zapStakeToTranchedPool", async () => {
-    it("works", async () => {
-      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-      const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-      const usdcToZap = usdcEquivalent.div(new BN(1))
-      const usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
-
-      const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
-
-      await stakingRewards.kick(stakedTokenId)
-      const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
-      const seniorPoolBalanceBefore = await seniorPool.assets()
-
-      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor1})
-
-      const result = await zapper.zapStakeToTranchedPool(
-        stakedTokenId,
-        tranchedPool.address,
-        TRANCHES.Junior,
-        usdcToZap,
-        {
-          from: investor1,
-        }
-      )
-
-      const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
-      const seniorPoolBalanceAfter = await seniorPool.assets()
-
-      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
-        result.receipt.rawLogs,
-        tranchedPool,
-        "DepositMade"
-      )
-      const poolTokenId = depositEvent.args.tokenId
-      const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
-
-      // it maintains investor as owner of staked position
-      expect(await stakingRewards.ownerOf(stakedTokenId)).to.eq(investor1)
-
-      // it unstakes usdcToZap from StakingRewards
-      expect(stakedPositionBefore.amount.sub(stakedPositionAfter.amount)).to.bignumber.eq(usdcToZapInFidu)
-
-      // it withdraws usdcToZap from SeniorPool
-      expect(seniorPoolBalanceBefore.sub(seniorPoolBalanceAfter)).to.bignumber.eq(usdcToZap)
-
-      // it does not slash unvested rewards
-      expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
-        stakedPositionAfter.rewards.totalUnvested,
-        bigVal(1)
-      )
-
-      // it deposits usdcToZap into the TranchedPool and holds the PoolToken on behalf of the user
-      expect(tokenInfo.principalAmount).to.bignumber.eq(usdcToZap)
-      expect(await poolTokens.ownerOf(poolTokenId)).to.eq(zapper.address)
-      const zap = (await zapper.tranchedPoolZaps(poolTokenId)) as any
-      expect(zap.owner).to.eq(investor1)
-      expect(zap.stakingPositionId).to.bignumber.eq(stakedTokenId)
-    })
-
-    describe("pool is invalid", async () => {
-      it("reverts", async () => {
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        const usdcToZap = usdcEquivalent.div(new BN(2))
-        const stakedTokenId = await stake(investor1, fiduAmount, stakingRewards, fidu)
-
-        // Wasn't created through our factory
-        const {tranchedPool: fakePool} = await deployUninitializedV2TranchedPoolFixture()
-        await fakePool.initialize(
-          goldfinchConfig.address,
-          investor1,
-          new BN(20),
-          usdcVal(1000),
-          new BN(15000),
-          schedule.address,
-          new BN(180),
-          new BN(0),
-          []
-        )
-
-        await expect(
-          zapper.zapStakeToTranchedPool(stakedTokenId, fakePool.address, TRANCHES.Junior, usdcToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Invalid pool/)
-      })
-    })
-
-    describe("investor does not own position token", async () => {
-      it("reverts", async () => {
-        // Stake from owner account
-        const fiduAmount = bigVal(100)
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: owner})
-
-        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        const usdcToZap = usdcEquivalent.div(new BN(2))
-
-        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: owner})
-        const ownerStakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
-          .args.tokenId
-
-        // Attempt to zap owner staked position as investor
-        await expect(
-          zapper.zapStakeToTranchedPool(ownerStakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Not token owner/)
-      })
-    })
-
-    describe("investor does not have required UID for tranched pool", async () => {
-      it("reverts", async () => {
-        // Mint UID with type 1
-        await goldfinchConfig.removeFromGoList(investor1)
-        await uid.setSupportedUIDTypes([1, 2, 3], [true, true, true])
-        const uidTokenType = new BN(1)
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mintUID(hre, uid, uidTokenType, expiresAt, new BN(0), owner, undefined, investor1)
-
-        // Require UID with type 2
-        await tranchedPool.setAllowedUIDTypes([2], {from: owner})
-
-        // Stake as investor
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        const usdcToZap = usdcEquivalent.div(new BN(2))
-
-        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor1})
-        const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
-          .tokenId
-
-        await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor1})
-
-        // Attempt to zap with UID with wrong type
-        await expect(
-          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Address not go-listed/)
-
-        // Sanity check that it works with the correct UID type
-        await tranchedPool.setAllowedUIDTypes([1], {from: owner})
-        await expect(
-          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
-            from: investor1,
-          })
-        ).to.be.fulfilled
-      })
-    })
-
-    describe("positionType is not Fidu", () => {
-      it("reverts", async () => {
-        // Set the effective multiplier for the Curve to 2x
-        await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-        const usdcEquilavent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        await usdc.approve(fiduUSDCCurveLP.address, usdcEquilavent, {from: investor1})
-        await fidu.approve(fiduUSDCCurveLP.address, fiduAmount, {from: investor1})
-        await fiduUSDCCurveLP.add_liquidity([new BN(1), new BN(1)], new BN(0), false, investor1, {from: investor1})
-
-        await fiduUSDCCurveLP.approve(stakingRewards.address, new BN(1000000000001), {from: investor1})
-        const receipt = await stakingRewards.stake(new BN(1), StakedPositionType.CurveLP, {from: investor1})
-        const originalTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
-          .tokenId
-
-        await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
-        await stakingRewards.kick(originalTokenId)
-
-        await stakingRewards.approve(zapper.address, originalTokenId, {from: investor1})
-
-        await expect(
-          zapper.zapStakeToTranchedPool(originalTokenId, tranchedPool.address, fiduAmount, new BN(0), {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/Bad positionType/)
-      })
-    })
-
-    describe("paused", async () => {
-      it("reverts", async () => {
-        await zapper.pause({from: owner})
-
-        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-        const usdcToZap = usdcEquivalent.div(new BN(2))
-
-        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor1})
-        const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
-          .tokenId
-
-        await expect(
-          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
-            from: investor1,
-          })
-        ).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
-  describe("claimTranchedPoolZap", async () => {
-    let usdcEquivalent: BN
-    let usdcToZap: BN
-    let stakedTokenId: BN
-    let poolTokenId: BN
-
-    beforeEach(async () => {
-      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor1})
-
-      usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-      usdcToZap = usdcEquivalent.div(new BN(2))
-
-      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor1})
-      stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
-
-      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
-
-      await stakingRewards.kick(stakedTokenId)
-
-      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor1})
-
-      const result = await zapper.zapStakeToTranchedPool(
-        stakedTokenId,
-        tranchedPool.address,
-        TRANCHES.Junior,
-        usdcToZap,
-        {
-          from: investor1,
-        }
-      )
-
-      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
-        result.receipt.rawLogs,
-        tranchedPool,
-        "DepositMade"
-      )
-      poolTokenId = depositEvent.args.tokenId
-    })
-
-    describe("TranchedPool is past lock period", async () => {
-      it("allows claiming the underlying PoolToken", async () => {
-        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
-        await tranchedPool.lockJuniorCapital()
-        await tranchedPool.drawdown(usdcToZap, {from: borrower})
-        await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
-
-        await zapper.claimTranchedPoolZap(poolTokenId, {from: investor1})
-        expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor1)
-      })
-    })
-
-    describe("TranchedPool is not past lock period", async () => {
-      it("reverts", async () => {
-        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor1})).to.be.rejectedWith(/Zap locked/)
-
-        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
-        await tranchedPool.lockJuniorCapital()
-        await tranchedPool.drawdown(usdcToZap, {from: borrower})
-        await advanceTime({seconds: drawdownTimePeriod.div(new BN(2))})
-
-        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor1})).to.be.rejectedWith(/Zap locked/)
-      })
-    })
-
-    describe("sender does not own zap", async () => {
-      it("reverts", async () => {
-        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
-        await tranchedPool.lockJuniorCapital()
-        await tranchedPool.drawdown(usdcToZap, {from: borrower})
-        await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
-
-        // Claim as `borrower` instead of `investor`
-        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
-      })
-    })
-
-    describe("paused", async () => {
-      it("reverts", async () => {
-        await zapper.pause({from: owner})
-        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor1})).to.be.rejectedWith(/paused/)
       })
     })
   })

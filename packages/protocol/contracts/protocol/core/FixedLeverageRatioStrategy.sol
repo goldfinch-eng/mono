@@ -26,7 +26,7 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
     config = _config;
   }
 
-  function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
+  function getLeverageRatio(ITranchedPool) public view override returns (uint256) {
     return config.getLeverageRatio();
   }
 }

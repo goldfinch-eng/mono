@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import {ImplementationRepository as Repo} from "../../../protocol/core/proxy/ImplementationRepository.sol";
 import {UcuProxy} from "../../../protocol/core/proxy/UcuProxy.sol";
 import {Test} from "forge-std/Test.sol";
-import {console2 as console} from "forge-std/console2.sol";
 
 contract TestImplementationRepository is Test {
   address internal constant REPO_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
@@ -144,7 +143,7 @@ contract TestImplementationRepository is Test {
     public
     impersonating(REPO_OWNER)
   {
-    UcuProxy proxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
+    UcuProxy newProxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
 
     repo.append(address(failingImpl));
     repo.setUpgradeDataFor(
@@ -155,7 +154,7 @@ contract TestImplementationRepository is Test {
     vm.stopPrank();
     vm.startPrank(PROXY_OWNER);
     vm.expectRevert("failed in proxied call");
-    proxy.upgradeImplementation();
+    newProxy.upgradeImplementation();
   }
 
   function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(REPO_OWNER) {

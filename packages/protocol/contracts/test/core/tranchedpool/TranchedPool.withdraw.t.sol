@@ -3,7 +3,6 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
@@ -78,11 +77,8 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
 
     uint256 interestOwed = pool.creditLine().interestOwed();
     pay(pool, cl.interestOwed() + cl.principalOwed());
-    console.log("1");
     assertZero(cl.interestOwed());
-    console.log("2");
     assertZero(cl.principalOwed());
-    console.log("3");
 
     // Total interest owed to junior:
     //  interest_accrued = amount1 + amount2 * 0.05

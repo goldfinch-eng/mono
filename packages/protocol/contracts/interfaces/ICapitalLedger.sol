@@ -38,6 +38,26 @@ interface ICapitalLedger {
     uint256 depositTimestamp
   );
 
+  /**
+   * @notice Emitted when an ERC721 capital asset has been harvested
+   * @param positionId id for the capital position
+   * @param assetAddress address of the underlying ERC721
+   */
+  event CapitalERC721Harvest(uint256 indexed positionId, address assetAddress);
+
+  /**
+   * @notice Emitted when an ERC721 capital asset has been "kicked", which may cause the underlying
+   *  usdc equivalent value to change.
+   * @param positionId id for the capital position
+   * @param assetAddress address of the underlying ERC721
+   * @param usdcEquivalent new usdc equivalent value of the position
+   */
+  event CapitalPositionAdjustment(
+    uint256 indexed positionId,
+    address assetAddress,
+    uint256 usdcEquivalent
+  );
+
   /// Thrown when called with an invalid asset type for the function. Valid
   /// types are defined under CapitalAssetType
   error InvalidAssetType(CapitalAssetType);
@@ -70,6 +90,15 @@ interface ICapitalLedger {
    * @param positionId id of the position
    */
   function withdraw(uint256 positionId) external;
+
+  /**
+   * @notice Harvests the associated rewards, interest, and other accrued assets
+   *  associated with the asset token. For example, if given a PoolToken asset,
+   *  this will collect the GFI rewards (if available), redeemable interest, and
+   *  redeemable principal, and send that to the `owner`.
+   * @param positionId id of the position
+   */
+  function harvest(uint256 positionId) external;
 
   /**
    * @notice Get the asset address of the position. Example: For an ERC721 position, this

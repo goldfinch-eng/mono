@@ -2,10 +2,17 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
-import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
+import {
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+  USDC_MANTISSA,
+} from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   TranchedPoolStatusFieldsFragment,
+  TranchedPoolRepaymentStatusFieldsFragment,
+  TranchedPoolFundingStatusFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
   TransactionCategory,
@@ -31,6 +38,7 @@ export const TRANCHED_POOL_STATUS_FIELDS = gql`
       id
       balance
       termEndTime
+      isLate @client
     }
   }
 `;
@@ -42,12 +50,14 @@ export enum PoolStatus {
   Full,
   ComingSoon,
   Open,
+  Default,
 }
 
 /**
  * Get the current status of the tranched pool
  * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
  * @returns the status of the pool
+ * @deprecated Deprecated in favor of getTranchedPoolRepaymentStatus and getTranchedPoolFundingStatus
  */
 export function getTranchedPoolStatus(
   pool: TranchedPoolStatusFieldsFragment
@@ -73,6 +83,91 @@ export function getTranchedPoolStatus(
   }
 }
 
+export enum PoolRepaymentStatus {
+  NotDrawnDown,
+  Current,
+  Late,
+  Default,
+  Repaid,
+}
+
+/**
+ * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolRepaymentStatus
+ */
+export const TRANCHED_POOL_REPAYMENT_STATUS_FIELDS = gql`
+  fragment TranchedPoolRepaymentStatusFields on TranchedPool {
+    id
+    creditLine {
+      id
+      balance
+      termEndTime
+      isLate @client
+      isInDefault @client
+    }
+  }
+`;
+
+export function getTranchedPoolRepaymentStatus(
+  tranchedPool: TranchedPoolRepaymentStatusFieldsFragment
+) {
+  if (
+    tranchedPool.creditLine.balance.isZero() &&
+    tranchedPool.creditLine.termEndTime.gt(0)
+  ) {
+    return PoolRepaymentStatus.Repaid;
+  } else if (tranchedPool.creditLine.balance.isZero()) {
+    return PoolRepaymentStatus.NotDrawnDown;
+  } else if (tranchedPool.creditLine.isInDefault) {
+    return PoolRepaymentStatus.Default;
+  } else if (tranchedPool.creditLine.isLate) {
+    return PoolRepaymentStatus.Late;
+  } else {
+    return PoolRepaymentStatus.Current;
+  }
+}
+
+export enum TranchedPoolFundingStatus {
+  ComingSoon,
+  Open,
+  Closed,
+  Full,
+  Cancelled,
+}
+
+export const TRANCHED_POOL_FUNDING_STATUS_FIELDS = gql`
+  fragment TranchedPoolFundingStatusFields on TranchedPool {
+    id
+    remainingCapacity
+    fundableAt
+    creditLine {
+      balance
+      termEndTime
+    }
+  }
+`;
+
+export function getTranchedPoolFundingStatus(
+  tranchedPool: TranchedPoolFundingStatusFieldsFragment
+) {
+  if (tranchedPool.id === CAURIS_POOL_ID) {
+    return TranchedPoolFundingStatus.Cancelled;
+  } else if (
+    !tranchedPool.creditLine.balance.isZero() ||
+    !tranchedPool.creditLine.termEndTime.isZero()
+  ) {
+    return TranchedPoolFundingStatus.Closed;
+  } else if (
+    tranchedPool.creditLine.termEndTime.isZero() &&
+    Date.now() / 1000 < tranchedPool.fundableAt.toNumber()
+  ) {
+    return TranchedPoolFundingStatus.ComingSoon;
+  } else if (tranchedPool.remainingCapacity.isZero()) {
+    return TranchedPoolFundingStatus.Full;
+  } else {
+    return TranchedPoolFundingStatus.Open;
+  }
+}
+
 export function computeApyFromGfiInFiat(
   apyFromGfiRaw: FixedNumber,
   fiatPerGfi: number
@@ -80,7 +175,6 @@ export function computeApyFromGfiInFiat(
   return apyFromGfiRaw.mulUnsafe(FixedNumber.fromString(fiatPerGfi.toString()));
 }
 
-const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
 const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
 const sharePriceMantissa = fiduMantissa;
 
@@ -97,7 +191,7 @@ export function sharesToUsdc(
   const amount = numShares
     .mul(sharePrice)
     .div(fiduMantissa)
-    .div(sharePriceMantissa.div(usdcMantissa));
+    .div(sharePriceMantissa.div(USDC_MANTISSA));
 
   return { token: "USDC", amount };
 }
@@ -114,7 +208,7 @@ export function usdcToShares(
 ): CryptoAmount<"FIDU"> {
   const numShares = usdcAmount
     .mul(fiduMantissa)
-    .div(usdcMantissa)
+    .div(USDC_MANTISSA)
     .mul(sharePriceMantissa)
     .div(sharePrice);
   return { token: "FIDU", amount: numShares };

@@ -10,7 +10,7 @@ import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
-import {TestTranchedPool} from "../TestTranchedPool.sol";
+import {TranchedPool} from "../../protocol/core/TranchedPool.sol";
 
 contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_JUNIOR_FEE_PERCENT = 20;
@@ -27,6 +27,10 @@ contract TranchedPoolBuilder {
   uint256 private lateFeeApr;
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
+  uint256 private _periodsInTerm = 12;
+  uint256 private _periodsPerInterestPeriod = 1;
+  uint256 private _periodsPerPrincipalPeriod = 12;
+  uint256 private _gracePrincipalPeriods = 0;
 
   constructor(
     GoldfinchFactory _gfFactory,
@@ -53,18 +57,48 @@ contract TranchedPoolBuilder {
       });
   }
 
-  function build(address borrower) external returns (TestTranchedPool, CreditLine) {
+  function build(address borrower) external returns (TranchedPool, CreditLine) {
     ITranchedPool created = gfFactory.createPool(
       borrower,
       juniorFeePercent,
       maxLimit,
       apr,
-      defaultSchedule(),
+      monthlyScheduleRepo.createSchedule({
+        periodsInTerm: _periodsInTerm,
+        periodsPerInterestPeriod: _periodsPerInterestPeriod,
+        periodsPerPrincipalPeriod: _periodsPerPrincipalPeriod,
+        gracePrincipalPeriods: _gracePrincipalPeriods
+      }),
       lateFeeApr,
       fundableAt,
       allowedUIDTypes
     );
-    TestTranchedPool pool = TestTranchedPool(address(created));
+    TranchedPool pool = TranchedPool(address(created));
+    return (pool, CreditLine(address(pool.creditLine())));
+  }
+
+  function buildWithMonthlySchedule(
+    address borrower,
+    uint256 monthsInTerm,
+    uint256 monthsPerInterestPeriod,
+    uint256 monthsPerPrincipalPeriod
+  ) external returns (TranchedPool, CreditLine) {
+    ITranchedPool created = gfFactory.createPool({
+      _borrower: borrower,
+      _juniorFeePercent: juniorFeePercent,
+      _limit: maxLimit,
+      _interestApr: apr,
+      _schedule: monthlyScheduleRepo.createSchedule({
+        periodsInTerm: monthsInTerm,
+        periodsPerInterestPeriod: monthsPerInterestPeriod,
+        periodsPerPrincipalPeriod: monthsPerPrincipalPeriod,
+        gracePrincipalPeriods: 0
+      }),
+      _lateFeeApr: lateFeeApr,
+      _fundableAt: fundableAt,
+      _allowedUIDTypes: allowedUIDTypes
+    });
+    TranchedPool pool = TranchedPool(address(created));
     return (pool, CreditLine(address(pool.creditLine())));
   }
 
@@ -90,6 +124,19 @@ contract TranchedPoolBuilder {
 
   function withFundableAt(uint256 _fundableAt) external returns (TranchedPoolBuilder) {
     fundableAt = _fundableAt;
+    return this;
+  }
+
+  function withScheduleParams(
+    uint256 periodsInTerm,
+    uint256 periodsPerInterestPeriod,
+    uint256 periodsPerPrincipalPeriod,
+    uint256 gracePrincipalPeriods
+  ) external returns (TranchedPoolBuilder) {
+    _periodsInTerm = periodsInTerm;
+    _periodsPerInterestPeriod = periodsPerInterestPeriod;
+    _periodsPerPrincipalPeriod = periodsPerPrincipalPeriod;
+    _gracePrincipalPeriods = gracePrincipalPeriods;
     return this;
   }
 

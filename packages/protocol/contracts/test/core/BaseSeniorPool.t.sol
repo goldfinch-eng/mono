@@ -4,6 +4,7 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {Accountant} from "../../protocol/core/Accountant.sol";
+import {TranchedPool} from "../../protocol/core/TranchedPool.sol";
 import {BackerRewards} from "../../rewards/BackerRewards.sol";
 import {BaseTest} from "./BaseTest.t.sol";
 import {ConfigHelper} from "../../protocol/core/ConfigHelper.sol";
@@ -27,7 +28,6 @@ import {StakingRewards} from "../../rewards/StakingRewards.sol";
 import {TestConstants} from "./TestConstants.t.sol";
 import {TestERC20} from "../../test/TestERC20.sol";
 import {TestSeniorPool} from "../../test/TestSeniorPool.sol";
-import {TestTranchedPool} from "../TestTranchedPool.sol";
 import {TranchedPoolBuilder} from "../helpers/TranchedPoolBuilder.t.sol";
 import {TranchedPoolImplementationRepository} from "../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
@@ -94,7 +94,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uniqueIdentity.setSupportedUIDTypes(supportedUids, supportedUidValues);
 
     // TranchedPool and CreditLine setup
-    TestTranchedPool tpImpl = new TestTranchedPool();
+    TranchedPool tpImpl = new TranchedPool();
     TranchedPoolImplementationRepository tpImplRepo = new TranchedPoolImplementationRepository();
     tpImplRepo.initialize(GF_OWNER, address(tpImpl));
 
@@ -154,6 +154,7 @@ contract SeniorPoolBaseTest is BaseTest {
     // "Error sent ERC1155 to non-receiver"
     fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(gfConfig.protocolAdminAddress());
+    fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
@@ -184,8 +185,8 @@ contract SeniorPoolBaseTest is BaseTest {
     return (fiduAmount * gfConfig.getSeniorPoolWithdrawalCancelationFeeInBps()) / 10_000;
   }
 
-  function defaultTp() internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
-    (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
+  function defaultTp() internal impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
+    (TranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
     (ISchedule schedule, ) = cl.schedule();
@@ -197,29 +198,29 @@ contract SeniorPoolBaseTest is BaseTest {
   function depositToTpFrom(
     address user,
     uint256 amount,
-    TestTranchedPool tp
+    TranchedPool tp
   ) internal impersonating(user) returns (uint256) {
     usdc.approve(address(tp), amount);
     return tp.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
   }
 
-  function payTp(uint256 amount, TestTranchedPool tp) internal impersonating(GF_OWNER) {
+  function payTp(uint256 amount, TranchedPool tp) internal impersonating(GF_OWNER) {
     usdc.approve(address(tp), type(uint256).max);
     tp.pay(amount);
   }
 
   function drawdownTp(
     uint256 amount,
-    TestTranchedPool tp
+    TranchedPool tp
   ) internal impersonating(tp.creditLine().borrower()) {
     tp.drawdown(amount);
   }
 
-  function lockJuniorCap(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lockJuniorCap(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockJuniorCapital();
   }
 
-  function lock(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lock(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockPool();
   }
 
@@ -296,7 +297,7 @@ contract SeniorPoolBaseTest is BaseTest {
     address user,
     uint256 userPrivateKey,
     uint256 amount
-  ) internal returns (uint8, bytes32, bytes32) {
+  ) internal view returns (uint8, bytes32, bytes32) {
     uint256 nonce = usdc.nonces(user);
     uint256 deadline = type(uint256).max;
     // Get signature for permit
@@ -340,7 +341,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256,
     uint256,
     bytes calldata
-  ) external returns (bytes4) {
+  ) external pure returns (bytes4) {
     return 0xf23a6e61;
   }
 

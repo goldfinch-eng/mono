@@ -20,7 +20,6 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
-  getListOfAllTranchedPoolAddresses,
 } from "./helpers"
 import {
   bigDecimalToBigInt,
@@ -33,6 +32,7 @@ import {
 } from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
+import {getListOfAllTranchedPoolAddresses} from "./protocol"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -175,6 +175,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
   tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
   tranchedPool.isPaused = poolContract.paused()
+  tranchedPool.drawdownsPaused = poolContract.drawdownsPaused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
   tranchedPool.totalDeployed = totalDeployed
@@ -185,6 +186,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   const creditLineAddress = poolContract.creditLine().toHexString()
   const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
   tranchedPool.creditLine = creditLine.id
+  tranchedPool.borrowerContract = creditLine.borrowerContract
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
   tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
   // This can happen in weird cases where the senior pool investment causes a pool to overfill

@@ -1,13 +1,19 @@
-"""
-Notes
-- address are mapped as IDs
-- We are using reverse lookups to create virtual fields:
-  https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
-"""
 type SeniorPool @entity {
-  id: ID!
-  latestPoolStatus: SeniorPoolStatus!
-  investmentsMade: [TranchedPool!]!
+  id: ID! # Hardcoded to "1", the Senior Pool is a singleton
+  address: Bytes!
+  sharePrice: BigInt!
+  totalShares: BigInt!
+  assets: BigInt!
+  totalLoansOutstanding: BigInt!
+  tranchedPools: [TranchedPool!]!
+  withdrawalCancellationFee: BigDecimal!
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal!
+
+  totalInvested: BigInt!
+  totalWrittenDown: BigInt!
+  defaultRate: BigDecimal!
 }
 
 enum StakedPositionType {
@@ -26,28 +32,16 @@ type SeniorPoolStakedPosition @entity {
   """
   startTime: BigInt!
   totalRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedStakedPosition
 }
 
-type SeniorPoolStatus @entity {
-  """
-  This entity is a singleton, so the id is always "1"
-  """
+type BorrowerContract @entity {
   id: ID!
-  rawBalance: BigInt!
-  balance: BigInt!
-  sharePrice: BigInt!
-  totalShares: BigInt!
-  assets: BigInt!
-  totalLoansOutstanding: BigInt!
-  cumulativeWritedowns: BigInt!
-  tranchedPools: [TranchedPool!]!
-  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
-  estimatedTotalInterest: BigDecimal!
-  estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal!
-  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
-  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
-  cancellationFee: BigDecimal!
+  createdAt: BigInt!
+  user: User!
+  tranchedPools: [TranchedPool!]! @derivedFrom(field: "borrowerContract")
+  creditLines: [CreditLine!]! @derivedFrom(field: "borrowerContract")
 }
 
 type User @entity {
@@ -68,10 +62,12 @@ type User @entity {
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
 
+  borrowerContracts: [BorrowerContract!]! @derivedFrom(field: "user")
+
   communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
 
-type SeniorTrancheInfo @entity {
+interface TrancheInfo {
   id: ID!
   trancheId: BigInt!
   tranchedPool: TranchedPool!
@@ -81,7 +77,17 @@ type SeniorTrancheInfo @entity {
   interestSharePrice: BigInt!
 }
 
-type JuniorTrancheInfo @entity {
+type SeniorTrancheInfo implements TrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type JuniorTrancheInfo implements TrancheInfo @entity {
   id: ID!
   trancheId: BigInt!
   tranchedPool: TranchedPool!
@@ -93,7 +99,7 @@ type JuniorTrancheInfo @entity {
 
 type CreditLine @entity {
   id: ID!
-  borrower: Bytes!
+  borrowerContract: BorrowerContract!
   tranchedPool: TranchedPool! @derivedFrom(field: "creditLine")
   limit: BigInt!
   maxLimit: BigInt!
@@ -103,7 +109,6 @@ type CreditLine @entity {
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
   nextDueTime: BigInt!
-  interestOwed: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
@@ -135,6 +140,7 @@ type TranchedPool @entity {
   remainingCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
+  drawdownsPaused: Boolean!
   """
   Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
   """
@@ -166,11 +172,21 @@ type TranchedPool @entity {
   The amount of interest determined to be owed to this pool, calculated at the very beginning
   """
   initialInterestOwed: BigInt!
+
+  borrowerContract: BorrowerContract!
 }
 
-# Internal use entity that just allows us to collect a list of all tranched pools
-type TranchedPoolRoster @entity {
+"""
+Captures protocol-wide data
+"""
+type Protocol @entity {
   id: ID! # Hardcoded to "1" because this is a singleton
+  totalWritedowns: BigInt!
+  totalDrawdowns: BigInt!
+  defaultRate: BigDecimal!
+  totalPrincipalCollected: BigInt!
+  totalInterestCollected: BigInt!
+  totalReserveCollected: BigInt!
   tranchedPools: [TranchedPool!]!
 }
 
@@ -179,7 +195,7 @@ type TranchedPoolToken @entity {
   mintedAt: BigInt!
   user: User!
   tranchedPool: TranchedPool!
-  tranche: BigInt!
+  tranche: TrancheInfo!
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
@@ -197,6 +213,8 @@ type TranchedPoolToken @entity {
   Refers to the rewards that are received from LP rewards matching
   """
   stakingRewardsClaimed: BigInt!
+
+  vaultedAsset: VaultedPoolToken
 }
 
 type StakingRewardsData @entity {

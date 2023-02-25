@@ -1,6 +1,5 @@
 import {GoldfinchConfig, TranchedPoolImplementationRepository} from "@goldfinch-eng/protocol/typechain/ethers"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
-import {ethers} from "hardhat"
+import {assertIsString} from "@goldfinch-eng/utils"
 import {CONFIG_KEYS} from "../configKeys"
 import {ContractDeployer, getProtocolOwner} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
@@ -15,7 +14,7 @@ export async function deployTranchedPoolImplementationRepository(
   assertIsString(gf_deployer)
   const protocolOwner = await getProtocolOwner()
 
-  const tranchedPoolImpl = await deployTranchedPool(deployer, {config, deployEffects})
+  const tranchedPoolImpl = await deployTranchedPool(deployer)
 
   const contractName = "TranchedPoolImplementationRepository"
   logger(`About to deploy ${contractName}...`)

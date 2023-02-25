@@ -62,8 +62,7 @@ contract ConfigurableRoyaltyStandardTest is BaseTest {
   }
 
   function testRoyaltyInfoCalculatesRoyaltyFeeUsingConfiguredParams(
-    address _receiver,
-    uint256 tokenId
+    address _receiver
   ) public onlyAllowListed(_receiver) impersonating(GF_OWNER) {
     uint256 fiftyBasisPoints = 5e15;
     standard.setRoyaltyParams(_receiver, fiftyBasisPoints);

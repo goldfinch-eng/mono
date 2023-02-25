@@ -55,7 +55,7 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 16348828, // Jan-06-2023 04:06:47 PM +UTC
+            blockNumber: 16684611, // Feb-22-2023 02:36:35 PM +UTC
           }
         : undefined,
     },

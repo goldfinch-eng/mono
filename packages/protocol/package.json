@@ -18,7 +18,7 @@
     "pre-commit": "yarn lint-staged",
     "deploy-for-client-test": "yarn generate-merkle-root:client-test && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.client_test.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.client_test.json BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.client_test.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.client_test.json yarn hardhat deploy --export-all deployments/all_client_test.json",
     "lint": "tsc --noEmit && eslint --resolve-plugins-relative-to=. . && solhint 'contracts/**/*.sol'",
-    "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol' --fix",
+    "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol'  --fix",
     "docs": "yarn hardhat docgen",
     "verify": "env-cmd -f ../../.env.local yarn hardhat etherscan-verify --api-key $ETHERSCAN_API_KEY --solc-input --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",

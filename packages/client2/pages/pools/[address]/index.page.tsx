@@ -1,7 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { FixedNumber, utils } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
@@ -40,6 +40,7 @@ import {
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
+import { ClaimPanel, CLAIM_PANEL_POOL_TOKEN_FIELDS } from "./claim-panel";
 import ComingSoonPanel from "./coming-soon-panel";
 import { CREDIT_MEMO_FIELDS } from "./credit-memos";
 import DealSummary from "./deal-summary";
@@ -59,7 +60,6 @@ import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-  WITHDRAWAL_PANEL_ZAP_FIELDS,
 } from "./withdrawal-panel";
 
 gql`
@@ -67,7 +67,7 @@ gql`
   ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
-  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
+  ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -94,11 +94,14 @@ gql`
         maxLimit
         id
         isLate @client
+        isInDefault @client
         termInDays
         paymentPeriodInDays
         nextDueTime
         interestAprDecimal
-        borrower
+        borrowerContract {
+          id
+        }
         lateFeeApr
       }
       initialInterestOwed
@@ -113,11 +116,8 @@ gql`
     }
     seniorPools(first: 1) {
       id
-      latestPoolStatus {
-        id
-        estimatedApyFromGfiRaw
-        sharePrice
-      }
+      estimatedApyFromGfiRaw
+      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -130,14 +130,13 @@ gql`
       ...SupplyPanelUserFields
       tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
-      }
-      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
-        ...WithdrawalPanelZapFields
+        ...ClaimPanelPoolTokenFields
       }
       vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         id
         poolToken {
           ...WithdrawalPanelPoolTokenFields
+          ...ClaimPanelPoolTokenFields
         }
       }
     }
@@ -403,9 +402,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               className="mt-12"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-              }
+              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
               fiatPerGfi={fiatPerGfi}
             />
           ) : null}
@@ -419,32 +416,33 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   tranchedPool={tranchedPool}
                   user={user}
                   fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
                   agreement={dealDetails.agreement}
                   isUnitrancheDeal={dealDetails.dealType === "unitranche"}
                 />
               ) : null}
 
-              {data?.user &&
-              (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0 ||
-                data?.user.vaultedPoolTokens.length > 0) ? (
+              {poolStatus === PoolStatus.Open &&
+              data?.user &&
+              data?.user.tranchedPoolTokens.length > 0 ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
                   vaultedPoolTokens={data.user.vaultedPoolTokens.map(
                     (v) => v.poolToken
                   )}
-                  zaps={data.user.zaps}
-                  isPoolLocked={
-                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
-                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
-                      tranchedPool.juniorTranches[0].lockedUntil
-                    )
-                  }
+                />
+              ) : null}
+
+              {poolStatus !== PoolStatus.Open &&
+              data?.user &&
+              (data?.user.tranchedPoolTokens.length > 0 ||
+                data?.user.vaultedPoolTokens.length > 0) ? (
+                <ClaimPanel
+                  poolTokens={data.user.tranchedPoolTokens}
+                  vaultedPoolTokens={data.user.vaultedPoolTokens}
+                  fiatPerGfi={fiatPerGfi}
+                  tranchedPool={tranchedPool}
                 />
               ) : null}
 
@@ -545,7 +543,7 @@ export const getStaticProps: GetStaticProps<
   >({
     query: singleDealQuery,
     variables: {
-      id: address,
+      id: address.toLowerCase(),
     },
     fetchPolicy: "network-only",
   });

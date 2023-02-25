@@ -1,6 +1,0 @@
-{
-  "name": "Unique Identity",
-  "description": "Unique Identity is a non-transferrable NFT representing KYC-verification on-chain. It follows the ERC-1155 standard, and is freely usable by any other protocol. No personal information is stored on-chain. It is currently managed by The Goldfinch Foundation. Read more at docs.goldfinch.finance.",
-  "image": "https://storage.googleapis.com/goldfinch-static-assets/uid/asset.jpg",
-  "animation_url": "https://storage.googleapis.com/goldfinch-static-assets/uid/asset.mp4"
-}

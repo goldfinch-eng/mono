@@ -17,7 +17,7 @@ import {
   MAINNET_TRUSTED_SIGNER_ADDRESS,
 } from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 
 const {deployments, ethers, artifacts, web3} = hre
@@ -41,7 +41,6 @@ import {
   getFirstLog,
   toEthers,
   mineInSameBlock,
-  mineBlock,
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
@@ -56,7 +55,9 @@ import {
   protocolFee,
   usdcFromShares,
   getCurrentTimestamp,
-  getDefaultMonthlySchedule,
+  getTruffleContractAtAddress,
+  SECONDS_PER_DAY,
+  getMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -74,6 +75,7 @@ import {
   ICurveLPInstance,
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
+  MonthlyScheduleRepoInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
@@ -83,6 +85,7 @@ import {
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/TranchedPool"
+import {TokenMinted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/PoolTokens"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/rewards/CommunityRewards"
 import {assertCommunityRewardsVestingRewards} from "../communityRewardsHelpers"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
@@ -110,6 +113,8 @@ import {
   TranchedPool,
   UniqueIdentity,
   Borrower as EthersBorrower,
+  GoldfinchFactory,
+  ERC20,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
@@ -347,6 +352,89 @@ describe("mainnet forking tests", async function () {
     })
   })
 
+  describe("daily interest accrual tranched pools", () => {
+    it("initializes a pool with a monthly schedule", async () => {
+      // Create a schedule for a 1 yr bullet loan
+      const monthlyScheduleRepoAddress = await goldfinchConfig.getAddress(
+        CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo
+      )
+      expect(monthlyScheduleRepoAddress).to.not.eq(ZERO_ADDRESS)
+      const monthylScheduleRepo = await getTruffleContract<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo", {
+        at: monthlyScheduleRepoAddress,
+      })
+
+      const periodsInTerm = 12
+      const periodsPerPrincipalPeriod = 12
+      const periodsPerInterestPeriod = 1
+      const principalGracePeriods = 0
+      await monthylScheduleRepo.createSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+      const oneYearBulletSchedule = await monthylScheduleRepo.getSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+
+      // Create the pool
+      const borrower = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D" // stratos EOA
+      await impersonateAccount(hre, borrower)
+
+      const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
+      const protocolAdminSigner = await ethers.provider.getSigner(protocolAdminAddress)
+      assertNonNullable(protocolAdminSigner)
+
+      const gfFactoryEthers = await (
+        await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {at: goldfinchFactory.address})
+      ).connect(protocolAdminSigner)
+
+      const poolCreationTx = await (
+        await gfFactoryEthers.createPool(
+          borrower,
+          0,
+          "100000000",
+          "135000000000000000",
+          oneYearBulletSchedule,
+          "0",
+          `${await getCurrentTimestamp()}`,
+          ["0", "1", "2", "3", "4"]
+        )
+      ).wait()
+
+      const event = asNonNullable(poolCreationTx.events![poolCreationTx.events!.length - 1])
+      const poolAddress = event.args!.pool
+      const pool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
+
+      // Advance time to august to avoid race conditions in the tests
+      // 	Thu Aug 24 2023 18:21:12 GMT+0000
+      await advanceAndMineBlock({toSecond: 1692901272})
+
+      // Fund the pool and drawdown
+      await fundWithWhales(["USDC"], [protocolAdminAddress])
+      const usdcEthers = await getEthersContract<ERC20>("ERC20", {at: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"})
+      await usdcEthers.connect(protocolAdminSigner).approve(poolAddress, `${usdcVal(10)}`)
+      await pool.connect(protocolAdminSigner).deposit(2, `${usdcVal(10)}`)
+
+      // Now that there's an investment, the borrower draws down
+      const borrowerSigner = await ethers.provider.getSigner(borrower)
+      await pool.connect(borrowerSigner).lockJuniorCapital()
+      await pool.connect(borrowerSigner).lockPool()
+      await pool.connect(borrowerSigner).drawdown(`${usdcVal(10)}`)
+
+      // Assert it has a monthly payment schedule as expected
+      const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
+      // Term start time should be Sept 1st (when the stub period ends)
+      console.log(`current time is ${await getCurrentTimestamp()}`)
+      expect(await creditLine.termStartTime()).to.bignumber.eq("1693526400") // Fri Sep 01 2023 00:00:00 GMT+0000
+      // Next due time should be the end of the period after the stub period (Oct 1st)
+      expect(await creditLine.nextDueTime()).to.bignumber.eq("1696118400") // Sun Oct 01 2023 00:00:00 GMT+0000
+    })
+  })
+
   /**
    * This test takes three staked fidu holders, unstakes their fidu, and then requets to withdraw their full fidu amount
    * We advance time, keeping track of pool repayments and the amount of usdc available for each epoch. Then after four
@@ -359,7 +447,11 @@ describe("mainnet forking tests", async function () {
 
       await pool.assess()
 
-      await advanceTime({toSecond: await cl.nextDueTime()})
+      // Advance time to the end of the epoch or next due time, whichever is later
+      // We do this because we need to ensure that the epoch has passed
+      const fourteenDaysInSeconds = new BN(14 * 24 * 60 * 60)
+      const timeToAdvance = BN.max(await cl.nextDueTime(), new BN(await time.latest()).add(fourteenDaysInSeconds))
+      await advanceTime({toSecond: timeToAdvance})
       await pool.assess()
 
       const interestOwed = await cl.interestOwed()
@@ -396,6 +488,7 @@ describe("mainnet forking tests", async function () {
 
       // Each staked fidu holder is going to unstake and request to withdraw
       const currentEpoch = await seniorPool.currentEpoch()
+      const latestMainnetWithdrawalRequestIndex = (await requestTokens._tokenIdTracker()).toNumber()
 
       fiduRequestedByEpoch.push(new BN(currentEpoch.fiduRequested))
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
@@ -420,7 +513,9 @@ describe("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcAvailable)
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[0].push(await seniorPool.withdrawalRequest(requestIds[i]!))
+        withdrawalRequestsByEpoch[0].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Stratos repayment  (also advances time to payment due date)
@@ -433,7 +528,9 @@ describe("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcAvailable)
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[1].push(await seniorPool.withdrawalRequest(requestIds[i]!))
+        withdrawalRequestsByEpoch[1].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Addem Repayment (also advances time to payment due date)
@@ -455,7 +552,9 @@ describe("mainnet forking tests", async function () {
       expectedUsdcAllocatedByEpoch.push(usdcFromShares(fiduRequestedByEpoch[2]!, await seniorPool.sharePrice()))
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[2].push(await seniorPool.withdrawalRequest(requestIds[i]!))
+        withdrawalRequestsByEpoch[2].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Advance to Epoch 4
@@ -469,7 +568,9 @@ describe("mainnet forking tests", async function () {
       fiduRequestedByEpoch.push(fiduRequestedByEpoch[2]!.sub(expectedFiduLiquidatedByEpoch[2]!))
       withdrawalRequestsByEpoch.push([])
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        withdrawalRequestsByEpoch[3].push(await seniorPool.withdrawalRequest(requestIds[i]!))
+        withdrawalRequestsByEpoch[3].push(
+          await seniorPool.withdrawalRequest(i + latestMainnetWithdrawalRequestIndex + 1)
+        )
       }
 
       // Verify that the request after each epoch had the correct usdc withdrawable and fidu requested
@@ -510,28 +611,34 @@ describe("mainnet forking tests", async function () {
       }
 
       // Verify claim sends udsc to all the right places
-      for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        const request = withdrawalRequestsByEpoch[3][i]
+      for (let requestId = 0; requestId < stakedFiduHolders.length; ++requestId) {
+        const request = withdrawalRequestsByEpoch[3][requestId]
         const userUsdc = amountLessProtocolFee(new BN(request.usdcWithdrawable))
         const reserveUsdc = protocolFee(new BN(request.usdcWithdrawable))
 
-        const tokenId = requestIds[i]!
         await expectAction(() =>
-          seniorPool.claimWithdrawalRequest(tokenId, {
-            from: stakedFiduHolders[i]!.address,
+          seniorPool.claimWithdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1, {
+            from: stakedFiduHolders[requestId]!.address,
           })
         ).toChange([
-          [() => usdc.balanceOf(stakedFiduHolders[i]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
+          [() => usdc.balanceOf(stakedFiduHolders[requestId]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
           [() => usdc.balanceOf(reserveAddress), {by: reserveUsdc}],
           [
             () => usdc.balanceOf(seniorPool.address),
             {byCloseTo: userUsdc.add(reserveUsdc).neg(), threshold: HALF_CENT},
           ],
         ])
+
+        expect(
+          (await requestTokens.balanceOf(stakedFiduHolders[requestId]!.address)).eq(new BN("0")) ||
+            (
+              await seniorPool.withdrawalRequest(requestId + latestMainnetWithdrawalRequestIndex + 1)
+            ).usdcWithdrawable.eq(new BN("0"))
+        ).to.be.true
       }
     })
 
-    it("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
+    it("takes cancellation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
       const {address: stakedFiduHolder, stakingRewardsTokenId} = stakedFiduHolders[1]!
       await impersonateAccount(hre, stakedFiduHolder)
       await stakingRewards.unstake(stakingRewardsTokenId, fiduVal(10_000), {from: stakedFiduHolder})
@@ -544,12 +651,176 @@ describe("mainnet forking tests", async function () {
 
       const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
 
-      const requestId = await requestTokens.tokenOfOwnerByIndex(stakedFiduHolder, "0")
-      await expectAction(() => seniorPool.cancelWithdrawalRequest(requestId, {from: stakedFiduHolder})).toChange([
+      const totalSupply = await requestTokens._tokenIdTracker()
+
+      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: stakedFiduHolder})).toChange([
         [() => fidu.balanceOf(stakedFiduHolder), {by: expectedFiduReturnedToUser}],
         [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
       ])
+    })
+  })
+
+  describe("poolToken splitting", () => {
+    /**
+     * The stratos test simualates progressing through the loan, having the token holder withdrawing some rewards
+     * partway through, and then finally at the end of the loan asserting that interest redeemed, principal redeemed,
+     * and total claimable backer rewards are what we would expect
+     */
+    describe("stratos", () => {
+      const stratosPoolAddress = "0x00c27fc71b159a346e179b4a1608a0865e8a7470"
+      const tokenId = 536 // This is a pool token belonging to the Stratos Pool
+      let tokenOwner: string
+      let tranchedPool: TranchedPoolInstance
+      let creditLine: CreditLineInstance
+      let tokenInfoBeforePayment
+      beforeEach(async () => {
+        tokenOwner = await poolTokens.ownerOf(tokenId)
+        tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", stratosPoolAddress)
+        creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
+          "CreditLine",
+          await tranchedPool.creditLine()
+        )
+
+        await fundWithWhales(["USDC"], [stratosEoa], 10_000_000)
+
+        // At the current blockNum, tokenOwner hasn't claimed any rewards. We want a test where they have non-zero
+        // rewardsClaimed at token split, so we'll withdraw all their claimable rewards up to now (they will accrue)
+        // more claimable rewards after payment time
+        // Need to make payment first. We can't claim rewards because the pool is late on payments...
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [stratosEoa],
+        })
+        await tranchedPool.assess()
+        let interestOwed = await creditLine.interestOwed()
+        await usdc.approve(tranchedPool.address, interestOwed, {from: stratosEoa})
+        await tranchedPool.pay(interestOwed, {from: stratosEoa})
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [tokenOwner],
+        })
+        await backerRewards.withdraw(tokenId, {from: tokenOwner})
+
+        await advanceTime({toSecond: (await creditLine.termEndTime()).sub(SECONDS_PER_DAY.mul(new BN(30)))})
+        await tranchedPool.assess()
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [stratosEoa],
+        })
+        interestOwed = await creditLine.interestOwed()
+        await usdc.approve(tranchedPool.address, interestOwed, {from: stratosEoa})
+        tokenInfoBeforePayment = await poolTokens.getTokenInfo(tokenId) // do not DELETE! needed to calculate expectedRedeemableInterest
+        await tranchedPool.pay(interestOwed, {from: stratosEoa})
+      })
+
+      it("doesn't change interest and principal redeemed/redeemable", async () => {
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [tokenOwner],
+        })
+
+        // These are the values we expect to be able to redeem with the original pool token
+        // after stratos's next repayment. They are computed by uncommenting the code snippet
+        // below and reading the console output
+
+        // await tranchedPool.withdrawMax(tokenId, {from: tokenOwner})
+        // const tokenInfoAfterPaymentAndWithdrawal = await poolTokens.getTokenInfo(tokenId)
+
+        // const interestRedeemed = new BN(tokenInfoAfterPaymentAndWithdrawal.interestRedeemed)
+        //   .sub(new BN(tokenInfoBeforePayment.interestRedeemed))
+        // const principalRedeemed = new BN(tokenInfoAfterPaymentAndWithdrawal.principalRedeemed)
+        //   .sub(new BN(tokenInfoBeforePayment.principalRedeemed))
+
+        // console.log(`interestRedeemed ${interestRedeemed}`)
+        // console.log(`principalRedeemed ${principalRedeemed}`)
+        const expectedRedeemableInterest = new BN(597978187)
+        const expectedRedeemablePrincipal = new BN(8744)
+
+        const principalAmount = new BN(tokenInfoBeforePayment.principalAmount)
+        const amount1 = principalAmount.div(new BN(4))
+
+        const tx = await poolTokens.splitToken(tokenId, amount1, {from: tokenOwner})
+        const logs = decodeLogs<TokenMinted>(tx.receipt.rawLogs, poolTokens, "TokenMinted")
+        const [newTokenId1, newTokenId2] = logs.map((log) => log.args.tokenId)
+        assertNonNullable(newTokenId1)
+        assertNonNullable(newTokenId2)
+
+        const newTokenInfo1BeforeWithdraw = await poolTokens.getTokenInfo(newTokenId1)
+        const newTokenInfo2BeforeWithdraw = await poolTokens.getTokenInfo(newTokenId2)
+
+        // The sum of interest redeemed in the split tokens should match the interest redeemed on
+        // the original token
+        expect(
+          new BN(newTokenInfo1BeforeWithdraw.interestRedeemed).add(new BN(newTokenInfo2BeforeWithdraw.interestRedeemed))
+        ).to.bignumber.eq(tokenInfoBeforePayment.interestRedeemed)
+        // The sum of principal redeemed in the split tokens should match the principal redeemed on
+        // the original token
+        expect(
+          new BN(newTokenInfo1BeforeWithdraw.principalRedeemed).add(
+            new BN(newTokenInfo2BeforeWithdraw.principalRedeemed)
+          )
+        ).to.bignumber.eq(tokenInfoBeforePayment.principalRedeemed)
+
+        await tranchedPool.withdrawMax(newTokenId1, {from: tokenOwner})
+        await tranchedPool.withdrawMax(newTokenId2, {from: tokenOwner})
+
+        const newTokenInfo1AfterWithdraw = await poolTokens.getTokenInfo(newTokenId1)
+        const newTokenInfo2AfterWithdraw = await poolTokens.getTokenInfo(newTokenId2)
+
+        // The sum of interest redeemable on the split tokens should match what the tokenOwner would
+        // have been able to redeem with the original token (but it might be a little less due to rounding
+        // in integer division)
+        const token1InterestRedeemed = new BN(newTokenInfo1AfterWithdraw.interestRedeemed).sub(
+          new BN(newTokenInfo1BeforeWithdraw.interestRedeemed)
+        )
+        const token2InterestRedeemed = new BN(newTokenInfo2AfterWithdraw.interestRedeemed).sub(
+          new BN(newTokenInfo2BeforeWithdraw.interestRedeemed)
+        )
+        expect(token1InterestRedeemed.add(token2InterestRedeemed)).to.bignumber.closeTo(expectedRedeemableInterest, "1")
+
+        // The sum of principal redeemable on the split tokens should match what the tokenOwner would
+        // have been able to redeem with the original token (but it might be a little less due to rounding
+        // in integer division)
+        const token1PrincipalRedeemed = new BN(newTokenInfo1AfterWithdraw.principalRedeemed).sub(
+          new BN(newTokenInfo1BeforeWithdraw.principalRedeemed)
+        )
+        const token2PrincipalRedeemed = new BN(newTokenInfo2AfterWithdraw.principalRedeemed).sub(
+          new BN(newTokenInfo2BeforeWithdraw.principalRedeemed)
+        )
+        expect(token1PrincipalRedeemed.add(token2PrincipalRedeemed)).to.bignumber.closeTo(
+          expectedRedeemablePrincipal,
+          "1"
+        )
+      })
+
+      it("doesn't change rewardsClaimed or rewardsClaimable", async () => {
+        const rewardsClaimed = new BN((await backerRewards.getTokenInfo(tokenId)).rewardsClaimed)
+        const rewardsClaimable = new BN(await backerRewards.poolTokenClaimableRewards(tokenId))
+
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [tokenOwner],
+        })
+
+        const principalAmount = new BN(tokenInfoBeforePayment.principalAmount)
+        const amount1 = principalAmount.div(new BN(4))
+        const tx = await poolTokens.splitToken(tokenId, amount1, {from: tokenOwner})
+        const logs = decodeLogs<TokenMinted>(tx.receipt.rawLogs, poolTokens, "TokenMinted")
+        const [newTokenId1, newTokenId2] = logs.map((log) => log.args.tokenId)
+        assertNonNullable(newTokenId1)
+        assertNonNullable(newTokenId2)
+
+        // The sum of the split tokens' claimable rewards should be the claimable rewards of the original
+        const claimableRewards1 = new BN(await backerRewards.poolTokenClaimableRewards(newTokenId1))
+        const claimableRewards2 = new BN(await backerRewards.poolTokenClaimableRewards(newTokenId2))
+        expect(claimableRewards1.add(claimableRewards2)).to.bignumber.eq(rewardsClaimable)
+
+        // The sum of the split tokens' claimed rewards should be the claimed rewards of the original
+        const claimedRewards1 = new BN((await backerRewards.getTokenInfo(newTokenId1)).rewardsClaimed)
+        const claimedRewards2 = new BN((await backerRewards.getTokenInfo(newTokenId2)).rewardsClaimed)
+        expect(claimedRewards1.add(claimedRewards2)).to.bignumber.eq(rewardsClaimed)
+      })
     })
   })
 
@@ -853,8 +1124,6 @@ describe("mainnet forking tests", async function () {
     let tranchedPoolWithOwnerConnected: TranchedPool
     let backerStakingTokenId: string
     let creditLine: CreditLine
-    const paymentPeriodInDays = new BigNumber("30")
-    const termInDays = new BigNumber("365")
     const trackedStakedAmount = usdcVal(2500)
     const untrackedStakedAmount = usdcVal(1000)
     const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("5"))
@@ -864,7 +1133,7 @@ describe("mainnet forking tests", async function () {
         "20",
         limit.toString(),
         "100000000000000000",
-        await getDefaultMonthlySchedule(goldfinchConfig),
+        await getMonthlySchedule(goldfinchConfig, "12", "1", "6", "1"),
         "0",
         "0",
         ["0"],
@@ -979,7 +1248,6 @@ describe("mainnet forking tests", async function () {
     }
 
     async function payOffTranchedPoolInterest(tranchedPool: TranchedPool): Promise<ContractReceipt> {
-      await (await tranchedPool.assess()).wait()
       const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
       const interestOwed = await creditLine.interestOwed()
       return (await tranchedPool["pay(uint256)"](interestOwed.toString())).wait()
@@ -993,8 +1261,6 @@ describe("mainnet forking tests", async function () {
       const interestOwed = await creditLine.interestOwedAt(`${(await getCurrentTimestamp()).add(new BN(1))}`)
       const totalOwed = principalOwed.add(interestOwed)
 
-      console.log("ts")
-      console.log(`totalOwed at ${await getCurrentTimestamp()} is ${totalOwed}`)
       const paymentTx = await tranchedPool["pay(uint256)"](totalOwed)
 
       const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
@@ -1035,7 +1301,7 @@ describe("mainnet forking tests", async function () {
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
 
       for (let i = 0; new BN(`${await getCurrentTimestamp()}`).lt(new BN(`${await creditLine.termEndTime()}`)); i++) {
-        await advanceTime({toSecond: (await creditLine.nextDueTime()).toString()})
+        await advanceAndMineBlock({toSecond: (await creditLine.nextDueTime()).toString()})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         await expectRewardsAreEqualForTokens(stakingRewardsTokenId, backerStakingTokenId, payTx.blockNumber)
@@ -1051,8 +1317,6 @@ describe("mainnet forking tests", async function () {
       const thirtyDaysAfterTermEndTime = termEndTime.add("2592000") // 30 days in seconds
       await advanceAndMineBlock({toSecond: thirtyDaysAfterTermEndTime.toString()})
       // Going to fully repay tranched pool
-      console.log("")
-      console.log("PAY AFTER TERM END TIME")
       const paymentTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
 
       const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerStakingRewardsForToken(
@@ -1107,7 +1371,7 @@ describe("mainnet forking tests", async function () {
 
       // Run through the first half of payments normally
       for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)
@@ -1141,7 +1405,7 @@ describe("mainnet forking tests", async function () {
 
       // second half of the payments
       for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw to make sure that the backer originally backer wont have less rewards
         // when their unutilized capital is removed from the pool
@@ -1199,8 +1463,8 @@ describe("mainnet forking tests", async function () {
       )
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
 
-      for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+      for (let i = 0; i < 5; i++) {
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
         expect((await getBackerStakingRewardsForToken(backerStakingTokenId, payTx.blockNumber)).gt(new BN(0)))
@@ -1235,7 +1499,11 @@ describe("mainnet forking tests", async function () {
       const secondSliceDepositTokenId = depositMadeEvent.args.tokenId
 
       await (await tranchedPoolWithBorrowerConnected.lockJuniorCapital()).wait()
-      await fundWithWhales(["USDC"], [seniorPool.address])
+      // Deposit more funds into the senior pool. Cannot fund with whales because the senior
+      // pool now tracks its usdcBalance with a separate varaible
+      await usdc.approve(seniorPool.address, usdcVal(20_000_000), {from: circleEoa})
+      await seniorPool.deposit(usdcVal(20_000_000), {from: circleEoa})
+
       await seniorPool.invest(tranchedPoolWithBorrowerConnected.address, {from: bwr.address})
 
       const [, secondSliceStakingTx] = await mineInSameBlock(
@@ -1258,8 +1526,8 @@ describe("mainnet forking tests", async function () {
         await backerRewards.stakingRewardsEarnedSinceLastWithdraw(secondSliceDepositTokenId.toString())
       ).to.bignumber.eq("0")
 
-      for (let i = 0; i < 6; i++) {
-        await advanceTime({toSecond: `${await creditLine.nextDueTime()}`})
+      for (let i = 0; i < 7; i++) {
+        await advanceAndMineBlock({toSecond: `${await creditLine.nextDueTime()}`})
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         // withdraw, as a way of establishing that a backer who removed their unutilized capital
         // would not receive less rewards as a consequence
@@ -1929,7 +2197,7 @@ describe("mainnet forking tests", async function () {
       it("does not affect reward calculations for a staked position created prior to GIP-1", async () => {
         // Use a known staked position created prior to GIP-1
         // Note: If this test starts failing, check that this position is still staked
-        const tokenId = new BN(70)
+        const tokenId = new BN(72)
 
         // The unsafeEffectiveMultiplier and unsafeBaseTokenExchangeRate should be 0
         const position = await stakingRewards.positions(tokenId)
