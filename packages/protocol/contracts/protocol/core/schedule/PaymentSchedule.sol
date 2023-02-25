@@ -16,12 +16,6 @@ using PaymentScheduleLogic for PaymentSchedule global;
 library PaymentScheduleLogic {
   using PaymentScheduleLogic for PaymentSchedule;
 
-  function asTuple(
-    PaymentSchedule memory s
-  ) internal view returns (ISchedule schedule, uint64 startTime) {
-    return (schedule, startTime);
-  }
-
   function startAt(PaymentSchedule storage s, uint256 timestamp) internal {
     assert(s.startTime == 0);
     s.startTime = uint64(timestamp);
@@ -88,7 +82,7 @@ library PaymentScheduleLogic {
     return s.schedule.totalPrincipalPeriods();
   }
 
-  function isActive(PaymentSchedule memory s) internal view returns (bool) {
+  function isActive(PaymentSchedule storage s) internal view returns (bool) {
     return s.startTime != 0;
   }
 

@@ -25,7 +25,7 @@ contract CallableLoanBuilder {
   uint256 private fundableAt;
   uint256[] private allowedUIDTypes = [0, 1, 2, 3, 4];
 
-  constructor(IGoldfinchFactory _gfFactory, IMonthlyScheduleRepo _monthlyScheduleRepo) public {
+  constructor(IGoldfinchFactory _gfFactory, IMonthlyScheduleRepo _monthlyScheduleRepo) {
     gfFactory = _gfFactory;
     monthlyScheduleRepo = _monthlyScheduleRepo;
     limit = DEFAULT_LIMIT;

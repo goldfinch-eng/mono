@@ -37,7 +37,6 @@ contract CallableLoanBaseTest is BaseTest {
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
-  uint256 internal constant UNIT_SHARE_PRICE = 1e18;
   uint256 internal constant DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS = 7 days;
   uint256 internal constant HALF_CENT = 1e6 / 200;
   uint256 internal constant HUNDREDTH_CENT = 1e6 / 10000;
@@ -353,24 +352,18 @@ contract CallableLoanBaseTest is BaseTest {
     uint256 end,
     uint256 balance,
     uint256 apr
-  ) internal returns (uint256) {
+  ) internal pure returns (uint256) {
     uint256 secondsElapsed = end - start;
     uint256 totalInterestPerYear = (balance * apr) / (1e18);
     uint256 interest = (totalInterestPerYear * secondsElapsed) / (365 days);
     return interest;
   }
 
-  // TODO - remove this function because it doesn't make sense with a monthly schedule
-  function periodInSeconds(CallableLoan callableLoan) internal returns (uint256) {
-    // return callableLoan.creditLine().nextDueTime().sub(callableLoan.creditLine().previousDueTime());
-    return 30 days;
-  }
-
   function addToGoList(address user) internal impersonating(GF_OWNER) {
     gfConfig.addToGoList(user);
   }
 
-  function maxPayableInterest(CallableLoan callableLoan) internal returns (uint) {
+  function maxPayableInterest(CallableLoan callableLoan) internal view returns (uint) {
     uint latestPaymentSettlementDate = Math.max(
       block.timestamp,
       callableLoan.nextPrincipalDueTime()

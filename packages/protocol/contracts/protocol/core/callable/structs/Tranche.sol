@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 using TrancheLogic for Tranche global;
 
@@ -18,6 +19,18 @@ library TrancheLogic {
   function settleReserves(Tranche storage t) internal {
     t._principalPaid += t._principalReserved;
     t._principalReserved = 0;
+  }
+
+  /// Settle reserves in this tranche to match the otherTranche's ratio of paid principal to total principal
+  /// (t.principalPaid + principalToSettle)/t.principalDeposited =
+  ///   otherTranche.principalPaid/otherTranche.principalDeposited
+  /// @dev IR: Insufficient reserves to match paid principal ratio.
+  function matchPaidPrincipalRatio(Tranche storage t, Tranche storage otherTranche) internal {
+    uint principalToSettle = ((otherTranche.principalPaid() * t.principalDeposited()) /
+      otherTranche.principalDeposited()) - t.principalPaid();
+    require(t.principalReserved() >= principalToSettle, "IR");
+    t._principalPaid += principalToSettle;
+    t._principalReserved -= principalToSettle;
   }
 
   function pay(Tranche storage t, uint principalAmount, uint interestAmount) internal {
@@ -58,25 +71,35 @@ library TrancheLogic {
     t._principalPaid -= principal;
   }
 
-  /**
-   * @notice remove `principal` from the Tranche and its corresponding interest
-   */
+  ///@notice remove `principalOutstanding` from the Tranche and its corresponding interest.
+  ///        Take as much reserved principal as possible.
+  ///        Only applicable to the uncalled tranche.
   function take(
     Tranche storage t,
-    uint principal
-  ) internal returns (uint principalPaid, uint principalReserved, uint interestTaken) {
-    require(t._principalDeposited > 0, "IT");
+    uint principalOutstanding
+  )
+    internal
+    returns (
+      uint principalDepositedTaken,
+      uint principalPaidTaken,
+      uint principalReservedTaken,
+      uint interestTaken
+    )
+  {
+    require(t._principalDeposited > t._principalPaid, "IT");
 
-    interestTaken = (t._interestPaid * principal) / t._principalDeposited;
+    interestTaken = (t._interestPaid * principalOutstanding) / t._principalDeposited;
+    principalReservedTaken = Math.min(t._principalReserved, principalOutstanding);
+    principalPaidTaken =
+      (t._principalPaid * principalOutstanding) /
+      t._principalDeposited -
+      t._principalPaid;
+    principalDepositedTaken = principalOutstanding + principalPaidTaken;
 
-    // Take pro rata portion of paid principal
-
-    principalReserved = (t._principalReserved * principal) / t._principalDeposited;
-    principalPaid = (t._principalPaid * principal) / t._principalDeposited;
+    t._principalPaid -= principalPaidTaken;
     t._interestPaid -= interestTaken;
-    t._principalDeposited -= principal;
-    t._principalReserved -= principalReserved;
-    t._principalPaid -= principalPaid;
+    t._principalDeposited -= principalOutstanding;
+    t._principalReserved -= principalReservedTaken;
   }
 
   // depositing into the tranche for the first time(uncalled)
@@ -90,15 +113,15 @@ library TrancheLogic {
 
   function addToBalances(
     Tranche storage t,
-    uint principalDeposited,
-    uint principalPaid,
-    uint principalReserved,
-    uint interestPaid
+    uint addToPrincipalDeposited,
+    uint addToPrincipalPaid,
+    uint addToPrincipalReserved,
+    uint addToInterestPaid
   ) internal {
-    t._principalDeposited += principalDeposited;
-    t._principalPaid += principalPaid;
-    t._principalReserved += principalReserved;
-    t._interestPaid += interestPaid;
+    t._principalDeposited += addToPrincipalDeposited;
+    t._principalPaid += addToPrincipalPaid;
+    t._principalReserved += addToPrincipalReserved;
+    t._interestPaid += addToInterestPaid;
   }
 
   function principalDeposited(Tranche storage t) internal view returns (uint) {

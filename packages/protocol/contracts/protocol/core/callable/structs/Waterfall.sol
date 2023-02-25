@@ -3,11 +3,11 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 // import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
 
-using MathUpgradeable for uint256;
+using Math for uint256;
 
 struct Waterfall {
   Tranche[] _tranches;
@@ -47,8 +47,8 @@ library WaterfallLogic {
     uint interestAmount,
     uint reserveTranchesIndexStart
   ) internal {
-    uint totalPrincipalOutstandingWithoutReserves = w.totalPrincipalOutstandingWithoutReserves();
-    require(totalPrincipalOutstandingWithoutReserves > 0, "NB");
+    uint existingPrincipalOutstandingWithoutReserves = w.totalPrincipalOutstandingWithoutReserves();
+    require(existingPrincipalOutstandingWithoutReserves > 0, "NB");
 
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
@@ -57,7 +57,8 @@ library WaterfallLogic {
     for (uint i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
       uint proRataInterestPayment = (interestAmount *
-        tranche.principalOutstandingWithoutReserves()) / totalPrincipalOutstandingWithoutReserves;
+        tranche.principalOutstandingWithoutReserves()) /
+        existingPrincipalOutstandingWithoutReserves;
       uint principalPayment = tranche.principalOutstandingWithReserves().min(principalAmount);
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
@@ -77,7 +78,7 @@ library WaterfallLogic {
     // drawdown in reverse order of payment priority
     for (uint i = w.numTranches() - 1; i > 0; i--) {
       Tranche storage tranche = w.getTranche(i);
-      uint withdrawAmount = MathUpgradeable.min(tranche.principalPaid(), principalAmount);
+      uint withdrawAmount = Math.min(tranche.principalPaid(), principalAmount);
       principalAmount -= withdrawAmount;
       tranche.drawdown(withdrawAmount);
     }
@@ -96,20 +97,20 @@ library WaterfallLogic {
    */
   function move(
     Waterfall storage w,
-    uint principalAmount,
+    uint principalOutstanding,
     uint fromTrancheId,
     uint toTrancheId
   ) internal {
-    (uint principalTaken, uint principalReserved, uint interestTaken) = w
+    (uint principalDeposited, uint principalPaid, uint principalReserved, uint interestPaid) = w
       .getTranche(fromTrancheId)
-      .take(principalAmount);
+      .take(principalOutstanding);
 
     return
       w.getTranche(toTrancheId).addToBalances(
-        principalAmount,
-        principalTaken,
+        principalDeposited,
+        principalPaid,
         principalReserved,
-        interestTaken
+        interestPaid
       );
   }
 
@@ -127,9 +128,21 @@ library WaterfallLogic {
     return w._tranches[trancheId].deposit(principalAmount);
   }
 
-  function settleReserves(Waterfall storage w) internal {
-    for (uint i = 0; i < w.numTranches(); i++) {
-      w._tranches[i].settleReserves();
+  /// Settle all past due tranches as well as the last tranche.
+  /// All other tranches should match the principal paid/principal deposited ratio in the last tranche.
+  /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
+  function settleReserves(Waterfall storage w, uint dueTrancheIndex) internal {
+    uint lastTrancheIndex = w.numTranches() - 1;
+    Tranche storage lastTranche = w._tranches[lastTrancheIndex];
+    if (dueTrancheIndex < lastTrancheIndex) {
+      lastTranche.settleReserves();
+    }
+    for (uint i = 0; i <= lastTrancheIndex; i++) {
+      if (i <= dueTrancheIndex) {
+        w._tranches[i].settleReserves();
+      } else {
+        w._tranches[i].matchPaidPrincipalRatio(lastTranche);
+      }
     }
   }
 

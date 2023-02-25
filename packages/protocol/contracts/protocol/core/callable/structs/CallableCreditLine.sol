@@ -20,15 +20,31 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 using CallableCreditLineLogic for CallableCreditLine global;
 
+// TODO: Add notes to fields to describe each (pseudo-natspec)
+/// @param _numLockupPeriods Describes when newly submitted call requests are rolled over
+///                          to the next call request period.
+///                          Number of periods is relative to the end date of a call request period.
+///                          e.g. if _numLockupPeriods is 2, then newly submitted call requests
+///                          in the last two periods of a call request period will be rolled over
+///                          to the next call request period.
+/// @param _numLockupPeriods Describes when newly submitted call requests are rolled over
+///                          to the next call request period.
+///                          Number of periods is relative to the end date of a call request period.
+///                          e.g. if _numLockupPeriods is 2, then newly submitted call requests
+///                          in the last two periods of a call request period will be rolled over
+///                          to the next call request period.
 struct CallableCreditLine {
   IGoldfinchConfig _config;
   uint256 _limit;
   uint256 _interestApr;
   uint256 _lateAdditionalApr;
+  //
   uint256 _numLockupPeriods;
   uint256 _checkpointedAsOf;
   uint256 _lastFullPaymentTime;
+  // Similar idea to existing tranched pool credit lines
   uint256 _totalInterestOwedAtLastCheckpoint;
+  // Similar idea to existing tranched pool credit lines
   uint256 _totalInterestAccruedAtLastCheckpoint;
   Waterfall _waterfall;
   PaymentSchedule _paymentSchedule;
@@ -180,7 +196,7 @@ library CallableCreditLineLogic {
     uint256 activePeriodAtLastCheckpoint = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
 
     if (currentlyActivePeriod > activePeriodAtLastCheckpoint) {
-      cl._waterfall.settleReserves();
+      cl._waterfall.settleReserves(currentlyActivePeriod - 1);
     }
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();

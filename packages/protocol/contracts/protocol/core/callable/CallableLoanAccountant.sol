@@ -35,7 +35,7 @@ library CallableLoanAccountant {
     uint256 interestRate,
     uint256 timeUntilNextPrincipalSettlemenet,
     uint256 balance
-  ) internal view returns (ILoan.PaymentAllocation memory) {
+  ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
 
