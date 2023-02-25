@@ -156,19 +156,18 @@ contract CallableLoan is
 
     (uint256 interestWithdrawn, uint256 principalWithdrawn) = _withdrawMax(poolTokenId);
     uint256 totalWithdrawn = interestWithdrawn + principalWithdrawn;
-    uint256 principalRemaining = cl.proportionalPrincipalOutstanding({
+    uint256 principalRemainingOnPoolToken = cl.proportionalPrincipalOutstanding({
       trancheId: tokenInfo.tranche,
       principalDeposited: tokenInfo.principalAmount
     });
-    require(callAmount > 0 && principalRemaining >= callAmount, "IA");
-
+    require(callAmount > 0 && principalRemainingOnPoolToken >= callAmount, "IA");
+    cl.submitCall(callAmount);
     (callRequestedTokenId, remainingTokenId) = _splitForCall(
       callAmount,
       poolTokenId,
       cl.uncalledCapitalTrancheIndex(),
       cl.activeCallSubmissionTrancheIndex()
     );
-    cl.submitCall(callAmount);
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 

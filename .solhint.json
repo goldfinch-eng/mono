@@ -328,9 +328,6 @@
           "resetRewards":  ["onlyOperator"],
           "allocateRewardsTo":  ["onlyOperator"]
         },
-        "**/MockCreditLine.sol:*": {
-          "initialize":  []
-        },
         "**/contracts/test/**": {
           "*.*": []
         }

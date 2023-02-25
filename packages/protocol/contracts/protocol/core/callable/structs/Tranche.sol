@@ -76,7 +76,7 @@ library TrancheLogic {
   ///        Only applicable to the uncalled tranche.
   function take(
     Tranche storage t,
-    uint principalOutstanding
+    uint principalOutstandingToTake
   )
     internal
     returns (
@@ -88,17 +88,19 @@ library TrancheLogic {
   {
     require(t._principalDeposited > t._principalPaid, "IT");
 
-    interestTaken = (t._interestPaid * principalOutstanding) / t._principalDeposited;
-    principalReservedTaken = Math.min(t._principalReserved, principalOutstanding);
+    interestTaken =
+      (t._interestPaid * principalOutstandingToTake) /
+      t.principalOutstandingWithoutReserves();
+    principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalPaidTaken =
-      (t._principalPaid * principalOutstanding) /
-      t._principalDeposited -
-      t._principalPaid;
-    principalDepositedTaken = principalOutstanding + principalPaidTaken;
+      (t._principalPaid * principalOutstandingToTake) /
+      (t._principalDeposited - t._principalPaid);
+
+    principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
 
     t._principalPaid -= principalPaidTaken;
     t._interestPaid -= interestTaken;
-    t._principalDeposited -= principalOutstanding;
+    t._principalDeposited -= principalDepositedTaken;
     t._principalReserved -= principalReservedTaken;
   }
 

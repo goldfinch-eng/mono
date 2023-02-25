@@ -198,7 +198,7 @@ library WaterfallLogic {
     Waterfall storage w,
     uint256 trancheIndex
   ) internal view returns (uint totalPrincipalPaid) {
-    for (uint i = 0; i < w.numTranches(); i++) {
+    for (uint i = 0; i < trancheIndex; i++) {
       totalPrincipalPaid += w.getTranche(i).principalPaidAfterSettlement();
     }
   }

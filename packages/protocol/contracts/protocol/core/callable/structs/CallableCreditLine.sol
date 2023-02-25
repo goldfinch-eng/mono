@@ -235,7 +235,12 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint timestamp
   ) internal view returns (uint returnedPrincipalOwed) {
-    return cl.totalPrincipalOwedAt(timestamp).saturatingSub(cl.totalPrincipalPaidAt(timestamp));
+    return
+      cl.totalPrincipalOwedAt(timestamp).saturatingSub(
+        cl._waterfall.totalPrincipalPaidAfterSettlementUpToTranche(
+          cl._paymentSchedule.principalPeriodAt(timestamp)
+        )
+      );
   }
 
   function principalOwed(CallableCreditLine storage cl) internal view returns (uint) {
