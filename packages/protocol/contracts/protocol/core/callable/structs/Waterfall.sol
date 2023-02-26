@@ -84,14 +84,6 @@ library WaterfallLogic {
     }
   }
 
-  function proportionalPrincipalOutstandingWithReserves(
-    Waterfall storage w,
-    uint256 trancheId,
-    uint256 principalDeposited
-  ) internal view returns (uint256) {
-    return w.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(principalDeposited);
-  }
-
   /**
    * @notice Move principal and paid interest from one tranche to another
    */
@@ -129,21 +121,22 @@ library WaterfallLogic {
   }
 
   /// Settle all past due tranches as well as the last tranche.
-  /// All other tranches should match the principal paid/principal deposited ratio in the last tranche.
   /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
   function settleReserves(Waterfall storage w, uint dueTrancheIndex) internal {
     uint lastTrancheIndex = w.numTranches() - 1;
     Tranche storage lastTranche = w._tranches[lastTrancheIndex];
-    if (dueTrancheIndex < lastTrancheIndex) {
-      lastTranche.settleReserves();
+    lastTranche.settleReserves();
+    for (uint i = 0; i <= dueTrancheIndex && i < lastTrancheIndex; i++) {
+      w._tranches[i].settleReserves();
     }
-    for (uint i = 0; i <= lastTrancheIndex; i++) {
-      if (i <= dueTrancheIndex) {
-        w._tranches[i].settleReserves();
-      } else {
-        w._tranches[i].matchPaidPrincipalRatio(lastTranche);
-      }
-    }
+  }
+
+  function proportionalPrincipalOutstandingWithReserves(
+    Waterfall storage w,
+    uint256 trancheId,
+    uint256 principalDeposited
+  ) internal view returns (uint256) {
+    return w.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailableAfterApplyReserves(

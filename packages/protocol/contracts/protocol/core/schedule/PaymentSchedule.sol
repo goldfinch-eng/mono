@@ -94,6 +94,10 @@ library PaymentScheduleLogic {
     return s.isActive() ? s.schedule.termStartTime(s.startTime) : 0;
   }
 
+  function periodsPerPrincipalPeriod(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.schedule.periodsPerPrincipalPeriod();
+  }
+
   function nextDueTimeAt(
     PaymentSchedule storage s,
     uint256 timestamp

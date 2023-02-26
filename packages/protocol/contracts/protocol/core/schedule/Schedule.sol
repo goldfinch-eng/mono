@@ -69,7 +69,7 @@ contract Schedule is ISchedule {
 
   /// @notice the number of payment periods that need to pass before principal
   ///         comes due
-  uint256 public immutable periodsPerPrincipalPeriod;
+  uint256 public immutable override periodsPerPrincipalPeriod;
 
   /// @notice the number of principal periods where no principal will be due
   uint256 public immutable gracePrincipalPeriods;

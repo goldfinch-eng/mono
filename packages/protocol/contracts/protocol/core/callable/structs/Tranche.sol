@@ -21,18 +21,6 @@ library TrancheLogic {
     t._principalReserved = 0;
   }
 
-  /// Settle reserves in this tranche to match the otherTranche's ratio of paid principal to total principal
-  /// (t.principalPaid + principalToSettle)/t.principalDeposited =
-  ///   otherTranche.principalPaid/otherTranche.principalDeposited
-  /// @dev IR: Insufficient reserves to match paid principal ratio.
-  function matchPaidPrincipalRatio(Tranche storage t, Tranche storage otherTranche) internal {
-    uint principalToSettle = ((otherTranche.principalPaid() * t.principalDeposited()) /
-      otherTranche.principalDeposited()) - t.principalPaid();
-    require(t.principalReserved() >= principalToSettle, "IR");
-    t._principalPaid += principalToSettle;
-    t._principalReserved -= principalToSettle;
-  }
-
   function pay(Tranche storage t, uint principalAmount, uint interestAmount) internal {
     assert(t._principalPaid + t._principalReserved + principalAmount <= t.principalDeposited());
 
@@ -203,8 +191,10 @@ library TrancheLogic {
       (t.principalDeposited() * 100);
   }
 
+  /// Updates the tranche as the result of a drawdown
+  /// @dev DP: drawdown principal amount exceeds principal paid
   function drawdown(Tranche storage t, uint principalAmount) internal {
-    require(principalAmount <= t._principalPaid);
+    require(principalAmount <= t._principalPaid, "EP");
     t._principalPaid -= principalAmount;
   }
 

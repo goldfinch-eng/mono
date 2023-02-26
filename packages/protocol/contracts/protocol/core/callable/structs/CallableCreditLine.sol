@@ -155,15 +155,22 @@ library CallableCreditLineLogic {
   }
 
   /// @dev IS - Invalid loan state - Can only submit call requests after drawdown period has ended.
+  /// @dev CL - In call request lockup period.
+  /// @dev LC - In last call request period, cannot submit calls.
+
   function submitCall(CallableCreditLine storage cl, uint256 amount) internal {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.InProgress, "IS");
+    uint currentPeriod = cl._paymentSchedule.currentPeriod();
+    uint numPeriodsPerPrincipalPeriod = cl._paymentSchedule.periodsPerPrincipalPeriod();
+    require(
+      currentPeriod % numPeriodsPerPrincipalPeriod <
+        numPeriodsPerPrincipalPeriod - cl._numLockupPeriods,
+      "CL"
+    );
 
     uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
-    require(
-      activeCallTranche < cl.uncalledCapitalTrancheIndex(),
-      "Cannot call during the last call request period"
-    );
+    require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
 
     cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
@@ -181,7 +188,7 @@ library CallableCreditLineLogic {
   /// @dev IS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
     LoanState loanState = cl.loanState();
-    require(loanState == LoanState.FundingPeriod);
+    require(loanState == LoanState.FundingPeriod, "IS");
     cl._waterfall.withdraw({trancheId: trancheId, principalAmount: amount});
   }
 

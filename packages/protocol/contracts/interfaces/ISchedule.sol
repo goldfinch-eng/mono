@@ -4,6 +4,8 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface ISchedule {
+  function periodsPerPrincipalPeriod() external view returns (uint256);
+
   /**
    * @notice Returns the period that timestamp resides in
    */
