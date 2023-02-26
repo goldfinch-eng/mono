@@ -26,7 +26,7 @@ interface ILoan {
     uint256 timestamp
   ) external view returns (uint256 interestOwed, uint256 interestAccrued, uint256 principalOwed);
 
-  function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
+  function getAllowedUIDTypes() external view returns (uint256[] memory);
 
   /// @notice Drawdown the loan. The credit line's balance should increase by the amount drawn down.
   ///   Junior capital must be locked before this function can be called. If senior capital isn't locked

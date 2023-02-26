@@ -154,8 +154,7 @@ contract CallableLoan is
       "NA"
     );
 
-    (uint256 interestWithdrawn, uint256 principalWithdrawn) = _withdrawMax(poolTokenId);
-    uint256 totalWithdrawn = interestWithdrawn + principalWithdrawn;
+    _withdrawMax(poolTokenId);
     uint256 principalRemainingOnPoolToken = cl.proportionalPrincipalOutstanding({
       trancheId: tokenInfo.tranche,
       principalDeposited: tokenInfo.principalAmount
@@ -325,7 +324,7 @@ contract CallableLoan is
     )
   {
     require(timestamp >= block.timestamp, "IT");
-    // TODO: Determine correct loan inactive conditions.
+    // TODO: Verify this is the correct loan inactive condition.
     require(termEndTime() > 0, "LI");
 
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
@@ -359,6 +358,19 @@ contract CallableLoan is
         principalDeposited: info.principalDeposited,
         principalPaid: info.principalPaid,
         principalReserved: info.principalReserved
+      });
+  }
+
+  function interestBearingBalance() public view returns (uint256) {
+    return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
+  }
+
+  function availableToCall(uint256 tokenId) public view returns (uint256) {
+    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    return
+      _staleCreditLine.proportionalPrincipalOutstanding({
+        trancheId: tokenInfo.tranche,
+        principalDeposited: tokenInfo.principalAmount
       });
   }
 
@@ -409,16 +421,16 @@ contract CallableLoan is
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
 
-    uint interestOwed = cl.interestOwed();
-    uint interestAccrued = cl.interestAccrued();
+    uint interestOwedBeforePayment = cl.interestOwed();
+    uint interestAccruedBeforePayment = cl.interestAccrued();
 
     uint timeUntilNextPrincipalSettlemenet = cl
       .nextPrincipalDueTimeAt(block.timestamp)
       .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
-      interestOwed: interestOwed,
-      interestAccrued: interestAccrued,
+      interestOwed: interestOwedBeforePayment,
+      interestAccrued: interestAccruedBeforePayment,
       principalOwed: cl.principalOwed(),
       interestRate: cl.interestApr(),
       timeUntilNextPrincipalSettlemenet: timeUntilNextPrincipalSettlemenet,
@@ -530,7 +542,7 @@ contract CallableLoan is
   }
 
   function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
-    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    /* CallableCreditLine storage cl = */ _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint totalWithdrawable = interestWithdrawable + principalWithdrawable;

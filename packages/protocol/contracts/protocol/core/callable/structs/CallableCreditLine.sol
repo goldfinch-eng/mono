@@ -27,12 +27,6 @@ using CallableCreditLineLogic for CallableCreditLine global;
 ///                          e.g. if _numLockupPeriods is 2, then newly submitted call requests
 ///                          in the last two periods of a call request period will be rolled over
 ///                          to the next call request period.
-/// @param _numLockupPeriods Describes when newly submitted call requests are rolled over
-///                          to the next call request period.
-///                          Number of periods is relative to the end date of a call request period.
-///                          e.g. if _numLockupPeriods is 2, then newly submitted call requests
-///                          in the last two periods of a call request period will be rolled over
-///                          to the next call request period.
 struct CallableCreditLine {
   IGoldfinchConfig _config;
   uint256 _limit;
@@ -392,7 +386,6 @@ library CallableCreditLineLogic {
       cl._lateAdditionalApr
     );
 
-    // TODO: Actually need to iterate over all possible balance settlements.
     if (firstInterestEndPoint < timestamp) {
       // Calculate interest accrued after balances are settled.
       totalInterestAccruedReturned += CallableLoanAccountant.calculateInterest(
@@ -458,7 +451,13 @@ library CallableCreditLineLogic {
       timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
-  /// Returns the total amount of principal outstanding - not taking into account unsettled principal.
+  function totalPrincipalOutstandingWithoutReserves(
+    CallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return cl._waterfall.totalPrincipalOutstandingWithoutReserves();
+  }
+
+  /// Returns the total amount of principal outstanding - including reserved principal.
   function totalPrincipalOutstanding(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {

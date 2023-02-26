@@ -28,7 +28,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   uint user2PoolTokenIdUncalledSplit;
   uint totalDeposits;
   // Use storage buffer to get around Solidity stack size limits.
-  uint calcBuffer;
+  uint principalAvailableToWithdraw;
   uint firstInterestAccrued;
   uint firstInterestOwedAtNextDueTime;
   uint firstInterestOwedAtNextPrincipalDueTime;
@@ -37,6 +37,11 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   uint userBalanceBefore;
   uint totalInterestPayment;
   uint totalPrincipalPayment;
+
+  uint callAmount1Max;
+  uint callAmount2Max;
+
+  ILoan.PaymentAllocation paymentAllocation;
 
   function testSubmitCallScenario(
     uint256 depositAmount1,
@@ -95,8 +100,8 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       );
       firstInterestAccrued = callableLoan.interestAccrued();
 
-      calcBuffer = (depositAmount1 * drawdownAmount) / totalDeposits;
-      callAmount1 = bound(callAmount1, 0, calcBuffer);
+      callAmount1Max = (depositAmount1 * drawdownAmount) / totalDeposits;
+      callAmount1 = bound(callAmount1, 0, callAmount1Max);
       if (callAmount1 > 0) {
         console.log("Submitting call 1");
         (user1PoolTokenIdCalledSplit, user1PoolTokenIdUncalledSplit) = submitCall(
@@ -143,5 +148,125 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       assertEq(crp.principalReserved, 0, "crp principal Reserved");
       assertEq(crp.interestPaid, 0, "crp interest paid");
     }
+
+    /// Pay - After First Call Submission
+    /// Assert payment updates accounting correctly.
+    /// Use {} to produce new stack frame and avoid stack too deep errors.
+    {
+      paymentAmount = bound(paymentAmount, 1, usdcVal(100_000_000_000));
+      fundAddress(address(this), paymentAmount);
+      usdc.approve(address(callableLoan), paymentAmount);
+      loanContractBalanceBefore = usdc.balanceOf(address(callableLoan));
+      userBalanceBefore = usdc.balanceOf(address(this));
+
+      paymentAllocation = callableLoan.pay(paymentAmount);
+      assertEq(paymentAllocation.principalPayment, 0, "principal 0");
+      assertApproxEqAbs(
+        callableLoan.interestAccrued(),
+        firstInterestAccrued.saturatingSub(paymentAllocation.accruedInterestPayment),
+        HUNDREDTH_CENT,
+        "accrued"
+      );
+
+      assertEq(paymentAllocation.owedInterestPayment, 0, "paid 0");
+      assertEq(callableLoan.interestOwed(), 0, "owes 0");
+
+      assertEq(
+        callableLoan.balance(),
+        originalBalance.saturatingSub(paymentAllocation.additionalBalancePayment),
+        "balance"
+      );
+
+      totalInterestPayment =
+        paymentAllocation.accruedInterestPayment +
+        paymentAllocation.owedInterestPayment;
+      totalPrincipalPayment =
+        paymentAllocation.principalPayment +
+        paymentAllocation.additionalBalancePayment;
+      assertApproxEqAbs(
+        usdc.balanceOf(address(callableLoan)),
+        loanContractBalanceBefore + totalPrincipalPayment + ((totalInterestPayment * 90) / 100),
+        HUNDREDTH_CENT,
+        "loan contract balance"
+      );
+      ICallableLoan.CallRequestPeriod memory crp = callableLoan.getCallRequestPeriod(0);
+
+      assertEq(
+        crp.principalDeposited - crp.principalPaid,
+        callAmount1,
+        "crp principal outstanding"
+      );
+      assertEq(
+        crp.principalReserved,
+        Math.min(callAmount1, paymentAllocation.additionalBalancePayment),
+        "crp principal Reserved"
+      );
+      assertEq(
+        crp.interestPaid,
+        (paymentAllocation.accruedInterestPayment * (crp.principalDeposited - crp.principalPaid)) /
+          (callableLoan.interestBearingBalance()),
+        "crp interest paid"
+      );
+    }
+
+    // /// Warp to before first payment period due date
+    // /// Submit Call request 2 from user 2
+    // /// Check that we update accounting correctly.
+    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    {
+      uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+      uint interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+        callableLoan.nextPrincipalDueTime()
+      );
+
+      callAmount2Max =
+        (depositAmount2 * (drawdownAmount - paymentAllocation.additionalBalancePayment)) /
+        totalDeposits;
+      callAmount2 = bound(callAmount2, 0, callAmount2Max);
+      if (callAmount2 > 0) {
+        console.log("Submitting call 2");
+        (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
+          callableLoan,
+          callAmount2,
+          user2PoolTokenId,
+          user2
+        );
+      }
+
+      assertApproxEqAbs(
+        callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        HUNDREDTH_CENT,
+        "New principal owed"
+      );
+
+      assertEq(
+        callableLoan.totalPrincipalPaid(),
+        totalDeposits - drawdownAmount,
+        "New principal paid"
+      );
+      assertApproxEqAbs(
+        callableLoan.interestOwedAt(callableLoan.nextDueTime()),
+        interestOwedAtNextDueTime,
+        HUNDREDTH_CENT,
+        "Interest owed at next due time"
+      );
+      assertApproxEqAbs(
+        callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+        interestOwedAtNextPrincipalDueTime,
+        HUNDREDTH_CENT,
+        "Interest owed at next principal due time"
+      );
+    }
+
+    // // TODO:
+    // /// Warp to first payment period due date
+    vm.warp(callableLoan.nextPrincipalDueTime() - 1);
+    vm.warp(callableLoan.nextPrincipalDueTime());
+    // /// Assert that both users can withdraw expected amounts
+    // /// Assert that second user cannot withdraw any amounts from their call requested token.
+    // {
+
+    // }
   }
 }

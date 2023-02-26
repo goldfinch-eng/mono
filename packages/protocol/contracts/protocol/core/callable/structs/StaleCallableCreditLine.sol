@@ -129,6 +129,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalOutstanding();
   }
 
+  function totalPrincipalOutstandingWithoutReserves(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return cl._cl.totalPrincipalOutstandingWithoutReserves();
+  }
+
   function nextInterestDueTimeAt(
     StaleCallableCreditLine storage cl,
     uint timestamp
@@ -160,6 +166,14 @@ library StaleCallableCreditLineLogic {
 
   function termEndTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
     return cl._cl.termEndTime();
+  }
+
+  function proportionalPrincipalOutstanding(
+    StaleCallableCreditLine storage cl,
+    uint trancheId,
+    uint principalDeposited
+  ) internal view returns (uint) {
+    return cl._cl.proportionalPrincipalOutstanding(trancheId, principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailable(
