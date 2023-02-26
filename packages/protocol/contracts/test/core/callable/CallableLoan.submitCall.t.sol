@@ -78,6 +78,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
 
+    console.log("Before 1st call submission frame");
     /// Call Submission 1 - After Drawdown Period
     /// Assert call submission updates accounting correctly.
     /// Use {} to produce new stack frame and avoid stack too deep errors.
@@ -152,6 +153,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     /// Pay - After First Call Submission
     /// Assert payment updates accounting correctly.
     /// Use {} to produce new stack frame and avoid stack too deep errors.
+    console.log("Before pay frame");
     {
       paymentAmount = bound(paymentAmount, 1, usdcVal(100_000_000_000));
       fundAddress(address(this), paymentAmount);
@@ -209,10 +211,10 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       );
     }
 
-    // /// Warp to before first payment period due date
     // /// Submit Call request 2 from user 2
     // /// Check that we update accounting correctly.
     // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    console.log("Before 2nd call submission frame");
     {
       uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
       uint interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
@@ -257,16 +259,82 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
         HUNDREDTH_CENT,
         "Interest owed at next principal due time"
       );
+
+      ICallableLoan.CallRequestPeriod memory crp = callableLoan.getCallRequestPeriod(0);
+      assertEq(
+        crp.principalDeposited - crp.principalPaid,
+        callAmount1 + callAmount2,
+        "crp principal outstanding"
+      );
+      assertEq(
+        crp.principalReserved,
+        Math.min(callAmount1 + callAmount2, paymentAllocation.additionalBalancePayment),
+        "crp principal Reserved"
+      );
+      assertApproxEqAbs(
+        crp.interestPaid,
+        (paymentAllocation.accruedInterestPayment * (crp.principalDeposited - crp.principalPaid)) /
+          (callableLoan.interestBearingBalance()),
+        HUNDREDTH_CENT,
+        "crp interest paid"
+      );
     }
 
-    // // TODO:
-    // /// Warp to first payment period due date
-    vm.warp(callableLoan.nextPrincipalDueTime() - 1);
-    vm.warp(callableLoan.nextPrincipalDueTime());
-    // /// Assert that both users can withdraw expected amounts
-    // /// Assert that second user cannot withdraw any amounts from their call requested token.
-    // {
+    {
+      // Hash and bound user3 to get pseudorandom warp destination
+      // Cannot add another fuzzed variable because of stack size limits.
+      uint invalidCallSubmissionTime = uint(keccak256(abi.encode(user3)));
+      invalidCallSubmissionTime = bound(
+        invalidCallSubmissionTime,
+        callableLoan.nextDueTime() + 1,
+        callableLoan.nextPrincipalDueTime() - 1
+      );
+      vm.warp(invalidCallSubmissionTime);
+      uint callAmount3Max = (depositAmount3 *
+        (drawdownAmount - paymentAllocation.additionalBalancePayment)) / totalDeposits;
+      // Hash and bound call amounts 1 and 2 to get pseudorandom call amount 3.
+      // Cannot add another fuzzed variable because of stack size limits.
+      uint callAmount3 = bound(uint256(keccak256(abi.encode(user1, user2))), 0, callAmount3Max);
 
-    // }
+      if (callAmount3 > 0) {
+        console.log("Submitting invalid call 3. Invalid since we are in a lock period.");
+        vm.expectRevert(bytes("CL"));
+        submitCall(callableLoan, callAmount3, user3PoolTokenId, user3);
+      }
+    }
+
+    // /// Warp to right principal payment period due time
+    vm.warp(callableLoan.nextPrincipalDueTime());
+
+    // /// Warp to first principal payment period due time
+    // /// Check that we update accounting correctly.
+    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    console.log("After principal payment period due time frame");
+    {
+      uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+      uint interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+        callableLoan.nextPrincipalDueTime()
+      );
+
+      assertApproxEqAbs(
+        callableLoan.principalOwed(),
+        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        HUNDREDTH_CENT,
+        "Principal owed remains the same as previous principalOwedAt(nextPrincipalDueTime)"
+      );
+
+      assertApproxEqAbs(
+        callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        HUNDREDTH_CENT,
+        "Principal owed at next principal due time remains the same as previous principalOwedAt(nextPrincipalDueTime)"
+      );
+
+      assertEq(
+        callableLoan.totalPrincipalPaid(),
+        totalDeposits - drawdownAmount + paymentAllocation.additionalBalancePayment,
+        "New principal paid"
+      );
+    }
   }
 }
