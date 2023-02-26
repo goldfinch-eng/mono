@@ -76,15 +76,13 @@ library TrancheLogic {
   {
     require(t._principalDeposited > t._principalPaid, "IT");
 
-    interestTaken =
-      (t._interestPaid * principalOutstandingToTake) /
-      t.principalOutstandingWithoutReserves();
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalPaidTaken =
       (t._principalPaid * principalOutstandingToTake) /
       (t._principalDeposited - t._principalPaid);
 
     principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
+    interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
 
     t._principalPaid -= principalPaidTaken;
     t._interestPaid -= interestTaken;
@@ -174,11 +172,11 @@ library TrancheLogic {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
-  function proportionalPrincipalOutstandingWithReserves(
+  function proportionalPrincipalOutstandingWithoutReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint) {
-    return (t.principalOutstandingWithReserves() * principalAmount) / t.principalDeposited();
+    return (t.principalOutstandingWithoutReserves() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalInterestWithdrawable(

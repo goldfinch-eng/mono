@@ -348,9 +348,21 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertApproxEqAbs(cl.interestOwed(), regIntOwed + lateIntOwed, HUNDREDTH_CENT);
   }
 
-  function testAccountingVarsCrossingTermEndTime(uint256 timestamp) public {
+  function testAccountingVarsCrossingTermEndTime(
+    uint256 timestamp,
+    address depositor,
+    uint256 depositAmount,
+    uint256 drawdownAmount
+  ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
+
+    vm.assume(fuzzHelper.isAllowed(depositor));
+    depositAmount = bound(depositAmount, 1, 100_000_000);
+    drawdownAmount = bound(depositAmount, 0, depositAmount);
+    fundAddress(depositor, depositAmount);
+    uid._mintForTest(depositor, 1, 1, "");
+    deposit(callableLoan, depositAmount, depositor);
+    drawdown(callableLoan, drawdownAmount);
     timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + 1000 days);
 
     uint256 expectedTotalInterestAccrued = getInterestAccrued(
@@ -360,6 +372,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.interestApr()
     );
     uint256 expectedInterestOwed = expectedTotalInterestAccrued;
+    uint256 expectedPrincipalOwed = cl.balance();
 
     assertApproxEqAbs(
       cl.totalInterestAccruedAt(timestamp),
@@ -371,6 +384,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
     vm.warp(timestamp);
 
+    assertApproxEqAbs(cl.totalPrincipalOwed(), expectedPrincipalOwed, HUNDREDTH_CENT);
     assertApproxEqAbs(cl.totalInterestAccrued(), expectedTotalInterestAccrued, HUNDREDTH_CENT);
     assertApproxEqAbs(cl.interestOwed(), expectedInterestOwed, HUNDREDTH_CENT);
     assertZero(cl.interestAccrued());

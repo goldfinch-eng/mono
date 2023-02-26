@@ -168,12 +168,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.termEndTime();
   }
 
-  function proportionalPrincipalOutstanding(
+  function proportionalCallablePrincipal(
     StaleCallableCreditLine storage cl,
     uint trancheId,
     uint principalDeposited
   ) internal view returns (uint) {
-    return cl._cl.proportionalPrincipalOutstanding(trancheId, principalDeposited);
+    return cl._cl.proportionalCallablePrincipal(trancheId, principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailable(

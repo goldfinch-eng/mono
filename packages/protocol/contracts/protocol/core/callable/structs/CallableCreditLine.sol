@@ -492,13 +492,13 @@ library CallableCreditLineLogic {
     }
   }
 
-  function proportionalPrincipalOutstanding(
+  function proportionalCallablePrincipal(
     CallableCreditLine storage cl,
     uint256 trancheId,
     uint256 principalDeposited
   ) internal view returns (uint256) {
     return
-      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(
+      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingWithoutReserves(
         principalDeposited
       );
   }

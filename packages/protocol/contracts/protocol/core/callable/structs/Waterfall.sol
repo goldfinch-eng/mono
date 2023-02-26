@@ -131,12 +131,13 @@ library WaterfallLogic {
     }
   }
 
-  function proportionalPrincipalOutstandingWithReserves(
+  function proportionalPrincipalOutstandingWithoutReserves(
     Waterfall storage w,
     uint256 trancheId,
     uint256 principalDeposited
   ) internal view returns (uint256) {
-    return w.getTranche(trancheId).proportionalPrincipalOutstandingWithReserves(principalDeposited);
+    return
+      w.getTranche(trancheId).proportionalPrincipalOutstandingWithoutReserves(principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailableAfterApplyReserves(

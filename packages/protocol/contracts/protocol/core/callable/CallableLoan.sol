@@ -155,11 +155,11 @@ contract CallableLoan is
     );
 
     _withdrawMax(poolTokenId);
-    uint256 principalRemainingOnPoolToken = cl.proportionalPrincipalOutstanding({
+    uint256 callablePrincipal = cl.proportionalCallablePrincipal({
       trancheId: tokenInfo.tranche,
       principalDeposited: tokenInfo.principalAmount
     });
-    require(callAmount > 0 && principalRemainingOnPoolToken >= callAmount, "IA");
+    require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
     cl.submitCall(callAmount);
     (callRequestedTokenId, remainingTokenId) = _splitForCall(
       callAmount,
@@ -368,7 +368,7 @@ contract CallableLoan is
   function availableToCall(uint256 tokenId) public view returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     return
-      _staleCreditLine.proportionalPrincipalOutstanding({
+      _staleCreditLine.proportionalCallablePrincipal({
         trancheId: tokenInfo.tranche,
         principalDeposited: tokenInfo.principalAmount
       });
