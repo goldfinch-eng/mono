@@ -23,6 +23,7 @@ import {
   getLoanFundingStatus,
   LoanFundingStatus,
   FUNDING_STATUS_LOAN_FIELDS,
+  REPAYMENT_SCHEDULE_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
@@ -62,7 +63,6 @@ import {
 import {
   RepaymentTermsSchedule,
   RepaymentTermsSchedulePlaceholder,
-  REPAYMENT_TERMS_SCHEDULE_FIELDS,
 } from "./v2-components/repayment-terms/repayment-terms-schedule";
 import {
   RepaymentTermsStats,
@@ -80,7 +80,7 @@ gql`
   ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
   ${FUNDING_STATUS_LOAN_FIELDS}
   ${BORROWER_OTHER_POOL_FIELDS}
-  ${REPAYMENT_TERMS_SCHEDULE_FIELDS}
+  ${REPAYMENT_SCHEDULE_FIELDS}
   ${REPAYMENT_TERMS_STATS_FIELDS}
   ${AMOUNT_STATS_FIELDS}
   query SingleTranchedPoolData(
@@ -100,7 +100,7 @@ gql`
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelTranchedPoolFields
-      ...RepaymentTermsScheduleFields
+      ...RepaymentScheduleFields
       ...RepaymentTermsStatsFields
       ...AmountStatsFields
     }

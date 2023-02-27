@@ -17,8 +17,7 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
-
-import { RepaymentScheduleData } from "./repayment-terms-schedule";
+import { RepaymentScheduleData } from "@/lib/pools";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
