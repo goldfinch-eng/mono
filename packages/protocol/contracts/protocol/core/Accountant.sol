@@ -28,6 +28,16 @@ library Accountant {
   uint256 private constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 private constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
 
+  /// @notice Input params for allocating a payment
+  struct AllocatePaymentParams {
+    uint256 principalPayment;
+    uint256 interestPayment;
+    uint256 balance;
+    uint256 interestOwed;
+    uint256 interestAccrued;
+    uint256 principalOwed;
+  }
+
   function calculateWritedownFor(
     ICreditLine cl,
     uint256 timestamp,
@@ -128,67 +138,63 @@ library Accountant {
    *  1. interestOwed must be paid before principalOwed
    *  2. principalOwed must be paid before interestAccrued
    *  3. interestAccrued must be paid before the rest of the balance
-   *
-   * @param principalPayment payment amount allocated to principalOwed and balance
-   * @param interestPayment payment amount allocated to interestOwed and interestAccrued
-   * @param balance total balance on the credit line
-   * @param interestOwed interest obligation to be paid
-   * @param interestAccrued interest amount that can be paid before it's due
-   * @param principalOwed principal obligation to be paid
-   *
-   * @return pa payment allocation
+   * @param params specifying payment amounts and amounts owed
+   * @return payment allocation
    *
    * @dev IO - Interest Owed
    * @dev PO - Principal Owed
    * @dev AI - Accrued Interest
    */
   function allocatePayment(
-    uint256 principalPayment,
-    uint256 interestPayment,
-    uint256 balance,
-    uint256 interestOwed,
-    uint256 interestAccrued,
-    uint256 principalOwed
+    AllocatePaymentParams memory params
   ) public pure returns (ITranchedPool.PaymentAllocation memory) {
-    require(principalPayment > 0 || interestPayment > 0, "ZZ");
+    require(params.principalPayment > 0 || params.interestPayment > 0, "ZZ");
+
+    uint256 remainingPrincipalPayment = params.principalPayment;
+    uint256 remainingInterestPayment = params.interestPayment;
+
     // The payment waterfall works like this:
 
     // 1. Any interest that is _currently_ owed must be paid
-    uint owedInterestPayment = Math.min(interestOwed, interestPayment);
-    interestPayment = interestPayment.sub(owedInterestPayment);
+    uint owedInterestPayment = Math.min(params.interestOwed, remainingInterestPayment);
+    remainingInterestPayment = remainingInterestPayment.sub(owedInterestPayment);
 
     // 2. Any principal that is _currently_ owed must be paid
     // If you still owe interest then you can't pay back principal or pay down balance
-    if (owedInterestPayment < interestOwed && principalPayment > 0) {
+    if (owedInterestPayment < params.interestOwed && params.principalPayment > 0) {
       revert("IO");
     }
-    uint owedPrincipalPayment = Math.min(principalPayment, principalOwed);
-    principalPayment = principalPayment.sub(owedPrincipalPayment);
+    uint owedPrincipalPayment = Math.min(remainingPrincipalPayment, params.principalOwed);
+    remainingPrincipalPayment = remainingPrincipalPayment.sub(owedPrincipalPayment);
 
     // 3. Any accured interest, meaning any interest that has accrued since the last payment
     //    date but isn't actually currently owed must be paid
     // If you still owe principal then you can't pay accrued interest
-    if (owedPrincipalPayment < principalOwed && interestPayment > 0 && interestAccrued > 0) {
+    if (
+      owedPrincipalPayment < params.principalOwed &&
+      remainingInterestPayment > 0 &&
+      params.interestAccrued > 0
+    ) {
       revert("PO");
     }
-    uint accruedInterestPayment = Math.min(interestPayment, interestAccrued);
-    interestPayment = interestPayment.sub(accruedInterestPayment);
+    uint accruedInterestPayment = Math.min(remainingInterestPayment, params.interestAccrued);
+    remainingInterestPayment = remainingInterestPayment.sub(accruedInterestPayment);
 
     // 4. If there's remaining principal payment, it can be applied to remaining balance
-    // If you still have additional interest then you can't pay back balance
+    // But if you still have additional interest then you can't pay back balance
     if (
-      accruedInterestPayment < interestAccrued &&
-      principalPayment > 0 &&
-      balance.sub(owedInterestPayment) > 0
+      accruedInterestPayment < params.interestAccrued &&
+      remainingPrincipalPayment > 0 &&
+      params.balance.sub(owedPrincipalPayment) > 0
     ) {
       revert("AI");
     }
-    uint balanceRemaining = balance.sub(owedPrincipalPayment);
-    uint additionalBalancePayment = Math.min(balanceRemaining, principalPayment);
-    principalPayment = principalPayment.sub(additionalBalancePayment);
+    uint balanceRemaining = params.balance.sub(owedPrincipalPayment);
+    uint additionalBalancePayment = Math.min(balanceRemaining, remainingPrincipalPayment);
+    remainingPrincipalPayment = remainingPrincipalPayment.sub(additionalBalancePayment);
 
     // 5. Any remaining payment is not applied
-    uint paymentRemaining = principalPayment.add(interestPayment);
+    uint paymentRemaining = remainingPrincipalPayment.add(remainingInterestPayment);
 
     return
       ITranchedPool.PaymentAllocation({

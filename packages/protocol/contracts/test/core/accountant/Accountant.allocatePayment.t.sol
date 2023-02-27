@@ -62,14 +62,16 @@ contract AccountantHandler is Test {
       principalOwed: _principalOwed
     });
 
-    pa = Accountant.allocatePayment({
-      principalPayment: principalPayment,
-      interestPayment: interestPayment,
-      balance: _balance,
-      interestOwed: _interestOwed,
-      interestAccrued: _interestAccrued,
-      principalOwed: _principalOwed
-    });
+    pa = Accountant.allocatePayment(
+      Accountant.AllocatePaymentParams({
+        principalPayment: principalPayment,
+        interestPayment: interestPayment,
+        balance: _balance,
+        interestOwed: _interestOwed,
+        interestAccrued: _interestAccrued,
+        principalOwed: _principalOwed
+      })
+    );
     _displayPaymentAllocation();
   }
 
@@ -87,14 +89,16 @@ contract AccountantHandler is Test {
     interestOwed = _interestOwed;
     principalOwed = _principalOwed;
     accruedInterest = _interestAccrued;
-    pa = Accountant.allocatePayment({
-      principalPayment: _principalPayment,
-      interestPayment: _interestPayment,
-      balance: _balance,
-      interestOwed: _interestOwed,
-      interestAccrued: _interestAccrued,
-      principalOwed: _principalOwed
-    });
+    pa = Accountant.allocatePayment(
+      Accountant.AllocatePaymentParams({
+        principalPayment: _principalPayment,
+        interestPayment: _interestPayment,
+        balance: _balance,
+        interestOwed: _interestOwed,
+        interestAccrued: _interestAccrued,
+        principalOwed: _principalOwed
+      })
+    );
 
     _displayPaymentAllocation();
   }

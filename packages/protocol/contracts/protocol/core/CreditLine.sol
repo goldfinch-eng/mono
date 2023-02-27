@@ -121,14 +121,16 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     _checkpoint();
 
     // Allocate payments
-    ITranchedPool.PaymentAllocation memory pa = Accountant.allocatePayment({
-      principalPayment: principalPayment,
-      interestPayment: interestPayment,
-      balance: balance,
-      interestOwed: interestOwed(),
-      interestAccrued: interestAccrued(),
-      principalOwed: principalOwed()
-    });
+    ITranchedPool.PaymentAllocation memory pa = Accountant.allocatePayment(
+      Accountant.AllocatePaymentParams({
+        principalPayment: principalPayment,
+        interestPayment: interestPayment,
+        balance: balance,
+        interestOwed: interestOwed(),
+        interestAccrued: interestAccrued(),
+        principalOwed: principalOwed()
+      })
+    );
 
     uint totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
     uint totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
