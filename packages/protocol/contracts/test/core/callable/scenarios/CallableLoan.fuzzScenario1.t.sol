@@ -147,8 +147,6 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       );
       callAmount1 = bound(callAmount1, 0, user1PoolTokenAvailableToCall);
       if (callAmount1 > 0) {
-        console.log("About to call, here are accounting variables");
-        console.log("depositAmount1:", depositAmount1);
         (user1PoolTokenIdCalledSplit, user1PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
           callAmount1,
@@ -341,7 +339,6 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
 
       if (callAmount2 > 0) {
         console.log("About to call, here are accounting variables");
-        console.log("depositAmount2:", depositAmount2);
         callRequestPeriod = callableLoan.getCallRequestPeriod(0);
         console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
         console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);

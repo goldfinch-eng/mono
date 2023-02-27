@@ -45,7 +45,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     address depositor,
     uint256 depositAmount,
     uint256 drawdownAmount,
-    uint256 callAmount,
+    uint callAmount,
     uint256 secondsElapsedSinceDrawdown
   ) public {
     secondsElapsedSinceDrawdown = bound(
@@ -59,11 +59,12 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     uid._mintForTest(depositor, 1, 1, "");
     uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
-    uint256 drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
+    uint256 drawdownAmount = bound(drawdownAmount, 1, depositAmount);
+    uint256 callAmount = bound(callAmount, 1, drawdownAmount);
     drawdown(callableLoan, drawdownAmount);
     vm.warp(block.timestamp + secondsElapsedSinceDrawdown);
     vm.expectRevert(bytes("IS"));
-    submitCall(callableLoan, depositAmount - drawdownAmount, token, depositor);
+    submitCall(callableLoan, callAmount, token, depositor);
   }
 
   // function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
