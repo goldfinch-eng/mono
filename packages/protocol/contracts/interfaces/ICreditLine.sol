@@ -101,19 +101,12 @@ interface ICreditLine {
   /// @notice Process a bulk payment, allocating the payment amount based on the payment waterfall
   function pay(uint paymentAmount) external returns (ITranchedPool.PaymentAllocation memory);
 
-  /// @notice Process a payment, splitting the payment into two separate waterfalls, one for interest and
-  ///   another for principal.
-  ///
-  ///   `principalPayment` is applied to principal debts in the waterfall:
-  ///     1. principal owed
-  ///     2. remaining balance
-  ///
-  ///   `interestPayment` is applied to the interest debts in the waterfall:
-  ///     1. interest owed
-  ///     2. interest accrued in the current payment period (not yet owed)
-  /// @param principalPayment USDC amount of principal to pay
-  /// @param interestPayment USDC amount of interest to pay
-  /// @return PaymentAllocation amounts allocated to each debt owed
+  /**
+   * Process a payment according to the waterfall described in `Accountant.allocatePayment`
+   * @param principalPayment principal payment amount
+   * @param interestPayment interest payment amount
+   * @return payment allocation
+   */
   function pay(
     uint256 principalPayment,
     uint256 interestPayment
