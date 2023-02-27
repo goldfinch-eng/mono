@@ -67,14 +67,6 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     submitCall(callableLoan, callAmount, token, depositor);
   }
 
-  function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
-    address user,
-    uint256 depositAmount,
-    uint256 drawdownAmount,
-    uint256 callAmount,
-    uint256 secondsElapsed
-  ) public {}
-
   function testDoesNotLetYouSubmitCallDuringLockupPeriods(
     address user,
     uint256 depositAmount,
@@ -119,8 +111,26 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     // Lockup period of call request period 3
     vm.warp(callableLoan.nextPrincipalDueTime());
     vm.warp(callableLoan.nextDueTime());
-    vm.warp(callableLoan.nextPrincipalDueTime() + secondsElapsedAfterLastLockup);
+
+    // Anything after call request period 3 would submit to uncalled tranche, and should be prohibited.
+    vm.warp(block.timestamp + secondsElapsedAfterLastLockup);
     vm.expectRevert(bytes("LC"));
     submitCall(callableLoan, callAmount, token, user);
   }
+
+  function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 secondsElapsed
+  ) public {}
+
+  function testSubmitsCallForCorrectTranche(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 secondsElapsed
+  ) public {}
 }

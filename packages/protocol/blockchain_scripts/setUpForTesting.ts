@@ -52,7 +52,7 @@ import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
-import {MonthlyScheduleRepoInstance, ScheduleInstance} from "../typechain/truffle"
+import {MonthlyScheduleRepoInstance} from "../typechain/truffle"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -631,7 +631,7 @@ async function writePoolMetadata({
   borrower,
   backerLimit = "1.00",
 }: {
-  pool: TranchedPool
+  pool: {address: string}
   borrower: string
   backerLimit?: string
 }) {
