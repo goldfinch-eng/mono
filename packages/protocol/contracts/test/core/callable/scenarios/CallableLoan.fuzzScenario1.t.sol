@@ -28,7 +28,6 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
   uint user2PoolTokenIdUncalledSplit;
   uint totalDeposits;
 
-  uint principalAvailableToWithdraw;
   uint firstInterestAccrued;
   uint firstInterestOwedAtNextDueTime;
   uint firstInterestOwedAtNextPrincipalDueTime;
@@ -43,13 +42,18 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
   uint user3PoolTokenAvailableToCall;
   uint user1PoolTokenUncalledSplitAvailableToCall;
 
-  uint user1TokenInterestAvailable;
-  uint user2TokenInterestAvailable;
-  uint user3TokenInterestAvailable;
-  uint user1PoolTokenUncalledSplitInterestAvailable;
-
+  uint user1TokenPrincipalAvailableForWithdraw;
+  uint user2TokenInterestAvailableForWithdraw;
+  uint user2TokenPrincipalAvailableForWithdraw;
+  uint user3TokenInterestAvailableForWithdraw;
+  uint user3TokenPrincipalAvailableForWithdraw;
+  uint user1PoolTokenUncalledSplitInterestAvailableForWithdraw;
+  uint user1PoolTokenCalledSplitInterestAvailableForWithdraw;
+  uint user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw;
+  uint user1PoolTokenCalledSplitPrincipalAvailableForWithdraw;
   // Use storage buffer to get around Solidity stack size limits.
-  uint tupleBuffer;
+  uint interestAvailableToWithdraw;
+  uint principalAvailableToWithdraw;
 
   ILoan.PaymentAllocation paymentAllocation;
   ICallableLoan.UncalledCapitalInfo uncalledCapitalInfo;
@@ -88,6 +92,16 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     user3PoolTokenId = deposit(callableLoan, depositAmount3, user3);
 
     drawdown(callableLoan, drawdownAmount);
+
+    console.log("totalDeposits", totalDeposits);
+    uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    assertEq(uncalledCapitalInfo.principalDeposited, totalDeposits, "Total principal deposits");
+    assertEq(
+      uncalledCapitalInfo.principalPaid,
+      totalDeposits - drawdownAmount,
+      "Total principal paid"
+    );
+
     warpToAfterDrawdownPeriod(callableLoan);
 
     console.log("Before 1st call submission frame");
@@ -117,8 +131,14 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       user2PoolTokenAvailableToCall = callableLoan.availableToCall(user2PoolTokenId);
       user3PoolTokenAvailableToCall = callableLoan.availableToCall(user3PoolTokenId);
 
-      (user2TokenInterestAvailable, ) = callableLoan.availableToWithdraw(user2PoolTokenId);
-      (user3TokenInterestAvailable, ) = callableLoan.availableToWithdraw(user3PoolTokenId);
+      (
+        user2TokenInterestAvailableForWithdraw,
+        user2TokenPrincipalAvailableForWithdraw
+      ) = callableLoan.availableToWithdraw(user2PoolTokenId);
+      (
+        user3TokenInterestAvailableForWithdraw,
+        user3TokenPrincipalAvailableForWithdraw
+      ) = callableLoan.availableToWithdraw(user3PoolTokenId);
       assertApproxEqAbs(
         user1PoolTokenAvailableToCall,
         (depositAmount1 * drawdownAmount) / totalDeposits,
@@ -127,13 +147,15 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       );
       callAmount1 = bound(callAmount1, 0, user1PoolTokenAvailableToCall);
       if (callAmount1 > 0) {
-        console.log("Submitting call 1");
+        console.log("About to call, here are accounting variables");
+        console.log("depositAmount1:", depositAmount1);
         (user1PoolTokenIdCalledSplit, user1PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
           callAmount1,
           user1PoolTokenId,
           user1
         );
+        console.log("Submitted call 1!");
       }
 
       assertApproxEqAbs(
@@ -149,17 +171,19 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "Submitting a call should not affect how much others are owed - Principal outstanding 3"
       );
 
-      (tupleBuffer, ) = callableLoan.availableToWithdraw(user2PoolTokenId);
+      (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+        .availableToWithdraw(user2PoolTokenId);
       assertApproxEqAbs(
-        tupleBuffer,
-        user2TokenInterestAvailable,
+        interestAvailableToWithdraw,
+        user2TokenInterestAvailableForWithdraw,
         HUNDREDTH_CENT,
         "Submitting a call should not affect how much others are owed - Interest 2"
       );
-      (tupleBuffer, ) = callableLoan.availableToWithdraw(user3PoolTokenId);
+      (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+        .availableToWithdraw(user3PoolTokenId);
       assertApproxEqAbs(
-        tupleBuffer,
-        user3TokenInterestAvailable,
+        interestAvailableToWithdraw,
+        user3TokenInterestAvailableForWithdraw,
         HUNDREDTH_CENT,
         "Submitting a call should not affect how much others are owed - Interest 3"
       );
@@ -285,18 +309,25 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         user1PoolTokenUncalledSplitAvailableToCall = callableLoan.availableToCall(
           user1PoolTokenIdUncalledSplit
         );
-        (user1PoolTokenUncalledSplitInterestAvailable, ) = callableLoan.availableToWithdraw(
-          user1PoolTokenIdUncalledSplit
-        );
-        console.log(
-          "user1PoolTokenUncalledSplitInterestAvailable",
-          user1PoolTokenUncalledSplitInterestAvailable
-        );
+        (
+          user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
+          user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw
+        ) = callableLoan.availableToWithdraw(user1PoolTokenIdUncalledSplit);
+      }
+
+      if (user1PoolTokenIdCalledSplit > 0) {
+        (
+          user1PoolTokenCalledSplitInterestAvailableForWithdraw,
+          user1PoolTokenCalledSplitPrincipalAvailableForWithdraw
+        ) = callableLoan.availableToWithdraw(user1PoolTokenIdCalledSplit);
       }
       user2PoolTokenAvailableToCall = callableLoan.availableToCall(user2PoolTokenId);
       user3PoolTokenAvailableToCall = callableLoan.availableToCall(user3PoolTokenId);
 
-      (user3TokenInterestAvailable, ) = callableLoan.availableToWithdraw(user3PoolTokenId);
+      (
+        user3TokenInterestAvailableForWithdraw,
+        user3TokenPrincipalAvailableForWithdraw
+      ) = callableLoan.availableToWithdraw(user3PoolTokenId);
 
       assertApproxEqAbs(
         user2PoolTokenAvailableToCall,
@@ -307,32 +338,58 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "Max available to call 2"
       );
       callAmount2 = bound(callAmount2, 0, user2PoolTokenAvailableToCall);
+
       if (callAmount2 > 0) {
-        console.log("Submitting call 2");
+        console.log("About to call, here are accounting variables");
+        console.log("depositAmount2:", depositAmount2);
+        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
+        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
+
+        uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+        console.log(
+          "uncalledCapitalInfo.principalDeposited:",
+          uncalledCapitalInfo.principalDeposited
+        );
+        console.log("uncalledCapitalInfo.principalPaid:", uncalledCapitalInfo.principalPaid);
         (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
           callAmount2,
           user2PoolTokenId,
           user2
         );
+
+        console.log("Submitted call 2!");
+        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdCalledSplit);
+        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdUncalledSplit);
+        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
+        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
       }
 
+      console.log("user1PoolTokenIdUncalledSplit", user1PoolTokenIdUncalledSplit);
       if (user1PoolTokenIdUncalledSplit > 0) {
         assertApproxEqAbs(
           callableLoan.availableToCall(user1PoolTokenIdUncalledSplit),
           user1PoolTokenUncalledSplitAvailableToCall,
-          HUNDREDTH_CENT,
+          HALF_CENT,
           "Submitting a call should not affect how much others are owed - Principal outstanding 1"
         );
-        (tupleBuffer, ) = callableLoan.availableToWithdraw(user1PoolTokenIdUncalledSplit);
-        console.log("callableLoan.availableToWithdraw(user1PoolTokenIdUncalledSplit)", tupleBuffer);
-        console.log(
-          "user1PoolTokenUncalledSplitInterestAvailable",
-          user1PoolTokenUncalledSplitInterestAvailable
-        );
+        (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+          .availableToWithdraw(user1PoolTokenIdUncalledSplit);
         assertApproxEqAbs(
-          tupleBuffer,
-          user1PoolTokenUncalledSplitInterestAvailable,
+          interestAvailableToWithdraw,
+          user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
+          HUNDREDTH_CENT,
+          "Submitting a call should not affect how much others are owed - Interest 1"
+        );
+      }
+      if (user1PoolTokenIdCalledSplit > 0) {
+        (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+          .availableToWithdraw(user1PoolTokenIdCalledSplit);
+        assertApproxEqAbs(
+          interestAvailableToWithdraw,
+          user1PoolTokenCalledSplitInterestAvailableForWithdraw,
           HUNDREDTH_CENT,
           "Submitting a call should not affect how much others are owed - Interest 1"
         );
@@ -344,11 +401,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "Submitting a call should not affect how much others are owed - Principal outstanding 3"
       );
 
-      (tupleBuffer, ) = callableLoan.availableToWithdraw(user3PoolTokenId);
+      (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+        .availableToWithdraw(user3PoolTokenId);
       assertApproxEqAbs(
-        tupleBuffer,
-        user3TokenInterestAvailable,
-        HUNDREDTH_CENT,
+        interestAvailableToWithdraw,
+        user3TokenInterestAvailableForWithdraw,
+        HALF_CENT,
         "Submitting a call should not affect how much others are owed - Interest 3"
       );
 

@@ -154,19 +154,87 @@ contract CallableLoan is
       "NA"
     );
 
-    _withdrawMax(poolTokenId);
-    uint256 callablePrincipal = cl.proportionalCallablePrincipal({
-      trancheId: tokenInfo.tranche,
-      principalDeposited: tokenInfo.principalAmount
-    });
-    require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
-    cl.submitCall(callAmount);
-    (callRequestedTokenId, remainingTokenId) = _splitForCall(
-      callAmount,
-      poolTokenId,
-      cl.uncalledCapitalTrancheIndex(),
-      cl.activeCallSubmissionTrancheIndex()
+    // Pseudo-withdraw max while also caching the total amount of interest and principal withdrawable.
+    // Total interest & principal withdrawable are useful for calculating how much will be redeemed on
+    // the newly split pool tokens.
+    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = cl
+      .proportionalInterestAndPrincipalAvailable({
+        trancheId: tokenInfo.tranche,
+        principal: tokenInfo.principalAmount,
+        feePercent: _reserveFundsFeePercent()
+      });
+
+    {
+      uint netWithdrawableAmount = totalPrincipalWithdrawable -
+        tokenInfo.principalRedeemed +
+        totalInterestWithdrawable -
+        tokenInfo.interestRedeemed;
+      if (netWithdrawableAmount > 0) {
+        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount);
+      }
+    }
+
+    {
+      uint256 callablePrincipal = cl.proportionalCallablePrincipal({
+        trancheId: tokenInfo.tranche,
+        principalDeposited: tokenInfo.principalAmount
+      });
+      // console.log("Submitting call request:", poolTokenId);
+      // console.log("poolTokenId:", poolTokenId);
+      // console.log("callAmount", callAmount);
+      // console.log("callablePrincipal", callablePrincipal);
+      require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
+    }
+
+    (uint principalDepositedMoved, uint principalPaidMoved, , uint interestMoved) = cl.submitCall(
+      callAmount
     );
+
+    {
+      address owner = poolTokens.ownerOf(poolTokenId);
+      callRequestedTokenId = poolTokens.mint(
+        IPoolTokens.MintParams({
+          principalAmount: principalDepositedMoved,
+          tranche: cl.activeCallSubmissionTrancheIndex()
+        }),
+        owner
+      );
+
+      poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestMoved);
+
+      // TODO: Determine "dust" threshold at which we should just not mint a remaining token.
+      if (tokenInfo.principalAmount - principalDepositedMoved > 0) {
+        remainingTokenId = poolTokens.mint(
+          IPoolTokens.MintParams({
+            principalAmount: tokenInfo.principalAmount - principalDepositedMoved,
+            tranche: cl.uncalledCapitalTrancheIndex()
+          }),
+          owner
+        );
+        // TODO: Remove scaffolding
+        //       Due to integer math, redeemeded amounts can be one more than redeemable amounts after splitting.
+        //       This scaffolding is to verify the error is only ever off by 1.
+        // require(
+        //   principalPaidMoved <= totalPrincipalWithdrawable + 1,
+        //   "Principal withdrawable is less than principal move"
+        // );
+        // require(
+        //   interestMoved <= totalInterestWithdrawable + 1,
+        //   "Interest withdrawable is less than interest moved"
+        // );
+        poolTokens.redeem(
+          remainingTokenId,
+          totalPrincipalWithdrawable.saturatingSub(principalPaidMoved),
+          totalInterestWithdrawable.saturatingSub(interestMoved)
+        );
+      } else {
+        remainingTokenId = 0;
+      }
+    }
+
+    poolTokens.redeem(poolTokenId, tokenInfo.principalAmount - totalPrincipalWithdrawable, 0);
+    poolTokens.burn(poolTokenId);
+
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 
@@ -365,8 +433,10 @@ contract CallableLoan is
     return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
   }
 
+  /// @dev OU: Only the uncalled tranche can call
   function availableToCall(uint256 tokenId) public view returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    require(tokenInfo.tranche == uncalledCapitalTrancheIndex(), "OU");
     return
       _staleCreditLine.proportionalCallablePrincipal({
         trancheId: tokenInfo.tranche,
@@ -386,37 +456,6 @@ contract CallableLoan is
   /*================================================================================
   Internal Write functions
   ================================================================================*/
-  function _splitForCall(
-    uint256 callAmount,
-    uint256 poolTokenId,
-    uint256 uncalledCapitalTrancheIndex,
-    uint256 activeCallSubmissionTrancheIndex
-  ) private returns (uint256 calledTokenId, uint256 remainingTokenId) {
-    IPoolTokens poolToken = config.getPoolTokens();
-    address owner = poolToken.ownerOf(poolTokenId);
-    IPoolTokens.TokenInfo memory tokenInfo = poolToken.getTokenInfo(poolTokenId);
-    calledTokenId = poolToken.mint(
-      IPoolTokens.MintParams({
-        principalAmount: callAmount,
-        tranche: activeCallSubmissionTrancheIndex
-      }),
-      owner
-    );
-    if (tokenInfo.principalAmount - callAmount > 0) {
-      remainingTokenId = poolToken.mint(
-        IPoolTokens.MintParams({
-          principalAmount: tokenInfo.principalAmount - callAmount,
-          tranche: uncalledCapitalTrancheIndex
-        }),
-        owner
-      );
-    } else {
-      remainingTokenId = 0;
-    }
-    poolToken.redeem(poolTokenId, tokenInfo.principalAmount - tokenInfo.principalRedeemed, 0);
-    poolToken.burn(poolTokenId);
-  }
-
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
@@ -441,8 +480,7 @@ contract CallableLoan is
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
     uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
 
-    uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
-    uint256 reserveFundsFee = (reserveFundsFeePercent * totalInterestPayment) / 100;
+    uint256 reserveFundsFee = (_reserveFundsFeePercent() * totalInterestPayment) / 100;
 
     cl.pay(totalPrincipalPayment, totalInterestPayment);
     emit PaymentApplied({
@@ -509,7 +547,6 @@ contract CallableLoan is
     uint amountAfterInterest = amount - interestToRedeem;
     uint principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
-    // if the pool is locked, we need to decrease the deposit rather than the amount redeemed
     {
       if (cl.loanState() == LoanState.InProgress) {
         poolTokens.redeem({
@@ -518,12 +555,12 @@ contract CallableLoan is
           interestRedeemed: interestToRedeem
         });
       } else if (cl.loanState() == LoanState.FundingPeriod) {
+        // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
         cl.withdraw(tokenInfo.tranche, principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
       } else if (cl.loanState() == LoanState.DrawdownPeriod) {
         // Could currently just use a else statement, but this is more explicit and future-proof.
-        // Since it's a revert scenario gas cost should not be consideration.
         revert("IS");
       }
     }
@@ -574,24 +611,39 @@ contract CallableLoan is
   /*================================================================================
   Internal View functions
   ================================================================================*/
+  function _reserveFundsFeePercent() public view returns (uint256) {
+    return uint256(100) / (config.getReserveDenominator());
+  }
+
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint interestAvailable, uint principalAvailable) {
-    uint256 reserveFundsFeePercent = uint256(100) / (config.getReserveDenominator());
     if (tokenInfo.principalAmount == 0) {
       // Bail out early to account for proportion of zero.
       return (0, 0);
     }
 
     (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
-      .proportionalInterestAndPrincipalAvailable(
-        tokenInfo.tranche,
-        tokenInfo.principalAmount,
-        reserveFundsFeePercent
-      );
+      .proportionalInterestAndPrincipalAvailable({
+        trancheId: tokenInfo.tranche,
+        principal: tokenInfo.principalAmount,
+        feePercent: _reserveFundsFeePercent()
+      });
+
+    // TODO: Remove scaffolding
+    //       Due to integer math, redeemeded amounts can be one more than redeemable amounts after splitting.
+    //       This scaffolding is to verify the error is only ever off by 1.
+    // require(
+    //   tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1,
+    //   "Principal withdrawable is less than principal redeemed"
+    // );
+    // require(
+    //   tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1,
+    //   "Interest withdrawable is less than interest redeemed"
+    // );
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
-      totalPrincipalWithdrawable - tokenInfo.principalRedeemed
+      totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
     );
   }
 

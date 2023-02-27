@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-// import {console2 as console} from "forge-std/console2.sol";
+import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
 
 using Math for uint256;
@@ -75,13 +75,8 @@ library WaterfallLogic {
   }
 
   function drawdown(Waterfall storage w, uint principalAmount) internal {
-    // drawdown in reverse order of payment priority
-    for (uint i = w.numTranches() - 1; i > 0; i--) {
-      Tranche storage tranche = w.getTranche(i);
-      uint withdrawAmount = Math.min(tranche.principalPaid(), principalAmount);
-      principalAmount -= withdrawAmount;
-      tranche.drawdown(withdrawAmount);
-    }
+    Tranche storage tranche = w.getTranche(w.numTranches() - 1);
+    tranche.drawdown(principalAmount);
   }
 
   /**
@@ -92,21 +87,21 @@ library WaterfallLogic {
     uint principalOutstanding,
     uint fromTrancheId,
     uint toTrancheId
-  ) internal {
-    (uint principalDeposited, uint principalPaid, uint principalReserved, uint interestPaid) = w
+  )
+    internal
+    returns (uint principalDeposited, uint principalPaid, uint principalReserved, uint interestPaid)
+  {
+    (principalDeposited, principalPaid, principalReserved, interestPaid) = w
       .getTranche(fromTrancheId)
       .take(principalOutstanding);
 
-    return
-      w.getTranche(toTrancheId).addToBalances(
-        principalDeposited,
-        principalPaid,
-        principalReserved,
-        interestPaid
-      );
+    w.getTranche(toTrancheId).addToBalances(
+      principalDeposited,
+      principalPaid,
+      principalReserved,
+      interestPaid
+    );
   }
-
-  // Submit call request to the callable pool - Proportional amount of principal paid is moved
 
   /**
    * @notice Withdraw principal when the tranche is not locked

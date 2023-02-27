@@ -182,7 +182,12 @@ library StaleCallableCreditLineLogic {
     uint principal,
     uint feePercent
   ) internal view returns (uint, uint) {
-    return cl._cl.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
+    return
+      cl._cl.proportionalInterestAndPrincipalAvailable({
+        trancheId: trancheId,
+        principal: principal,
+        feePercent: feePercent
+      });
   }
 
   function totalInterestAccrued(

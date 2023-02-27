@@ -62,6 +62,7 @@ library TrancheLogic {
   ///@notice remove `principalOutstanding` from the Tranche and its corresponding interest.
   ///        Take as much reserved principal as possible.
   ///        Only applicable to the uncalled tranche.
+  ///@dev    IT: Invalid take - principal depositeed must always be larger than principalPaid + principalReserved
   function take(
     Tranche storage t,
     uint principalOutstandingToTake
@@ -74,8 +75,7 @@ library TrancheLogic {
       uint interestTaken
     )
   {
-    require(t._principalDeposited > t._principalPaid, "IT");
-
+    require(principalOutstandingToTake <= t._principalDeposited - t._principalPaid, "TOO_MUCH");
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalPaidTaken =
       (t._principalPaid * principalOutstandingToTake) /
@@ -88,6 +88,7 @@ library TrancheLogic {
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principalDepositedTaken;
     t._principalReserved -= principalReservedTaken;
+    require(t._principalDeposited >= t._principalPaid + t._principalReserved, "IT");
   }
 
   // depositing into the tranche for the first time(uncalled)

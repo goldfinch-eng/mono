@@ -152,7 +152,18 @@ library CallableCreditLineLogic {
   /// @dev CL - In call request lockup period.
   /// @dev LC - In last call request period, cannot submit calls.
 
-  function submitCall(CallableCreditLine storage cl, uint256 amount) internal {
+  function submitCall(
+    CallableCreditLine storage cl,
+    uint256 amount
+  )
+    internal
+    returns (
+      uint principalDepositedMoved,
+      uint principalPaidMoved,
+      uint principalReservedMoved,
+      uint interestMoved
+    )
+  {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.InProgress, "IS");
     uint currentPeriod = cl._paymentSchedule.currentPeriod();
@@ -166,7 +177,7 @@ library CallableCreditLineLogic {
     uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
     require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
 
-    cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
+    return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
 
   /// @dev IS - Invalid loan state - Cannot deposit after first drawdown
