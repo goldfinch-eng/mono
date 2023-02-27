@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {ITranchedPool} from "../../../interfaces/ICreditLine.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 contract MockCreditLine is ICreditLine {
@@ -35,36 +35,123 @@ contract MockCreditLine is ICreditLine {
   uint256 private _totalPrincipalOwed;
   uint256 private _termStartTime;
 
-  function balance() external view override returns (uint256) { return _balance; }
-  function interestOwed() external view override returns (uint256) { return _interestOwed; }
-  function principalOwed() external view override returns (uint256) { return _principalOwed; }
-  function termEndTime() external view override returns (uint256) { return _termEndTime; }
-  function nextDueTime() external view override returns (uint256) { return _nextDueTime; }
-  function interestAccruedAsOf() external view override returns (uint256) { return _interestAccruedAsOf; }
-  function lastFullPaymentTime() external view override returns (uint256) { return _lastFullPaymentTime; }
-  function borrower() external view override returns (address) { return _borrower; }
-  function currentLimit() external view override returns (uint256) { return _limit; }
-  function limit() external view override returns (uint256) { return _limit; }
-  function maxLimit() external view override returns (uint256) { return _interestApr; }
-  function interestApr() external view override returns (uint256) { return _interestApr; }
-  function lateFeeApr() external view override returns (uint256) { return _lateFeeApr; }
-  function isLate() external view override returns (bool) { return _isLate; }
-  function withinPrincipalGracePeriod() external view override returns (bool) { return _withinPrincipalGracePeriod; }
-  function totalInterestAccrued() external view override returns (uint256) { return _totalInterestAccrued; }
-  function totalInterestAccruedAt(uint256) external view override returns (uint256) { return _totalInterestAccruedAt; }
-  function totalInterestPaid() external view override returns (uint256) { return _totalInterestPaid; }
-  function totalInterestOwed() external view override returns (uint256) { return _totalInterestOwed; }
-  function totalInterestOwedAt(uint256) external view override returns (uint256) { return _totalInterestOwedAt; }
-  function interestOwedAt(uint256) external view override returns (uint256) { return _interestOwedAt; }
-  function interestAccrued() external view override returns (uint256) { return _interestAccrued; }
-  function interestAccruedAt(uint256) external view override returns (uint256) { return _interestAccruedAt; }
-  function principalOwedAt(uint256) external view override returns (uint256) { return _principalOwedAt; }
-  function totalPrincipalPaid() external view override returns (uint256) { return _totalPrincipalPaid; }
-  function totalPrincipalOwedAt(uint256) external view override returns (uint256) { return _totalPrincipalOwedAt; }
-  function totalPrincipalOwed() external view override returns (uint256) { return _totalPrincipalOwed; }
-  function termStartTime() external view override returns (uint256) { return _termStartTime; }
+  function balance() external view override returns (uint256) {
+    return _balance;
+  }
+
+  function interestOwed() external view override returns (uint256) {
+    return _interestOwed;
+  }
+
+  function principalOwed() external view override returns (uint256) {
+    return _principalOwed;
+  }
+
+  function termEndTime() external view override returns (uint256) {
+    return _termEndTime;
+  }
+
+  function nextDueTime() external view override returns (uint256) {
+    return _nextDueTime;
+  }
+
+  function interestAccruedAsOf() external view override returns (uint256) {
+    return _interestAccruedAsOf;
+  }
+
+  function lastFullPaymentTime() external view override returns (uint256) {
+    return _lastFullPaymentTime;
+  }
+
+  function borrower() external view override returns (address) {
+    return _borrower;
+  }
+
+  function currentLimit() external view override returns (uint256) {
+    return _limit;
+  }
+
+  function limit() external view override returns (uint256) {
+    return _limit;
+  }
+
+  function maxLimit() external view override returns (uint256) {
+    return _interestApr;
+  }
+
+  function interestApr() external view override returns (uint256) {
+    return _interestApr;
+  }
+
+  function lateFeeApr() external view override returns (uint256) {
+    return _lateFeeApr;
+  }
+
+  function isLate() external view override returns (bool) {
+    return _isLate;
+  }
+
+  function withinPrincipalGracePeriod() external view override returns (bool) {
+    return _withinPrincipalGracePeriod;
+  }
+
+  function totalInterestAccrued() external view override returns (uint256) {
+    return _totalInterestAccrued;
+  }
+
+  function totalInterestAccruedAt(uint256) external view override returns (uint256) {
+    return _totalInterestAccruedAt;
+  }
+
+  function totalInterestPaid() external view override returns (uint256) {
+    return _totalInterestPaid;
+  }
+
+  function totalInterestOwed() external view override returns (uint256) {
+    return _totalInterestOwed;
+  }
+
+  function totalInterestOwedAt(uint256) external view override returns (uint256) {
+    return _totalInterestOwedAt;
+  }
+
+  function interestOwedAt(uint256) external view override returns (uint256) {
+    return _interestOwedAt;
+  }
+
+  function interestAccrued() external view override returns (uint256) {
+    return _interestAccrued;
+  }
+
+  function interestAccruedAt(uint256) external view override returns (uint256) {
+    return _interestAccruedAt;
+  }
+
+  function principalOwedAt(uint256) external view override returns (uint256) {
+    return _principalOwedAt;
+  }
+
+  function totalPrincipalPaid() external view override returns (uint256) {
+    return _totalPrincipalPaid;
+  }
+
+  function totalPrincipalOwedAt(uint256) external view override returns (uint256) {
+    return _totalPrincipalOwedAt;
+  }
+
+  function totalPrincipalOwed() external view override returns (uint256) {
+    return _totalPrincipalOwed;
+  }
+
+  function termStartTime() external view override returns (uint256) {
+    return _termStartTime;
+  }
+
   function setLimit(uint256) external override {}
+
   function setMaxLimit(uint256) external override {}
+
+  //NOTE: Has initializer modifier just to please solhint.json
   function initialize(
     address _config,
     address owner,
@@ -73,12 +160,17 @@ contract MockCreditLine is ICreditLine {
     uint256 _interestApr,
     ISchedule _schedule,
     uint256 _lateFeeApr
-  ) external override {}
-  function pay(uint paymentAmount) external override returns (ITranchedPool.PaymentAllocation memory) {}
+  ) external override initializer {}
+
+  function pay(
+    uint paymentAmount
+  ) external override returns (ITranchedPool.PaymentAllocation memory) {}
+
   function pay(
     uint256 principalPayment,
     uint256 interestPaymen
   ) external override returns (ITranchedPool.PaymentAllocation memory) {}
+
   function drawdown(uint256 amount) external override {}
 
   function setTermEndTime(uint256 __termEndTime) external {
@@ -99,5 +191,9 @@ contract MockCreditLine is ICreditLine {
 
   function setInterestApr(uint256 __interestApr) external {
     _interestApr = __interestApr;
+  }
+
+  modifier initializer() {
+    _;
   }
 }

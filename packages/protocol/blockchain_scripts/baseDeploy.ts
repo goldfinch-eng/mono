@@ -120,14 +120,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const capitalLedger = await getTruffleContract<CapitalLedgerInstance>("CapitalLedger")
   await config.addToGoList(capitalLedger.address)
 
-  const router = await getTruffleContract<RouterInstance>("Router")
-  const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
-  await router.setContract(routingIdOf("BackerRewards"), backerRewards.address)
-  await router.setContract(routingIdOf("Go"), go.contract.address)
-
-  const capitalLedger = await getTruffleContract<CapitalLedgerInstance>("CapitalLedger")
-  await config.addToGoList(capitalLedger.address)
-
   await deployEffects.executeDeferred()
 }
 
