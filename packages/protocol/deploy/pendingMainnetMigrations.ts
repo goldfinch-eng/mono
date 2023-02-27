@@ -1,5 +1,6 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
+import * as migrate313 from "../blockchain_scripts/migrations/v3.1.3/migrate"
 import * as migrate321 from "../blockchain_scripts/migrations/v3.2.1/migrate3_2_1"
 
 /**
@@ -10,6 +11,7 @@ import * as migrate321 from "../blockchain_scripts/migrations/v3.2.1/migrate3_2_
  */
 async function main(hre: HardhatRuntimeEnvironment) {
   console.log("Running pending mainnet migrations...")
+  await migrate313.main()
   await migrate321.main()
   console.log("Ran pending mainnet migrations...")
 }

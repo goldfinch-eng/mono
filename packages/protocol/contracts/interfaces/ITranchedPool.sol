@@ -59,6 +59,12 @@ interface ITranchedPool {
   /// @param trancheId id of tranche. Valid ids are in the range [1, 2*numSlices]
   function getTranche(uint256 trancheId) external view returns (ITranchedPool.TrancheInfo memory);
 
+  /**
+   * @notice Get the array of all UID types that are allowed to interact with this pool.
+   * @return array of UID types
+   *
+   * @dev This only exists on TranchedPools deployed from Nov 2022 onward
+   */
   function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
 
   /// @notice Pay down the credit line. Excess payments are refunded to the caller

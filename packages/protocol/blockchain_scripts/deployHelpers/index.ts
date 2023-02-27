@@ -340,7 +340,16 @@ export async function getTruffleContract<T extends Truffle.ContractInstance = Tr
   }
   const at = opts.at
   const from = opts.from || (await getProtocolOwner())
-  const contract = await artifacts.require(contractName)
+  // There may be two ERC20 artifacts:
+  //
+  // @openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20
+  // openzeppelin-contracts-0-8-x/token/ERC20/ERC20.sol:ERC20
+  //
+  // If the contract is ERC20, specify which should be used
+  const contract =
+    contractName == "ERC20"
+      ? await artifacts.require("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20")
+      : await artifacts.require(contractName)
   contract.defaults({from})
   return contract.at(at) as unknown as T
 }
