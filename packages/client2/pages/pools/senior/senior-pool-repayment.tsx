@@ -35,6 +35,19 @@ export function SeniorPoolRepaymentSection({
 }: SeniorPoolRepaymentSectionProps) {
   const { repayingPools } = seniorPool;
   const allIncomingRepayments = useMemo(() => {
+    const now = new Date();
+    const beginningOfThisMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+    const oneYearFromBeginningOfMonth = new Date(
+      beginningOfThisMonth.getTime() + 3.154e7 * 1000
+    );
     const allIncomingRepayments = repayingPools
       .flatMap((pool) =>
         generateRepaymentSchedule(pool).map((r) => ({
@@ -43,7 +56,12 @@ export function SeniorPoolRepaymentSection({
           borrowerLogo: pool.borrowerLogo,
         }))
       )
-      .filter((repayment) => repayment.estimatedPaymentDate >= Date.now());
+      .filter(
+        (repayment) =>
+          repayment.estimatedPaymentDate >= beginningOfThisMonth.getTime() &&
+          repayment.estimatedPaymentDate <=
+            oneYearFromBeginningOfMonth.getTime()
+      );
     allIncomingRepayments.sort(
       (a, b) => a.estimatedPaymentDate - b.estimatedPaymentDate
     );
