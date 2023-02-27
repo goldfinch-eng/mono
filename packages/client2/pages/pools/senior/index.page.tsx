@@ -16,6 +16,11 @@ import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import {
+  CapitalStats,
+  CapitalStatsPlaceholder,
+  CAPITAL_STATS_SENIOR_POOL_FIELDS,
+} from "./capital-stats";
+import {
   InvestAndWithdrawTabs,
   INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
@@ -32,6 +37,8 @@ import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
+
+  ${CAPITAL_STATS_SENIOR_POOL_FIELDS}
 
   ${INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS}
   ${USER_ELIGIBILITY_FIELDS}
@@ -66,6 +73,7 @@ gql`
       withdrawalCancellationFee
       epochEndsAt @client
       ...SeniorPoolStatusFields
+      ...CapitalStatsFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
       ...InvestAndWithdrawSeniorPoolFields
@@ -204,7 +212,11 @@ export default function SeniorPoolPage() {
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: <div className="h-96" />,
+                content: seniorPool ? (
+                  <CapitalStats seniorPool={seniorPool} />
+                ) : (
+                  <CapitalStatsPlaceholder />
+                ),
               },
               {
                 navTitle: "Highlights",
