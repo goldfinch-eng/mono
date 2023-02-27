@@ -16,7 +16,12 @@ export const CAPITAL_STATS_SENIOR_POOL_FIELDS = gql`
     assets
     totalLoansOutstanding
     defaultRate
-    tranchedPools(orderBy: nextDueTime, orderDirection: desc, first: 1) {
+    nextRepayingPool: tranchedPools(
+      orderBy: nextDueTime
+      orderDirection: asc
+      first: 1
+      where: { nextDueTime_not: 0 }
+    ) {
       id
       nextDueTime
     }
@@ -28,7 +33,7 @@ interface CapitalStatsProps {
 }
 
 export function CapitalStats({ seniorPool }: CapitalStatsProps) {
-  const { assets, totalLoansOutstanding, defaultRate, tranchedPools } =
+  const { assets, totalLoansOutstanding, defaultRate, nextRepayingPool } =
     seniorPool;
   const utilizationRate = FixedNumber.from(totalLoansOutstanding).divUnsafe(
     FixedNumber.from(assets)
@@ -79,9 +84,9 @@ export function CapitalStats({ seniorPool }: CapitalStatsProps) {
         label="Next repayment"
         tooltip="The next expected repayment date for a Tranched Pool that the Senior Pool has invested in."
         value={
-          tranchedPools.length !== 0
+          nextRepayingPool.length !== 0
             ? format(
-                tranchedPools[0].nextDueTime.toNumber() * 1000,
+                nextRepayingPool[0].nextDueTime.toNumber() * 1000,
                 "MMM dd, yyyy"
               )
             : "-"
