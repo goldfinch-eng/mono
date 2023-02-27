@@ -255,7 +255,7 @@ contract AccountantCalculateWritedownForTest is BaseTest {
       TOLERANCE,
       "writedownAmount should be 25% of balance"
     );
-    timestamp = block.timestamp + 2; // 1 second after termEndTerm
+    timestamp = block.timestamp + 3; // 1 second after termEndTime
     (writedownPercent, writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       timestamp,
