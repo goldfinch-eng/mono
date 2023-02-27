@@ -50,8 +50,8 @@ const RepaymentScheduleBarChartTooltip = ({
   label,
 }: TooltipProps<ValueType, NameType>) => {
   if (active && payload) {
-    const interestDataPoint = payload[0];
-    const principalDataPoint = payload[1];
+    const principalDataPoint = payload[0];
+    const interestDataPoint = payload[1];
 
     return (
       <div className="rounded-xl border-sand-300 bg-white p-6 outline-none">

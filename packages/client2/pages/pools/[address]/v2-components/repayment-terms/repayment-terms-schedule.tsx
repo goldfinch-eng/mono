@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 
@@ -28,8 +27,8 @@ interface RepaymentTermsScheduleProps {
 }
 
 export interface RepaymentScheduleData {
-  paymentPeriod: string;
-  estimatedPaymentDate: string;
+  paymentPeriod: number;
+  estimatedPaymentDate: number;
   principal: BigNumber;
   interest: BigNumber;
 }
@@ -73,8 +72,8 @@ const generateRepaymentScheduleData = (
       balance: principal,
     });
     repaymentScheduleData.push({
-      paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(periodEndTimestamp * 1000, "MMM d, Y"),
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: periodEndTimestamp * 1000,
       principal: BigNumber.from(0),
       interest: expectedInterest,
     });
@@ -95,8 +94,8 @@ const generateRepaymentScheduleData = (
       balance: principal,
     });
     repaymentScheduleData.push({
-      paymentPeriod: paymentPeriod.toString(),
-      estimatedPaymentDate: formatDate(termEndTime * 1000, "MMM d, Y"),
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: termEndTime * 1000,
       principal: principal,
       interest: expectedInterest,
     });

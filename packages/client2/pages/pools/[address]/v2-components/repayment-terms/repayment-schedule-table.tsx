@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { format as formatDate } from "date-fns";
 
 import { formatCrypto } from "@/lib/format";
 
@@ -37,7 +38,9 @@ export function RepaymentScheduleTable({
             ({ paymentPeriod, estimatedPaymentDate, interest, principal }) => (
               <tr key={paymentPeriod}>
                 <td className="text-left">{paymentPeriod}</td>
-                <td className="text-left">{estimatedPaymentDate}</td>
+                <td className="text-left">
+                  {formatDate(estimatedPaymentDate, "MMM d, y")}
+                </td>
                 <td className="text-right">
                   {formatCrypto({ amount: principal, token: "USDC" })}
                 </td>
