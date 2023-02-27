@@ -539,12 +539,12 @@ export function gfiToUsdc(
   };
 }
 
-export interface RepaymentScheduleData {
+export type RepaymentSchedule = {
   paymentPeriod: number;
   estimatedPaymentDate: number;
   principal: BigNumber;
   interest: BigNumber;
-}
+}[];
 
 export const REPAYMENT_SCHEDULE_FIELDS = gql`
   fragment RepaymentScheduleFields on Loan {
@@ -559,10 +559,10 @@ export const REPAYMENT_SCHEDULE_FIELDS = gql`
   }
 `;
 
-export function generateRepaymentScheduleData(
+export function generateRepaymentSchedule(
   loan: RepaymentScheduleFieldsFragment
-): RepaymentScheduleData[] {
-  const repaymentScheduleData: RepaymentScheduleData[] = [];
+): RepaymentSchedule {
+  const repaymentSchedule: RepaymentSchedule = [];
   const secondsPerDay = 24 * 60 * 60;
 
   const termStartTime = !loan.termStartTime.isZero()
@@ -597,7 +597,7 @@ export function generateRepaymentScheduleData(
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
       balance: principal,
     });
-    repaymentScheduleData.push({
+    repaymentSchedule.push({
       paymentPeriod: paymentPeriod,
       estimatedPaymentDate: periodEndTimestamp * 1000,
       principal: BigNumber.from(0),
@@ -619,7 +619,7 @@ export function generateRepaymentScheduleData(
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
       balance: principal,
     });
-    repaymentScheduleData.push({
+    repaymentSchedule.push({
       paymentPeriod: paymentPeriod,
       estimatedPaymentDate: termEndTime * 1000,
       principal: principal,
@@ -627,5 +627,5 @@ export function generateRepaymentScheduleData(
     });
   }
 
-  return repaymentScheduleData;
+  return repaymentSchedule;
 }

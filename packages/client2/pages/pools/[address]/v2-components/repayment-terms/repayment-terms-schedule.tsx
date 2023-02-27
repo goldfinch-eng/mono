@@ -1,7 +1,7 @@
 import clsx from "clsx";
 
 import { RepaymentScheduleFieldsFragment } from "@/lib/graphql/generated";
-import { generateRepaymentScheduleData } from "@/lib/pools";
+import { generateRepaymentSchedule } from "@/lib/pools";
 
 import { RepaymentScheduleBarChart } from "./repayment-schedule-bar-chart";
 import { RepaymentScheduleTable } from "./repayment-schedule-table";
@@ -15,16 +15,14 @@ export function RepaymentTermsSchedule({
   loan,
   className,
 }: RepaymentTermsScheduleProps) {
-  const repaymentScheduleData = generateRepaymentScheduleData(loan);
+  const repaymentSchedule = generateRepaymentSchedule(loan);
 
   return (
     <div className={clsx(className, "rounded-xl border border-sand-300")}>
       <div className="p-6">
-        <RepaymentScheduleBarChart
-          repaymentScheduleData={repaymentScheduleData}
-        />
+        <RepaymentScheduleBarChart repaymentSchedule={repaymentSchedule} />
       </div>
-      <RepaymentScheduleTable repaymentScheduleData={repaymentScheduleData} />
+      <RepaymentScheduleTable repaymentSchedule={repaymentSchedule} />
     </div>
   );
 }

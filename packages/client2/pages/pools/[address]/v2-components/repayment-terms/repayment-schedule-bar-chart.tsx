@@ -17,14 +17,14 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
-import { RepaymentScheduleData } from "@/lib/pools";
+import { RepaymentSchedule } from "@/lib/pools";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 
 interface RepaymentScheduleBarChartProps {
   className?: string;
-  repaymentScheduleData: RepaymentScheduleData[];
+  repaymentSchedule: RepaymentSchedule;
 }
 
 const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
@@ -78,18 +78,17 @@ const RepaymentScheduleBarChartTooltip = ({
 
 export function RepaymentScheduleBarChart({
   className,
-  repaymentScheduleData,
+  repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
-  const repaymentScheduleDataFloat = repaymentScheduleData.map((data) => ({
+  const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
     principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
   }));
 
   const maxYValue =
-    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1]
-      .principal +
-    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1].interest;
+    repaymentScheduleFloat[repaymentScheduleFloat.length - 1].principal +
+    repaymentScheduleFloat[repaymentScheduleFloat.length - 1].interest;
 
   const yAxisTicks = [
     0,
@@ -108,7 +107,7 @@ export function RepaymentScheduleBarChart({
   return (
     <ResponsiveContainer width="100%" height={225} className={className}>
       <BarChart
-        data={repaymentScheduleDataFloat}
+        data={repaymentScheduleFloat}
         margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
       >
         <Legend
@@ -121,7 +120,7 @@ export function RepaymentScheduleBarChart({
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
           interval={
-            repaymentScheduleDataFloat.length <=
+            repaymentScheduleFloat.length <=
             MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
               ? 0
               : 1
