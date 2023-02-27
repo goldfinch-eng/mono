@@ -179,16 +179,12 @@ contract CallableLoan is
         trancheId: tokenInfo.tranche,
         principalDeposited: tokenInfo.principalAmount
       });
-      // console.log("Submitting call request:", poolTokenId);
-      // console.log("poolTokenId:", poolTokenId);
-      // console.log("callAmount", callAmount);
-      // console.log("callablePrincipal", callablePrincipal);
       require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
     }
 
-    (uint principalDepositedMoved, uint principalPaidMoved, , uint interestMoved) = cl.submitCall(
-      callAmount
-    );
+    (uint principalDepositedMoved, uint principalPaidMoved, , uint interestRedeemable) = cl
+      .submitCall(callAmount);
+    interestRedeemable = (interestRedeemable * (100 - _reserveFundsFeePercent())) / 100;
 
     {
       address owner = poolTokens.ownerOf(poolTokenId);
@@ -200,7 +196,7 @@ contract CallableLoan is
         owner
       );
 
-      poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestMoved);
+      poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestRedeemable);
 
       // TODO: Determine "dust" threshold at which we should just not mint a remaining token.
       if (tokenInfo.principalAmount - principalDepositedMoved > 0) {
@@ -212,20 +208,20 @@ contract CallableLoan is
           owner
         );
         // TODO: Remove scaffolding
-        //       Due to integer math, redeemeded amounts can be one more than redeemable amounts after splitting.
-        //       This scaffolding is to verify the error is only ever off by 1.
-        // require(
-        //   principalPaidMoved <= totalPrincipalWithdrawable + 1,
-        //   "Principal withdrawable is less than principal move"
-        // );
-        // require(
-        //   interestMoved <= totalInterestWithdrawable + 1,
-        //   "Interest withdrawable is less than interest moved"
-        // );
+        //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
+        //       This scaffolding is to verify the error is within some reasonable margin.
+        require(
+          principalPaidMoved <= totalPrincipalWithdrawable,
+          "Principal withdrawable is less than principal move"
+        );
+        require(
+          interestRedeemable <= totalInterestWithdrawable,
+          "Interest withdrawable is less than interest moved"
+        );
         poolTokens.redeem(
           remainingTokenId,
-          totalPrincipalWithdrawable.saturatingSub(principalPaidMoved),
-          totalInterestWithdrawable.saturatingSub(interestMoved)
+          totalPrincipalWithdrawable - principalPaidMoved,
+          totalInterestWithdrawable - interestRedeemable
         );
       } else {
         remainingTokenId = 0;
@@ -631,16 +627,16 @@ contract CallableLoan is
       });
 
     // TODO: Remove scaffolding
-    //       Due to integer math, redeemeded amounts can be one more than redeemable amounts after splitting.
-    //       This scaffolding is to verify the error is only ever off by 1.
-    // require(
-    //   tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1,
-    //   "Principal withdrawable is less than principal redeemed"
-    // );
-    // require(
-    //   tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1,
-    //   "Interest withdrawable is less than interest redeemed"
-    // );
+    //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
+    //       This scaffolding is to verify the error is within some reasonable margin.
+    require(
+      tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1,
+      "Principal withdrawable is less than principal redeemed"
+    );
+    require(
+      tokenInfo.interestRedeemed <= totalInterestWithdrawable,
+      "Interest withdrawable is less than interest redeemed"
+    );
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
