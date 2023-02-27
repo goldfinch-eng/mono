@@ -14,6 +14,7 @@ import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 
 import {
   InvestAndWithdrawTabs,
@@ -65,6 +66,12 @@ gql`
       sharePrice
       withdrawalCancellationFee
       epochEndsAt @client
+      name @client
+      category @client
+      icon @client
+      tranchedPools {
+        id
+      }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
@@ -218,8 +225,8 @@ export default function SeniorPoolPage() {
               },
               {
                 navTitle: "Portfolio",
-                title: "Portfolio",
-                content: <div className="h-96" />,
+                title: "Portfolio details",
+                content: <PortfolioDetails seniorPool={seniorPool} />,
               },
               {
                 navTitle: "Risk",
