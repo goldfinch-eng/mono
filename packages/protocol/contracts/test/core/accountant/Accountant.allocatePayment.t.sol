@@ -16,6 +16,36 @@ contract AccountantAllocatePaymentTest is Test, InvariantTest {
     targetSender(address(0xDEADBEEF));
   }
 
+  function testRegression() public {
+    /*
+    This scenario should trigger an "AI" revert because
+      interestAccrued > interestAccrued payment
+      remainingPrincipalPayment > 0
+      balance - owedPrincipalPayment > 0.
+    But there was a bug in the "AI" revert condition where the owedInterestPayment was
+    subtracted from the balance instead of the owedPrincipalPayment:
+      if (
+        accruedInterestPayment < params.interestAccrued &&
+        remainingPrincipalPayment > 0 &&
+        params.balance.sub(owedInterestPayment) > 0
+      ) {
+        revert("AI");
+      }
+    This test catches that bug. The buggy code WILL NOT revert for the given inputs
+     */
+    vm.expectRevert(bytes("AI"));
+    Accountant.allocatePayment(
+      Accountant.AllocatePaymentParams({
+        principalPayment: 6,
+        interestPayment: 15,
+        balance: 10,
+        interestOwed: 10,
+        interestAccrued: 6,
+        principalOwed: 5
+      })
+    );
+  }
+
   // TODO: reversion tests
 
   function invariant_owedInterestIsPaidFirst() public {

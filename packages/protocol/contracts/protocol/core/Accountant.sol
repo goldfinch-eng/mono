@@ -189,6 +189,7 @@ library Accountant {
     ) {
       revert("AI");
     }
+
     uint balanceRemaining = params.balance.sub(owedPrincipalPayment);
     uint additionalBalancePayment = Math.min(balanceRemaining, remainingPrincipalPayment);
     remainingPrincipalPayment = remainingPrincipalPayment.sub(additionalBalancePayment);
