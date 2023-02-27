@@ -67,31 +67,60 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     submitCall(callableLoan, callAmount, token, depositor);
   }
 
-  // function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
-  //   address user,
-  //   uint256 depositAmount,
-  //   uint256 drawdownAmount,
-  //   uint256 callAmount,
-  //   uint256 secondsElapsed
-  // ) public {}
+  function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 secondsElapsed
+  ) public {}
 
-  // function testDoesNotLetYouSubmitCallInLastTranche(
-  //   address user,
-  //   uint256 depositAmount,
-  //   uint256 drawdownAmount,
-  //   uint256 callAmount,
-  //   uint256 secondsElapsed
-  // ) public {
-  //   secondsElapsed = bound(secondsElapsed, 0, DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS);
-  //   depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-  //   (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
-  //   vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
-  //   uid._mintForTest(user, 1, 1, "");
-  //   uint256 token = deposit(callableLoan, 3, depositAmount, user);
-  //   uint256 drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
-  //   drawdown(callableLoan, drawdownAmount);
-  //   vm.warp(block.timestamp + secondsElapsed);
-  //   vm.expectRevert(bytes("IS"));
-  //   submitCall(callableLoan, depositAmount - drawdownAmount, token, user);
-  // }
+  function testDoesNotLetYouSubmitCallDuringLockupPeriods(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 secondsElapsedAfterLockup,
+    uint256 secondsElapsedAfterLastLockup
+  ) public {
+    secondsElapsedAfterLastLockup = bound(secondsElapsedAfterLastLockup, 0, 3650 days);
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
+    drawdownAmount = bound(drawdownAmount, 1, depositAmount);
+    callAmount = bound(callAmount, 1, drawdownAmount);
+    drawdown(callableLoan, drawdownAmount);
+
+    // Lockup period of call request period 1
+    vm.warp(callableLoan.nextDueTime());
+    secondsElapsedAfterLockup = bound(
+      secondsElapsedAfterLockup,
+      block.timestamp,
+      callableLoan.nextPrincipalDueTime() - 1
+    );
+    vm.warp(secondsElapsedAfterLockup);
+    vm.expectRevert(bytes("CL"));
+    submitCall(callableLoan, callAmount, token, user);
+
+    // Lockup period of call request period 2
+    vm.warp(callableLoan.nextPrincipalDueTime());
+    vm.warp(callableLoan.nextDueTime());
+    secondsElapsedAfterLockup = bound(
+      secondsElapsedAfterLockup,
+      block.timestamp,
+      callableLoan.nextPrincipalDueTime() - 1
+    );
+    vm.warp(secondsElapsedAfterLockup);
+    vm.expectRevert(bytes("CL"));
+    submitCall(callableLoan, callAmount, token, user);
+
+    // Lockup period of call request period 3
+    vm.warp(callableLoan.nextPrincipalDueTime());
+    vm.warp(callableLoan.nextDueTime());
+    vm.warp(callableLoan.nextPrincipalDueTime() + secondsElapsedAfterLastLockup);
+    vm.expectRevert(bytes("LC"));
+    submitCall(callableLoan, callAmount, token, user);
+  }
 }

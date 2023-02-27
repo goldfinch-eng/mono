@@ -168,14 +168,13 @@ library CallableCreditLineLogic {
     require(loanState == LoanState.InProgress, "IS");
     uint currentPeriod = cl._paymentSchedule.currentPeriod();
     uint numPeriodsPerPrincipalPeriod = cl._paymentSchedule.periodsPerPrincipalPeriod();
+    uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
+    require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
     require(
       currentPeriod % numPeriodsPerPrincipalPeriod <
         numPeriodsPerPrincipalPeriod - cl._numLockupPeriods,
       "CL"
     );
-
-    uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
-    require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
 
     return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
