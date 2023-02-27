@@ -29,7 +29,7 @@ import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
 import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 
-// import {console2 as console} from "forge-std/console2.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 /// @title CallableLoan
 /// @notice A loan that allows the lenders to call back capital from the borrower.
@@ -211,6 +211,10 @@ contract CallableLoan is
           }),
           owner
         );
+        console.log("totalPrincipalWithdrawable", totalPrincipalWithdrawable);
+        console.log("totalInterestWithdrawable", totalInterestWithdrawable);
+        console.log("principalPaidMoved", principalPaidMoved);
+        console.log("interestMoved", interestMoved);
         // TODO: Remove scaffolding
         //       Due to integer math, redeemeded amounts can be one more than redeemable amounts after splitting.
         //       This scaffolding is to verify the error is only ever off by 1.

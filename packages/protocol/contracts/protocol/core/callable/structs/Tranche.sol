@@ -3,6 +3,7 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 using TrancheLogic for Tranche global;
 
@@ -76,12 +77,16 @@ library TrancheLogic {
     )
   {
     require(principalOutstandingToTake <= t._principalDeposited - t._principalPaid, "TOO_MUCH");
+    console.log("Taking from tranche, principalOutstandingToTake: ", principalOutstandingToTake);
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalPaidTaken =
       (t._principalPaid * principalOutstandingToTake) /
       (t._principalDeposited - t._principalPaid);
+    console.log("Taking from tranche, principalPaidTaken: ", principalPaidTaken);
 
     principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
+    console.log("Taking from tranche, principalDepositedTaken: ", principalDepositedTaken);
+
     interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
 
     t._principalPaid -= principalPaidTaken;
@@ -185,6 +190,11 @@ library TrancheLogic {
     uint256 principalAmount,
     uint feePercent
   ) internal view returns (uint) {
+    console.log("proportionalInterestWithdrawable");
+    console.log("t.interestPaid()", t.interestPaid());
+    console.log("principalAmount", principalAmount);
+    console.log("percentLessFee(feePercent))", percentLessFee(feePercent));
+    console.log("t.principalDeposited()", t.principalDeposited());
     return
       (t.interestPaid() * principalAmount * percentLessFee(feePercent)) /
       (t.principalDeposited() * 100);

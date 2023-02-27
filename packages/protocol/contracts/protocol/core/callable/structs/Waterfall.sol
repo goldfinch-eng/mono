@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import {console2 as console} from "forge-std/console2.sol";
+// import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
 
 using Math for uint256;
