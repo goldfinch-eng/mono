@@ -5,6 +5,15 @@ import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
 
 interface ICallableLoan is ILoan {
+  /// @param principalDeposited The amount of principal deposited towards this call request period.
+  /// @param principalPaid The amount of principal which has already been paid back towards this call request period.
+  ///                      There are 3 ways principal paid can enter a CallRequestPeriod.
+  ///                      1. Converted from principalReserved after a call request period becomes due.
+  ///                      2. Moved from uncalled tranche as the result of a call request.
+  ///                      3. Paid directly when a CallRequestPeriod is past due and has a remaining balance.
+  /// @param principalReserved The amount of principal reserved for this call request period.
+  ///                          Payments to a not-yet-due CallRequestPeriod are applied to principalReserved.
+  /// @param interestPaid The amount of interest paid towards this call request period.
   struct CallRequestPeriod {
     uint256 principalDeposited;
     uint256 principalPaid;
@@ -12,6 +21,18 @@ interface ICallableLoan is ILoan {
     uint256 interestPaid;
   }
 
+  /// @param principalDeposited The amount of uncalled, deposited principal.
+  /// @param principalPaid The amount of principal which has already been paid back.
+  ///                      There are two ways uncalled principal can be paid.
+  ///                      1. Remainder after drawdowns.
+  ///                      2. Conversion from principalReserved after a call request period becomes due.
+  ///                         All call requested principal outstanding must already be paid
+  ///                         (or have principal reserved) before uncalled principal can be paid.
+  ///                      3. Paid directly after term end time.
+  /// @param principalReserved The amount of principal reserved for uncalled tranche.
+  ///                          principalReserved is greedily moved to call request periods (as much as can fill)
+  ///                          when a call request is submitted.
+  /// @param interestPaid The amount of interest paid towards uncalled capital.
   struct UncalledCapitalInfo {
     uint256 principalDeposited;
     uint256 principalPaid;
@@ -19,7 +40,6 @@ interface ICallableLoan is ILoan {
     uint256 interestPaid;
   }
 
-  // TODO: Update with final `initialize` interface once CallableLoan removes ITranchedPool conformance
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
   ///   contract creation to avoid initialization front-running
   /// @param _config address of GoldfinchConfig
