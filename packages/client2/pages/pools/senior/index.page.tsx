@@ -31,6 +31,10 @@ import {
   SeniorPoolLoanSummary,
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
 } from "./senior-pool-loan-summary";
+import {
+  SeniorPoolRepaymentSection,
+  SENIOR_POOL_REPAYMENTS_FIELDS,
+} from "./senior-pool-repayment";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
@@ -48,6 +52,8 @@ gql`
   ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
 
   ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
+
+  ${SENIOR_POOL_REPAYMENTS_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -77,6 +83,7 @@ gql`
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
       ...InvestAndWithdrawSeniorPoolFields
+      ...SeniorPoolRepaymentFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -226,7 +233,9 @@ export default function SeniorPoolPage() {
               {
                 navTitle: "Repayment",
                 title: "Repayments",
-                content: <div className="h-96" />,
+                content: seniorPool ? (
+                  <SeniorPoolRepaymentSection seniorPool={seniorPool} />
+                ) : null,
               },
               {
                 navTitle: "Portfolio",
