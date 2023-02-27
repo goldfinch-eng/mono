@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
+import { GetStaticProps, InferGetStaticPropsType } from "next";
 import NextLink from "next/link";
 
 import {
@@ -11,10 +12,18 @@ import {
   ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
-import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
+import { apolloClient } from "@/lib/graphql/apollo";
+import {
+  useSeniorPoolPageQuery,
+  SeniorPoolPageCmsQuery,
+} from "@/lib/graphql/generated";
 import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
-import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
+import {
+  PortfolioDetails,
+  SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS,
+  SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS,
+} from "@/pages/pools/senior/portfolio-details";
 
 import {
   InvestAndWithdrawTabs,
@@ -22,7 +31,7 @@ import {
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
   SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
 } from "./invest-and-withdraw/invest-and-withdraw-tabs";
-import { SeniorPoolHighlights } from "./senior-pool-highlights";
+// import { SeniorPoolHighlights } from "./senior-pool-highlights";
 import {
   SeniorPoolLoanSummary,
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
@@ -42,6 +51,8 @@ gql`
   ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
 
   ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
+
+  ${SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -66,12 +77,7 @@ gql`
       sharePrice
       withdrawalCancellationFee
       epochEndsAt @client
-      name @client
-      category @client
-      icon @client
-      tranchedPools {
-        id
-      }
+      ...SeniorPoolPortfolioDetailsFields
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
@@ -92,7 +98,20 @@ gql`
   }
 `;
 
-export default function SeniorPoolPage() {
+const seniorPoolCmsQuery = gql`
+  ${SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS}
+  query SeniorPoolPageCMS @api(name: cms) {
+    Deals(limit: 100, where: { hidden: { not_equals: true } }) {
+      docs {
+        ...SeniorPoolPortfolioPoolsDealsFields
+      }
+    }
+  }
+`;
+
+export default function SeniorPoolPage({
+  dealMetadata,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const { account } = useWallet();
   const { data, error } = useSeniorPoolPageQuery({
     variables: {
@@ -216,7 +235,8 @@ export default function SeniorPoolPage() {
               {
                 navTitle: "Highlights",
                 title: "Highlights",
-                content: <SeniorPoolHighlights />,
+                // content: <SeniorPoolHighlights />,
+                content: <div className="h-96" />,
               },
               {
                 navTitle: "Repayment",
@@ -226,7 +246,12 @@ export default function SeniorPoolPage() {
               {
                 navTitle: "Portfolio",
                 title: "Portfolio details",
-                content: <PortfolioDetails seniorPool={seniorPool} />,
+                content: (
+                  <PortfolioDetails
+                    seniorPool={seniorPool}
+                    dealMetadata={dealMetadata}
+                  />
+                ),
               },
               {
                 navTitle: "Risk",
@@ -339,3 +364,33 @@ export default function SeniorPoolPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps = async () => {
+  const res = await apolloClient.query<SeniorPoolPageCmsQuery>({
+    query: seniorPoolCmsQuery,
+    fetchPolicy: "network-only",
+  });
+
+  const deals = res.data.Deals?.docs;
+  if (!deals) {
+    throw new Error("No metadata found for any deals");
+  }
+
+  const dealMetadata: Record<
+    string,
+    NonNullable<
+      NonNullable<NonNullable<SeniorPoolPageCmsQuery["Deals"]>["docs"]>[number]
+    >
+  > = {};
+  deals.forEach((d) => {
+    if (d && d.id) {
+      dealMetadata[d.id] = d;
+    }
+  });
+
+  return {
+    props: {
+      dealMetadata,
+    },
+  };
+};

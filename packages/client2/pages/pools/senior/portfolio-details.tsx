@@ -1,9 +1,12 @@
 import { gql } from "graphql-request";
 import Image from "next/future/image";
 
-import { Button, Stat, StatGrid } from "@/components/design-system";
+import { Button, Stat, StatGrid, Link } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { SeniorPoolPortfolioDetailsFieldsFragment } from "@/lib/graphql/generated";
+import {
+  SeniorPoolPortfolioDetailsFieldsFragment,
+  SeniorPoolPortfolioPoolsDealsFieldsFragment,
+} from "@/lib/graphql/generated";
 import { PortfolioCurrentDistribution } from "@/pages/pools/senior/portfolio-current-distribution";
 
 export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
@@ -13,18 +16,56 @@ export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
     icon @client
     defaultRate
     totalLoansOutstanding
-    tranchedPools {
+    tranchedPools(
+      orderBy: nextDueTime
+      orderDirection: desc
+      # Active pools with contributions to SP
+      where: {
+        balance_gt: 0
+        termEndTime_gt: 0
+        estimatedLeverageRatio_not: null
+      }
+    ) {
       id
+      balance
+      termEndTime
+      isLate @client
+      isInDefault @client
+      seniorTranches {
+        id
+        principalDeposited
+        principalSharePrice
+      }
+    }
+  }
+`;
+
+export const SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS = gql`
+  fragment SeniorPoolPortfolioPoolsDealsFields on Deal {
+    id
+    name
+    category
+    dealType
+    borrower {
+      id
+      name
+      logo {
+        url
+      }
     }
   }
 `;
 
 interface PortfolioDetailsProps {
   seniorPool?: SeniorPoolPortfolioDetailsFieldsFragment;
+  dealMetadata?: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>;
 }
 
-export function PortfolioDetails({ seniorPool }: PortfolioDetailsProps) {
-  if (!seniorPool) {
+export function PortfolioDetails({
+  seniorPool,
+  dealMetadata,
+}: PortfolioDetailsProps) {
+  if (!seniorPool || !dealMetadata) {
     return null;
   }
 
@@ -65,15 +106,12 @@ export function PortfolioDetails({ seniorPool }: PortfolioDetailsProps) {
           protocol. Capital is automatically allocated from The Goldfinch Senior
           Pool across the senior tranches (second-loss) of tranched Goldfinch
           direct-lending deals according to the{" "}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            // TODO: Zadra get real link
-            href={"https://google.ca"}
-            className="underline"
+          <Link
+            openInNewTab
+            href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/leveragemodel"
           >
             Leverage Model
-          </a>
+          </Link>
           .
         </div>
         <div className="flex">
@@ -118,7 +156,7 @@ export function PortfolioDetails({ seniorPool }: PortfolioDetailsProps) {
           </Button>
         </div>
       </div>
-      <StatGrid className="mb-6" bgColor="mustard-50">
+      <StatGrid className="mb-6" bgColor="mustard-50" borderColor="sand-300">
         <Stat
           label="No. of portfolio loans"
           value={seniorPool.tranchedPools.length}
@@ -139,7 +177,10 @@ export function PortfolioDetails({ seniorPool }: PortfolioDetailsProps) {
           tooltip="The total value of Senior Pool capital currently deployed in active Borrower Pools across the protocol."
         />
       </StatGrid>
-      <PortfolioCurrentDistribution seniorPool={seniorPool} />
+      <PortfolioCurrentDistribution
+        seniorPool={seniorPool}
+        dealMetaData={dealMetadata}
+      />
     </>
   );
 }
