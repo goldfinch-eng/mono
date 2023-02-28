@@ -143,6 +143,14 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "dueDiligenceContact",
+      type: "text",
+      admin: {
+        description:
+          "This should be a URL linking to the direct chat with the borrower for due diligence.",
+      },
+    },
+    {
       name: "creditMemos",
       type: "array",
       minRows: 0,

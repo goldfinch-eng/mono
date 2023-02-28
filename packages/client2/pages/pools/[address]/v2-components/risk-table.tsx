@@ -22,6 +22,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
     dealType
     agreement
     dataroom
+    dueDiligenceContact
     onChainCapitalPriority
   }
 `;
@@ -186,8 +187,15 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
                   <Link href={deal.dataroom} openInNewTab>
                     data room
                   </Link>{" "}
-                  or by contacting the borrower directly using a KYC-gated
-                  Discord channel
+                  or by contacting the borrower{" "}
+                  {deal.dueDiligenceContact ? (
+                    <Link openInNewTab href={deal.dueDiligenceContact}>
+                      directly
+                    </Link>
+                  ) : (
+                    "directly"
+                  )}
+                  .
                 </div>
               }
             />
