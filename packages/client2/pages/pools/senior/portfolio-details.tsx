@@ -17,25 +17,21 @@ export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
     defaultRate
     totalLoansOutstanding
     tranchedPools(
-      orderBy: nextDueTime
+      orderBy: actualSeniorPoolInvestment
       orderDirection: desc
       # Active pools with contributions to SP
       where: {
         balance_gt: 0
         termEndTime_gt: 0
-        estimatedLeverageRatio_not: null
+        actualSeniorPoolInvestment_gt: 0
       }
     ) {
       id
       balance
       termEndTime
+      actualSeniorPoolInvestment
       isLate @client
       isInDefault @client
-      seniorTranches {
-        id
-        principalDeposited
-        principalSharePrice
-      }
     }
   }
 `;
@@ -179,7 +175,7 @@ export function PortfolioDetails({
       </StatGrid>
       <PortfolioCurrentDistribution
         seniorPool={seniorPool}
-        dealMetaData={dealMetadata}
+        dealMetadata={dealMetadata}
       />
     </>
   );
