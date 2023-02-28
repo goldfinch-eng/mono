@@ -94,27 +94,19 @@ export function SeniorPoolRepaymentSection({
     const buckets = allIncomingRepayments.reduce((buckets, current) => {
       const date = new Date(current.estimatedPaymentDate);
       const key = `${date.getMonth()}-${date.getFullYear()}`;
-      if (buckets[key]) {
-        buckets[key] = {
-          period: buckets[key].period,
-          amount:
-            buckets[key].amount +
-            cryptoToFloat({
-              token: "USDC",
-              amount: current.interest.add(current.principal),
-            }),
-          timestamp: buckets[key].timestamp,
-        };
-      } else {
+      if (!buckets[key]) {
         buckets[key] = {
           period: formatDate(date, "MMM yy"),
-          amount: cryptoToFloat({
-            token: "USDC",
-            amount: current.interest.add(current.principal),
-          }),
           timestamp: date.getTime(),
+          amount: 0,
         };
       }
+      buckets[key].amount =
+        buckets[key].amount +
+        cryptoToFloat({
+          token: "USDC",
+          amount: current.interest.add(current.principal),
+        });
       return buckets;
     }, {} as Record<string, { period: string; amount: number; timestamp: number }>);
     return Object.values(buckets);
