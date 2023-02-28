@@ -91,6 +91,7 @@ export function SeniorPoolRepaymentSection({
   }, [repayingPools, perspective]);
 
   const chartData = useMemo(() => {
+    const now = new Date();
     const buckets = allIncomingRepayments.reduce((buckets, current) => {
       const date = new Date(current.estimatedPaymentDate);
       const key = `${date.getMonth()}-${date.getFullYear()}`;
@@ -99,16 +100,27 @@ export function SeniorPoolRepaymentSection({
           period: formatDate(date, "MMM yy"),
           timestamp: date.getTime(),
           amount: 0,
+          futureAmount: 0,
         };
       }
-      buckets[key].amount =
-        buckets[key].amount +
-        cryptoToFloat({
-          token: "USDC",
-          amount: current.interest.add(current.principal),
-        });
+      if (current.estimatedPaymentDate <= now.getTime()) {
+        buckets[key].amount =
+          buckets[key].amount +
+          cryptoToFloat({
+            token: "USDC",
+            amount: current.interest.add(current.principal),
+          });
+      } else {
+        buckets[key].futureAmount =
+          buckets[key].futureAmount +
+          cryptoToFloat({
+            token: "USDC",
+            amount: current.interest.add(current.principal),
+          });
+      }
+
       return buckets;
-    }, {} as Record<string, { period: string; amount: number; timestamp: number }>);
+    }, {} as Record<string, { period: string; amount: number; futureAmount: number; timestamp: number }>);
     return Object.values(buckets);
   }, [allIncomingRepayments]);
 
@@ -147,7 +159,13 @@ export function SeniorPoolRepaymentSection({
           <BarChart data={chartData} margin={{ top: 20 }}>
             <CartesianGrid vertical={false} />
             <Tooltip content={<CustomChartTooltip />} />
-            <Bar dataKey="amount" fill="#65C397" />
+            <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
+            <Bar
+              dataKey="futureAmount"
+              fill="rgba(178, 225, 203, 0.35)"
+              stroke="#65C397"
+              stackId="a"
+            />
             <XAxis
               dataKey="period"
               tick={{ fontSize: "8px" }}
@@ -224,13 +242,41 @@ function CustomChartTooltip({
   payload,
 }: TooltipProps<ValueType, NameType>) {
   if (active && payload) {
+    const pastDataPoint = payload[0];
+    const futureDataPoint = payload[1];
     return (
       <div className="rounded-lg bg-white p-2 text-xs shadow-lg outline-none">
         <div className="mb-1 font-medium">
-          {formatDate(payload[0].payload.timestamp, "MMMM yyyy")}
+          {formatDate(pastDataPoint.payload.timestamp, "MMMM yyyy")}
         </div>
-        <div>
-          {formatFiat({ amount: payload[0].payload.amount, symbol: "USD" })}
+        <div className="mb-1 flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: pastDataPoint.color }}
+          />
+          <div>
+            Expected past repayment:{" "}
+            {formatFiat({
+              amount: pastDataPoint.payload.amount,
+              symbol: "USD",
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{
+              backgroundColor: futureDataPoint.color,
+              border: `1px solid ${pastDataPoint.color}`,
+            }}
+          />
+          <div>
+            Expected future repayment:{" "}
+            {formatFiat({
+              amount: futureDataPoint.payload.futureAmount,
+              symbol: "USD",
+            })}
+          </div>
         </div>
       </div>
     );
