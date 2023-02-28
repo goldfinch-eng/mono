@@ -148,7 +148,6 @@ export function RepaymentScheduleBarChart({
           width={40}
         />
         <CartesianGrid vertical={false} x={0} width={650} />
-        {/* TODO: Waiting on official Tooltip UI design */}
         <Tooltip
           content={RepaymentScheduleBarChartTooltip}
           offset={15}
