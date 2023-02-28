@@ -56,6 +56,26 @@ interface PortfolioCurrentDistributionProps {
   dealMetadata: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>;
 }
 
+enum DistributionGroupByValue {
+  BY_DEAL,
+  BY_BORROWER,
+}
+
+const GROUP_BY_OPTIONS = [
+  { value: DistributionGroupByValue.BY_DEAL, label: "by Deal" },
+  { value: DistributionGroupByValue.BY_BORROWER, label: "by Borrower" },
+];
+
+interface PoolTableData {
+  description?: string;
+  icon?: string | null;
+  portfolioShare: number;
+  capitalOwed: BigNumber;
+  termEndTime?: BigNumber;
+  poolRepaymentStatus?: LoanRepaymentStatus;
+}
+[];
+
 function PoolStatus({
   poolRepaymentStatus,
 }: {
@@ -85,26 +105,6 @@ function PoolStatus({
   }
 }
 
-enum DISTRIBUTION_GROUP_BY_CRITERIA {
-  BY_DEAL,
-  BY_BORROWER,
-}
-
-const options = [
-  { value: DISTRIBUTION_GROUP_BY_CRITERIA.BY_DEAL, label: "by Deal" },
-  { value: DISTRIBUTION_GROUP_BY_CRITERIA.BY_BORROWER, label: "by Borrower" },
-];
-
-interface PoolTableData {
-  dealName?: string;
-  icon?: string | null;
-  portfolioShare: number;
-  capitalOwed: BigNumber;
-  termEndTime?: BigNumber;
-  poolRepaymentStatus?: LoanRepaymentStatus;
-}
-[];
-
 const getTableDataByDeal = (
   dealMetadata: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>,
   seniorPool: SeniorPoolPortfolioDistributionFieldsFragment,
@@ -126,7 +126,7 @@ const getTableDataByDeal = (
     );
 
     poolTableData.push({
-      dealName: dealDetails.name,
+      description: dealDetails.name,
       icon: dealDetails.borrower.logo?.url,
       portfolioShare,
       capitalOwed: actualSeniorPoolInvestment,
@@ -155,7 +155,7 @@ const getTableDataByBorrower = (
     if (borrowerId) {
       if (!tableDataByBorrowerId[borrowerId]) {
         tableDataByBorrowerId[borrowerId] = {
-          dealName: deal.borrower.name,
+          description: deal.borrower.name,
           icon: deal.borrower.logo?.url,
           portfolioShare: computePercentage(
             actualSeniorPoolInvestment,
@@ -190,7 +190,7 @@ export function PortfolioCurrentDistribution({
   dealMetadata,
 }: PortfolioCurrentDistributionProps) {
   const [distributionGroupByOption, setDistributionGroupByOption] = useState(
-    options[0]
+    GROUP_BY_OPTIONS[0]
   );
 
   const totalSeniorPoolFundsCurrentlyInvested =
@@ -201,7 +201,7 @@ export function PortfolioCurrentDistribution({
     );
 
   const tableData =
-    distributionGroupByOption.value === DISTRIBUTION_GROUP_BY_CRITERIA.BY_DEAL
+    distributionGroupByOption.value === DistributionGroupByValue.BY_DEAL
       ? getTableDataByDeal(
           dealMetadata,
           seniorPool,
@@ -218,7 +218,7 @@ export function PortfolioCurrentDistribution({
       <div className="flex justify-between p-6">
         <div className="text-sm">Current distribution</div>
         <DropdownMenu
-          options={options}
+          options={GROUP_BY_OPTIONS}
           selectedOption={distributionGroupByOption}
           onSelect={(option) => setDistributionGroupByOption(option)}
         />
@@ -247,7 +247,7 @@ export function PortfolioCurrentDistribution({
         <tbody className="divide-y divide-sand-300">
           {tableData?.map(
             ({
-              dealName,
+              description,
               icon,
               portfolioShare,
               capitalOwed,
@@ -255,20 +255,20 @@ export function PortfolioCurrentDistribution({
               poolRepaymentStatus,
             }) => {
               return (
-                <tr key={dealName} className="h-[2.9rem]">
+                <tr key={description} className="h-[2.9rem]">
                   <td className="w-[30%] max-w-0 !pr-0 text-left">
                     <div className="flex items-center">
                       <div className="relative mr-1.5 h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {icon ? (
                           <Image
                             src={icon}
-                            alt={`${dealName}`}
+                            alt={`${description}`}
                             className="object-cover"
                             fill
                           />
                         ) : null}
                       </div>
-                      <div className="truncate">{dealName}</div>
+                      <div className="truncate">{description}</div>
                     </div>
                   </td>
                   <td className="text-right">
