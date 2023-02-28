@@ -136,7 +136,7 @@ export function PortfolioDetails({
         <Stat
           label="No. of portfolio loans"
           value={seniorPool.poolsOrderedBySpInvestment.length}
-          // TODO: Zadra get tooltip content
+          // TODO: No. of portfolio loans tooltip
           tooltip="TODO: No. of portfolio loans"
         />
         <Stat

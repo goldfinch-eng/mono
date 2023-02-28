@@ -274,6 +274,7 @@ export function PortfolioCurrentDistribution({
                       token: "USDC",
                     })}
                   </td>
+                  {/* TODO: double check with Chico "-" is cool for group by views */}
                   <td className="text-right">
                     {termEndTime
                       ? formatDate(
@@ -282,6 +283,7 @@ export function PortfolioCurrentDistribution({
                         )
                       : "-"}
                   </td>
+                  {/* TODO: double check with Chico "-" is cool for group by views */}
                   <td className="text-right">
                     {poolRepaymentStatus ? (
                       <PoolStatus poolRepaymentStatus={poolRepaymentStatus} />
