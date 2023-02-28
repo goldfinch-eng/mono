@@ -228,7 +228,10 @@ export function PortfolioCurrentDistribution({
         <thead>
           <tr className="border-b border-sand-300 bg-mustard-100">
             <th scope="col" className="w-[30%] text-left">
-              Deal name
+              {distributionGroupByOption.value ===
+              DistributionGroupByValue.BY_DEAL
+                ? "Deal name"
+                : "Borrower name"}
             </th>
             <th scope="col" className="w-[17.5%] text-right">
               Portfolio share
