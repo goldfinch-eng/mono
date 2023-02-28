@@ -1,29 +1,15 @@
 import { gql } from "@apollo/client";
 import { ReactNode } from "react";
 
-import { Button, Icon, Link } from "@/components/design-system";
+import { Icon, Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
   RiskTableDealFieldsFragment,
   RiskTableLoanFieldsFragment,
-  DocumentFileFieldsFragment,
 } from "@/lib/graphql/generated";
 
-import PdfSvg from "./pdf.svg";
-import ZipSvg from "./zip.svg";
-
-const DOCUMENT_FILE_FIELDS = gql`
-  fragment DocumentFileFields on Media {
-    url
-    filename
-    fileNameOverride
-    mimeType
-  }
-`;
-
 export const RISK_TABLE_DEAL_FIELDS = gql`
-  ${DOCUMENT_FILE_FIELDS}
   fragment RiskTableDealFields on Deal {
     securitiesAndRecourse {
       value
@@ -32,14 +18,10 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
       description
       recourse
       recourseDescription
-      covenants
     }
     dealType
     agreement
     dataroom
-    transactionStructure {
-      ...DocumentFileFields
-    }
   }
 `;
 
@@ -178,21 +160,6 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               }
             />
           ) : null}
-          {deal.transactionStructure ? (
-            <RiskTableRow
-              heading="Transaction structure"
-              value={<DocumentFile {...deal.transactionStructure} />}
-            />
-          ) : null}
-          {deal.securitiesAndRecourse &&
-          deal.securitiesAndRecourse.covenants ? (
-            <RiskTableRow
-              heading="Covenants"
-              value={
-                <RichText content={deal.securitiesAndRecourse.covenants} />
-              }
-            />
-          ) : null}
           {deal.dataroom ? (
             <RiskTableRow
               heading="Due diligence"
@@ -252,46 +219,5 @@ function RiskTableRow({
         <div>{value}</div>
       </td>
     </tr>
-  );
-}
-
-function DocumentFile({
-  filename,
-  fileNameOverride,
-  url,
-  mimeType,
-}: DocumentFileFieldsFragment) {
-  const Svg = mimeType === "application/pdf" ? PdfSvg : ZipSvg;
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-10">
-        <Svg className="h-20 w-20" />
-        <div className="mb-3 font-medium">{fileNameOverride ?? filename}</div>
-      </div>
-      {mimeType === "application/zip" ? (
-        <Button
-          variant="rounded"
-          colorScheme="secondary"
-          as="a"
-          download
-          href={url as string}
-          iconRight="ArrowDown"
-        >
-          Download
-        </Button>
-      ) : (
-        <Button
-          variant="rounded"
-          colorScheme="secondary"
-          as="a"
-          href={url as string}
-          iconRight="ArrowTopRight"
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          View
-        </Button>
-      )}
-    </div>
   );
 }
