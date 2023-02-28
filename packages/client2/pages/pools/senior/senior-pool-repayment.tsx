@@ -310,3 +310,12 @@ const CustomChartLegend: ContentType = ({ payload }) => {
     </div>
   );
 };
+
+export function SeniorPoolRepaymentSectionPlaceholder() {
+  return (
+    <div
+      className="overflow-hidden rounded-lg border border-sand-300"
+      style={{ height: "600px" }}
+    />
+  );
+}

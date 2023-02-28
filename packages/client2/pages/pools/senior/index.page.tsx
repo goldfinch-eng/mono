@@ -32,6 +32,7 @@ import {
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
 } from "./senior-pool-loan-summary";
 import {
+  SeniorPoolRepaymentSectionPlaceholder,
   SeniorPoolRepaymentSection,
   SENIOR_POOL_REPAYMENTS_FIELDS,
 } from "./senior-pool-repayment";
@@ -235,7 +236,9 @@ export default function SeniorPoolPage() {
                 title: "Repayments",
                 content: seniorPool ? (
                   <SeniorPoolRepaymentSection seniorPool={seniorPool} />
-                ) : null,
+                ) : (
+                  <SeniorPoolRepaymentSectionPlaceholder />
+                ),
               },
               {
                 navTitle: "Portfolio",
