@@ -74,7 +74,7 @@ const RepaymentScheduleBarChartTooltip = ({
           />
           <div>
             {`Interest: ${formatFiat({
-              amount: interestDataPoint.payload.principal,
+              amount: interestDataPoint.payload.interest,
               symbol: "USD",
             })}`}
           </div>
