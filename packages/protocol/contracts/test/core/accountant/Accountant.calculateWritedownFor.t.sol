@@ -29,12 +29,9 @@ contract AccountantCalculateWritedownForTest is BaseTest {
   function testWritedownWhenPaymentPeriodGtGracePeriodInDays() public {
     cl.setBalance(usdcVal(10));
     cl.setInterestApr(30000000000000000);
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: 30 days,
-      amount: cl.balance(),
-      apr: cl.interestApr()
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({start: 0, end: 30 days, amount: cl.balance(), apr: cl.interestApr()})
+    );
     cl.setTermEndTime(block.timestamp);
 
     // Calculate for 100 seconds in the future
@@ -52,7 +49,7 @@ contract AccountantCalculateWritedownForTest is BaseTest {
     assertEq(writedownPercent, 16, "writedownPercent should be 50%");
     assertApproxEqAbs(
       writedownAmount,
-      cl.balance() * 1667 / 10000,
+      (cl.balance() * 1667) / 10000,
       TOLERANCE,
       "writedownAmount should be half the balance"
     );
@@ -62,7 +59,10 @@ contract AccountantCalculateWritedownForTest is BaseTest {
   If we are past termEndTime, owe interest and/or balance, and before the grace period,
   then the principal should not be written down
   */
-  function testZeroWritedownWithinGracePeriod(uint256 gracePeriodInDays, uint256 daysOfInterestOwed) public {
+  function testZeroWritedownWithinGracePeriod(
+    uint256 gracePeriodInDays,
+    uint256 daysOfInterestOwed
+  ) public {
     cl.setTermEndTime(block.timestamp + 1);
     // Set gracePeriodInDays within reasonable bounds
     gracePeriodInDays = bound(gracePeriodInDays, 7, 90);
@@ -70,12 +70,14 @@ contract AccountantCalculateWritedownForTest is BaseTest {
 
     cl.setBalance(usdcVal(100));
     cl.setInterestApr(30000000000000000);
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: daysOfInterestOwed * 1 days,
-      amount: cl.balance(),
-      apr: cl.interestApr()
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({
+        start: 0,
+        end: daysOfInterestOwed * 1 days,
+        amount: cl.balance(),
+        apr: cl.interestApr()
+      })
+    );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
@@ -97,18 +99,23 @@ contract AccountantCalculateWritedownForTest is BaseTest {
 
     uint256 gracePeriodInDays = 15;
     uint256 maxDaysLate = 40;
-    daysOfInterestOwed = bound(daysOfInterestOwed, gracePeriodInDays + 1, maxDaysLate + gracePeriodInDays);
+    daysOfInterestOwed = bound(
+      daysOfInterestOwed,
+      gracePeriodInDays + 1,
+      maxDaysLate + gracePeriodInDays
+    );
 
     cl.setBalance(usdcVal(100));
     cl.setInterestApr(30000000000000000);
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: daysOfInterestOwed * 1 days,
-      amount: cl.balance(),
-      apr: cl.interestApr()
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({
+        start: 0,
+        end: daysOfInterestOwed * 1 days,
+        amount: cl.balance(),
+        apr: cl.interestApr()
+      })
+    );
 
-    log("HERE 1");
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       block.timestamp,
@@ -116,15 +123,11 @@ contract AccountantCalculateWritedownForTest is BaseTest {
       maxDaysLate
     );
 
-    log("HERE 2");
-
     FixedPoint.Unsigned memory expectedWritedownPercent = getPercentage(
       cl,
       gracePeriodInDays,
       maxDaysLate
     );
-
-    log("HERE 3");
 
     assertEq(
       writedownPercent,
@@ -153,12 +156,14 @@ contract AccountantCalculateWritedownForTest is BaseTest {
     uint256 gracePeriodInDays = 15;
     uint256 maxDaysLate = 40;
     vm.assume(daysLate > maxDaysLate + gracePeriodInDays && daysLate <= maxDaysLate * 100);
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: daysLate * (1 days),
-      amount: cl.balance(),
-      apr: cl.interestApr()
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({
+        start: 0,
+        end: daysLate * (1 days),
+        amount: cl.balance(),
+        apr: cl.interestApr()
+      })
+    );
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
@@ -250,7 +255,7 @@ contract AccountantCalculateWritedownForTest is BaseTest {
       TOLERANCE,
       "writedownAmount should be 25% of balance"
     );
-    timestamp = block.timestamp + 2; // 1 second after termEndTerm
+    timestamp = block.timestamp + 3; // 1 second after termEndTime
     (writedownPercent, writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       timestamp,
@@ -270,16 +275,15 @@ contract AccountantCalculateWritedownForTest is BaseTest {
   We should have proportional writedowns after termEndTime, same as before. The
   main difference here is that daysLate will include the seconds elapsed after termEndTime.
   */
-  function testWritedownPastTermEndTimeUsesTimestampToWritedownLinearly(uint256 daysAfterTermEndTime) public {
+  function testWritedownPastTermEndTimeUsesTimestampToWritedownLinearly(
+    uint256 daysAfterTermEndTime
+  ) public {
     cl.setTermEndTime(block.timestamp);
     cl.setBalance(usdcVal(100));
     cl.setInterestApr(usdcVal(30000000000000000));
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: 30 days + 10,
-      amount: cl.balance(),
-      apr: cl.interestApr() 
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({start: 0, end: 30 days + 10, amount: cl.balance(), apr: cl.interestApr()})
+    );
 
     uint256 gracePeriodInDays = 30;
     uint256 maxDaysLate = 120;
@@ -324,12 +328,9 @@ contract AccountantCalculateWritedownForTest is BaseTest {
   */
   function testWritedownPastTermEndTimeCapsAt100Percent(uint256 daysAfterTermEndTime) public {
     cl.setTermEndTime(block.timestamp);
-    cl.setInterestOwed(getInterestAccrued({
-      start: 0,
-      end: 30 days,
-      amount: usdcVal(10),
-      apr: 30000000000000000
-    }));
+    cl.setInterestOwed(
+      getInterestAccrued({start: 0, end: 30 days, amount: usdcVal(10), apr: 30000000000000000})
+    );
     cl.setBalance(usdcVal(100));
     cl.setPrincipalOwed(usdcVal(100));
 
@@ -388,7 +389,7 @@ contract AccountantCalculateWritedownForTest is BaseTest {
     return (totalIntPerYear * secondsElapsed) / TestConstants.SECONDS_PER_YEAR;
   }
 
-   function getPercentage(
+  function getPercentage(
     MockCreditLine cl,
     uint256 gracePeriodInDays,
     uint256 maxDaysLate

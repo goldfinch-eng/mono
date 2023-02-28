@@ -19,7 +19,7 @@ contract PoolTokensReducePrincipalAmountTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
 
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
 
     token = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(token);

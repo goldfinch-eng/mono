@@ -19,7 +19,7 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
     super.setUp();
     (tp, cl) = defaultTp();
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
 
     // Junior deposit
     tokenId = tp.deposit(2, usdcVal(5));

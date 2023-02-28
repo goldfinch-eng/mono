@@ -18,7 +18,7 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
     super.setUp();
     (tp, cl) = defaultTp();
     fundAddress(address(this), usdcVal(2_000_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
   }
 
   function testRevertsForPoolNotCreatedByGfFactory() public {
@@ -82,7 +82,7 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
     // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
     (tp, cl) = tpWithSchedule(12, 1, 6, 1);
     fundAddress(address(this), usdcVal(2_000_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
 
     _startImpersonation(GF_OWNER);
     // Setup backer rewards
