@@ -43,6 +43,12 @@ abstract contract ITranchedPool {
     uint256[] calldata _allowedUIDTypes
   ) public virtual;
 
+  /**
+   * @notice Get the array of all UID types that are allowed to interact with this pool.
+   * @return array of UID types
+   *
+   * @dev This only exists on TranchedPools deployed from Nov 2022 onward
+   */
   function getAllowedUIDTypes() external view virtual returns (uint256[] memory);
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
