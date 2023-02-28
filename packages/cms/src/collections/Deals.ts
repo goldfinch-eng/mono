@@ -124,6 +124,7 @@ const Deals: CollectionConfig = {
         leaves: ["bold", "italic", "underline"],
       },
     },
+    // TODO remove this after new deal page ux goes live. This is unused.
     { name: "transactionStructure", type: "upload", relationTo: "media" },
     {
       name: "agreement",
@@ -225,6 +226,7 @@ const Deals: CollectionConfig = {
           },
           label: "Recourse description",
         },
+        // TODO delete this after new deal page ux goes live. This is unused.
         {
           name: "covenants",
           type: "richText",
@@ -235,6 +237,7 @@ const Deals: CollectionConfig = {
         },
       ],
     },
+    // TODO delete this after the new deal page ux goes live. This is unused.
     {
       name: "documents",
       type: "blocks",
