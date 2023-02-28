@@ -3,9 +3,18 @@ import { Menu } from "@headlessui/react";
 import { format as formatDate } from "date-fns";
 import Image from "next/future/image";
 import { useMemo, useState } from "react";
+import {
+  BarChart,
+  ResponsiveContainer,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 import { Icon } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
+import { cryptoToFloat, formatCrypto } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {
   generateRepaymentSchedule,
@@ -75,6 +84,35 @@ export function SeniorPoolRepaymentSection({
     );
     return allIncomingRepayments;
   }, [repayingPools, perspective]);
+
+  const chartData = useMemo(() => {
+    const buckets = allIncomingRepayments.reduce((buckets, current) => {
+      const date = new Date(current.estimatedPaymentDate);
+      const key = `${date.getMonth()}-${date.getFullYear()}`;
+      if (buckets[key]) {
+        buckets[key] = {
+          period: buckets[key].period,
+          amount:
+            buckets[key].amount +
+            cryptoToFloat({
+              token: "USDC",
+              amount: current.interest.add(current.principal),
+            }),
+        };
+      } else {
+        buckets[key] = {
+          period: formatDate(date, "MMM yy"),
+          amount: cryptoToFloat({
+            token: "USDC",
+            amount: current.interest.add(current.principal),
+          }),
+        };
+      }
+      return buckets;
+    }, {} as Record<string, { period: string; amount: number }>);
+    return Object.values(buckets);
+  }, [allIncomingRepayments]);
+
   return (
     <div className="overflow-hidden rounded-lg border border-sand-300">
       <div className="py-8 px-6">
@@ -106,6 +144,26 @@ export function SeniorPoolRepaymentSection({
             </Menu.Items>
           </Menu>
         </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={chartData} margin={{ top: 20 }}>
+            <CartesianGrid vertical={false} />
+            <Tooltip />
+            <Bar dataKey="amount" fill="#65C397" />
+            <XAxis
+              dataKey="period"
+              tick={{ fontSize: "8px" }}
+              interval={perspective === "future" ? 0 : 1}
+              padding={{ left: 36 }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              mirror
+              type="number"
+              tick={{ fontSize: "8px", dx: -8, dy: -4, textAnchor: "start" }}
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       <div className="max-h-80 overflow-y-auto">
         <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
