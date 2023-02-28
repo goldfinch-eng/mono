@@ -75,8 +75,7 @@ export function PortfolioDetails({
             className="mr-1.5"
             target="_blank"
             rel="noopener"
-            // TODO: Zadra get real link
-            href={"https://google.ca"}
+            href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
           >
             Read more
           </Button>
@@ -103,8 +102,7 @@ export function PortfolioDetails({
             className="mr-2"
             target="_blank"
             rel="noopener"
-            // TODO: Zadra get real link
-            href={"https://google.ca"}
+            href="https://goldfinch.finance/"
           >
             Website
           </Button>
@@ -116,8 +114,7 @@ export function PortfolioDetails({
             className="mr-2"
             target="_blank"
             rel="noopener"
-            // TODO: Zadra get real link
-            href={"https://google.ca"}
+            href="https://www.linkedin.com/company/goldfinchfinance/"
           >
             LinkedIn
           </Button>
@@ -129,8 +126,7 @@ export function PortfolioDetails({
             className="mr-2"
             target="_blank"
             rel="noopener"
-            // TODO: Zadra get real link
-            href={"https://google.ca"}
+            href="https://twitter.com/goldfinch_fi"
           >
             Twitter
           </Button>
