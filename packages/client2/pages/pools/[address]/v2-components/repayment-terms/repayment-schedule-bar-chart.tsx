@@ -53,32 +53,30 @@ const RepaymentScheduleBarChartTooltip = ({
     const interestDataPoint = payload[1];
 
     return (
-      <div className="rounded-xl border-sand-300 bg-white p-6 outline-none">
-        <div className="text-xs outline-none">
-          <div className="mb-1">Month {label}</div>
-          <div className="mb-1 flex items-center gap-2">
-            <div
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: principalDataPoint.color }}
-            />
-            <div>
-              {`Principal: ${formatFiat({
-                amount: principalDataPoint.payload.principal,
-                symbol: "USD",
-              })}`}
-            </div>
+      <div className="rounded-lg bg-white p-2 text-xs shadow-lg outline-none">
+        <div className="mb-1">Month {label}</div>
+        <div className="mb-1 flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: principalDataPoint.color }}
+          />
+          <div>
+            {`Principal: ${formatFiat({
+              amount: principalDataPoint.payload.principal,
+              symbol: "USD",
+            })}`}
           </div>
-          <div className="mb-1 flex items-center gap-2">
-            <div
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: interestDataPoint.color }}
-            />
-            <div>
-              {`Interest: ${formatFiat({
-                amount: interestDataPoint.payload.principal,
-                symbol: "USD",
-              })}`}
-            </div>
+        </div>
+        <div className="mb-1 flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: interestDataPoint.color }}
+          />
+          <div>
+            {`Interest: ${formatFiat({
+              amount: interestDataPoint.payload.principal,
+              symbol: "USD",
+            })}`}
           </div>
         </div>
       </div>

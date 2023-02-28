@@ -11,10 +11,15 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  TooltipProps,
 } from "recharts";
+import {
+  NameType,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 import { Icon } from "@/components/design-system";
-import { cryptoToFloat, formatCrypto } from "@/lib/format";
+import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {
   generateRepaymentSchedule,
@@ -98,6 +103,7 @@ export function SeniorPoolRepaymentSection({
               token: "USDC",
               amount: current.interest.add(current.principal),
             }),
+          timestamp: buckets[key].timestamp,
         };
       } else {
         buckets[key] = {
@@ -106,10 +112,11 @@ export function SeniorPoolRepaymentSection({
             token: "USDC",
             amount: current.interest.add(current.principal),
           }),
+          timestamp: date.getTime(),
         };
       }
       return buckets;
-    }, {} as Record<string, { period: string; amount: number }>);
+    }, {} as Record<string, { period: string; amount: number; timestamp: number }>);
     return Object.values(buckets);
   }, [allIncomingRepayments]);
 
@@ -117,7 +124,7 @@ export function SeniorPoolRepaymentSection({
     <div className="overflow-hidden rounded-lg border border-sand-300">
       <div className="py-8 px-6">
         <div>
-          <Menu as="div" className="relative">
+          <Menu as="div" className="relative mb-2">
             <Menu.Button className="flex items-center gap-2 text-xs font-medium">
               {perspective === "future"
                 ? "Future repayments"
@@ -127,7 +134,7 @@ export function SeniorPoolRepaymentSection({
             <Menu.Items className="absolute left-0 z-50 mt-1 flex flex-col rounded-md bg-white text-xs">
               <Menu.Item>
                 <button
-                  className="block p-2 text-left hover:bg-sand-50"
+                  className="block px-3 py-3 text-left hover:bg-sand-50"
                   onClick={() => setPerspective("future")}
                 >
                   Future repayments
@@ -135,7 +142,7 @@ export function SeniorPoolRepaymentSection({
               </Menu.Item>
               <Menu.Item>
                 <button
-                  className="block p-2 text-left hover:bg-sand-50"
+                  className="block px-3 py-3 text-left hover:bg-sand-50"
                   onClick={() => setPerspective("past")}
                 >
                   Past repayments
@@ -147,7 +154,7 @@ export function SeniorPoolRepaymentSection({
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData} margin={{ top: 20 }}>
             <CartesianGrid vertical={false} />
-            <Tooltip />
+            <Tooltip content={<CustomChartTooltip />} />
             <Bar dataKey="amount" fill="#65C397" />
             <XAxis
               dataKey="period"
@@ -160,7 +167,7 @@ export function SeniorPoolRepaymentSection({
               tickLine={false}
               mirror
               type="number"
-              tick={{ fontSize: "8px", dx: -8, dy: -4, textAnchor: "start" }}
+              tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
             />
           </BarChart>
         </ResponsiveContainer>
@@ -218,4 +225,23 @@ export function SeniorPoolRepaymentSection({
       </div>
     </div>
   );
+}
+
+function CustomChartTooltip({
+  active,
+  payload,
+}: TooltipProps<ValueType, NameType>) {
+  if (active && payload) {
+    return (
+      <div className="rounded-lg bg-white p-2 text-xs shadow-lg outline-none">
+        <div className="mb-1 font-medium">
+          {formatDate(payload[0].payload.timestamp, "MMMM yyyy")}
+        </div>
+        <div>
+          {formatFiat({ amount: payload[0].payload.amount, symbol: "USD" })}
+        </div>
+      </div>
+    );
+  }
+  return null;
 }
