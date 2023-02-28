@@ -118,6 +118,33 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     submitCall(callableLoan, callAmount, token, user);
   }
 
+  function testDoesNotLetYouSubmitCallAfterLoanIsPaidBack(address user) public {
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(80);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, 80, user);
+    drawdown(callableLoan, 80);
+
+    vm.warp(callableLoan.nextPrincipalDueTime());
+    vm.warp(callableLoan.nextPrincipalDueTime());
+
+    uint256 guaranteedFutureInterest = 1;
+    pay(
+      callableLoan,
+      callableLoan.balance() +
+        callableLoan.interestOwed() +
+        cl.interestAccrued() +
+        guaranteedFutureInterest
+    );
+
+    assertZero(callableLoan.balance(), "balance");
+    assertZero(callableLoan.principalOwed(), "principalOwed");
+    assertZero(callableLoan.interestOwed(), "interestOwed");
+
+    vm.expectRevert();
+    submitCall(callableLoan, 1, token, user);
+  }
+
   function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
     address user,
     uint256 depositAmount,
