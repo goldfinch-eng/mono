@@ -13,6 +13,7 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CURVE_LP_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { computePercentage } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
@@ -691,13 +692,6 @@ function curveLpTokensToUsdc(
     amount: utils.parseUnits(usdValue.toString().split(".")[0], USDC_DECIMALS),
     token: "USDC" as const,
   };
-}
-
-function computePercentage(n: BigNumber, total: BigNumber): number {
-  if (total.isZero()) {
-    return 0;
-  }
-  return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
 }
 
 function setAll<S extends string, T>(

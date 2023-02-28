@@ -1,12 +1,12 @@
 import { format as formatDate } from "date-fns";
-import { BigNumber, FixedNumber } from "ethers/lib/ethers";
+import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 import Image from "next/future/image";
 import { useState } from "react";
 
 import { Chip } from "@/components/design-system";
 import { DropdownMenu } from "@/components/design-system/dropdown-menu";
-import { formatCrypto, formatPercent } from "@/lib/format";
+import { computePercentage, formatCrypto, formatPercent } from "@/lib/format";
 import {
   SeniorPoolPortfolioDistributionFieldsFragment,
   SeniorPoolPortfolioPoolsDealsFieldsFragment,
@@ -98,7 +98,7 @@ const options = [
 interface PoolTableData {
   dealName?: string;
   icon?: string | null;
-  portfolioShare: FixedNumber;
+  portfolioShare: number;
   capitalOwed: BigNumber;
   termEndTime?: BigNumber;
   poolRepaymentStatus?: LoanRepaymentStatus;
@@ -120,9 +120,10 @@ const getTableDataByDeal = (
     const actualSeniorPoolInvestment =
       pool.actualSeniorPoolInvestment as BigNumber;
 
-    const portfolioShare = FixedNumber.from(
-      actualSeniorPoolInvestment
-    ).divUnsafe(FixedNumber.from(totalSeniorPoolFundsCurrentlyInvested));
+    const portfolioShare = computePercentage(
+      actualSeniorPoolInvestment,
+      totalSeniorPoolFundsCurrentlyInvested
+    );
 
     poolTableData.push({
       dealName: dealDetails.name,
@@ -156,9 +157,10 @@ const getTableDataByBorrower = (
         tableDataByBorrowerId[borrowerId] = {
           dealName: deal.borrower.name,
           icon: deal.borrower.logo?.url,
-          portfolioShare: FixedNumber.from(
-            actualSeniorPoolInvestment
-          ).divUnsafe(FixedNumber.from(totalSeniorPoolFundsCurrentlyInvested)),
+          portfolioShare: computePercentage(
+            actualSeniorPoolInvestment,
+            totalSeniorPoolFundsCurrentlyInvested
+          ),
           capitalOwed: actualSeniorPoolInvestment,
         };
       } else {
@@ -166,9 +168,10 @@ const getTableDataByBorrower = (
 
         tableDataByBorrowerId[borrowerId] = {
           ...currentPoolTableData,
-          portfolioShare: FixedNumber.from(
-            actualSeniorPoolInvestment.add(currentPoolTableData.capitalOwed)
-          ).divUnsafe(FixedNumber.from(totalSeniorPoolFundsCurrentlyInvested)),
+          portfolioShare: computePercentage(
+            actualSeniorPoolInvestment.add(currentPoolTableData.capitalOwed),
+            totalSeniorPoolFundsCurrentlyInvested
+          ),
           capitalOwed: actualSeniorPoolInvestment.add(
             currentPoolTableData.capitalOwed
           ),
@@ -177,15 +180,18 @@ const getTableDataByBorrower = (
     }
   }
 
-  return Object.values(tableDataByBorrowerId);
+  return Object.values(tableDataByBorrowerId).sort(
+    (a, b) => b.capitalOwed.toNumber() - a.capitalOwed.toNumber()
+  );
 };
 
 export function PortfolioCurrentDistribution({
   seniorPool,
   dealMetadata,
 }: PortfolioCurrentDistributionProps) {
-  const [distributionGroupByCriteria, setDistributionGroupByCriteria] =
-    useState(options[0]);
+  const [distributionGroupByOption, setDistributionGroupByOption] = useState(
+    options[0]
+  );
 
   const totalSeniorPoolFundsCurrentlyInvested =
     seniorPool.poolsOrderedBySpInvestment.reduce(
@@ -195,7 +201,7 @@ export function PortfolioCurrentDistribution({
     );
 
   const tableData =
-    distributionGroupByCriteria.value === DISTRIBUTION_GROUP_BY_CRITERIA.BY_DEAL
+    distributionGroupByOption.value === DISTRIBUTION_GROUP_BY_CRITERIA.BY_DEAL
       ? getTableDataByDeal(
           dealMetadata,
           seniorPool,
@@ -213,8 +219,8 @@ export function PortfolioCurrentDistribution({
         <div className="text-sm">Current distribution</div>
         <DropdownMenu
           options={options}
-          selectedOption={distributionGroupByCriteria}
-          onSelect={(option) => setDistributionGroupByCriteria(option)}
+          selectedOption={distributionGroupByOption}
+          onSelect={(option) => setDistributionGroupByOption(option)}
         />
       </div>
 
@@ -266,7 +272,7 @@ export function PortfolioCurrentDistribution({
                     </div>
                   </td>
                   <td className="text-right">
-                    {formatPercent(portfolioShare.toUnsafeFloat())}
+                    {formatPercent(portfolioShare)}
                   </td>
                   <td className="text-right">
                     {formatCrypto({
