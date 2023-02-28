@@ -267,6 +267,14 @@ const Deals: CollectionConfig = {
           "If this is set to 'Junior', off-chain capital priority is assumed to be senior, and vice versa.",
       },
     },
+    {
+      name: "collateralAssets",
+      type: "richText",
+      admin: {
+        elements: ["link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
+    },
   ],
 };
 

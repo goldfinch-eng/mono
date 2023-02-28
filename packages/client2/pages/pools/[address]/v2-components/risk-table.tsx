@@ -24,6 +24,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
     dataroom
     dueDiligenceContact
     onChainCapitalPriority
+    collateralAssets
   }
 `;
 
@@ -164,6 +165,12 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               value={
                 <RichText content={deal.securitiesAndRecourse.description} />
               }
+            />
+          ) : null}
+          {deal.collateralAssets ? (
+            <RiskTableRow
+              heading="Collateral assets"
+              value={<RichText content={deal.collateralAssets} />}
             />
           ) : null}
           {deal.securitiesAndRecourse &&
