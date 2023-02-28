@@ -164,14 +164,6 @@ export function SeniorPoolRepaymentSection({
               wrapperStyle={{ top: "-1.5rem", right: 0, width: "max-content" }}
             />
             <CartesianGrid vertical={false} />
-            <Tooltip content={<CustomChartTooltip />} />
-            <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
-            <Bar
-              dataKey="futureAmount"
-              fill="rgba(178, 225, 203, 0.35)"
-              stroke="#65C397"
-              stackId="a"
-            />
             <XAxis
               dataKey="period"
               tick={{ fontSize: "8px" }}
@@ -184,6 +176,14 @@ export function SeniorPoolRepaymentSection({
               mirror
               type="number"
               tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
+            />
+            <Tooltip content={<CustomChartTooltip />} />
+            <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
+            <Bar
+              dataKey="futureAmount"
+              fill="rgba(178, 225, 203, 0.35)"
+              stroke="#65C397"
+              stackId="a"
             />
           </BarChart>
         </ResponsiveContainer>
