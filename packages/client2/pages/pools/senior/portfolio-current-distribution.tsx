@@ -256,7 +256,7 @@ export function PortfolioCurrentDistribution({
             }) => {
               return (
                 <tr key={dealName} className="h-[2.9rem]">
-                  <td className="w-[30%] max-w-0 text-left">
+                  <td className="w-[30%] max-w-0 !pr-0 text-left">
                     <div className="flex items-center">
                       <div className="relative mr-1.5 h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {icon ? (
