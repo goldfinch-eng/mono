@@ -1,5 +1,6 @@
 import { format as formatDate } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers/lib/ethers";
+import { gql } from "graphql-request";
 import Image from "next/future/image";
 import { useState } from "react";
 
@@ -7,13 +8,51 @@ import { Chip } from "@/components/design-system";
 import { DropdownMenu } from "@/components/design-system/dropdown-menu";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
-  SeniorPoolPortfolioDetailsFieldsFragment,
+  SeniorPoolPortfolioDistributionFieldsFragment,
   SeniorPoolPortfolioPoolsDealsFieldsFragment,
 } from "@/lib/graphql/generated";
 import { getLoanRepaymentStatus, LoanRepaymentStatus } from "@/lib/pools";
 
+export const SENIOR_POOL_PORTFOLIO_DISTRIBUTION_FIELDS = gql`
+  fragment SeniorPoolPortfolioDistributionFields on SeniorPool {
+    poolsOrderedBySpInvestment: tranchedPools(
+      orderBy: actualSeniorPoolInvestment
+      orderDirection: desc
+      # Active pools with contributions to SP
+      where: {
+        balance_gt: 0
+        termEndTime_gt: 0
+        actualSeniorPoolInvestment_gt: 0
+      }
+    ) {
+      id
+      balance
+      termEndTime
+      actualSeniorPoolInvestment
+      isLate @client
+      isInDefault @client
+    }
+  }
+`;
+
+export const SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS = gql`
+  fragment SeniorPoolPortfolioPoolsDealsFields on Deal {
+    id
+    name
+    category
+    dealType
+    borrower {
+      id
+      name
+      logo {
+        url
+      }
+    }
+  }
+`;
+
 interface PortfolioCurrentDistributionProps {
-  seniorPool: SeniorPoolPortfolioDetailsFieldsFragment;
+  seniorPool: SeniorPoolPortfolioDistributionFieldsFragment;
   dealMetadata: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>;
 }
 
@@ -68,12 +107,12 @@ interface PoolTableData {
 
 const getTableDataByDeal = (
   dealMetadata: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>,
-  seniorPool: SeniorPoolPortfolioDetailsFieldsFragment,
+  seniorPool: SeniorPoolPortfolioDistributionFieldsFragment,
   totalSeniorPoolFundsCurrentlyInvested: BigNumber
 ) => {
   const poolTableData: PoolTableData[] = [];
 
-  for (const pool of seniorPool.tranchedPools) {
+  for (const pool of seniorPool.poolsOrderedBySpInvestment) {
     const dealDetails = dealMetadata[pool.id];
 
     const poolRepaymentStatus = getLoanRepaymentStatus(pool);
@@ -100,12 +139,12 @@ const getTableDataByDeal = (
 
 const getTableDataByBorrower = (
   dealMetadata: Record<string, SeniorPoolPortfolioPoolsDealsFieldsFragment>,
-  seniorPool: SeniorPoolPortfolioDetailsFieldsFragment,
+  seniorPool: SeniorPoolPortfolioDistributionFieldsFragment,
   totalSeniorPoolFundsCurrentlyInvested: BigNumber
 ) => {
-  const dealDataByBorrowerId: Record<string, PoolTableData> = {};
+  const tableDataByBorrowerId: Record<string, PoolTableData> = {};
 
-  for (const pool of seniorPool.tranchedPools) {
+  for (const pool of seniorPool.poolsOrderedBySpInvestment) {
     const deal = dealMetadata[pool.id];
     const borrowerId = deal.borrower.id;
 
@@ -113,8 +152,8 @@ const getTableDataByBorrower = (
       pool.actualSeniorPoolInvestment as BigNumber;
 
     if (borrowerId) {
-      if (!dealDataByBorrowerId[borrowerId]) {
-        dealDataByBorrowerId[borrowerId] = {
+      if (!tableDataByBorrowerId[borrowerId]) {
+        tableDataByBorrowerId[borrowerId] = {
           dealName: deal.borrower.name,
           icon: deal.borrower.logo?.url,
           portfolioShare: FixedNumber.from(
@@ -123,9 +162,9 @@ const getTableDataByBorrower = (
           capitalOwed: actualSeniorPoolInvestment,
         };
       } else {
-        const currentPoolTableData = dealDataByBorrowerId[borrowerId];
+        const currentPoolTableData = tableDataByBorrowerId[borrowerId];
 
-        dealDataByBorrowerId[borrowerId] = {
+        tableDataByBorrowerId[borrowerId] = {
           ...currentPoolTableData,
           portfolioShare: FixedNumber.from(
             actualSeniorPoolInvestment.add(currentPoolTableData.capitalOwed)
@@ -138,7 +177,7 @@ const getTableDataByBorrower = (
     }
   }
 
-  return Object.values(dealDataByBorrowerId);
+  return Object.values(tableDataByBorrowerId);
 };
 
 export function PortfolioCurrentDistribution({
@@ -148,11 +187,12 @@ export function PortfolioCurrentDistribution({
   const [distributionGroupByCriteria, setDistributionGroupByCriteria] =
     useState(options[0]);
 
-  const totalSeniorPoolFundsCurrentlyInvested = seniorPool.tranchedPools.reduce(
-    (sum, { actualSeniorPoolInvestment }) =>
-      sum.add(actualSeniorPoolInvestment as BigNumber),
-    BigNumber.from(0)
-  );
+  const totalSeniorPoolFundsCurrentlyInvested =
+    seniorPool.poolsOrderedBySpInvestment.reduce(
+      (sum, { actualSeniorPoolInvestment }) =>
+        sum.add(actualSeniorPoolInvestment as BigNumber),
+      BigNumber.from(0)
+    );
 
   const tableData =
     distributionGroupByCriteria.value === DISTRIBUTION_GROUP_BY_CRITERIA.BY_DEAL

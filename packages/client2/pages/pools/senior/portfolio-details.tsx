@@ -16,7 +16,7 @@ export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
     icon @client
     defaultRate
     totalLoansOutstanding
-    tranchedPools(
+    poolsOrderedBySpInvestment: tranchedPools(
       orderBy: actualSeniorPoolInvestment
       orderDirection: desc
       # Active pools with contributions to SP
@@ -32,22 +32,6 @@ export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
       actualSeniorPoolInvestment
       isLate @client
       isInDefault @client
-    }
-  }
-`;
-
-export const SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS = gql`
-  fragment SeniorPoolPortfolioPoolsDealsFields on Deal {
-    id
-    name
-    category
-    dealType
-    borrower {
-      id
-      name
-      logo {
-        url
-      }
     }
   }
 `;
@@ -155,7 +139,7 @@ export function PortfolioDetails({
       <StatGrid className="mb-6" bgColor="mustard-50" borderColor="sand-300">
         <Stat
           label="No. of portfolio loans"
-          value={seniorPool.tranchedPools.length}
+          value={seniorPool.poolsOrderedBySpInvestment.length}
           // TODO: Zadra get tooltip content
           tooltip="TODO: No. of portfolio loans"
         />

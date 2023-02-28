@@ -19,11 +19,7 @@ import {
 } from "@/lib/graphql/generated";
 import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
-import {
-  PortfolioDetails,
-  SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS,
-  SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS,
-} from "@/pages/pools/senior/portfolio-details";
+import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 
 import {
   InvestAndWithdrawTabs,
@@ -52,8 +48,6 @@ gql`
 
   ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
 
-  ${SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS}
-
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
@@ -77,6 +71,20 @@ gql`
       sharePrice
       withdrawalCancellationFee
       epochEndsAt @client
+      name @client
+      category @client
+      icon @client
+      defaultRate
+      totalLoansOutstanding
+      totalInvested
+      tranchedPools {
+        id
+        balance
+        termEndTime
+        actualSeniorPoolInvestment
+        isLate @client
+        isInDefault @client
+      }
       ...SeniorPoolPortfolioDetailsFields
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -99,11 +107,20 @@ gql`
 `;
 
 const seniorPoolCmsQuery = gql`
-  ${SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS}
   query SeniorPoolPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...SeniorPoolPortfolioPoolsDealsFields
+        id
+        name
+        category
+        dealType
+        borrower {
+          id
+          name
+          logo {
+            url
+          }
+        }
       }
     }
   }
