@@ -502,3 +502,30 @@ type SeniorPoolWithdrawalDisbursementPostponement @entity(immutable: true) {
   oldEndsAt: Int!
   newEndsAt: Int!
 }
+
+type CallableLoan implements Loan @entity {
+  id: ID!
+  address: Bytes!
+  fundingLimit: BigInt!
+  principalAmount: BigInt!
+  initialInterestOwed: BigInt!
+  usdcApy: BigDecimal!
+  rawGfiApy: BigDecimal!
+  totalDeposited: BigInt!
+  remainingCapacity: BigInt!
+  fundableAt: Int!
+  createdAt: Int!
+  allowedUidTypes: [UidType!]!
+  backers: [User!]!
+  numBackers: Int!
+
+  balance: BigInt!
+  paymentPeriodInDays: BigInt!
+  nextDueTime: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  termInDays: Int!
+  interestRate: BigDecimal!
+  interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
+  lateFeeRate: BigDecimal!
+}

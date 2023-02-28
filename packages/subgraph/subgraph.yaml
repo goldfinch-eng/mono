@@ -111,6 +111,8 @@ dataSources:
           handler: handlePoolCreated
         - event: BorrowerCreated(indexed address,indexed address)
           handler: handleBorrowerCreated
+        - event: CallableLoanCreated(indexed address,indexed address)
+          handler: handleCallableLoanCreated
 
   - kind: ethereum/contract
     name: PoolTokens
@@ -614,6 +616,45 @@ templates:
           file: ./abis/BackerRewards.json
         - name: Zapper
           file: ./abis/Zapper.json
+      eventHandlers:
+        - event: CreditLineMigrated(indexed address,indexed address)
+          handler: handleCreditLineMigrated
+        - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
+          handler: handleDepositMade
+        - event: DrawdownsPaused(indexed address)
+          handler: handleDrawdownsPaused
+        - event: DrawdownsUnpaused(indexed address)
+          handler: handleDrawdownsUnpaused
+        - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handleWithdrawalMade
+        - event: TrancheLocked(indexed address,uint256,uint256)
+          handler: handleTrancheLocked
+        - event: SliceCreated(indexed address,uint256)
+          handler: handleSliceCreated
+        - event: EmergencyShutdown(indexed address)
+          handler: handleEmergencyShutdown
+        - event: DrawdownMade(indexed address,uint256)
+          handler: handleDrawdownMade
+        - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePaymentApplied
+        - event: TranchedPoolAssessed(indexed address)
+          handler: handleTranchedPoolAssessed
+
+  - name: CallableLoan
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CallableLoan
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/tranched_pool.ts
+      entities:
+        - CallableLoan
+      abis:
+        - name: CallableLoan
+          file: ./abis/CallableLoan.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
