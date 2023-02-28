@@ -5,6 +5,11 @@
 
 - _submitCall_
   - Allows you to submit a call even when the loan is fully paid off
+    - I believe this is a symptom of LoanState being incomplete
+    - What's the impact?
+
+- _initialize_
+  - Should enforce that _numLockupPeriods < periodsPerPrincipalPeriods
   
 - Drawdown
   - Can they drawdown again after the term end time?
