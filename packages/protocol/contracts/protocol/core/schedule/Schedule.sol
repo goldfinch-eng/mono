@@ -61,18 +61,18 @@ contract Schedule is ISchedule {
   IPeriodMapper public immutable periodMapper;
 
   /// @notice the number of periods in the term of the loan
-  uint256 public immutable periodsInTerm;
+  uint256 public immutable override periodsInTerm;
 
   /// @notice the number of payment periods that need to pass before interest
   ///         comes due
-  uint256 public immutable periodsPerInterestPeriod;
+  uint256 public immutable override periodsPerInterestPeriod;
 
   /// @notice the number of payment periods that need to pass before principal
   ///         comes due
   uint256 public immutable override periodsPerPrincipalPeriod;
 
   /// @notice the number of principal periods where no principal will be due
-  uint256 public immutable gracePrincipalPeriods;
+  uint256 public immutable override gracePrincipalPeriods;
 
   //===============================================================================
   // external functions
