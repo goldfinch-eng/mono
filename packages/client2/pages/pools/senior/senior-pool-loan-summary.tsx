@@ -101,7 +101,19 @@ export function SeniorPoolLoanSummary({
         />
         <InfoLine
           label="Liquidity"
-          tooltip="You may submit a withdrawal request, and the available liquidity in the Senior Pool will be divided amongst all outstanding withdrawal requests every 2 weeks."
+          tooltip={
+            <div className="max-w-xs">
+              You may submit a withdrawal request, and the available liquidity
+              in the Senior Pool will be divided amongst all outstanding
+              withdrawal requests every 2 weeks.{" "}
+              <Link
+                openInNewTab
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
+              >
+                Read more about withdrawal mechanics.
+              </Link>
+            </div>
+          }
           value="Withdrawal request (2-week window)"
         />
       </div>
