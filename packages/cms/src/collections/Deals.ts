@@ -245,6 +245,20 @@ const Deals: CollectionConfig = {
       maxRows: 999,
       blocks: [Document],
     },
+    {
+      ...generateBinarySelect(
+        "onChainCapitalPriority",
+        "On-chain capital priority",
+        [
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+        ]
+      ),
+      admin: {
+        description:
+          "If this is set to 'Junior', off-chain capital priority is assumed to be senior, and vice versa.",
+      },
+    },
   ],
 };
 

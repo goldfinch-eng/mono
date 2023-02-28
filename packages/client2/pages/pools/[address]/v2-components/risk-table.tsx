@@ -22,6 +22,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
     dealType
     agreement
     dataroom
+    onChainCapitalPriority
   }
 `;
 
@@ -100,16 +101,32 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               }
             />
           ) : null}
-          <RiskTableRow
-            heading="On-chain capital priority"
-            boldValue="Junior"
-            value="First-loss capital"
-          />
-          <RiskTableRow
-            heading="Off-chain capital priority"
-            boldValue="Senior"
-            value="If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
-          />
+          {deal.onChainCapitalPriority ? (
+            <>
+              <RiskTableRow
+                heading="On-chain capital priority"
+                boldValue={
+                  deal.onChainCapitalPriority === "junior" ? "Junior" : "Senior"
+                }
+                value={
+                  deal.onChainCapitalPriority === "junior"
+                    ? "First-loss capital"
+                    : "If the borrower has received other off-chain funding for this pool, on-chain capital will be prioritized first"
+                }
+              />
+              <RiskTableRow
+                heading="Off-chain capital priority"
+                boldValue={
+                  deal.onChainCapitalPriority === "junior" ? "Senior" : "Junior"
+                }
+                value={
+                  deal.onChainCapitalPriority === "junior"
+                    ? "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
+                    : "First-loss capital"
+                }
+              />
+            </>
+          ) : null}
           <RiskTableRow
             heading="Post-close reporting"
             value={
