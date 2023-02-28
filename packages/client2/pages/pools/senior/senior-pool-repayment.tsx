@@ -12,7 +12,9 @@ import {
   Tooltip,
   CartesianGrid,
   TooltipProps,
+  Legend,
 } from "recharts";
+import { ContentType } from "recharts/types/component/DefaultLegendContent";
 import {
   NameType,
   ValueType,
@@ -126,7 +128,7 @@ export function SeniorPoolRepaymentSection({
 
   return (
     <div className="overflow-hidden rounded-lg border border-sand-300">
-      <div className="py-8 px-6">
+      <div className="px-6 pt-8">
         <div>
           <Menu as="div" className="relative mb-2">
             <Menu.Button className="flex items-center gap-2 text-xs font-medium">
@@ -157,6 +159,10 @@ export function SeniorPoolRepaymentSection({
         </div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData} margin={{ top: 20 }}>
+            <Legend
+              content={CustomChartLegend}
+              wrapperStyle={{ top: "-1.5rem", right: 0, width: "max-content" }}
+            />
             <CartesianGrid vertical={false} />
             <Tooltip content={<CustomChartTooltip />} />
             <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
@@ -252,7 +258,10 @@ function CustomChartTooltip({
         <div className="mb-1 flex items-center gap-2">
           <div
             className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: pastDataPoint.color }}
+            style={{
+              backgroundColor: pastDataPoint.color,
+              border: `1px solid ${pastDataPoint.color}`,
+            }}
           />
           <div>
             Expected past repayment:{" "}
@@ -283,3 +292,21 @@ function CustomChartTooltip({
   }
   return null;
 }
+
+const CustomChartLegend: ContentType = ({ payload }) => {
+  return (
+    <div className="flex gap-4">
+      {payload?.map(({ value, color }) => (
+        <div key={value} className="flex items-center gap-2 text-xs">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: color, border: `1px solid #65C397` }}
+          />
+          <div>
+            {value === "futureAmount" ? "Est. payment" : "Paid to date"}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
