@@ -239,12 +239,18 @@ export function PortfolioCurrentDistribution({
             <th scope="col" className="w-[17.5%] text-right">
               Capital owed
             </th>
-            <th scope="col" className="w-[17.5%] text-right">
-              Maturity date
-            </th>
-            <th scope="col" className="w-[17.5%] text-right">
-              Status
-            </th>
+            {distributionGroupByOption.value ===
+              DistributionGroupByValue.BY_DEAL && (
+              <th scope="col" className="w-[17.5%] text-right">
+                Maturity date
+              </th>
+            )}
+            {distributionGroupByOption.value ===
+              DistributionGroupByValue.BY_DEAL && (
+              <th scope="col" className="w-[17.5%] text-right">
+                Status
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-sand-300">
@@ -283,23 +289,19 @@ export function PortfolioCurrentDistribution({
                       token: "USDC",
                     })}
                   </td>
-                  {/* TODO: double check with Chico "-" is cool for group by views */}
-                  <td className="text-right">
-                    {termEndTime
-                      ? formatDate(
-                          termEndTime.toNumber() * 1000,
-                          "MMM dd, yyyy"
-                        )
-                      : "-"}
-                  </td>
-                  {/* TODO: double check with Chico "-" is cool for group by views */}
-                  <td className="text-right">
-                    {poolRepaymentStatus ? (
+                  {termEndTime && (
+                    <td className="text-right">
+                      {formatDate(
+                        termEndTime.toNumber() * 1000,
+                        "MMM dd, yyyy"
+                      )}
+                    </td>
+                  )}
+                  {poolRepaymentStatus && (
+                    <td className="text-right">
                       <PoolStatus poolRepaymentStatus={poolRepaymentStatus} />
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+                    </td>
+                  )}
                 </tr>
               );
             }
