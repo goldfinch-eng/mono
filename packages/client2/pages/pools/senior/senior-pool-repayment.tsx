@@ -189,7 +189,7 @@ export function SeniorPoolRepaymentSection({
         </ResponsiveContainer>
       </div>
       <div className="max-h-80 overflow-y-auto">
-        <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
+        <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-3">
           <thead>
             <tr className="sticky top-0 z-10 bg-mustard-100">
               <th scope="col" className="w-1/2 text-left">
@@ -216,13 +216,15 @@ export function SeniorPoolRepaymentSection({
                 index
               ) => (
                 <tr key={index}>
-                  <td className="flex items-center gap-1 text-left">
-                    {borrowerLogo ? (
-                      <div className="relative h-3 w-3 shrink-0 overflow-hidden rounded-full">
-                        <Image src={borrowerLogo} fill sizes="12px" alt="" />
-                      </div>
-                    ) : null}
-                    <span>{name}</span>
+                  <td className="w-1/2 max-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      {borrowerLogo ? (
+                        <div className="relative h-3 w-3 shrink-0 overflow-hidden rounded-full">
+                          <Image src={borrowerLogo} fill sizes="12px" alt="" />
+                        </div>
+                      ) : null}
+                      <div className="truncate">{name}</div>
+                    </div>
                   </td>
                   <td className="text-left">
                     {formatDate(estimatedPaymentDate, "MMM d, y")}
