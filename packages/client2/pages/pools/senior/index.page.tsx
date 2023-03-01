@@ -23,7 +23,7 @@ import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 
 import { CapitalStats, CapitalStatsPlaceholder } from "./capital-stats";
 import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
-// import { SeniorPoolHighlights } from "./senior-pool-highlights";
+import { SeniorPoolHighlights } from "./senior-pool-highlights";
 import { SeniorPoolLoanSummary } from "./senior-pool-loan-summary";
 import {
   SeniorPoolRepaymentSectionPlaceholder,
@@ -220,8 +220,7 @@ export default function SeniorPoolPage({
               {
                 navTitle: "Highlights",
                 title: "Highlights",
-                // content: <SeniorPoolHighlights />,
-                content: <div className="h-96" />,
+                content: <SeniorPoolHighlights />,
               },
               {
                 navTitle: "Repayment",

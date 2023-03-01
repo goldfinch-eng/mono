@@ -1,6 +1,6 @@
+import { gql } from "@apollo/client";
 import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers/lib/ethers";
-import { gql } from "graphql-request";
 import Image from "next/future/image";
 import { useState } from "react";
 

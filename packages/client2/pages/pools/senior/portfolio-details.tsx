@@ -1,4 +1,4 @@
-import { gql } from "graphql-request";
+import { gql } from "@apollo/client";
 import Image from "next/future/image";
 
 import { Button, Stat, StatGrid, Link } from "@/components/design-system";
