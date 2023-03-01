@@ -226,7 +226,6 @@ contract CallableLoanBaseTest is BaseTest {
 
   function deposit(
     CallableLoan callableLoan,
-    uint256 tranche,
     uint256 depositAmount,
     address depositor
   ) internal impersonating(depositor) returns (uint256) {
@@ -235,16 +234,7 @@ contract CallableLoanBaseTest is BaseTest {
       fundAddress(depositor, depositAmount - balance);
     }
     usdc.approve(address(callableLoan), depositAmount);
-    return callableLoan.deposit(tranche, depositAmount);
-  }
-
-  function deposit(
-    CallableLoan callableLoan,
-    uint256 depositAmount,
-    address depositor
-  ) internal returns (uint256) {
-    return
-      deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), depositAmount, depositor);
+    return callableLoan.deposit(depositAmount);
   }
 
   function pay(
@@ -316,7 +306,6 @@ contract CallableLoanBaseTest is BaseTest {
 
   function depositWithPermit(
     CallableLoan callableLoan,
-    uint256 tranche,
     uint256 amount,
     uint256 deadline,
     uint8 v,
@@ -328,7 +317,7 @@ contract CallableLoanBaseTest is BaseTest {
     if (balance < amount) {
       fundAddress(user, amount - balance);
     }
-    return callableLoan.depositWithPermit(tranche, amount, deadline, v, r, s);
+    return callableLoan.depositWithPermit(amount, deadline, v, r, s);
   }
 
   function depositAndDrawdown(
@@ -343,7 +332,7 @@ contract CallableLoanBaseTest is BaseTest {
     uint256 depositAmount,
     address investor
   ) internal impersonating(callableLoan.creditLine().borrower()) returns (uint256 tokenId) {
-    tokenId = deposit(callableLoan, 3, depositAmount, investor);
+    tokenId = deposit(callableLoan, depositAmount, investor);
     callableLoan.drawdown(depositAmount);
   }
 

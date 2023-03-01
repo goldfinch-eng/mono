@@ -39,23 +39,6 @@ interface ILoan {
   /// @notice Update `fundableAt` to a new timestamp. Only the borrower can call this.
   function setFundableAt(uint256 newFundableAt) external;
 
-  /// @notice Supply capital to this pool. Caller can't deposit to the junior tranche if the junior pool is locked.
-  ///   Caller can't deposit to a senior tranche if the pool is locked. Caller can't deposit if they are missing the
-  ///   required UID NFT.
-  /// @param tranche id of tranche to supply capital to. Id must correspond to a tranche in the current slice.
-  /// @param amount amount of capital to supply
-  /// @return tokenId NFT representing your position in this pool
-  function deposit(uint256 tranche, uint256 amount) external returns (uint256 tokenId);
-
-  function depositWithPermit(
-    uint256 tranche,
-    uint256 amount,
-    uint256 deadline,
-    uint8 v,
-    bytes32 r,
-    bytes32 s
-  ) external returns (uint256 tokenId);
-
   /// @notice Query the max amount available to withdraw for tokenId's position
   /// @param tokenId position to query max amount withdrawable for
   /// @return interestRedeemable total interest withdrawable on the position

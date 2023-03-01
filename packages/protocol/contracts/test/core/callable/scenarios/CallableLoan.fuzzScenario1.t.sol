@@ -223,7 +223,18 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       assertEq(callRequestPeriod.interestPaid, 0, "callRequestPeriod interest paid");
 
       uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      assertEq(
+        uncalledCapitalInfo.principalDeposited,
+        totalDeposits - callRequestPeriod.principalDeposited,
+        "Total principal deposits"
+      );
+      assertEq(
+        uncalledCapitalInfo.principalPaid,
+        totalDeposits - drawdownAmount - callRequestPeriod.principalPaid,
+        "Total principal paid"
+      );
+      assertEq(uncalledCapitalInfo.principalReserved, 0, "Total principal reserved");
+      assertEq(uncalledCapitalInfo.interestPaid, 0, "Total interest paid");
     }
 
     /// Pay - After First Call Submission
@@ -288,7 +299,29 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       );
 
       uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      assertEq(
+        uncalledCapitalInfo.principalDeposited,
+        totalDeposits - callRequestPeriod.principalDeposited,
+        "Uncalled capital principal deposited"
+      );
+      assertEq(
+        uncalledCapitalInfo.principalPaid,
+        totalDeposits - drawdownAmount - callRequestPeriod.principalPaid,
+        "Uncalled capital principal paid"
+      );
+      assertEq(
+        uncalledCapitalInfo.principalReserved,
+        paymentAllocation.additionalBalancePayment.saturatingSub(callAmount1),
+        "Uncalled capital principal reserved"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.interestPaid,
+        (paymentAllocation.accruedInterestPayment *
+          (uncalledCapitalInfo.principalDeposited - uncalledCapitalInfo.principalPaid)) /
+          (callableLoan.interestBearingBalance()),
+        HUNDREDTH_CENT,
+        "Uncalled capital interest paid"
+      );
     }
 
     // /// Submit Call request 2 from user 2
@@ -338,17 +371,8 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       callAmount2 = bound(callAmount2, 0, user2PoolTokenAvailableToCall);
 
       if (callAmount2 > 0) {
-        console.log("About to call, here are accounting variables");
         callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
-
         uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-        console.log(
-          "uncalledCapitalInfo.principalDeposited:",
-          uncalledCapitalInfo.principalDeposited
-        );
-        console.log("uncalledCapitalInfo.principalPaid:", uncalledCapitalInfo.principalPaid);
         (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
           callAmount2,
@@ -357,11 +381,25 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         );
 
         console.log("Submitted call 2!");
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdCalledSplit);
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdUncalledSplit);
         callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
+        assertEq(
+          callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
+          callAmount1 + callAmount2,
+          "callRequestPeriod principal outstanding"
+        );
+        assertEq(
+          callRequestPeriod.principalReserved,
+          Math.min(callAmount1 + callAmount2, paymentAllocation.additionalBalancePayment),
+          "callRequestPeriod principal Reserved"
+        );
+        assertApproxEqAbs(
+          callRequestPeriod.interestPaid,
+          (paymentAllocation.accruedInterestPayment *
+            (callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid)) /
+            (callableLoan.interestBearingBalance()),
+          HUNDREDTH_CENT,
+          "callRequestPeriod interest paid"
+        );
       }
 
       console.log("user1PoolTokenIdUncalledSplit", user1PoolTokenIdUncalledSplit);

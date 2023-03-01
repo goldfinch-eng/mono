@@ -23,7 +23,7 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
     drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
     (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(drawdownAmount).build(BORROWER);
 
-    deposit(callableLoan, 3, drawdownAmount, DEPOSITOR);
+    deposit(callableLoan, drawdownAmount, DEPOSITOR);
     drawdown(callableLoan, drawdownAmount / 2);
     uint256 termEndTimeBefore = callableLoan.termEndTime();
     drawdown(callableLoan, drawdownAmount / 2);

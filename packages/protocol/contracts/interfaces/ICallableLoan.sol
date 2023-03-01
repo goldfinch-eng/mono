@@ -76,6 +76,21 @@ interface ICallableLoan is ILoan {
     uint256 poolTokenId
   ) external returns (uint256, uint256);
 
+  /// @notice Supply capital to this pool. Caller can't deposit to the junior tranche if the junior pool is locked.
+  ///   Caller can't deposit to a senior tranche if the pool is locked. Caller can't deposit if they are missing the
+  ///   required UID NFT.
+  /// @param amount amount of capital to supply
+  /// @return tokenId NFT representing your position in this pool
+  function deposit(uint256 amount) external returns (uint256 tokenId);
+
+  function depositWithPermit(
+    uint256 amount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external returns (uint256 tokenId);
+
   function schedule() external view returns (ISchedule);
 
   function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
