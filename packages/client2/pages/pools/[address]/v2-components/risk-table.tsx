@@ -24,6 +24,7 @@ export const RISK_TABLE_DEAL_FIELDS = gql`
     dataroom
     dueDiligenceContact
     onChainCapitalPriority
+    offChainCapitalPriority
     collateralAssets
   }
 `;
@@ -104,30 +105,30 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             />
           ) : null}
           {deal.onChainCapitalPriority ? (
-            <>
-              <RiskTableRow
-                heading="On-chain capital priority"
-                boldValue={
-                  deal.onChainCapitalPriority === "junior" ? "Junior" : "Senior"
-                }
-                value={
-                  deal.onChainCapitalPriority === "junior"
-                    ? "First-loss capital"
-                    : "If the borrower has received other off-chain funding for this pool, on-chain capital will be prioritized first"
-                }
-              />
-              <RiskTableRow
-                heading="Off-chain capital priority"
-                boldValue={
-                  deal.onChainCapitalPriority === "junior" ? "Senior" : "Junior"
-                }
-                value={
-                  deal.onChainCapitalPriority === "junior"
-                    ? "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
-                    : "First-loss capital"
-                }
-              />
-            </>
+            <RiskTableRow
+              heading="On-chain capital priority"
+              boldValue={
+                deal.onChainCapitalPriority === "junior" ? "Junior" : "Senior"
+              }
+              value={
+                deal.onChainCapitalPriority === "junior"
+                  ? "First-loss capital"
+                  : "If the borrower has received other off-chain funding for this pool, on-chain capital will be prioritized first"
+              }
+            />
+          ) : null}
+          {deal.offChainCapitalPriority ? (
+            <RiskTableRow
+              heading="Off-chain capital priority"
+              boldValue={
+                deal.offChainCapitalPriority === "junior" ? "Junior" : "Senior"
+              }
+              value={
+                deal.offChainCapitalPriority === "junior"
+                  ? "First-loss capital"
+                  : "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first"
+              }
+            />
           ) : null}
           <RiskTableRow
             heading="Post-close reporting"

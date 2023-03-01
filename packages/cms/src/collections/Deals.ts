@@ -262,10 +262,16 @@ const Deals: CollectionConfig = {
           { label: "Senior", value: "senior" },
         ]
       ),
-      admin: {
-        description:
-          "If this is set to 'Junior', off-chain capital priority is assumed to be senior, and vice versa.",
-      },
+    },
+    {
+      ...generateBinarySelect(
+        "offChainCapitalPriority",
+        "Off-chain capital priority",
+        [
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+        ]
+      ),
     },
     {
       name: "collateralAssets",
