@@ -28,7 +28,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     uid._mintForTest(poolTokenOwner, 1, 1, "");
     uid._mintForTest(rando, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, depositAmount, poolTokenOwner);
+    uint256 token = deposit(callableLoan, depositAmount, poolTokenOwner);
     uint256 drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
     drawdown(callableLoan, drawdownAmount);
     secondsElapsedSinceDrawdownPeriod = bound(
@@ -58,7 +58,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(depositor, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
+    uint256 token = deposit(callableLoan, depositAmount, depositor);
     uint256 drawdownAmount = bound(drawdownAmount, 1, depositAmount);
     uint256 callAmount = bound(callAmount, 1, drawdownAmount);
     drawdown(callableLoan, drawdownAmount);
@@ -80,7 +80,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, depositAmount, user);
+    uint256 token = deposit(callableLoan, depositAmount, user);
     drawdownAmount = bound(drawdownAmount, 1, depositAmount);
     callAmount = bound(callAmount, 1, drawdownAmount);
     drawdown(callableLoan, drawdownAmount);

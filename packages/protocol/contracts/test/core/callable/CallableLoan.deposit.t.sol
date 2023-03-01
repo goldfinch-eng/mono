@@ -29,7 +29,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
     vm.expectRevert(bytes("NA"));
-    callableLoan.deposit(3, 1);
+    callableLoan.deposit(1);
   }
 
   function testDepositWorksIfGolistedAndWithoutAllowedUid() public impersonating(DEPOSITOR) {
@@ -41,14 +41,14 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     _stopImpersonation();
     addToGoList(DEPOSITOR);
     usdc.approve(address(callableLoan), type(uint256).max);
-    uint256 poolToken = callableLoan.deposit(3, usdcVal(10));
+    uint256 poolToken = callableLoan.deposit(usdcVal(10));
     assertEq(poolToken, 1);
   }
 
   function testDepositWorksIfAllowedUidButNotGoListed() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
-    uint256 poolToken = callableLoan.deposit(3, usdcVal(100));
+    uint256 poolToken = callableLoan.deposit(usdcVal(100));
     assertEq(poolToken, 1);
   }
 
@@ -57,7 +57,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
     vm.expectRevert(bytes("ZA"));
-    callableLoan.deposit(1, usdcVal(0));
+    callableLoan.deposit(usdcVal(0));
   }
 
   function testDepositRevertsIfPoolLocked() public impersonating(DEPOSITOR) {
@@ -65,18 +65,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     usdc.approve(address(callableLoan), type(uint256).max);
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
     vm.expectRevert(bytes("IS"));
-    callableLoan.deposit(3, usdcVal(100));
-  }
-
-  function testDepositRevertsForInvalidTranche(
-    uint invalidTranche
-  ) public impersonating(DEPOSITOR) {
-    vm.assume(invalidTranche != 3);
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-    uid._mintForTest(DEPOSITOR, 1, 1, "");
-    usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("IT"));
-    callableLoan.deposit(invalidTranche, usdcVal(100));
+    callableLoan.deposit(usdcVal(100));
   }
 
   function testDepositUpdatesTrancheInfoAndMintsToken(
@@ -94,7 +83,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     vm.expectEmit(true, true, true, true);
     emit DepositMade(DEPOSITOR, 3, 1, depositAmount);
 
-    uint256 poolToken = callableLoan.deposit(3, depositAmount);
+    uint256 poolToken = callableLoan.deposit(depositAmount);
 
     ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
       .getUncalledCapitalInfo();
@@ -140,8 +129,8 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
 
-    callableLoan.deposit(3, amount1);
-    callableLoan.deposit(3, amount2);
+    callableLoan.deposit(amount1);
+    callableLoan.deposit(amount2);
 
     ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
       .getUncalledCapitalInfo();
@@ -168,17 +157,6 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     vm.expectEmit(true, true, true, true);
     emit DepositsLocked(address(callableLoan));
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
-  }
-
-  function testDepositFailsForInvalidTranches(uint256 trancheId) public {
-    vm.assume(trancheId < 3);
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    _startImpersonation(DEPOSITOR);
-    usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("IT"));
-    callableLoan.deposit(trancheId, usdcVal(1));
-    _stopImpersonation();
   }
 
   function testDepositUsingPermit(uint256 userPrivateKey, uint256 depositAmount) public {
@@ -217,7 +195,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, depositAmount, "");
     // Deposit with permit
     _startImpersonation(user);
-    uint256 poolTokenId = callableLoan.depositWithPermit(3, depositAmount, deadline, v, r, s);
+    uint256 poolTokenId = callableLoan.depositWithPermit(depositAmount, deadline, v, r, s);
     _stopImpersonation();
 
     ICallableLoan.UncalledCapitalInfo memory uncalledCapital = callableLoan
@@ -259,6 +237,6 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     vm.expectRevert(bytes("EL"));
-    callableLoan.deposit(3, depositAmount);
+    callableLoan.deposit(depositAmount);
   }
 }

@@ -126,7 +126,8 @@ contract CallableLoan is
   /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
   /// @dev IT: invalid tranche - must be uncalled capital tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @notice Supply capital to the loan.
+  /// @notice Submit a call request for a given amount of capital. The borrower is obligated
+  ///         to pay back the call requested amount in the active call payment period.
   /// @param callAmount Amount of capital to call back
   /// @param poolTokenId Pool token id to be called back.
   function submitCall(
@@ -229,7 +230,7 @@ contract CallableLoan is
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ICallableLoan
   /// @notice Supply capital to the loan.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
@@ -237,7 +238,7 @@ contract CallableLoan is
     return _deposit(amount);
   }
 
-  /// @inheritdoc ILoan
+  /// @inheritdoc ICallableLoan
   /// @notice Supply capital to the loan.
   /// @param amount amount of capital to supply
   /// @param deadline deadline of permit operation

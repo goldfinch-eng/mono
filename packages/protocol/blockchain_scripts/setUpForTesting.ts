@@ -217,7 +217,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
     await txn.wait()
 
-    txn = await openCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
+    txn = await openCallableLoan.connect(signer).deposit(String(depositAmount))
     await txn.wait()
     /*** CALLABLE LOAN END ***/
 
@@ -236,7 +236,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     depositAmount = new BN(10000).mul(USDCDecimals)
     txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
     await txn.wait()
-    txn = await closedCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
+    txn = await closedCallableLoan.connect(signer).deposit(String(depositAmount))
     await txn.wait()
 
     txn = await closedCallableLoan.drawdown(String(depositAmount))

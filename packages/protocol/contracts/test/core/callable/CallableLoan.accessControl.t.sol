@@ -62,10 +62,10 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     pause(callableLoan);
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.deposit(3, usdcVal(1));
+    callableLoan.deposit(usdcVal(1));
 
     vm.expectRevert("Pausable: paused");
-    callableLoan.depositWithPermit(3, usdcVal(1), 0, 0, 0, 0);
+    callableLoan.depositWithPermit(usdcVal(1), 0, 0, 0, 0);
 
     vm.expectRevert("Pausable: paused");
     callableLoan.withdraw(1, usdcVal(1));
@@ -104,7 +104,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     unpause(callableLoan);
 
     // None of these calls should revert
-    deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), usdcVal(100), user);
+    deposit(callableLoan, usdcVal(100), user);
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
       usdc,
       user,
@@ -114,16 +114,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
       block.timestamp + 1
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
-    depositWithPermit(
-      callableLoan,
-      callableLoan.uncalledCapitalTrancheIndex(),
-      usdcVal(100),
-      block.timestamp + 1,
-      v,
-      r,
-      s,
-      user
-    );
+    depositWithPermit(callableLoan, usdcVal(100), block.timestamp + 1, v, r, s, user);
 
     withdraw(callableLoan, 1, usdcVal(1), user);
     withdrawMax(callableLoan, 2, user);
