@@ -180,6 +180,10 @@ type TranchedPool implements Loan @entity {
   allowedUidTypes: [UidType!]!
   backers: [User!]!
   numBackers: Int!
+  """
+  A null value indicates there have been no senior pool contributions to the pool yet
+  """
+  actualSeniorPoolInvestment: BigInt
 
   balance: BigInt!
   paymentPeriodInDays: BigInt!
