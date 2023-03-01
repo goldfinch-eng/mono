@@ -935,7 +935,7 @@ async function createCallableLoanForBorrower({
     const depositorSigner = ethers.provider.getSigner(depositor)
     txn = await erc20.connect(depositorSigner).approve(loan.address, String(limit))
     await txn.wait()
-    txn = await loan.connect(depositorSigner).deposit(UNCALLED_CAPITAL_TRANCHE, depositAmount)
+    txn = await loan.connect(depositorSigner).deposit(depositAmount)
     await txn.wait()
 
     logger(`Deposited ${depositAmount} into ${loan.address} via ${depositor}`)
