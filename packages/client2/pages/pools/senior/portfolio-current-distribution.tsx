@@ -63,7 +63,7 @@ const GROUP_BY_OPTIONS = [
 ];
 
 interface PoolTableData {
-  description?: string;
+  name?: string;
   icon?: string | null;
   portfolioShare: number;
   capitalOwed: BigNumber;
@@ -122,7 +122,7 @@ const getTableDataByDeal = (
     );
 
     poolTableData.push({
-      description: dealDetails.name,
+      name: dealDetails.name,
       icon: dealDetails.borrower.logo?.url,
       portfolioShare,
       capitalOwed: actualSeniorPoolInvestment,
@@ -151,7 +151,7 @@ const getTableDataByBorrower = (
     if (borrowerId) {
       if (!tableDataByBorrowerId[borrowerId]) {
         tableDataByBorrowerId[borrowerId] = {
-          description: deal.borrower.name,
+          name: deal.borrower.name,
           icon: deal.borrower.logo?.url,
           portfolioShare: computePercentage(
             actualSeniorPoolInvestment,
@@ -252,7 +252,7 @@ export function PortfolioCurrentDistribution({
         <tbody className="divide-y divide-sand-300">
           {tableData?.map(
             ({
-              description,
+              name,
               icon,
               portfolioShare,
               capitalOwed,
@@ -260,20 +260,20 @@ export function PortfolioCurrentDistribution({
               poolRepaymentStatus,
             }) => {
               return (
-                <tr key={description} className="h-[2.9rem]">
+                <tr key={name} className="h-[2.9rem]">
                   <td className="w-[30%] max-w-0 !pr-0 text-left">
                     <div className="flex items-center">
                       <div className="relative mr-1.5 h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {icon ? (
                           <Image
                             src={icon}
-                            alt={`${description}`}
+                            alt={`${name}`}
                             className="object-cover"
                             fill
                           />
                         ) : null}
                       </div>
-                      <div className="truncate">{description}</div>
+                      <div className="truncate">{name}</div>
                     </div>
                   </td>
                   <td className="text-right">
