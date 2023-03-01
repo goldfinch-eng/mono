@@ -27,6 +27,7 @@ import {
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { TransactionTable } from "./transaction-table";
 import { AmountStats, AMOUNT_STATS_FIELDS } from "./v2-components/amount-stats";
 import {
   BorrowerProfile,
@@ -372,6 +373,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 : undefined
             }
           />
+
+          <div>
+            <h2 className="mb-6 font-semibold">Recent activity</h2>
+            {tranchedPool ? (
+              <TransactionTable tranchedPoolId={tranchedPool.id} />
+            ) : null}
+          </div>
         </div>
 
         <div className="flex flex-col" style={{ gridArea: "widgets" }}>
