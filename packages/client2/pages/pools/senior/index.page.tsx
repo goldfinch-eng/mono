@@ -16,52 +16,24 @@ import { apolloClient } from "@/lib/graphql/apollo";
 import {
   useSeniorPoolPageQuery,
   SeniorPoolPageCmsQuery,
+  SeniorPoolPageCmsDocument,
 } from "@/lib/graphql/generated";
-import { USER_ELIGIBILITY_FIELDS } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 
-import {
-  CapitalStats,
-  CapitalStatsPlaceholder,
-  CAPITAL_STATS_SENIOR_POOL_FIELDS,
-} from "./capital-stats";
-import {
-  InvestAndWithdrawTabs,
-  INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS,
-  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
-  SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS,
-} from "./invest-and-withdraw/invest-and-withdraw-tabs";
+import { CapitalStats, CapitalStatsPlaceholder } from "./capital-stats";
+import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
 // import { SeniorPoolHighlights } from "./senior-pool-highlights";
-import {
-  SeniorPoolLoanSummary,
-  SENIOR_POOL_LOAN_SUMMARY_FIELDS,
-} from "./senior-pool-loan-summary";
+import { SeniorPoolLoanSummary } from "./senior-pool-loan-summary";
 import {
   SeniorPoolRepaymentSectionPlaceholder,
   SeniorPoolRepaymentSection,
-  SENIOR_POOL_REPAYMENTS_FIELDS,
 } from "./senior-pool-repayment";
-import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
+import { StatusSection } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
-  ${SENIOR_POOL_STATUS_FIELDS}
-
-  ${CAPITAL_STATS_SENIOR_POOL_FIELDS}
-
-  ${INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS}
-  ${USER_ELIGIBILITY_FIELDS}
-
-  ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
-
-  ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
-
-  ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
-
-  ${SENIOR_POOL_REPAYMENTS_FIELDS}
-
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
     user(id: $userId) {
@@ -85,20 +57,6 @@ gql`
       sharePrice
       withdrawalCancellationFee
       epochEndsAt @client
-      name @client
-      category @client
-      icon @client
-      defaultRate
-      totalLoansOutstanding
-      totalInvested
-      tranchedPools {
-        id
-        balance
-        termEndTime
-        actualSeniorPoolInvestment
-        isLate @client
-        isInDefault @client
-      }
       ...SeniorPoolPortfolioDetailsFields
       ...SeniorPoolStatusFields
       ...CapitalStatsFields
@@ -122,21 +80,11 @@ gql`
   }
 `;
 
-const seniorPoolCmsQuery = gql`
+gql`
   query SeniorPoolPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        id
-        name
-        category
-        dealType
-        borrower {
-          id
-          name
-          logo {
-            url
-          }
-        }
+        ...SeniorPoolPortfolioPoolsDealsFields
       }
     }
   }
@@ -408,7 +356,7 @@ export default function SeniorPoolPage({
 
 export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<SeniorPoolPageCmsQuery>({
-    query: seniorPoolCmsQuery,
+    query: SeniorPoolPageCmsDocument,
     fetchPolicy: "network-only",
   });
 

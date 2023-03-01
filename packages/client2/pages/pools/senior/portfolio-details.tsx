@@ -9,7 +9,7 @@ import {
 } from "@/lib/graphql/generated";
 import { PortfolioCurrentDistribution } from "@/pages/pools/senior/portfolio-current-distribution";
 
-export const SENIOR_POOL_PORTFOLIO_DETAILS_FIELDS = gql`
+gql`
   fragment SeniorPoolPortfolioDetailsFields on SeniorPool {
     name @client
     category @client

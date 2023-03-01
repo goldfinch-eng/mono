@@ -13,7 +13,7 @@ import {
 } from "@/lib/graphql/generated";
 import { getLoanRepaymentStatus, LoanRepaymentStatus } from "@/lib/pools";
 
-export const SENIOR_POOL_PORTFOLIO_DISTRIBUTION_FIELDS = gql`
+gql`
   fragment SeniorPoolPortfolioDistributionFields on SeniorPool {
     poolsOrderedBySpInvestment: tranchedPools(
       orderBy: actualSeniorPoolInvestment
@@ -31,7 +31,7 @@ export const SENIOR_POOL_PORTFOLIO_DISTRIBUTION_FIELDS = gql`
   }
 `;
 
-export const SENIOR_POOL_PORTFOLIO_POOLS_DEALS_FIELDS = gql`
+gql`
   fragment SeniorPoolPortfolioPoolsDealsFields on Deal {
     id
     name
