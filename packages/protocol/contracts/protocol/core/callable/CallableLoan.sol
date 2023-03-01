@@ -112,12 +112,7 @@ contract CallableLoan is
     );
     borrower = _borrower;
     createdAt = block.timestamp;
-    if (_allowedUIDTypes.length == 0) {
-      uint256[1] memory defaultAllowedUIDTypes = [config.getGo().ID_TYPE_0()];
-      allowedUIDTypes = defaultAllowedUIDTypes;
-    } else {
-      allowedUIDTypes = _allowedUIDTypes;
-    }
+    allowedUIDTypes = _allowedUIDTypes;
 
     _setupRole(LOCKER_ROLE, _borrower);
     _setupRole(LOCKER_ROLE, owner);
@@ -497,6 +492,7 @@ contract CallableLoan is
   /// @dev ZA: zero amount - must be greater than 0.
   /// @dev IT: invalid tranche - must be uncalled capital tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
+  /// @dev NF: not open for funding. Must be after fundableAt
   /// @notice Supply capital to the loan.
   /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
@@ -506,7 +502,7 @@ contract CallableLoan is
     require(amount > 0, "ZA");
     require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
     require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp >= fundableAt, "Not open for funding");
+    require(block.timestamp >= fundableAt, "NF");
 
     cl.deposit(amount);
     uint256 tokenId = config.getPoolTokens().mint(

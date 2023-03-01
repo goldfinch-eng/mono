@@ -23,7 +23,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
 
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
 
     // First junior deposit
     token1 = tp.deposit(2, usdcVal(5));

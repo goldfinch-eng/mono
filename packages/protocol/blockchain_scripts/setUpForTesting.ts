@@ -239,7 +239,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await closedCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
     await txn.wait()
 
-    //TODO: Lock pool
+    txn = await closedCallableLoan.drawdown(String(depositAmount))
     await txn.wait()
     /*** CALLABLE LOAN CLOSED END ***/
 

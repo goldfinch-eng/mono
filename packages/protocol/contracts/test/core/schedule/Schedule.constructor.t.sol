@@ -26,7 +26,7 @@ contract ScheduleConstructorTest is Test {
   function testRevertsWhenPeriodMapperIsNull(ScheduleParams memory p) public withValidParams(p) {
     vm.expectRevert(bytes("Z"));
     s = new Schedule(
-      IPeriodMapper(address(0)), // m,
+      IPeriodMapper(address(0)),
       p.periodsInTerm,
       p.periodsPerPrincipalPeriod,
       p.periodsPerInterestPeriod,

@@ -70,7 +70,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
     // Make a junior deposit
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
     tokenId = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -81,7 +81,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testRevertsForNonOwnerNonApprovedOperator(address caller) public impersonating(caller) {
-    vm.assume(caller != address(this));
+    vm.assume(fuzzHelper.isAllowed(caller));
     vm.expectRevert(bytes("NA"));
     poolTokens.splitToken(tokenId, usdcVal(5) / 2);
   }
@@ -340,7 +340,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
     (tp, cl) = tpWithSchedule(12, 1, 6, 1);
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
     tokenId = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(tokenId);
     grantRole(address(tp), TestConstants.SENIOR_ROLE, GF_OWNER);

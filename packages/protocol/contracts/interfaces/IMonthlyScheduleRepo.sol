@@ -3,10 +3,10 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "./ISchedule.sol";
-import {IMonthlyPeriodMapper} from "./IMonthlyPeriodMapper.sol";
+import {IPeriodMapper} from "./IPeriodMapper.sol";
 
 interface IMonthlyScheduleRepo {
-  function periodMapper() external view returns (IMonthlyPeriodMapper);
+  function periodMapper() external view returns (IPeriodMapper);
 
   function getSchedule(
     uint256 periodsInTerm,

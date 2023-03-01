@@ -6,6 +6,12 @@ pragma experimental ABIEncoderV2;
 interface ISchedule {
   function periodsPerPrincipalPeriod() external view returns (uint256);
 
+  function periodsInTerm() external view returns (uint256);
+
+  function periodsPerInterestPeriod() external view returns (uint256);
+
+  function gracePrincipalPeriods() external view returns (uint256);
+
   /**
    * @notice Returns the period that timestamp resides in
    */
