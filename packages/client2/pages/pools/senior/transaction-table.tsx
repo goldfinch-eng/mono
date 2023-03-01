@@ -160,7 +160,7 @@ export function TransactionTable() {
         <Link
           href={`/pools/${transaction.tranchedPool.id}`}
           iconRight="ArrowTopRight"
-          className="text-sand-400"
+          className="text-mustard-700"
         >
           Pool
         </Link>
@@ -171,7 +171,7 @@ export function TransactionTable() {
         rel="noopener noreferrer"
         key={`${transaction.id}-tx`}
         iconRight="ArrowTopRight"
-        className="text-sand-400"
+        className="text-mustard-700"
       >
         Tx
       </Link>,

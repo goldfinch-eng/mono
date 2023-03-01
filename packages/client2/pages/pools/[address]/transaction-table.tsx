@@ -147,7 +147,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         href={`https://etherscan.io/tx/${transaction.transactionHash}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sand-400"
+        className="text-mustard-700"
         key={`${transaction.id}-link`}
         iconRight="ArrowTopRight"
       >
