@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -18,6 +17,33 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 interestWithdrawn,
     uint256 principalWithdrawn
   );
+
+  function testCanSplitToken(uint256 amount1, uint256 amount2, address otherDepositor) public {
+    amount1 = bound(amount1, usdcVal(1), usdcVal(1_000_000_000));
+    amount2 = bound(amount2, usdcVal(1), usdcVal(1_000_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount1 + amount2);
+    vm.assume(fuzzHelper.isAllowed(otherDepositor));
+
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    uid._mintForTest(otherDepositor, 1, 1, "");
+
+    uint256 token1 = deposit(callableLoan, 3, amount1, DEPOSITOR);
+    uint256 token2 = deposit(callableLoan, 3, amount2, otherDepositor);
+
+    drawdown(callableLoan, amount1 + amount2);
+
+    _startImpersonation(DEPOSITOR);
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+    (uint256 token3, uint256 token4) = poolTokens.splitToken(token1, tokenInfo.principalAmount / 2);
+    _stopImpersonation();
+
+    uint256 uncalledCapitalTranche = 3;
+    tokenInfo = poolTokens.getTokenInfo(token3);
+    assertEq(tokenInfo.tranche, uncalledCapitalTranche);
+
+    tokenInfo = poolTokens.getTokenInfo(token4);
+    assertEq(tokenInfo.tranche, uncalledCapitalTranche);
+  }
 
   function testAvailableToWithdrawReturnsInterestAndPrincipalRedeemable(
     uint256 amount1,
