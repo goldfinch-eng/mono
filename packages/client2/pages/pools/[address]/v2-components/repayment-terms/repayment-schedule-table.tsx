@@ -1,17 +1,17 @@
 import clsx from "clsx";
+import { format as formatDate } from "date-fns";
 
 import { formatCrypto } from "@/lib/format";
-
-import { RepaymentScheduleData } from "./repayment-terms-schedule";
+import { RepaymentSchedule } from "@/lib/pools";
 
 interface RepaymentScheduleTableProps {
   className?: string;
-  repaymentScheduleData: RepaymentScheduleData[];
+  repaymentSchedule: RepaymentSchedule;
 }
 
 export function RepaymentScheduleTable({
   className,
-  repaymentScheduleData,
+  repaymentSchedule,
 }: RepaymentScheduleTableProps) {
   return (
     <div className={clsx(className, "max-h-80 overflow-y-auto")}>
@@ -33,11 +33,13 @@ export function RepaymentScheduleTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-sand-300">
-          {repaymentScheduleData.map(
+          {repaymentSchedule.map(
             ({ paymentPeriod, estimatedPaymentDate, interest, principal }) => (
               <tr key={paymentPeriod}>
                 <td className="text-left">{paymentPeriod}</td>
-                <td className="text-left">{estimatedPaymentDate}</td>
+                <td className="text-left">
+                  {formatDate(estimatedPaymentDate, "MMM d, y")}
+                </td>
                 <td className="text-right">
                   {formatCrypto({ amount: principal, token: "USDC" })}
                 </td>

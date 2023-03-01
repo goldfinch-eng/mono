@@ -22,6 +22,11 @@ import { useWallet } from "@/lib/wallet";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 
 import {
+  CapitalStats,
+  CapitalStatsPlaceholder,
+  CAPITAL_STATS_SENIOR_POOL_FIELDS,
+} from "./capital-stats";
+import {
   InvestAndWithdrawTabs,
   INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS,
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
@@ -32,12 +37,19 @@ import {
   SeniorPoolLoanSummary,
   SENIOR_POOL_LOAN_SUMMARY_FIELDS,
 } from "./senior-pool-loan-summary";
+import {
+  SeniorPoolRepaymentSectionPlaceholder,
+  SeniorPoolRepaymentSection,
+  SENIOR_POOL_REPAYMENTS_FIELDS,
+} from "./senior-pool-repayment";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
+
+  ${CAPITAL_STATS_SENIOR_POOL_FIELDS}
 
   ${INVEST_AND_WITHDRAW_SENIOR_POOL_FIELDS}
   ${USER_ELIGIBILITY_FIELDS}
@@ -47,6 +59,8 @@ gql`
   ${SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS}
 
   ${SENIOR_POOL_LOAN_SUMMARY_FIELDS}
+
+  ${SENIOR_POOL_REPAYMENTS_FIELDS}
 
   # Must provide user arg as an ID type and a String type. Selecting a single user requires an ID! type arg, but a where clause involving a using requires a String! type arg, despite the fact that they're basically the same. Very silly.
   query SeniorPoolPage($userId: ID!, $user: String!) {
@@ -87,9 +101,11 @@ gql`
       }
       ...SeniorPoolPortfolioDetailsFields
       ...SeniorPoolStatusFields
+      ...CapitalStatsFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
       ...InvestAndWithdrawSeniorPoolFields
+      ...SeniorPoolRepaymentFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -247,7 +263,11 @@ export default function SeniorPoolPage({
               {
                 navTitle: "Overview",
                 title: "Overview",
-                content: <div className="h-96" />,
+                content: seniorPool ? (
+                  <CapitalStats seniorPool={seniorPool} />
+                ) : (
+                  <CapitalStatsPlaceholder />
+                ),
               },
               {
                 navTitle: "Highlights",
@@ -258,7 +278,11 @@ export default function SeniorPoolPage({
               {
                 navTitle: "Repayment",
                 title: "Repayments",
-                content: <div className="h-96" />,
+                content: seniorPool ? (
+                  <SeniorPoolRepaymentSection seniorPool={seniorPool} />
+                ) : (
+                  <SeniorPoolRepaymentSectionPlaceholder />
+                ),
               },
               {
                 navTitle: "Portfolio",

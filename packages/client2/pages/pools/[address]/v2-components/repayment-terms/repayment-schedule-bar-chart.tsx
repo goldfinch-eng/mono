@@ -17,15 +17,14 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
-
-import { RepaymentScheduleData } from "./repayment-terms-schedule";
+import { RepaymentSchedule } from "@/lib/pools";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 
 interface RepaymentScheduleBarChartProps {
   className?: string;
-  repaymentScheduleData: RepaymentScheduleData[];
+  repaymentSchedule: RepaymentSchedule;
 }
 
 const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
@@ -50,20 +49,30 @@ const RepaymentScheduleBarChartTooltip = ({
   label,
 }: TooltipProps<ValueType, NameType>) => {
   if (active && payload) {
-    const interestDataPoint = payload[0];
-    const principalDataPoint = payload[1];
+    const principalDataPoint = payload[0];
+    const interestDataPoint = payload[1];
 
     return (
-      <div className="rounded-xl border-sand-300 bg-white p-6 outline-none">
-        <div className="text-xs outline-none">
-          <div className="mb-2">No.: {label}</div>
-          <div style={{ color: principalDataPoint.color }} className="mb-1">
+      <div className="rounded-lg bg-white p-2 text-xs shadow-lg outline-none">
+        <div className="mb-1">Month {label}</div>
+        <div className="mb-1 flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: principalDataPoint.color }}
+          />
+          <div>
             {`Principal: ${formatFiat({
               amount: principalDataPoint.payload.principal,
               symbol: "USD",
             })}`}
           </div>
-          <div style={{ color: interestDataPoint.color }}>
+        </div>
+        <div className="mb-1 flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: interestDataPoint.color }}
+          />
+          <div>
             {`Interest: ${formatFiat({
               amount: interestDataPoint.payload.interest,
               symbol: "USD",
@@ -79,18 +88,17 @@ const RepaymentScheduleBarChartTooltip = ({
 
 export function RepaymentScheduleBarChart({
   className,
-  repaymentScheduleData,
+  repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
-  const repaymentScheduleDataFloat = repaymentScheduleData.map((data) => ({
+  const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
     principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
   }));
 
   const maxYValue =
-    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1]
-      .principal +
-    repaymentScheduleDataFloat[repaymentScheduleDataFloat.length - 1].interest;
+    repaymentScheduleFloat[repaymentScheduleFloat.length - 1].principal +
+    repaymentScheduleFloat[repaymentScheduleFloat.length - 1].interest;
 
   const yAxisTicks = [
     0,
@@ -109,7 +117,7 @@ export function RepaymentScheduleBarChart({
   return (
     <ResponsiveContainer width="100%" height={225} className={className}>
       <BarChart
-        data={repaymentScheduleDataFloat}
+        data={repaymentScheduleFloat}
         margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
       >
         <Legend
@@ -122,7 +130,7 @@ export function RepaymentScheduleBarChart({
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
           interval={
-            repaymentScheduleDataFloat.length <=
+            repaymentScheduleFloat.length <=
             MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
               ? 0
               : 1
@@ -138,7 +146,6 @@ export function RepaymentScheduleBarChart({
           width={40}
         />
         <CartesianGrid vertical={false} x={0} width={650} />
-        {/* TODO: Waiting on official Tooltip UI design */}
         <Tooltip
           content={RepaymentScheduleBarChartTooltip}
           offset={15}

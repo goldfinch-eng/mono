@@ -93,7 +93,7 @@ function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
           </Link>
         );
       default:
-        return <p key={i}>{renderRichText(node.children)}</p>;
+        return <div key={i}>{renderRichText(node.children)}</div>;
     }
   });
 }

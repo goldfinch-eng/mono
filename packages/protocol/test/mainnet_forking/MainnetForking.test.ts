@@ -601,15 +601,20 @@ describe("mainnet forking tests", async function () {
         // At the current blockNum, tokenOwner hasn't claimed any rewards. We want a test where they have non-zero
         // rewardsClaimed at token split, so we'll withdraw all their claimable rewards up to now (they will accrue)
         // more claimable rewards after payment time
-        // Need to make payment first. We can't claim rewards because the pool is late on payments...
+
         await hre.network.provider.request({
           method: "hardhat_impersonateAccount",
           params: [stratosEoa],
         })
         await tranchedPool.assess()
         let interestOwed = await creditLine.interestOwed()
-        await usdc.approve(tranchedPool.address, interestOwed, {from: stratosEoa})
-        await tranchedPool.pay(interestOwed, {from: stratosEoa})
+        if (!interestOwed.isZero()) {
+          // Need to make payment first. We can't claim rewards if the pool is late on payments...
+
+          await usdc.approve(tranchedPool.address, interestOwed, {from: stratosEoa})
+          await tranchedPool.pay(interestOwed, {from: stratosEoa})
+        }
+
         await hre.network.provider.request({
           method: "hardhat_impersonateAccount",
           params: [tokenOwner],

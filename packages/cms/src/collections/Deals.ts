@@ -124,6 +124,7 @@ const Deals: CollectionConfig = {
         leaves: ["bold", "italic", "underline"],
       },
     },
+    // TODO remove this after new deal page ux goes live. This is unused.
     { name: "transactionStructure", type: "upload", relationTo: "media" },
     {
       name: "agreement",
@@ -139,6 +140,14 @@ const Deals: CollectionConfig = {
       admin: {
         description:
           "This should be a URL linking to the dataroom for this deal.",
+      },
+    },
+    {
+      name: "dueDiligenceContact",
+      type: "text",
+      admin: {
+        description:
+          "This should be a URL linking to the direct chat with the borrower for due diligence.",
       },
     },
     {
@@ -225,6 +234,7 @@ const Deals: CollectionConfig = {
           },
           label: "Recourse description",
         },
+        // TODO delete this after new deal page ux goes live. This is unused.
         {
           name: "covenants",
           type: "richText",
@@ -235,12 +245,35 @@ const Deals: CollectionConfig = {
         },
       ],
     },
+    // TODO delete this after the new deal page ux goes live. This is unused.
     {
       name: "documents",
       type: "blocks",
       minRows: 0,
       maxRows: 999,
       blocks: [Document],
+    },
+    {
+      ...generateBinarySelect(
+        "onChainCapitalPriority",
+        "On-chain capital priority",
+        [
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+        ]
+      ),
+      admin: {
+        description:
+          "If this is set to 'Junior', off-chain capital priority is assumed to be senior, and vice versa.",
+      },
+    },
+    {
+      name: "collateralAssets",
+      type: "richText",
+      admin: {
+        elements: ["link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
   ],
 };

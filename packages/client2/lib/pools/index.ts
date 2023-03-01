@@ -17,7 +17,9 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
+  RepaymentScheduleFieldsFragment,
 } from "@/lib/graphql/generated";
+import { calculateInterestOwed } from "@/pages/borrow/helpers";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
@@ -535,4 +537,95 @@ export function gfiToUsdc(
     token: "USDC",
     amount: BigNumber.from(amount.toString().split(".")[0]),
   };
+}
+
+export type RepaymentSchedule = {
+  paymentPeriod: number;
+  estimatedPaymentDate: number;
+  principal: BigNumber;
+  interest: BigNumber;
+}[];
+
+export const REPAYMENT_SCHEDULE_FIELDS = gql`
+  fragment RepaymentScheduleFields on Loan {
+    fundableAt
+    termStartTime
+    termEndTime
+    paymentPeriodInDays
+    termInDays
+    interestRateBigInt
+    principalAmount
+    fundingLimit
+  }
+`;
+
+export function generateRepaymentSchedule(
+  loan: RepaymentScheduleFieldsFragment
+): RepaymentSchedule {
+  const repaymentSchedule: RepaymentSchedule = [];
+  const secondsPerDay = 24 * 60 * 60;
+
+  const termStartTime = !loan.termStartTime.isZero()
+    ? loan.termStartTime.toNumber()
+    : loan.fundableAt + secondsPerDay * 14;
+  const termEndTime = !loan.termEndTime.isZero()
+    ? loan.termEndTime.toNumber()
+    : termStartTime + loan.termInDays * secondsPerDay;
+
+  const principal = !loan.principalAmount.isZero()
+    ? loan.principalAmount
+    : loan.fundingLimit;
+
+  // Number of seconds in 'paymentPeriodInDays'
+  const paymentPeriodInSeconds =
+    loan.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
+
+  // Keep track of period start & end and payment period number
+  let periodStartTimestamp = termStartTime;
+  let paymentPeriod = 1;
+
+  for (
+    let periodEndTimestamp = termStartTime + paymentPeriodInSeconds;
+    periodEndTimestamp <= termEndTime;
+    periodEndTimestamp += paymentPeriodInSeconds
+  ) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.interestRateBigInt,
+      nextDueTime: BigNumber.from(periodEndTimestamp),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: principal,
+    });
+    repaymentSchedule.push({
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: periodEndTimestamp * 1000,
+      principal: BigNumber.from(0),
+      interest: expectedInterest,
+    });
+
+    paymentPeriod++;
+    periodStartTimestamp = periodEndTimestamp;
+  }
+
+  // Catch the remainder of time when there's not a perfect diff of 'paymentPeriodInDays' on the last period
+  // i.e startTime Dec 6th 2024, endTime Dec 16th 2024 and paymentPeriodInDays is 30 days
+  if (periodStartTimestamp <= termEndTime) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.interestRateBigInt,
+      nextDueTime: BigNumber.from(termEndTime),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: principal,
+    });
+    repaymentSchedule.push({
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: termEndTime * 1000,
+      principal: principal,
+      interest: expectedInterest,
+    });
+  }
+
+  return repaymentSchedule;
 }
