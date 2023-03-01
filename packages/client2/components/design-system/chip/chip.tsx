@@ -32,7 +32,7 @@ export function Chip({
   return (
     <div
       className={clsx(
-        "inline-flex items-center gap-2 rounded-full border py-1.5 px-3 text-xs font-medium",
+        "inline-flex items-center gap-2 rounded-full border font-medium",
         size === "sm" ? "py-1 px-2 text-[10px]" : "py-1.5 px-3 text-xs",
         colorScheme === "white"
           ? "border-eggplant-100 bg-white text-eggplant-700"

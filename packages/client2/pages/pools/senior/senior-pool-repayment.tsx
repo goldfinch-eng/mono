@@ -216,13 +216,13 @@ export function SeniorPoolRepaymentSection({
                 index
               ) => (
                 <tr key={index}>
-                  <td className="w-1/2 max-w-0 text-left">
+                  <td className="w-1/2 max-w-0 !pr-0 text-left">
                     <div className="flex items-center gap-1.5">
-                      {borrowerLogo ? (
-                        <div className="relative h-3 w-3 shrink-0 overflow-hidden rounded-full">
+                      <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
+                        {borrowerLogo ? (
                           <Image src={borrowerLogo} fill sizes="12px" alt="" />
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                       <div className="truncate">{name}</div>
                     </div>
                   </td>

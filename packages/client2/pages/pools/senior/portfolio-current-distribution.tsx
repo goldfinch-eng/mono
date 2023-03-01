@@ -260,16 +260,17 @@ export function PortfolioCurrentDistribution({
               poolRepaymentStatus,
             }) => {
               return (
-                <tr key={name} className="h-[2.9rem]">
+                <tr key={name}>
                   <td className="w-[30%] max-w-0 !pr-0 text-left">
-                    <div className="flex items-center">
-                      <div className="relative mr-1.5 h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {icon ? (
                           <Image
                             src={icon}
                             alt={`${name}`}
                             className="object-cover"
                             fill
+                            sizes="12px"
                           />
                         ) : null}
                       </div>
