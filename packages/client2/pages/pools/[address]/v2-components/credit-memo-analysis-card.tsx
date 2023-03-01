@@ -1,6 +1,6 @@
+import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { format as formatDate } from "date-fns";
-import { gql } from "graphql-request";
 import Image from "next/future/image";
 
 import { Button, Chip } from "@/components/design-system";

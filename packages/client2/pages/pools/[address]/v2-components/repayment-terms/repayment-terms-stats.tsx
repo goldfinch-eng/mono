@@ -1,5 +1,5 @@
+import { gql } from "@apollo/client";
 import { formatDistanceStrict, format as formatDate } from "date-fns";
-import { gql } from "graphql-request";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";

@@ -160,7 +160,7 @@ export function TransactionTable() {
         <Link
           href={`/pools/${transaction.tranchedPool.id}`}
           iconRight="ArrowTopRight"
-          className="text-sand-400"
+          className="text-mustard-700"
         >
           Pool
         </Link>
@@ -171,7 +171,7 @@ export function TransactionTable() {
         rel="noopener noreferrer"
         key={`${transaction.id}-tx`}
         iconRight="ArrowTopRight"
-        className="text-sand-400"
+        className="text-mustard-700"
       >
         Tx
       </Link>,
@@ -191,7 +191,7 @@ export function TransactionTable() {
 
   return (
     <div>
-      <h2 className="mb-8 text-lg font-semibold">Recent activity</h2>
+      <h2 className="mb-6 font-semibold">Recent activity</h2>
       {error ? (
         <div className="text-clay-500">
           Unable to fetch recent transactions. {error.message}
