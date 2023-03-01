@@ -25,12 +25,8 @@ export const SENIOR_POOL_PORTFOLIO_DISTRIBUTION_FIELDS = gql`
         actualSeniorPoolInvestment_gt: 0
       }
     ) {
-      id
-      balance
-      termEndTime
+      ...RepaymentStatusLoanFields
       actualSeniorPoolInvestment
-      isLate @client
-      isInDefault @client
     }
   }
 `;
