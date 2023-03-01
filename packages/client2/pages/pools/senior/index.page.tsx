@@ -7,8 +7,6 @@ import {
   Banner,
   HelperText,
   Button,
-  Link,
-  HeavyTable,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
@@ -29,7 +27,6 @@ import {
   SeniorPoolRepaymentSectionPlaceholder,
   SeniorPoolRepaymentSection,
 } from "./senior-pool-repayment";
-import { StatusSection } from "./status-section";
 import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
@@ -58,7 +55,6 @@ gql`
       withdrawalCancellationFee
       epochEndsAt @client
       ...SeniorPoolPortfolioDetailsFields
-      ...SeniorPoolStatusFields
       ...CapitalStatsFields
       ...SeniorPoolSupplyPanelPoolFields
       ...SeniorPoolLoanSummaryFields
@@ -206,6 +202,13 @@ export default function SeniorPoolPage({
           </div>
         </div>
         <div style={{ gridArea: "info" }}>
+          {error ? (
+            <HelperText isError>
+              There was a problem fetching data on the senior pool. Shown data
+              may be outdated.
+            </HelperText>
+          ) : null}
+
           <ScrollingSectionedContainer
             sections={[
               {
@@ -248,105 +251,8 @@ export default function SeniorPoolPage({
               },
             ]}
           />
-          {error ? (
-            <HelperText isError>
-              There was a problem fetching data on the senior pool. Shown data
-              may be outdated.
-            </HelperText>
-          ) : null}
-
-          <StatusSection className="mb-12" seniorPool={seniorPool} />
-
-          <div className="mb-20">
-            <h2 className="mb-8 text-3xl">Overview</h2>
-            <p className="mb-8 text-2xl font-light">
-              The Senior Pool is the simple, lower risk, lower return option on
-              Goldfinch. Capital is automatically diversified across Borrower
-              pools, and protected by Backer capital.
-            </p>
-            <Button
-              className="block"
-              as="a"
-              size="lg"
-              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              How it Works
-            </Button>
-          </div>
-
-          <div className="mb-20">
-            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-            <ul className="list-outside list-disc space-y-5 pl-5">
-              <li>
-                Earn passive yield. Capital is automatically deployed across a
-                diverse portfolio of Borrowers that are vetted by Backers.
-              </li>
-              <li>
-                Lower risk. Losses are protected by the first-loss capital
-                supplied by Backers.
-              </li>
-              <li>
-                Stable returns. Receive USDC APY from the underlying interest,
-                driven by real-world activity that is uncorrelated with crypto,
-                plus GFI from liquidity mining distributions.
-              </li>
-            </ul>
-          </div>
-
-          <div className="mb-20">
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold">Liquidity options</h2>
-            </div>
-            <HeavyTable
-              rows={[
-                [
-                  "Withdrawal Request",
-                  null,
-                  <div key="withdrawal-request">
-                    <div className="mb-2">
-                      To withdraw capital from the Senior Pool, an LP must
-                      submit a Withdrawal Request. Capital is distributed for
-                      withdrawal every two weeks, based on availability and
-                      requested amount.
-                    </div>
-                    <Link
-                      href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidity"
-                      iconRight="ArrowTopRight"
-                      className="text-sand-500"
-                      openInNewTab
-                    >
-                      Read more
-                    </Link>
-                  </div>,
-                ],
-              ]}
-            />
-          </div>
 
           <TransactionTable />
-
-          <div className="flex gap-2">
-            <Button
-              as="a"
-              href="https://dune.com/goldfinch/goldfinch"
-              colorScheme="secondary"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              Dashboard
-            </Button>
-            <Button
-              as="a"
-              href={`https://etherscan.io/address/${seniorPool?.address}`}
-              colorScheme="secondary"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              Pool
-            </Button>
-          </div>
         </div>
       </div>
     </>
