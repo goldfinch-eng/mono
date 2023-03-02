@@ -1,17 +1,17 @@
 import React, { ReactNode } from "react";
 
-interface Row {
+export interface VerboseTableRowProps {
   heading: string;
   boldValue?: ReactNode;
   value: ReactNode;
 }
 
 interface VerboseTableProps {
-  rows: Row[];
+  rows: VerboseTableRowProps[];
   className?: string;
 }
 
-function VerboseTableRow({ heading, boldValue, value }: Row) {
+function VerboseTableRow({ heading, boldValue, value }: VerboseTableRowProps) {
   return (
     <tr>
       <th

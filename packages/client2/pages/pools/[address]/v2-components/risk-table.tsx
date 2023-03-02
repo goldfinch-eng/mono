@@ -1,6 +1,10 @@
 import { gql } from "@apollo/client";
 
-import { Link, VerboseTable } from "@/components/design-system";
+import {
+  Link,
+  VerboseTable,
+  VerboseTableRowProps,
+} from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
@@ -44,7 +48,7 @@ interface RiskTableProps {
 }
 
 export function RiskTable({ deal, loan }: RiskTableProps) {
-  const riskTableRows = [
+  const riskTableRows: VerboseTableRowProps[] = [
     ...(deal.securitiesAndRecourse?.value
       ? [
           {
