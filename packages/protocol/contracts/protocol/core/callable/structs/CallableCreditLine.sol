@@ -166,15 +166,10 @@ library CallableCreditLineLogic {
   {
     LoanState loanState = cl.loanState();
     require(loanState == LoanState.InProgress, "IS");
-    uint currentPeriod = cl._paymentSchedule.currentPeriod();
-    uint numPeriodsPerPrincipalPeriod = cl._paymentSchedule.periodsPerPrincipalPeriod();
-    uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
+
+    uint activeCallTranche = cl.activeCallSubmissionTrancheIndex();
     require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
-    require(
-      currentPeriod % numPeriodsPerPrincipalPeriod <
-        numPeriodsPerPrincipalPeriod - cl._numLockupPeriods,
-      "CL"
-    );
+    require(!cl.inLockupPeriod(), "CL");
 
     return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
@@ -573,6 +568,14 @@ library CallableCreditLineLogic {
 
   function totalPrincipalDeposited(CallableCreditLine storage cl) internal view returns (uint256) {
     return cl._waterfall.totalPrincipalDeposited();
+  }
+
+  function inLockupPeriod(CallableCreditLine storage cl) internal view returns (bool) {
+    uint currentPeriod = cl._paymentSchedule.currentPeriod();
+    uint numPeriodsPerPrincipalPeriod = cl._paymentSchedule.periodsPerPrincipalPeriod();
+    return
+      currentPeriod % numPeriodsPerPrincipalPeriod >=
+      numPeriodsPerPrincipalPeriod - cl._numLockupPeriods;
   }
 
   /*================================================================================
