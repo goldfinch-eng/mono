@@ -126,8 +126,7 @@ contract CallableLoan is
   /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
   /// @dev IT: invalid tranche - must be uncalled capital tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @notice Submit a call request for a given amount of capital. The borrower is obligated
-  ///         to pay back the call requested amount in the active call payment period.
+  /// @notice Supply capital to the loan.
   /// @param callAmount Amount of capital to call back
   /// @param poolTokenId Pool token id to be called back.
   function submitCall(
@@ -230,16 +229,21 @@ contract CallableLoan is
     emit CallRequestSubmitted(poolTokenId, callRequestedTokenId, remainingTokenId, callAmount);
   }
 
-  /// @inheritdoc ICallableLoan
+  /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
-  function deposit(uint256 amount) external override nonReentrant whenNotPaused returns (uint256) {
-    return _deposit(amount);
+  function deposit(
+    uint256 tranche,
+    uint256 amount
+  ) external override nonReentrant whenNotPaused returns (uint256) {
+    return _deposit(tranche, amount);
   }
 
-  /// @inheritdoc ICallableLoan
+  /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* -
   /// @param amount amount of capital to supply
   /// @param deadline deadline of permit operation
   /// @param v v portion of signature
@@ -247,6 +251,7 @@ contract CallableLoan is
   /// @param s s portion of signature
   /// @return tokenId NFT representing your position in this pool
   function depositWithPermit(
+    uint256 tranche,
     uint256 amount,
     uint256 deadline,
     uint8 v,
@@ -262,7 +267,7 @@ contract CallableLoan is
       r,
       s
     );
-    return _deposit(amount);
+    return _deposit(tranche, amount);
   }
 
   /// @inheritdoc ILoan
@@ -489,22 +494,24 @@ contract CallableLoan is
   /// @dev NA: not authorized. Must have correct UID or be go listed
   /// @dev NF: not open for funding. Must be after fundableAt
   /// @notice Supply capital to the loan.
+  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
-  function _deposit(uint256 amount) internal returns (uint256) {
+  function _deposit(uint256 tranche, uint256 amount) internal returns (uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
+    require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
     require(hasAllowedUID(msg.sender), "NA");
     require(block.timestamp >= fundableAt, "NF");
 
     cl.deposit(amount);
     uint256 tokenId = config.getPoolTokens().mint(
-      IPoolTokens.MintParams({tranche: cl.uncalledCapitalTrancheIndex(), principalAmount: amount}),
+      IPoolTokens.MintParams({tranche: tranche, principalAmount: amount}),
       msg.sender
     );
     config.getUSDC().safeTransferFrom(msg.sender, address(this), amount);
 
-    emit DepositMade(msg.sender, cl.uncalledCapitalTrancheIndex(), tokenId, amount);
+    emit DepositMade(msg.sender, tranche, tokenId, amount);
     return tokenId;
   }
 
