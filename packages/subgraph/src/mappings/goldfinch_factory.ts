@@ -7,7 +7,7 @@ import {TranchedPool as TranchedPoolTemplate, CallableLoan as CallableLoanTempla
 import {getOrInitBorrower} from "../entities/borrower"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
 import {addToListOfAllTranchedPools} from "../entities/protocol"
-import {getOrInitCallableLoan} from "./callable_loan/helpers"
+import {initCallableLoan} from "./callable_loan/helpers"
 
 export function handlePoolCreated(event: PoolCreated): void {
   if (INVALID_POOLS.has(event.params.pool.toHexString())) {
@@ -25,7 +25,6 @@ export function handleBorrowerCreated(event: BorrowerCreated): void {
 
 export function handleCallableLoanCreated(event: CallableLoanCreated): void {
   CallableLoanTemplate.create(event.params.loan)
-  const callableLoan = getOrInitCallableLoan(event.params.loan)
-  callableLoan.createdAt = event.block.timestamp.toI32()
+  const callableLoan = initCallableLoan(event.params.loan, event.block)
   callableLoan.save()
 }

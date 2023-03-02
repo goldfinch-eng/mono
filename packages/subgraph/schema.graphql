@@ -532,4 +532,14 @@ type CallableLoan implements Loan @entity {
   interestRate: BigDecimal!
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
+
+  repaymentSchedule: [ScheduledRepayment!]!
+}
+
+type ScheduledRepayment @entity(immutable: true) {
+  id: ID!
+  paymentPeriod: Int!
+  estimatedPaymentDate: Int!
+  principal: BigInt!
+  interest: BigInt!
 }

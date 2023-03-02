@@ -1,9 +1,9 @@
+import {CallableLoan} from "../../../generated/schema"
 import {DepositMade} from "../../../generated/templates/CallableLoan/CallableLoan"
 import {getOrInitUser} from "../../entities/user"
-import {getOrInitCallableLoan} from "./helpers"
 
 export function handleDepositMade(event: DepositMade): void {
-  const callableLoan = getOrInitCallableLoan(event.address)
+  const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
   callableLoan.totalDeposited = callableLoan.totalDeposited.plus(event.params.amount)
   const user = getOrInitUser(event.params.owner)
   callableLoan.backers = callableLoan.backers.concat([user.id])
