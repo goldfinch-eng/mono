@@ -291,9 +291,9 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       // TODO: uncalledCapitalInfo Assertions
     }
 
-    // /// Submit Call request 2 from user 2
-    // /// Check that we update accounting correctly.
-    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    /// Submit Call request 2 from user 2
+    /// Check that we update accounting correctly.
+    /// Use {} to produce new stack frame and avoid stack too deep errors.
     console.log("Before 2nd call submission frame");
     {
       uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
@@ -479,12 +479,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       }
     }
 
-    // /// Warp to right principal payment period due time
+    /// Warp to right principal payment period due time
     vm.warp(callableLoan.nextPrincipalDueTime());
 
-    // /// Warp to first principal payment period due time
-    // /// Check that we update accounting correctly.
-    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    /// Warp to first principal payment period due time
+    /// Check that we update accounting correctly.
+    /// Use {} to produce new stack frame and avoid stack too deep errors.
     console.log("After principal payment period due time frame");
     {
       uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());

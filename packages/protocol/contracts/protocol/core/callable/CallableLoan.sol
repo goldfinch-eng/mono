@@ -52,6 +52,11 @@ contract CallableLoan is
   uint8 internal constant MAJOR_VERSION = 1;
   uint8 internal constant MINOR_VERSION = 0;
   uint8 internal constant PATCH_VERSION = 0;
+  // When splitting a pool token as part of submitting a call, the remainder on a
+  // pool token should be voided if it does not meet this threshold.
+  // Why 5e3 (half a cent)? Large enough to rule out rounding errors, but small
+  // enough to not materially effect USD accounting.
+  uint256 internal constant SPLIT_TOKEN_DUST_THRESHOLD = 5e3;
 
   /*================================================================================
   Storage State
@@ -126,7 +131,9 @@ contract CallableLoan is
   /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
   /// @dev IT: invalid tranche - must be uncalled capital tranche
   /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @notice Supply capital to the loan.
+  /// @notice Submit a call request for the given amount of capital.
+  ///         The borrower is obligated to pay the call request back at the end of the
+  ///         corresponding call request period.
   /// @param callAmount Amount of capital to call back
   /// @param poolTokenId Pool token id to be called back.
   function submitCall(
@@ -139,6 +146,7 @@ contract CallableLoan is
     whenNotPaused
     returns (uint256 callRequestedTokenId, uint256 remainingTokenId)
   {
+    // 1. Checkpoint the credit line and perform basic validation on the call request.
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
@@ -148,10 +156,18 @@ contract CallableLoan is
         tokenInfo.tranche == cl.uncalledCapitalTrancheIndex(),
       "NA"
     );
+    require(
+      callAmount > 0 &&
+        callAmount <=
+        cl.proportionalCallablePrincipal({
+          trancheId: tokenInfo.tranche,
+          principalDeposited: tokenInfo.principalAmount
+        }),
+      "IA"
+    );
 
-    // Pseudo-withdraw max while also caching the total amount of interest and principal withdrawable.
-    // Total interest & principal withdrawable are useful for calculating how much will be redeemed on
-    // the newly split pool tokens.
+    // 2. Determine the amount of principal and interest that can be withdrawn
+    //    on the given pool token. Withdraw all of this amount.
     (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
@@ -169,19 +185,17 @@ contract CallableLoan is
       }
     }
 
-    {
-      uint256 callablePrincipal = cl.proportionalCallablePrincipal({
-        trancheId: tokenInfo.tranche,
-        principalDeposited: tokenInfo.principalAmount
-      });
-      require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
-    }
-
+    // 3. Account for the call request in the credit line - this will return the corresponding
+    //    amounts of principal deposited, principal paid, and interest redeemable which have
+    //    been moved from the pool token to the call request token.
     (uint principalDepositedMoved, uint principalPaidMoved, , uint interestRedeemable) = cl
       .submitCall(callAmount);
     interestRedeemable = (interestRedeemable * (100 - _reserveFundsFeePercent())) / 100;
 
     {
+      // 4. Mint a new token representing the call requested pool token.
+      //    Redeem the principal paid and interest redeemed to make sure a user cannot
+      //    double withdraw their redeemable balances on the call requested token.
       address owner = poolTokens.ownerOf(poolTokenId);
       callRequestedTokenId = poolTokens.mint(
         IPoolTokens.MintParams({
@@ -193,8 +207,12 @@ contract CallableLoan is
 
       poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestRedeemable);
 
-      // TODO: Determine "dust" threshold at which we should just not mint a remaining token.
-      if (tokenInfo.principalAmount - principalDepositedMoved > 0) {
+      // 5. If an above SPLIT_TOKEN_DUST_THRESHOLD amount of principal remains on the pool token,
+      //    mint a new token representing the remainder.
+      //    Redeem the principal paid and interest redeemed to make sure a user cannot
+      //    double withdraw their redeemable balances on the call requested token.
+      // TODO: Write test for dust threshold.
+      if (tokenInfo.principalAmount - principalDepositedMoved > SPLIT_TOKEN_DUST_THRESHOLD) {
         remainingTokenId = poolTokens.mint(
           IPoolTokens.MintParams({
             principalAmount: tokenInfo.principalAmount - principalDepositedMoved,
@@ -218,11 +236,10 @@ contract CallableLoan is
           totalPrincipalWithdrawable - principalPaidMoved,
           totalInterestWithdrawable - interestRedeemable
         );
-      } else {
-        remainingTokenId = 0;
       }
     }
 
+    // 6. Redeem the original pool token's balance so we can burn it. Then burn it.
     poolTokens.redeem(poolTokenId, tokenInfo.principalAmount - totalPrincipalWithdrawable, 0);
     poolTokens.burn(poolTokenId);
 
@@ -474,12 +491,13 @@ contract CallableLoan is
     uint256 reserveFundsFee = (_reserveFundsFeePercent() * totalInterestPayment) / 100;
 
     cl.pay(totalPrincipalPayment, totalInterestPayment);
+    // TODO: Write test that correct event is emitted.
     emit PaymentApplied({
       payer: msg.sender,
       pool: address(this),
       interest: totalInterestPayment,
       principal: totalPrincipalPayment,
-      remaining: 0,
+      remaining: pa.paymentRemaining,
       reserve: reserveFundsFee
     });
 
