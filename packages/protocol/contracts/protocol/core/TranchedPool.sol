@@ -106,7 +106,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   // solhint-disable-next-line no-empty-blocks
   function assess() external override whenNotPaused {}
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev TL: tranche locked
   /// @dev IA: invalid amount
   /// @dev NA: not authorized. Must have correct UID or be go listed

@@ -41,7 +41,7 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     uid._mintForTest(user, 1, 1, "");
 
     vm.warp(block.timestamp + warp1Time);
-    uint256 token = deposit(callableLoan, depositAmount, user);
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
     vm.warp(block.timestamp + warp2Time);
     _startImpersonation(user);
     vm.expectRevert(bytes("NA"));
@@ -61,7 +61,7 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
 
-    uint256 token = deposit(callableLoan, depositAmount, user);
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
     // Starts drawdown period.
     callableLoan.drawdown(drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);

@@ -20,7 +20,7 @@ contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
 
-    deposit(callableLoan, usdcVal(1_000_000), DEPOSITOR);
+    deposit(callableLoan, 3, usdcVal(1_000_000), DEPOSITOR);
     drawdown(callableLoan, 100);
 
     ISchedule s = callableLoan.schedule();
