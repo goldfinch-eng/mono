@@ -103,6 +103,8 @@ contract CallableLoan is
     // NOTE: This check can be replaced with an after deploy verification rather than
     //       a require statement which increases bytecode size.
     // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
+    // TODO: Test and custom error class.
+    require(_numLockupPeriods < _schedule.periodsPerPrincipalPeriod());
 
     config = IGoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();

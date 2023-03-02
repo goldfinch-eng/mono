@@ -154,7 +154,6 @@ contract SeniorPoolBaseTest is BaseTest {
     // "Error sent ERC1155 to non-receiver"
     fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(gfConfig.protocolAdminAddress());
-    fuzzHelper.exclude(address(0));
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
