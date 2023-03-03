@@ -90,7 +90,7 @@ contract CallableLoan is
   }
 
   function initialize(
-    address _config,
+    IGoldfinchConfig _config,
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
@@ -104,7 +104,7 @@ contract CallableLoan is
     //       a require statement which increases bytecode size.
     // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
 
-    config = IGoldfinchConfig(_config);
+    config = _config;
     address owner = config.protocolAdminAddress();
     __BaseUpgradeablePausable__init(owner);
     _staleCreditLine.initialize(
@@ -442,7 +442,7 @@ contract CallableLoan is
   }
 
   /// @dev OU: Only the uncalled tranche can call
-  function availableToCall(uint256 tokenId) public view returns (uint256) {
+  function availableToCall(uint tokenId) public view override returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     require(tokenInfo.tranche == uncalledCapitalTrancheIndex(), "OU");
     return
@@ -535,6 +535,7 @@ contract CallableLoan is
 
   /// @dev ZA: Zero amount
   /// @dev IA: Invalid amount - amount too large
+  /// @dev IS: Invalid LoanState
   /// @dev DL: Deposits Locked
   function _withdraw(
     IPoolTokens.TokenInfo memory tokenInfo,
@@ -570,7 +571,6 @@ contract CallableLoan is
         cl.withdraw(tokenInfo.tranche, principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
       } else if (cl.loanState() == LoanState.DrawdownPeriod) {
-        // Could currently just use a else statement, but this is more explicit and future-proof.
         revert("IS");
       }
     }
@@ -810,12 +810,14 @@ contract CallableLoan is
   }
 
   /// Unsupported in callable loans.
-  function setMaxLimit(uint256 newAmount) external override onlyAdmin {
+
+  function setMaxLimit(uint newAmount) external override {
     revert("US");
   }
 
   /// Unsupported ICreditLine method kept for ICreditLine conformance
-  function setLimit(uint256 newAmount) external override onlyAdmin {
+
+  function setLimit(uint newAmount) external override {
     revert("US");
   }
 
