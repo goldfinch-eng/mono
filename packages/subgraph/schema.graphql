@@ -49,7 +49,7 @@ type User @entity {
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
   vaultedStakedPositions: [VaultedStakedPosition!]! @derivedFrom(field: "user")
 
-  tranchedPoolTokens: [TranchedPoolToken!]!
+  poolTokens: [PoolToken!]!
   vaultedPoolTokens: [VaultedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
@@ -70,7 +70,7 @@ type User @entity {
 interface TrancheInfo {
   id: ID!
   trancheId: BigInt!
-  tranchedPool: TranchedPool!
+  loan: Loan!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
   principalSharePrice: BigInt!
@@ -80,6 +80,7 @@ interface TrancheInfo {
 type SeniorTrancheInfo implements TrancheInfo @entity {
   id: ID!
   trancheId: BigInt!
+  loan: Loan!
   tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
@@ -90,6 +91,7 @@ type SeniorTrancheInfo implements TrancheInfo @entity {
 type JuniorTrancheInfo implements TrancheInfo @entity {
   id: ID!
   trancheId: BigInt!
+  loan: Loan!
   tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
@@ -149,6 +151,7 @@ interface Loan {
   allowedUidTypes: [UidType!]!
   backers: [User!]!
   numBackers: Int!
+  isPaused: Boolean!
 
   # "Credit line" fields
   balance: BigInt!
@@ -211,12 +214,10 @@ type TranchedPool implements Loan @entity {
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  tokens: [TranchedPoolToken!]!
+  tokens: [PoolToken!]!
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
-
-  transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
 
   principalAmountRepaid: BigInt!
   interestAmountRepaid: BigInt!
@@ -238,11 +239,11 @@ type Protocol @entity {
   tranchedPools: [TranchedPool!]!
 }
 
-type TranchedPoolToken @entity {
+type PoolToken @entity {
   id: ID! # Set to tokenId
   mintedAt: BigInt!
   user: User!
-  tranchedPool: TranchedPool!
+  loan: Loan!
   tranche: TrancheInfo!
   principalAmount: BigInt!
   principalRedeemed: BigInt!
@@ -363,8 +364,7 @@ type Transaction @entity(immutable: true) {
   receivedNftId: String
   receivedNftType: SupportedNft
 
-  # TODO change this to a Loan reference
-  tranchedPool: TranchedPool
+  loan: Loan
 
   fiduPrice: BigInt
 }
@@ -377,7 +377,7 @@ type Zap @entity {
   amount: BigInt!
   user: User!
   seniorPoolStakedPosition: SeniorPoolStakedPosition!
-  poolToken: TranchedPoolToken!
+  poolToken: PoolToken!
   tranchedPool: TranchedPool!
 }
 
@@ -429,8 +429,8 @@ type VaultedPoolToken @entity {
   user: User!
   usdcEquivalent: BigInt!
   vaultedAt: Int!
-  poolToken: TranchedPoolToken!
-  tranchedPool: TranchedPool!
+  poolToken: PoolToken!
+  loan: Loan!
 }
 
 type Membership @entity {

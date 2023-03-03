@@ -205,7 +205,7 @@ export function SupplyPanel({
     await apolloClient.refetchQueries({
       include: "active",
       updateCache(cache) {
-        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "poolTokens" });
       },
     });
   };

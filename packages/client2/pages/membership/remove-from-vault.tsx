@@ -405,7 +405,7 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
       include: "active",
       updateCache(cache) {
         cache.evict({ fieldName: "user" });
-        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "poolTokens" });
         cache.evict({ fieldName: "seniorPoolStakedPositions" });
       },
     });
