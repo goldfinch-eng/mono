@@ -1,5 +1,5 @@
-import {Address, BigInt, BigDecimal, ethereum, store} from "@graphprotocol/graph-ts"
-import {CallableLoan, ScheduledRepayment} from "../../../generated/schema"
+import {Address, BigInt, BigDecimal, ethereum, store, log} from "@graphprotocol/graph-ts"
+import {CallableLoan, PoolToken, ScheduledRepayment} from "../../../generated/schema"
 import {CallableLoan as CallableLoanContract} from "../../../generated/templates/CallableLoan/CallableLoan"
 import {Schedule as ScheduleContract} from "../../../generated/templates/CallableLoan/Schedule"
 
@@ -127,4 +127,21 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   callableLoan.repaymentSchedule = []
+}
+
+// TODO this function exists for tranched pools too. Try to consolidate them?
+export function updatePoolTokensRedeemable(callableLoan: CallableLoan): void {
+  const callableLoanContract = CallableLoanContract.bind(Address.fromBytes(callableLoan.address))
+  const poolTokenIds = callableLoan.tokens
+  for (let i = 0; i < poolTokenIds.length; i++) {
+    const poolToken = assert(PoolToken.load(poolTokenIds[i]))
+    const availableToWithdrawResult = callableLoanContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
+    if (!availableToWithdrawResult.reverted) {
+      poolToken.interestRedeemable = availableToWithdrawResult.value.value0
+      poolToken.principalRedeemable = availableToWithdrawResult.value.value1
+    } else {
+      log.warning("availableToWithdraw reverted for pool token {} on CallableLoan {}", [poolToken.id, callableLoan.id])
+    }
+    poolToken.save()
+  }
 }

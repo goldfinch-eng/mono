@@ -657,6 +657,7 @@ templates:
       file: ./src/mappings/callable_loan/callable_loan.ts
       entities:
         - CallableLoan
+        - PoolToken
       abis:
         - name: CallableLoan
           file: ./abis/CallableLoan.json
@@ -674,7 +675,8 @@ templates:
         # - event: DrawdownsUnpaused(indexed address)
         # - event: EmergencyShutdown(indexed address)
         # - event: Paused(address)
-        # - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+        - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePaymentApplied
         # - event: ReserveFundsCollected(indexed address,uint256)
         # - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
         # - event: RoleGranted(indexed bytes32,indexed address,indexed address)

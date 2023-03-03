@@ -3,9 +3,14 @@ import {
   CallableLoan as CallableLoanContract,
   DepositMade,
   DrawdownMade,
+  PaymentApplied,
 } from "../../../generated/templates/CallableLoan/CallableLoan"
 import {getOrInitUser} from "../../entities/user"
-import {deleteCallableLoanRepaymentSchedule, generateRepaymentScheduleForCallableLoan} from "./helpers"
+import {
+  deleteCallableLoanRepaymentSchedule,
+  generateRepaymentScheduleForCallableLoan,
+  updatePoolTokensRedeemable,
+} from "./helpers"
 
 export function handleDepositMade(event: DepositMade): void {
   const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
@@ -24,5 +29,12 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   deleteCallableLoanRepaymentSchedule(callableLoan)
   callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.save()
+}
+
+export function handlePaymentApplied(event: PaymentApplied): void {
+  const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
+  updatePoolTokensRedeemable(callableLoan)
+  callableLoan.balance = callableLoan.balance.minus(event.params.principal)
   callableLoan.save()
 }
