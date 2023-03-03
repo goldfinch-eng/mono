@@ -1,4 +1,4 @@
-import {Address, BigInt, BigDecimal, log, ethereum} from "@graphprotocol/graph-ts"
+import {Address, BigInt, BigDecimal, ethereum, store} from "@graphprotocol/graph-ts"
 import {CallableLoan, ScheduledRepayment} from "../../../generated/schema"
 import {CallableLoan as CallableLoanContract} from "../../../generated/templates/CallableLoan/CallableLoan"
 import {Schedule as ScheduleContract} from "../../../generated/templates/CallableLoan/Schedule"
@@ -59,7 +59,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
 const twoWeeksSeconds = 86400 * 14
 const secondsPerYear = BigInt.fromI32(31540000)
 
-function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): string[] {
+export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): string[] {
   const repaymentIds: string[] = []
   const callableLoanContract = CallableLoanContract.bind(Address.fromBytes(callableLoan.address))
   const scheduleContract = ScheduleContract.bind(callableLoanContract.schedule())
@@ -95,9 +95,12 @@ function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): s
   } else {
     const startTime = callableLoan.termStartTime
     const periodsInTerm = scheduleContract.periodsInTerm()
+    let prevInterest = BigInt.zero()
+    // TODO revisit this when we have access to the function for interestOwedAtSansLateFees
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-      const interest = callableLoanContract.interestOwedAt(estimatedPaymentDate)
+      const interest = callableLoanContract.interestOwedAt(estimatedPaymentDate).minus(prevInterest)
+      prevInterest = callableLoanContract.interestOwedAt(estimatedPaymentDate)
       const principal = callableLoanContract.principalOwedAt(estimatedPaymentDate)
 
       const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
@@ -111,4 +114,15 @@ function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): s
   }
 
   return repaymentIds
+}
+
+/**
+ * Deletes all of the ScheduledRepayment entities attached to a callable loan
+ */
+export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan): void {
+  const repaymentIds = callableLoan.repaymentSchedule
+  for (let i = 0; i < repaymentIds.length; i++) {
+    store.remove("ScheduledRepayment", repaymentIds[i])
+  }
+  callableLoan.repaymentSchedule = []
 }

@@ -536,7 +536,7 @@ type CallableLoan implements Loan @entity {
   repaymentSchedule: [ScheduledRepayment!]!
 }
 
-type ScheduledRepayment @entity(immutable: true) {
+type ScheduledRepayment @entity {
   id: ID!
   paymentPeriod: Int!
   estimatedPaymentDate: Int!
