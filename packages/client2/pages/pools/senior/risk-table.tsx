@@ -70,22 +70,6 @@ export function RiskTable() {
         </div>
       ),
     },
-    {
-      heading: "Due diligence",
-      value: (
-        <div>
-          Additional due diligence information can be viewed in the{" "}
-          <Link href="https://google.ca" openInNewTab>
-            {/* TODO Get link */}
-            Data room
-          </Link>{" "}
-          or by contacting the borrower directly using a KYC-gated{" "}
-          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
-            Discord channel
-          </Link>
-        </div>
-      ),
-    },
   ];
 
   return (
