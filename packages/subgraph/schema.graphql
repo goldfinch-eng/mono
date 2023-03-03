@@ -219,8 +219,6 @@ type TranchedPool implements Loan @entity {
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
 
-  transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
-
   principalAmountRepaid: BigInt!
   interestAmountRepaid: BigInt!
 
@@ -366,8 +364,7 @@ type Transaction @entity(immutable: true) {
   receivedNftId: String
   receivedNftType: SupportedNft
 
-  # TODO change this to a Loan reference
-  tranchedPool: TranchedPool
+  loan: Loan
 
   fiduPrice: BigInt
 }

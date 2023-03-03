@@ -46,7 +46,7 @@ export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentAmount = event.params.amount
   transaction.sentToken = "USDC"
   transaction.receivedNftId = event.params.tokenId.toString()
@@ -83,7 +83,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     Address.fromString(underlyingOwner)
   )
   transaction.transactionHash = event.transaction.hash
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentNftId = event.params.tokenId.toString()
   transaction.sentNftType = "POOL_TOKEN"
   transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
@@ -127,7 +127,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolTokensRedeemable(tranchedPool)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "USDC"
   transaction.save()
@@ -151,7 +151,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.sentToken = "USDC"
   transaction.save()

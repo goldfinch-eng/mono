@@ -33,7 +33,7 @@ function saveBackerRewardsClaimedTransaction(event: ethereum.Event, gfiAmount: B
   const transaction = createTransactionFromEvent(event, "BACKER_REWARDS_CLAIMED", Address.fromString(underlyingOwner))
   transaction.receivedAmount = gfiAmount
   transaction.receivedToken = "GFI"
-  transaction.tranchedPool = poolToken.loan
+  transaction.loan = poolToken.loan
   transaction.save()
 }
 
