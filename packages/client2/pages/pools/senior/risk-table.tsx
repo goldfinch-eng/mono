@@ -51,8 +51,7 @@ export function RiskTable() {
     {
       heading: "Legal recourse",
       boldValue: (
-        <Link href="https://google.ca" openInNewTab>
-          {/* TODO Get link */}
+        <Link href="/senior-pool-agreement-interstitial" openInNewTab>
           Loan agreement
         </Link>
       ),
