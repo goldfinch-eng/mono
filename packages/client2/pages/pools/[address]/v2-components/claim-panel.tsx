@@ -22,7 +22,7 @@ import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
-  fragment ClaimPanelPoolTokenFields on TranchedPoolToken {
+  fragment ClaimPanelPoolTokenFields on PoolToken {
     id
     principalAmount
     principalRedeemable

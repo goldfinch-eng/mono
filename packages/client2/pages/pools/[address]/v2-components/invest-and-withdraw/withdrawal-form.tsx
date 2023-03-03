@@ -16,7 +16,7 @@ import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
-  fragment WithdrawalPanelPoolTokenFields on TranchedPoolToken {
+  fragment WithdrawalPanelPoolTokenFields on PoolToken {
     id
     principalAmount
   }
@@ -88,7 +88,7 @@ export function WithdrawalPanel({
     await apolloClient.refetchQueries({
       include: "active",
       updateCache(cache) {
-        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "poolTokens" });
       },
     });
   };
