@@ -5,6 +5,7 @@ import {
 } from "@/components/design-system";
 import { HighValueInvestorNotice } from "@/pages/pools/high-value-investor-notice";
 
+// TODO: We need a run through of the content here from product
 export function RiskTable() {
   const riskTableRows: VerboseTableRowProps[] = [
     {
@@ -41,7 +42,6 @@ export function RiskTable() {
       value: (
         <div>
           Investors can access borrower-reported updates via investment-gated{" "}
-          {/* TODO Zadra */}
           <Link href="https://google.ca" openInNewTab>
             Discord channel
           </Link>
@@ -52,7 +52,6 @@ export function RiskTable() {
       heading: "Legal recourse",
       boldValue: (
         <Link href="https://google.ca" openInNewTab>
-          {/* TODO Zadra */}
           Loan agreement
         </Link>
       ),
@@ -68,7 +67,6 @@ export function RiskTable() {
           <Link href="https://google.ca" openInNewTab>
             Discord channel
           </Link>
-          {/* TODO Zadra */}
         </div>
       ),
     },
@@ -80,12 +78,10 @@ export function RiskTable() {
           <Link href="https://google.ca" openInNewTab>
             Data room
           </Link>{" "}
-          {/* TODO Zadra */}
           or by contacting the borrower directly using a KYC-gated{" "}
           <Link href="https://google.ca" openInNewTab>
             Discord channel
           </Link>
-          {/* TODO Zadra */}
         </div>
       ),
     },

@@ -32,15 +32,14 @@ export function RiskMitigation() {
               className="mr-1.5"
               target="_blank"
               rel="noopener"
-              // TODO ZADRA
-              href="https://google.ca"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
             >
               Read more
             </Button>
           </div>
           <div className="w-1/2">
             <div className="ml-2 w-[calc(100%_-_theme(space.4))]">
-              <div className="relative mb-1.5 w-3/5 rounded-lg border border-[#DBCCA6] bg-[#FEF4DA] py-2 px-3 font-medium text-black">
+              <div className="relative mb-1.5 w-3/5 rounded-lg border border-mustard-200 bg-mustard-100 py-2 px-3 font-medium text-black">
                 <div className="absolute -right-[8.4rem] -top-5 text-xs">
                   <Icon
                     name="ArrowDown"
@@ -53,13 +52,13 @@ export function RiskMitigation() {
               </div>
             </div>
 
-            <div className="flex items-center rounded-lg border border-[#C8C4B9] p-2">
+            <div className="flex items-center rounded-lg border border-sand-300 p-2">
               <div className="w-3/5">
-                <div className="mb-1 flex flex-col rounded-lg bg-[#A1894B] py-2 px-3 text-[#FAF5E7]">
+                <div className="mb-1 flex flex-col rounded-lg bg-mustard-600 py-2 px-3 text-sand-50">
                   <div className="text-sm">Junior Tranche</div>
                   <div className="text-xs">20% of Borrower Pool</div>
                 </div>
-                <div className="flex h-[7rem] flex-col rounded-lg border border-[#919BB7] bg-[#303543] py-2 px-3 text-[#FAF5E7]">
+                <div className="flex h-[7rem] flex-col rounded-lg border border-twilight-400 bg-twilight-700 py-2 px-3 text-sand-50">
                   <div className="text-sm">Senior Tranche</div>
                   <div className="text-xs">80% of Borrower Pool</div>
                 </div>
