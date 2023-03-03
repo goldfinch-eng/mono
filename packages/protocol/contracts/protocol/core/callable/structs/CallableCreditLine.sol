@@ -414,18 +414,17 @@ library CallableCreditLineLogic {
     uint timestamp
   ) internal view returns (uint) {
     uint alreadyPaidPrincipal = cl._waterfall.totalPrincipalPaid();
+
     if (!cl.isActive()) {
       return alreadyPaidPrincipal;
     }
 
-    uint activeCallRequestPeriodAtTimestamp = cl._paymentSchedule.principalPeriodAt(timestamp);
-    uint activeCallRequestPeriodAtCheckpoint = cl._paymentSchedule.principalPeriodAt(
-      cl._checkpointedAsOf
-    );
+    uint principalPeriodAtTimestamp = cl._paymentSchedule.principalPeriodAt(timestamp);
+    uint principalPeriodAtCheckpoint = cl._paymentSchedule.principalPeriodAt(cl._checkpointedAsOf);
 
     // Unsettled principal from previous call request periods which will settle.
     uint reservedPrincipalWhichWillSettle = cl._waterfall.totalPrincipalReservedUpToTranche(
-      activeCallRequestPeriodAtTimestamp
+      principalPeriodAtTimestamp
     );
 
     /// If we entered a new principal period since checkpoint,
@@ -434,8 +433,8 @@ library CallableCreditLineLogic {
     /// Uncalled capital has already been counted due to principalPeriod being the uncalled tranche.
 
     if (
-      activeCallRequestPeriodAtTimestamp > activeCallRequestPeriodAtCheckpoint &&
-      activeCallRequestPeriodAtTimestamp <= cl.uncalledCapitalTrancheIndex()
+      principalPeriodAtTimestamp > principalPeriodAtCheckpoint &&
+      principalPeriodAtTimestamp <= cl.uncalledCapitalTrancheIndex()
     ) {
       reservedPrincipalWhichWillSettle += cl
         ._waterfall
