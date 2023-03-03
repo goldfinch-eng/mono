@@ -40,7 +40,7 @@ gql`
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
     }
-    tranchedPoolTokens(
+    poolTokens(
       where: { user: $userId }
       orderBy: mintedAt
       orderDirection: asc
@@ -89,7 +89,7 @@ export default function GfiPage() {
 
   const totalClaimable = sumTotalClaimable(
     grantsWithTokens,
-    data?.tranchedPoolTokens.concat(
+    data?.poolTokens.concat(
       data?.vaultedPoolTokens.map((vpt) => vpt.poolToken)
     ),
     data?.seniorPoolStakedPositions.concat(
@@ -106,7 +106,7 @@ export default function GfiPage() {
   const userHasRewards =
     (data?.seniorPoolStakedPositions.length ?? 0) +
       (data?.vaultedStakedPositions.length ?? 0) +
-      (data?.tranchedPoolTokens.length ?? 0) +
+      (data?.poolTokens.length ?? 0) +
       (data?.vaultedPoolTokens.length ?? 0) +
       (grantsWithTokens?.length ?? 0) >
     0;
@@ -190,7 +190,7 @@ export default function GfiPage() {
                     vaultedCapitalPositionId={v.id}
                   />
                 ))}
-                {data.tranchedPoolTokens.map((token) => (
+                {data.poolTokens.map((token) => (
                   <BackerCard key={token.id} token={token} />
                 ))}
                 {data.vaultedPoolTokens.map((v) => (

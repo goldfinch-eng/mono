@@ -51,11 +51,11 @@ gql`
     id
     amount
   }
-  fragment PoolTokenFieldsForAssets on TranchedPoolToken {
+  fragment PoolTokenFieldsForAssets on PoolToken {
     id
     principalAmount
     principalRedeemed
-    tranchedPool {
+    loan {
       id
       name @client
     }
@@ -84,7 +84,7 @@ gql`
     ) {
       ...StakedPositionFieldsForAssets
     }
-    tranchedPoolTokens(
+    poolTokens(
       where: {
         user: $userId
         principalAmount_gt: 0
@@ -95,7 +95,7 @@ gql`
     ) {
       ...PoolTokenFieldsForAssets
     }
-    ineligiblePoolTokens: tranchedPoolTokens(
+    ineligiblePoolTokens: poolTokens(
       where: {
         user: $userId
         principalAmount_gt: 0
@@ -202,8 +202,8 @@ export default function MembershipPage() {
     });
   }
 
-  if (data && data.tranchedPoolTokens.length > 0) {
-    data.tranchedPoolTokens.forEach((poolToken) => {
+  if (data && data.poolTokens.length > 0) {
+    data.poolTokens.forEach((poolToken) => {
       if (
         !poolToken.principalAmount.sub(poolToken.principalRedeemed).isZero()
       ) {
@@ -532,7 +532,7 @@ export default function MembershipPage() {
                     }
                   }
                   fiatPerGfi={data.gfiPrice.price.amount}
-                  vaultablePoolTokens={data.tranchedPoolTokens.filter(
+                  vaultablePoolTokens={data.poolTokens.filter(
                     (poolToken) =>
                       !poolToken.principalAmount
                         .sub(poolToken.principalRedeemed)

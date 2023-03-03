@@ -36,7 +36,7 @@ gql`
       receivedNftType
       fiduPrice
       timestamp
-      tranchedPool {
+      loan {
         id
       }
     }
@@ -188,9 +188,9 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
             "--"}
         </div>,
         <div key={`${transaction.id}-pool`} className="text-left">
-          {transaction.tranchedPool ? (
+          {transaction.loan ? (
             <Link
-              href={`/pools/${transaction.tranchedPool.id}`}
+              href={`/pools/${transaction.loan.id}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >

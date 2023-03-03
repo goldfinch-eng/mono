@@ -1,5 +1,5 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
-import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
+import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, PoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
@@ -127,6 +127,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     }
     seniorTranche.trancheId = BigInt.fromI32(counter)
     seniorTranche.lockedUntil = seniorTrancheInfo.lockedUntil
+    seniorTranche.loan = address.toHexString()
     seniorTranche.tranchedPool = address.toHexString()
     seniorTranche.principalDeposited = seniorTrancheInfo.principalDeposited
     seniorTranche.principalSharePrice = seniorTrancheInfo.principalSharePrice
@@ -145,6 +146,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     }
     juniorTranche.trancheId = BigInt.fromI32(counter)
     juniorTranche.lockedUntil = juniorTrancheInfo.lockedUntil
+    juniorTranche.loan = address.toHexString()
     juniorTranche.tranchedPool = address.toHexString()
     juniorTranche.principalSharePrice = juniorTrancheInfo.principalSharePrice
     juniorTranche.interestSharePrice = juniorTrancheInfo.interestSharePrice
@@ -455,7 +457,7 @@ export function updatePoolRewardsClaimable(
   const backerRewardsContract = BackerRewardsContract.bind(backerRewardsContractAddress)
   const poolTokenIds = tranchedPool.tokens
   for (let i = 0; i < poolTokenIds.length; i++) {
-    const poolToken = assert(TranchedPoolToken.load(poolTokenIds[i]))
+    const poolToken = assert(PoolToken.load(poolTokenIds[i]))
     poolToken.rewardsClaimable = backerRewardsContract.poolTokenClaimableRewards(BigInt.fromString(poolToken.id))
     const stakingRewardsEarnedResult = backerRewardsContract.try_stakingRewardsEarnedSinceLastWithdraw(
       BigInt.fromString(poolToken.id)
@@ -471,7 +473,7 @@ export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
   const tranchedPoolContract = TranchedPoolContract.bind(Address.fromString(tranchedPool.id))
   const poolTokenIds = tranchedPool.tokens
   for (let i = 0; i < poolTokenIds.length; i++) {
-    const poolToken = assert(TranchedPoolToken.load(poolTokenIds[i]))
+    const poolToken = assert(PoolToken.load(poolTokenIds[i]))
     const availableToWithdrawResult = tranchedPoolContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
     if (!availableToWithdrawResult.reverted) {
       poolToken.interestRedeemable = availableToWithdrawResult.value.value0

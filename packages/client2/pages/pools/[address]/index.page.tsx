@@ -126,11 +126,11 @@ gql`
     user(id: $userId) {
       id
       ...SupplyPanelUserFields
-      tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+      poolTokens(where: { loan: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
         ...ClaimPanelPoolTokenFields
       }
-      vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+      vaultedPoolTokens(where: { loan: $tranchedPoolAddress }) {
         id
         poolToken {
           ...WithdrawalPanelPoolTokenFields
@@ -425,14 +425,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                         tranchedPool={tranchedPool}
                         user={user}
                         deal={dealDetails}
-                        poolTokens={user?.tranchedPoolTokens ?? []}
+                        poolTokens={user?.poolTokens ?? []}
                       />
                     ) : fundingStatus === LoanFundingStatus.Closed &&
                       user &&
-                      (user.tranchedPoolTokens.length > 0 ||
+                      (user.poolTokens.length > 0 ||
                         user.vaultedPoolTokens.length > 0) ? (
                       <ClaimPanel
-                        poolTokens={user.tranchedPoolTokens}
+                        poolTokens={user.poolTokens}
                         vaultedPoolTokens={user.vaultedPoolTokens}
                         fiatPerGfi={fiatPerGfi}
                         tranchedPool={tranchedPool}
