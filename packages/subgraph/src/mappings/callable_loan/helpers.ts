@@ -57,18 +57,58 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
 }
 
 const twoWeeksSeconds = 86400 * 14
+const secondsPerYear = BigInt.fromI32(31540000)
 
 function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): string[] {
   const repaymentIds: string[] = []
   const callableLoanContract = CallableLoanContract.bind(Address.fromBytes(callableLoan.address))
   const scheduleContract = ScheduleContract.bind(callableLoanContract.schedule())
 
-  // Assume termStartTime will be 2 weeks after funding opens if it's not already known
-  const termStartTime = callableLoan.termStartTime.isZero()
-    ? scheduleContract.termStartTime(BigInt.fromI32(callableLoan.fundableAt + twoWeeksSeconds))
-    : callableLoan.termStartTime
+  const isBeforeClose = callableLoanContract.termStartTime().isZero()
 
-  log.info("termStartTime: {}", [termStartTime.toString()])
+  if (isBeforeClose) {
+    // Assume termStartTime will be 2 weeks after funding opens if it's not already known
+    const startTime = scheduleContract.termStartTime(BigInt.fromI32(callableLoan.fundableAt + twoWeeksSeconds))
+    const periodsInTerm = scheduleContract.periodsInTerm()
+    const interestPerSecond = callableLoan.interestRateBigInt.div(secondsPerYear)
+
+    let lastPeriodEndTime = startTime
+    for (let period = 0; period < periodsInTerm.toI32(); period++) {
+      const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
+      const thisPeriodEndTime = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
+      const periodLengthSeconds = thisPeriodEndTime.minus(lastPeriodEndTime)
+      lastPeriodEndTime = thisPeriodEndTime
+      const interest = interestPerSecond
+        .times(periodLengthSeconds)
+        .times(callableLoan.fundingLimit)
+        .div(BigInt.fromString("1000000000000000000"))
+      const principal = period == periodsInTerm.toI32() - 1 ? callableLoan.fundingLimit : BigInt.zero()
+
+      const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
+      scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
+      scheduledRepayment.paymentPeriod = period
+      scheduledRepayment.interest = interest
+      scheduledRepayment.principal = principal
+      scheduledRepayment.save()
+      repaymentIds.push(scheduledRepayment.id)
+    }
+  } else {
+    const startTime = callableLoan.termStartTime
+    const periodsInTerm = scheduleContract.periodsInTerm()
+    for (let period = 0; period < periodsInTerm.toI32(); period++) {
+      const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
+      const interest = callableLoanContract.interestOwedAt(estimatedPaymentDate)
+      const principal = callableLoanContract.principalOwedAt(estimatedPaymentDate)
+
+      const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
+      scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
+      scheduledRepayment.paymentPeriod = period
+      scheduledRepayment.interest = interest
+      scheduledRepayment.principal = principal
+      scheduledRepayment.save()
+      repaymentIds.push(scheduledRepayment.id)
+    }
+  }
 
   return repaymentIds
 }
