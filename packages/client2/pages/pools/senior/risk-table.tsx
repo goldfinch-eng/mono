@@ -42,7 +42,7 @@ export function RiskTable() {
       value: (
         <div>
           Investors can access borrower-reported updates via investment-gated{" "}
-          <Link href="https://google.ca" openInNewTab>
+          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
             Discord channel
           </Link>
         </div>
@@ -52,6 +52,7 @@ export function RiskTable() {
       heading: "Legal recourse",
       boldValue: (
         <Link href="https://google.ca" openInNewTab>
+          {/* TODO Get link */}
           Loan agreement
         </Link>
       ),
@@ -64,7 +65,7 @@ export function RiskTable() {
         <div>
           The Borrower can be contacted directly using a token-gated Discord
           channel{" "}
-          <Link href="https://google.ca" openInNewTab>
+          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
             Discord channel
           </Link>
         </div>
@@ -76,10 +77,11 @@ export function RiskTable() {
         <div>
           Additional due diligence information can be viewed in the{" "}
           <Link href="https://google.ca" openInNewTab>
+            {/* TODO Get link */}
             Data room
           </Link>{" "}
           or by contacting the borrower directly using a KYC-gated{" "}
-          <Link href="https://google.ca" openInNewTab>
+          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
             Discord channel
           </Link>
         </div>
