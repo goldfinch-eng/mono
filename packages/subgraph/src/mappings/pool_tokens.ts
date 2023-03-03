@@ -6,7 +6,7 @@ import {
   Transfer,
   TokenPrincipalWithdrawn,
 } from "../../generated/PoolTokens/PoolTokens"
-import {TranchedPool, PoolToken, User} from "../../generated/schema"
+import {TranchedPool, PoolToken, User, CallableLoan} from "../../generated/schema"
 import {getOrInitUser} from "../entities/user"
 import {deleteZapAfterClaimMaybe} from "../entities/zapper"
 import {removeFromList} from "../utils"
@@ -21,6 +21,7 @@ export function handleTokenBurned(event: TokenBurned): void {
 
   // Remove the token from both the user and tranched pool's token list
   const tranchedPool = TranchedPool.load(event.params.pool.toHexString())
+  const callableLoan = CallableLoan.load(event.params.pool.toHexString())
   const user = getOrInitUser(event.params.owner)
 
   if (tranchedPool) {
@@ -28,18 +29,23 @@ export function handleTokenBurned(event: TokenBurned): void {
     user.poolTokens = removeFromList(user.poolTokens, burnedTokenId)
     tranchedPool.save()
     user.save()
+  } else if (callableLoan) {
+    callableLoan.tokens = removeFromList(callableLoan.tokens, burnedTokenId)
+    user.poolTokens = removeFromList(user.poolTokens, burnedTokenId)
+    callableLoan.save()
+    user.save()
   }
 }
 
 export function handleTokenMinted(event: TokenMinted): void {
   const tranchedPool = TranchedPool.load(event.params.pool.toHexString())
+  const callableLoan = CallableLoan.load(event.params.pool.toHexString())
   const user = getOrInitUser(event.params.owner)
-  if (tranchedPool) {
+  if (tranchedPool || callableLoan) {
     const token = new PoolToken(event.params.tokenId.toString())
     token.mintedAt = event.block.timestamp
     token.user = user.id
-    token.loan = tranchedPool.id
-    token.tranche = `${event.params.pool.toHexString()}-${event.params.tranche.toString()}`
+    token.tranche = event.params.tranche
     token.principalAmount = event.params.amount
     token.principalRedeemed = BigInt.zero()
     token.principalRedeemable = token.principalAmount
@@ -49,13 +55,18 @@ export function handleTokenMinted(event: TokenMinted): void {
     token.rewardsClaimed = BigInt.zero()
     token.stakingRewardsClaimable = BigInt.zero()
     token.stakingRewardsClaimed = BigInt.zero()
-    token.save()
-
-    tranchedPool.tokens = tranchedPool.tokens.concat([token.id])
-    tranchedPool.save()
-
+    if (tranchedPool) {
+      token.loan = tranchedPool.id
+      tranchedPool.tokens = tranchedPool.tokens.concat([token.id])
+      tranchedPool.save()
+    } else if (callableLoan) {
+      token.loan = callableLoan.id
+      callableLoan.tokens = callableLoan.tokens.concat([token.id])
+      callableLoan.save()
+    }
     user.poolTokens = user.poolTokens.concat([token.id])
     user.save()
+    token.save()
   }
 }
 

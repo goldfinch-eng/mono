@@ -152,6 +152,7 @@ interface Loan {
   backers: [User!]!
   numBackers: Int!
   isPaused: Boolean!
+  tokens: [PoolToken!]!
 
   # "Credit line" fields
   balance: BigInt!
@@ -183,6 +184,7 @@ type TranchedPool implements Loan @entity {
   allowedUidTypes: [UidType!]!
   backers: [User!]!
   numBackers: Int!
+  tokens: [PoolToken!]!
   """
   A null value indicates there have been no senior pool contributions to the pool yet
   """
@@ -214,7 +216,6 @@ type TranchedPool implements Loan @entity {
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  tokens: [PoolToken!]!
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
@@ -244,7 +245,7 @@ type PoolToken @entity {
   mintedAt: BigInt!
   user: User!
   loan: Loan!
-  tranche: TrancheInfo!
+  tranche: BigInt!
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
@@ -522,6 +523,8 @@ type CallableLoan implements Loan @entity {
   allowedUidTypes: [UidType!]!
   backers: [User!]!
   numBackers: Int!
+  isPaused: Boolean!
+  tokens: [PoolToken!]!
 
   balance: BigInt!
   paymentPeriodInDays: BigInt!
