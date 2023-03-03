@@ -6,7 +6,7 @@ export function RiskMitigation() {
     <div>
       <div className="mb-5 rounded-xl border border-sand-300 p-5">
         <div className="flex items-center">
-          <div className="w-[50%] pr-3">
+          <div className="w-1/2 pr-3">
             <div className="mb-3 text-sm text-sand-600">
               Senior Pool capital risk
             </div>
@@ -38,13 +38,13 @@ export function RiskMitigation() {
               Read more
             </Button>
           </div>
-          <div className="w-[50%]">
+          <div className="w-1/2">
             <div className="ml-2 w-[calc(100%_-_theme(space.4))]">
-              <div className="relative mb-1.5 w-[60%] rounded-lg border border-[#DBCCA6] bg-[#FEF4DA] py-2 px-3 font-medium text-black">
-                <div className="absolute -right-32 -top-5 text-xs">
+              <div className="relative mb-1.5 w-3/5 rounded-lg border border-[#DBCCA6] bg-[#FEF4DA] py-2 px-3 font-medium text-black">
+                <div className="absolute -right-[8.4rem] -top-5 text-xs">
                   <Icon
                     name="ArrowDown"
-                    className="absolute top-3 -left-1"
+                    className="absolute top-3 -left-1.5"
                     size="xs"
                   />
                   ~15% overcollateralization
@@ -54,8 +54,8 @@ export function RiskMitigation() {
             </div>
 
             <div className="flex items-center rounded-lg border border-[#C8C4B9] p-2">
-              <div className="w-[60%]">
-                <div className="mb-1 flex h-[20%] flex-col rounded-lg bg-[#A1894B] py-2 px-3 text-[#FAF5E7]">
+              <div className="w-3/5">
+                <div className="mb-1 flex flex-col rounded-lg bg-[#A1894B] py-2 px-3 text-[#FAF5E7]">
                   <div className="text-sm">Junior Tranche</div>
                   <div className="text-xs">20% of Borrower Pool</div>
                 </div>
@@ -64,8 +64,8 @@ export function RiskMitigation() {
                   <div className="text-xs">80% of Borrower Pool</div>
                 </div>
               </div>
-              <div className="flex w-[40%] justify-center pl-3 text-xs font-medium text-sand-500">
-                <div className="max-w-[8rem] text-center">
+              <div className="flex w-2/5 justify-center pl-3 text-xs font-medium text-sand-500">
+                <div className="max-w-[6rem] text-center">
                   Borrower Pool Principal Value
                 </div>
               </div>
