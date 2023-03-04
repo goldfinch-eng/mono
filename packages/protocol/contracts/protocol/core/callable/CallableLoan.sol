@@ -531,12 +531,13 @@ contract CallableLoan is
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256, uint256) {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+
     require(amount > 0, "ZA");
     IPoolTokens poolTokens = config.getPoolTokens();
     /// @dev NA: not authorized
     require(poolTokens.isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
 
-    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     // calculate the amount that will ever be redeemable
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
 
