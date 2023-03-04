@@ -31,7 +31,7 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
 
     ISchedule s = defaultSchedule();
     vm.expectRevert(bytes("US"));
-    cl.initialize(gfConfig, GF_OWNER, BORROWER, 0, 0, s, 0);
+    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
   }
 
   function testInitializationCantHappenTwiceViaCreditLine() public {
@@ -39,7 +39,7 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
 
     ISchedule s = defaultSchedule();
     vm.expectRevert("Initializable: contract is already initialized");
-    cl.initialize(gfConfig, GF_OWNER, BORROWER, 0, 0, s, 0);
+    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
   }
 
   function testGetAmountsOwedFailedForUninitializedCreditLine() public {
