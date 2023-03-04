@@ -512,9 +512,10 @@ library CallableCreditLineLogic {
   function activeCallSubmissionTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint activeTrancheIndex) {
-    uint callSubmissionPeriod = cl._paymentSchedule.currentPeriod() + cl._numLockupPeriods;
-    uint callSubmissionPeriodEnd = cl._paymentSchedule.periodEndTime(callSubmissionPeriod) - 1;
-    return cl._paymentSchedule.principalPeriodAt(callSubmissionPeriodEnd);
+    uint256 currentPrincipalPeriod = cl._paymentSchedule.principalPeriodAt(block.timestamp);
+    // Call requests submitted in the current principal period's lockup period are
+    // submitted into the tranche of the NEXT principal period
+    return cl.inLockupPeriod() ? currentPrincipalPeriod + 1 : currentPrincipalPeriod;
   }
 
   function proportionalInterestAndPrincipalAvailable(
