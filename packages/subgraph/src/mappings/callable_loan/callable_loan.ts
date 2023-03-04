@@ -5,6 +5,11 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../../generated/templates/CallableLoan/CallableLoan"
+import {
+  updateTotalInterestCollected,
+  updateTotalPrincipalCollected,
+  updateTotalReserveCollected,
+} from "../../entities/protocol"
 import {getOrInitUser} from "../../entities/user"
 import {
   deleteCallableLoanRepaymentSchedule,
@@ -37,4 +42,8 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolTokensRedeemable(callableLoan)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
   callableLoan.save()
+
+  updateTotalPrincipalCollected(event.params.principal)
+  updateTotalInterestCollected(event.params.interest)
+  updateTotalReserveCollected(event.params.reserve)
 }

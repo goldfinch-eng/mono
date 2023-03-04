@@ -6,7 +6,7 @@ import {BorrowerCreated, CallableLoanCreated, PoolCreated} from "../../generated
 import {TranchedPool as TranchedPoolTemplate, CallableLoan as CallableLoanTemplate} from "../../generated/templates"
 import {getOrInitBorrower} from "../entities/borrower"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
-import {addToListOfAllTranchedPools} from "../entities/protocol"
+import {addToListOfAllLoans} from "../entities/protocol"
 import {initCallableLoan} from "./callable_loan/helpers"
 
 export function handlePoolCreated(event: PoolCreated): void {
@@ -16,7 +16,7 @@ export function handlePoolCreated(event: PoolCreated): void {
 
   TranchedPoolTemplate.create(event.params.pool)
   getOrInitTranchedPool(event.params.pool, event.block.timestamp)
-  addToListOfAllTranchedPools(event.params.pool)
+  addToListOfAllLoans(event.params.pool)
 }
 
 export function handleBorrowerCreated(event: BorrowerCreated): void {
@@ -27,4 +27,5 @@ export function handleCallableLoanCreated(event: CallableLoanCreated): void {
   CallableLoanTemplate.create(event.params.loan)
   const callableLoan = initCallableLoan(event.params.loan, event.block)
   callableLoan.save()
+  addToListOfAllLoans(event.params.loan)
 }
