@@ -6,17 +6,17 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 // import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
 
-using Math for uint256;
-
 struct Waterfall {
   Tranche[] _tranches;
   uint[50] __padding;
 }
 
+using Math for uint256;
 using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
   function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
+    require(w._tranches.length == 0, "Already Initialized");
     for (uint256 i = 0; i < nTranches; i++) {
       Tranche memory t;
       w._tranches.push(t);

@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 
@@ -37,14 +37,14 @@ library CallableLoanAccountant {
     uint256 balance
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
-    uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
+    uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
 
     paymentRemaining = paymentRemaining - owedInterestPayment;
 
-    uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
+    uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
     paymentRemaining = paymentRemaining - principalPayment;
 
-    uint256 accruedInterestPayment = MathUpgradeable.min(interestAccrued, paymentRemaining);
+    uint256 accruedInterestPayment = Math.min(interestAccrued, paymentRemaining);
     paymentRemaining = paymentRemaining - accruedInterestPayment;
 
     uint256 balanceRemaining = balance - principalPayment;
@@ -53,13 +53,13 @@ library CallableLoanAccountant {
       principal: balanceRemaining,
       interestApr: interestRate
     });
-    uint256 guaranteedFutureAccruedInterestPayment = MathUpgradeable.min(
+    uint256 guaranteedFutureAccruedInterestPayment = Math.min(
       guaranteedFutureInterest,
       paymentRemaining
     );
     paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
 
-    uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
+    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
     paymentRemaining = paymentRemaining - additionalBalancePayment;
 
     return
@@ -100,7 +100,7 @@ library CallableLoanAccountant {
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
     if (lateFeesStartsAt < end) {
-      uint256 lateDuration = end.saturatingSub(MathUpgradeable.max(lateFeesStartsAt, start));
+      uint256 lateDuration = end.saturatingSub(Math.max(lateFeesStartsAt, start));
       interest += calculateInterest(lateDuration, principal, lateInterestApr);
     }
   }

@@ -88,17 +88,6 @@ interface ICreditLine {
   /// @notice Time of first drawdown
   function termStartTime() external view returns (uint256);
 
-  /// @notice Initialize a brand new credit line
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external;
-
   /// @notice Process a bulk payment, allocating the payment amount based on the payment waterfall
   function pay(uint paymentAmount) external returns (ILoan.PaymentAllocation memory);
 
