@@ -6,13 +6,12 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 // import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
 
-using Math for uint256;
-
 struct Waterfall {
   Tranche[] _tranches;
   uint[50] __padding;
 }
 
+using Math for uint256;
 using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
