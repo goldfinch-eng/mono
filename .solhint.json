@@ -112,7 +112,9 @@
           "pay": ["whenNotPaused", "nonReentrant"],
           "drawdown": ["onlyLocker", "whenNotPaused", "nonReentrant"],
           "setAllowedUIDTypes": ["onlyLocker"],
-          "setFundableAt": ["onlyLocker"]
+          "setFundableAt": ["onlyLocker"],
+          "setMaxLimit": [],
+          "setLimit": []
         },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],

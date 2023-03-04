@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
+import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 
 interface ICallableLoan is ILoan {
   /// @param principalDeposited The amount of principal deposited towards this call request period.
@@ -53,7 +54,7 @@ interface ICallableLoan is ILoan {
   ///   payment becomes late
   /// @param _fundableAt earliest time at which the first slice can be funded
   function initialize(
-    address _config,
+    IGoldfinchConfig _config,
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
@@ -85,6 +86,8 @@ interface ICallableLoan is ILoan {
   function getCallRequestPeriod(
     uint callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory);
+
+  function availableToCall(uint tokenId) external view returns (uint256);
 
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,

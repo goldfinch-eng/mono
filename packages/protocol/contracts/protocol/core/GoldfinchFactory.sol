@@ -127,17 +127,17 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       loan = ICallableLoan(address(callableLoanProxy));
     }
 
-    loan.initialize(
-      address(config),
-      _borrower,
-      _limit,
-      _interestApr,
-      _numLockupPeriods,
-      _schedule,
-      _lateFeeApr,
-      _fundableAt,
-      _allowedUIDTypes
-    );
+    loan.initialize({
+      _config: config,
+      _borrower: _borrower,
+      _limit: _limit,
+      _interestApr: _interestApr,
+      _numLockupPeriods: _numLockupPeriods,
+      _schedule: _schedule,
+      _lateFeeApr: _lateFeeApr,
+      _fundableAt: _fundableAt,
+      _allowedUIDTypes: _allowedUIDTypes
+    });
     emit CallableLoanCreated(loan, _borrower);
     config.getPoolTokens().onPoolCreated(address(loan));
   }
