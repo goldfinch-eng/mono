@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
+
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
