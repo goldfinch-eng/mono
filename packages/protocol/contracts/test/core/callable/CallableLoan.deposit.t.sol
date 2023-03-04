@@ -69,7 +69,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
   }
 
   function testDepositRevertsForInvalidTranche(
-    uint invalidTranche
+    uint256 invalidTranche
   ) public impersonating(DEPOSITOR) {
     vm.assume(invalidTranche != 3);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
@@ -80,7 +80,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
   }
 
   function testDepositUpdatesTrancheInfoAndMintsToken(
-    uint depositAmount
+    uint256 depositAmount
   ) public impersonating(DEPOSITOR) {
     vm.assume(
       depositAmount <= usdc.balanceOf(DEPOSITOR) &&

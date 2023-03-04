@@ -7,10 +7,10 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 using TrancheLogic for Tranche global;
 
 struct Tranche {
-  uint _principalDeposited;
-  uint _principalPaid;
-  uint _principalReserved;
-  uint _interestPaid;
+  uint256 _principalDeposited;
+  uint256 _principalPaid;
+  uint256 _principalReserved;
+  uint256 _interestPaid;
   // TODO: verify that this works for upgradeability
   uint[50] __padding;
 }
@@ -21,14 +21,14 @@ library TrancheLogic {
     t._principalReserved = 0;
   }
 
-  function pay(Tranche storage t, uint principalAmount, uint interestAmount) internal {
+  function pay(Tranche storage t, uint256 principalAmount, uint256 interestAmount) internal {
     assert(t._principalPaid + t._principalReserved + principalAmount <= t.principalDeposited());
 
     t._interestPaid += interestAmount;
     t._principalPaid += principalAmount;
   }
 
-  function reserve(Tranche storage t, uint principalAmount, uint interestAmount) internal {
+  function reserve(Tranche storage t, uint256 principalAmount, uint256 interestAmount) internal {
     assert(t._principalPaid + t._principalReserved + principalAmount <= t.principalDeposited());
 
     t._interestPaid += interestAmount;
@@ -38,14 +38,14 @@ library TrancheLogic {
   /**
    * Returns principal outstanding, omitting _principalReserve.
    */
-  function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint) {
+  function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
    * Returns principal outstanding, taking into account any _principalReserve.
    */
-  function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint) {
+  function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;
   }
 
@@ -53,7 +53,7 @@ library TrancheLogic {
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
    * @dev reverts if interest has been paid to tranche
    */
-  function withdraw(Tranche storage t, uint principal) internal {
+  function withdraw(Tranche storage t, uint256 principal) internal {
     assert(t._interestPaid == 0);
     t._principalDeposited -= principal;
     t._principalPaid -= principal;
@@ -65,14 +65,14 @@ library TrancheLogic {
   ///@dev    IT: Invalid take - principal depositeed must always be larger than principalPaid + principalReserved
   function take(
     Tranche storage t,
-    uint principalOutstandingToTake
+    uint256 principalOutstandingToTake
   )
     internal
     returns (
-      uint principalDepositedTaken,
-      uint principalPaidTaken,
-      uint principalReservedTaken,
-      uint interestTaken
+      uint256 principalDepositedTaken,
+      uint256 principalPaidTaken,
+      uint256 principalReservedTaken,
+      uint256 interestTaken
     )
   {
     require(principalOutstandingToTake <= t._principalDeposited - t._principalPaid, "TOO_MUCH");
@@ -92,7 +92,7 @@ library TrancheLogic {
   }
 
   // depositing into the tranche for the first time(uncalled)
-  function deposit(Tranche storage t, uint principal) internal {
+  function deposit(Tranche storage t, uint256 principal) internal {
     // SAFETY but gas cost
     assert(t._interestPaid == 0);
     t._principalDeposited += principal;
@@ -102,10 +102,10 @@ library TrancheLogic {
 
   function addToBalances(
     Tranche storage t,
-    uint addToPrincipalDeposited,
-    uint addToPrincipalPaid,
-    uint addToPrincipalReserved,
-    uint addToInterestPaid
+    uint256 addToPrincipalDeposited,
+    uint256 addToPrincipalPaid,
+    uint256 addToPrincipalReserved,
+    uint256 addToInterestPaid
   ) internal {
     t._principalDeposited += addToPrincipalDeposited;
     t._principalPaid += addToPrincipalPaid;
@@ -113,26 +113,26 @@ library TrancheLogic {
     t._interestPaid += addToInterestPaid;
   }
 
-  function principalDeposited(Tranche storage t) internal view returns (uint) {
+  function principalDeposited(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited;
   }
 
   /// @notice Returns the amount of principal paid to the tranche
-  function principalPaid(Tranche storage t) internal view returns (uint) {
+  function principalPaid(Tranche storage t) internal view returns (uint256) {
     return t._principalPaid;
   }
 
   /// @notice Returns the amount of principal paid to the tranche
-  function principalReserved(Tranche storage t) internal view returns (uint) {
+  function principalReserved(Tranche storage t) internal view returns (uint256) {
     return t._principalReserved;
   }
 
   /// @notice Returns the amount of principal paid + principal reserved
-  function principalPaidAfterSettlement(Tranche storage t) internal view returns (uint) {
+  function principalPaidAfterSettlement(Tranche storage t) internal view returns (uint256) {
     return t._principalPaid + t._principalReserved;
   }
 
-  function interestPaid(Tranche storage t) internal view returns (uint) {
+  function interestPaid(Tranche storage t) internal view returns (uint256) {
     return t._interestPaid;
   }
 
@@ -140,8 +140,8 @@ library TrancheLogic {
   function proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
     Tranche storage t,
     uint256 principalAmount,
-    uint feePercent
-  ) internal view returns (uint, uint) {
+    uint256 feePercent
+  ) internal view returns (uint256, uint256) {
     return (
       t.proportionalInterestWithdrawable(principalAmount, feePercent),
       t.proportionalPrincipalAvailableAfterApplyingReserves(principalAmount)
@@ -151,8 +151,8 @@ library TrancheLogic {
   function proportionalInterestAndPrincipalAvailable(
     Tranche storage t,
     uint256 principalAmount,
-    uint feePercent
-  ) internal view returns (uint, uint) {
+    uint256 feePercent
+  ) internal view returns (uint256, uint256) {
     return (
       t.proportionalInterestWithdrawable(principalAmount, feePercent),
       t.proportionalPrincipalWithdrawable(principalAmount)
@@ -162,29 +162,29 @@ library TrancheLogic {
   function proportionalPrincipalAvailableAfterApplyingReserves(
     Tranche storage t,
     uint256 principalAmount
-  ) internal view returns (uint) {
+  ) internal view returns (uint256) {
     return ((t.principalPaid() + t._principalReserved) * principalAmount) / t.principalDeposited();
   }
 
   function proportionalPrincipalWithdrawable(
     Tranche storage t,
     uint256 principalAmount
-  ) internal view returns (uint) {
+  ) internal view returns (uint256) {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalPrincipalOutstandingWithoutReserves(
     Tranche storage t,
     uint256 principalAmount
-  ) internal view returns (uint) {
+  ) internal view returns (uint256) {
     return (t.principalOutstandingWithoutReserves() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalInterestWithdrawable(
     Tranche storage t,
     uint256 principalAmount,
-    uint feePercent
-  ) internal view returns (uint) {
+    uint256 feePercent
+  ) internal view returns (uint256) {
     return
       (t.interestPaid() * principalAmount * percentLessFee(feePercent)) /
       (t.principalDeposited() * 100);
@@ -192,12 +192,12 @@ library TrancheLogic {
 
   /// Updates the tranche as the result of a drawdown
   /// @dev DP: drawdown principal amount exceeds principal paid
-  function drawdown(Tranche storage t, uint principalAmount) internal {
+  function drawdown(Tranche storage t, uint256 principalAmount) internal {
     require(principalAmount <= t._principalPaid, "EP");
     t._principalPaid -= principalAmount;
   }
 
-  function percentLessFee(uint feePercent) private pure returns (uint) {
+  function percentLessFee(uint256 feePercent) private pure returns (uint256) {
     return 100 - feePercent;
   }
 }

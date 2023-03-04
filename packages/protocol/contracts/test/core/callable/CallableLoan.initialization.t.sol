@@ -58,10 +58,10 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
   }
 
   function createMonthlySchedule(
-    uint periodsInTerm,
-    uint periodsPerPrincipalPeriod,
-    uint periodsPerInterestPeriod,
-    uint gracePrincipalPeriods
+    uint256 periodsInTerm,
+    uint256 periodsPerPrincipalPeriod,
+    uint256 periodsPerInterestPeriod,
+    uint256 gracePrincipalPeriods
   ) public returns (ISchedule) {
     IPeriodMapper pm = IPeriodMapper(deployCode("MonthlyPeriodMapper.sol"));
     return

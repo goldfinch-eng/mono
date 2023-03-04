@@ -14,7 +14,7 @@ contract TestWaterfall is Test {
     w.initialize(4);
   }
 
-  function testDepositAddsPrincipalToTranche(uint amount, uint8 trancheId) external {
+  function testDepositAddsPrincipalToTranche(uint256 amount, uint8 trancheId) external {
     trancheId = uint8(bound(trancheId, 0, w.numTranches() - 1));
     Tranche storage trancheBefore = w.getTranche(trancheId);
     assertTrue(trancheBefore.principalDeposited() == 0);
@@ -23,7 +23,7 @@ contract TestWaterfall is Test {
 
     w.deposit(trancheId, amount);
 
-    for (uint i = 0; i < w.numTranches(); i++) {
+    for (uint256 i = 0; i < w.numTranches(); i++) {
       Tranche storage sampled = w.getTranche(i);
       // if its the tranche that we deposited into
       bool isTrancheWeDepositedInto = i == trancheId;

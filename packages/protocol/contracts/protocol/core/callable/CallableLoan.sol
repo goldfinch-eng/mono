@@ -169,7 +169,7 @@ contract CallableLoan is
 
     // 2. Determine the amount of principal and interest that can be withdrawn
     //    on the given pool token. Withdraw all of this amount.
-    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = cl
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
         principal: tokenInfo.principalAmount,
@@ -177,7 +177,7 @@ contract CallableLoan is
       });
 
     {
-      uint netWithdrawableAmount = totalPrincipalWithdrawable -
+      uint256 netWithdrawableAmount = totalPrincipalWithdrawable -
         tokenInfo.principalRedeemed +
         totalInterestWithdrawable -
         tokenInfo.interestRedeemed;
@@ -189,7 +189,7 @@ contract CallableLoan is
     // 3. Account for the call request in the credit line - this will return the corresponding
     //    amounts of principal deposited, principal paid, and interest redeemable which have
     //    been moved from the pool token to the call request token.
-    (uint principalDepositedMoved, uint principalPaidMoved, , uint interestRedeemable) = cl
+    (uint256 principalDepositedMoved, uint256 principalPaidMoved, , uint256 interestRedeemable) = cl
       .submitCall(callAmount);
     interestRedeemable = (interestRedeemable * (100 - _reserveFundsFeePercent())) / 100;
 
@@ -425,7 +425,7 @@ contract CallableLoan is
   }
 
   function getCallRequestPeriod(
-    uint callRequestPeriodIndex
+    uint256 callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory) {
     require(callRequestPeriodIndex < uncalledCapitalTrancheIndex());
     SettledTrancheInfo memory info = _staleCreditLine.getSettledTrancheInfo(callRequestPeriodIndex);
@@ -443,7 +443,7 @@ contract CallableLoan is
   }
 
   /// @dev OU: Only the uncalled tranche can call
-  function availableToCall(uint tokenId) public view override returns (uint256) {
+  function availableToCall(uint256 tokenId) public view override returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     require(tokenInfo.tranche == uncalledCapitalTrancheIndex(), "OU");
     return
@@ -469,10 +469,10 @@ contract CallableLoan is
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     require(amount > 0, "ZA");
 
-    uint interestOwedBeforePayment = cl.interestOwed();
-    uint interestAccruedBeforePayment = cl.interestAccrued();
+    uint256 interestOwedBeforePayment = cl.interestOwed();
+    uint256 interestAccruedBeforePayment = cl.interestAccrued();
 
-    uint timeUntilNextPrincipalSettlemenet = cl
+    uint256 timeUntilNextPrincipalSettlemenet = cl
       .nextPrincipalDueTimeAt(block.timestamp)
       .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
@@ -550,14 +550,14 @@ contract CallableLoan is
 
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     // calculate the amount that will ever be redeemable
-    (uint interestWithdrawable, uint principalWithdrawable) = _availableToWithdraw(tokenInfo);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
 
     require(amount <= interestWithdrawable + principalWithdrawable, "IA");
 
     // prefer to withdraw interest first, then principal
-    uint interestToRedeem = Math.min(interestWithdrawable, amount);
-    uint amountAfterInterest = amount - interestToRedeem;
-    uint principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
+    uint256 interestToRedeem = Math.min(interestWithdrawable, amount);
+    uint256 amountAfterInterest = amount - interestToRedeem;
+    uint256 principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
     {
       if (cl.loanState() == LoanState.InProgress) {
@@ -593,7 +593,7 @@ contract CallableLoan is
     /* CallableCreditLine storage cl = */ _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
-    uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
+    uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
     if (totalWithdrawable == 0) {
       return (0, 0);
     }
@@ -603,7 +603,7 @@ contract CallableLoan is
   /*================================================================================
   PaymentSchedule proxy functions
   ================================================================================*/
-  function nextPrincipalDueTime() public view returns (uint) {
+  function nextPrincipalDueTime() public view returns (uint256) {
     return _staleCreditLine.nextPrincipalDueTime();
   }
 
@@ -628,13 +628,13 @@ contract CallableLoan is
 
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
-  ) internal view returns (uint interestAvailable, uint principalAvailable) {
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
     if (tokenInfo.principalAmount == 0) {
       // Bail out early to account for proportion of zero.
       return (0, 0);
     }
 
-    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = _staleCreditLine
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
         principal: tokenInfo.principalAmount,
@@ -812,13 +812,13 @@ contract CallableLoan is
 
   /// Unsupported in callable loans.
 
-  function setMaxLimit(uint newAmount) external override {
+  function setMaxLimit(uint256 newAmount) external override {
     revert("US");
   }
 
   /// Unsupported ICreditLine method kept for ICreditLine conformance
 
-  function setLimit(uint newAmount) external override {
+  function setLimit(uint256 newAmount) external override {
     revert("US");
   }
 

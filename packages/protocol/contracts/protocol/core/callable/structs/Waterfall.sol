@@ -16,19 +16,22 @@ struct Waterfall {
 using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
-  function initialize(Waterfall storage w, uint nTranches) internal returns (Waterfall storage) {
-    for (uint i = 0; i < nTranches; i++) {
+  function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
+    for (uint256 i = 0; i < nTranches; i++) {
       Tranche memory t;
       w._tranches.push(t);
     }
     return w;
   }
 
-  function getTranche(Waterfall storage w, uint trancheId) internal view returns (Tranche storage) {
+  function getTranche(
+    Waterfall storage w,
+    uint256 trancheId
+  ) internal view returns (Tranche storage) {
     return w._tranches[trancheId];
   }
 
-  function numTranches(Waterfall storage w) internal view returns (uint) {
+  function numTranches(Waterfall storage w) internal view returns (uint256) {
     return w._tranches.length;
   }
 
@@ -42,23 +45,24 @@ library WaterfallLogic {
   /// @dev NB: no balance
   function pay(
     Waterfall storage w,
-    uint principalAmount,
-    uint interestAmount,
-    uint reserveTranchesIndexStart
+    uint256 principalAmount,
+    uint256 interestAmount,
+    uint256 reserveTranchesIndexStart
   ) internal {
-    uint existingPrincipalOutstandingWithoutReserves = w.totalPrincipalOutstandingWithoutReserves();
+    uint256 existingPrincipalOutstandingWithoutReserves = w
+      .totalPrincipalOutstandingWithoutReserves();
     require(existingPrincipalOutstandingWithoutReserves > 0, "NB");
 
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
 
-    for (uint i = 0; i < w._tranches.length; i++) {
+    for (uint256 i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w._tranches[i];
-      uint proRataInterestPayment = (interestAmount *
+      uint256 proRataInterestPayment = (interestAmount *
         tranche.principalOutstandingWithoutReserves()) /
         existingPrincipalOutstandingWithoutReserves;
-      uint principalPayment = tranche.principalOutstandingWithReserves().min(principalAmount);
+      uint256 principalPayment = tranche.principalOutstandingWithReserves().min(principalAmount);
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
       if (i < reserveTranchesIndexStart) {
@@ -73,7 +77,7 @@ library WaterfallLogic {
     require(principalAmount == 0, "OP");
   }
 
-  function drawdown(Waterfall storage w, uint principalAmount) internal {
+  function drawdown(Waterfall storage w, uint256 principalAmount) internal {
     Tranche storage tranche = w.getTranche(w.numTranches() - 1);
     tranche.drawdown(principalAmount);
   }
@@ -83,12 +87,17 @@ library WaterfallLogic {
    */
   function move(
     Waterfall storage w,
-    uint principalOutstanding,
-    uint fromTrancheId,
-    uint toTrancheId
+    uint256 principalOutstanding,
+    uint256 fromTrancheId,
+    uint256 toTrancheId
   )
     internal
-    returns (uint principalDeposited, uint principalPaid, uint principalReserved, uint interestPaid)
+    returns (
+      uint256 principalDeposited,
+      uint256 principalPaid,
+      uint256 principalReserved,
+      uint256 interestPaid
+    )
   {
     (principalDeposited, principalPaid, principalReserved, interestPaid) = w
       .getTranche(fromTrancheId)
@@ -106,21 +115,21 @@ library WaterfallLogic {
    * @notice Withdraw principal when the tranche is not locked
             Assumes that the caller is allowed to withdraw
    */
-  function withdraw(Waterfall storage w, uint trancheId, uint principalAmount) internal {
+  function withdraw(Waterfall storage w, uint256 trancheId, uint256 principalAmount) internal {
     return w._tranches[trancheId].withdraw(principalAmount);
   }
 
-  function deposit(Waterfall storage w, uint trancheId, uint principalAmount) internal {
+  function deposit(Waterfall storage w, uint256 trancheId, uint256 principalAmount) internal {
     return w._tranches[trancheId].deposit(principalAmount);
   }
 
   /// Settle all past due tranches as well as the last tranche.
   /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
-  function settleReserves(Waterfall storage w, uint dueTrancheIndex) internal {
-    uint lastTrancheIndex = w.numTranches() - 1;
+  function settleReserves(Waterfall storage w, uint256 dueTrancheIndex) internal {
+    uint256 lastTrancheIndex = w.numTranches() - 1;
     Tranche storage lastTranche = w._tranches[lastTrancheIndex];
     lastTranche.settleReserves();
-    for (uint i = 0; i <= dueTrancheIndex && i < lastTrancheIndex; i++) {
+    for (uint256 i = 0; i <= dueTrancheIndex && i < lastTrancheIndex; i++) {
       w._tranches[i].settleReserves();
     }
   }
@@ -138,8 +147,8 @@ library WaterfallLogic {
     Waterfall storage w,
     uint256 trancheId,
     uint256 principalDeposited,
-    uint feePercent
-  ) internal view returns (uint256, uint) {
+    uint256 feePercent
+  ) internal view returns (uint256, uint256) {
     return
       w.getTranche(trancheId).proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
         principalDeposited,
@@ -152,30 +161,30 @@ library WaterfallLogic {
    */
   function proportionalInterestAndPrincipalAvailable(
     Waterfall storage w,
-    uint trancheId,
+    uint256 trancheId,
     uint256 principal,
-    uint feePercent
-  ) internal view returns (uint, uint) {
+    uint256 feePercent
+  ) internal view returns (uint256, uint256) {
     return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
-  function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint) {
+  function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint256) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint totalPrincipalDeposited;
-    for (uint i = 0; i < w.numTranches(); i++) {
+    uint256 totalPrincipalDeposited;
+    for (uint256 i = 0; i < w.numTranches(); i++) {
       totalPrincipalDeposited += w.getTranche(i).principalDeposited();
     }
     return totalPrincipalDeposited;
   }
 
   /// @notice Returns the total amount of interest paid to all tranches
-  function totalInterestPaid(Waterfall storage w) internal view returns (uint) {
+  function totalInterestPaid(Waterfall storage w) internal view returns (uint256) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint totalInterestPaid;
-    for (uint i = 0; i < w.numTranches(); i++) {
+    uint256 totalInterestPaid;
+    for (uint256 i = 0; i < w.numTranches(); i++) {
       totalInterestPaid += w.getTranche(i).interestPaid();
     }
     return totalInterestPaid;
@@ -185,18 +194,18 @@ library WaterfallLogic {
   function totalPrincipalPaidAfterSettlementUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
-  ) internal view returns (uint totalPrincipalPaid) {
-    for (uint i = 0; i < trancheIndex; i++) {
+  ) internal view returns (uint256 totalPrincipalPaid) {
+    for (uint256 i = 0; i < trancheIndex; i++) {
       totalPrincipalPaid += w.getTranche(i).principalPaidAfterSettlement();
     }
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
-  function totalPrincipalPaid(Waterfall storage w) internal view returns (uint) {
+  function totalPrincipalPaid(Waterfall storage w) internal view returns (uint256) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint totalPrincipalPaid;
-    for (uint i = 0; i < w.numTranches(); i++) {
+    uint256 totalPrincipalPaid;
+    for (uint256 i = 0; i < w.numTranches(); i++) {
       totalPrincipalPaid += w.getTranche(i).principalPaid();
     }
     return totalPrincipalPaid;
@@ -204,9 +213,9 @@ library WaterfallLogic {
 
   function totalPrincipalOutstandingWithoutReserves(
     Waterfall storage w
-  ) internal view returns (uint sum) {
-    uint sum;
-    for (uint i = 0; i < w._tranches.length; i++) {
+  ) internal view returns (uint256 sum) {
+    uint256 sum;
+    for (uint256 i = 0; i < w._tranches.length; i++) {
       sum += w._tranches[i].principalOutstandingWithoutReserves();
     }
     return sum;
@@ -214,9 +223,9 @@ library WaterfallLogic {
 
   function totalPrincipalOutstandingWithReserves(
     Waterfall storage w
-  ) internal view returns (uint sum) {
-    uint sum;
-    for (uint i = 0; i < w._tranches.length; i++) {
+  ) internal view returns (uint256 sum) {
+    uint256 sum;
+    for (uint256 i = 0; i < w._tranches.length; i++) {
       sum += w._tranches[i].principalOutstandingWithReserves();
     }
     return sum;
@@ -229,8 +238,8 @@ library WaterfallLogic {
   function totalPrincipalReservedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
-  ) internal view returns (uint sum) {
-    for (uint i = 0; i < trancheIndex; i++) {
+  ) internal view returns (uint256 sum) {
+    for (uint256 i = 0; i < trancheIndex; i++) {
       sum += w._tranches[i].principalReserved();
     }
   }
@@ -242,8 +251,8 @@ library WaterfallLogic {
   function totalPrincipalDepositedUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
-  ) internal view returns (uint sum) {
-    for (uint i = 0; i < trancheIndex; i++) {
+  ) internal view returns (uint256 sum) {
+    for (uint256 i = 0; i < trancheIndex; i++) {
       sum += w._tranches[i].principalDeposited();
     }
   }

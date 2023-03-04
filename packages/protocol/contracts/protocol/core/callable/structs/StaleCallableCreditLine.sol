@@ -23,11 +23,11 @@ library StaleCallableCreditLineLogic {
   function initialize(
     StaleCallableCreditLine storage cl,
     IGoldfinchConfig _config,
-    uint _interestApr,
-    uint _numLockupPeriods,
+    uint256 _interestApr,
+    uint256 _numLockupPeriods,
     ISchedule _schedule,
-    uint _lateAdditionalApr,
-    uint _limit
+    uint256 _lateAdditionalApr,
+    uint256 _limit
   ) internal {
     cl._cl.initialize(
       _config,
@@ -50,11 +50,11 @@ library StaleCallableCreditLineLogic {
     return cl._cl._paymentSchedule.schedule;
   }
 
-  function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function termStartTime(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.termStartTime();
   }
 
-  function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.lastFullPaymentTime();
   }
 
@@ -74,7 +74,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.isLate();
   }
 
-  function checkpointedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function checkpointedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.checkpointedAsOf();
   }
 
@@ -102,14 +102,14 @@ library StaleCallableCreditLineLogic {
 
   function totalInterestOwedAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
+    uint256 timestamp
   ) internal view returns (uint256) {
     return cl._cl.totalInterestOwedAt(timestamp);
   }
 
   function totalPrincipalOwedAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
+    uint256 timestamp
   ) internal view returns (uint256) {
     return cl._cl.totalPrincipalOwedAt(timestamp);
   }
@@ -136,51 +136,53 @@ library StaleCallableCreditLineLogic {
 
   function nextInterestDueTimeAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
-  ) internal view returns (uint) {
+    uint256 timestamp
+  ) internal view returns (uint256) {
     return cl._cl.nextInterestDueTimeAt(timestamp);
   }
 
-  function nextPrincipalDueTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function nextPrincipalDueTime(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
     return cl._cl.nextPrincipalDueTime();
   }
 
   function nextPrincipalDueTimeAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
-  ) internal view returns (uint) {
+    uint256 timestamp
+  ) internal view returns (uint256) {
     return cl._cl.nextPrincipalDueTimeAt(timestamp);
   }
 
   function nextDueTimeAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
-  ) internal view returns (uint) {
+    uint256 timestamp
+  ) internal view returns (uint256) {
     return cl._cl.nextDueTimeAt(timestamp);
   }
 
-  function nextDueTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function nextDueTime(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.nextDueTime();
   }
 
-  function termEndTime(StaleCallableCreditLine storage cl) internal view returns (uint) {
+  function termEndTime(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.termEndTime();
   }
 
   function proportionalCallablePrincipal(
     StaleCallableCreditLine storage cl,
-    uint trancheId,
-    uint principalDeposited
-  ) internal view returns (uint) {
+    uint256 trancheId,
+    uint256 principalDeposited
+  ) internal view returns (uint256) {
     return cl._cl.proportionalCallablePrincipal(trancheId, principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailable(
     StaleCallableCreditLine storage cl,
-    uint trancheId,
-    uint principal,
-    uint feePercent
-  ) internal view returns (uint, uint) {
+    uint256 trancheId,
+    uint256 principal,
+    uint256 feePercent
+  ) internal view returns (uint256, uint256) {
     return
       cl._cl.proportionalInterestAndPrincipalAvailable({
         trancheId: trancheId,
@@ -197,7 +199,7 @@ library StaleCallableCreditLineLogic {
 
   function totalInterestAccruedAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
+    uint256 timestamp
   ) internal view returns (uint256) {
     return cl._cl.totalInterestAccruedAt(timestamp);
   }
@@ -208,7 +210,7 @@ library StaleCallableCreditLineLogic {
 
   function interestAccruedAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
+    uint256 timestamp
   ) internal view returns (uint256) {
     return cl._cl.interestAccruedAt(timestamp);
   }
@@ -219,7 +221,7 @@ library StaleCallableCreditLineLogic {
 
   function totalPrincipalPaidAt(
     StaleCallableCreditLine storage cl,
-    uint timestamp
+    uint256 timestamp
   ) internal view returns (uint256) {
     return cl._cl.totalPrincipalPaidAt(timestamp);
   }

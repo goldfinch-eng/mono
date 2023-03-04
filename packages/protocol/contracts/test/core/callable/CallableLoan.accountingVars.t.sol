@@ -401,7 +401,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 
-    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
     pay(
       callableLoan,
       cl.interestAccruedAt(nextPrincipalDueTime) +
@@ -413,14 +413,14 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertZero(cl.interestAccrued());
 
     // Advance to next due time - interest or principal
-    uint nextDueTimeJump = callableLoan.nextDueTime();
+    uint256 nextDueTimeJump = callableLoan.nextDueTime();
     vm.warp(nextDueTimeJump);
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
 
     // Advance to next principal payment period in order for principal payment to process.
-    uint nextPrincipalDueTimeJump = callableLoan.nextPrincipalDueTime();
+    uint256 nextPrincipalDueTimeJump = callableLoan.nextPrincipalDueTime();
     vm.warp(nextPrincipalDueTimeJump);
     assertZero(cl.balance());
     assertZero(cl.interestOwed());

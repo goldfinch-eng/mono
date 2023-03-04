@@ -362,16 +362,16 @@ contract CallableLoanBaseTest is BaseTest {
     gfConfig.addToGoList(user);
   }
 
-  function maxPayableInterest(CallableLoan callableLoan) internal view returns (uint) {
-    uint latestPaymentSettlementDate = Math.max(
+  function maxPayableInterest(CallableLoan callableLoan) internal view returns (uint256) {
+    uint256 latestPaymentSettlementDate = Math.max(
       block.timestamp,
       callableLoan.nextPrincipalDueTime()
     );
 
-    uint owedAndAccruedInterest = callableLoan.interestOwed() + callableLoan.interestAccrued();
+    uint256 owedAndAccruedInterest = callableLoan.interestOwed() + callableLoan.interestAccrued();
 
     uint256 timeToSettlement = latestPaymentSettlementDate - block.timestamp;
-    uint futureInterestPayable = CallableLoanAccountant.calculateInterest(
+    uint256 futureInterestPayable = CallableLoanAccountant.calculateInterest(
       timeToSettlement,
       callableLoan.balance() - callableLoan.principalOwed(),
       callableLoan.interestApr()

@@ -44,7 +44,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     address depositor,
     uint256 depositAmount,
     uint256 drawdownAmount,
-    uint callAmount,
+    uint256 callAmount,
     uint256 secondsElapsedSinceDrawdown
   ) public {
     secondsElapsedSinceDrawdown = bound(

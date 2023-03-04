@@ -84,10 +84,10 @@ interface ICallableLoan is ILoan {
   function getUncalledCapitalInfo() external view returns (UncalledCapitalInfo memory);
 
   function getCallRequestPeriod(
-    uint callRequestPeriodIndex
+    uint256 callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory);
 
-  function availableToCall(uint tokenId) external view returns (uint256);
+  function availableToCall(uint256 tokenId) external view returns (uint256);
 
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,

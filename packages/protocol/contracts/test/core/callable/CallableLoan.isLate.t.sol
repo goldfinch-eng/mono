@@ -82,7 +82,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     warpToAfterDrawdownPeriod(callableLoan);
 
     // Advance to the last payment period and pay back interes
-    for (uint i = 0; i < 11; ++i) {
+    for (uint256 i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
       if (cl.interestOwed() > 0) {
         pay(callableLoan, cl.interestOwed());
@@ -106,7 +106,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     warpToAfterDrawdownPeriod(callableLoan);
 
     // Advance to the last payment period and pay back interes
-    for (uint i = 0; i < 11; ++i) {
+    for (uint256 i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
       if (cl.interestOwed() > 0) {
         pay(callableLoan, cl.interestOwed());

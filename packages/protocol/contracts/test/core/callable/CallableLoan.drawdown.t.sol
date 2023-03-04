@@ -13,10 +13,10 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
   using CallableLoanConfigHelper for IGoldfinchConfig;
 
   function testDrawdownBeforeDepositsFails(
-    uint loanLimit,
-    uint drawdownAmount
+    uint256 loanLimit,
+    uint256 drawdownAmount
   ) public impersonating(BORROWER) {
-    drawdownAmount = bound(drawdownAmount, 1, type(uint).max);
+    drawdownAmount = bound(drawdownAmount, 1, type(uint256).max);
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(loanLimit);
     vm.expectRevert(bytes("ED"));
     callableLoan.drawdown(drawdownAmount);
@@ -24,10 +24,10 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
 
   function testDrawdownOnlyAvailableToBorrower(
     address user,
-    uint depositAmount,
-    uint drawdownAmount,
-    uint warp1Time,
-    uint warp2Time
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 warp1Time,
+    uint256 warp2Time
   ) public {
     vm.assume(user != BORROWER && user != gfConfig.protocolAdminAddress());
     warp1Time = bound(warp1Time, 0, 1000 days);
@@ -49,13 +49,13 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
 
   function testDrawdownFailsAfterDrawdownPeriod(
     address user,
-    uint depositAmount,
-    uint drawdownAmount,
-    uint failedDrawdownAmount
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 failedDrawdownAmount
   ) public impersonating(BORROWER) {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
-    failedDrawdownAmount = bound(failedDrawdownAmount, 1, type(uint).max);
+    failedDrawdownAmount = bound(failedDrawdownAmount, 1, type(uint256).max);
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");

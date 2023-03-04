@@ -18,42 +18,42 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
 
   CallableLoan callableLoan;
   // Use storage array to get around Solidity stack size limits.
-  uint user1PoolTokenId;
-  uint user2PoolTokenId;
-  uint user3PoolTokenId;
+  uint256 user1PoolTokenId;
+  uint256 user2PoolTokenId;
+  uint256 user3PoolTokenId;
 
-  uint user1PoolTokenIdCalledSplit;
-  uint user1PoolTokenIdUncalledSplit;
-  uint user2PoolTokenIdCalledSplit;
-  uint user2PoolTokenIdUncalledSplit;
-  uint totalDeposits;
+  uint256 user1PoolTokenIdCalledSplit;
+  uint256 user1PoolTokenIdUncalledSplit;
+  uint256 user2PoolTokenIdCalledSplit;
+  uint256 user2PoolTokenIdUncalledSplit;
+  uint256 totalDeposits;
 
-  uint firstInterestAccrued;
-  uint firstInterestOwedAtNextDueTime;
-  uint firstInterestOwedAtNextPrincipalDueTime;
-  uint originalBalance;
-  uint loanContractBalanceBefore;
-  uint userBalanceBefore;
-  uint totalInterestPayment;
-  uint totalPrincipalPayment;
+  uint256 firstInterestAccrued;
+  uint256 firstInterestOwedAtNextDueTime;
+  uint256 firstInterestOwedAtNextPrincipalDueTime;
+  uint256 originalBalance;
+  uint256 loanContractBalanceBefore;
+  uint256 userBalanceBefore;
+  uint256 totalInterestPayment;
+  uint256 totalPrincipalPayment;
 
-  uint user1PoolTokenAvailableToCall;
-  uint user2PoolTokenAvailableToCall;
-  uint user3PoolTokenAvailableToCall;
-  uint user1PoolTokenUncalledSplitAvailableToCall;
+  uint256 user1PoolTokenAvailableToCall;
+  uint256 user2PoolTokenAvailableToCall;
+  uint256 user3PoolTokenAvailableToCall;
+  uint256 user1PoolTokenUncalledSplitAvailableToCall;
 
-  uint user1TokenPrincipalAvailableForWithdraw;
-  uint user2TokenInterestAvailableForWithdraw;
-  uint user2TokenPrincipalAvailableForWithdraw;
-  uint user3TokenInterestAvailableForWithdraw;
-  uint user3TokenPrincipalAvailableForWithdraw;
-  uint user1PoolTokenUncalledSplitInterestAvailableForWithdraw;
-  uint user1PoolTokenCalledSplitInterestAvailableForWithdraw;
-  uint user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw;
-  uint user1PoolTokenCalledSplitPrincipalAvailableForWithdraw;
+  uint256 user1TokenPrincipalAvailableForWithdraw;
+  uint256 user2TokenInterestAvailableForWithdraw;
+  uint256 user2TokenPrincipalAvailableForWithdraw;
+  uint256 user3TokenInterestAvailableForWithdraw;
+  uint256 user3TokenPrincipalAvailableForWithdraw;
+  uint256 user1PoolTokenUncalledSplitInterestAvailableForWithdraw;
+  uint256 user1PoolTokenCalledSplitInterestAvailableForWithdraw;
+  uint256 user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw;
+  uint256 user1PoolTokenCalledSplitPrincipalAvailableForWithdraw;
   // Use storage buffer to get around Solidity stack size limits.
-  uint interestAvailableToWithdraw;
-  uint principalAvailableToWithdraw;
+  uint256 interestAvailableToWithdraw;
+  uint256 principalAvailableToWithdraw;
 
   ILoan.PaymentAllocation paymentAllocation;
   ICallableLoan.UncalledCapitalInfo uncalledCapitalInfo;
@@ -296,8 +296,8 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     /// Use {} to produce new stack frame and avoid stack too deep errors.
     console.log("Before 2nd call submission frame");
     {
-      uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
-      uint interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+      uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+      uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
         callableLoan.nextPrincipalDueTime()
       );
 
@@ -459,18 +459,18 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     {
       // Hash and bound user3 to get pseudorandom warp destination
       // Cannot add another fuzzed variable because of stack size limits.
-      uint invalidCallSubmissionTime = uint(keccak256(abi.encode(user3)));
+      uint256 invalidCallSubmissionTime = uint256(keccak256(abi.encode(user3)));
       invalidCallSubmissionTime = bound(
         invalidCallSubmissionTime,
         callableLoan.nextDueTime() + 1,
         callableLoan.nextPrincipalDueTime() - 1
       );
       vm.warp(invalidCallSubmissionTime);
-      uint callAmount3Max = (depositAmount3 *
+      uint256 callAmount3Max = (depositAmount3 *
         (drawdownAmount - paymentAllocation.additionalBalancePayment)) / totalDeposits;
       // Hash and bound call amounts 1 and 2 to get pseudorandom call amount 3.
       // Cannot add another fuzzed variable because of stack size limits.
-      uint callAmount3 = bound(uint256(keccak256(abi.encode(user1, user2))), 0, callAmount3Max);
+      uint256 callAmount3 = bound(uint256(keccak256(abi.encode(user1, user2))), 0, callAmount3Max);
 
       if (callAmount3 > 0) {
         console.log("Submitting invalid call 3. Invalid since we are in a lock period.");
@@ -487,8 +487,8 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     /// Use {} to produce new stack frame and avoid stack too deep errors.
     console.log("After principal payment period due time frame");
     {
-      uint interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
-      uint interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+      uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+      uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
         callableLoan.nextPrincipalDueTime()
       );
 

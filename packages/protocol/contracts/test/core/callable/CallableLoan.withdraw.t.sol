@@ -294,7 +294,11 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     withdraw(callableLoan, token2, HALF_CENT, user2);
   }
 
-  function testWithdrawEmitsAnEvent(address user, uint depositAmount, uint drawdownAmount) public {
+  function testWithdrawEmitsAnEvent(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount
+  ) public {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
 
@@ -305,10 +309,10 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
     drawdown(callableLoan, drawdownAmount);
     vm.warp(cl.termEndTime());
-    uint interestOwed = cl.interestOwed();
+    uint256 interestOwed = cl.interestOwed();
     pay(callableLoan, interestOwed + drawdownAmount);
 
-    uint withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
+    uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
     // Total amount owed
     vm.expectEmit(true, true, true, true);
     emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
@@ -473,7 +477,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uid._mintForTest(user, 1, 1, "");
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
-    uint poolToken = deposit(callableLoan, depositAmount, user);
+    uint256 poolToken = deposit(callableLoan, depositAmount, user);
     drawdown(callableLoan, drawdownAmount);
     vm.warp(block.timestamp + secondsElapsed);
 
@@ -525,8 +529,8 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
     vm.warp(block.timestamp + secondsElapsed);
-    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
-    uint interestOwed;
+    uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    uint256 interestOwed;
     if (nextPrincipalDueTime > block.timestamp) {
       // If we are before the termEndTime
       assertLt(block.timestamp, callableLoan.termEndTime());
@@ -551,7 +555,11 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     );
   }
 
-  function testWithdrawMaxEmitsEvent(address user, uint depositAmount, uint drawdownAmount) public {
+  function testWithdrawMaxEmitsEvent(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount
+  ) public {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
 
@@ -562,10 +570,10 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
     drawdown(callableLoan, drawdownAmount);
     vm.warp(cl.termEndTime());
-    uint interestOwed = cl.interestOwed();
+    uint256 interestOwed = cl.interestOwed();
     pay(callableLoan, interestOwed + drawdownAmount);
 
-    uint withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
+    uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
     // Total amount owed
     vm.expectEmit(true, true, true, true);
     emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
@@ -600,7 +608,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       assertEq(principalRedeemed, depositAmount - drawdownAmount);
     }
 
-    uint interestOwed = cl.interestOwed();
+    uint256 interestOwed = cl.interestOwed();
     // fully pay off the loan
     pay(callableLoan, interestOwed + cl.principalOwed());
     // remaining 20% of principal should be withdrawn

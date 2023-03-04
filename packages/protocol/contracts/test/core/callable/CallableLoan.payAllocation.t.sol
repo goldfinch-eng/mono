@@ -27,12 +27,12 @@ contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
-    uint latestPayableInterestDueDate = Math.max(
+    uint256 latestPayableInterestDueDate = Math.max(
       block.timestamp,
       callableLoan.nextPrincipalDueTime()
     );
 
-    uint totalIntPayable = maxPayableInterest(callableLoan);
+    uint256 totalIntPayable = maxPayableInterest(callableLoan);
 
     interestAmount = bound(interestAmount, totalIntPayable, totalIntPayable * 10);
 
@@ -86,7 +86,7 @@ contract CallableLoanPayAllocationTest is CallableLoanBaseTest {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.termEndTime());
     vm.warp(timestamp);
 
-    uint latestPayableInterestDueDate = Math.max(
+    uint256 latestPayableInterestDueDate = Math.max(
       block.timestamp,
       callableLoan.nextPrincipalDueTime()
     );
