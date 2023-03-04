@@ -17,6 +17,7 @@ using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
   function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
+    require(w._tranches.length == 0, "Already Initialized");
     for (uint256 i = 0; i < nTranches; i++) {
       Tranche memory t;
       w._tranches.push(t);
