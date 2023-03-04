@@ -1,5 +1,6 @@
 import type { Resolvers } from "@apollo/client";
 
+import { callableLoanResolvers } from "./callable-loan";
 import { creditLineResolvers } from "./credit-line";
 import { curvePoolResolvers } from "./curve-pool";
 import {
@@ -26,4 +27,5 @@ export const resolvers: Resolvers = {
   SeniorPoolWithdrawalRequest: seniorPoolWithdrawalRequestResolvers,
   SeniorPool: seniorPoolResolvers,
   User: userResolvers,
+  CallableLoan: callableLoanResolvers,
 };

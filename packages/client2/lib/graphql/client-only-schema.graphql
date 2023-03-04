@@ -26,6 +26,14 @@ extend type TranchedPool {
   isInDefault: Boolean!
 }
 
+extend type CallableLoan {
+  name: String!
+  borrowerName: String!
+  borrowerLogo: String
+  isLate: Boolean!
+  isInDefault: Boolean!
+}
+
 extend type CreditLine {
   isLate: Boolean!
   isInDefault: Boolean!

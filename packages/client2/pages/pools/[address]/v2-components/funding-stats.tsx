@@ -18,6 +18,7 @@ export const FUNDING_STATS_LOAN_FIELDS = gql`
       juniorDeposited
       estimatedLeverageRatio
     }
+    totalDeposited
     fundableAt
     fundingLimit
   }
@@ -35,27 +36,28 @@ interface FundingStatsProps {
 }
 
 export function FundingStats({ loan, deal }: FundingStatsProps) {
-  const { juniorDeposited, estimatedLeverageRatio, fundableAt } = loan;
-  const isMultitranche =
-    deal.dealType === "multitranche" && loan.__typename === "TranchedPool";
+  if (loan.__typename === "TranchedPool") {
+  }
   const fundedAmount =
-    isMultitranche && estimatedLeverageRatio
-      ? juniorDeposited.add(
-          utils.parseUnits(
-            FixedNumber.from(juniorDeposited)
-              .mulUnsafe(estimatedLeverageRatio)
-              .toString(),
-            0
+    loan.__typename === "TranchedPool"
+      ? deal.dealType === "multitranche" && loan.estimatedLeverageRatio
+        ? loan.juniorDeposited.add(
+            utils.parseUnits(
+              FixedNumber.from(loan.juniorDeposited)
+                .mulUnsafe(loan.estimatedLeverageRatio)
+                .toString(),
+              0
+            )
           )
-        )
-      : juniorDeposited;
+        : loan.juniorDeposited
+      : loan.totalDeposited;
   const maxFundingAmount = loan.fundingLimit;
 
   const fillRatio = FixedNumber.from(fundedAmount).divUnsafe(
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(fundableAt * 1000 + twoWeeksMs);
+  const estimatedCloseDate = new Date(loan.fundableAt * 1000 + twoWeeksMs);
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>

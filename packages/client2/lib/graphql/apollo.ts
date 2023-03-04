@@ -70,7 +70,7 @@ export const apolloClient = new ApolloClient({
     typePolicies,
     possibleTypes: {
       GfiGrant: ["IndirectGfiGrant", "DirectGfiGrant"],
-      Loan: ["TranchedPool"],
+      Loan: ["TranchedPool", "CallableLoan"],
     },
   }),
   typeDefs: localSchema,

@@ -88,7 +88,7 @@ gql`
       where: {
         user: $userId
         principalAmount_gt: 0
-        tranche_: { lockedUntil_gt: 0 }
+        loan_: { termStartTime_gt: 0 }
       }
       orderBy: mintedAt
       orderDirection: desc
@@ -99,7 +99,7 @@ gql`
       where: {
         user: $userId
         principalAmount_gt: 0
-        tranche_: { lockedUntil: 0 }
+        loan_: { termStartTime: 0 }
       }
       orderBy: mintedAt
       orderDirection: desc
