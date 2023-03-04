@@ -75,18 +75,6 @@ contract CallableLoan is
   /*================================================================================
   Initialization
   ================================================================================*/
-  /// Unsupported - only included for compatibility with ICreditLine.
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external override initializer {
-    revert("US");
-  }
 
   function initialize(
     IGoldfinchConfig _config,
