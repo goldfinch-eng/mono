@@ -64,7 +64,6 @@ contract CallableLoan is
   Storage State
   ================================================================================*/
   StaleCallableCreditLine private _staleCreditLine;
-  uint256 public fundableAt;
   bool public drawdownsPaused;
   uint256[] public allowedUIDTypes;
 
@@ -99,23 +98,28 @@ contract CallableLoan is
     }
 
     config = _config;
-    address owner = config.protocolAdminAddress();
-    __BaseUpgradeablePausable__init(owner);
-    _staleCreditLine.initialize(
-      config,
-      _interestApr,
-      _numLockupPeriods,
-      _schedule,
-      _lateFeeApr,
-      _limit
-    );
     borrower = _borrower;
     createdAt = block.timestamp;
     allowedUIDTypes = _allowedUIDTypes;
 
-    _setupRole(LOCKER_ROLE, _borrower);
-    _setupRole(LOCKER_ROLE, owner);
-    _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+    {
+      address owner = config.protocolAdminAddress();
+      __BaseUpgradeablePausable__init(owner);
+
+      _setupRole(LOCKER_ROLE, _borrower);
+      _setupRole(LOCKER_ROLE, owner);
+      _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+    }
+
+    _staleCreditLine.initialize({
+      _config: _config,
+      _fundableAt: _fundableAt,
+      _numLockupPeriods: _numLockupPeriods,
+      _schedule: _schedule,
+      _interestApr: _interestApr,
+      _lateAdditionalApr: _lateFeeApr,
+      _limit: _limit
+    });
   }
 
   /*================================================================================
@@ -381,12 +385,16 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   function setFundableAt(uint256 newFundableAt) external override onlyLocker {
-    fundableAt = newFundableAt;
+    _staleCreditLine.checkpoint().setFundableAt(newFundableAt);
   }
 
   /*================================================================================
   Main Public/External View functions
   ================================================================================*/
+  function getFundableAt() external view returns (uint256) {
+    return _staleCreditLine.fundableAt();
+  }
+
   function getAllowedUIDTypes() external view override returns (uint256[] memory) {
     return allowedUIDTypes;
   }
@@ -530,9 +538,6 @@ contract CallableLoan is
     }
     if (!hasAllowedUID(msg.sender)) {
       revert InvalidUIDForDepositor(msg.sender);
-    }
-    if (block.timestamp < fundableAt) {
-      revert NotYetFundable(fundableAt);
     }
 
     cl.deposit(amount);

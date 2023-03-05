@@ -31,20 +31,18 @@ using CallableCreditLineLogic for CallableCreditLine global;
 ///                          to the next call request period.
 struct CallableCreditLine {
   IGoldfinchConfig _config;
+  uint256 _fundableAt;
   uint256 _limit;
   uint256 _interestApr;
   uint256 _lateAdditionalApr;
-  //
   uint256 _numLockupPeriods;
   uint256 _checkpointedAsOf;
   uint256 _lastFullPaymentTime;
-  // Similar idea to existing tranched pool credit lines
   uint256 _totalInterestOwedAtLastCheckpoint;
-  // Similar idea to existing tranched pool credit lines
   uint256 _totalInterestAccruedAtLastCheckpoint;
   Waterfall _waterfall;
   PaymentSchedule _paymentSchedule;
-  uint[50] __padding;
+  uint[20] __padding;
 }
 
 struct SettledTrancheInfo {
@@ -75,13 +73,13 @@ library CallableCreditLineLogic {
   /*================================================================================
   Errors
   ================================================================================*/
-
   function initialize(
     CallableCreditLine storage cl,
     IGoldfinchConfig _config,
-    uint256 _interestApr,
+    uint256 _fundableAt,
     uint256 _numLockupPeriods,
     ISchedule _schedule,
+    uint256 _interestApr,
     uint256 _lateAdditionalApr,
     uint256 _limit
   ) internal {
@@ -232,6 +230,10 @@ library CallableCreditLineLogic {
     cl._checkpointedAsOf = block.timestamp;
   }
 
+  function setFundableAt(CallableCreditLine storage cl, uint256 newFundableAt) internal {
+    cl._fundableAt = newFundableAt;
+  }
+
   /*================================================================================
   Main View Functions
   ================================================================================*/
@@ -243,15 +245,17 @@ library CallableCreditLineLogic {
       return LockState.Unlocked;
     } else if (cl._paymentSchedule.isActive()) {
       return LockState.DrawdownPeriod;
-    } else {
+    } else if (block.timestamp > cl._fundableAt) {
       return LockState.Funding;
+    } else {
+      return LockState.Prefunding;
     }
   }
 
   function uncalledCapitalTrancheIndex(
     CallableCreditLine storage cl
-  ) internal view returns (uint32) {
-    return uint32(cl._waterfall.numTranches() - 1);
+  ) internal view returns (uint256) {
+    return cl._waterfall.numTranches() - 1;
   }
 
   function principalOwedAt(
@@ -665,6 +669,10 @@ library CallableCreditLineLogic {
   /*================================================================================
   Static Struct Config Getters
   ================================================================================*/
+  function fundableAt(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._fundableAt;
+  }
+
   function interestApr(CallableCreditLine storage cl) internal view returns (uint256) {
     return cl._interestApr;
   }

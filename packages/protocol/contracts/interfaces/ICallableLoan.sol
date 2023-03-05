@@ -15,6 +15,7 @@ import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 /// @param LockState.Unlocked Starts after ConfigHelper.DrawdownPeriodInSeconds elapses and never ends.
 /// In Unlocked, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
 enum LockState {
+  Prefunding,
   Funding,
   DrawdownPeriod,
   Unlocked

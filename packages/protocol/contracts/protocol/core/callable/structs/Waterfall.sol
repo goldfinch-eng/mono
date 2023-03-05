@@ -9,7 +9,7 @@ import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.so
 
 struct Waterfall {
   Tranche[] _tranches;
-  uint[50] __padding;
+  uint[31] __padding;
 }
 
 using Math for uint256;

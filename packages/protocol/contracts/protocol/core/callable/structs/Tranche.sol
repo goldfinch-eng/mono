@@ -13,7 +13,7 @@ struct Tranche {
   uint256 _principalReserved;
   uint256 _interestPaid;
   // TODO: verify that this works for upgradeability
-  uint[50] __padding;
+  uint[28] __padding;
 }
 
 library TrancheLogic {

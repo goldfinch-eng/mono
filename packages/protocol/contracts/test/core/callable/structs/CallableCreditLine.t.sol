@@ -31,6 +31,7 @@ contract TestCallableCreditLine is BaseTest {
   IMonthlyScheduleRepo private monthlyScheduleRepo;
   ISchedule private schedule;
 
+  uint256 fundableAt;
   uint256 constant defaultInterestApr = 1000;
   uint256 constant firstDepositor = 0x64;
   uint256 constant atLeast6Months = 6 * 31 days;
@@ -46,6 +47,7 @@ contract TestCallableCreditLine is BaseTest {
       gracePrincipalPeriods: 0
     });
     schedule = defaultSchedule();
+    fundableAt = block.timestamp + 1 days;
   }
 
   function defaultSchedule() public returns (ISchedule) {
@@ -59,14 +61,15 @@ contract TestCallableCreditLine is BaseTest {
   }
 
   function testInitialize() public {
-    callableCreditLine.initialize(
-      config,
-      DEFAULT_APR,
-      DEFAULT_NUM_LOCKUP_PERIODS,
-      schedule,
-      DEFAULT_LATE_ADDITIONAL_APR,
-      DEFAULT_LIMIT
-    );
+    callableCreditLine.initialize({
+      _config: config,
+      _fundableAt: fundableAt,
+      _numLockupPeriods: DEFAULT_NUM_LOCKUP_PERIODS,
+      _schedule: schedule,
+      _interestApr: DEFAULT_APR,
+      _lateAdditionalApr: DEFAULT_LATE_ADDITIONAL_APR,
+      _limit: DEFAULT_LIMIT
+    });
     CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
     assertEq(address(cpcl._config), address(config));
     assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
@@ -180,14 +183,15 @@ contract TestCallableCreditLine is BaseTest {
   function testTotalInterestAccruedAt() public {}
 
   function setupDefaultWithLimit(uint128 limit) public {
-    callableCreditLine.initialize(
-      config,
-      defaultInterestApr,
-      DEFAULT_NUM_LOCKUP_PERIODS,
-      schedule,
-      0,
-      uint256(limit)
-    );
+    callableCreditLine.initialize({
+      _config: config,
+      _fundableAt: fundableAt,
+      _numLockupPeriods: DEFAULT_NUM_LOCKUP_PERIODS,
+      _schedule: schedule,
+      _interestApr: defaultInterestApr,
+      _lateAdditionalApr: 0,
+      _limit: uint256(limit)
+    });
   }
 
   function setupFullyFundedAndDrawndown(uint128 limit) public {
