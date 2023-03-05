@@ -61,7 +61,6 @@ interface ICallableLoanErrors {
   /*================================================================================
   Deposits
   ================================================================================*/
-  error NotYetFundable(uint256 fundableAt);
   error MustDepositToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
   error InvalidUIDForDepositor(address depositor);
   error DepositExceedsLimit(uint deposit, uint amountCurrentlyDeposited, uint limit);
