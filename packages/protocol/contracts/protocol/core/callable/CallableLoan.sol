@@ -503,7 +503,6 @@ contract CallableLoan is
 
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
-    uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
 
     uint256 reserveFundsFee = (_reserveFundsFeePercent() * totalInterestPayment) / 100;
 
@@ -518,7 +517,11 @@ contract CallableLoan is
       reserve: reserveFundsFee
     });
 
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
+    config.getUSDC().safeTransferFrom(
+      msg.sender,
+      address(this),
+      totalInterestPayment + totalPrincipalPayment
+    );
     config.getUSDC().safeTransfer(config.reserveAddress(), reserveFundsFee);
     emit ReserveFundsCollected(address(this), reserveFundsFee);
     return pa;
