@@ -122,9 +122,6 @@ contract CallableLoan is
   Main Public/External Write functions
   ================================================================================*/
   /// @inheritdoc ICallableLoan
-  /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
   /// @notice Submit a call request for the given amount of capital.
   ///         The borrower is obligated to pay the call request back at the end of the
   ///         corresponding call request period.
@@ -151,15 +148,25 @@ contract CallableLoan is
       revert InvalidCallSubmissionPoolToken(poolTokenId);
     }
 
+    if (callAmount == 0) {
+      revert ZeroCallSubmissionAmount();
+    }
+
     if (
-      callAmount == 0 ||
       callAmount >
       cl.proportionalCallablePrincipal({
         trancheId: tokenInfo.tranche,
         principalDeposited: tokenInfo.principalAmount
       })
     ) {
-      revert InvalidCallSubmissionAmount(callAmount);
+      revert ExcessiveCallSubmissionAmount(
+        poolTokenId,
+        callAmount,
+        cl.proportionalCallablePrincipal({
+          trancheId: tokenInfo.tranche,
+          principalDeposited: tokenInfo.principalAmount
+        })
+      );
     }
 
     // 2. Determine the amount of principal and interest that can be withdrawn
@@ -293,7 +300,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev LN: argument length mismatch
   function withdrawMultiple(
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
@@ -322,8 +328,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev DP: drawdowns paused
-  /// @dev ZA: Zero amount - must be greater than 0
   function drawdown(
     uint256 amount
   ) external override(ICreditLine, ILoan) nonReentrant onlyLocker whenNotPaused {
@@ -342,7 +346,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev ZA: zero amount
   function pay(
     uint256 amount
   )
@@ -389,8 +392,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev IT: invalid timestamp
-  /// @dev LI: loan inactive
   function getAmountsOwed(
     uint256 timestamp
   )
@@ -431,10 +432,7 @@ contract CallableLoan is
     uint256 callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory) {
     if (callRequestPeriodIndex >= uncalledCapitalTrancheIndex()) {
-      revert OutOfCallRequestPeriodBounds(
-        callRequestPeriodIndex,
-        uncalledCapitalTrancheIndex() - 1
-      );
+      revert OutOfCallRequestPeriodBounds(uncalledCapitalTrancheIndex() - 1);
     }
     SettledTrancheInfo memory info = _staleCreditLine.getSettledTrancheInfo(callRequestPeriodIndex);
     return
@@ -450,7 +448,6 @@ contract CallableLoan is
     return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
   }
 
-  /// @dev OU: Only the uncalled tranche can call
   function availableToCall(uint256 tokenId) public view override returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     if (tokenInfo.tranche != uncalledCapitalTrancheIndex()) {
@@ -520,10 +517,6 @@ contract CallableLoan is
     return pa;
   }
 
-  /// @dev ZA: zero amount - must be greater than 0.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @dev NF: not open for funding. Must be after fundableAt
   /// @notice Supply capital to the loan.
   /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
@@ -554,10 +547,6 @@ contract CallableLoan is
     return tokenId;
   }
 
-  /// @dev ZA: Zero amount
-  /// @dev IA: Invalid amount - amount too large
-  /// @dev IS: Invalid LockState
-  /// @dev DL: Deposits Locked
   function _withdraw(
     IPoolTokens.TokenInfo memory tokenInfo,
     uint256 tokenId,
@@ -569,7 +558,6 @@ contract CallableLoan is
       revert ZeroWithdrawAmount();
     }
     IPoolTokens poolTokens = config.getPoolTokens();
-    /// @dev NA: not authorized
     if (!poolTokens.isApprovedOrOwner(msg.sender, tokenId) || !hasAllowedUID(msg.sender)) {
       revert NotAuthorizedToWithdraw(msg.sender, tokenId);
     }
@@ -861,7 +849,6 @@ contract CallableLoan is
     (version[0], version[1], version[2]) = (MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
   }
 
-  /// @dev NA: not authorized. not locker
   modifier onlyLocker() {
     if (!hasRole(LOCKER_ROLE, msg.sender)) {
       revert RequiresLockerRole(msg.sender);

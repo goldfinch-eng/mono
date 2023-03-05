@@ -70,6 +70,7 @@ library CallableCreditLineLogic {
   Constants
   ================================================================================*/
   uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
+  uint256 internal constant MINIMUM_WATERFALL_TRANCHES = 2;
 
   /*================================================================================
   Errors
@@ -85,7 +86,9 @@ library CallableCreditLineLogic {
     uint256 _limit
   ) internal {
     // NOTE: Acts as implicit initializer check - should not be able to reinitialize.
-    require(cl._checkpointedAsOf == 0, "NI");
+    if (cl._checkpointedAsOf != 0) {
+      revert ICallableLoanErrors.CannotReinitialize();
+    }
     cl._config = _config;
     cl._limit = _limit;
     cl._numLockupPeriods = _numLockupPeriods;
@@ -99,14 +102,17 @@ library CallableCreditLineLogic {
     cl._lastFullPaymentTime = block.timestamp;
     cl._totalInterestAccruedAtLastCheckpoint = 0;
     cl._totalInterestOwedAtLastCheckpoint = 0;
-    // MT - Waterfall must have at minimum 2 tranches in order to submit call requests
-    require(cl._waterfall.numTranches() >= 2, "MT");
+    if (cl._waterfall.numTranches() < 2) {
+      revert ICallableLoanErrors.NeedsMorePrincipalPeriods(
+        cl._waterfall.numTranches(),
+        MINIMUM_WATERFALL_TRANCHES
+      );
+    }
   }
 
   /*================================================================================
   Main Write Functions
   ================================================================================*/
-  /// @dev IS - Invalid loan state - Can only pay after drawdowns are disabled.
   function pay(
     CallableCreditLine storage cl,
     uint256 principalPayment,
@@ -128,8 +134,6 @@ library CallableCreditLineLogic {
     }
   }
 
-  /// @dev IS - Invalid loan state - Can only drawdown before first due date.
-  /// @dev ED - Exceeds deposits - Can only drawdown as much as has been deposited.
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
     LockState lockState = cl.lockState();
     if (lockState == LockState.Funding) {
@@ -147,17 +151,11 @@ library CallableCreditLineLogic {
       revert ICallableLoanErrors.InvalidLockState(lockState, LockState.DrawdownPeriod);
     }
 
-    require(
-      amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <=
-        cl.totalPrincipalDeposited(),
-      "ED"
-    );
+    if (amount > cl.totalPrincipalPaid()) {
+      revert ICallableLoanErrors.DrawdownAmountExceedsDeposits(amount, cl.totalPrincipalPaid());
+    }
     cl._waterfall.drawdown(amount);
   }
-
-  /// @dev IS - Invalid loan state - Can only submit call requests after drawdown period has ended.
-  /// @dev CL - In call request lockup period.
-  /// @dev LC - In last call request period, cannot submit calls.
 
   function submitCall(
     CallableCreditLine storage cl,
@@ -177,24 +175,31 @@ library CallableCreditLineLogic {
     }
 
     uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
-    require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
-    require(!cl.inLockupPeriod(), "CL");
+    if (activeCallTranche >= cl.uncalledCapitalTrancheIndex()) {
+      revert ICallableLoanErrors.TooLateToSubmitCallRequests();
+    }
+    if (cl.inLockupPeriod()) {
+      revert ICallableLoanErrors.CannotSubmitCallInLockupPeriod();
+    }
     return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
 
-  /// @dev IS - Invalid loan state - Cannot deposit after first drawdown
-  /// @dev EL - Exceeds limit - Total deposit cumulative amount more than limit
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {
     LockState lockState = cl.lockState();
     if (lockState != LockState.Funding) {
       revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Funding);
     }
-    require(amount + cl._waterfall.totalPrincipalDeposited() <= cl.limit(), "EL");
+    if (amount + cl._waterfall.totalPrincipalDeposited() > cl.limit()) {
+      revert ICallableLoanErrors.DepositExceedsLimit(
+        amount,
+        cl._waterfall.totalPrincipalDeposited(),
+        cl.limit()
+      );
+    }
     cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
   }
 
   /// Withdraws funds from the specified tranche.
-  /// @dev IS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
     LockState lockState = cl.lockState();
     if (lockState != LockState.Funding) {
@@ -294,7 +299,9 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint256 timestamp
   ) internal view returns (uint256) {
-    require(timestamp >= cl._checkpointedAsOf, "IT");
+    if (timestamp < cl._checkpointedAsOf) {
+      revert ICallableLoanErrors.InputTimestampBeforeCheckpoint(timestamp, cl._checkpointedAsOf);
+    }
     // After loan maturity there is no concept of additional interest. All interest accrued
     // automatically becomes interest owed.
     if (timestamp > cl.termEndTime()) {
@@ -323,7 +330,9 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint256 timestamp
   ) internal view returns (uint256) {
-    require(timestamp >= cl._checkpointedAsOf, "IT");
+    if (timestamp < cl._checkpointedAsOf) {
+      revert ICallableLoanErrors.InputTimestampBeforeCheckpoint(timestamp, cl._checkpointedAsOf);
+    }
     return cl.totalInterestOwedAt(timestamp).saturatingSub(cl.totalInterestPaid());
   }
 
@@ -338,7 +347,9 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint256 timestamp
   ) internal view returns (uint256) {
-    require(timestamp >= block.timestamp, "PT");
+    if (timestamp < block.timestamp) {
+      revert ICallableLoanErrors.InputTimestampInThePast(timestamp);
+    }
     return
       cl.totalInterestAccruedAt(timestamp).saturatingSub(
         Math.max(cl._waterfall.totalInterestPaid(), cl.totalInterestOwedAt(timestamp))
@@ -375,7 +386,10 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint256 timestamp
   ) internal view returns (uint256 totalInterestAccruedReturned) {
-    require(timestamp >= cl._checkpointedAsOf, "IT");
+    if (timestamp < cl._checkpointedAsOf) {
+      revert ICallableLoanErrors.InputTimestampBeforeCheckpoint(timestamp, cl._checkpointedAsOf);
+    }
+
     if (!cl._paymentSchedule.isActive()) {
       return 0;
     }

@@ -263,7 +263,14 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     );
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
-    vm.expectRevert(bytes("EL"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.DepositExceedsLimit.selector,
+        depositAmount,
+        0,
+        limit
+      )
+    );
     callableLoan.deposit(3, depositAmount);
   }
 }

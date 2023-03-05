@@ -5,6 +5,7 @@ pragma solidity ^0.8.17;
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 // import {console2 as console} from "forge-std/console2.sol";
 import {Tranche} from "./Tranche.sol";
+import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
 
 struct Waterfall {
   Tranche[] _tranches;
@@ -16,7 +17,9 @@ using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
   function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
-    require(w._tranches.length == 0, "Already Initialized");
+    if (w._tranches.length != 0) {
+      revert ICallableLoanErrors.CannotReinitialize();
+    }
     for (uint256 i = 0; i < nTranches; i++) {
       Tranche memory t;
       w._tranches.push(t);
@@ -41,8 +44,6 @@ library WaterfallLogic {
   /// @param principalAmount: the amount of principal to apply to the tranches
   /// @param interestAmount: the amount of interest to apply to the tranches
   /// @param reserveTranchesIndexStart: After this index (inclusive), tranches will reserve principal
-  /// @dev OP: overpayment
-  /// @dev NB: no balance
   function pay(
     Waterfall storage w,
     uint256 principalAmount,
@@ -51,7 +52,9 @@ library WaterfallLogic {
   ) internal {
     uint256 existingPrincipalOutstandingWithoutReserves = w
       .totalPrincipalOutstandingWithoutReserves();
-    require(existingPrincipalOutstandingWithoutReserves > 0, "NB");
+    if (existingPrincipalOutstandingWithoutReserves == 0) {
+      revert ICallableLoanErrors.NoBalanceToPay(principalAmount);
+    }
 
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
@@ -74,7 +77,12 @@ library WaterfallLogic {
         });
       }
     }
-    require(principalAmount == 0, "OP");
+    if (principalAmount > 0) {
+      revert ICallableLoanErrors.BalanceOverpayment(
+        principalAmount,
+        existingPrincipalOutstandingWithoutReserves
+      );
+    }
   }
 
   function drawdown(Waterfall storage w, uint256 principalAmount) internal {

@@ -9,6 +9,7 @@ import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {ICallableLoan} from "../../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -474,7 +475,7 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
 
       if (callAmount3 > 0) {
         console.log("Submitting invalid call 3. Invalid since we are in a lock period.");
-        vm.expectRevert(bytes("CL"));
+        vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
         submitCall(callableLoan, callAmount3, user3PoolTokenId, user3);
       }
     }

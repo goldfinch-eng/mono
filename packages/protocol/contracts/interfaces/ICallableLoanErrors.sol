@@ -8,31 +8,81 @@ import {LockState} from "./ICallableLoan.sol";
 ///      in Solidity version >= 0.8.4, and ICallableLoan requires Solidity 0.6.x conformance.
 interface ICallableLoanErrors {
   /*================================================================================
-  Errors
+  Drawdowns
   ================================================================================*/
-  error InvalidNumLockupPeriods(uint256 numLockupPeriods, uint256 periodsPerPrincipalPeriod);
-  error NotAuthorizedToSubmitCall(address callSubmissionSender, uint256 tokenId);
-  error InvalidCallSubmissionPoolToken(uint256 tokenId);
-  error InvalidCallSubmissionAmount(uint256 callSubmissionAmount);
-  error CannotWithdrawInDrawdownPeriod();
-  error ArrayLengthMismatch(uint256 arrayLength1, uint256 arrayLength2);
   error CannotDrawdownWhenDrawdownsPaused();
-  error CannotSetAllowedUIDTypesAfterDeposit();
+  error DrawdownAmountExceedsDeposits(uint256 drawdownAmount, uint256 existingPrincipalPaid);
+
+  /*================================================================================
+  Zero Amounts
+  ================================================================================*/
   error ZeroDrawdownAmount();
   error ZeroPaymentAmount();
   error ZeroDepositAmount();
   error ZeroWithdrawAmount();
-  error NotAuthorizedToWithdraw(address withdrawSender, uint256 tokenId);
-  error RequiresLockerRole(address nonLockerAddress);
-  error InputTimestampInThePast(uint256 inputTimestamp);
-  error MustSubmitCallToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
-  error MustDepositToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
-  error InvalidUIDForDepositor(address depositor);
-  error OutOfCallRequestPeriodBounds(
-    uint256 inputCallRequestPeriodIndex,
-    uint256 lastCallRequestPeriod
-  );
-  error NotYetFundable(uint256 fundableAt);
+  error ZeroCallSubmissionAmount();
+
+  /*================================================================================
+  Withdrawals
+  ================================================================================*/
   error WithdrawAmountExceedsWithdrawable(uint256 withdrawAmount, uint256 withdrawableAmount);
   error InvalidLockState(LockState currentLockState, LockState validLockState);
+  error ArrayLengthMismatch(uint256 arrayLength1, uint256 arrayLength2);
+  error CannotWithdrawInDrawdownPeriod();
+  error NotAuthorizedToWithdraw(address withdrawSender, uint256 tokenId);
+
+  /*================================================================================
+  Payments
+  ================================================================================*/
+  error NoBalanceToPay(uint256 attemptedPrincipalPayment);
+  error BalanceOverpayment(uint256 principalPayment, uint256 existingBalance);
+
+  /*================================================================================
+  Call Requests
+  ================================================================================*/
+  error MustSubmitCallToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
+  error OutOfCallRequestPeriodBounds(uint256 lastCallRequestPeriod);
+  error CannotSubmitCallInLockupPeriod();
+  error TooLateToSubmitCallRequests();
+  error NotAuthorizedToSubmitCall(address callSubmissionSender, uint256 tokenId);
+  error InvalidCallSubmissionPoolToken(uint256 tokenId);
+  error ExcessiveCallSubmissionAmount(
+    uint256 poolTokenId,
+    uint256 callSubmissionAmount,
+    uint256 maxCallSubmissionAmount
+  );
+  error InternalTrancheTakeAccountingError(
+    uint256 takeAmount,
+    uint256 principalDeposited,
+    uint256 principalPaid,
+    uint256 principalReserved,
+    uint256 interestPaid
+  );
+
+  /*================================================================================
+  Deposits
+  ================================================================================*/
+  error NotYetFundable(uint256 fundableAt);
+  error MustDepositToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
+  error InvalidUIDForDepositor(address depositor);
+  error DepositExceedsLimit(uint deposit, uint amountCurrentlyDeposited, uint limit);
+
+  /*================================================================================
+  Miscellaneous
+  ================================================================================*/
+  error CannotSetAllowedUIDTypesAfterDeposit();
+  error RequiresLockerRole(address nonLockerAddress);
+
+  /*================================================================================
+  Initialization
+  ================================================================================*/
+  error NeedsMorePrincipalPeriods(uint256 numPrincipalPeriods, uint256 minimumNumPrincipalPeriods);
+  error CannotReinitialize();
+  error InvalidNumLockupPeriods(uint256 numLockupPeriods, uint256 periodsPerPrincipalPeriod);
+
+  /*================================================================================
+  Timestamps
+  ================================================================================*/
+  error InputTimestampBeforeCheckpoint(uint256 inputTimestamp, uint256 checkpointedAt);
+  error InputTimestampInThePast(uint256 inputTimestamp);
 }

@@ -40,11 +40,6 @@ library CallableLoanConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
   }
 
-  /// @dev deprecated because we no longer use GSN
-  function trustedForwarderAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.TrustedForwarder));
-  }
-
   function configAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig));
   }

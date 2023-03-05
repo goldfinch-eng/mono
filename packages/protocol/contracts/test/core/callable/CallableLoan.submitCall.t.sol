@@ -74,8 +74,10 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     vm.warp(block.timestamp + secondsElapsedSinceDeposit);
     vm.expectRevert(
       abi.encodeWithSelector(
-        ICallableLoanErrors.InvalidCallSubmissionAmount.selector,
-        uint256(callAmount)
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        token,
+        callAmount,
+        0
       )
     );
     submitCall(callableLoan, callAmount, token, depositor);
@@ -147,7 +149,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.nextPrincipalDueTime() - 1
     );
     vm.warp(secondsElapsedAfterLockup);
-    vm.expectRevert(bytes("CL"));
+    vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
     submitCall(callableLoan, callAmount, token, user);
 
     // Lockup period of call request period 2
@@ -159,7 +161,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.nextPrincipalDueTime() - 1
     );
     vm.warp(secondsElapsedAfterLockup);
-    vm.expectRevert(bytes("CL"));
+    vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
     submitCall(callableLoan, callAmount, token, user);
 
     // Lockup period of call request period 3
@@ -168,7 +170,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     // Anything after call request period 3 would submit to uncalled tranche, and should be prohibited.
     vm.warp(block.timestamp + secondsElapsedAfterLastLockup);
-    vm.expectRevert(bytes("LC"));
+    vm.expectRevert(ICallableLoanErrors.TooLateToSubmitCallRequests.selector);
     submitCall(callableLoan, callAmount, token, user);
   }
 

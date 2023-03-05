@@ -20,7 +20,13 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
   ) public impersonating(BORROWER) {
     drawdownAmount = bound(drawdownAmount, 1, type(uint256).max);
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(loanLimit);
-    vm.expectRevert(bytes("ED"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.DrawdownAmountExceedsDeposits.selector,
+        drawdownAmount,
+        0
+      )
+    );
     callableLoan.drawdown(drawdownAmount);
   }
 

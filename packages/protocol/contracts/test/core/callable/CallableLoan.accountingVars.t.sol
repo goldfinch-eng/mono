@@ -23,16 +23,36 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     (, ICreditLine cl) = defaultCallableLoan();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.interestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("PT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InputTimestampInThePast.selector, timestamp)
+    );
     cl.interestAccruedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestAccruedAt(timestamp);
   }
 
