@@ -50,15 +50,15 @@ contract CallableLoan is
   Constants
   ================================================================================*/
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
+  // When splitting a pool token as part of submitting a call, the remainder on a
+  // pool token should be voided if it does not meet this threshold.
+  // Why 5e3 (half a cent)? Large enough to rule out rounding errors, but small
+  // enough to not materially effect USD accounting.
   uint256 public constant SPLIT_TOKEN_DUST_THRESHOLD = 5e3;
 
   uint8 internal constant MAJOR_VERSION = 1;
   uint8 internal constant MINOR_VERSION = 0;
   uint8 internal constant PATCH_VERSION = 0;
-  // When splitting a pool token as part of submitting a call, the remainder on a
-  // pool token should be voided if it does not meet this threshold.
-  // Why 5e3 (half a cent)? Large enough to rule out rounding errors, but small
-  // enough to not materially effect USD accounting.
 
   /*================================================================================
   Storage State

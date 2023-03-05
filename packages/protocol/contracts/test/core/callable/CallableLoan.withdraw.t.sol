@@ -220,13 +220,6 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     vm.warp(block.timestamp + secondsElapsed);
     vm.expectRevert(ICallableLoanErrors.CannotWithdrawInDrawdownPeriod.selector);
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.InvalidLockState.selector,
-    //     LockState.DrawdownPeriod,
-    //     LockState.Unlocked
-    //   )
-    // );
     withdraw(callableLoan, token, depositAmount - drawdownAmount, user);
   }
 
