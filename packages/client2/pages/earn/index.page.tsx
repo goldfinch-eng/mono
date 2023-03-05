@@ -42,7 +42,7 @@ gql`
       estimatedApyFromGfiRaw
       sharePrice
     }
-    tranchedPools(orderBy: createdAt, orderDirection: desc) {
+    loans(orderBy: createdAt, orderDirection: desc) {
       id
       usdcApy
       rawGfiApy
@@ -99,31 +99,28 @@ export default function EarnPage({
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
-  // Only display tranched pools for which we have deal metadata
-  const tranchedPools = data?.tranchedPools?.filter(
-    (tranchedPool) => !!dealMetadata[tranchedPool.id]
-  );
+  // Only display loans for which we have deal metadata
+  const loans = data?.loans?.filter((loan) => !!dealMetadata[loan.id]);
 
   const protocol = data?.protocols[0];
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
-  const openTranchedPools =
-    tranchedPools?.filter(
-      (tranchedPool) =>
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open
+  const openLoans =
+    loans?.filter(
+      (loan) => getLoanFundingStatus(loan) === LoanFundingStatus.Open
     ) ?? [];
-  const closedTranchedPools =
-    tranchedPools?.filter(
-      (tranchedPool) =>
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Closed ||
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Full
+  const closedLoans =
+    loans?.filter(
+      (loan) =>
+        getLoanFundingStatus(loan) === LoanFundingStatus.Closed ||
+        getLoanFundingStatus(loan) === LoanFundingStatus.Full
     ) ?? [];
 
   // +1 for Senior Pool
-  const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
+  const openDealsCount = openLoans ? openLoans.length + 1 : 0;
 
-  const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
+  const loading = !seniorPool || !fiatPerGfi || !loans || !protocol;
 
   return (
     <div>
@@ -185,11 +182,11 @@ export default function EarnPage({
               liquidity="2 week withdraw requests"
               href="/pools/senior"
             />
-            {openTranchedPools?.map((tranchedPool) => {
-              const dealDetails = dealMetadata[tranchedPool.id];
+            {openLoans?.map((loan) => {
+              const dealDetails = dealMetadata[loan.id];
 
-              const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-                tranchedPool.rawGfiApy,
+              const loanApyFromGfi = computeApyFromGfiInFiat(
+                loan.rawGfiApy,
                 fiatPerGfi
               );
 
@@ -198,21 +195,19 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const apyFromGfi = tranchedPool.rawGfiApy.isZero()
-                ? tranchedPool.rawGfiApy
-                : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+              const apyFromGfi = loan.rawGfiApy.isZero()
+                ? loan.rawGfiApy
+                : loanApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
-              const termLengthInMonths = Math.floor(
-                tranchedPool.termInDays / 30
-              );
+              const termLengthInMonths = Math.floor(loan.termInDays / 30);
 
               return (
                 <OpenDealCard
-                  key={tranchedPool.id}
+                  key={loan.id}
                   icon={dealDetails.borrower.logo?.url}
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
-                  usdcApy={tranchedPool.usdcApy}
+                  usdcApy={loan.usdcApy}
                   gfiApy={apyFromGfi}
                   gfiApyTooltip={
                     <div>
@@ -234,15 +229,13 @@ export default function EarnPage({
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <div>Backer liquidity mining GFI APY</div>
-                          <div>{formatPercent(tranchedPoolApyFromGfi)}</div>
+                          <div>{formatPercent(loanApyFromGfi)}</div>
                         </div>
                         <div className="flex justify-between">
                           <div>LP rewards match GFI APY</div>
                           <div>
                             {formatPercent(
-                              tranchedPool.rawGfiApy.isZero()
-                                ? 0
-                                : seniorPoolApyFromGfi
+                              loan.rawGfiApy.isZero() ? 0 : seniorPoolApyFromGfi
                             )}
                           </div>
                         </div>
@@ -256,20 +249,20 @@ export default function EarnPage({
                   }
                   termLengthInMonths={termLengthInMonths}
                   liquidity="End of loan term"
-                  href={`/pools/${tranchedPool.id}`}
+                  href={`/pools/${loan.id}`}
                 />
               );
             })}
           </div>
 
-          <EarnPageHeading>{`${closedTranchedPools.length} Closed Deals`}</EarnPageHeading>
+          <EarnPageHeading>{`${closedLoans.length} Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
-            {closedTranchedPools.map((tranchedPool, i) => {
-              const deal = dealMetadata[tranchedPool.id];
-              const repaymentStatus = getLoanRepaymentStatus(tranchedPool);
+            {closedLoans.map((loan, i) => {
+              const deal = dealMetadata[loan.id];
+              const repaymentStatus = getLoanRepaymentStatus(loan);
               return (
                 <ClosedDealCard
-                  key={tranchedPool.id}
+                  key={loan.id}
                   // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
                   className={
                     !showMoreClosedPools && i >= visiblePoolOnFirstLoad
@@ -279,22 +272,22 @@ export default function EarnPage({
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}
                   dealName={deal.name}
-                  loanAmount={tranchedPool.principalAmount}
-                  termEndTime={tranchedPool.termEndTime}
+                  loanAmount={loan.principalAmount}
+                  termEndTime={loan.termEndTime}
                   repaymentStatus={repaymentStatus}
-                  href={`/pools/${tranchedPool.id}`}
+                  href={`/pools/${loan.id}`}
                 />
               );
             })}
           </div>
-          {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
+          {!showMoreClosedPools && closedLoans?.length > 4 && (
             <Button
               onClick={() => setShowMoreClosedPools(true)}
               className="mt-2 w-full"
               colorScheme="sand"
               size="lg"
             >
-              {`View ${closedTranchedPools?.length - 4} more closed pools`}
+              {`View ${closedLoans?.length - 4} more closed pools`}
             </Button>
           )}
         </>

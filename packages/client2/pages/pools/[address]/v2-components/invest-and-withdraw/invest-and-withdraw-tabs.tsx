@@ -82,11 +82,7 @@ export function InvestAndWithdrawTabs({
               {shownPanel === "invest" ? "Invest" : "Withdraw"}
             </button>
             {shownPanel === "invest" ? (
-              <SupplyPanel
-                tranchedPool={tranchedPool}
-                user={user}
-                deal={deal}
-              />
+              <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
             ) : shownPanel === "withdraw" ? (
               <WithdrawalPanel
                 tranchedPoolAddress={tranchedPool.id}
@@ -96,7 +92,7 @@ export function InvestAndWithdrawTabs({
           </div>
         )
       ) : (
-        <SupplyPanel tranchedPool={tranchedPool} user={user} deal={deal} />
+        <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
       )}
     </div>
   );

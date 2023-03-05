@@ -30,6 +30,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
   const callableLoanContract = CallableLoanContract.bind(event.address)
   callableLoan.principalAmount = event.params.amount
+  callableLoan.balance = callableLoanContract.balance()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   deleteCallableLoanRepaymentSchedule(callableLoan)
