@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
@@ -22,16 +23,36 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     (, ICreditLine cl) = defaultCallableLoan();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.interestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("PT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InputTimestampInThePast.selector, timestamp)
+    );
     cl.interestAccruedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestAccruedAt(timestamp);
   }
 

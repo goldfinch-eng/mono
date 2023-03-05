@@ -119,6 +119,8 @@ interface ILoan {
     uint256 indexed tokenId,
     uint256 amount
   );
+
+  /// @notice While owner is the label of the first argument, it is actually the sender of the transaction.
   event WithdrawalMade(
     address indexed owner,
     uint256 indexed tranche,

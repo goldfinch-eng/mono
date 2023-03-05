@@ -118,6 +118,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalInterestOwed();
   }
 
+  function totalPrincipalDeposited(
+    StaleCallableCreditLine storage cl
+  ) internal view returns (uint256) {
+    return cl._cl.totalPrincipalDeposited();
+  }
+
   function totalPrincipalOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.totalPrincipalOwed();
   }

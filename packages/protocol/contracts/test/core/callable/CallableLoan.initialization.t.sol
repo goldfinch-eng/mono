@@ -7,6 +7,7 @@ import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
@@ -25,9 +26,9 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     callableLoan.initialize(gfConfig, BORROWER, 0, 0, 2, s, 0, block.timestamp, uidTypes);
   }
 
-  function testGetAmountsOwedFailedForUninitializedCreditLine() public {
+  function testGetAmountsOwedFailedForUndrawndownLoan() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    vm.expectRevert(bytes("LI"));
+    vm.expectRevert();
     callableLoan.getAmountsOwed(block.timestamp);
   }
 

@@ -2,10 +2,9 @@
 
 pragma solidity >=0.6.12;
 
-import {ICreditLine} from "./ICreditLine.sol";
 import {ISchedule} from "./ISchedule.sol";
 
-interface ITranchedPoolCreditLine is ICreditLine {
+interface ITranchedCreditLineInitializable {
   /// @notice Initialize a brand new credit line
   function initialize(
     address _config,

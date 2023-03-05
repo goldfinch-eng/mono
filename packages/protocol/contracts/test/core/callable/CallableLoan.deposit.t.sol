@@ -3,7 +3,8 @@
 pragma solidity ^0.8.0;
 
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoan, LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
@@ -28,7 +29,9 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
   function testDepositWithoutGoListOrUid() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("NA"));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InvalidUIDForDepositor.selector, address(this))
+    );
     callableLoan.deposit(3, 1);
   }
 
@@ -56,7 +59,8 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("ZA"));
+
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.ZeroDepositAmount.selector));
     callableLoan.deposit(1, usdcVal(0));
   }
 
@@ -64,7 +68,13 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     usdc.approve(address(callableLoan), type(uint256).max);
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
-    vm.expectRevert(bytes("IS"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InvalidLockState.selector,
+        LockState.DrawdownPeriod,
+        LockState.Funding
+      )
+    );
     callableLoan.deposit(3, usdcVal(100));
   }
 
@@ -75,7 +85,13 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.MustDepositToUncalledTranche.selector,
+        invalidTranche,
+        callableLoan.uncalledCapitalTrancheIndex()
+      )
+    );
     callableLoan.deposit(invalidTranche, usdcVal(100));
   }
 
@@ -170,17 +186,6 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
   }
 
-  function testDepositFailsForInvalidTranches(uint256 trancheId) public {
-    vm.assume(trancheId < 3);
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-
-    _startImpersonation(DEPOSITOR);
-    usdc.approve(address(callableLoan), type(uint256).max);
-    vm.expectRevert(bytes("IT"));
-    callableLoan.deposit(trancheId, usdcVal(1));
-    _stopImpersonation();
-  }
-
   function testDepositUsingPermit(uint256 userPrivateKey, uint256 depositAmount) public {
     vm.assume(
       depositAmount <= usdc.balanceOf(DEPOSITOR) &&
@@ -258,7 +263,14 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     );
 
     uid._mintForTest(DEPOSITOR, 1, 1, "");
-    vm.expectRevert(bytes("EL"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.DepositExceedsLimit.selector,
+        depositAmount,
+        0,
+        limit
+      )
+    );
     callableLoan.deposit(3, depositAmount);
   }
 }

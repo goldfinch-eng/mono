@@ -6,6 +6,7 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 
 contract CallableLoanIsLateTest is CallableLoanBaseTest {
   function setUp() public override {

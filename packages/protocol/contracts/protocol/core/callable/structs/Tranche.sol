@@ -3,6 +3,7 @@
 pragma solidity ^0.8.17;
 
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
 
 using TrancheLogic for Tranche global;
 
@@ -36,14 +37,14 @@ library TrancheLogic {
   }
 
   /**
-   * Returns principal outstanding, omitting _principalReserve.
+   * Returns principal outstanding, omitting _principalReserved.
    */
   function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
-   * Returns principal outstanding, taking into account any _principalReserve.
+   * Returns principal outstanding, taking into account any _principalReserved.
    */
   function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;
@@ -51,7 +52,6 @@ library TrancheLogic {
 
   /**
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
-   * @dev reverts if interest has been paid to tranche
    */
   function withdraw(Tranche storage t, uint256 principal) internal {
     assert(t._interestPaid == 0);
@@ -62,7 +62,6 @@ library TrancheLogic {
   ///@notice remove `principalOutstanding` from the Tranche and its corresponding interest.
   ///        Take as much reserved principal as possible.
   ///        Only applicable to the uncalled tranche.
-  ///@dev    IT: Invalid take - principal depositeed must always be larger than principalPaid + principalReserved
   function take(
     Tranche storage t,
     uint256 principalOutstandingToTake
@@ -75,11 +74,13 @@ library TrancheLogic {
       uint256 interestTaken
     )
   {
-    require(principalOutstandingToTake <= t._principalDeposited - t._principalPaid, "TOO_MUCH");
+    if (principalOutstandingToTake > t.principalOutstandingWithoutReserves()) {
+      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
+    }
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalPaidTaken =
       (t._principalPaid * principalOutstandingToTake) /
-      (t._principalDeposited - t._principalPaid);
+      t.principalOutstandingWithoutReserves();
 
     principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
     interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
@@ -88,7 +89,10 @@ library TrancheLogic {
     t._interestPaid -= interestTaken;
     t._principalDeposited -= principalDepositedTaken;
     t._principalReserved -= principalReservedTaken;
-    require(t._principalDeposited >= t._principalPaid + t._principalReserved, "IT");
+
+    if (t._principalDeposited < t._principalPaid + t._principalReserved) {
+      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
+    }
   }
 
   // depositing into the tranche for the first time(uncalled)
@@ -191,13 +195,27 @@ library TrancheLogic {
   }
 
   /// Updates the tranche as the result of a drawdown
-  /// @dev DP: drawdown principal amount exceeds principal paid
   function drawdown(Tranche storage t, uint256 principalAmount) internal {
-    require(principalAmount <= t._principalPaid, "EP");
+    if (principalAmount > t._principalPaid) {
+      revert ICallableLoanErrors.DrawdownAmountExceedsDeposits(principalAmount, t._principalPaid);
+    }
     t._principalPaid -= principalAmount;
   }
 
   function percentLessFee(uint256 feePercent) private pure returns (uint256) {
     return 100 - feePercent;
+  }
+
+  function _revertInternalTrancheTakeAccountingError(
+    Tranche storage t,
+    uint256 principalOutstandingToTake
+  ) internal view {
+    revert ICallableLoanErrors.InternalTrancheTakeAccountingError(
+      principalOutstandingToTake,
+      t._principalDeposited,
+      t._principalPaid,
+      t._principalReserved,
+      t._interestPaid
+    );
   }
 }

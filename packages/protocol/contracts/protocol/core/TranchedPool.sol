@@ -11,7 +11,7 @@ import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
-import {ITranchedPoolCreditLine} from "../../interfaces/ITranchedPoolCreditLine.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {IVersioned} from "../../interfaces/IVersioned.sol";
@@ -552,7 +552,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 _lateFeeApr
   ) internal {
     creditLine = ICreditLine(config.getGoldfinchFactory().createCreditLine());
-    ITranchedPoolCreditLine(address(creditLine)).initialize(
+    ITranchedCreditLineInitializable(address(creditLine)).initialize(
       address(config),
       address(this), // Set self as the owner
       _borrower,

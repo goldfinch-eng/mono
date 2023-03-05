@@ -13,7 +13,7 @@ import {Accountant} from "./Accountant.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ITranchedPoolCreditLine} from "../../interfaces/ITranchedPoolCreditLine.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 
@@ -27,7 +27,7 @@ import {ISchedule} from "../../interfaces/ISchedule.sol";
  * @author Warbler Labs Engineering
  */
 
-contract CreditLine is BaseUpgradeablePausable, ITranchedPoolCreditLine {
+contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable, ICreditLine {
   using ConfigHelper for GoldfinchConfig;
   using PaymentScheduleLib for PaymentSchedule;
 
@@ -72,7 +72,7 @@ contract CreditLine is BaseUpgradeablePausable, ITranchedPoolCreditLine {
   External functions
   =============================================================================*/
 
-  /// @inheritdoc ITranchedPoolCreditLine
+  /// @inheritdoc ITranchedCreditLineInitializable
   function initialize(
     address _config,
     address owner,
