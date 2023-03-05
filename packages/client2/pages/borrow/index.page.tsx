@@ -25,18 +25,17 @@ import {
 
 gql`
   ${CREDIT_LINE_ACCOUNTING_FIELDS}
-  query BorrowPage($userId: ID!) {
-    user(id: $userId) {
-      borrowerContracts(orderBy: createdAt, orderDirection: desc) {
+  query BorrowPage($userId: String!) {
+    tranchedPools(
+      where: { borrowerContract_: { user: $userId } }
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      creditLine {
         id
-        tranchedPools(orderBy: createdAt, orderDirection: desc) {
-          id
-          creditLine {
-            id
-            interestAprDecimal
-            ...CreditLineAccountingFields
-          }
-        }
+        interestAprDecimal
+        ...CreditLineAccountingFields
       }
     }
   }
@@ -88,13 +87,7 @@ export default function BorrowPage({
     skip: !account,
   });
 
-  const borrowerContracts = data?.user?.borrowerContracts;
-
-  // Get the most recently created borrower contract - older borrower contracts have no associated pools
-  const tranchedPools =
-    borrowerContracts && borrowerContracts.length > 0
-      ? borrowerContracts[0].tranchedPools
-      : [];
+  const tranchedPools = data?.tranchedPools ?? [];
 
   return (
     <div>

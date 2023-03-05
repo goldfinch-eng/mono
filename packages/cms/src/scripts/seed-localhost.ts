@@ -155,21 +155,20 @@ const importDeals = async () => {
 
   const query = gql`
     {
-      tranchedPools {
+      loans {
+        __typename
         id
         borrowerContract {
           id
         }
-        creditLine {
-          termStartTime
-        }
+        termStartTime
       }
     }
   `;
   const gqlResult = await gqlClient.request(query);
 
   console.log(
-    `Importing tranched pools from subgraph as deals (${gqlResult.tranchedPools.length} total)`
+    `Importing loans from subgraph as deals (${gqlResult.loans.length} total)`
   );
 
   // Keep track of deals per borrower
@@ -187,10 +186,10 @@ const importDeals = async () => {
   const borrowers = allBorrowersRequest.docs;
 
   await Promise.all(
-    gqlResult.tranchedPools.map(async (tranchedPool) => {
-      const id = tranchedPool.id;
-      const index = parseInt(tranchedPool.id.slice(-2), 16) % borrowers.length;
-      const isDrawnDown = tranchedPool.creditLine.termStartTime === "0";
+    gqlResult.loans.map(async (loan) => {
+      const id = loan.id;
+      const index = parseInt(loan.id.slice(-2), 16) % borrowers.length;
+      const isDrawnDown = loan.termStartTime === "0";
       const borrower = borrowers[index];
       const deal = {
         name: _.sample([
@@ -244,18 +243,19 @@ const importDeals = async () => {
                 ]
               : null,
             borrower: borrower.id,
-            dealType: isDrawnDown
-              ? "multitranche"
-              : (_.sample(["multitranche", "unitranche"]) as
-                  | "multitranche"
-                  | "unitranche"),
+            dealType:
+              loan.__typename === "CallableLoan"
+                ? "unitranche"
+                : isDrawnDown
+                ? "multitranche"
+                : (_.sample(["multitranche", "unitranche"]) as
+                    | "multitranche"
+                    | "unitranche"),
           } as unknown as Deal,
         });
       } catch (e) {
-        // if this failed, it was probably because the deal already existed.
-        console.log(
-          `Did not import tranched pool ${id} because it already existed in db`
-        );
+        console.log(`Error: ${(e as Error).message}`);
+        console.log(`Did not import loan ${id} due to the above error`);
       }
     })
   );

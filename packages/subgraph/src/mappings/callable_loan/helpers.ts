@@ -52,6 +52,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.interestRate = callableLoan.usdcApy
   callableLoan.interestRateBigInt = callableLoanContract.interestApr()
   callableLoan.lateFeeRate = callableLoanContract.lateFeeApr().divDecimal(INTEREST_DECIMALS)
+  callableLoan.borrowerContract = callableLoanContract.borrower().toHexString()
 
   callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
 
