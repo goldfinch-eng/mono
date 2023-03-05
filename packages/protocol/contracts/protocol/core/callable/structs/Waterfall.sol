@@ -96,8 +96,7 @@ library WaterfallLogic {
   function move(
     Waterfall storage w,
     uint256 principalOutstanding,
-    uint256 fromTrancheId,
-    uint256 toTrancheId
+    uint256 toCallRequestPeriodTrancheId
   )
     internal
     returns (
@@ -108,10 +107,10 @@ library WaterfallLogic {
     )
   {
     (principalDeposited, principalPaid, principalReserved, interestPaid) = w
-      .getTranche(fromTrancheId)
+      .getTranche(w.numTranches() - 1)
       .take(principalOutstanding);
 
-    w.getTranche(toTrancheId).addToBalances(
+    w.getTranche(toCallRequestPeriodTrancheId).addToBalances(
       principalDeposited,
       principalPaid,
       principalReserved,

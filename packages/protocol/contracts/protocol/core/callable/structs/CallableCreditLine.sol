@@ -181,7 +181,7 @@ library CallableCreditLineLogic {
     if (cl.inLockupPeriod()) {
       revert ICallableLoanErrors.CannotSubmitCallInLockupPeriod();
     }
-    return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
+    return cl._waterfall.move(amount, activeCallTranche);
   }
 
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {

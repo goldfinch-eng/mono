@@ -38,14 +38,13 @@ library CallableLoanAccountant {
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
-
-    paymentRemaining = paymentRemaining - owedInterestPayment;
+    paymentRemaining -= owedInterestPayment;
 
     uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining - principalPayment;
+    paymentRemaining -= principalPayment;
 
     uint256 accruedInterestPayment = Math.min(interestAccrued, paymentRemaining);
-    paymentRemaining = paymentRemaining - accruedInterestPayment;
+    paymentRemaining -= accruedInterestPayment;
 
     uint256 balanceRemaining = balance - principalPayment;
     uint256 guaranteedFutureInterest = calculateInterest({
@@ -57,10 +56,10 @@ library CallableLoanAccountant {
       guaranteedFutureInterest,
       paymentRemaining
     );
-    paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
+    paymentRemaining -= guaranteedFutureAccruedInterestPayment;
 
     uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
-    paymentRemaining = paymentRemaining - additionalBalancePayment;
+    paymentRemaining -= additionalBalancePayment;
 
     return
       ILoan.PaymentAllocation({
@@ -94,14 +93,14 @@ library CallableLoanAccountant {
     uint256 lateFeesStartsAt,
     uint256 principal,
     uint256 interestApr,
-    uint256 lateInterestApr
+    uint256 lateInterestAdditionalApr
   ) internal pure returns (uint256 interest) {
     if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
     if (lateFeesStartsAt < end) {
       uint256 lateDuration = end.saturatingSub(Math.max(lateFeesStartsAt, start));
-      interest += calculateInterest(lateDuration, principal, lateInterestApr);
+      interest += calculateInterest(lateDuration, principal, lateInterestAdditionalApr);
     }
   }
 }
