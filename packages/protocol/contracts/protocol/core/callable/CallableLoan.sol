@@ -251,7 +251,7 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
   function deposit(
@@ -263,7 +263,7 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* -
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @param deadline deadline of permit operation
   /// @param v v portion of signature
@@ -517,7 +517,7 @@ contract CallableLoan is
   }
 
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
   function _deposit(uint256 tranche, uint256 amount) internal returns (uint256) {

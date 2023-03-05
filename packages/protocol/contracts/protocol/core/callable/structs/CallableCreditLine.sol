@@ -196,7 +196,7 @@ library CallableCreditLineLogic {
         cl.limit()
       );
     }
-    cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
+    cl._waterfall.deposit(amount);
   }
 
   /// Withdraws funds from the specified tranche.
@@ -205,7 +205,7 @@ library CallableCreditLineLogic {
     if (lockState != LockState.Funding) {
       revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Funding);
     }
-    cl._waterfall.withdraw({trancheId: trancheId, principalAmount: amount});
+    cl._waterfall.withdraw(amount);
   }
 
   /// Settles payment reserves and updates the checkpointed values.

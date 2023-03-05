@@ -52,6 +52,7 @@ library TrancheLogic {
 
   /**
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
+   * @dev reverts if interest has been paid to tranche
    */
   function withdraw(Tranche storage t, uint256 principal) internal {
     assert(t._interestPaid == 0);
@@ -74,15 +75,15 @@ library TrancheLogic {
       uint256 interestTaken
     )
   {
-    if (principalOutstandingToTake > t.principalOutstandingWithoutReserves()) {
+    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingWithoutReserves();
+    if (principalOutstandingToTake > tranchePrincipalOutstandingBeforeReserves) {
       t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
     }
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
-    principalPaidTaken =
-      (t._principalPaid * principalOutstandingToTake) /
-      t.principalOutstandingWithoutReserves();
-
-    principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
+    principalDepositedTaken =
+      (t._principalDeposited * principalOutstandingToTake) /
+      tranchePrincipalOutstandingBeforeReserves;
+    principalPaidTaken = principalDepositedTaken - principalOutstandingToTake;
     interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
 
     t._principalPaid -= principalPaidTaken;
