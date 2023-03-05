@@ -145,40 +145,6 @@ library WaterfallLogic {
     }
   }
 
-  function proportionalPrincipalOutstandingWithoutReserves(
-    Waterfall storage w,
-    uint256 trancheId,
-    uint256 principalDeposited
-  ) internal view returns (uint256) {
-    return
-      w.getTranche(trancheId).proportionalPrincipalOutstandingWithoutReserves(principalDeposited);
-  }
-
-  function proportionalInterestAndPrincipalAvailableAfterApplyReserves(
-    Waterfall storage w,
-    uint256 trancheId,
-    uint256 principalDeposited,
-    uint256 feePercent
-  ) internal view returns (uint256, uint256) {
-    return
-      w.getTranche(trancheId).proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
-        principalDeposited,
-        feePercent
-      );
-  }
-
-  /**
-   * Returns the lifetime amount withdrawable
-   */
-  function proportionalInterestAndPrincipalAvailable(
-    Waterfall storage w,
-    uint256 trancheId,
-    uint256 principal,
-    uint256 feePercent
-  ) internal view returns (uint256, uint256) {
-    return w.getTranche(trancheId).proportionalInterestAndPrincipalAvailable(principal, feePercent);
-  }
-
   /// @notice Returns the total amount of principal paid to all tranches
   function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint256 sum) {
     // TODO(will): this can be optimized by storing the aggregate amount paid

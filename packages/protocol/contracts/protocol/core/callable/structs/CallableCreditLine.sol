@@ -534,7 +534,7 @@ library CallableCreditLineLogic {
     uint256 principalDeposited
   ) internal view returns (uint256) {
     return
-      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingWithoutReserves(
+      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingBeforeReserves(
         principalDeposited
       );
   }
@@ -555,9 +555,9 @@ library CallableCreditLineLogic {
     uint256 principal,
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
+    Tranche storage tranche = cl._waterfall.getTranche(trancheId);
     if (cl.lockState() != LockState.Unlocked) {
-      return
-        cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
+      return tranche.proportionalInterestAndPrincipalAvailable(principal, feePercent);
     }
     bool uncalledTrancheAndNeedsSettling = trancheId == cl.uncalledCapitalTrancheIndex() &&
       cl._paymentSchedule.principalPeriodAt(cl._checkpointedAsOf) <
@@ -568,12 +568,8 @@ library CallableCreditLineLogic {
 
     return
       needsSettling
-        ? cl._waterfall.proportionalInterestAndPrincipalAvailableAfterApplyReserves(
-          trancheId,
-          principal,
-          feePercent
-        )
-        : cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
+        ? tranche.proportionalInterestAndPrincipalAvailableAfterReserves(principal, feePercent)
+        : tranche.proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
   /// Returns the balances of the given tranche - only settling principal if the tranche should be settled.

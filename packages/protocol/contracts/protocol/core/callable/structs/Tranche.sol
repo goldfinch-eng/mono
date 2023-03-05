@@ -142,14 +142,14 @@ library TrancheLogic {
   }
 
   // returns principal, interest withdrawable
-  function proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
+  function proportionalInterestAndPrincipalAvailableAfterReserves(
     Tranche storage t,
     uint256 principalAmount,
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
     return (
       t.proportionalInterestWithdrawable(principalAmount, feePercent),
-      t.proportionalPrincipalAvailableAfterApplyingReserves(principalAmount)
+      t.proportionalPrincipalAvailableAfterReserves(principalAmount)
     );
   }
 
@@ -164,7 +164,7 @@ library TrancheLogic {
     );
   }
 
-  function proportionalPrincipalAvailableAfterApplyingReserves(
+  function proportionalPrincipalAvailableAfterReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {
@@ -178,7 +178,7 @@ library TrancheLogic {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
-  function proportionalPrincipalOutstandingWithoutReserves(
+  function proportionalPrincipalOutstandingBeforeReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {
