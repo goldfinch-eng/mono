@@ -617,7 +617,7 @@ contract CallableLoan is
   }
 
   function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
-    /* CallableCreditLine storage cl = */ _staleCreditLine.checkpoint();
+    _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
