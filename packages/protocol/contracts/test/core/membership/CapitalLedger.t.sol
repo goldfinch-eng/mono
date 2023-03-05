@@ -338,8 +338,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -392,8 +390,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -430,8 +426,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -464,8 +458,6 @@ contract CapitalLedgerTest is BaseTest {
     // Give assets to CapitalLedger as if they were returned for pool tokens
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
-
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
 
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,

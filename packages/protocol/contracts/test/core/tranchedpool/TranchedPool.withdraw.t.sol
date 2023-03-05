@@ -57,9 +57,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     // Amounts available to withdraw should be 0 when the pool is locked
     lockJuniorTranche(pool);
     {
-      (uint256 interestRedeemable1, uint256 principalRedeemable1) = pool.availableToWithdraw(
-        token1
-      );
+      (, uint256 principalRedeemable1) = pool.availableToWithdraw(token1);
       (uint256 interestRedeemable2, uint256 principalRedeemable2) = pool.availableToWithdraw(
         token2
       );
