@@ -590,13 +590,14 @@ contract CallableLoan is
         assert(interestToRedeem == 0);
         cl.withdraw(tokenInfo.tranche, principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
-      } else if (lockState == LockState.DrawdownPeriod) {
+      } else {
         revert CannotWithdrawInDrawdownPeriod();
       }
     }
 
     config.getUSDC().safeTransfer(msg.sender, interestToRedeem + principalToRedeem);
 
+    // While owner is the label of the first argument, it is actually the sender of the transaction.
     emit WithdrawalMade({
       owner: msg.sender,
       tranche: tokenInfo.tranche,
