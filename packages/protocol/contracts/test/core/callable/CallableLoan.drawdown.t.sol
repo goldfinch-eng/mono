@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
+import {LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
@@ -43,7 +45,7 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
     vm.warp(block.timestamp + warp2Time);
     _startImpersonation(user);
-    vm.expectRevert(bytes("NA"));
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresLockerRole.selector, user));
     callableLoan.drawdown(drawdownAmount);
   }
 
@@ -64,7 +66,13 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     // Starts drawdown period.
     callableLoan.drawdown(drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
-    vm.expectRevert(bytes("IS"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InvalidLockState.selector,
+        LockState.Unlocked,
+        LockState.DrawdownPeriod
+      )
+    );
     callableLoan.drawdown(failedDrawdownAmount);
   }
 }

@@ -3,8 +3,8 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ICallableLoan} from "./ICallableLoan.sol";
 import {ISchedule} from "./ISchedule.sol";
+import {ICallableLoan} from "./ICallableLoan.sol";
 
 interface IGoldfinchFactory {
   function createCreditLine() external returns (address);

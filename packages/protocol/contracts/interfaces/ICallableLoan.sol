@@ -5,7 +5,28 @@ import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
 import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 
+/// A LockState represents a period of time during which certain callable loan actions are prohibited.
+/// @param LockState.Funding Starts when a loan is created and ends when the first borrower drawdown occurs.
+/// In Funding, the lender can deposit principal to mint a pool token and they can withdraw their deposited principal.
+/// @param LockState.DrawdownPeriod Starts when the first borrower drawdown occurs and
+/// ends after ConfigHelper.DrawdownPeriodInSeconds elapses.
+/// In DrawdownPeriod, the lender can deposit principal to mint a pool token and they can withdraw
+/// their deposited principal.
+/// @param LockState.Unlocked Starts after ConfigHelper.DrawdownPeriodInSeconds elapses and never ends.
+/// In Unlocked, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
+enum LockState {
+  Funding,
+  DrawdownPeriod,
+  Unlocked
+}
+
+/// @dev A CallableLoan is a loan which allows the lender to call the borrower's principal.
+///     The lender can call the borrower's principal at any time, but the borrower must pay back the principal
+/// @dev The ICallableLoanErrors interface contains all errors due to Solidity version compatibility with custom errors.
 interface ICallableLoan is ILoan {
+  /*================================================================================
+  Structs
+  ================================================================================*/
   /// @param principalDeposited The amount of principal deposited towards this call request period.
   /// @param principalPaid The amount of principal which has already been paid back towards this call request period.
   ///                      There are 3 ways principal paid can enter a CallRequestPeriod.
@@ -41,6 +62,9 @@ interface ICallableLoan is ILoan {
     uint256 interestPaid;
   }
 
+  /*================================================================================
+  Functions
+  ================================================================================*/
   /// @notice Initialize the pool. Can only be called once, and should be called in the same transaction as
   ///   contract creation to avoid initialization front-running
   /// @param _config address of GoldfinchConfig
@@ -89,6 +113,9 @@ interface ICallableLoan is ILoan {
 
   function availableToCall(uint256 tokenId) external view returns (uint256);
 
+  /*================================================================================
+  Events
+  ================================================================================*/
   event CallRequestSubmitted(
     uint256 indexed originalTokenId,
     uint256 indexed callRequestedTokenId,

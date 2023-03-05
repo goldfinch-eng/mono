@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";

@@ -6,16 +6,19 @@ pragma solidity ^0.8.17;
 
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
+import {ICallableLoan} from "../../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
+import {ILoan} from "../../../../interfaces/ILoan.sol";
+
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {CallableLoanAccountant} from "../CallableLoanAccountant.sol";
-import {ILoan} from "../../../../interfaces/ILoan.sol";
+import {LockState} from "../../../../interfaces/ICallableLoan.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {Tranche} from "./Tranche.sol";
 import {Waterfall} from "./Waterfall.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
 import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 using CallableCreditLineLogic for CallableCreditLine global;
 
@@ -51,12 +54,6 @@ struct SettledTrancheInfo {
   uint256 interestPaid;
 }
 
-enum LoanState {
-  FundingPeriod,
-  DrawdownPeriod,
-  InProgress
-}
-
 /**
  * Handles the accounting of borrower obligations in a callable loan.
  * Allows
@@ -69,7 +66,14 @@ library CallableCreditLineLogic {
   using SaturatingSub for uint256;
   using ConfigNumbersHelper for IGoldfinchConfig;
 
+  /*================================================================================
+  Constants
+  ================================================================================*/
   uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
+
+  /*================================================================================
+  Errors
+  ================================================================================*/
 
   function initialize(
     CallableCreditLine storage cl,
@@ -108,8 +112,10 @@ library CallableCreditLineLogic {
     uint256 principalPayment,
     uint256 interestPayment
   ) internal {
-    LoanState loanState = cl.loanState();
-    require(loanState == LoanState.InProgress, "IS");
+    LockState lockState = cl.lockState();
+    if (lockState != LockState.Unlocked) {
+      revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Unlocked);
+    }
 
     cl._waterfall.pay({
       principalAmount: principalPayment,
@@ -125,19 +131,21 @@ library CallableCreditLineLogic {
   /// @dev IS - Invalid loan state - Can only drawdown before first due date.
   /// @dev ED - Exceeds deposits - Can only drawdown as much as has been deposited.
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
-    LoanState loanState = cl.loanState();
-    if (loanState == LoanState.FundingPeriod) {
+    LockState lockState = cl.lockState();
+    if (lockState == LockState.Funding) {
       cl._paymentSchedule.startAt(block.timestamp);
       cl._lastFullPaymentTime = block.timestamp;
-      loanState = cl.loanState();
+      lockState = cl.lockState();
       emit DepositsLocked(address(this));
       // Scaffolding: TODO: Remove - this invariant should always be true across all tests.
       require(
-        loanState == LoanState.DrawdownPeriod,
+        lockState == LockState.DrawdownPeriod,
         "Scaffolding failure: Should be DrawdownPeriod"
       );
     }
-    require(loanState == LoanState.DrawdownPeriod, "IS");
+    if (lockState != LockState.DrawdownPeriod) {
+      revert ICallableLoanErrors.InvalidLockState(lockState, LockState.DrawdownPeriod);
+    }
 
     require(
       amount + cl._waterfall.totalPrincipalOutstandingWithReserves() <=
@@ -163,21 +171,24 @@ library CallableCreditLineLogic {
       uint256 interestMoved
     )
   {
-    LoanState loanState = cl.loanState();
-    require(loanState == LoanState.InProgress, "IS");
+    LockState lockState = cl.lockState();
+    if (lockState != LockState.Unlocked) {
+      revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Unlocked);
+    }
 
     uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
     require(activeCallTranche < cl.uncalledCapitalTrancheIndex(), "LC");
     require(!cl.inLockupPeriod(), "CL");
-
     return cl._waterfall.move(amount, cl.uncalledCapitalTrancheIndex(), activeCallTranche);
   }
 
   /// @dev IS - Invalid loan state - Cannot deposit after first drawdown
   /// @dev EL - Exceeds limit - Total deposit cumulative amount more than limit
   function deposit(CallableCreditLine storage cl, uint256 amount) internal {
-    LoanState loanState = cl.loanState();
-    require(loanState == LoanState.FundingPeriod, "IS");
+    LockState lockState = cl.lockState();
+    if (lockState != LockState.Funding) {
+      revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Funding);
+    }
     require(amount + cl._waterfall.totalPrincipalDeposited() <= cl.limit(), "EL");
     cl._waterfall.deposit(cl.uncalledCapitalTrancheIndex(), amount);
   }
@@ -185,15 +196,17 @@ library CallableCreditLineLogic {
   /// Withdraws funds from the specified tranche.
   /// @dev IS - Invalid loan state - Can only withdraw before first drawdown or when loan is in progress
   function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
-    LoanState loanState = cl.loanState();
-    require(loanState == LoanState.FundingPeriod, "IS");
+    LockState lockState = cl.lockState();
+    if (lockState != LockState.Funding) {
+      revert ICallableLoanErrors.InvalidLockState(lockState, LockState.Funding);
+    }
     cl._waterfall.withdraw({trancheId: trancheId, principalAmount: amount});
   }
 
   /// Settles payment reserves and updates the checkpointed values.
   function checkpoint(CallableCreditLine storage cl) internal {
-    LoanState loanState = cl.loanState();
-    if (loanState == LoanState.FundingPeriod) {
+    LockState lockState = cl.lockState();
+    if (lockState == LockState.Funding) {
       return;
     }
 
@@ -217,16 +230,16 @@ library CallableCreditLineLogic {
   /*================================================================================
   Main View Functions
   ================================================================================*/
-  function loanState(CallableCreditLine storage cl) internal view returns (LoanState) {
+  function lockState(CallableCreditLine storage cl) internal view returns (LockState) {
     if (
       cl._paymentSchedule.isActive() &&
       block.timestamp > cl.termStartTime() + cl._config.getDrawdownPeriodInSeconds()
     ) {
-      return LoanState.InProgress;
+      return LockState.Unlocked;
     } else if (cl._paymentSchedule.isActive()) {
-      return LoanState.DrawdownPeriod;
+      return LockState.DrawdownPeriod;
     } else {
-      return LoanState.FundingPeriod;
+      return LockState.Funding;
     }
   }
 
@@ -328,7 +341,7 @@ library CallableCreditLineLogic {
     require(timestamp >= block.timestamp, "PT");
     return
       cl.totalInterestAccruedAt(timestamp).saturatingSub(
-        MathUpgradeable.max(cl._waterfall.totalInterestPaid(), cl.totalInterestOwedAt(timestamp))
+        Math.max(cl._waterfall.totalInterestPaid(), cl.totalInterestOwedAt(timestamp))
       );
   }
 
@@ -370,11 +383,11 @@ library CallableCreditLineLogic {
     uint256 firstInterestEndPoint = timestamp;
     if (cl._checkpointedAsOf > cl.termEndTime()) {} else {
       uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
-      firstInterestEndPoint = MathUpgradeable.min(settleBalancesAt, timestamp);
+      firstInterestEndPoint = Math.min(settleBalancesAt, timestamp);
     }
 
     // TODO: Test scenario where cl._lastFullPaymentTime falls on due date.
-    uint256 lateFeesStartAt = MathUpgradeable.max(
+    uint256 lateFeesStartAt = Math.max(
       cl._checkpointedAsOf,
       cl._paymentSchedule.nextDueTimeAt(cl._lastFullPaymentTime) +
         (cl._config.getLatenessGracePeriodInDays() * (SECONDS_PER_DAY))
@@ -446,7 +459,7 @@ library CallableCreditLineLogic {
   }
 
   function isLate(CallableCreditLine storage cl, uint256 timestamp) internal view returns (bool) {
-    if (cl.loanState() != LoanState.InProgress) {
+    if (cl.lockState() != LockState.Unlocked) {
       return false;
     }
     uint256 gracePeriodInSeconds = cl._config.getLatenessGracePeriodInDays() * SECONDS_PER_DAY;
@@ -479,7 +492,7 @@ library CallableCreditLineLogic {
     fullPaymentTime = cl._lastFullPaymentTime;
     // Similarly if !isActive(), we should bail out early since loan has not begun &&
     // paymentSchedule calls will revert.
-    if (cl.loanState() != LoanState.InProgress) {
+    if (cl.lockState() != LockState.Unlocked) {
       return block.timestamp;
     }
     uint256 startPeriod = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
@@ -524,7 +537,7 @@ library CallableCreditLineLogic {
     uint256 principal,
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
-    if (cl.loanState() != LoanState.InProgress) {
+    if (cl.lockState() != LockState.Unlocked) {
       return
         cl._waterfall.proportionalInterestAndPrincipalAvailable(trancheId, principal, feePercent);
     }

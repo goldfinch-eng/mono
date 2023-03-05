@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanTermStartTimeTest is CallableLoanBaseTest {

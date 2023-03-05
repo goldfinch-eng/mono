@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
-
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanSetters is CallableLoanBaseTest {
@@ -25,7 +25,7 @@ contract CallableLoanSetters is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uint256[] memory ids = new uint256[](0);
-    vm.expectRevert(bytes("NA"));
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresLockerRole.selector, user));
     callableLoan.setAllowedUIDTypes(ids);
   }
 
@@ -40,12 +40,12 @@ contract CallableLoanSetters is CallableLoanBaseTest {
     deposit(callableLoan, 3, usdcVal(1), user);
 
     uint256[] memory newIds = new uint256[](0);
-    vm.expectRevert(bytes("AF"));
+    vm.expectRevert(ICallableLoanErrors.CannotSetAllowedUIDTypesAfterDeposit.selector);
     callableLoan.setAllowedUIDTypes(newIds);
 
     // Cannot set uids if there is junior + senior capital
     depositAndDrawdown(callableLoan, usdcVal(4));
-    vm.expectRevert(bytes("AF"));
+    vm.expectRevert(ICallableLoanErrors.CannotSetAllowedUIDTypesAfterDeposit.selector);
     callableLoan.setAllowedUIDTypes(newIds);
   }
 

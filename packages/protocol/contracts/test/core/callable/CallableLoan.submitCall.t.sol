@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 
 import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
+import {ICallableLoan, LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
@@ -36,8 +38,47 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.termEndTime()
     );
     vm.warp(block.timestamp + secondsElapsedSinceDrawdownPeriod);
-    vm.expectRevert(bytes("NA"));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.NotAuthorizedToSubmitCall.selector, rando, token)
+    );
     submitCall(callableLoan, depositAmount - drawdownAmount, token, rando);
+  }
+
+  function testDoesNotLetYouSubmitCallBeforeFirstDeposit(
+    uint256 loanLimit,
+    uint256 tokenId,
+    uint256 callAmount,
+    uint128 secondsElapsedSinceLoanConstruction,
+    address caller
+  ) public {
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(loanLimit);
+    vm.warp(block.timestamp + secondsElapsedSinceLoanConstruction);
+    // This state is so invalid there are many reasons it could revert.
+    vm.expectRevert();
+    submitCall(callableLoan, callAmount, tokenId, caller);
+  }
+
+  function testDoesNotLetYouSubmitCallBeforeFirstDrawdown(
+    address depositor,
+    uint256 depositAmount,
+    uint256 callAmount,
+    uint128 secondsElapsedSinceDeposit
+  ) public {
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
+
+    uid._mintForTest(depositor, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
+    uint256 callAmount = bound(callAmount, 1, depositAmount);
+    vm.warp(block.timestamp + secondsElapsedSinceDeposit);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InvalidCallSubmissionAmount.selector,
+        uint256(callAmount)
+      )
+    );
+    submitCall(callableLoan, callAmount, token, depositor);
   }
 
   function testDoesNotLetYouSubmitCallAfterDrawdownBeforeLockupEnds(
@@ -62,7 +103,21 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 callAmount = bound(callAmount, 1, drawdownAmount);
     drawdown(callableLoan, drawdownAmount);
     vm.warp(block.timestamp + secondsElapsedSinceDrawdown);
-    vm.expectRevert(bytes("IS"));
+
+    if (depositAmount == drawdownAmount) {
+      vm.expectRevert(
+        abi.encodeWithSelector(
+          ICallableLoanErrors.InvalidLockState.selector,
+          LockState.DrawdownPeriod,
+          LockState.Unlocked
+        )
+      );
+    } else {
+      vm.expectRevert(
+        abi.encodeWithSelector(ICallableLoanErrors.CannotWithdrawInDrawdownPeriod.selector)
+      );
+    }
+
     submitCall(callableLoan, callAmount, token, depositor);
   }
 
