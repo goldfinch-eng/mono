@@ -37,14 +37,14 @@ library TrancheLogic {
   }
 
   /**
-   * Returns principal outstanding, omitting _principalReserve.
+   * Returns principal outstanding, omitting _principalReserved.
    */
   function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
-   * Returns principal outstanding, taking into account any _principalReserve.
+   * Returns principal outstanding, taking into account any _principalReserved.
    */
   function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;

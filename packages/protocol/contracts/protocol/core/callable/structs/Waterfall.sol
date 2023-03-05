@@ -177,66 +177,58 @@ library WaterfallLogic {
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
-  function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint256) {
+  function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint256 sum) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint256 totalPrincipalDeposited;
     for (uint256 i = 0; i < w.numTranches(); i++) {
-      totalPrincipalDeposited += w.getTranche(i).principalDeposited();
+      sum += w.getTranche(i).principalDeposited();
     }
-    return totalPrincipalDeposited;
   }
 
   /// @notice Returns the total amount of interest paid to all tranches
-  function totalInterestPaid(Waterfall storage w) internal view returns (uint256) {
+  function totalInterestPaid(Waterfall storage w) internal view returns (uint256 sum) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint256 totalInterestPaid;
     for (uint256 i = 0; i < w.numTranches(); i++) {
-      totalInterestPaid += w.getTranche(i).interestPaid();
+      sum += w.getTranche(i).interestPaid();
     }
-    return totalInterestPaid;
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
   function totalPrincipalPaidAfterSettlementUpToTranche(
     Waterfall storage w,
     uint256 trancheIndex
-  ) internal view returns (uint256 totalPrincipalPaid) {
+  ) internal view returns (uint256 sum) {
     for (uint256 i = 0; i < trancheIndex; i++) {
-      totalPrincipalPaid += w.getTranche(i).principalPaidAfterSettlement();
+      sum += w.getTranche(i).principalPaidAfterSettlement();
     }
   }
 
   /// @notice Returns the total amount of principal paid to all tranches
-  function totalPrincipalPaid(Waterfall storage w) internal view returns (uint256) {
+  function totalPrincipalPaid(
+    Waterfall storage w
+  ) internal view returns (uint256 totalPrincipalPaidSum) {
     // TODO(will): this can be optimized by storing the aggregate amount paid
     //       as a storage var and updating when the tranches are paid
-    uint256 totalPrincipalPaid;
     for (uint256 i = 0; i < w.numTranches(); i++) {
-      totalPrincipalPaid += w.getTranche(i).principalPaid();
+      totalPrincipalPaidSum += w.getTranche(i).principalPaid();
     }
-    return totalPrincipalPaid;
   }
 
   function totalPrincipalOutstandingWithoutReserves(
     Waterfall storage w
   ) internal view returns (uint256 sum) {
-    uint256 sum;
     for (uint256 i = 0; i < w._tranches.length; i++) {
       sum += w._tranches[i].principalOutstandingWithoutReserves();
     }
-    return sum;
   }
 
   function totalPrincipalOutstandingWithReserves(
     Waterfall storage w
   ) internal view returns (uint256 sum) {
-    uint256 sum;
     for (uint256 i = 0; i < w._tranches.length; i++) {
       sum += w._tranches[i].principalOutstandingWithReserves();
     }
-    return sum;
   }
 
   /**
