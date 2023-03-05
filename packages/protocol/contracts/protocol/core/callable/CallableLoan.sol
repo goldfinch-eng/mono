@@ -481,7 +481,7 @@ contract CallableLoan is
     uint256 interestOwedBeforePayment = cl.interestOwed();
     uint256 interestAccruedBeforePayment = cl.interestAccrued();
 
-    uint256 timeUntilNextPrincipalSettlemenet = cl
+    uint256 timeUntilNextPrincipalSettlement = cl
       .nextPrincipalDueTimeAt(block.timestamp)
       .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
@@ -490,7 +490,7 @@ contract CallableLoan is
       interestAccrued: interestAccruedBeforePayment,
       principalOwed: cl.principalOwed(),
       interestRate: cl.interestApr(),
-      timeUntilNextPrincipalSettlemenet: timeUntilNextPrincipalSettlemenet,
+      timeUntilNextPrincipalSettlement: timeUntilNextPrincipalSettlement,
       balance: cl.totalPrincipalOutstanding()
     });
 

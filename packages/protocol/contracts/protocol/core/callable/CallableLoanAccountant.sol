@@ -24,7 +24,7 @@ library CallableLoanAccountant {
   /// @param interestAccrued interest accrued between the last due time and the present time
   /// @param interestRate interest which is guaranteed to accrue between now and
   ///                      the next time principal is settled
-  /// @param timeUntilNextPrincipalSettlemenet time at which the next principal payment is due
+  /// @param timeUntilNextPrincipalSettlement time at which the next principal payment is due
   /// @param principalOwed principal owed on the credit line
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
@@ -33,7 +33,7 @@ library CallableLoanAccountant {
     uint256 interestAccrued,
     uint256 principalOwed,
     uint256 interestRate,
-    uint256 timeUntilNextPrincipalSettlemenet,
+    uint256 timeUntilNextPrincipalSettlement,
     uint256 balance
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
@@ -49,7 +49,7 @@ library CallableLoanAccountant {
 
     uint256 balanceRemaining = balance - principalPayment;
     uint256 guaranteedFutureInterest = calculateInterest({
-      secondsElapsed: timeUntilNextPrincipalSettlemenet,
+      secondsElapsed: timeUntilNextPrincipalSettlement,
       principal: balanceRemaining,
       interestApr: interestRate
     });
