@@ -98,9 +98,9 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   function pay(
-    uint paymentAmount
+    uint256 paymentAmount
   ) external override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
-    (uint interestAmount, uint principalAmount) = Accountant.splitPayment(
+    (uint256 interestAmount, uint256 principalAmount) = Accountant.splitPayment(
       paymentAmount,
       balance,
       interestOwed(),
@@ -132,8 +132,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       })
     );
 
-    uint totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
-    uint totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
+    uint256 totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
+    uint256 totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
 
     totalInterestPaid = totalInterestPaid.add(totalInterestPayment);
     balance = balance.sub(totalPrincipalPayment);
@@ -150,7 +150,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function drawdown(uint256 amount) external override onlyAdmin {
     require(
       !schedule.isActive() || block.timestamp < termEndTime(),
-      "After termEndTime or uninitialized"
+      "Uninitialized or after termEndTime"
     );
     require(amount.add(balance) <= limit(), "Cannot drawdown more than the limit");
     require(amount > 0, "Invalid drawdown amount");
@@ -165,6 +165,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     // The balance is about to change.. checkpoint amounts owed!
     _checkpoint();
 
+    // TODO - find a better way to enforce that the balance can only be updated on a "non-stale"
+    // credit line. I.e. follow the same pattern done for callable loans with StaleCallableCreditLine
     balance = balance.add(amount);
     require(!_isLate(block.timestamp), "Cannot drawdown when payments are past due");
   }
