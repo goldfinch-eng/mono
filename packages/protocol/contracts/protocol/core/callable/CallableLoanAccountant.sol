@@ -18,6 +18,12 @@ library CallableLoanAccountant {
   uint256 internal constant SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 
   /// @notice Allocate a payment to proper balances according to the payment waterfall.
+  ///         Expected payment waterfall:
+  ///         1. Interest owed
+  ///         2. Principal owed
+  ///         3. Interest accrued
+  ///         4. Interest guaranteed to accrue before the next principal settlement
+  ///         5. Any additional remaining balance
   /// @param paymentAmount amount to allocate
   /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time

@@ -65,7 +65,10 @@ library WaterfallLogic {
       uint256 proRataInterestPayment = (interestAmount *
         tranche.principalOutstandingWithoutReserves()) /
         existingPrincipalOutstandingWithoutReserves;
-      uint256 principalPayment = tranche.principalOutstandingWithReserves().min(principalAmount);
+      uint256 principalPayment = Math.min(
+        tranche.principalOutstandingWithReserves(),
+        principalAmount
+      );
       // subtract so that future iterations can't re-allocate a principal payment
       principalAmount -= principalPayment;
       if (i < reserveTranchesIndexStart) {
