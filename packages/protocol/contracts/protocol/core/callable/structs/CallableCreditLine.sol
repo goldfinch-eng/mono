@@ -85,14 +85,14 @@ library CallableCreditLineLogic {
     uint256 _lateAdditionalApr,
     uint256 _limit
   ) internal {
-    // NOTE: We should not be able to reinitialize.
     if (cl._checkpointedAsOf != 0) {
       revert ICallableLoanErrors.CannotReinitialize();
     }
     cl._config = _config;
     cl._limit = _limit;
     cl._numLockupPeriods = _numLockupPeriods;
-    cl._paymentSchedule = PaymentSchedule(_schedule, 0);
+    // Keep PaymentSchedule's startTime "0" until it is set at first drawdown (schedule start).
+    cl._paymentSchedule = PaymentSchedule({schedule: _schedule, startTime: 0});
     cl._waterfall.initialize(_schedule.totalPrincipalPeriods());
     cl._interestApr = _interestApr;
     cl._lateAdditionalApr = _lateAdditionalApr;
