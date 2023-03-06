@@ -170,7 +170,10 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       const transaction =
         loan.__typename === "TranchedPool"
           ? tranchedPoolContract.deposit(TRANCHES.Junior, value)
-          : callableLoanContract.deposit(value);
+          : callableLoanContract.deposit(
+              await callableLoanContract.uncalledCapitalTrancheIndex(),
+              value
+            );
       submittedTransaction = await toastTransaction({
         transaction,
         pendingPrompt: `Deposit submitted for pool ${loan.address}.`,
@@ -198,6 +201,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
               signature.s
             )
           : callableLoanContract.depositWithPermit(
+              await callableLoanContract.uncalledCapitalTrancheIndex(),
               value,
               deadline,
               signature.v,
