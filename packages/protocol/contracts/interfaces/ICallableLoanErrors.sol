@@ -63,12 +63,13 @@ interface ICallableLoanErrors {
   ================================================================================*/
   error MustDepositToUncalledTranche(uint256 inputTranche, uint256 uncalledTranche);
   error InvalidUIDForDepositor(address depositor);
-  error DepositExceedsLimit(uint deposit, uint amountCurrentlyDeposited, uint limit);
+  error DepositExceedsLimit(uint256 deposit, uint256 amountCurrentlyDeposited, uint256 limit);
 
   /*================================================================================
   Miscellaneous
   ================================================================================*/
   error CannotSetAllowedUIDTypesAfterDeposit();
+  error CannotSetFundableAtAfterFundableAt(uint256 existingFundableAt);
   error RequiresLockerRole(address nonLockerAddress);
 
   /*================================================================================

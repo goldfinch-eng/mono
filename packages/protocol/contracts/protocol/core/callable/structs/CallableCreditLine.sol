@@ -236,6 +236,10 @@ library CallableCreditLineLogic {
   }
 
   function setFundableAt(CallableCreditLine storage cl, uint256 newFundableAt) internal {
+    // TODO: Needs unit test
+    if (cl.loanPhase() != LoanPhase.Prefunding) {
+      revert ICallableLoanErrors.CannotSetFundableAtAfterFundableAt(cl._fundableAt);
+    }
     cl._fundableAt = newFundableAt;
   }
 
