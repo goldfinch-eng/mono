@@ -512,12 +512,13 @@ library CallableCreditLineLogic {
   function lastFullPaymentTime(
     CallableCreditLine storage cl
   ) internal view returns (uint256 fullPaymentTime) {
-    fullPaymentTime = cl._lastFullPaymentTime;
-    // Similarly if !isActive(), we should bail out early since loan has not begun &&
-    // paymentSchedule calls will revert.
     if (cl.lockState() != LockState.Unlocked) {
+      // The loan has not begun && paymentSchedule calls will revert.
       return block.timestamp;
     }
+
+    fullPaymentTime = cl._lastFullPaymentTime;
+
     uint256 startPeriod = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
     uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
 
