@@ -23,25 +23,25 @@ import {
 import { getLoanFundingStatus, LoanFundingStatus } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
-import { TransactionTable } from "./transaction-table";
-import { AmountStats } from "./v2-components/amount-stats";
-import { BorrowerProfile } from "./v2-components/borrower-profile";
-import { ClaimPanel } from "./v2-components/claim-panel";
-import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
-import { CreditMemoAnalysisCard } from "./v2-components/credit-memo-analysis-card";
-import { DealHighlights } from "./v2-components/deal-highlights";
-import { FundingStats } from "./v2-components/funding-stats";
-import { InvestAndWithdrawTabs } from "./v2-components/invest-and-withdraw/invest-and-withdraw-tabs";
-import { LoanSummary } from "./v2-components/loan-summary";
+import { AmountStats } from "./amount-stats";
+import { BorrowerProfile } from "./borrower-profile";
+import { ClaimPanel } from "./claim-panel";
+import { ComingSoonPanel } from "./coming-soon-panel";
+import { CreditMemoAnalysisCard } from "./credit-memo-analysis-card";
+import { DealHighlights } from "./deal-highlights";
+import { FundingStats } from "./funding-stats";
+import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
+import { LoanSummary } from "./loan-summary";
 import {
   RepaymentTermsSchedule,
   RepaymentTermsSchedulePlaceholder,
-} from "./v2-components/repayment-terms/repayment-terms-schedule";
+} from "./repayment-terms/repayment-terms-schedule";
 import {
   RepaymentTermsStats,
   RepaymentTermsStatsPlaceholder,
-} from "./v2-components/repayment-terms/repayment-terms-stats";
-import { RiskTable } from "./v2-components/risk-table";
+} from "./repayment-terms/repayment-terms-stats";
+import { RiskTable } from "./risk-table";
+import { TransactionTable } from "./transaction-table";
 
 gql`
   query SingleTranchedPoolData(
