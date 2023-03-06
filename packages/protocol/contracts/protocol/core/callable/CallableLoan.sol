@@ -195,8 +195,12 @@ contract CallableLoan is
     // 3. Account for the call request in the credit line - this will return the corresponding
     //    amounts of principal deposited, principal paid, and interest redeemable which have
     //    been moved from the pool token to the call request token.
-    (uint256 principalDepositedMoved, uint256 principalPaidMoved, , uint256 interestRedeemable) = cl
-      .submitCall(callAmount);
+    (
+      uint256 principalDepositedMoved,
+      uint256 principalPaidRedeemable,
+      ,
+      uint256 interestRedeemable
+    ) = cl.submitCall(callAmount);
     interestRedeemable = (interestRedeemable * (100 - _reserveFundsFeePercent())) / 100;
 
     {
@@ -212,7 +216,7 @@ contract CallableLoan is
         owner
       );
 
-      poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestRedeemable);
+      poolTokens.redeem(callRequestedTokenId, principalPaidRedeemable, interestRedeemable);
 
       // 5. If an above SPLIT_TOKEN_DUST_THRESHOLD amount of principal remains on the pool token,
       //    mint a new token representing the remainder.
@@ -231,8 +235,8 @@ contract CallableLoan is
         //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
         //       This scaffolding is to verify the error is within some reasonable margin.
         require(
-          principalPaidMoved <= totalPrincipalWithdrawable,
-          "Principal withdrawable is less than principal move"
+          principalPaidRedeemable <= totalPrincipalWithdrawable,
+          "Principal withdrawable is less than principal moved"
         );
         require(
           interestRedeemable <= totalInterestWithdrawable,
@@ -240,7 +244,7 @@ contract CallableLoan is
         );
         poolTokens.redeem(
           remainingTokenId,
-          totalPrincipalWithdrawable - principalPaidMoved,
+          totalPrincipalWithdrawable - principalPaidRedeemable,
           totalInterestWithdrawable - interestRedeemable
         );
       }
