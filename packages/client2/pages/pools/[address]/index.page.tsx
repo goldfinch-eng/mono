@@ -18,49 +18,21 @@ import {
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
+  SingleDealDocument,
 } from "@/lib/graphql/generated";
-import {
-  getLoanFundingStatus,
-  LoanFundingStatus,
-  FUNDING_STATUS_LOAN_FIELDS,
-  REPAYMENT_SCHEDULE_FIELDS,
-} from "@/lib/pools";
+import { getLoanFundingStatus, LoanFundingStatus } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { TransactionTable } from "./transaction-table";
-import { AmountStats, AMOUNT_STATS_FIELDS } from "./v2-components/amount-stats";
-import {
-  BorrowerProfile,
-  BORROWER_OTHER_POOL_FIELDS,
-  BORROWER_PROFILE_FIELDS,
-} from "./v2-components/borrower-profile";
-import {
-  ClaimPanel,
-  CLAIM_PANEL_POOL_TOKEN_FIELDS,
-  CLAIM_PANEL_TRANCHED_POOL_FIELDS,
-} from "./v2-components/claim-panel";
+import { AmountStats } from "./v2-components/amount-stats";
+import { BorrowerProfile } from "./v2-components/borrower-profile";
+import { ClaimPanel } from "./v2-components/claim-panel";
 import { ComingSoonPanel } from "./v2-components/coming-soon-panel";
-import {
-  CreditMemoAnalysisCard,
-  CREDIT_MEMO_FIELDS,
-} from "./v2-components/credit-memo-analysis-card";
-import {
-  DealHighlights,
-  DEAL_HIGHLIGHT_FIELDS,
-} from "./v2-components/deal-highlights";
+import { CreditMemoAnalysisCard } from "./v2-components/credit-memo-analysis-card";
+import { DealHighlights } from "./v2-components/deal-highlights";
 import { FundingStats } from "./v2-components/funding-stats";
-import {
-  InvestAndWithdrawTabs,
-  SUPPLY_PANEL_USER_FIELDS,
-  SUPPLY_PANEL_LOAN_FIELDS,
-  SUPPLY_PANEL_DEAL_FIELDS,
-  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-} from "./v2-components/invest-and-withdraw/invest-and-withdraw-tabs";
-import {
-  LoanSummary,
-  LOAN_SUMMARY_BORROWER_FIELDS,
-  LOAN_SUMMARY_TRANCHED_POOL_FIELDS,
-} from "./v2-components/loan-summary";
+import { InvestAndWithdrawTabs } from "./v2-components/invest-and-withdraw/invest-and-withdraw-tabs";
+import { LoanSummary } from "./v2-components/loan-summary";
 import {
   RepaymentTermsSchedule,
   RepaymentTermsSchedulePlaceholder,
@@ -68,22 +40,10 @@ import {
 import {
   RepaymentTermsStats,
   RepaymentTermsStatsPlaceholder,
-  REPAYMENT_TERMS_STATS_FIELDS,
 } from "./v2-components/repayment-terms/repayment-terms-stats";
-import { RiskTable, RISK_TABLE_DEAL_FIELDS } from "./v2-components/risk-table";
+import { RiskTable } from "./v2-components/risk-table";
 
 gql`
-  ${LOAN_SUMMARY_TRANCHED_POOL_FIELDS}
-  ${SUPPLY_PANEL_USER_FIELDS}
-  ${SUPPLY_PANEL_LOAN_FIELDS}
-  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
-  ${CLAIM_PANEL_TRANCHED_POOL_FIELDS}
-  ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
-  ${FUNDING_STATUS_LOAN_FIELDS}
-  ${BORROWER_OTHER_POOL_FIELDS}
-  ${REPAYMENT_SCHEDULE_FIELDS}
-  ${REPAYMENT_TERMS_STATS_FIELDS}
-  ${AMOUNT_STATS_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -145,13 +105,7 @@ gql`
   }
 `;
 
-const singleDealQuery = gql`
-  ${CREDIT_MEMO_FIELDS}
-  ${SUPPLY_PANEL_DEAL_FIELDS}
-  ${LOAN_SUMMARY_BORROWER_FIELDS}
-  ${BORROWER_PROFILE_FIELDS}
-  ${DEAL_HIGHLIGHT_FIELDS}
-  ${RISK_TABLE_DEAL_FIELDS}
+gql`
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -495,7 +449,7 @@ export const getStaticProps: GetStaticProps<
     SingleDealQuery,
     SingleDealQueryVariables
   >({
-    query: singleDealQuery,
+    query: SingleDealDocument,
     variables: {
       id: address.toLowerCase(),
     },
