@@ -1,6 +1,6 @@
 pragma solidity >=0.8.4;
 
-import {LockState} from "./ICallableLoan.sol";
+import {LoanPhase} from "./ICallableLoan.sol";
 
 /// @dev This interface is used to define errors for the CallableLoan contract.
 ///      Ideally this would be on ICallableLoan, but custom errors are only supported
@@ -25,7 +25,7 @@ interface ICallableLoanErrors {
   Withdrawals
   ================================================================================*/
   error WithdrawAmountExceedsWithdrawable(uint256 withdrawAmount, uint256 withdrawableAmount);
-  error InvalidLockState(LockState currentLockState, LockState validLockState);
+  error InvalidLoanPhase(LoanPhase currentLoanPhase, LoanPhase validLoanPhase);
   error ArrayLengthMismatch(uint256 arrayLength1, uint256 arrayLength2);
   error CannotWithdrawInDrawdownPeriod();
   error NotAuthorizedToWithdraw(address withdrawSender, uint256 tokenId);

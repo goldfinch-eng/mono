@@ -6,7 +6,7 @@ import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-import {LockState} from "../../../interfaces/ICallableLoan.sol";
+import {LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
@@ -69,9 +69,9 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     usdc.approve(address(callableLoan), usdcVal(1));
     vm.expectRevert(
       abi.encodeWithSelector(
-        ICallableLoanErrors.InvalidLockState.selector,
-        LockState.DrawdownPeriod,
-        LockState.Unlocked
+        ICallableLoanErrors.InvalidLoanPhase.selector,
+        LoanPhase.DrawdownPeriod,
+        LoanPhase.InProgress
       )
     );
     callableLoan.pay(usdcVal(1));

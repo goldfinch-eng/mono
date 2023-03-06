@@ -7,7 +7,7 @@ import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token
 // solhint-disable-next-line max-line-length
 import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import {ICallableLoan, LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
@@ -589,14 +589,14 @@ contract CallableLoan is
     uint256 principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
     {
-      LockState lockState = cl.lockState();
-      if (lockState == LockState.Unlocked) {
+      LoanPhase loanPhase = cl.loanPhase();
+      if (loanPhase == LoanPhase.InProgress) {
         poolTokens.redeem({
           tokenId: tokenId,
           principalRedeemed: principalToRedeem,
           interestRedeemed: interestToRedeem
         });
-      } else if (lockState == LockState.Funding) {
+      } else if (loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
         cl.withdraw(tokenInfo.tranche, principalToRedeem);

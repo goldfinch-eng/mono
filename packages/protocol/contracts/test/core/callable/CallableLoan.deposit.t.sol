@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-import {ICallableLoan, LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
@@ -70,9 +70,9 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
     vm.expectRevert(
       abi.encodeWithSelector(
-        ICallableLoanErrors.InvalidLockState.selector,
-        LockState.DrawdownPeriod,
-        LockState.Funding
+        ICallableLoanErrors.InvalidLoanPhase.selector,
+        LoanPhase.DrawdownPeriod,
+        LoanPhase.Funding
       )
     );
     callableLoan.deposit(3, usdcVal(100));
