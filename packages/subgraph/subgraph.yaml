@@ -682,4 +682,5 @@ templates:
         # - event: RoleGranted(indexed bytes32,indexed address,indexed address)
         # - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
         # - event: Unpaused(address)
-        # - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+        - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handleWithdrawalMade
