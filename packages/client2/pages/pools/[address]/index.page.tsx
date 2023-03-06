@@ -57,7 +57,7 @@ gql`
       usdcApy
       rawGfiApy
       fundableAt
-      ...LoanSummaryTranchedPoolFields
+      ...LoanSummaryFields
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelLoanFields

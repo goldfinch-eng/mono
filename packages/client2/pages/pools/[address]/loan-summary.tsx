@@ -8,15 +8,16 @@ import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
   LoanSummaryDealFieldsFragment,
-  LoanSummaryTranchedPoolFieldsFragment,
+  LoanSummaryFieldsFragment,
   LoanSummaryBorrowerFieldsFragment,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
 const secondsPerDay = 86400;
 
-export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
-  fragment LoanSummaryTranchedPoolFields on Loan {
+export const LOAN_SUMMARY_FIELDS = gql`
+  fragment LoanSummaryFields on Loan {
+    __typename
     id
     usdcApy
     rawGfiApy
@@ -44,7 +45,7 @@ export const LOAN_SUMMARY_DEAL_FIELDS = gql`
 
 interface LoanSummaryProps {
   className?: string;
-  loan: LoanSummaryTranchedPoolFieldsFragment;
+  loan: LoanSummaryFieldsFragment;
   deal: LoanSummaryDealFieldsFragment;
   borrower: LoanSummaryBorrowerFieldsFragment;
   seniorPoolEstimatedApyFromGfiRaw: FixedNumber;
@@ -87,19 +88,21 @@ export function LoanSummary({
             {formatPercent(loan.usdcApy)}
           </div>
         </div>
-        <div className="text-right">
-          <div className="mb-2 text-sm">Variable GFI APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(
-              computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
-                computeApyFromGfiInFiat(
-                  seniorPoolEstimatedApyFromGfiRaw,
-                  fiatPerGfi
+        {!loan.rawGfiApy.isZero() ? (
+          <div className="text-right">
+            <div className="mb-2 text-sm">Variable GFI APY</div>
+            <div className="font-serif text-4xl font-semibold text-sand-800">
+              {formatPercent(
+                computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
+                  computeApyFromGfiInFiat(
+                    seniorPoolEstimatedApyFromGfiRaw,
+                    fiatPerGfi
+                  )
                 )
-              )
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
       <div className="-mb-3">
         <InfoLine
@@ -114,7 +117,11 @@ export function LoanSummary({
         <InfoLine
           label="Liquidity"
           tooltip="When you can withdraw and reclaim your invested capital."
-          value="End of loan term"
+          value={
+            loan.__typename === "CallableLoan"
+              ? "Quarterly callable"
+              : "End of loan term"
+          }
         />
       </div>
     </div>
