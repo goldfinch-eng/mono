@@ -28,6 +28,7 @@ export function handleDepositMade(event: DepositMade): void {
 
 export function handleDrawdownMade(event: DrawdownMade): void {
   const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
+  updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after the pool is drawn down (they become 0)
   const callableLoanContract = CallableLoanContract.bind(event.address)
   callableLoan.principalAmount = event.params.amount
   callableLoan.balance = callableLoanContract.balance()
@@ -40,7 +41,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
 
 export function handlePaymentApplied(event: PaymentApplied): void {
   const callableLoan = assert(CallableLoan.load(event.address.toHexString()))
-  updatePoolTokensRedeemable(callableLoan)
+  updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after a repayment is made (principal or interest can increase)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
   callableLoan.save()
 

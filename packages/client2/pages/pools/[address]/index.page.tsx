@@ -60,7 +60,7 @@ gql`
       ...LoanSummaryTranchedPoolFields
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
-      ...ClaimPanelTranchedPoolFields
+      ...ClaimPanelLoanFields
       ...RepaymentScheduleFields
       ...RepaymentTermsStatsFields
       ...AmountStatsFields
@@ -389,7 +389,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                         poolTokens={user.poolTokens}
                         vaultedPoolTokens={user.vaultedPoolTokens}
                         fiatPerGfi={fiatPerGfi}
-                        tranchedPool={tranchedPool}
+                        loan={tranchedPool}
                       />
                     ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
                       <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />

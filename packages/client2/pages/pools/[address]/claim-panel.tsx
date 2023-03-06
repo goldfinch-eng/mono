@@ -14,7 +14,7 @@ import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   ClaimPanelPoolTokenFieldsFragment,
-  ClaimPanelTranchedPoolFieldsFragment,
+  ClaimPanelLoanFieldsFragment,
   ClaimPanelVaultedPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
@@ -45,8 +45,9 @@ export const CLAIM_PANEL_VAULTED_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
-export const CLAIM_PANEL_TRANCHED_POOL_FIELDS = gql`
-  fragment ClaimPanelTranchedPoolFields on TranchedPool {
+export const CLAIM_PANEL_LOAN_FIELDS = gql`
+  fragment ClaimPanelLoanFields on Loan {
+    __typename
     id
     isLate @client
   }
@@ -56,7 +57,7 @@ interface ClaimPanelProps {
   poolTokens: ClaimPanelPoolTokenFieldsFragment[];
   vaultedPoolTokens: ClaimPanelVaultedPoolTokenFieldsFragment[];
   fiatPerGfi: number;
-  tranchedPool: ClaimPanelTranchedPoolFieldsFragment;
+  loan: ClaimPanelLoanFieldsFragment;
 }
 
 /**
@@ -67,9 +68,9 @@ export function ClaimPanel({
   poolTokens,
   vaultedPoolTokens,
   fiatPerGfi,
-  tranchedPool,
+  loan,
 }: ClaimPanelProps) {
-  const canClaimGfi = !tranchedPool.isLate;
+  const canClaimGfi = !loan.isLate;
 
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
@@ -112,12 +113,13 @@ export function ClaimPanel({
     }
 
     if (poolTokens.length > 0) {
-      const tranchedPoolContract = await getContract({
-        name: "TranchedPool",
-        address: tranchedPool.id,
+      const loanContract = await getContract({
+        name:
+          loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
+        address: loan.id,
         provider,
       });
-      const usdcTransaction = tranchedPoolContract.withdrawMultiple(
+      const usdcTransaction = loanContract.withdrawMultiple(
         poolTokens.map((pt) => pt.id),
         poolTokens.map((pt) =>
           pt.principalRedeemable.add(pt.interestRedeemable)
