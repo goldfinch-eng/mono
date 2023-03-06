@@ -132,6 +132,9 @@ library CallableCreditLineLogic {
     }
   }
 
+  /// @notice Updates accounting for the given drawdown amount.
+  ///         If the loan is in the Funding state, then the loan will be permanently
+  ///         transitioned to the DrawdownPeriod state.
   function drawdown(CallableCreditLine storage cl, uint256 amount) internal {
     LockState lockState = cl.lockState();
     if (lockState == LockState.Funding) {
