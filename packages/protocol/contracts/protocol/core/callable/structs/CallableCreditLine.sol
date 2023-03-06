@@ -85,7 +85,7 @@ library CallableCreditLineLogic {
     uint256 _lateAdditionalApr,
     uint256 _limit
   ) internal {
-    // NOTE: Acts as implicit initializer check - should not be able to reinitialize.
+    // NOTE: We should not be able to reinitialize.
     if (cl._checkpointedAsOf != 0) {
       revert ICallableLoanErrors.CannotReinitialize();
     }
@@ -482,14 +482,16 @@ library CallableCreditLineLogic {
   }
 
   function isLate(CallableCreditLine storage cl, uint256 timestamp) internal view returns (bool) {
-    if (cl.lockState() != LockState.Unlocked) {
+    if (
+      cl.lockState() != LockState.Unlocked ||
+      ((cl.totalPrincipalOwedAt(timestamp) + cl.totalInterestOwedAt(timestamp)) == 0)
+    ) {
       return false;
     }
+
     uint256 gracePeriodInSeconds = cl._config.getLatenessGracePeriodInDays() * SECONDS_PER_DAY;
     uint256 oldestUnpaidDueTime = cl._paymentSchedule.nextDueTimeAt(cl.lastFullPaymentTime());
-    return
-      (cl.totalPrincipalOwedAt(timestamp) > 0 || cl.totalInterestOwedAt(timestamp) > 0) &&
-      timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
+    return timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
   function totalPrincipalOutstandingWithoutReserves(
