@@ -35,6 +35,7 @@ export function handleDepositMade(event: DepositMade): void {
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   const callableLoan = getCallableLoan(event.address)
   callableLoan.totalDeposited = callableLoan.totalDeposited.minus(event.params.principalWithdrawn)
+  callableLoan.save()
 }
 
 export function handleDrawdownMade(event: DrawdownMade): void {
