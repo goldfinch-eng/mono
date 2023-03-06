@@ -18,6 +18,7 @@ import {
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
+import { RiskMitigation } from "@/pages/pools/senior/risk-mitigation";
 
 import { CapitalStats, CapitalStatsPlaceholder } from "./capital-stats";
 import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
@@ -246,8 +247,8 @@ export default function SeniorPoolPage({
               },
               {
                 navTitle: "Risk",
-                title: "Risk",
-                content: <div className="h-96" />,
+                title: "Risk mitigation",
+                content: <RiskMitigation />,
               },
             ]}
           />

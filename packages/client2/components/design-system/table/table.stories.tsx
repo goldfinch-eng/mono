@@ -1,6 +1,6 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { Table, HeavyTable, MiniTable } from "./index";
+import { Table, HeavyTable, MiniTable, VerboseTable } from "./index";
 
 export default {
   title: "Components/Table",
@@ -45,4 +45,18 @@ export const MiniTableStory: ComponentStory<typeof MiniTable> = () => {
       />
     </div>
   );
+};
+
+export const VerboseTableStory: ComponentStory<typeof VerboseTable> = () => {
+  const rows = [
+    { heading: "Heading 1", value: "Heading 1 content" },
+    {
+      heading: "Heading 2",
+      boldValue: "Important heading 2 content",
+      value: "Heading 2 content",
+    },
+    { heading: "Heading 3", value: "Heading 3 content" },
+  ];
+
+  return <VerboseTable rows={rows} />;
 };
