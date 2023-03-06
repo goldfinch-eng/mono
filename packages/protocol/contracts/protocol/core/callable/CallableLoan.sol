@@ -411,7 +411,7 @@ contract CallableLoan is
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
   }
 
-  function uncalledCapitalTrancheIndex() public view returns (uint256) {
+  function uncalledCapitalTrancheIndex() public view override returns (uint256) {
     return _staleCreditLine.uncalledCapitalTrancheIndex();
   }
 

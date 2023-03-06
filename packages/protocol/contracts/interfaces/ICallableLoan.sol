@@ -111,6 +111,8 @@ interface ICallableLoan is ILoan {
     uint256 callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory);
 
+  function uncalledCapitalTrancheIndex() external view returns (uint256);
+
   function availableToCall(uint256 tokenId) external view returns (uint256);
 
   /*================================================================================
