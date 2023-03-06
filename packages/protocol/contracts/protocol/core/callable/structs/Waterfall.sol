@@ -7,13 +7,24 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 import {Tranche} from "./Tranche.sol";
 import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
 
+using Math for uint256;
+using WaterfallLogic for Waterfall global;
+
+/**
+ * @notice Handles the accounting of borrower obligations across all tranches.
+ *         Supports
+ *         - Deposit of funds (into the uncalled tranche)
+ *         - Drawdown of funds  (from the uncalled tranche)
+ *         - Repayment of borrowed funds - across all tranches
+ *         - Withdrawal of paid funds (from the uncalled tranche)
+ *         - Summing accounting variables across all tranches
+ *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ */
+
 struct Waterfall {
   Tranche[] _tranches;
   uint[31] __padding;
 }
-
-using Math for uint256;
-using WaterfallLogic for Waterfall global;
 
 library WaterfallLogic {
   function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {

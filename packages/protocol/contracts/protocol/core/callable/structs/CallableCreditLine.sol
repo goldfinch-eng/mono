@@ -22,6 +22,16 @@ import {ConfigNumbersHelper} from "../../ConfigNumbersHelper.sol";
 
 using CallableCreditLineLogic for CallableCreditLine global;
 
+/**
+ * @notice Handles the accounting of borrower obligations in a callable loan.
+ *         Supports
+ *         - Deposit of funds before the loan is drawn down.
+ *         - Drawdown of funds which should start the loan.
+ *         - Repayment of borrowed funds.
+ *         - Withdrawal of undrawndown funds which were not used to drawdown the loan.
+ *         See "./notes.md" for notes on entities in the CallableCreditLine
+ */
+
 // TODO: Add notes to fields to describe each (pseudo-natspec)
 /// @param _numLockupPeriods Describes when newly submitted call requests are rolled over
 ///                          to the next call request period.
@@ -52,14 +62,6 @@ struct SettledTrancheInfo {
   uint256 interestPaid;
 }
 
-/**
- * Handles the accounting of borrower obligations in a callable loan.
- * Allows
- *  - Deposit of funds before the loan is drawn down.
- *  - Drawdown of funds which should start the loan.
- *  - Repayment of drawndown funds which should reduce the borrower's obligations according to the payment waterfall.
- *  - Withdrawal of undrawndown funds whi
- */
 library CallableCreditLineLogic {
   using SaturatingSub for uint256;
   using ConfigNumbersHelper for IGoldfinchConfig;

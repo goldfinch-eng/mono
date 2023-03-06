@@ -7,6 +7,16 @@ import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.so
 
 using TrancheLogic for Tranche global;
 
+/**
+ * @notice Handles the accounting of borrower obligations for a single tranche.
+ *         Supports
+ *         - Deposit of funds
+ *         - Drawdown of funds
+ *         - Repayment of borrowed funds
+ *         - Withdrawal of paid funds
+ *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ */
+
 struct Tranche {
   uint256 _principalDeposited;
   uint256 _principalPaid;
