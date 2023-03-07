@@ -231,17 +231,10 @@ contract CallableLoan is
           }),
           owner
         );
-        // TODO: Remove scaffolding
-        //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-        //       This scaffolding is to verify the error is within some reasonable margin.
-        require(
-          principalPaidRedeemable <= totalPrincipalWithdrawable,
-          "Principal withdrawable is less than principal moved"
-        );
-        require(
-          interestRedeemable <= totalInterestWithdrawable,
-          "Interest withdrawable is less than interest moved"
-        );
+
+        assert(principalPaidRedeemable <= totalPrincipalWithdrawable);
+        assert(interestRedeemable <= totalInterestWithdrawable);
+
         poolTokens.redeem(
           remainingTokenId,
           totalPrincipalWithdrawable - principalPaidRedeemable,
@@ -457,7 +450,7 @@ contract CallableLoan is
   }
 
   function interestBearingBalance() public view returns (uint256) {
-    return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
+    return _staleCreditLine.totalPrincipalOutstandingBeforeReserves();
   }
 
   function availableToCall(uint256 tokenId) public view override returns (uint256) {
@@ -672,17 +665,10 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
-    // TODO: Remove scaffolding
-    //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-    //       This scaffolding is to verify the error is within some reasonable margin.
-    require(
-      tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1,
-      "Principal withdrawable is less than principal redeemed"
-    );
-    require(
-      tokenInfo.interestRedeemed <= totalInterestWithdrawable,
-      "Interest withdrawable is less than interest redeemed"
-    );
+    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
+    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)

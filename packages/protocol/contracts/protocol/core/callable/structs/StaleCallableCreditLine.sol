@@ -140,10 +140,10 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalOutstanding();
   }
 
-  function totalPrincipalOutstandingWithoutReserves(
+  function totalPrincipalOutstandingBeforeReserves(
     StaleCallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return cl._cl.totalPrincipalOutstandingWithoutReserves();
+    return cl._cl.totalPrincipalOutstandingBeforeReserves();
   }
 
   function nextInterestDueTimeAt(

@@ -49,18 +49,19 @@ library TrancheLogic {
   /**
    * Returns principal outstanding, omitting _principalReserved.
    */
-  function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint256) {
+  function principalOutstandingBeforeReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
    * Returns principal outstanding, taking into account any _principalReserved.
    */
-  function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint256) {
+  function principalOutstandingAfterReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;
   }
 
   /**
+   * @notice Only valid for Uncalled Tranche
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
    * @dev reverts if interest has been paid to tranche
    */
@@ -70,9 +71,10 @@ library TrancheLogic {
     t._principalPaid -= principal;
   }
 
-  ///@notice remove `principalOutstanding` from the Tranche and its corresponding interest.
-  ///        Take as much reserved principal as possible.
-  ///        Only applicable to the uncalled tranche.
+  /// @notice Only valid for Uncalled Tranche
+  /// @notice remove `principalOutstanding` from the Tranche and its corresponding interest.
+  ///         Take as much reserved principal as possible.
+  ///         Only applicable to the uncalled tranche.
   function take(
     Tranche storage t,
     uint256 principalOutstandingToTake
@@ -85,10 +87,11 @@ library TrancheLogic {
       uint256 interestTaken
     )
   {
-    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingWithoutReserves();
-    if (principalOutstandingToTake > tranchePrincipalOutstandingBeforeReserves) {
-      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
-    }
+    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingBeforeReserves();
+
+    // Sanity check - expect `take` to always be called with valid inputs.
+    assert(principalOutstandingToTake <= tranchePrincipalOutstandingBeforeReserves);
+
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalDepositedTaken =
       (t._principalDeposited * principalOutstandingToTake) /
@@ -101,12 +104,12 @@ library TrancheLogic {
     t._principalDeposited -= principalDepositedTaken;
     t._principalReserved -= principalReservedTaken;
 
-    if (t._principalDeposited < t._principalPaid + t._principalReserved) {
-      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
-    }
+    // Sanity check - accounting math should always bear this out.
+    assert(t._principalDeposited >= t._principalPaid + t._principalReserved);
   }
 
-  // depositing into the tranche for the first time(uncalled)
+  /// @notice Only valid for Uncalled Tranche
+  /// @notice depositing into the tranche for the first time(uncalled)
   function deposit(Tranche storage t, uint256 principal) internal {
     // SAFETY but gas cost
     assert(t._interestPaid == 0);
@@ -115,6 +118,7 @@ library TrancheLogic {
     t._principalPaid += principal;
   }
 
+  /// @notice Only valid for Callable Principal Tranches in the context of a call submission
   function addToBalances(
     Tranche storage t,
     uint256 addToPrincipalDeposited,
@@ -192,7 +196,7 @@ library TrancheLogic {
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {
-    return (t.principalOutstandingWithoutReserves() * principalAmount) / t.principalDeposited();
+    return (t.principalOutstandingBeforeReserves() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalInterestWithdrawable(
@@ -201,32 +205,15 @@ library TrancheLogic {
     uint256 feePercent
   ) internal view returns (uint256) {
     return
-      (t.interestPaid() * principalAmount * percentLessFee(feePercent)) /
-      (t.principalDeposited() * 100);
+      (t.interestPaid() * principalAmount * (100 - feePercent)) / (t.principalDeposited() * 100);
   }
 
+  /// @notice Only valid for Uncalled Tranche
   /// Updates the tranche as the result of a drawdown
   function drawdown(Tranche storage t, uint256 principalAmount) internal {
     if (principalAmount > t._principalPaid) {
       revert ICallableLoanErrors.DrawdownAmountExceedsDeposits(principalAmount, t._principalPaid);
     }
     t._principalPaid -= principalAmount;
-  }
-
-  function percentLessFee(uint256 feePercent) private pure returns (uint256) {
-    return 100 - feePercent;
-  }
-
-  function _revertInternalTrancheTakeAccountingError(
-    Tranche storage t,
-    uint256 principalOutstandingToTake
-  ) internal view {
-    revert ICallableLoanErrors.InternalTrancheTakeAccountingError(
-      principalOutstandingToTake,
-      t._principalDeposited,
-      t._principalPaid,
-      t._principalReserved,
-      t._interestPaid
-    );
   }
 }
