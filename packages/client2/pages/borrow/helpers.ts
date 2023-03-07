@@ -2,7 +2,10 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { roundUpUsdcPenny } from "@/lib/format";
-import { CreditLineAccountingFieldsFragment } from "@/lib/graphql/generated";
+import {
+  BorrowerAccountingFieldsFragment,
+  TranchedPoolBorrowerAccountingFieldsFragment,
+} from "@/lib/graphql/generated";
 
 /**
  * Calculates the current interest owed on the credit line.
@@ -14,14 +17,14 @@ import { CreditLineAccountingFieldsFragment } from "@/lib/graphql/generated";
 export function calculateInterestOwed({
   isLate,
   interestOwed,
-  interestApr,
+  interestRateBigInt,
   nextDueTime,
   interestAccruedAsOf,
   balance,
 }: {
   isLate: boolean;
   interestOwed: BigNumber;
-  interestApr: BigNumber;
+  interestRateBigInt: BigNumber;
   nextDueTime: BigNumber;
   interestAccruedAsOf: BigNumber;
   balance: BigNumber;
@@ -32,13 +35,13 @@ export function calculateInterestOwed({
 
   const expectedElapsedSeconds = nextDueTime.sub(interestAccruedAsOf);
   const secondsPerYear = BigNumber.from(60 * 60 * 24 * 365);
-  const interestAccrualRate = interestApr.div(secondsPerYear);
+  const interestAccrualRate = interestRateBigInt.div(secondsPerYear);
 
-  const interestAprMantissa = BigNumber.from(10).pow(18);
+  const interestRateBigIntMantissa = BigNumber.from(10).pow(18);
   const expectedAdditionalInterest = balance
     .mul(interestAccrualRate)
     .mul(expectedElapsedSeconds)
-    .div(interestAprMantissa);
+    .div(interestRateBigIntMantissa);
 
   return roundUpUsdcPenny(expectedAdditionalInterest.add(interestOwed));
 }
@@ -232,14 +235,14 @@ export function calculateCreditLineMaxDrawdownAmount({
   currentInterestOwed,
   nextDueTime,
   termEndTime,
-  limit,
+  principalAmount,
   balance,
 }: {
   collectedPaymentBalance: BigNumber;
   currentInterestOwed: BigNumber;
   nextDueTime: BigNumber;
   termEndTime: BigNumber;
-  limit: BigNumber;
+  principalAmount: BigNumber;
   balance: BigNumber;
 }): BigNumber {
   const periodDueAmount = calculateNextDueAmount({
@@ -257,26 +260,37 @@ export function calculateCreditLineMaxDrawdownAmount({
   // Available credit is the lesser of the two:
   //  - The limit of the credit line (nothing borrowed yet or fully paid off)
   //  - The limit minus the outstanding principal balance, plus any amount collected for principal
-  const availableCredit = limit.sub(balance).add(collectedForPrincipal);
-  if (availableCredit.lt(limit)) {
+  const availableCredit = principalAmount
+    .sub(balance)
+    .add(collectedForPrincipal);
+  if (availableCredit.lt(principalAmount)) {
     return availableCredit;
   }
 
-  return limit;
+  return principalAmount;
 }
 
-export const CREDIT_LINE_ACCOUNTING_FIELDS = gql`
-  fragment CreditLineAccountingFields on CreditLine {
-    limit
-    maxLimit
+gql`
+  fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
     interestOwed @client
-    interestApr
-    nextDueTime
+    collectedPaymentBalance @client
+    isLate @client
     interestAccruedAsOf
+    fundingLimit
+    principalAmount
+    creditLine {
+      id
+    }
+  }
+`;
+
+export const BORROWER_ACCOUNTING_FIELDS = gql`
+  fragment BorrowerAccountingFields on Loan {
+    interestRateBigInt
+    nextDueTime
     balance
     termEndTime
-    isLate @client
-    collectedPaymentBalance @client
+    ...TranchedPoolBorrowerAccountingFields
   }
 `;
 
@@ -291,29 +305,32 @@ export const CREDIT_LINE_ACCOUNTING_FIELDS = gql`
  * @returns {CreditLineStatus} [creditLineStatus] - the status of credit line
  */
 export function getCreditLineAccountingAnalyisValues({
-  limit,
-  maxLimit,
+  principalAmount,
+  fundingLimit,
   isLate,
   interestOwed,
-  interestApr,
+  interestRateBigInt,
   nextDueTime,
   interestAccruedAsOf,
   balance,
   collectedPaymentBalance,
   termEndTime,
-}: CreditLineAccountingFieldsFragment): {
+}: BorrowerAccountingFieldsFragment &
+  TranchedPoolBorrowerAccountingFieldsFragment): {
   creditLineLimit: BigNumber;
   currentInterestOwed: BigNumber;
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   creditLineStatus: CreditLineStatus;
 } {
-  const creditLineLimit = limit.gt(0) ? limit : maxLimit;
+  const creditLineLimit = principalAmount.gt(0)
+    ? principalAmount
+    : fundingLimit;
 
   const currentInterestOwed = calculateInterestOwed({
     isLate,
     interestOwed,
-    interestApr,
+    interestRateBigInt,
     nextDueTime,
     interestAccruedAsOf,
     balance,

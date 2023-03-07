@@ -188,6 +188,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.interestRate = creditLine.interestAprDecimal
   tranchedPool.interestRateBigInt = creditLine.interestApr
   tranchedPool.lateFeeRate = creditLine.lateFeeApr
+  tranchedPool.interestAccruedAsOf = creditLine.interestAccruedAsOf
   tranchedPool.borrowerContract = creditLine.borrowerContract
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
   tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)

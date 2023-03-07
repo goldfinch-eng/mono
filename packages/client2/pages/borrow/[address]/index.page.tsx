@@ -22,7 +22,7 @@ import {
   calculateCreditLineMaxDrawdownAmount,
   calculatePoolFundsAvailable,
   CreditLineStatus,
-  CREDIT_LINE_ACCOUNTING_FIELDS,
+  BORROWER_ACCOUNTING_FIELDS,
   getCreditLineAccountingAnalyisValues,
 } from "@/pages/borrow/helpers";
 
@@ -31,22 +31,19 @@ import { DrawdownForm } from "./drawdown-form";
 import { PaymentForm } from "./payment-form";
 
 gql`
-  ${CREDIT_LINE_ACCOUNTING_FIELDS}
+  ${BORROWER_ACCOUNTING_FIELDS}
   query PoolCreditLinePage($tranchedPoolId: ID!) {
     tranchedPool(id: $tranchedPoolId) {
       id
       isPaused
       drawdownsPaused
+      interestRate
+      termInDays
+      isAfterTermEndTime @client
+      ...BorrowerAccountingFields
+
       borrowerContract {
         id
-      }
-      creditLine {
-        id
-        interestAprDecimal
-        termInDays
-        paymentPeriodInDays
-        isAfterTermEndTime @client
-        ...CreditLineAccountingFields
       }
       juniorTranches {
         id
@@ -153,7 +150,7 @@ export default function PoolCreditLinePage({
       ...creditLine,
       currentInterestOwed:
         creditLineAccountingAnalysisValues.currentInterestOwed,
-      limit: creditLineLimit,
+      principalAmount: creditLineLimit,
     });
 
     const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
@@ -185,7 +182,7 @@ export default function PoolCreditLinePage({
   });
 
   const formattedNextDueTime = creditLine
-    ? formatDate(creditLine.nextDueTime.toNumber() * 1000, "MMM d")
+    ? formatDate(tranchedPool.nextDueTime.toNumber() * 1000, "MMM d")
     : "0";
 
   return (
@@ -261,7 +258,7 @@ export default function PoolCreditLinePage({
                       borrowerContractAddress={tranchedPool.borrowerContract.id}
                       tranchedPoolAddress={tranchedPool.id}
                       creditLineStatus={creditLineStatus}
-                      isAfterTermEndTime={creditLine.isAfterTermEndTime}
+                      isAfterTermEndTime={tranchedPool.isAfterTermEndTime}
                       onClose={() => setShownForm(null)}
                     />
                   ) : (
@@ -379,7 +376,7 @@ export default function PoolCreditLinePage({
                     <Icon name="Clock" className="mr-2" />
                     <div className="text-lg">
                       {`Full balance repayment due ${formatDate(
-                        creditLine.termEndTime.toNumber() * 1000,
+                        tranchedPool.termEndTime.toNumber() * 1000,
                         "MMM d, yyyy"
                       )}`}
                     </div>
@@ -400,19 +397,17 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {formatPercent(creditLine.interestAprDecimal)}
+                    {formatPercent(tranchedPool.interestRate)}
                   </div>
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">
-                    {`${creditLine.paymentPeriodInDays.toString()} days`}
-                  </div>
+                  <div className="mb-0.5 text-2xl">{`TODO days`}</div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {creditLine.termInDays.toString()}
+                    {tranchedPool.termInDays.toString()}
                   </div>
                   <div className="text-sand-500">Payback term</div>
                 </div>
