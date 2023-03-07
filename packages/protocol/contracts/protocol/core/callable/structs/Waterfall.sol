@@ -61,9 +61,8 @@ library WaterfallLogic {
     uint256 interestAmount,
     uint256 reserveTranchesIndexStart
   ) internal {
-    uint256 existingPrincipalOutstandingBeforeReserves = w
-      .totalPrincipalOutstandingBeforeReserves();
-    if (existingPrincipalOutstandingBeforeReserves == 0) {
+    uint256 _totalPrincipalOutstandingBeforeReserves = w.totalPrincipalOutstandingBeforeReserves();
+    if (_totalPrincipalOutstandingBeforeReserves == 0) {
       revert ICallableLoanErrors.NoBalanceToPay(principalAmount);
     }
 
@@ -74,7 +73,7 @@ library WaterfallLogic {
     for (uint256 i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w.getTranche(i);
       uint256 proRataInterestPayment = (interestAmount *
-        tranche.principalOutstandingBeforeReserves()) / existingPrincipalOutstandingBeforeReserves;
+        tranche.principalOutstandingBeforeReserves()) / _totalPrincipalOutstandingBeforeReserves;
       uint256 principalPayment = Math.min(
         tranche.principalOutstandingAfterReserves(),
         principalAmount
