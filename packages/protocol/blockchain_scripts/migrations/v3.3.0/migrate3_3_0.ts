@@ -1,4 +1,4 @@
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
@@ -9,6 +9,7 @@ import {
   getProtocolOwner,
   populateTxAndLog,
 } from "../../deployHelpers"
+import {MAINNET_WARBLER_LABS_MULTISIG} from "../../mainnetForkingHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
@@ -24,6 +25,8 @@ export async function main() {
   assertNonNullable(gf_deployer)
 
   const gfConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  const gfFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory")
+  const borrowerRole = await gfFactory.BORROWER_ROLE()
 
   const borrowerImpl = await deployer.deploy("Borrower", {
     from: gf_deployer,
@@ -57,6 +60,7 @@ export async function main() {
       },
     },
   })
+
   await deployEffects.add({
     deferred: [
       await populateTxAndLog(
@@ -65,6 +69,10 @@ export async function main() {
           callableLoanImplRepo.address
         ),
         `Populated tx to set the CallableLoanImplementationRepository address to ${callableLoanImplRepo.address}`
+      ),
+      await populateTxAndLog(
+        gfFactory.populateTransaction.grantRole(borrowerRole, MAINNET_WARBLER_LABS_MULTISIG),
+        `Populated tx to grant '${MAINNET_WARBLER_LABS_MULTISIG}' the borrower role(${borrowerRole})`
       ),
     ],
   })
