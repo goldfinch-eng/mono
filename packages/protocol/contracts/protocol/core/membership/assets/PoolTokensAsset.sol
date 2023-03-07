@@ -12,8 +12,9 @@ import "../../../../cake/Routing.sol" as Routing;
 
 import {CapitalAssetType} from "../../../../interfaces/ICapitalLedger.sol";
 import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
-
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../../../../interfaces/ICallableLoan.sol";
+import {ILoan, LoanType} from "../../../../interfaces/ILoan.sol";
 
 using Routing.Context for Context;
 using SafeERC20 for IERC20Upgradeable;
@@ -38,9 +39,22 @@ library PoolTokensAsset {
    */
   function isValid(Context context, uint256 assetTokenId) internal view returns (bool) {
     IPoolTokens.TokenInfo memory tokenInfo = context.poolTokens().getTokenInfo(assetTokenId);
-    ITranchedPool tranchedPool = ITranchedPool(tokenInfo.pool);
 
-    return tranchedPool.getTranche(tokenInfo.tranche).lockedUntil != 0;
+    // Legacy TranchedPools do not support ILoan#getLoanType
+    LoanType loanType = LoanType.TranchedPool;
+
+    // !!! IMPORTANT As long as this is a view function, external call writes are prohibited.
+    // Regardless, the external calls are limited to tokenInfo.pool addresses which are a
+    // trusted subset of addresses.
+    try ILoan(tokenInfo.pool).getLoanType() returns (LoanType _loanType) {
+      loanType = _loanType;
+    } catch {}
+
+    if (loanType == LoanType.TranchedPool) {
+      return ITranchedPool(tokenInfo.pool).getTranche(tokenInfo.tranche).lockedUntil != 0;
+    } else if (loanType == LoanType.CallableLoan) {
+      return ICallableLoan(tokenInfo.pool).uncalledCapitalTrancheIndex() == tokenInfo.tranche;
+    }
   }
 
   /**
@@ -68,15 +82,13 @@ library PoolTokensAsset {
    */
   function harvest(Context context, address owner, uint256 assetTokenId) internal {
     IPoolTokens.TokenInfo memory tokenInfo = context.poolTokens().getTokenInfo(assetTokenId);
-    ITranchedPool tranchedPool = ITranchedPool(tokenInfo.pool);
+    ILoan loan = ILoan(tokenInfo.pool);
 
     if (!context.go().goOnlyIdTypes(owner, getAllowedUIDs(tokenInfo.pool))) {
       revert NotGoListed(owner);
     }
 
-    (uint256 interestWithdrawn, uint256 principalWithdrawn) = tranchedPool.withdrawMax(
-      assetTokenId
-    );
+    (uint256 interestWithdrawn, uint256 principalWithdrawn) = loan.withdrawMax(assetTokenId);
     context.usdc().safeTransfer(owner, interestWithdrawn + principalWithdrawn);
 
     try context.backerRewards().withdraw(assetTokenId) returns (uint256 rewards) {
@@ -148,6 +160,6 @@ library PoolTokensAsset {
     }
 
     // All other and future pools implement getAllowedUIDTypes
-    return ITranchedPool(poolAddress).getAllowedUIDTypes();
+    return ILoan(poolAddress).getAllowedUIDTypes();
   }
 }

@@ -9,7 +9,7 @@ import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgrade
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
-import {ILoan} from "../../../interfaces/ILoan.sol";
+import {ILoan, LoanType} from "../../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
 import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWithDec.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -388,6 +388,12 @@ contract CallableLoan is
   /*================================================================================
   Main Public/External View functions
   ================================================================================*/
+
+  /// @inheritdoc ILoan
+  function getLoanType() external view override returns (LoanType) {
+    return LoanType.CallableLoan;
+  }
+
   function getFundableAt() external view returns (uint256) {
     return _staleCreditLine.fundableAt();
   }
