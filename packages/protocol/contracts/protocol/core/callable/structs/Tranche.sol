@@ -88,9 +88,10 @@ library TrancheLogic {
     )
   {
     uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingWithoutReserves();
-    if (principalOutstandingToTake > tranchePrincipalOutstandingBeforeReserves) {
-      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
-    }
+
+    // Sanity check - expect `take` to always be called with valid inputs.
+    assert(principalOutstandingToTake <= tranchePrincipalOutstandingBeforeReserves);
+
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
     principalDepositedTaken =
       (t._principalDeposited * principalOutstandingToTake) /
@@ -103,9 +104,8 @@ library TrancheLogic {
     t._principalDeposited -= principalDepositedTaken;
     t._principalReserved -= principalReservedTaken;
 
-    if (t._principalDeposited < t._principalPaid + t._principalReserved) {
-      t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
-    }
+    // Sanity check - accounting math should always bear this out.
+    assert(t._principalDeposited >= t._principalPaid + t._principalReserved);
   }
 
   /// @notice Only valid for Uncalled Tranche

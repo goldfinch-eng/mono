@@ -50,13 +50,6 @@ interface ICallableLoanErrors {
     uint256 callSubmissionAmount,
     uint256 maxCallSubmissionAmount
   );
-  error InternalTrancheTakeAccountingError(
-    uint256 takeAmount,
-    uint256 principalDeposited,
-    uint256 principalPaid,
-    uint256 principalReserved,
-    uint256 interestPaid
-  );
 
   /*================================================================================
   Deposits

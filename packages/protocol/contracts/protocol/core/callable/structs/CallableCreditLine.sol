@@ -168,9 +168,8 @@ library CallableCreditLineLogic {
       uint256 interestMoved
     )
   {
-    LoanPhase loanPhase = cl.loanPhase();
-    if (loanPhase != LoanPhase.InProgress) {
-      revert ICallableLoanErrors.InvalidLoanPhase(loanPhase, LoanPhase.InProgress);
+    if (cl.loanPhase() != LoanPhase.InProgress) {
+      revert ICallableLoanErrors.InvalidLoanPhase(cl.loanPhase(), LoanPhase.InProgress);
     }
 
     uint256 activeCallTranche = cl.activeCallSubmissionTrancheIndex();
@@ -223,11 +222,8 @@ library CallableCreditLineLogic {
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    uint256 totalInterestAccrued = cl.totalInterestAccrued();
-    uint256 totalInterestOwed = cl.totalInterestOwed();
-
-    cl._totalInterestAccruedAtLastCheckpoint = totalInterestAccrued;
-    cl._totalInterestOwedAtLastCheckpoint = totalInterestOwed;
+    cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccrued();
+    cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwed();
     cl._checkpointedAsOf = block.timestamp;
   }
 
