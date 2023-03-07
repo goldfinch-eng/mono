@@ -3,13 +3,13 @@ import NextLink from "next/link";
 import { ReactNode } from "react";
 
 import { InfoIconTooltip } from "@/components/design-system";
-import { TranchedPoolBorrowCardFieldsFragment } from "@/lib/graphql/generated";
+import { LoanBorrowCardFieldsFragment } from "@/lib/graphql/generated";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface CreditLineCardProps {
   className?: string;
   href: string;
-  dealMetaData: TranchedPoolBorrowCardFieldsFragment;
+  dealMetaData: LoanBorrowCardFieldsFragment;
   description: ReactNode;
   nextPayment: ReactNode;
   status: CreditLineStatus;
@@ -17,7 +17,7 @@ interface CreditLineCardProps {
 }
 
 gql`
-  fragment TranchedPoolBorrowCardFields on Deal {
+  fragment LoanBorrowCardFields on Deal {
     id
     name
     category

@@ -38,7 +38,7 @@ gql`
   query BorrowPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...TranchedPoolBorrowCardFields
+        ...LoanBorrowCardFields
       }
     }
   }

@@ -42,7 +42,7 @@ gql`
 gql`
   query PoolCreditLinePageCMS($id: String!) @api(name: cms) {
     Deal(id: $id) {
-      ...TranchedPoolBorrowCardFields
+      ...LoanBorrowCardFields
     }
   }
 `;
