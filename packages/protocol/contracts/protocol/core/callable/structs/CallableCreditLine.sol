@@ -429,37 +429,28 @@ library CallableCreditLineLogic {
   function totalPrincipalPaidAt(
     CallableCreditLine storage cl,
     uint256 timestamp
-  ) internal view returns (uint256) {
-    uint256 alreadyPaidPrincipal = cl._waterfall.totalPrincipalPaid();
+  ) internal view returns (uint256 principalPaidSum) {
+    principalPaidSum = cl._waterfall.totalPrincipalPaid();
 
     if (!cl.isActive()) {
-      return alreadyPaidPrincipal;
+      return principalPaidSum;
     }
 
     uint256 trancheIndexAtTimestamp = cl.trancheIndexAtTimestamp(timestamp);
-    uint256 trancheAtCheckpoint = cl.trancheIndexAtTimestamp(cl._checkpointedAsOf);
-
-    // Unsettled principal from previous call request periods which will settle.
-    uint256 reservedPrincipalWhichWillSettle = cl._waterfall.totalPrincipalReservedUpToTranche(
-      trancheIndexAtTimestamp
-    );
 
     /// If we entered a new principal period since checkpoint,
-    /// we should settle reserved principal in the uncalled tranche,
-    /// UNLESS
-    /// Uncalled capital has already been counted due to tranche being the uncalled tranche.
-
-    if (
-      trancheIndexAtTimestamp > trancheAtCheckpoint &&
-      trancheIndexAtTimestamp <= cl.uncalledCapitalTrancheIndex()
-    ) {
-      reservedPrincipalWhichWillSettle += cl
+    /// we should settle reserved principal in the uncalled tranche.
+    if (trancheIndexAtTimestamp > cl.trancheIndexAtTimestamp(cl._checkpointedAsOf)) {
+      principalPaidSum += cl
         ._waterfall
         .getTranche(cl.uncalledCapitalTrancheIndex())
         .principalReserved();
     }
 
-    return alreadyPaidPrincipal + reservedPrincipalWhichWillSettle;
+    // Unsettled principal from previous call request periods which will settle.
+    principalPaidSum += cl._waterfall.totalPrincipalReservedUpToTranche(
+      Math.min(trancheIndexAtTimestamp, cl.uncalledCapitalTrancheIndex())
+    );
   }
 
   function isLate(CallableCreditLine storage cl) internal view returns (bool) {
@@ -533,6 +524,7 @@ library CallableCreditLineLogic {
   }
 
   /// @notice Returns the tranche index which the given timestamp falls within.
+  /// @return The tranche index will go 1 beyond the max tranche index to represent the "after loan" period.
   ///         This is not to be confused with activeCallSubmissionTrancheIndex, which is the tranche for which
   ///         current call requests should be submitted to.
   ///         See notes.md for explanation of relationship between principalPeriod, call request period and tranche.
@@ -548,10 +540,10 @@ library CallableCreditLineLogic {
   function activeCallSubmissionTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint256 activeTrancheIndex) {
-    uint256 currentPrincipalPeriod = cl._paymentSchedule.principalPeriodAt(block.timestamp);
+    uint256 currentTranche = cl.trancheIndexAtTimestamp(block.timestamp);
     // Call requests submitted in the current principal period's lockup period are
     // submitted into the tranche of the NEXT principal period
-    return cl.inLockupPeriod() ? currentPrincipalPeriod + 1 : currentPrincipalPeriod;
+    return cl.inLockupPeriod() ? currentTranche + 1 : currentTranche;
   }
 
   function proportionalInterestAndPrincipalAvailable(
@@ -565,7 +557,7 @@ library CallableCreditLineLogic {
       return tranche.proportionalInterestAndPrincipalAvailable(principal, feePercent);
     }
     bool uncalledTrancheAndNeedsSettling = trancheId == cl.uncalledCapitalTrancheIndex() &&
-      cl._paymentSchedule.principalPeriodAt(cl._checkpointedAsOf) <
+      cl.trancheIndexAtTimestamp(cl._checkpointedAsOf) <
       cl._paymentSchedule.currentPrincipalPeriod();
     bool callRequestTrancheAndNeedsSettling = trancheId < cl.uncalledCapitalTrancheIndex() &&
       trancheId < cl._paymentSchedule.currentPrincipalPeriod();
