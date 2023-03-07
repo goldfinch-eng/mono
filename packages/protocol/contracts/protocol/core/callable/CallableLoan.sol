@@ -17,6 +17,7 @@ import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IVersioned} from "../../../interfaces/IVersioned.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
+import {ILoanTypeProvider, LoanType} from "../../../interfaces/ILoanTypeProvider.sol";
 
 import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 
@@ -40,7 +41,8 @@ contract CallableLoan is
   ICallableLoanErrors,
   ICreditLine,
   IRequiresUID,
-  IVersioned
+  IVersioned,
+  ILoanTypeProvider
 {
   using CallableLoanConfigHelper for IGoldfinchConfig;
   using SafeERC20 for IERC20UpgradeableWithDec;
@@ -388,6 +390,12 @@ contract CallableLoan is
   /*================================================================================
   Main Public/External View functions
   ================================================================================*/
+
+  /// @inheritdoc ILoanTypeProvider
+  function getLoanType() external view override returns (LoanType) {
+    return LoanType.CallableLoan;
+  }
+
   function getFundableAt() external view returns (uint256) {
     return _staleCreditLine.fundableAt();
   }
