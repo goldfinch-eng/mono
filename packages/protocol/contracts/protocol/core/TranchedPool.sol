@@ -482,14 +482,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // linearly
     uint256[] memory principalPaymentsPerSlice = new uint256[](numSlices);
     for (uint256 i = 0; i < numSlices; i++) {
+      ITranchedPool.PoolSlice storage slice = _poolSlices[i];
       uint256 interestForSlice = TranchingLogic.scaleByFraction(
         interestAccrued,
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       principalPaymentsPerSlice[i] = TranchingLogic.scaleByFraction(
         pa.principalPayment.add(pa.additionalBalancePayment),
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       _poolSlices[i].totalInterestAccrued = _poolSlices[i].totalInterestAccrued.add(
