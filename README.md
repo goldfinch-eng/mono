@@ -15,7 +15,7 @@ Stay up to date by joining our [Goldfinch Discord server](https://discord.com/in
 ```bash
 git clone https://github.com/warbler-labs/mono.git
 ``` 
-- When you open the project in a new VSCode window, a [pop up](https://dev.to/askrishnapravin/recommend-vs-code-extensions-to-your-future-teammates-4gkb#:~:text=Configuring%20recommended%20extensions&text=vscode%2F%20in%20the%20root%20of,tools(we%20use%20Git).) will display which will allow you to install all the recommended extensions for the repo. 
+When you open the project in a new VSCode window, a [pop up](https://dev.to/askrishnapravin/recommend-vs-code-extensions-to-your-future-teammates-4gkb#:~:text=Configuring%20recommended%20extensions&text=vscode%2F%20in%20the%20root%20of,tools(we%20use%20Git).) will display which will allow you to install all the recommended extensions for the repo. 
 
 ## Installation
 
