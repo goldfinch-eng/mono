@@ -64,6 +64,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256[] calldata _allowedUIDTypes
   ) public override initializer {
     require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
+    require(_juniorFeePercent <= 100, "JF");
 
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
