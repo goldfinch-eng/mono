@@ -7,7 +7,7 @@ import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
-  BorrowerAccountingFieldsFragment,
+  LoanBorrowerAccountingFieldsFragment,
   BorrowPageCmsDocument,
   BorrowPageCmsQuery,
   TranchedPoolBorrowerAccountingFieldsFragment,
@@ -29,9 +29,7 @@ gql`
       orderBy: createdAt
       orderDirection: desc
     ) {
-      id
-      interestRate
-      ...BorrowerAccountingFields
+      ...LoanBorrowerAccountingFields
     }
   }
 `;
@@ -140,7 +138,7 @@ export default function BorrowPage({
               remainingPeriodDueAmount,
               creditLineStatus,
             } = getCreditLineAccountingAnalyisValues(
-              loan as BorrowerAccountingFieldsFragment &
+              loan as LoanBorrowerAccountingFieldsFragment &
                 TranchedPoolBorrowerAccountingFieldsFragment
             );
 

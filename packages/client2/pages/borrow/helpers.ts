@@ -3,9 +3,54 @@ import { BigNumber } from "ethers";
 
 import { roundUpUsdcPenny } from "@/lib/format";
 import {
-  BorrowerAccountingFieldsFragment,
+  LoanBorrowerAccountingFieldsFragment,
   TranchedPoolBorrowerAccountingFieldsFragment,
 } from "@/lib/graphql/generated";
+
+gql`
+  fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
+    interestOwed @client
+    collectedPaymentBalance @client
+    isLate @client
+    isAfterTermEndTime @client
+    interestAccruedAsOf
+    fundingLimit
+    principalAmount
+    drawdownsPaused
+    creditLine {
+      id
+    }
+    juniorTranches {
+      id
+      principalSharePrice
+      principalDeposited
+      lockedUntil
+    }
+    seniorTranches {
+      id
+      principalSharePrice
+      principalDeposited
+    }
+  }
+`;
+
+gql`
+  fragment LoanBorrowerAccountingFields on Loan {
+    __typename
+    id
+    isPaused
+    termInDays
+    interestRate
+    interestRateBigInt
+    nextDueTime
+    balance
+    termEndTime
+    ...TranchedPoolBorrowerAccountingFields
+    borrowerContract {
+      id
+    }
+  }
+`;
 
 /**
  * Calculates the current interest owed on the credit line.
@@ -270,30 +315,6 @@ export function calculateCreditLineMaxDrawdownAmount({
   return principalAmount;
 }
 
-gql`
-  fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
-    interestOwed @client
-    collectedPaymentBalance @client
-    isLate @client
-    interestAccruedAsOf
-    fundingLimit
-    principalAmount
-    creditLine {
-      id
-    }
-  }
-`;
-
-export const BORROWER_ACCOUNTING_FIELDS = gql`
-  fragment BorrowerAccountingFields on Loan {
-    interestRateBigInt
-    nextDueTime
-    balance
-    termEndTime
-    ...TranchedPoolBorrowerAccountingFields
-  }
-`;
-
 /**
  * Analyses a Credit Line's Accounting fields to derive variables required for the borrower views
  *
@@ -315,7 +336,7 @@ export function getCreditLineAccountingAnalyisValues({
   balance,
   collectedPaymentBalance,
   termEndTime,
-}: BorrowerAccountingFieldsFragment &
+}: LoanBorrowerAccountingFieldsFragment &
   TranchedPoolBorrowerAccountingFieldsFragment): {
   creditLineLimit: BigNumber;
   currentInterestOwed: BigNumber;

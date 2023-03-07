@@ -16,7 +16,7 @@ interface CreditLineCardProps {
   dueDateLabel: ReactNode;
 }
 
-export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
+gql`
   fragment TranchedPoolBorrowCardFields on Deal {
     id
     name

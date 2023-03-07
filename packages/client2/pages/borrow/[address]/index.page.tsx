@@ -10,19 +10,20 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
+  LoanBorrowerAccountingFieldsFragment,
   Deal,
+  PoolCreditLinePageCmsDocument,
   PoolCreditLinePageCmsQuery,
   PoolCreditLinePageCmsQueryVariables,
+  TranchedPoolBorrowerAccountingFieldsFragment,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
-import { TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS } from "@/pages/borrow/credit-line-card";
 import {
   calculateCreditLineMaxDrawdownAmount,
   calculatePoolFundsAvailable,
   CreditLineStatus,
-  BORROWER_ACCOUNTING_FIELDS,
   getCreditLineAccountingAnalyisValues,
 } from "@/pages/borrow/helpers";
 
@@ -31,40 +32,14 @@ import { DrawdownForm } from "./drawdown-form";
 import { PaymentForm } from "./payment-form";
 
 gql`
-  ${BORROWER_ACCOUNTING_FIELDS}
-  query PoolCreditLinePage($tranchedPoolId: ID!) {
-    tranchedPool(id: $tranchedPoolId) {
-      id
-      isPaused
-      drawdownsPaused
-      interestRate
-      termInDays
-      isAfterTermEndTime @client
-      ...BorrowerAccountingFields
-
-      borrowerContract {
-        id
-      }
-      juniorTranches {
-        id
-        principalSharePrice
-        principalDeposited
-        lockedUntil
-      }
-      seniorTranches {
-        id
-        principalSharePrice
-        principalDeposited
-      }
-    }
-    currentBlock @client {
-      timestamp
+  query PoolCreditLinePage($loanId: ID!) {
+    loan(id: $loanId) {
+      ...LoanBorrowerAccountingFields
     }
   }
 `;
 
-const poolCreditLineCmsQuery = gql`
-  ${TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS}
+gql`
   query PoolCreditLinePageCMS($id: String!) @api(name: cms) {
     Deal(id: $id) {
       ...TranchedPoolBorrowCardFields
@@ -111,23 +86,23 @@ export default function PoolCreditLinePage({
 
   const { data, error, loading } = usePoolCreditLinePageQuery({
     variables: {
-      tranchedPoolId: dealDetails?.id,
+      loanId: dealDetails?.id,
     },
   });
 
-  const tranchedPool = data?.tranchedPool;
-  const creditLine = tranchedPool?.creditLine;
-  const juniorTranche = tranchedPool?.juniorTranches?.[0];
-  const seniorTranche = tranchedPool?.seniorTranches?.[0];
+  const loan = data?.loan as LoanBorrowerAccountingFieldsFragment &
+    TranchedPoolBorrowerAccountingFieldsFragment;
+  const juniorTranche = loan?.juniorTranches?.[0];
+  const seniorTranche = loan?.seniorTranches?.[0];
 
   let creditLineStatus;
   let creditLineLimit = BigNumber.from(0);
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
-  if (creditLine && juniorTranche && seniorTranche) {
+  if (loan && juniorTranche && seniorTranche) {
     const creditLineAccountingAnalysisValues =
-      getCreditLineAccountingAnalyisValues(creditLine);
+      getCreditLineAccountingAnalyisValues(loan);
 
     creditLineStatus = creditLineAccountingAnalysisValues.creditLineStatus;
     creditLineLimit = creditLineAccountingAnalysisValues.creditLineLimit;
@@ -147,7 +122,10 @@ export default function PoolCreditLinePage({
     };
 
     const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
-      ...creditLine,
+      collectedPaymentBalance: loan.collectedPaymentBalance,
+      nextDueTime: loan.nextDueTime,
+      termEndTime: loan.termEndTime,
+      balance: loan.balance,
       currentInterestOwed:
         creditLineAccountingAnalysisValues.currentInterestOwed,
       principalAmount: creditLineLimit,
@@ -181,8 +159,8 @@ export default function PoolCreditLinePage({
     token: "USDC",
   });
 
-  const formattedNextDueTime = creditLine
-    ? formatDate(tranchedPool.nextDueTime.toNumber() * 1000, "MMM d")
+  const formattedNextDueTime = loan
+    ? formatDate(loan.nextDueTime.toNumber() * 1000, "MMM d")
     : "0";
 
   return (
@@ -210,7 +188,7 @@ export default function PoolCreditLinePage({
         </div>
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
-      ) : error || !creditLine ? (
+      ) : error || !loan ? (
         <div className="text-2xl">Unable to load credit line</div>
       ) : (
         <div className="flex flex-col">
@@ -255,18 +233,18 @@ export default function PoolCreditLinePage({
                   {shownForm === "drawdown" ? (
                     <DrawdownForm
                       availableForDrawdown={availableForDrawdown}
-                      borrowerContractAddress={tranchedPool.borrowerContract.id}
-                      tranchedPoolAddress={tranchedPool.id}
+                      borrowerContractAddress={loan.borrowerContract.id}
+                      tranchedPoolAddress={loan.id}
                       creditLineStatus={creditLineStatus}
-                      isAfterTermEndTime={tranchedPool.isAfterTermEndTime}
+                      isAfterTermEndTime={loan.isAfterTermEndTime}
                       onClose={() => setShownForm(null)}
                     />
                   ) : (
                     <PaymentForm
                       remainingPeriodDueAmount={remainingPeriodDueAmount}
                       remainingTotalDueAmount={remainingTotalDueAmount}
-                      borrowerContractAddress={tranchedPool.borrowerContract.id}
-                      tranchedPoolAddress={tranchedPool.id}
+                      borrowerContractAddress={loan.borrowerContract.id}
+                      tranchedPoolAddress={loan.id}
                       creditLineStatus={creditLineStatus}
                       onClose={() => setShownForm(null)}
                     />
@@ -288,8 +266,8 @@ export default function PoolCreditLinePage({
                     colorScheme="mustard"
                     onClick={() => setShownForm("drawdown")}
                     disabled={
-                      tranchedPool.isPaused ||
-                      tranchedPool.drawdownsPaused ||
+                      loan.isPaused ||
+                      loan.drawdownsPaused ||
                       juniorTranche?.lockedUntil.isZero() ||
                       availableForDrawdown.lte(BigNumber.from(0))
                     }
@@ -334,7 +312,7 @@ export default function PoolCreditLinePage({
                   colorScheme="secondary"
                   iconRight="ArrowTopRight"
                   as="a"
-                  href={`https://etherscan.io/address/${tranchedPool.id}`}
+                  href={`https://etherscan.io/address/${loan.id}`}
                   target="_blank"
                   rel="noopener"
                   size="sm"
@@ -376,7 +354,7 @@ export default function PoolCreditLinePage({
                     <Icon name="Clock" className="mr-2" />
                     <div className="text-lg">
                       {`Full balance repayment due ${formatDate(
-                        tranchedPool.termEndTime.toNumber() * 1000,
+                        loan.termEndTime.toNumber() * 1000,
                         "MMM d, yyyy"
                       )}`}
                     </div>
@@ -397,7 +375,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {formatPercent(tranchedPool.interestRate)}
+                    {formatPercent(loan.interestRate)}
                   </div>
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
@@ -407,7 +385,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {tranchedPool.termInDays.toString()}
+                    {loan.termInDays.toString()}
                   </div>
                   <div className="text-sand-500">Payback term</div>
                 </div>
@@ -462,7 +440,7 @@ export const getStaticProps: GetStaticProps<
     PoolCreditLinePageCmsQuery,
     PoolCreditLinePageCmsQueryVariables
   >({
-    query: poolCreditLineCmsQuery,
+    query: PoolCreditLinePageCmsDocument,
     variables: {
       id: address,
     },
