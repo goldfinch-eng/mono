@@ -412,7 +412,7 @@ library CallableCreditLineLogic {
       cl._checkpointedAsOf,
       firstInterestEndPoint,
       lateFeesStartAt,
-      cl._waterfall.totalPrincipalOutstandingWithoutReserves(),
+      cl._waterfall.totalPrincipalOutstandingBeforeReserves(),
       cl._interestApr,
       cl._lateAdditionalApr
     );
@@ -423,7 +423,7 @@ library CallableCreditLineLogic {
         firstInterestEndPoint,
         timestamp,
         lateFeesStartAt,
-        cl._waterfall.totalPrincipalOutstandingWithReserves(),
+        cl._waterfall.totalPrincipalOutstandingAfterReserves(),
         cl._interestApr,
         cl._lateAdditionalApr
       );
@@ -485,17 +485,17 @@ library CallableCreditLineLogic {
     return timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
   }
 
-  function totalPrincipalOutstandingWithoutReserves(
+  function totalPrincipalOutstandingBeforeReserves(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return cl._waterfall.totalPrincipalOutstandingWithoutReserves();
+    return cl._waterfall.totalPrincipalOutstandingBeforeReserves();
   }
 
   /// Returns the total amount of principal outstanding - including reserved principal.
   function totalPrincipalOutstanding(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return cl._waterfall.totalPrincipalOutstandingWithReserves();
+    return cl._waterfall.totalPrincipalOutstandingAfterReserves();
   }
 
   function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {

@@ -61,9 +61,9 @@ library WaterfallLogic {
     uint256 interestAmount,
     uint256 reserveTranchesIndexStart
   ) internal {
-    uint256 existingPrincipalOutstandingWithoutReserves = w
-      .totalPrincipalOutstandingWithoutReserves();
-    if (existingPrincipalOutstandingWithoutReserves == 0) {
+    uint256 existingPrincipalOutstandingBeforeReserves = w
+      .totalPrincipalOutstandingBeforeReserves();
+    if (existingPrincipalOutstandingBeforeReserves == 0) {
       revert ICallableLoanErrors.NoBalanceToPay(principalAmount);
     }
 
@@ -74,10 +74,9 @@ library WaterfallLogic {
     for (uint256 i = 0; i < w._tranches.length; i++) {
       Tranche storage tranche = w.getTranche(i);
       uint256 proRataInterestPayment = (interestAmount *
-        tranche.principalOutstandingWithoutReserves()) /
-        existingPrincipalOutstandingWithoutReserves;
+        tranche.principalOutstandingBeforeReserves()) / existingPrincipalOutstandingBeforeReserves;
       uint256 principalPayment = Math.min(
-        tranche.principalOutstandingWithReserves(),
+        tranche.principalOutstandingAfterReserves(),
         principalAmount
       );
       // subtract so that future iterations can't re-allocate a principal payment
@@ -94,7 +93,7 @@ library WaterfallLogic {
     if (principalAmount > 0) {
       revert ICallableLoanErrors.BalanceOverpayment(
         principalAmount,
-        existingPrincipalOutstandingWithoutReserves
+        existingPrincipalOutstandingAfterReserves
       );
     }
   }
@@ -196,19 +195,19 @@ library WaterfallLogic {
     }
   }
 
-  function totalPrincipalOutstandingWithoutReserves(
+  function totalPrincipalOutstandingBeforeReserves(
     Waterfall storage w
   ) internal view returns (uint256 sum) {
     for (uint256 i = 0; i < w._tranches.length; i++) {
-      sum += w.getTranche(i).principalOutstandingWithoutReserves();
+      sum += w.getTranche(i).principalOutstandingBeforeReserves();
     }
   }
 
-  function totalPrincipalOutstandingWithReserves(
+  function totalPrincipalOutstandingAfterReserves(
     Waterfall storage w
   ) internal view returns (uint256 sum) {
     for (uint256 i = 0; i < w._tranches.length; i++) {
-      sum += w.getTranche(i).principalOutstandingWithReserves();
+      sum += w.getTranche(i).principalOutstandingAfterReserves();
     }
   }
 

@@ -49,14 +49,14 @@ library TrancheLogic {
   /**
    * Returns principal outstanding, omitting _principalReserved.
    */
-  function principalOutstandingWithoutReserves(Tranche storage t) internal view returns (uint256) {
+  function principalOutstandingBeforeReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid;
   }
 
   /**
    * Returns principal outstanding, taking into account any _principalReserved.
    */
-  function principalOutstandingWithReserves(Tranche storage t) internal view returns (uint256) {
+  function principalOutstandingAfterReserves(Tranche storage t) internal view returns (uint256) {
     return t._principalDeposited - t._principalPaid - t._principalReserved;
   }
 
@@ -87,7 +87,7 @@ library TrancheLogic {
       uint256 interestTaken
     )
   {
-    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingWithoutReserves();
+    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingBeforeReserves();
 
     // Sanity check - expect `take` to always be called with valid inputs.
     assert(principalOutstandingToTake <= tranchePrincipalOutstandingBeforeReserves);
@@ -196,7 +196,7 @@ library TrancheLogic {
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {
-    return (t.principalOutstandingWithoutReserves() * principalAmount) / t.principalDeposited();
+    return (t.principalOutstandingBeforeReserves() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalInterestWithdrawable(

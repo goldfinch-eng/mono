@@ -450,7 +450,7 @@ contract CallableLoan is
   }
 
   function interestBearingBalance() public view returns (uint256) {
-    return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
+    return _staleCreditLine.totalPrincipalOutstandingBeforeReserves();
   }
 
   function availableToCall(uint256 tokenId) public view override returns (uint256) {
