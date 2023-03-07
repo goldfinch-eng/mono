@@ -7,13 +7,23 @@ import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.so
 
 using TrancheLogic for Tranche global;
 
+/**
+ * @notice Handles the accounting of borrower obligations for a single tranche.
+ *         Supports
+ *         - Deposit of funds
+ *         - Drawdown of funds
+ *         - Repayment of borrowed funds
+ *         - Withdrawal of paid funds
+ *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ */
+
 struct Tranche {
   uint256 _principalDeposited;
   uint256 _principalPaid;
   uint256 _principalReserved;
   uint256 _interestPaid;
   // TODO: verify that this works for upgradeability
-  uint[50] __padding;
+  uint[28] __padding;
 }
 
 library TrancheLogic {
@@ -52,6 +62,7 @@ library TrancheLogic {
 
   /**
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
+   * @dev reverts if interest has been paid to tranche
    */
   function withdraw(Tranche storage t, uint256 principal) internal {
     assert(t._interestPaid == 0);
@@ -74,15 +85,15 @@ library TrancheLogic {
       uint256 interestTaken
     )
   {
-    if (principalOutstandingToTake > t.principalOutstandingWithoutReserves()) {
+    uint tranchePrincipalOutstandingBeforeReserves = t.principalOutstandingWithoutReserves();
+    if (principalOutstandingToTake > tranchePrincipalOutstandingBeforeReserves) {
       t._revertInternalTrancheTakeAccountingError(principalOutstandingToTake);
     }
     principalReservedTaken = Math.min(t._principalReserved, principalOutstandingToTake);
-    principalPaidTaken =
-      (t._principalPaid * principalOutstandingToTake) /
-      t.principalOutstandingWithoutReserves();
-
-    principalDepositedTaken = principalOutstandingToTake + principalPaidTaken;
+    principalDepositedTaken =
+      (t._principalDeposited * principalOutstandingToTake) /
+      tranchePrincipalOutstandingBeforeReserves;
+    principalPaidTaken = principalDepositedTaken - principalOutstandingToTake;
     interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
 
     t._principalPaid -= principalPaidTaken;
@@ -141,14 +152,14 @@ library TrancheLogic {
   }
 
   // returns principal, interest withdrawable
-  function proportionalInterestAndPrincipalAvailableAfterApplyingReserves(
+  function proportionalInterestAndPrincipalAvailableAfterReserves(
     Tranche storage t,
     uint256 principalAmount,
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
     return (
       t.proportionalInterestWithdrawable(principalAmount, feePercent),
-      t.proportionalPrincipalAvailableAfterApplyingReserves(principalAmount)
+      t.proportionalPrincipalAvailableAfterReserves(principalAmount)
     );
   }
 
@@ -163,7 +174,7 @@ library TrancheLogic {
     );
   }
 
-  function proportionalPrincipalAvailableAfterApplyingReserves(
+  function proportionalPrincipalAvailableAfterReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {
@@ -177,7 +188,7 @@ library TrancheLogic {
     return (t.principalPaid() * principalAmount) / t.principalDeposited();
   }
 
-  function proportionalPrincipalOutstandingWithoutReserves(
+  function proportionalPrincipalOutstandingBeforeReserves(
     Tranche storage t,
     uint256 principalAmount
   ) internal view returns (uint256) {

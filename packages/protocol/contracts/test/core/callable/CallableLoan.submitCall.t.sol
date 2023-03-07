@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
-import {ICallableLoan, LockState} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -109,9 +109,9 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     if (depositAmount == drawdownAmount) {
       vm.expectRevert(
         abi.encodeWithSelector(
-          ICallableLoanErrors.InvalidLockState.selector,
-          LockState.DrawdownPeriod,
-          LockState.Unlocked
+          ICallableLoanErrors.InvalidLoanPhase.selector,
+          LoanPhase.DrawdownPeriod,
+          LoanPhase.InProgress
         )
       );
     } else {

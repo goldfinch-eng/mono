@@ -37,7 +37,7 @@ contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
     assertEq(cl.termEndTime(), termEndTimeBefore);
   }
 
-  function termInSeconds(CreditLine cl) internal returns (uint256) {
+  function termInSeconds(CreditLine cl) internal view returns (uint256) {
     return cl.termEndTime() - cl.termStartTime();
   }
 }

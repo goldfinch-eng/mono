@@ -5,19 +5,24 @@ import {ILoan} from "./ILoan.sol";
 import {ISchedule} from "./ISchedule.sol";
 import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 
-/// A LockState represents a period of time during which certain callable loan actions are prohibited.
-/// @param LockState.Funding Starts when a loan is created and ends when the first borrower drawdown occurs.
-/// In Funding, the lender can deposit principal to mint a pool token and they can withdraw their deposited principal.
-/// @param LockState.DrawdownPeriod Starts when the first borrower drawdown occurs and
+/// A LoanPhase represents a period of time during which certain callable loan actions are prohibited.
+/// @param Prefunding Starts when a loan is created and ends at fundableAt.
+/// In Prefunding, all actions are prohibited or ineffectual.
+/// @param Funding Starts at the fundableAt timestamp and ends at the first borrower drawdown.
+/// In Funding, lenders can deposit principal to mint a pool token and they can withdraw their deposited principal.
+/// @param DrawdownPeriod Starts when the first borrower drawdown occurs and
 /// ends after ConfigHelper.DrawdownPeriodInSeconds elapses.
 /// In DrawdownPeriod, the lender can deposit principal to mint a pool token and they can withdraw
 /// their deposited principal.
-/// @param LockState.Unlocked Starts after ConfigHelper.DrawdownPeriodInSeconds elapses and never ends.
-/// In Unlocked, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
-enum LockState {
+/// @param InProgress Starts after ConfigHelper.DrawdownPeriodInSeconds elapses and never ends.
+/// In InProgress, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
+/// When a loan is fully paid back, we do not update the loan state, but most of these actions will
+/// be prohibited or ineffectual.
+enum LoanPhase {
+  Prefunding,
   Funding,
   DrawdownPeriod,
-  Unlocked
+  InProgress
 }
 
 /// @dev A CallableLoan is a loan which allows the lender to call the borrower's principal.

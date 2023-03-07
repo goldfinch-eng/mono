@@ -18,6 +18,12 @@ library CallableLoanAccountant {
   uint256 internal constant SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 
   /// @notice Allocate a payment to proper balances according to the payment waterfall.
+  ///         Expected payment waterfall:
+  ///         1. Interest owed
+  ///         2. Principal owed
+  ///         3. Interest accrued
+  ///         4. Interest guaranteed to accrue before the next principal settlement
+  ///         5. Any additional remaining balance
   /// @param paymentAmount amount to allocate
   /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time
@@ -38,14 +44,13 @@ library CallableLoanAccountant {
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
-
-    paymentRemaining = paymentRemaining - owedInterestPayment;
+    paymentRemaining -= owedInterestPayment;
 
     uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining - principalPayment;
+    paymentRemaining -= principalPayment;
 
     uint256 accruedInterestPayment = Math.min(interestAccrued, paymentRemaining);
-    paymentRemaining = paymentRemaining - accruedInterestPayment;
+    paymentRemaining -= accruedInterestPayment;
 
     uint256 balanceRemaining = balance - principalPayment;
     uint256 guaranteedFutureInterest = calculateInterest({
@@ -57,10 +62,10 @@ library CallableLoanAccountant {
       guaranteedFutureInterest,
       paymentRemaining
     );
-    paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
+    paymentRemaining -= guaranteedFutureAccruedInterestPayment;
 
     uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
-    paymentRemaining = paymentRemaining - additionalBalancePayment;
+    paymentRemaining -= additionalBalancePayment;
 
     return
       ILoan.PaymentAllocation({
@@ -94,14 +99,14 @@ library CallableLoanAccountant {
     uint256 lateFeesStartsAt,
     uint256 principal,
     uint256 interestApr,
-    uint256 lateInterestApr
+    uint256 lateInterestAdditionalApr
   ) internal pure returns (uint256 interest) {
     if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
     if (lateFeesStartsAt < end) {
       uint256 lateDuration = end.saturatingSub(Math.max(lateFeesStartsAt, start));
-      interest += calculateInterest(lateDuration, principal, lateInterestApr);
+      interest += calculateInterest(lateDuration, principal, lateInterestAdditionalApr);
     }
   }
 }

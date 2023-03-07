@@ -23,20 +23,22 @@ library StaleCallableCreditLineLogic {
   function initialize(
     StaleCallableCreditLine storage cl,
     IGoldfinchConfig _config,
-    uint256 _interestApr,
+    uint256 _fundableAt,
     uint256 _numLockupPeriods,
     ISchedule _schedule,
+    uint256 _interestApr,
     uint256 _lateAdditionalApr,
     uint256 _limit
   ) internal {
-    cl._cl.initialize(
-      _config,
-      _interestApr,
-      _numLockupPeriods,
-      _schedule,
-      _lateAdditionalApr,
-      _limit
-    );
+    cl._cl.initialize({
+      _config: _config,
+      _fundableAt: _fundableAt,
+      _numLockupPeriods: _numLockupPeriods,
+      _schedule: _schedule,
+      _interestApr: _interestApr,
+      _lateAdditionalApr: _lateAdditionalApr,
+      _limit: _limit
+    });
   }
 
   function checkpoint(
@@ -56,6 +58,10 @@ library StaleCallableCreditLineLogic {
 
   function lastFullPaymentTime(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.lastFullPaymentTime();
+  }
+
+  function fundableAt(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cl.fundableAt();
   }
 
   function limit(StaleCallableCreditLine storage cl) internal view returns (uint256) {

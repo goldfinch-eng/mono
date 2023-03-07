@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
-import {LockState} from "../../../interfaces/ICallableLoan.sol";
+import {LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
@@ -74,9 +74,9 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     warpToAfterDrawdownPeriod(callableLoan);
     vm.expectRevert(
       abi.encodeWithSelector(
-        ICallableLoanErrors.InvalidLockState.selector,
-        LockState.Unlocked,
-        LockState.DrawdownPeriod
+        ICallableLoanErrors.InvalidLoanPhase.selector,
+        LoanPhase.InProgress,
+        LoanPhase.DrawdownPeriod
       )
     );
     callableLoan.drawdown(failedDrawdownAmount);
