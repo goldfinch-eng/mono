@@ -120,6 +120,17 @@ interface ICallableLoan is ILoan {
 
   function availableToCall(uint256 tokenId) external view returns (uint256);
 
+  /// @notice Returns the current balance of the loan which will be used for
+  ///         interest calculations.
+  ///         Settles any principal reserved if a call request period has
+  ///         ended since the last checkpoint
+  ///         Excludes principal reserved for future call request periods
+  function interestBearingBalance() external view returns (uint256);
+
+  /// @notice Returns a naive estimate of the interest owed at the timestamp.
+  ///         Omits any late fees, and assumes no future payments.
+  function estimateOwedInterestAt(uint256 timestamp) external view returns (uint256);
+
   /*================================================================================
   Events
   ================================================================================*/

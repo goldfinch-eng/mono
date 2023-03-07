@@ -396,6 +396,18 @@ contract CallableLoan is
     return allowedUIDTypes;
   }
 
+  /// TODO: Low priority tests - only used for frontend estimations of interest payments.
+  /// @inheritdoc ICallableLoan
+  function estimateOwedInterestAt(uint256 timestamp) external view override returns (uint256) {
+    return
+      _staleCreditLine.interestOwed() +
+      CallableLoanAccountant.calculateInterest(
+        timestamp - block.timestamp,
+        interestBearingBalance(),
+        _staleCreditLine.interestApr()
+      );
+  }
+
   /// @inheritdoc ILoan
   function getAmountsOwed(
     uint256 timestamp
@@ -449,8 +461,12 @@ contract CallableLoan is
       });
   }
 
-  function interestBearingBalance() public view returns (uint256) {
-    return _staleCreditLine.totalPrincipalOutstandingBeforeReserves();
+  /// TODO: Low priority tests - currently only used for tests and frontend
+  /// @inheritdoc ICallableLoan
+  function interestBearingBalance() public view override returns (uint256) {
+    return
+      _staleCreditLine.totalPrincipalDeposited() -
+      _staleCreditLine.totalPrincipalPaidAt(block.timestamp);
   }
 
   function availableToCall(uint256 tokenId) public view override returns (uint256) {
