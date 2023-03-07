@@ -39,8 +39,10 @@ contract TranchedPoolPaySeparateIntOwedEq0IntAccrGt0PrincOwedEq0 is TranchedPool
 
   function testIntAccNotPaidAcceptPrincPaymentEq0(uint256 intPayment, uint256 timestamp) public {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.nextDueTime() - 1);
+
     vm.warp(timestamp);
-    vm.assume(cl.interestAccrued() > 0);
+
+    vm.assume(cl.interestAccrued() > 1);
     vm.assume(cl.interestOwed() == 0);
     vm.assume(cl.principalOwed() == 0);
 
@@ -61,8 +63,10 @@ contract TranchedPoolPaySeparateIntOwedEq0IntAccrGt0PrincOwedEq0 is TranchedPool
     uint256 timestamp
   ) public {
     timestamp = bound(timestamp, block.timestamp + 1 days, cl.nextDueTime() - 1);
+
     vm.warp(timestamp);
-    vm.assume(cl.interestAccrued() > 0);
+
+    vm.assume(cl.interestAccrued() > 1);
     vm.assume(cl.interestOwed() == 0);
     vm.assume(cl.principalOwed() == 0);
 

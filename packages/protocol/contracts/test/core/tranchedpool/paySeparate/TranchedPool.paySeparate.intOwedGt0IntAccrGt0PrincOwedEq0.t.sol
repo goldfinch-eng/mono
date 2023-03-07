@@ -45,7 +45,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
-    assertTrue(cl.interestOwed() > 0);
+    assertTrue(cl.interestOwed() > 1);
     assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
@@ -68,7 +68,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
-    assertTrue(cl.interestOwed() > 0);
+    assertTrue(cl.interestOwed() > 1);
     assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
@@ -112,6 +112,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
+    vm.assume(cl.interestAccrued() > 0);
     intPayment = bound(intPayment, cl.interestOwed(), cl.interestOwed() + cl.interestAccrued() - 1);
     princPayment = bound(princPayment, 1, usdcVal(1000));
 
