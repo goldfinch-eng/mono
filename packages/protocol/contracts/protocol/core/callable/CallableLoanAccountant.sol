@@ -84,9 +84,12 @@ library CallableLoanAccountant {
     uint256 secondsElapsed,
     uint256 principal,
     uint256 interestApr
-  ) internal pure returns (uint256 interest) {
-    uint256 totalInterestPerYear = (principal * interestApr) / INTEREST_DECIMALS;
-    interest = (totalInterestPerYear * secondsElapsed) / SECONDS_PER_YEAR;
+  ) internal pure returns (uint256) {
+    // More readable, but less gas efficient implementation:
+    // uint256 totalInterestPerYear = (principal * interestApr) / INTEREST_DECIMALS;
+    // interest = (totalInterestPerYear * secondsElapsed) / SECONDS_PER_YEAR;
+
+    return (principal * interestApr * secondsElapsed) / (INTEREST_DECIMALS * SECONDS_PER_YEAR);
   }
 
   /**
