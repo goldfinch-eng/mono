@@ -4,7 +4,16 @@ pragma experimental ABIEncoderV2;
 import {ISchedule} from "./ISchedule.sol";
 import {ICreditLine} from "./ICreditLine.sol";
 
+enum LoanType {
+  TranchedPool,
+  CallableLoan
+}
+
 interface ILoan {
+  /// @notice getLoanType was added to support the new callable loan type.
+  ///         It is not supported in older versions of ILoan (e.g. legacy TranchedPools)
+  function getLoanType() external view returns (LoanType);
+
   /// @notice Pool's credit line, responsible for managing the loan's accounting variables
   function creditLine() external view returns (ICreditLine);
 

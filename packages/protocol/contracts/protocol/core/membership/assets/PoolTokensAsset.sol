@@ -14,8 +14,7 @@ import {CapitalAssetType} from "../../../../interfaces/ICapitalLedger.sol";
 import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
 import {ICallableLoan} from "../../../../interfaces/ICallableLoan.sol";
-import {ILoan} from "../../../../interfaces/ILoan.sol";
-import {ILoanTypeProvider, LoanType} from "../../../../interfaces/ILoanTypeProvider.sol";
+import {ILoan, LoanType} from "../../../../interfaces/ILoan.sol";
 
 using Routing.Context for Context;
 using SafeERC20 for IERC20Upgradeable;
@@ -41,11 +40,13 @@ library PoolTokensAsset {
   function isValid(Context context, uint256 assetTokenId) internal view returns (bool) {
     IPoolTokens.TokenInfo memory tokenInfo = context.poolTokens().getTokenInfo(assetTokenId);
 
-    // Legacy TranchedPools do not support ILoanTypeProvider
+    // Legacy TranchedPools do not support ILoan#getLoanType
     LoanType loanType = LoanType.TranchedPool;
 
-    // Arbitrary external call limited to tokenInfo.pool addresses which are a subset of addresses.
-    try ILoanTypeProvider(tokenInfo.pool).getLoanType() returns (LoanType _loanType) {
+    // !!! IMPORTANT As long as this is a view function, external call writes are prohibited.
+    // Regardless, the external calls are limited to tokenInfo.pool addresses which are a
+    // trusted subset of addresses.
+    try ILoan(tokenInfo.pool).getLoanType() returns (LoanType _loanType) {
       loanType = _loanType;
     } catch {}
 

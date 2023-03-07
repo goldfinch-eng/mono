@@ -7,7 +7,7 @@ import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ILoan} from "../../interfaces/ITranchedPool.sol";
+import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
@@ -418,6 +418,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       total = total.add(_poolSlices[i].juniorTranche.principalDeposited);
     }
     return total;
+  }
+
+  /// @inheritdoc ILoan
+  function getLoanType() external view override returns (LoanType) {
+    return LoanType.TranchedPool;
   }
 
   /// @inheritdoc ILoan
