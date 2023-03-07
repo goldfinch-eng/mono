@@ -69,8 +69,8 @@ export function GoldfinchPoolsMetrics({
         value={formatForMetrics(activeLoans)}
       />
       <Stat
-        label="Average Default Rate"
-        tooltip="Average default rate across all loans in the Goldfinch Protocol."
+        label="Total Loss Rate"
+        tooltip="Total value of loans written off (losses) as a proportion of total loans issued on the Goldfinch protocol."
         value={formatPercent(defaultRate)}
       />
       <Stat
