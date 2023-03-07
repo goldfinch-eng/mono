@@ -27,9 +27,17 @@ struct Waterfall {
 }
 
 library WaterfallLogic {
+  /*================================================================================
+  Constants
+  ================================================================================*/
+  uint256 internal constant MINIMUM_WATERFALL_TRANCHES = 2;
+
   function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
     if (w._tranches.length != 0) {
       revert ICallableLoanErrors.CannotReinitialize();
+    }
+    if (nTranches < 2) {
+      revert ICallableLoanErrors.HasInsufficientTranches(nTranches, MINIMUM_WATERFALL_TRANCHES);
     }
     for (uint256 i = 0; i < nTranches; i++) {
       Tranche memory t;
@@ -38,17 +46,9 @@ library WaterfallLogic {
     return w;
   }
 
-  function getTranche(
-    Waterfall storage w,
-    uint256 trancheId
-  ) internal view returns (Tranche storage) {
-    return w._tranches[trancheId];
-  }
-
-  function numTranches(Waterfall storage w) internal view returns (uint256) {
-    return w._tranches.length;
-  }
-
+  /*================================================================================
+  Main Write Functions
+  ================================================================================*/
   /// @notice apply a payment to tranches in the waterfall.
   ///         The principal payment is applied to the tranches in order of priority
   ///         The interest payment is applied to the tranches pro rata
@@ -90,12 +90,9 @@ library WaterfallLogic {
         });
       }
     }
-    if (principalAmount > 0) {
-      revert ICallableLoanErrors.BalanceOverpayment(
-        principalAmount,
-        existingPrincipalOutstandingAfterReserves
-      );
-    }
+
+    // Sanity check - CallableLoanAccountant should have already accounted for any excess payment.
+    assert(principalAmount == 0);
   }
 
   function drawdown(Waterfall storage w, uint256 principalAmount) internal {
@@ -147,6 +144,9 @@ library WaterfallLogic {
     return w.getTranche(w.uncalledCapitalTrancheIndex()).deposit(principalAmount);
   }
 
+  /*================================================================================
+  Main View Functions
+  ================================================================================*/
   /// Settle all past due tranches as well as the last tranche.
   /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
   function settleReserves(Waterfall storage w, uint256 dueTrancheIndex) internal {
@@ -156,6 +156,17 @@ library WaterfallLogic {
     for (uint256 i = 0; i <= dueTrancheIndex && i < uncalledCapitalTrancheIdx; i++) {
       w._tranches[i].settleReserves();
     }
+  }
+
+  function getTranche(
+    Waterfall storage w,
+    uint256 trancheId
+  ) internal view returns (Tranche storage) {
+    return w._tranches[trancheId];
+  }
+
+  function numTranches(Waterfall storage w) internal view returns (uint256) {
+    return w._tranches.length;
   }
 
   function uncalledCapitalTrancheIndex(Waterfall storage w) internal view returns (uint256) {

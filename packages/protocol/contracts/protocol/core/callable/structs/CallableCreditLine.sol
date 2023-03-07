@@ -70,7 +70,6 @@ library CallableCreditLineLogic {
   Constants
   ================================================================================*/
   uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
-  uint256 internal constant MINIMUM_WATERFALL_TRANCHES = 2;
 
   /*================================================================================
   Errors
@@ -102,12 +101,6 @@ library CallableCreditLineLogic {
     cl._lastFullPaymentTime = block.timestamp;
     cl._totalInterestAccruedAtLastCheckpoint = 0;
     cl._totalInterestOwedAtLastCheckpoint = 0;
-    if (cl._waterfall.numTranches() < 2) {
-      revert ICallableLoanErrors.NeedsMorePrincipalPeriods(
-        cl._waterfall.numTranches(),
-        MINIMUM_WATERFALL_TRANCHES
-      );
-    }
   }
 
   /*================================================================================
@@ -222,8 +215,14 @@ library CallableCreditLineLogic {
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccrued();
+    /// !!! IMPORTANT !!!
+    /// The order of these assignments matter!
+    /// Calculating cl.totalInterestOwed() is dependent upon the value of cl._totalInterestAccruedAtLastCheckpoint.
+    /// _totalInterestOwedAtLastCheckpoint must use the ORIGINAL value of _totalInterestAccruedAtLastCheckpoint!
+    /// Otherwise cl.totalInterestOwed() (and consequently cl._totalInterestOwedAtLastCheckpoint) will be incorrect.
     cl._totalInterestOwedAtLastCheckpoint = cl.totalInterestOwed();
+    cl._totalInterestAccruedAtLastCheckpoint = cl.totalInterestAccrued();
+
     cl._checkpointedAsOf = block.timestamp;
   }
 
@@ -261,7 +260,7 @@ library CallableCreditLineLogic {
     return
       cl.totalPrincipalOwedAt(timestamp).saturatingSub(
         cl._waterfall.totalPrincipalPaidAfterSettlementUpToTranche(
-          cl._paymentSchedule.principalPeriodAt(timestamp)
+          cl.trancheIndexAtTimestamp(timestamp)
         )
       );
   }
@@ -278,10 +277,7 @@ library CallableCreditLineLogic {
     CallableCreditLine storage cl,
     uint256 timestamp
   ) internal view returns (uint256) {
-    return
-      cl._waterfall.totalPrincipalDepositedUpToTranche(
-        cl._paymentSchedule.principalPeriodAt(timestamp)
-      );
+    return cl._waterfall.totalPrincipalDepositedUpToTranche(cl.trancheIndexAtTimestamp(timestamp));
   }
 
   function totalPrincipalPaid(CallableCreditLine storage cl) internal view returns (uint256) {
@@ -440,24 +436,22 @@ library CallableCreditLineLogic {
       return alreadyPaidPrincipal;
     }
 
-    uint256 principalPeriodAtTimestamp = cl._paymentSchedule.principalPeriodAt(timestamp);
-    uint256 principalPeriodAtCheckpoint = cl._paymentSchedule.principalPeriodAt(
-      cl._checkpointedAsOf
-    );
+    uint256 trancheIndexAtTimestamp = cl.trancheIndexAtTimestamp(timestamp);
+    uint256 trancheAtCheckpoint = cl.trancheIndexAtTimestamp(cl._checkpointedAsOf);
 
     // Unsettled principal from previous call request periods which will settle.
     uint256 reservedPrincipalWhichWillSettle = cl._waterfall.totalPrincipalReservedUpToTranche(
-      principalPeriodAtTimestamp
+      trancheIndexAtTimestamp
     );
 
     /// If we entered a new principal period since checkpoint,
     /// we should settle reserved principal in the uncalled tranche,
     /// UNLESS
-    /// Uncalled capital has already been counted due to principalPeriod being the uncalled tranche.
+    /// Uncalled capital has already been counted due to tranche being the uncalled tranche.
 
     if (
-      principalPeriodAtTimestamp > principalPeriodAtCheckpoint &&
-      principalPeriodAtTimestamp <= cl.uncalledCapitalTrancheIndex()
+      trancheIndexAtTimestamp > trancheAtCheckpoint &&
+      trancheIndexAtTimestamp <= cl.uncalledCapitalTrancheIndex()
     ) {
       reservedPrincipalWhichWillSettle += cl
         ._waterfall
@@ -538,7 +532,19 @@ library CallableCreditLineLogic {
       );
   }
 
+  /// @notice Returns the tranche index which the given timestamp falls within.
+  ///         This is not to be confused with activeCallSubmissionTrancheIndex, which is the tranche for which
+  ///         current call requests should be submitted to.
+  ///         See notes.md for explanation of relationship between principalPeriod, call request period and tranche.
+  function trancheIndexAtTimestamp(
+    CallableCreditLine storage cl,
+    uint256 timestamp
+  ) internal view returns (uint256) {
+    return cl._paymentSchedule.principalPeriodAt(timestamp);
+  }
+
   /// Returns the index of the tranche which current call requests should be submitted to.
+  ///See notes.md for explanation of relationship between principalPeriod, call request period and tranche.
   function activeCallSubmissionTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint256 activeTrancheIndex) {

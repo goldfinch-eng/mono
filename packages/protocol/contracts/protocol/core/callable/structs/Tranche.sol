@@ -205,8 +205,7 @@ library TrancheLogic {
     uint256 feePercent
   ) internal view returns (uint256) {
     return
-      (t.interestPaid() * principalAmount * percentLessFee(feePercent)) /
-      (t.principalDeposited() * 100);
+      (t.interestPaid() * principalAmount * (100 - feePercent)) / (t.principalDeposited() * 100);
   }
 
   /// @notice Only valid for Uncalled Tranche
@@ -216,22 +215,5 @@ library TrancheLogic {
       revert ICallableLoanErrors.DrawdownAmountExceedsDeposits(principalAmount, t._principalPaid);
     }
     t._principalPaid -= principalAmount;
-  }
-
-  function percentLessFee(uint256 feePercent) private pure returns (uint256) {
-    return 100 - feePercent;
-  }
-
-  function _revertInternalTrancheTakeAccountingError(
-    Tranche storage t,
-    uint256 principalOutstandingToTake
-  ) internal view {
-    revert ICallableLoanErrors.InternalTrancheTakeAccountingError(
-      principalOutstandingToTake,
-      t._principalDeposited,
-      t._principalPaid,
-      t._principalReserved,
-      t._interestPaid
-    );
   }
 }

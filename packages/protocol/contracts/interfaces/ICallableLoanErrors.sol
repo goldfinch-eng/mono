@@ -34,7 +34,6 @@ interface ICallableLoanErrors {
   Payments
   ================================================================================*/
   error NoBalanceToPay(uint256 attemptedPrincipalPayment);
-  error BalanceOverpayment(uint256 principalPayment, uint256 existingBalance);
 
   /*================================================================================
   Call Requests
@@ -68,7 +67,7 @@ interface ICallableLoanErrors {
   /*================================================================================
   Initialization
   ================================================================================*/
-  error NeedsMorePrincipalPeriods(uint256 numPrincipalPeriods, uint256 minimumNumPrincipalPeriods);
+  error HasInsufficientTranches(uint256 numPrincipalPeriods, uint256 minimumNumPrincipalPeriods);
   error CannotReinitialize();
   error InvalidNumLockupPeriods(uint256 numLockupPeriods, uint256 periodsPerPrincipalPeriod);
 
