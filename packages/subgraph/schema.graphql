@@ -198,6 +198,7 @@ type TranchedPool implements Loan @entity {
   interestRate: BigDecimal!
   interestRateBigInt: BigInt!
   lateFeeRate: BigDecimal!
+  interestAccruedAsOf: BigInt!
   borrowerContract: BorrowerContract!
 
   estimatedTotalAssets: BigInt!
