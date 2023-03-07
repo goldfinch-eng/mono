@@ -122,7 +122,9 @@ interface ICallableLoan is ILoan {
 
   /// @notice Returns the current balance of the loan which will be used for
   ///         interest calculations.
-  ///         Does not include reserved principal which is not due for processing.
+  ///         Settles any principal reserved if a call request period has
+  ///         ended since the last checkpoint
+  ///         Excludes principal reserved for future call request periods
   function interestBearingBalance() external view returns (uint256);
 
   /// @notice Returns a naive estimate of the interest owed at the timestamp.
