@@ -95,7 +95,7 @@ export function GoldfinchPoolsMetricsPlaceholder({
       size="lg"
     >
       <Stat label="Active Loans" />
-      <Stat label="Average Default Rate" />
+      <Stat label="Total Loss Rate" />
       <Stat label="Total Loans Repaid" />
     </StatGrid>
   );
