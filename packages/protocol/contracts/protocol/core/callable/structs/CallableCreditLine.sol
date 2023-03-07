@@ -118,9 +118,8 @@ library CallableCreditLineLogic {
     uint256 principalPayment,
     uint256 interestPayment
   ) internal {
-    LoanPhase loanPhase = cl.loanPhase();
-    if (loanPhase != LoanPhase.InProgress) {
-      revert ICallableLoanErrors.InvalidLoanPhase(loanPhase, LoanPhase.InProgress);
+    if (cl.loanPhase() != LoanPhase.InProgress) {
+      revert ICallableLoanErrors.InvalidLoanPhase(cl.loanPhase(), LoanPhase.InProgress);
     }
 
     cl._waterfall.pay({
@@ -144,11 +143,8 @@ library CallableCreditLineLogic {
       cl._lastFullPaymentTime = block.timestamp;
       loanPhase = cl.loanPhase();
       emit DepositsLocked(address(this));
-      // Scaffolding: TODO: Remove - this invariant should always be true across all tests.
-      require(
-        loanPhase == LoanPhase.DrawdownPeriod,
-        "Scaffolding failure: Should be DrawdownPeriod"
-      );
+      // Sanity check
+      assert(loanPhase == LoanPhase.DrawdownPeriod);
     }
     if (loanPhase != LoanPhase.DrawdownPeriod) {
       revert ICallableLoanErrors.InvalidLoanPhase(loanPhase, LoanPhase.DrawdownPeriod);
@@ -247,24 +243,19 @@ library CallableCreditLineLogic {
   Main View Functions
   ================================================================================*/
   function loanPhase(CallableCreditLine storage cl) internal view returns (LoanPhase) {
-    if (
-      cl._paymentSchedule.isActive() &&
-      block.timestamp > cl.termStartTime() + cl._config.getDrawdownPeriodInSeconds()
-    ) {
-      return LoanPhase.InProgress;
-    } else if (cl._paymentSchedule.isActive()) {
+    if (!cl._paymentSchedule.isActive()) {
+      return block.timestamp < cl._fundableAt ? LoanPhase.Prefunding : LoanPhase.Funding;
+    } else if (block.timestamp < cl.termStartTime() + cl._config.getDrawdownPeriodInSeconds()) {
       return LoanPhase.DrawdownPeriod;
-    } else if (block.timestamp > cl._fundableAt) {
-      return LoanPhase.Funding;
     } else {
-      return LoanPhase.Prefunding;
+      return LoanPhase.InProgress;
     }
   }
 
   function uncalledCapitalTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return cl._waterfall.numTranches() - 1;
+    return cl._waterfall.uncalledCapitalTrancheIndex();
   }
 
   function principalOwedAt(

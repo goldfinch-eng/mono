@@ -181,8 +181,4 @@ contract MockCreditLine is ICreditLine {
   function setInterestApr(uint256 __interestApr) external {
     _interestApr = __interestApr;
   }
-
-  modifier initializer() {
-    _;
-  }
 }

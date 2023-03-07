@@ -100,7 +100,7 @@ library WaterfallLogic {
   }
 
   function drawdown(Waterfall storage w, uint256 principalAmount) internal {
-    Tranche storage tranche = w.getTranche(w.numTranches() - 1);
+    Tranche storage tranche = w.getTranche(w.uncalledCapitalTrancheIndex());
     tranche.drawdown(principalAmount);
   }
 
@@ -121,7 +121,7 @@ library WaterfallLogic {
     )
   {
     (principalDeposited, principalPaid, principalReserved, interestPaid) = w
-      .getTranche(w.numTranches() - 1)
+      .getTranche(w.uncalledCapitalTrancheIndex())
       .take(principalOutstanding);
 
     w.getTranche(toCallRequestPeriodTrancheId).addToBalances(
@@ -137,7 +137,7 @@ library WaterfallLogic {
             Assumes that the caller is allowed to withdraw.
    */
   function withdraw(Waterfall storage w, uint256 principalAmount) internal {
-    return w.getTranche(w.numTranches() - 1).withdraw(principalAmount);
+    return w.getTranche(w.uncalledCapitalTrancheIndex()).withdraw(principalAmount);
   }
 
   /**
@@ -145,24 +145,26 @@ library WaterfallLogic {
             Assumes that the caller is allowed to deposit.
    */
   function deposit(Waterfall storage w, uint256 principalAmount) internal {
-    return w.getTranche(w.numTranches() - 1).deposit(principalAmount);
+    return w.getTranche(w.uncalledCapitalTrancheIndex()).deposit(principalAmount);
   }
 
   /// Settle all past due tranches as well as the last tranche.
   /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
   function settleReserves(Waterfall storage w, uint256 dueTrancheIndex) internal {
-    uint256 lastTrancheIndex = w.numTranches() - 1;
-    Tranche storage lastTranche = w.getTranche(lastTrancheIndex);
-    lastTranche.settleReserves();
-    for (uint256 i = 0; i <= dueTrancheIndex && i < lastTrancheIndex; i++) {
+    uint256 uncalledCapitalTrancheIdx = w.uncalledCapitalTrancheIndex();
+    Tranche storage uncalledCapitalTranche = w.getTranche(uncalledCapitalTrancheIdx);
+    uncalledCapitalTranche.settleReserves();
+    for (uint256 i = 0; i <= dueTrancheIndex && i < uncalledCapitalTrancheIdx; i++) {
       w._tranches[i].settleReserves();
     }
   }
 
+  function uncalledCapitalTrancheIndex(Waterfall storage w) internal view returns (uint256) {
+    return w.numTranches() - 1;
+  }
+
   /// @notice Returns the total amount of principal paid to all tranches
   function totalPrincipalDeposited(Waterfall storage w) internal view returns (uint256 sum) {
-    // TODO(will): this can be optimized by storing the aggregate amount paid
-    //       as a storage var and updating when the tranches are paid
     for (uint256 i = 0; i < w.numTranches(); i++) {
       sum += w.getTranche(i).principalDeposited();
     }
@@ -170,8 +172,6 @@ library WaterfallLogic {
 
   /// @notice Returns the total amount of interest paid to all tranches
   function totalInterestPaid(Waterfall storage w) internal view returns (uint256 sum) {
-    // TODO(will): this can be optimized by storing the aggregate amount paid
-    //       as a storage var and updating when the tranches are paid
     for (uint256 i = 0; i < w.numTranches(); i++) {
       sum += w.getTranche(i).interestPaid();
     }
@@ -191,8 +191,6 @@ library WaterfallLogic {
   function totalPrincipalPaid(
     Waterfall storage w
   ) internal view returns (uint256 totalPrincipalPaidSum) {
-    // TODO(will): this can be optimized by storing the aggregate amount paid
-    //       as a storage var and updating when the tranches are paid
     for (uint256 i = 0; i < w.numTranches(); i++) {
       totalPrincipalPaidSum += w.getTranche(i).principalPaid();
     }

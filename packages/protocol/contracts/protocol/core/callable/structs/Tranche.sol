@@ -61,6 +61,7 @@ library TrancheLogic {
   }
 
   /**
+   * @notice Only valid for Uncalled Tranche
    * @notice Withdraw principal from tranche - effectively nullifying the deposit.
    * @dev reverts if interest has been paid to tranche
    */
@@ -70,9 +71,10 @@ library TrancheLogic {
     t._principalPaid -= principal;
   }
 
-  ///@notice remove `principalOutstanding` from the Tranche and its corresponding interest.
-  ///        Take as much reserved principal as possible.
-  ///        Only applicable to the uncalled tranche.
+  /// @notice Only valid for Uncalled Tranche
+  /// @notice remove `principalOutstanding` from the Tranche and its corresponding interest.
+  ///         Take as much reserved principal as possible.
+  ///         Only applicable to the uncalled tranche.
   function take(
     Tranche storage t,
     uint256 principalOutstandingToTake
@@ -106,7 +108,8 @@ library TrancheLogic {
     }
   }
 
-  // depositing into the tranche for the first time(uncalled)
+  /// @notice Only valid for Uncalled Tranche
+  /// @notice depositing into the tranche for the first time(uncalled)
   function deposit(Tranche storage t, uint256 principal) internal {
     // SAFETY but gas cost
     assert(t._interestPaid == 0);
@@ -115,6 +118,7 @@ library TrancheLogic {
     t._principalPaid += principal;
   }
 
+  /// @notice Only valid for Callable Principal Tranches in the context of a call submission
   function addToBalances(
     Tranche storage t,
     uint256 addToPrincipalDeposited,
@@ -205,6 +209,7 @@ library TrancheLogic {
       (t.principalDeposited() * 100);
   }
 
+  /// @notice Only valid for Uncalled Tranche
   /// Updates the tranche as the result of a drawdown
   function drawdown(Tranche storage t, uint256 principalAmount) internal {
     if (principalAmount > t._principalPaid) {
