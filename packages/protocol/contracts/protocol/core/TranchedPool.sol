@@ -65,6 +65,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256[] calldata _allowedUIDTypes
   ) public override initializer {
     require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
+    require(_juniorFeePercent <= 100, "JF");
 
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
@@ -448,11 +449,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // It also causes issues trying to allocate payments to an empty slice (divide by zero)
     require(_locked(), "NL");
 
-    uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
+    uint256 totalInterestAccruedAtLastCheckpoint = creditLine.totalInterestAccruedAt(
+      creditLine.interestAccruedAsOf()
+    );
     PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
-    interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
+    uint256 interestAccruedSinceLastCheckpoint = creditLine.totalInterestAccrued().sub(
+      totalInterestAccruedAtLastCheckpoint
+    );
 
-    distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
+    distributeToSlicesAndAllocateBackerRewards(interestAccruedSinceLastCheckpoint, pa);
     return pa;
   }
 
@@ -479,14 +484,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // linearly
     uint256[] memory principalPaymentsPerSlice = new uint256[](numSlices);
     for (uint256 i = 0; i < numSlices; i++) {
+      ITranchedPool.PoolSlice storage slice = _poolSlices[i];
       uint256 interestForSlice = TranchingLogic.scaleByFraction(
         interestAccrued,
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       principalPaymentsPerSlice[i] = TranchingLogic.scaleByFraction(
         pa.principalPayment.add(pa.additionalBalancePayment),
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       _poolSlices[i].totalInterestAccrued = _poolSlices[i].totalInterestAccrued.add(

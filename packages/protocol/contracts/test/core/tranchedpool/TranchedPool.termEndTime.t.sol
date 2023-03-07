@@ -20,7 +20,6 @@ contract TranchedPoolTermEndTimeTest is TranchedPoolBaseTest {
     assertGe(cl.termEndTime(), block.timestamp + termInSeconds(cl));
   }
 
-  // TODO - bug when you drawdown multiple times!
   function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 amount) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     amount = bound(amount, usdcVal(2), usdcVal(10_000_000));
