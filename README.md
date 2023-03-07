@@ -3,9 +3,19 @@
 </p>
 
 # Goldfinch Protocol
+
 [Goldfinch](https://goldfinch.finance/) is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend, and other supporting code. For the latest documentation, check out our [docs](https://docs.goldfinch.finance/).
 
 Stay up to date by joining our [Goldfinch Discord server](https://discord.com/invite/HVeaca3fN8) or following us on [Twitter @goldfinch_fi](https://twitter.com/goldfinch_fi).
+
+## Software Development Set Up 
+
+- Install [VSCode](https://code.visualstudio.com/download)
+- Clone this repo to your local computer 
+```bash
+git clone https://github.com/warbler-labs/mono.git
+``` 
+- When you open the project in a new VSCode window, a [pop up](https://dev.to/askrishnapravin/recommend-vs-code-extensions-to-your-future-teammates-4gkb#:~:text=Configuring%20recommended%20extensions&text=vscode%2F%20in%20the%20root%20of,tools(we%20use%20Git).) will display which will allow you to install all the recommended extensions for the repo. 
 
 ## Installation
 
