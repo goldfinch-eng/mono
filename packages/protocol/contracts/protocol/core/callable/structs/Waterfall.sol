@@ -148,12 +148,12 @@ library WaterfallLogic {
   Main View Functions
   ================================================================================*/
   /// Settle all past due tranches as well as the last tranche.
-  /// @param dueTrancheIndex - Index of the tranche that is due. All previous tranches are also due.
-  function settleReserves(Waterfall storage w, uint256 dueTrancheIndex) internal {
+  /// @param currentTrancheIndex - Index of the current tranche. All previous tranches are due.
+  function settleReserves(Waterfall storage w, uint256 currentTrancheIndex) internal {
     uint256 uncalledCapitalTrancheIdx = w.uncalledCapitalTrancheIndex();
     Tranche storage uncalledCapitalTranche = w.getTranche(uncalledCapitalTrancheIdx);
     uncalledCapitalTranche.settleReserves();
-    for (uint256 i = 0; i <= dueTrancheIndex && i < uncalledCapitalTrancheIdx; i++) {
+    for (uint256 i = 0; i < currentTrancheIndex && i < uncalledCapitalTrancheIdx; i++) {
       w._tranches[i].settleReserves();
     }
   }

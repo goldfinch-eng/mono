@@ -210,7 +210,7 @@ library CallableCreditLineLogic {
     uint256 activePeriodAtLastCheckpoint = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
 
     if (currentlyActivePeriod > activePeriodAtLastCheckpoint) {
-      cl._waterfall.settleReserves(currentlyActivePeriod - 1);
+      cl._waterfall.settleReserves(currentlyActivePeriod);
     }
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
