@@ -100,6 +100,51 @@ export async function isInDefault(creditLineAddress: string): Promise<boolean> {
   );
 }
 
+export async function interestOwed(
+  creditLineAddress: string
+): Promise<BigNumber> {
+  const provider = await getProvider();
+  const creditLineContract = await getContract({
+    name: "CreditLine",
+    address: creditLineAddress,
+    provider,
+    useSigner: false,
+  });
+
+  return await creditLineContract.interestOwed();
+}
+
+export async function isAfterTermEndTime(
+  creditLineAddress: string
+): Promise<boolean> {
+  const provider = await getProvider();
+  const creditLineContract = await getContract({
+    name: "CreditLine",
+    address: creditLineAddress,
+    provider,
+    useSigner: false,
+  });
+
+  const [currentBlock, termEndTime] = await Promise.all([
+    provider.getBlock("latest"),
+    creditLineContract.termEndTime(),
+  ]);
+
+  return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
+}
+
+export async function collectedPaymentBalance(
+  creditLineAddress: string
+): Promise<BigNumber> {
+  const provider = await getProvider();
+  const usdcContract = await getContract({ name: "USDC", provider });
+  const collectedPaymentBalance = await usdcContract.balanceOf(
+    creditLineAddress
+  );
+
+  return collectedPaymentBalance;
+}
+
 export const creditLineResolvers: Resolvers[string] = {
   async isLate(creditLine: CreditLine): Promise<boolean> {
     return isLate(creditLine.id);
@@ -108,37 +153,12 @@ export const creditLineResolvers: Resolvers[string] = {
     return isInDefault(creditLine.id);
   },
   async collectedPaymentBalance(creditLine: CreditLine): Promise<BigNumber> {
-    const provider = await getProvider();
-    const usdcContract = await getContract({ name: "USDC", provider });
-    const collectedPaymentBalance = await usdcContract.balanceOf(creditLine.id);
-
-    return collectedPaymentBalance;
+    return collectedPaymentBalance(creditLine.id);
   },
   async isAfterTermEndTime(creditLine: CreditLine): Promise<boolean> {
-    const provider = await getProvider();
-    const creditLineContract = await getContract({
-      name: "CreditLine",
-      address: creditLine.id,
-      provider,
-      useSigner: false,
-    });
-
-    const [currentBlock, termEndTime] = await Promise.all([
-      provider.getBlock("latest"),
-      creditLineContract.termEndTime(),
-    ]);
-
-    return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
+    return isAfterTermEndTime(creditLine.id);
   },
   async interestOwed(creditLine: CreditLine): Promise<BigNumber> {
-    const provider = await getProvider();
-    const creditLineContract = await getContract({
-      name: "CreditLine",
-      address: creditLine.id,
-      provider,
-      useSigner: false,
-    });
-
-    return creditLineContract.interestOwed();
+    return interestOwed(creditLine.id);
   },
 };
