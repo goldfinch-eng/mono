@@ -87,6 +87,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.checkpointedAsOf();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.previewInterestOwed();
   }
@@ -95,6 +96,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.principalOwed();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestOwedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -109,6 +111,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.principalOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestOwedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -123,6 +126,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.previewTotalInterestOwed();
   }
@@ -206,12 +210,14 @@ library StaleCallableCreditLineLogic {
       });
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestAccrued(
     StaleCallableCreditLine storage cl
   ) internal view returns (uint256) {
     return cl._cl.previewTotalInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestAccruedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -219,10 +225,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalInterestAccruedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestAccrued(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.previewInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestAccruedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
