@@ -189,7 +189,7 @@ contract CallableLoan is
         totalInterestWithdrawable -
         tokenInfo.interestRedeemed;
       if (netWithdrawableAmount > 0) {
-        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount);
+        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount, cl);
       }
     }
 
@@ -306,13 +306,14 @@ contract CallableLoan is
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
   ) external override nonReentrant whenNotPaused {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     if (tokenIds.length != amounts.length) {
       revert ArrayLengthMismatch(tokenIds.length, amounts.length);
     }
 
     for (uint256 i = 0; i < amounts.length; i++) {
       IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenIds[i]);
-      _withdraw(tokenInfo, tokenIds[i], amounts[i]);
+      _withdraw(tokenInfo, tokenIds[i], amounts[i], cl);
     }
   }
 
@@ -580,7 +581,15 @@ contract CallableLoan is
     uint256 amount
   ) internal returns (uint256, uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    _withdraw(tokenInfo, tokenId, amount, cl);
+  }
 
+  function _withdraw(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 tokenId,
+    uint256 amount,
+    CallableCreditLine storage cl
+  ) internal returns (uint256, uint256) {
     if (amount == 0) {
       revert ZeroWithdrawAmount();
     }
@@ -640,14 +649,14 @@ contract CallableLoan is
   }
 
   function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
-    _staleCreditLine.checkpoint();
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
     if (totalWithdrawable == 0) {
       return (0, 0);
     }
-    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
+    return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
   /*================================================================================
