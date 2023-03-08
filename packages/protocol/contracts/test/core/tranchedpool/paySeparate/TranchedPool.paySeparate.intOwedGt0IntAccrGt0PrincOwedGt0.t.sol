@@ -53,6 +53,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedGt0 is TranchedPool
   ) public {
     advanceTime(timestamp);
 
+    vm.assume(cl.interestOwed() > 1);
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
     ITranchedPool.PaymentAllocation memory pa = tp.pay(0, intPayment);
 
@@ -70,6 +71,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedGt0 is TranchedPool
   ) public {
     advanceTime(timestamp);
 
+    vm.assume(cl.interestOwed() > 1);
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
     princPayment = bound(princPayment, 1, usdcVal(1000));
 
