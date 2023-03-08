@@ -791,11 +791,13 @@ contract CallableLoan is
     return _staleCreditLine.isLate();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccrued() public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccruedAt(timestamp);
@@ -806,26 +808,31 @@ contract CallableLoan is
     return _staleCreditLine.totalInterestPaid();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwed();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccrued() public view override returns (uint256) {
     return _staleCreditLine.interestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestAccruedAt(timestamp);
