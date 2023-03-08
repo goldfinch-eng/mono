@@ -180,7 +180,12 @@ library CallableCreditLineLogic {
     if (loanPhase != LoanPhase.Funding) {
       revert ICallableLoanErrors.InvalidLoanPhase(loanPhase, LoanPhase.Funding);
     }
-    if (amount + cl._waterfall.totalPrincipalDeposited() > cl.limit()) {
+
+    // !! Make assumption that Funding phase deposits are solely in the uncalled capital tranche.
+    if (
+      amount + cl._waterfall.getTranche(cl.uncalledCapitalTrancheIndex()).principalDeposited() >
+      cl.limit()
+    ) {
       revert ICallableLoanErrors.DepositExceedsLimit(
         amount,
         cl._waterfall.totalPrincipalDeposited(),
@@ -215,7 +220,7 @@ library CallableCreditLineLogic {
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
-    /// !!! IMPORTANT !!!
+    /// !! IMPORTANT !!
     /// The order of these assignments matter!
     /// Calculating cl.previewTotalInterestOwed() depends on the value of cl._totalInterestAccruedAtLastCheckpoint.
     /// _totalInterestOwedAtLastCheckpoint must use the ORIGINAL value of _totalInterestAccruedAtLastCheckpoint!
@@ -355,6 +360,7 @@ library CallableCreditLineLogic {
   /// Calculates interest accrued over the duration bounded by the `cl._checkpointedAsOf` and `timestamp` timestamps.
   /// Assumes cl._waterfall.totalPrincipalOutstanding() for the principal balance that the interest is applied to.
   /// Assumes a checkpoint has occurred.
+  /// If a checkpoint has not occurred, late fees will not account for balance settlement or future payments.
   function totalInterestAccruedAt(
     CallableCreditLine storage cl,
     uint256 timestamp
