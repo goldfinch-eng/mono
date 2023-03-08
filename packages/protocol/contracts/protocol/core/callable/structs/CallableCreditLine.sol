@@ -352,7 +352,7 @@ library CallableCreditLineLogic {
    *LSBE
    */
 
-  /// Calculates interest accrued over the duration bounded by the `cl._checkpointedAsOf` and `end` timestamps.
+  /// Calculates interest accrued over the duration bounded by the `cl._checkpointedAsOf` and `timestamp` timestamps.
   /// Assumes cl._waterfall.totalPrincipalOutstanding() for the principal balance that the interest is applied to.
   /// Assumes a checkpoint has occurred.
   function totalInterestAccruedAt(
@@ -370,8 +370,10 @@ library CallableCreditLineLogic {
     totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
     uint256 firstInterestEndPoint = timestamp;
     if (cl._checkpointedAsOf < cl.termEndTime()) {
-      uint256 settleBalancesAt = cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf);
-      firstInterestEndPoint = Math.min(settleBalancesAt, timestamp);
+      firstInterestEndPoint = Math.min(
+        cl._paymentSchedule.nextPrincipalDueTimeAt(cl._checkpointedAsOf),
+        timestamp
+      );
     }
 
     // TODO: Test scenario where cl._lastFullPaymentTime falls on due date.
@@ -640,7 +642,7 @@ library CallableCreditLineLogic {
   event DepositsLocked(address indexed loan);
 }
 
-/// Functions which make no assumption that a checkpoint has just occurred.
+/// @notice Functions which make no assumption that a checkpoint has just occurred.
 library PreviewCallableCreditLineLogic {
   function previewProportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,
@@ -688,9 +690,17 @@ library PreviewCallableCreditLineLogic {
   }
 }
 
-/// Functions which assume a checkpoint has just occurred.
+/// @notice Functions which assume a checkpoint has just occurred.
 library CheckpointedCallableCreditLineLogic {
   using SaturatingSub for uint256;
+
+  function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._totalInterestOwedAtLastCheckpoint;
+  }
+
+  function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._totalInterestAccruedAtLastCheckpoint;
+  }
 
   function proportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,
@@ -707,21 +717,11 @@ library CheckpointedCallableCreditLineLogic {
     return cl._totalInterestOwedAtLastCheckpoint.saturatingSub(cl.totalInterestPaid());
   }
 
-  /// Returns the total interest owed
-  function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._totalInterestOwedAtLastCheckpoint;
-  }
-
   /// Interest accrued up to now minus the max(totalInterestPaid, totalInterestOwedAt)
   function interestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
     return
       cl._totalInterestAccruedAtLastCheckpoint.saturatingSub(
         Math.max(cl._waterfall.totalInterestPaid(), cl._totalInterestOwedAtLastCheckpoint)
       );
-  }
-
-  /// Returns the total interest accrued
-  function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._totalInterestAccruedAtLastCheckpoint;
   }
 }
