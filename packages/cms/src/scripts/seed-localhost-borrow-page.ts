@@ -4,26 +4,14 @@ import { GraphQLClient, gql } from "graphql-request";
 import _ from "lodash";
 
 import { Borrower, Deal, Media } from "payload/generated-types";
+import { initializePayload } from "./helpers";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 require("dotenv").config({
   path: path.resolve(__dirname, "../../../../.env.local"),
 });
 
-const initializePayload = async () => {
-  await payload.init({
-    secret: process.env.PAYLOAD_SECRET as string,
-    mongoURL: process.env.MONGODB_URI as string,
-    mongoOptions: {
-      dbName: "payload",
-    },
-    local: true,
-  });
-};
-
-const localBorrower = {
+const borrowPageBorrower = {
   name: "Borrowers Inc",
   orgType: "Fintech",
   website: "https://goldfinch.finance",
@@ -35,24 +23,24 @@ const localBorrower = {
 };
 
 /**
- * Seed for borrow page
+ * Setup Deals & Borrower for borrow page testing
  */
 const setupBorrowPageContent = async () => {
-  console.log(`Adding some local borrower for borrow page.`);
+  console.log(`Adding a borrower for borrow page.`);
 
   try {
     const existingBorrower = await payload.find({
       collection: "borrowers",
-      where: { name: { equals: localBorrower.name } },
+      where: { name: { equals: borrowPageBorrower.name } },
     });
     if (existingBorrower.docs.length === 0) {
-      console.log(`Importing borrower: ${localBorrower.name}`);
+      console.log(`Importing borrower: ${borrowPageBorrower.name}`);
       let logoId: string;
-      if (localBorrower.logoPath) {
+      if (borrowPageBorrower.logoPath) {
         const thing = await payload.create({
           collection: "media",
           data: { alt: "Pug" } as Media,
-          filePath: localBorrower.logoPath,
+          filePath: borrowPageBorrower.logoPath,
         });
         logoId = thing.id;
       }
@@ -63,11 +51,11 @@ const setupBorrowPageContent = async () => {
         {
           children: [
             {
-              text: localBorrower.bio,
+              text: borrowPageBorrower.bio,
             },
           ],
         },
-        ...(localBorrower.highlights
+        ...(borrowPageBorrower.highlights
           ? [
               {
                 children: [
@@ -78,7 +66,7 @@ const setupBorrowPageContent = async () => {
                 type: "h3",
               },
               {
-                children: localBorrower.highlights.map((item) => ({
+                children: borrowPageBorrower.highlights.map((item) => ({
                   children: [
                     {
                       text: item,
@@ -95,17 +83,17 @@ const setupBorrowPageContent = async () => {
       await payload.create({
         collection: "borrowers",
         data: {
-          ...localBorrower,
+          ...borrowPageBorrower,
           bio,
           logo: logoId,
         } as unknown as Borrower,
-        filePath: localBorrower.logoPath,
+        filePath: borrowPageBorrower.logoPath,
       });
     } else {
       console.log(`Skipping borrower is already in the database`);
     }
   } catch (e) {
-    console.error(`Failed on: ${localBorrower.name}`);
+    console.error(`Failed on: ${borrowPageBorrower.name}`);
     throw new Error(`Borrowers error: ${e.message}`);
   }
 
@@ -147,11 +135,11 @@ const setupBorrowPageContent = async () => {
   });
 
   const borrowers = allBorrowersRequest.docs;
-  const testBorrowerUserId = process.env.TEST_USER;
+  const borrowPageBorrowerAddressId = process.env.TEST_USER;
   const borrowerPageDealsQuery = gql`
     {
       loans(
-        where: { borrowerContract_: { user: "${testBorrowerUserId.toLocaleLowerCase()}" } }
+        where: { borrowerContract_: { user: "${borrowPageBorrowerAddressId.toLocaleLowerCase()}" } }
         orderBy: createdAt
         orderDirection: desc
       ) {
@@ -172,13 +160,14 @@ const setupBorrowPageContent = async () => {
     `Importing borrow page loans from subgraph as deals (${borrowerPageDealsQueryResult.loans.length} total)`
   );
 
-  const testBorrower = borrowers.find(({ name }) => name === "Borrowers Inc");
+  const borrowPageCmsBorrower = borrowers.find(
+    ({ name }) => name === borrowPageBorrower.name
+  );
 
   await Promise.all(
     borrowerPageDealsQueryResult.loans.map(async (loan, i) => {
       const id = loan.id;
-      const borrower = testBorrower;
-      const borrowerId = borrower.id;
+      const borrowerId = borrowPageCmsBorrower.id;
 
       const deal = {
         name: `Borrower loan #${i + 1}`,

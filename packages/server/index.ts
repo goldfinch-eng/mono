@@ -36,6 +36,7 @@ import admin, {firestore} from "firebase-admin"
 
 import {getDb, getUsers} from "@goldfinch-eng/functions/db"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {execSync} from "child_process"
 
 const app = express()
 app.use(express.json())
@@ -110,6 +111,8 @@ app.post("/setupForTesting", async (req, res) => {
         console.log(...args)
       },
     })
+    // Seeds CMS with borrower page Borrower and Deals
+    execSync("yarn run seed:borrower-page", {cwd: "../../packages/cms"})
   } catch (e) {
     console.error("setupForTesting error", e)
     return res.status(500).send({message: "setupForTesting error"})

@@ -4,20 +4,7 @@ import { GraphQLClient, gql } from "graphql-request";
 import _ from "lodash";
 
 import { Borrower, Deal, Media } from "payload/generated-types";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
-
-const initializePayload = async () => {
-  await payload.init({
-    secret: process.env.PAYLOAD_SECRET as string,
-    mongoURL: process.env.MONGODB_URI as string,
-    mongoOptions: {
-      dbName: "payload",
-    },
-    local: true,
-  });
-};
+import { initializePayload } from "./helpers";
 
 const localBorrowers = [
   {
