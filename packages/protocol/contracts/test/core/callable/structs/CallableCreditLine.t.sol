@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, PreviewCallableCreditLineLogic, CheckpointedCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/CallableCreditLine.sol";
 // solhint-disable-next-line max-line-length
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "../../../../protocol/core/callable/structs/StaleCallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
@@ -17,6 +17,8 @@ import {BaseTest} from "../../BaseTest.t.sol";
 
 using StaleCallableCreditLineLogic for StaleCallableCreditLine;
 using CallableCreditLineLogic for CallableCreditLine;
+using PreviewCallableCreditLineLogic for CallableCreditLine;
+using CheckpointedCallableCreditLineLogic for CallableCreditLine;
 using PaymentScheduleLogic for PaymentSchedule;
 using CallableLoanConfigHelper for IGoldfinchConfig;
 
