@@ -604,6 +604,7 @@ templates:
         - TranchedPoolToken
         - Transaction
         - Zap
+        - ScheduledRepayment
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -621,6 +622,8 @@ templates:
           file: ./abis/BackerRewards.json
         - name: Zapper
           file: ./abis/Zapper.json
+        - name: Schedule
+          file: ./abis/Schedule.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated

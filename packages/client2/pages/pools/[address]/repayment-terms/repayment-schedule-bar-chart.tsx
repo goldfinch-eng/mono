@@ -17,14 +17,14 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
-import { RepaymentSchedule } from "@/lib/pools";
+import { RepaymentTableLoanFieldsFragment } from "@/lib/graphql/generated";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 
 interface RepaymentScheduleBarChartProps {
   className?: string;
-  repaymentSchedule: RepaymentSchedule;
+  repaymentSchedule: RepaymentTableLoanFieldsFragment["loanRepaymentSchedule"];
 }
 
 const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (

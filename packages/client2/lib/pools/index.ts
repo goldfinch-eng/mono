@@ -559,6 +559,9 @@ export const REPAYMENT_SCHEDULE_FIELDS = gql`
   }
 `;
 
+/**
+ * @deprecated replace this with the subgraph repayment schedule
+ */
 export function generateRepaymentSchedule(
   loan: RepaymentScheduleFieldsFragment
 ): RepaymentSchedule {
