@@ -24,6 +24,9 @@ extend type TranchedPool {
   borrowerLogo: String
   isLate: Boolean!
   isInDefault: Boolean!
+  isAfterTermEndTime: Boolean!
+  interestOwed: BigInt!
+  collectedPaymentBalance: BigInt!
 }
 
 extend type CallableLoan {

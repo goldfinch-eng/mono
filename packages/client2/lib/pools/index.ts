@@ -595,7 +595,7 @@ export function generateRepaymentSchedule(
     const expectedInterest = calculateInterestOwed({
       isLate: false,
       interestOwed: BigNumber.from(0),
-      interestApr: loan.interestRateBigInt,
+      interestRateBigInt: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(periodEndTimestamp),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
       balance: principal,
@@ -617,7 +617,7 @@ export function generateRepaymentSchedule(
     const expectedInterest = calculateInterestOwed({
       isLate: false,
       interestOwed: BigNumber.from(0),
-      interestApr: loan.interestRateBigInt,
+      interestRateBigInt: loan.interestRateBigInt,
       nextDueTime: BigNumber.from(termEndTime),
       interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
       balance: principal,

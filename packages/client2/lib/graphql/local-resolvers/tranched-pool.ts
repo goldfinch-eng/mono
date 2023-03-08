@@ -1,11 +1,18 @@
 import { Resolvers } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
 import { TranchedPool } from "../generated";
-import { isInDefault, isLate } from "./credit-line";
+import {
+  collectedPaymentBalance,
+  interestOwed,
+  isAfterTermEndTime,
+  isInDefault,
+  isLate,
+} from "./credit-line";
 
 export const tranchedPoolResolvers: Resolvers[string] = {
   name(tranchedPool: TranchedPool) {
@@ -54,6 +61,24 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     creditLineAddress = await tranchedPoolContract.creditLine();
     return isLate(creditLineAddress);
   },
+  async collectedPaymentBalance(
+    tranchedPool: TranchedPool
+  ): Promise<BigNumber> {
+    // Small optimization if tranchedPool.creditLine is already present in cache
+    let creditLineAddress = tranchedPool.creditLine?.id;
+    if (creditLineAddress) {
+      return collectedPaymentBalance(creditLineAddress);
+    }
+    const provider = await getProvider();
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      useSigner: false,
+      address: tranchedPool.id,
+    });
+    creditLineAddress = await tranchedPoolContract.creditLine();
+    return collectedPaymentBalance(creditLineAddress);
+  },
   async isInDefault(tranchedPool: TranchedPool): Promise<boolean> {
     // Small optimization if tranchedPool.creditLine is already present in cache
     let creditLineAddress = tranchedPool.creditLine?.id;
@@ -69,5 +94,37 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     });
     creditLineAddress = await tranchedPoolContract.creditLine();
     return isInDefault(creditLineAddress);
+  },
+  async isAfterTermEndTime(tranchedPool: TranchedPool): Promise<boolean> {
+    // Small optimization if tranchedPool.creditLine is already present in cache
+    let creditLineAddress = tranchedPool.creditLine?.id;
+    if (creditLineAddress) {
+      return isAfterTermEndTime(creditLineAddress);
+    }
+    const provider = await getProvider();
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      useSigner: false,
+      address: tranchedPool.id,
+    });
+    creditLineAddress = await tranchedPoolContract.creditLine();
+    return isAfterTermEndTime(creditLineAddress);
+  },
+  async interestOwed(tranchedPool: TranchedPool): Promise<BigNumber> {
+    // Small optimization if tranchedPool.creditLine is already present in cache
+    let creditLineAddress = tranchedPool.creditLine?.id;
+    if (creditLineAddress) {
+      return interestOwed(creditLineAddress);
+    }
+    const provider = await getProvider();
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      useSigner: false,
+      address: tranchedPool.id,
+    });
+    creditLineAddress = await tranchedPoolContract.creditLine();
+    return interestOwed(creditLineAddress);
   },
 };
