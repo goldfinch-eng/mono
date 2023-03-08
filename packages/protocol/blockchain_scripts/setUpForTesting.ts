@@ -1,4 +1,4 @@
-import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/utils"
+import {NON_US_UID_TYPES, US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED} from "@goldfinch-eng/utils"
 import {JsonRpcSigner} from "@ethersproject/providers"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
@@ -208,7 +208,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       goldfinchFactory,
       borrower: protocolBorrowerCon,
       erc20,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
     })
     // TODO: Pool metadata will be incorrect for now
     await writePoolMetadata({pool: openCallableLoan, borrower: "CALLABLE OPEN"})
@@ -219,7 +219,28 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     txn = await openCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
     await txn.wait()
-    /*** CALLABLE LOAN END ***/
+    /*** CALLABLE LOAN OPEN END ***/
+
+    /*** CALLABLE LOAN - FAZZ EXAMPLE START ***/
+    const fazzExampleCallableLoan = await createCallableLoanForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
+      fundableAt: String(new BN(1679587200)), // Thu Mar 23 2023 09:00:00 GMT-0700 (Pacific Daylight Time)
+    })
+    // TODO: Pool metadata will be incorrect for now
+    await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "CALLABLE OPEN"})
+    await impersonateAccount(hre, borrower)
+    depositAmount = new BN(5000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(fazzExampleCallableLoan.address, String(depositAmount))
+    await txn.wait()
+
+    txn = await fazzExampleCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
+    await txn.wait()
+    /*** CALLABLE LOAN FAZZ EXAMPLE END ***/
 
     /*** CALLABLE LOAN CLOSED START ***/
     const closedCallableLoan = await createCallableLoanForBorrower({
@@ -228,7 +249,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       goldfinchFactory,
       borrower: protocolBorrowerCon,
       erc20,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
     })
     await writePoolMetadata({pool: closedCallableLoan, borrower: "CALLABLE CLOSED"})
     await impersonateAccount(hre, borrower)
@@ -858,12 +879,12 @@ async function createPoolForBorrower({
 
 const CALLABLE_LOAN_SCHEDULE_CONFIG = {
   numPeriods: 24,
-  numPeriodsPerPrincipalPeriods: 3,
+  numPeriodsPerPrincipalPeriod: 3,
   numPeriodsPerInterestPeriod: 1,
-  gracePrincipalPeriods: 1,
+  gracePrincipalPeriods: 0,
 }
 const UNCALLED_CAPITAL_TRANCHE =
-  CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods / CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods -
+  CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods / CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriod -
   CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods -
   1
 async function createCallableLoanForBorrower({
@@ -875,6 +896,14 @@ async function createCallableLoanForBorrower({
   erc20,
   allowedUIDTypes,
   limitInDollars,
+  interestApr = String(interestAprAsBN("13.00")),
+  numLockPeriods = 2,
+  lateFeeApr = String(interestAprAsBN("5.00")), // TODO: Make this the Fazz deal late APR (good example of a late fee)
+  fundableAt = String(new BN(0)), // 0 means immediately
+  numPeriods = CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
+  gracePrincipalPeriods = CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods,
+  numPeriodsPerInterestPeriod = CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
+  numPeriodsPerPrincipalPeriod = CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriod,
 }: {
   getOrNull: any
   underwriter: string
@@ -884,26 +913,30 @@ async function createCallableLoanForBorrower({
   erc20: Contract
   allowedUIDTypes: Array<number>
   limitInDollars?: number
+  interestApr?: string
+  numLockPeriods?: number
+  lateFeeApr?: string
+  fundableAt?: string
+  numPeriods?: number
+  gracePrincipalPeriods?: number
+  numPeriodsPerInterestPeriod?: number
+  numPeriodsPerPrincipalPeriod?: number
 }): Promise<CallableLoan> {
   const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
   await monthlyScheduleRepo.createSchedule(
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
+    numPeriods,
+    numPeriodsPerPrincipalPeriod,
+    numPeriodsPerInterestPeriod,
+    gracePrincipalPeriods
   )
   const schedule = await monthlyScheduleRepo.getSchedule(
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
+    numPeriods,
+    numPeriodsPerPrincipalPeriod,
+    numPeriodsPerInterestPeriod,
+    gracePrincipalPeriods
   )
 
-  const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
-  const interestApr = String(interestAprAsBN("5.00"))
-  const lateFeeApr = String(new BN(0))
-  const fundableAt = String(new BN(0))
-  const numLockPeriods = 2
+  const limit = String(new BN(limitInDollars || 2000000).mul(USDCDecimals))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
 
   const result = await (
