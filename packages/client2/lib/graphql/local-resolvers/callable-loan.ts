@@ -1,10 +1,41 @@
 import { Resolvers } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
+
+const loanDueAmountAt = async (
+  // TODO: Zadra "any"
+  callableLoanContract: any,
+  timestamp: BigNumber
+) => {
+  // Loan has not started
+  const termEndTime = await callableLoanContract.termEndTime();
+  if (termEndTime.eq(0)) {
+    return BigNumber.from(0);
+  }
+
+  const isLate = await callableLoanContract.isLate();
+  if (isLate) {
+    const [interestOwed, interestAccrued, principalOwed] = await Promise.all([
+      callableLoanContract.interestOwed(),
+      callableLoanContract.interestAccrued(),
+      callableLoanContract.principalOwed(),
+    ]);
+    return interestOwed.add(interestAccrued).add(principalOwed);
+  }
+
+  const [interestOwedAt, interestAccruedAt, principalOwedAt] =
+    await Promise.all([
+      callableLoanContract.interestOwedAt(timestamp),
+      callableLoanContract.interestAccruedAt(timestamp),
+      callableLoanContract.principalOwedAt(timestamp),
+    ]);
+  return interestOwedAt.add(interestAccruedAt).add(principalOwedAt);
+};
 
 export const callableLoanResolvers: Resolvers[string] = {
   name(callableLoan: CallableLoan) {
@@ -59,5 +90,27 @@ export const callableLoanResolvers: Resolvers[string] = {
     const withinPrincipalGracePeriod =
       await callableLoanContract.withinPrincipalGracePeriod();
     return !termStartTime.isZero() && !withinPrincipalGracePeriod;
+  },
+  async periodDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    const timestamp = await callableLoanContract.nextDueTime();
+    return loanDueAmountAt(callableLoanContract, timestamp);
+  },
+  async termDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    const timestamp = await callableLoanContract.termEndTime();
+    return loanDueAmountAt(callableLoanContract, timestamp);
   },
 };

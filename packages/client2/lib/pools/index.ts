@@ -551,7 +551,7 @@ export const REPAYMENT_SCHEDULE_FIELDS = gql`
     fundableAt
     termStartTime
     termEndTime
-    paymentPeriodInDays
+    # paymentPeriodInDays
     termInDays
     interestRateBigInt
     principalAmount
@@ -580,8 +580,7 @@ export function generateRepaymentSchedule(
     : loan.fundingLimit;
 
   // Number of seconds in 'paymentPeriodInDays'
-  const paymentPeriodInSeconds =
-    loan.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
+  const paymentPeriodInSeconds = 30 * 24 * 60 * 60;
 
   // Keep track of period start & end and payment period number
   let periodStartTimestamp = termStartTime;
