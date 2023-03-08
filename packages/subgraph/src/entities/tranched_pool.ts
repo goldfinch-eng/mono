@@ -581,7 +581,12 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
         .times(paymentPeriodInSeconds)
         .times(tranchedPool.fundingLimit)
         .div(BigInt.fromString("1000000000000000000"))
-      const principal = period == periodsInTerm.toI32() - 1 ? tranchedPool.fundingLimit : BigInt.zero()
+      const principal =
+        period == periodsInTerm.toI32() - 1
+          ? isBeforeClose
+            ? tranchedPool.fundingLimit
+            : tranchedPool.principalAmount
+          : BigInt.zero()
 
       const scheduledRepayment = new ScheduledRepayment(`${tranchedPool.id}-${period.toString()}`)
       scheduledRepayment.loan = tranchedPool.id
