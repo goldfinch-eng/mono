@@ -61,7 +61,6 @@ gql`
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelLoanFields
-      ...RepaymentScheduleFields
       ...RepaymentTermsStatsFields
       ...AmountStatsFields
       ...RepaymentTableLoanFields

@@ -8,10 +8,11 @@ export const REPAYMENT_TERMS_STATS_FIELDS = gql`
   fragment RepaymentTermsStatsFields on Loan {
     fundableAt
     termInDays
-    paymentPeriodInDays
-    termInDays
     termStartTime
     termEndTime
+    repaymentSchedule(first: 1000) {
+      id
+    }
   }
 `;
 
@@ -41,12 +42,12 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       <Stat
         label="Payment frequency"
         tooltip="The frequency of interest payments."
-        value={`${loan.paymentPeriodInDays.toString()} days`}
+        value="Monthly" // TODO don't hardcode this, find a way to express it
       />
       <Stat
         label="Total payments"
         tooltip="The expected total number of principal and interest payments."
-        value={Math.ceil(loan.termInDays / loan.paymentPeriodInDays.toNumber())}
+        value={loan.repaymentSchedule.length}
       />
       <Stat
         label="Repayment structure"
