@@ -48,7 +48,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrEq0PrincOwedEq0 is TranchedPool
     }
 
     vm.assume(cl.interestAccrued() == 0);
-    vm.assume(cl.interestOwed() > 0);
+    vm.assume(cl.interestOwed() > 1);
     vm.assume(cl.principalOwed() == 0);
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
@@ -72,7 +72,7 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrEq0PrincOwedEq0 is TranchedPool
     }
 
     vm.assume(cl.interestAccrued() == 0);
-    vm.assume(cl.interestOwed() > 0);
+    vm.assume(cl.interestOwed() > 1);
     vm.assume(cl.principalOwed() == 0);
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);

@@ -95,7 +95,7 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
     lockSeniorTranche(pool);
     drawdown(pool, limit);
 
-    // Advance to the last payment period and pay back interes
+    // Advance to the last payment period and pay back interest
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
       pay(pool, cl.interestOwed());
@@ -118,7 +118,7 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
     lockSeniorTranche(pool);
     drawdown(pool, limit);
 
-    // Advance to the last payment period and pay back interes
+    // Advance to the last payment period and pay back interest
     for (uint i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
       pay(pool, cl.interestOwed());

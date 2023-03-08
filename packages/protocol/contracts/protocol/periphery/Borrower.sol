@@ -163,7 +163,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Pay back a v1.0.0 pool
+   * @notice Pay back a v2.0.0 pool
    * @param poolAddress The pool to be paid back
    * @param principalAmount principal amount to pay
    * @param interestAmount interest amount to pay

@@ -119,7 +119,7 @@ contract TranchedPoolPaySeparateIntOwedEq0IntAccGt0PrincOwedGt0 is TranchedPoolB
     // Pay off interest owed
     tp.pay(0, cl.interestOwed());
 
-    vm.assume(cl.interestAccrued() > 0);
+    vm.assume(cl.interestAccrued() > 1);
     vm.assume(cl.principalOwed() > 0);
 
     intPayment = bound(intPayment, 0, cl.interestAccrued() - 1);
