@@ -54,12 +54,11 @@ export async function isInDefault(creditLineAddress: string): Promise<boolean> {
   });
 
   try {
+    const termStartTime = await creditLineContract.termStartTime();
     // Newer credit lines have this function than can be used to immediately determine if principal is in default
     const withinPrincipalGracePeriod =
       await creditLineContract.withinPrincipalGracePeriod();
-    if (!withinPrincipalGracePeriod) {
-      return true;
-    }
+    return !termStartTime.isZero() && !withinPrincipalGracePeriod;
   } catch (e) {
     // Do nothing, move on
   }

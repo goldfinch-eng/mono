@@ -2,11 +2,11 @@ import clsx from "clsx";
 import { format as formatDate } from "date-fns";
 
 import { formatCrypto } from "@/lib/format";
-import { RepaymentSchedule } from "@/lib/pools";
+import { RepaymentTableLoanFieldsFragment } from "@/lib/graphql/generated";
 
 interface RepaymentScheduleTableProps {
   className?: string;
-  repaymentSchedule: RepaymentSchedule;
+  repaymentSchedule: RepaymentTableLoanFieldsFragment["loanRepaymentSchedule"];
 }
 
 export function RepaymentScheduleTable({
@@ -38,7 +38,7 @@ export function RepaymentScheduleTable({
               <tr key={paymentPeriod}>
                 <td className="text-left">{paymentPeriod}</td>
                 <td className="text-left">
-                  {formatDate(estimatedPaymentDate, "MMM d, y")}
+                  {formatDate(estimatedPaymentDate * 1000, "MMM d, y")}
                 </td>
                 <td className="text-right">
                   {formatCrypto({ amount: principal, token: "USDC" })}

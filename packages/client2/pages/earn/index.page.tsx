@@ -43,6 +43,7 @@ gql`
       sharePrice
     }
     loans(orderBy: createdAt, orderDirection: desc) {
+      __typename
       id
       usdcApy
       rawGfiApy
@@ -127,7 +128,7 @@ export default function EarnPage({
       {error ? (
         <HelperText isError className="mb-12">
           There was a problem fetching data on pools. Shown data may be
-          outdated.
+          outdated. {error.message}
         </HelperText>
       ) : null}
       {loading ? (
@@ -248,7 +249,11 @@ export default function EarnPage({
                     </div>
                   }
                   termLengthInMonths={termLengthInMonths}
-                  liquidity="End of loan term"
+                  liquidity={
+                    loan.__typename === "TranchedPool"
+                      ? "End of loan term"
+                      : "Quarterly callable"
+                  }
                   href={`/pools/${loan.id}`}
                 />
               );

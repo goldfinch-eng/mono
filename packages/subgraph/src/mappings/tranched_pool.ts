@@ -31,6 +31,8 @@ import {
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
   getLeverageRatioFromConfig,
+  deleteTranchedPoolRepaymentSchedule,
+  generateRepaymentScheduleForTranchedPool,
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
@@ -125,6 +127,9 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updatePoolTokensRedeemable(tranchedPool)
+  deleteTranchedPoolRepaymentSchedule(tranchedPool)
+  tranchedPool.repaymentSchedule = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
   transaction.loan = event.address.toHexString()
@@ -143,8 +148,8 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
 
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
-  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
-  tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
+  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principal)
+  tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interest)
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)
@@ -152,13 +157,13 @@ export function handlePaymentApplied(event: PaymentApplied): void {
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.loan = event.address.toHexString()
-  transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.sentAmount = event.params.principal.plus(event.params.interest)
   transaction.sentToken = "USDC"
   transaction.save()
 
-  updateTotalPrincipalCollected(event.params.principalAmount)
-  updateTotalInterestCollected(event.params.interestAmount)
-  updateTotalReserveCollected(event.params.reserveAmount)
+  updateTotalPrincipalCollected(event.params.principal)
+  updateTotalInterestCollected(event.params.interest)
+  updateTotalReserveCollected(event.params.reserve)
 
   handleCreditLineBalanceChanged()
 }

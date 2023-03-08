@@ -23,13 +23,8 @@ import {
 import { Icon } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
-import {
-  generateRepaymentSchedule,
-  REPAYMENT_SCHEDULE_FIELDS,
-} from "@/lib/pools";
 
 export const SENIOR_POOL_REPAYMENTS_FIELDS = gql`
-  ${REPAYMENT_SCHEDULE_FIELDS}
   fragment SeniorPoolRepaymentFields on SeniorPool {
     repayingPools: tranchedPools(
       orderBy: nextDueTime
@@ -39,7 +34,13 @@ export const SENIOR_POOL_REPAYMENTS_FIELDS = gql`
       id
       name @client
       borrowerLogo @client
-      ...RepaymentScheduleFields
+      repaymentSchedule(orderBy: paymentPeriod, first: 1000) {
+        id
+        paymentPeriod
+        estimatedPaymentDate
+        interest
+        principal
+      }
     }
   }
 `;
@@ -69,8 +70,11 @@ export function SeniorPoolRepaymentSection({
     );
     const allIncomingRepayments = repayingPools
       .flatMap((pool) =>
-        generateRepaymentSchedule(pool).map((r) => ({
-          ...r,
+        pool.repaymentSchedule.map((r) => ({
+          paymentPeriod: r.paymentPeriod,
+          interest: r.interest,
+          principal: r.principal,
+          estimatedPaymentDate: r.estimatedPaymentDate * 1000,
           name: pool.name,
           borrowerLogo: pool.borrowerLogo,
         }))

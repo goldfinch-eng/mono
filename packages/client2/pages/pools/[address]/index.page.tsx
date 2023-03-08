@@ -57,13 +57,14 @@ gql`
       usdcApy
       rawGfiApy
       fundableAt
-      ...LoanSummaryTranchedPoolFields
+      ...LoanSummaryFields
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
       ...ClaimPanelLoanFields
       ...RepaymentScheduleFields
       ...RepaymentTermsStatsFields
       ...AmountStatsFields
+      ...RepaymentTableLoanFields
     }
     borrowerAllPools: tranchedPools(
       where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
@@ -331,7 +332,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           <div>
             <h2 className="mb-6 font-semibold">Recent activity</h2>
             {tranchedPool ? (
-              <TransactionTable tranchedPoolId={tranchedPool.id} />
+              <TransactionTable loanAddress={tranchedPool.id} />
             ) : null}
           </div>
         </div>

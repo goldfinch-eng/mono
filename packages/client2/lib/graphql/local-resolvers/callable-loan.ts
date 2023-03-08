@@ -55,6 +55,9 @@ export const callableLoanResolvers: Resolvers[string] = {
       useSigner: false,
       address: callableLoan.id,
     });
-    return !(await callableLoanContract.withinPrincipalGracePeriod());
+    const termStartTime = await callableLoanContract.termStartTime();
+    const withinPrincipalGracePeriod =
+      await callableLoanContract.withinPrincipalGracePeriod();
+    return !termStartTime.isZero() && !withinPrincipalGracePeriod;
   },
 };

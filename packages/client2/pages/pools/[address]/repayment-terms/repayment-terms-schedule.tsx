@@ -1,13 +1,27 @@
+import { gql } from "@apollo/client";
 import clsx from "clsx";
 
-import { RepaymentScheduleFieldsFragment } from "@/lib/graphql/generated";
-import { generateRepaymentSchedule } from "@/lib/pools";
+import { RepaymentTableLoanFieldsFragment } from "@/lib/graphql/generated";
 
 import { RepaymentScheduleBarChart } from "./repayment-schedule-bar-chart";
 import { RepaymentScheduleTable } from "./repayment-schedule-table";
 
+gql`
+  fragment RepaymentTableLoanFields on Loan {
+    loanRepaymentSchedule: repaymentSchedule(
+      orderBy: paymentPeriod
+      first: 1000
+    ) {
+      paymentPeriod
+      estimatedPaymentDate
+      interest
+      principal
+    }
+  }
+`;
+
 interface RepaymentTermsScheduleProps {
-  loan: RepaymentScheduleFieldsFragment;
+  loan: RepaymentTableLoanFieldsFragment;
   className?: string;
 }
 
@@ -15,7 +29,7 @@ export function RepaymentTermsSchedule({
   loan,
   className,
 }: RepaymentTermsScheduleProps) {
-  const repaymentSchedule = generateRepaymentSchedule(loan);
+  const repaymentSchedule = loan.loanRepaymentSchedule;
 
   return (
     <div className={clsx(className, "rounded-xl border border-sand-300")}>

@@ -15,13 +15,13 @@ import {createTransactionFromEvent} from "../entities/helpers"
 export function handleSetTotalRewards(event: BackerRewardsSetTotalRewards): void {
   updateBackerRewardsData(event.address)
   // It's a little odd to see this calculation initiated here, but it's in order to ensure that rewards are calculated if the backer contract is deployed after some pools
-  calculateApyFromGfiForAllPools(event.block.timestamp)
+  calculateApyFromGfiForAllPools()
 }
 
 export function handleSetMaxInterestDollarsEligible(event: BackerRewardsSetMaxInterestDollarsEligible): void {
   updateBackerRewardsData(event.address)
   // It's a little odd to see this calculation initiated here, but it's in order to ensure that rewards are calculated if the backer contract is deployed after some pools
-  calculateApyFromGfiForAllPools(event.block.timestamp)
+  calculateApyFromGfiForAllPools()
 }
 
 function saveBackerRewardsClaimedTransaction(event: ethereum.Event, gfiAmount: BigInt, poolToken: PoolToken): void {

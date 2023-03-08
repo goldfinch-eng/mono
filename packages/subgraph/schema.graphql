@@ -106,7 +106,6 @@ type CreditLine @entity {
   interestApr: BigInt!
   balance: BigInt!
   interestAccruedAsOf: BigInt!
-  paymentPeriodInDays: BigInt!
   termInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
@@ -151,10 +150,10 @@ interface Loan {
   numBackers: Int!
   isPaused: Boolean!
   tokens: [PoolToken!]!
+  repaymentSchedule: [ScheduledRepayment!]!
 
   # "Credit line" fields
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -184,13 +183,13 @@ type TranchedPool implements Loan @entity {
   backers: [User!]!
   numBackers: Int!
   tokens: [PoolToken!]!
+  repaymentSchedule: [ScheduledRepayment!]!
   """
   A null value indicates there have been no senior pool contributions to the pool yet
   """
   actualSeniorPoolInvestment: BigInt
 
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -347,7 +346,7 @@ type Transaction @entity(immutable: true) {
   """
   This is a concatenation of transaction hash with log index. One transaction can result in more than one of this entity.
   """
-  id: Bytes!
+  id: ID! # It's tempting to type this as Bytes, but there's a bug in graph-node that makes it impossible to query the `loan` property if you do that. https://github.com/graphprotocol/graph-node/issues/3566 (it says fixed but it is not fixed)
   transactionHash: Bytes!
   category: TransactionCategory!
   user: User!
@@ -526,7 +525,6 @@ type CallableLoan implements Loan @entity {
   tokens: [PoolToken!]!
 
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -541,6 +539,7 @@ type CallableLoan implements Loan @entity {
 
 type ScheduledRepayment @entity {
   id: ID!
+  loan: Loan!
   paymentPeriod: Int!
   estimatedPaymentDate: Int!
   principal: BigInt!
