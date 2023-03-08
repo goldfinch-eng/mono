@@ -44,7 +44,6 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.tokens = []
 
   callableLoan.balance = callableLoanContract.balance()
-  callableLoan.paymentPeriodInDays = BigInt.fromI32(30) // TODO FIX THIS. `paymentPeriodInDays` should be removed from the Loan interface
   callableLoan.nextDueTime = callableLoanContract.nextDueTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.termStartTime = callableLoanContract.termStartTime()

@@ -106,7 +106,6 @@ type CreditLine @entity {
   interestApr: BigInt!
   balance: BigInt!
   interestAccruedAsOf: BigInt!
-  paymentPeriodInDays: BigInt!
   termInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
@@ -155,7 +154,6 @@ interface Loan {
 
   # "Credit line" fields
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -192,7 +190,6 @@ type TranchedPool implements Loan @entity {
   actualSeniorPoolInvestment: BigInt
 
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -528,7 +525,6 @@ type CallableLoan implements Loan @entity {
   tokens: [PoolToken!]!
 
   balance: BigInt!
-  paymentPeriodInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
