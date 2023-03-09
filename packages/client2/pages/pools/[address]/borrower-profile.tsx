@@ -145,12 +145,18 @@ export function BorrowerProfile({
             <table className="w-full text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
               <thead>
                 <tr className="border-b border-sand-200 bg-white text-right [&>th]:font-normal">
-                  <th scope="col" className="text-left">
+                  <th scope="col" className="w-1/4 text-left">
                     Deal name
                   </th>
-                  <th scope="col">Loan principal</th>
-                  <th scope="col">Maturity date</th>
-                  <th scope="col">Repayment status</th>
+                  <th scope="col" className="w-1/4">
+                    Loan principal
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Maturity date
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Repayment status
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sand-200">
@@ -213,7 +219,7 @@ function RepaymentStatusChip({
       {repaymentStatus === LoanRepaymentStatus.Current
         ? "On time"
         : repaymentStatus === LoanRepaymentStatus.Late
-        ? "Late"
+        ? "Grace Period"
         : repaymentStatus === LoanRepaymentStatus.Default
         ? "Default"
         : repaymentStatus === LoanRepaymentStatus.NotDrawnDown
