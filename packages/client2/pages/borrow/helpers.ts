@@ -2,21 +2,14 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { roundUpUsdcPenny } from "@/lib/format";
-import {
-  CallableLoanBorrowerAccountingFieldsFragment,
-  LoanBorrowerAccountingFieldsFragment,
-  TranchedPoolBorrowerAccountingFieldsFragment,
-} from "@/lib/graphql/generated";
+import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 
 gql`
   fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
     id
     interestOwed @client
     collectedPaymentBalance @client
-    isLate @client
-    isAfterTermEndTime @client
     interestAccruedAsOf
-    drawdownsPaused
     creditLine {
       id
     }
@@ -37,6 +30,7 @@ gql`
 gql`
   fragment CallableLoanBorrowerAccountingFields on CallableLoan {
     id
+    totalDeposited
     periodDueAmount @client
     termDueAmount @client
   }
@@ -46,6 +40,7 @@ gql`
   fragment LoanBorrowerAccountingFields on Loan {
     __typename
     isPaused
+    drawdownsPaused
     termInDays
     interestRate
     interestRateBigInt
@@ -54,6 +49,8 @@ gql`
     termEndTime
     principalAmount
     fundingLimit
+    isLate @client
+    isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields
     ...CallableLoanBorrowerAccountingFields
     borrowerContract {
@@ -335,7 +332,9 @@ export function calculateCreditLineMaxDrawdownAmount({
  * @returns {BigNumber} [remainingTotalDueAmount] - the remaining total due amount considering payments made so far
  * @returns {CreditLineStatus} [creditLineStatus] - the status of credit line
  */
-export function getCreditLineAccountingAnalyisValues(loan: any): {
+export function getCreditLineAccountingAnalyisValues(
+  loan: LoanBorrowerAccountingFieldsFragment
+): {
   creditLineLimit: BigNumber;
   currentInterestOwed: BigNumber;
   remainingPeriodDueAmount: BigNumber;
@@ -347,12 +346,9 @@ export function getCreditLineAccountingAnalyisValues(loan: any): {
     principalAmount,
     fundingLimit,
     isLate,
-    interestOwed,
     interestRateBigInt,
     nextDueTime,
-    interestAccruedAsOf,
     balance,
-    collectedPaymentBalance,
     termEndTime,
   } = loan;
 
@@ -360,15 +356,16 @@ export function getCreditLineAccountingAnalyisValues(loan: any): {
     ? principalAmount
     : fundingLimit;
 
+  // TODO: Zadra figure out value for callableloan vs 0
   const currentInterestOwed =
     __typename === "CallableLoan"
       ? BigNumber.from(0)
       : calculateInterestOwed({
           isLate,
-          interestOwed,
+          interestOwed: loan.interestOwed,
           interestRateBigInt,
           nextDueTime,
-          interestAccruedAsOf,
+          interestAccruedAsOf: loan.interestAccruedAsOf,
           balance,
         });
 
@@ -376,7 +373,7 @@ export function getCreditLineAccountingAnalyisValues(loan: any): {
     __typename === "CallableLoan"
       ? loan.periodDueAmount
       : calculateRemainingPeriodDueAmount({
-          collectedPaymentBalance,
+          collectedPaymentBalance: loan.collectedPaymentBalance,
           nextDueTime,
           termEndTime,
           balance,
@@ -387,7 +384,7 @@ export function getCreditLineAccountingAnalyisValues(loan: any): {
     __typename === "CallableLoan"
       ? loan.termDueAmount
       : calculateRemainingTotalDueAmount({
-          collectedPaymentBalance,
+          collectedPaymentBalance: loan.collectedPaymentBalance,
           balance,
           currentInterestOwed,
         });

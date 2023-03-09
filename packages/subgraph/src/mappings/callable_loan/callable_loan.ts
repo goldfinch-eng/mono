@@ -4,6 +4,8 @@ import {
   CallableLoan as CallableLoanContract,
   DepositMade,
   DrawdownMade,
+  DrawdownsPaused,
+  DrawdownsUnpaused,
   PaymentApplied,
   WithdrawalMade,
 } from "../../../generated/templates/CallableLoan/CallableLoan"
@@ -25,6 +27,7 @@ function getCallableLoan(address: Address): CallableLoan {
 
 export function handleDepositMade(event: DepositMade): void {
   const callableLoan = getCallableLoan(event.address)
+  // TODO: Zadra why not just get `totalPrincipalPaid` view var?
   callableLoan.totalDeposited = callableLoan.totalDeposited.plus(event.params.amount)
   const user = getOrInitUser(event.params.owner)
   callableLoan.backers = callableLoan.backers.concat([user.id])
@@ -34,6 +37,7 @@ export function handleDepositMade(event: DepositMade): void {
 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   const callableLoan = getCallableLoan(event.address)
+  // TODO: Zadra why not just get `totalPrincipalPaid` view var?
   callableLoan.totalDeposited = callableLoan.totalDeposited.minus(event.params.principalWithdrawn)
   callableLoan.save()
 }
@@ -47,6 +51,8 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.nextDueTime = callableLoanContract.nextDueTime()
+  callableLoan.isPaused = callableLoanContract.paused()
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   deleteCallableLoanRepaymentSchedule(callableLoan)
   callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
   callableLoan.save()
@@ -61,4 +67,18 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updateTotalPrincipalCollected(event.params.principal)
   updateTotalInterestCollected(event.params.interest)
   updateTotalReserveCollected(event.params.reserve)
+}
+
+export function handleDrawdownsPaused(event: DrawdownsPaused): void {
+  const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
+  callableLoan.save()
+}
+
+export function handleDrawdownsUnpaused(event: DrawdownsUnpaused): void {
+  const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
+  callableLoan.save()
 }

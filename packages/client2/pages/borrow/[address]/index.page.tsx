@@ -10,12 +10,10 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
-  LoanBorrowerAccountingFieldsFragment,
   Deal,
   PoolCreditLinePageCmsDocument,
   PoolCreditLinePageCmsQuery,
   PoolCreditLinePageCmsQueryVariables,
-  TranchedPoolBorrowerAccountingFieldsFragment,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
@@ -90,17 +88,14 @@ export default function PoolCreditLinePage({
     },
   });
 
-  const loan = data?.loan as LoanBorrowerAccountingFieldsFragment &
-    TranchedPoolBorrowerAccountingFieldsFragment;
-  const juniorTranche = loan?.juniorTranches?.[0];
-  const seniorTranche = loan?.seniorTranches?.[0];
+  const loan = data?.loan;
 
   let creditLineStatus;
   let creditLineLimit = BigNumber.from(0);
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
-  if (loan && juniorTranche && seniorTranche) {
+  if (loan) {
     const creditLineAccountingAnalysisValues =
       getCreditLineAccountingAnalyisValues(loan);
 
@@ -111,37 +106,44 @@ export default function PoolCreditLinePage({
     remainingPeriodDueAmount =
       creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
-    const juniorTrancheShareInfo = {
-      principalDeposited: juniorTranche.principalDeposited,
-      sharePrice: juniorTranche.principalSharePrice,
-    };
+    if (loan.__typename === "CallableLoan") {
+      availableForDrawdown = loan.totalDeposited;
+    } else {
+      const juniorTranche = loan.juniorTranches[0];
+      const seniorTranche = loan.seniorTranches[0];
 
-    const seniorTrancheShareInfo = {
-      principalDeposited: seniorTranche.principalDeposited,
-      sharePrice: seniorTranche.principalSharePrice,
-    };
+      const juniorTrancheShareInfo = {
+        principalDeposited: juniorTranche.principalDeposited,
+        sharePrice: juniorTranche.principalSharePrice,
+      };
 
-    const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
-      collectedPaymentBalance: loan.collectedPaymentBalance,
-      nextDueTime: loan.nextDueTime,
-      termEndTime: loan.termEndTime,
-      balance: loan.balance,
-      currentInterestOwed:
-        creditLineAccountingAnalysisValues.currentInterestOwed,
-      principalAmount: creditLineLimit,
-    });
+      const seniorTrancheShareInfo = {
+        principalDeposited: seniorTranche.principalDeposited,
+        sharePrice: seniorTranche.principalSharePrice,
+      };
 
-    const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
-      juniorTrancheShareInfo,
-      seniorTrancheShareInfo,
-    });
+      const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
+        collectedPaymentBalance: loan.collectedPaymentBalance,
+        nextDueTime: loan.nextDueTime,
+        termEndTime: loan.termEndTime,
+        balance: loan.balance,
+        currentInterestOwed:
+          creditLineAccountingAnalysisValues.currentInterestOwed,
+        principalAmount: creditLineLimit,
+      });
 
-    // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
-    // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
-    // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
-    availableForDrawdown = poolFundsAvailableForDrawdown;
-    if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
-      availableForDrawdown = creditLineMaxDrawdownAmount;
+      const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
+        juniorTrancheShareInfo,
+        seniorTrancheShareInfo,
+      });
+
+      // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
+      // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
+      // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
+      availableForDrawdown = poolFundsAvailableForDrawdown;
+      if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
+        availableForDrawdown = creditLineMaxDrawdownAmount;
+      }
     }
   }
 
@@ -258,6 +260,7 @@ export default function PoolCreditLinePage({
                   <div className="mb-5 text-2xl">
                     {formattedAvailableForDrawdown}
                   </div>
+                  {/* TODO: Zadra disclaimer for first drawdown causing pool to lock and prevent further lender deposits */}
                   <Button
                     as="button"
                     className="w-full text-xl"
@@ -268,7 +271,8 @@ export default function PoolCreditLinePage({
                     disabled={
                       loan.isPaused ||
                       loan.drawdownsPaused ||
-                      juniorTranche?.lockedUntil.isZero() ||
+                      // TODO: Zadra do we need this?
+                      // juniorTranche?.lockedUntil.isZero() ||
                       availableForDrawdown.lte(BigNumber.from(0))
                     }
                   >

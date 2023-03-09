@@ -4,12 +4,12 @@ import { BigNumber } from "ethers";
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
+import type { CallableLoan as CallableLoanContract } from "@/types/ethers-contracts";
 
 import { CallableLoan } from "../generated";
 
-const loanDueAmountAt = async (
-  // TODO: Zadra "any"
-  callableLoanContract: any,
+const loanAmountDueAt = async (
+  callableLoanContract: CallableLoanContract,
   timestamp: BigNumber
 ) => {
   // Loan has not started
@@ -91,6 +91,21 @@ export const callableLoanResolvers: Resolvers[string] = {
       await callableLoanContract.withinPrincipalGracePeriod();
     return !termStartTime.isZero() && !withinPrincipalGracePeriod;
   },
+  async isAfterTermEndTime(callableLoan: CallableLoan): Promise<boolean> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    const [currentBlock, termEndTime] = await Promise.all([
+      provider.getBlock("latest"),
+      callableLoanContract.termEndTime(),
+    ]);
+
+    return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
+  },
   async periodDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();
     const callableLoanContract = await getContract({
@@ -100,7 +115,7 @@ export const callableLoanResolvers: Resolvers[string] = {
       address: callableLoan.id,
     });
     const timestamp = await callableLoanContract.nextDueTime();
-    return loanDueAmountAt(callableLoanContract, timestamp);
+    return loanAmountDueAt(callableLoanContract, timestamp);
   },
   async termDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();
@@ -111,6 +126,6 @@ export const callableLoanResolvers: Resolvers[string] = {
       address: callableLoan.id,
     });
     const timestamp = await callableLoanContract.termEndTime();
-    return loanDueAmountAt(callableLoanContract, timestamp);
+    return loanAmountDueAt(callableLoanContract, timestamp);
   },
 };

@@ -15,6 +15,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.initialInterestOwed = BigInt.zero() // TODO figure this out. There may be a view function for this
   callableLoan.usdcApy = callableLoanContract.interestApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.rawGfiApy = BigDecimal.zero()
+  // TODO: Zadra why not just get `totalPrincipalPaid` view var?
   callableLoan.totalDeposited = BigInt.zero()
   callableLoan.remainingCapacity = callableLoan.fundingLimit
   callableLoan.createdAt = block.timestamp.toI32()
@@ -40,7 +41,8 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   }
   callableLoan.backers = []
   callableLoan.numBackers = 0
-  callableLoan.isPaused = false
+  callableLoan.isPaused = callableLoanContract.paused()
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   callableLoan.tokens = []
 
   callableLoan.balance = callableLoanContract.balance()

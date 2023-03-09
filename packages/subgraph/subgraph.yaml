@@ -674,8 +674,10 @@ templates:
         # - event: DepositsLocked(indexed address)
         - event: DrawdownMade(indexed address,uint256)
           handler: handleDrawdownMade
-        # - event: DrawdownsPaused(indexed address)
-        # - event: DrawdownsUnpaused(indexed address)
+        - event: DrawdownsPaused(indexed address)
+          handler: handleDrawdownsPaused
+        - event: DrawdownsUnpaused(indexed address)
+          handler: handleDrawdownsUnpaused
         # - event: EmergencyShutdown(indexed address)
         # - event: Paused(address)
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)

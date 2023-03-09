@@ -149,6 +149,7 @@ interface Loan {
   backers: [User!]!
   numBackers: Int!
   isPaused: Boolean!
+  drawdownsPaused: Boolean!
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
 
@@ -522,6 +523,7 @@ type CallableLoan implements Loan @entity {
   backers: [User!]!
   numBackers: Int!
   isPaused: Boolean!
+  drawdownsPaused: Boolean!
   tokens: [PoolToken!]!
 
   balance: BigInt!
