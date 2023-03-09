@@ -9,11 +9,6 @@ import { HighValueInvestorNotice } from "@/pages/pools/high-value-investor-notic
 export function RiskTable() {
   const riskTableRows: VerboseTableRowProps[] = [
     {
-      heading: "LTV ratio",
-      boldValue: "110%",
-      value: "This loan is overcollateralized",
-    },
-    {
       heading: "Deal structure",
       boldValue: "Liquidity pool",
       value:
@@ -31,7 +26,7 @@ export function RiskTable() {
         "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first",
     },
     {
-      heading: "Securitization",
+      heading: "Collateralization",
       boldValue: "Yes",
       value:
         "This loan is secured with real-world, off-chain assets as collateral",
@@ -57,18 +52,6 @@ export function RiskTable() {
       ),
       value:
         "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
-    },
-    {
-      heading: "Borrower communications",
-      value: (
-        <div>
-          The Borrower can be contacted directly using a token-gated Discord
-          channel{" "}
-          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
-            Discord channel
-          </Link>
-        </div>
-      ),
     },
   ];
 

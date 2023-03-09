@@ -159,7 +159,7 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
     deal.securitiesAndRecourse.secured !== null
       ? [
           {
-            heading: "Securitization",
+            heading: "Collateralization",
             boldValue: deal.securitiesAndRecourse.secured
               ? `Yes${
                   deal.securitiesAndRecourse.type
