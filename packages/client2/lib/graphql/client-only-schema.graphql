@@ -39,6 +39,7 @@ extend type CallableLoan {
   isAfterTermEndTime: Boolean!
   periodDueAmount: BigInt!
   termDueAmount: BigInt!
+  nextDueTime: BigInt!
 }
 
 extend type CreditLine {

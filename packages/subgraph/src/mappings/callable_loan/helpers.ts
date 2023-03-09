@@ -48,7 +48,6 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.tokens = []
 
   callableLoan.balance = callableLoanContract.balance()
-  callableLoan.nextDueTime = callableLoanContract.nextDueTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termInDays = 365 // TODO FIX THIS. Might be time to eliminate termInDays

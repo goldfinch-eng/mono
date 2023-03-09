@@ -7,12 +7,10 @@ import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 gql`
   fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
     id
+    nextDueTime
+    interestAccruedAsOf
     interestOwed @client
     collectedPaymentBalance @client
-    interestAccruedAsOf
-    creditLine {
-      id
-    }
     juniorTranches {
       id
       principalSharePrice
@@ -33,6 +31,7 @@ gql`
     totalDeposited
     periodDueAmount @client
     termDueAmount @client
+    nextDueTime @client
   }
 `;
 
@@ -44,11 +43,11 @@ gql`
     termInDays
     interestRate
     interestRateBigInt
-    nextDueTime
     balance
     termEndTime
     principalAmount
     fundingLimit
+    creditLineAddress
     isLate @client
     isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields

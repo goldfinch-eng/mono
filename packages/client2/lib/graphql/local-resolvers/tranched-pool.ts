@@ -47,7 +47,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   },
   async isLate(tranchedPool: TranchedPool): Promise<boolean> {
     // Small optimization if tranchedPool.creditLine is already present in cache
-    let creditLineAddress = tranchedPool.creditLine?.id;
+    let creditLineAddress = tranchedPool?.creditLineAddress;
     if (creditLineAddress) {
       return isLate(creditLineAddress);
     }
@@ -65,7 +65,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     tranchedPool: TranchedPool
   ): Promise<BigNumber> {
     // Small optimization if tranchedPool.creditLine is already present in cache
-    let creditLineAddress = tranchedPool.creditLine?.id;
+    let creditLineAddress = tranchedPool?.creditLineAddress;
     if (creditLineAddress) {
       return collectedPaymentBalance(creditLineAddress);
     }
@@ -81,7 +81,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   },
   async isInDefault(tranchedPool: TranchedPool): Promise<boolean> {
     // Small optimization if tranchedPool.creditLine is already present in cache
-    let creditLineAddress = tranchedPool.creditLine?.id;
+    let creditLineAddress = tranchedPool?.creditLineAddress;
     if (creditLineAddress) {
       return isInDefault(creditLineAddress);
     }
@@ -97,7 +97,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   },
   async isAfterTermEndTime(tranchedPool: TranchedPool): Promise<boolean> {
     // Small optimization if tranchedPool.creditLine is already present in cache
-    let creditLineAddress = tranchedPool.creditLine?.id;
+    let creditLineAddress = tranchedPool?.creditLineAddress;
     if (creditLineAddress) {
       return isAfterTermEndTime(creditLineAddress);
     }
@@ -113,7 +113,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   },
   async interestOwed(tranchedPool: TranchedPool): Promise<BigNumber> {
     // Small optimization if tranchedPool.creditLine is already present in cache
-    let creditLineAddress = tranchedPool.creditLine?.id;
+    let creditLineAddress = tranchedPool?.creditLineAddress;
     if (creditLineAddress) {
       return interestOwed(creditLineAddress);
     }

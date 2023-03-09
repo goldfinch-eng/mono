@@ -155,7 +155,6 @@ interface Loan {
 
   # "Credit line" fields
   balance: BigInt!
-  nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
   termInDays: Int!
@@ -529,7 +528,6 @@ type CallableLoan implements Loan @entity {
   tokens: [PoolToken!]!
 
   balance: BigInt!
-  nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
   termInDays: Int!

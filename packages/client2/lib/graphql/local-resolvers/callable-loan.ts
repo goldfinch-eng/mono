@@ -128,4 +128,14 @@ export const callableLoanResolvers: Resolvers[string] = {
     const timestamp = await callableLoanContract.termEndTime();
     return loanAmountDueAt(callableLoanContract, timestamp);
   },
+  async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    return callableLoanContract.nextDueTime();
+  },
 };
