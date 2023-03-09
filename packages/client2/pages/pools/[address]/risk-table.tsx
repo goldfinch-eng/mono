@@ -129,8 +129,8 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               deal.offChainCapitalPriority === "junior" ? "Junior" : "Senior",
             value:
               deal.offChainCapitalPriority === "junior"
-                ? "First-loss capital"
-                : "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first",
+                ? "The borrower will receive other on-chain funding that is senior to the capital provided in this pool"
+                : "If the borrower has received other on-chain funding for this pool, this capital will be prioritized first",
           },
         ]
       : []),
