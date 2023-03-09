@@ -548,6 +548,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       : !cl_termStartTimeResult.reverted // no idea why this can revert
       ? cl_termStartTimeResult.value
       : BigInt.fromI32(tranchedPool.fundableAt)
+    const endTime = creditLineContract.termEndTime()
     const periodsInTerm = termInDays.div(paymentPeriodInDays)
     const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
     const loanPrincipal = isBeforeClose ? tranchedPool.fundingLimit : tranchedPool.principalAmount
@@ -558,7 +559,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
         .times(paymentPeriodInSeconds)
         .times(loanPrincipal)
         .div(BigInt.fromString("1000000000000000000"))
-      const principal = period == periodsInTerm.toI32() - 1 ? loanPrincipal : BigInt.zero()
+      const principal = estimatedPaymentDate.ge(endTime) ? loanPrincipal : BigInt.zero()
 
       const scheduledRepayment = new ScheduledRepayment(`${tranchedPool.id}-${period.toString()}`)
       scheduledRepayment.loan = tranchedPool.id
@@ -568,6 +569,22 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       scheduledRepayment.principal = principal
       scheduledRepayment.save()
       repaymentIds.push(scheduledRepayment.id)
+
+      // Handles final partial period
+      if (period == periodsInTerm.toI32() - 1 && estimatedPaymentDate.lt(endTime)) {
+        const finalPeriod = period + 1
+        const finalRepayment = new ScheduledRepayment(`${tranchedPool.id}-${finalPeriod.toString()}`)
+        finalRepayment.loan = tranchedPool.id
+        finalRepayment.estimatedPaymentDate = endTime.toI32()
+        finalRepayment.paymentPeriod = finalPeriod
+        finalRepayment.interest = interestPerSecond
+          .times(endTime.minus(estimatedPaymentDate))
+          .times(loanPrincipal)
+          .div(BigInt.fromString("1000000000000000000"))
+        finalRepayment.principal = loanPrincipal
+        finalRepayment.save()
+        repaymentIds.push(finalRepayment.id)
+      }
     }
   }
 
