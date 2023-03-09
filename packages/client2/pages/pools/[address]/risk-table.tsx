@@ -57,8 +57,10 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               style: "percent",
             }).format(deal.securitiesAndRecourse.value),
             value:
-              deal.securitiesAndRecourse.value > 1
+              deal.securitiesAndRecourse.value < 1
                 ? "This deal is overcollateralized"
+                : deal.securitiesAndRecourse.value > 1
+                ? "This deal is undercollateralized"
                 : null,
           },
         ]
