@@ -19,6 +19,7 @@ export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
   fragment LoanSummaryTranchedPoolFields on Loan {
     id
     usdcApy
+    interestRate
     rawGfiApy
     termInDays
   }
@@ -39,6 +40,7 @@ export const LOAN_SUMMARY_DEAL_FIELDS = gql`
     id
     name
     overview
+    dealType
   }
 `;
 
@@ -84,7 +86,11 @@ export function LoanSummary({
         <div className="text-left">
           <div className="mb-2 text-sm">Fixed USDC APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(loan.usdcApy)}
+            {formatPercent(
+              deal.dealType === "multitranche"
+                ? loan.usdcApy
+                : loan.interestRate
+            )}
           </div>
         </div>
         <div className="text-right">
