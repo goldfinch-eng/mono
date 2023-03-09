@@ -132,7 +132,7 @@ export function BorrowerProfile({
             value={numOtherPools}
           />
           <Stat
-            label="Default rate"
+            label="Total loss rate"
             tooltip="[TODO] content"
             value={formatPercent(borrowerDefaultRate)}
           />

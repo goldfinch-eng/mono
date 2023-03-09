@@ -76,8 +76,8 @@ export function CapitalStats({ seniorPool }: CapitalStatsProps) {
         value={formatPercent(utilizationRate)}
       />
       <Stat
-        label="Avg. default rate"
-        tooltip="Default rate experienced by the Senior Pool."
+        label="Total loss rate"
+        tooltip="Total loss rate experienced by the Senior Pool."
         value={formatPercent(defaultRate)}
       />
       <Stat
@@ -117,7 +117,7 @@ export function CapitalStatsPlaceholder() {
         <div className="h-2.5 overflow-hidden rounded-full bg-mustard-100"></div>
       </div>
       <Stat label="Utilization rate" />
-      <Stat label="Avg. default rate" />
+      <Stat label="Total loss rate" />
       <Stat label="Next repayment" />
     </StatGrid>
   );

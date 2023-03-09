@@ -140,9 +140,9 @@ export function PortfolioDetails({
           tooltip="TODO: No. of portfolio loans"
         />
         <Stat
-          label="Default Rate"
+          label="Total loss rate"
           value={formatPercent(seniorPool.defaultRate)}
-          tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol, calculated as the current total writedown value divided by the total loan value."
+          tooltip="The total loss rate across all Borrower Pools on the Goldfinch protocol, calculated as the current total writedown value divided by the total loan value."
         />
         <Stat
           label="Principal outstanding"

@@ -57,8 +57,10 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               style: "percent",
             }).format(deal.securitiesAndRecourse.value),
             value:
-              deal.securitiesAndRecourse.value > 1
+              deal.securitiesAndRecourse.value < 1
                 ? "This deal is overcollateralized"
+                : deal.securitiesAndRecourse.value > 1
+                ? "This deal is undercollateralized"
                 : null,
           },
         ]
@@ -67,13 +69,15 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
       heading: "Deal structure",
       boldValue:
         deal.dealType === "multitranche"
-          ? "Tranched"
+          ? "Multitranche"
           : deal.dealType === "unitranche"
-          ? "Non-tranched"
+          ? "Unitranche"
           : null,
       value: "On-chain capital for this deal comes from multiple sources",
     },
-    ...(loan.__typename === "TranchedPool" && loan.estimatedLeverageRatio
+    ...(loan.__typename === "TranchedPool" &&
+    loan.estimatedLeverageRatio &&
+    deal.dealType === "multitranche"
       ? [
           {
             heading: "Leverage ratio",
@@ -127,46 +131,18 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               deal.offChainCapitalPriority === "junior" ? "Junior" : "Senior",
             value:
               deal.offChainCapitalPriority === "junior"
-                ? "First-loss capital"
-                : "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first",
+                ? "The borrower will receive other on-chain funding that is senior to the capital provided in this pool"
+                : "If the borrower has received other on-chain funding for this pool, this capital will be prioritized first",
           },
         ]
       : []),
-    {
-      heading: "Post-close reporting",
-      value: (
-        <div>
-          Investors can access borrower-related updated via investment-gated
-          Discord Channel
-        </div>
-      ),
-    },
-    ...(deal.agreement
-      ? [
-          {
-            heading: "Legal recourse",
-            boldValue: (
-              <Link href={deal.agreement} openInNewTab>
-                Loan agreement
-              </Link>
-            ),
-            value:
-              "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
-          },
-        ]
-      : []),
+
     ...(deal.securitiesAndRecourse &&
     deal.securitiesAndRecourse.secured !== null
       ? [
           {
-            heading: "Securitization",
-            boldValue: deal.securitiesAndRecourse.secured
-              ? `Yes${
-                  deal.securitiesAndRecourse.type
-                    ? ` (${deal.securitiesAndRecourse.type})`
-                    : ""
-                }`
-              : "No",
+            heading: "Collateralization",
+            boldValue: deal.securitiesAndRecourse.secured ? "Yes" : "No",
             value: (
               <RichText content={deal.securitiesAndRecourse.description} />
             ),
@@ -187,11 +163,35 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           {
             heading: "Recourse to borrower",
             boldValue: deal.securitiesAndRecourse.recourse ? "Yes" : "No",
-            value: (
-              <RichText
-                content={deal.securitiesAndRecourse.recourseDescription}
-              />
+            value: null,
+          },
+        ]
+      : []),
+    {
+      heading: "Post-close reporting",
+      value: (
+        <div>
+          Investors can access borrower-related updated via investment-gated{" "}
+          <Link
+            href="https://discord.com/channels/793925570739044362/1034881143964717066"
+            openInNewTab
+          >
+            Discord Channel
+          </Link>
+        </div>
+      ),
+    },
+    ...(deal.agreement
+      ? [
+          {
+            heading: "Legal recourse",
+            boldValue: (
+              <Link href={deal.agreement} openInNewTab>
+                Loan agreement
+              </Link>
             ),
+            value:
+              "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
           },
         ]
       : []),
