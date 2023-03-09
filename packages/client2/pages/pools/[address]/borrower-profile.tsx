@@ -213,6 +213,8 @@ function RepaymentStatusChip({
           ? "border-clay-200 bg-clay-100 text-clay-700"
           : repaymentStatus === LoanRepaymentStatus.Late
           ? "border-mustard-200 bg-mustard-100 text-mustard-700"
+          : repaymentStatus === LoanRepaymentStatus.Repaid
+          ? "border-mint-300 bg-mint-200 text-mint-800"
           : "border-mint-200 bg-mint-100 text-mint-700"
       )}
     >
