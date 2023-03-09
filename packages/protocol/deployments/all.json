@@ -5710,7 +5710,7 @@
           ]
         },
         "CapitalLedger_Implementation": {
-          "address": "0x63F26a0878F047363436A79a439b7f5cC3318925",
+          "address": "0xb835f5351D32ba0eaD26b78a391306d5C55b20Eb",
           "abi": [
             {
               "inputs": [
@@ -49139,270 +49139,6 @@
   ],
   "31337": [
     {
-      "name": "hardhat",
-      "chainId": "31337",
-      "contracts": {
-        "TestHasAdmin": {
-          "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-          "abi": [
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "nonpayable",
-              "type": "constructor"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "sender",
-                  "type": "address"
-                }
-              ],
-              "name": "RoleGranted",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "sender",
-                  "type": "address"
-                }
-              ],
-              "name": "RoleRevoked",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [],
-              "name": "TestEvent",
-              "type": "event"
-            },
-            {
-              "inputs": [],
-              "name": "DEFAULT_ADMIN_ROLE",
-              "outputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "",
-                  "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "OWNER_ROLE",
-              "outputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "",
-                  "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "adminFunction",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                }
-              ],
-              "name": "getRoleAdmin",
-              "outputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "",
-                  "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "index",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getRoleMember",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                }
-              ],
-              "name": "getRoleMemberCount",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "grantRole",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "hasRole",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "isAdmin",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "renounceRole",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "role",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "revokeRole",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            }
-          ]
-        }
-      }
-    },
-    {
       "name": "localhost",
       "chainId": "31337",
       "contracts": {
@@ -50686,6 +50422,19 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "clearTokenInfo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "config",
               "outputs": [
@@ -50724,6 +50473,69 @@
               "name": "forceInitializeStakingRewardsPoolInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "pool",
+                  "type": "address"
+                }
+              ],
+              "name": "getBackerStakingRewardsPoolInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "lastUpdateTime",
+                      "type": "uint256"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "fiduSharePriceAtDrawdown",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "principalDeployedAtLastCheckpoint",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "accumulatedRewardsPerTokenAtDrawdown",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IBackerRewards.StakingRewardsSliceInfo[]",
+                      "name": "slicesInfo",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsPoolInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -50783,6 +50595,63 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getStakingRewardsTokenInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getTokenInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rewardsClaimed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "accRewardsPerPrincipalDollarAtMint",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
+                  "name": "",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -50990,6 +50859,53 @@
             {
               "inputs": [
                 {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rewardsClaimed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "accRewardsPerPrincipalDollarAtMint",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
+                  "name": "originalBackerRewardsTokenInfo",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
+                  "name": "originalStakingRewardsTokenInfo",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newTokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newRewardsClaimed",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setBackerAndStakingRewardsTokenInfoOnSplit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "_maxInterestDollarsEligible",
                   "type": "uint256"
@@ -51180,7 +51096,13 @@
                 }
               ],
               "name": "withdraw",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -51490,6 +51412,19 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "clearTokenInfo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "config",
               "outputs": [
@@ -51528,6 +51463,69 @@
               "name": "forceInitializeStakingRewardsPoolInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "pool",
+                  "type": "address"
+                }
+              ],
+              "name": "getBackerStakingRewardsPoolInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "lastUpdateTime",
+                      "type": "uint256"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "fiduSharePriceAtDrawdown",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "principalDeployedAtLastCheckpoint",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "accumulatedRewardsPerTokenAtDrawdown",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IBackerRewards.StakingRewardsSliceInfo[]",
+                      "name": "slicesInfo",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsPoolInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -51587,6 +51585,63 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getStakingRewardsTokenInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getTokenInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rewardsClaimed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "accRewardsPerPrincipalDollarAtMint",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
+                  "name": "",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -51794,6 +51849,53 @@
             {
               "inputs": [
                 {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rewardsClaimed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "accRewardsPerPrincipalDollarAtMint",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
+                  "name": "originalBackerRewardsTokenInfo",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
+                  "name": "originalStakingRewardsTokenInfo",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newTokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newRewardsClaimed",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setBackerAndStakingRewardsTokenInfoOnSplit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "_maxInterestDollarsEligible",
                   "type": "uint256"
@@ -51984,7 +52086,13 @@
                 }
               ],
               "name": "withdraw",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -52981,6 +53089,17 @@
               "inputs": [
                 {
                   "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "NotGoListed",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
                   "name": "resource",
                   "type": "address"
                 },
@@ -53045,6 +53164,25 @@
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "assetAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "CapitalERC721Harvest",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -53069,6 +53207,31 @@
                 }
               ],
               "name": "CapitalERC721Withdrawal",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "assetAddress",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "usdcEquivalent",
+                  "type": "uint256"
+                }
+              ],
+              "name": "CapitalPositionAdjustment",
               "type": "event"
             },
             {
@@ -53155,6 +53318,19 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "harvest",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -53458,6 +53634,17 @@
               "inputs": [
                 {
                   "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "NotGoListed",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
                   "name": "resource",
                   "type": "address"
                 },
@@ -53522,6 +53709,25 @@
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "assetAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "CapitalERC721Harvest",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -53546,6 +53752,31 @@
                 }
               ],
               "name": "CapitalERC721Withdrawal",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "assetAddress",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "usdcEquivalent",
+                  "type": "uint256"
+                }
+              ],
+              "name": "CapitalPositionAdjustment",
               "type": "event"
             },
             {
@@ -53632,6 +53863,19 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "positionId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "harvest",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -58004,7 +58248,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "seniorPool",
+                  "name": "",
                   "type": "address"
                 },
                 {
@@ -58164,7 +58408,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "seniorPool",
+                  "name": "",
                   "type": "address"
                 },
                 {
@@ -61050,7 +61294,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "seniorPool",
+                  "name": "",
                   "type": "address"
                 },
                 {
@@ -61074,7 +61318,7 @@
               "inputs": [
                 {
                   "internalType": "contract ITranchedPool",
-                  "name": "pool",
+                  "name": "",
                   "type": "address"
                 }
               ],
@@ -61215,7 +61459,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "seniorPool",
+                  "name": "",
                   "type": "address"
                 },
                 {
@@ -68412,16 +68656,6 @@
               "type": "receive"
             },
             {
-              "inputs": [],
-              "name": "CannotWithdrawForAddress0",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "CannotWithdrawForMultipleOwners",
-              "type": "error"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -68429,12 +68663,7 @@
                   "type": "address"
                 }
               ],
-              "name": "CannotWithdrawUnownedAsset",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "MustWithdrawSomething",
+              "name": "CannotOperateOnUnownedAsset",
               "type": "error"
             },
             {
@@ -68451,6 +68680,11 @@
                 }
               ],
               "name": "RequiresOperator",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "RequiresValidInput",
               "type": "error"
             },
             {
@@ -68662,6 +68896,19 @@
             {
               "inputs": [],
               "name": "finalizeEpochs",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "capitalPositionIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "harvest",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -68918,16 +69165,6 @@
               "type": "constructor"
             },
             {
-              "inputs": [],
-              "name": "CannotWithdrawForAddress0",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "CannotWithdrawForMultipleOwners",
-              "type": "error"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -68935,12 +69172,7 @@
                   "type": "address"
                 }
               ],
-              "name": "CannotWithdrawUnownedAsset",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "MustWithdrawSomething",
+              "name": "CannotOperateOnUnownedAsset",
               "type": "error"
             },
             {
@@ -68957,6 +69189,11 @@
                 }
               ],
               "name": "RequiresOperator",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "RequiresValidInput",
               "type": "error"
             },
             {
@@ -69168,6 +69405,19 @@
             {
               "inputs": [],
               "name": "finalizeEpochs",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "capitalPositionIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "harvest",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -71394,25 +71644,6 @@
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "configAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "GoldfinchConfigUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "address",
                   "name": "account",
@@ -71470,31 +71701,6 @@
                 }
               ],
               "name": "RoleRevoked",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "sender",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "newReceiver",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newRoyaltyPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "RoyaltyParamsSet",
               "type": "event"
             },
             {
@@ -71637,6 +71843,55 @@
                 }
               ],
               "name": "TokenRedeemed",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "pool",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newTokenId1",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrincipal1",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newTokenId2",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrincipal2",
+                  "type": "uint256"
+                }
+              ],
+              "name": "TokenSplit",
               "type": "event"
             },
             {
@@ -71850,6 +72105,42 @@
                   "internalType": "address",
                   "name": "",
                   "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "pool",
+                  "type": "address"
+                }
+              ],
+              "name": "getPoolInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "totalMinted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalPrincipalRedeemed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "created",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct IPoolTokens.PoolInfo",
+                  "name": "",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -72417,6 +72708,35 @@
               ],
               "name": "setRoyaltyParams",
               "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newPrincipal1",
+                  "type": "uint256"
+                }
+              ],
+              "name": "splitToken",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId2",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -72694,25 +73014,6 @@
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "configAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "GoldfinchConfigUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "address",
                   "name": "account",
@@ -72770,31 +73071,6 @@
                 }
               ],
               "name": "RoleRevoked",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "sender",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "newReceiver",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newRoyaltyPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "RoyaltyParamsSet",
               "type": "event"
             },
             {
@@ -72937,6 +73213,55 @@
                 }
               ],
               "name": "TokenRedeemed",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "pool",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newTokenId1",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrincipal1",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newTokenId2",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrincipal2",
+                  "type": "uint256"
+                }
+              ],
+              "name": "TokenSplit",
               "type": "event"
             },
             {
@@ -73150,6 +73475,42 @@
                   "internalType": "address",
                   "name": "",
                   "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "pool",
+                  "type": "address"
+                }
+              ],
+              "name": "getPoolInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "totalMinted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalPrincipalRedeemed",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "created",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct IPoolTokens.PoolInfo",
+                  "name": "",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -73717,6 +74078,35 @@
               ],
               "name": "setRoyaltyParams",
               "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "newPrincipal1",
+                  "type": "uint256"
+                }
+              ],
+              "name": "splitToken",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId1",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId2",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -78319,7 +78709,13 @@
                 }
               ],
               "name": "getReward",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -80234,7 +80630,13 @@
                 }
               ],
               "name": "getReward",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -81824,7 +82226,7 @@
                 },
                 {
                   "internalType": "bool",
-                  "name": "use_eth",
+                  "name": "",
                   "type": "bool"
                 },
                 {
@@ -82022,22 +82424,22 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "i",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "j",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "dx",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "min_dy",
+                  "name": "",
                   "type": "uint256"
                 }
               ],
@@ -82056,17 +82458,17 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "i",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "j",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "dx",
+                  "name": "",
                   "type": "uint256"
                 }
               ],
@@ -82197,12 +82599,12 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "_amount",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256[2]",
-                  "name": "min_amounts",
+                  "name": "",
                   "type": "uint256[2]"
                 }
               ],
@@ -82221,17 +82623,17 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "token_amount",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "i",
+                  "name": "",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "min_amount",
+                  "name": "",
                   "type": "uint256"
                 }
               ],

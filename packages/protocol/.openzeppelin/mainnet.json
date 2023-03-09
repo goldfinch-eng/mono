@@ -102,11 +102,6 @@
       "kind": "transparent"
     },
     {
-      "address": "0x94e0bC3aedA93434B848C49752cfC58B1e7c5029",
-      "txHash": "0xc70046000b26758d69769a5c34bb8f6d1d153003e7d15c74c7d12bc44dfd161c",
-      "kind": "transparent"
-    },
-    {
       "address": "0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3",
       "txHash": "0x35209c1c82bcfffaed71d0837bc7a8604ba5be7910b458b8bc2d934e38aa36ca",
       "kind": "transparent"
@@ -119,6 +114,11 @@
     {
       "address": "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df",
       "txHash": "0x84a4be75f4946aa541f58d7a4689077943fdaadf5552668438a9b3cfbebf01db",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x94e0bC3aedA93434B848C49752cfC58B1e7c5029",
+      "txHash": "0xc70046000b26758d69769a5c34bb8f6d1d153003e7d15c74c7d12bc44dfd161c",
       "kind": "transparent"
     }
   ],
@@ -15296,6 +15296,157 @@
               }
             ],
             "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      }
+    },
+    "6bd021817358777c85491fd8f22b99de2b8f103ed5ea138ef28157e7e400063c": {
+      "address": "0xb835f5351D32ba0eaD26b78a391306d5C55b20Eb",
+      "txHash": "0xf53ce14b91af18b918c4f94befe31bab6d1ab979964fa297e64aba774880b78d",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "positions",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_uint256,t_struct(Position)6192_storage)",
+            "contract": "CapitalLedger",
+            "src": "contracts/protocol/core/membership/CapitalLedger.sol:59"
+          },
+          {
+            "label": "owners",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "contract": "CapitalLedger",
+            "src": "contracts/protocol/core/membership/CapitalLedger.sol:62"
+          },
+          {
+            "label": "totals",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_struct(UserEpochTotal)11072_storage)",
+            "contract": "CapitalLedger",
+            "src": "contracts/protocol/core/membership/CapitalLedger.sol:65"
+          },
+          {
+            "label": "positionCounter",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "CapitalLedger",
+            "src": "contracts/protocol/core/membership/CapitalLedger.sol:68"
+          },
+          {
+            "label": "erc721Datas",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_uint256,t_struct(ERC721Data)6195_storage)",
+            "contract": "CapitalLedger",
+            "src": "contracts/protocol/core/membership/CapitalLedger.sol:72"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(UserEpochTotal)11072_storage)": {
+            "label": "mapping(address => struct UserEpochTotal)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(ERC721Data)6195_storage)": {
+            "label": "mapping(uint256 => struct CapitalLedger.ERC721Data)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Position)6192_storage)": {
+            "label": "mapping(uint256 => struct CapitalLedger.Position)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ERC721Data)6195_storage": {
+            "label": "struct CapitalLedger.ERC721Data",
+            "members": [
+              {
+                "label": "assetTokenId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Position)6192_storage": {
+            "label": "struct CapitalLedger.Position",
+            "members": [
+              {
+                "label": "owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "ownedIndex",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "assetAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "usdcEquivalent",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "depositTimestamp",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(UserEpochTotal)11072_storage": {
+            "label": "struct UserEpochTotal",
+            "members": [
+              {
+                "label": "totalAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "eligibleAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "checkpointedAt",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
           },
           "t_uint256": {
             "label": "uint256",
