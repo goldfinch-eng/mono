@@ -165,7 +165,7 @@ export function BorrowerProfile({
                     key={pool.id}
                     className="relative text-right hover:bg-white"
                   >
-                    <td className="text-left">
+                    <td className="w-1/4 max-w-0 truncate text-left">
                       <NextLink passHref href={`/pools/${pool.id}`}>
                         <a className="before:absolute before:inset-0">
                           {pool.name}
