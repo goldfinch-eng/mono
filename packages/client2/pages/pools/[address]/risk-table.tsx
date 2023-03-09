@@ -67,9 +67,9 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
       heading: "Deal structure",
       boldValue:
         deal.dealType === "multitranche"
-          ? "Tranched"
+          ? "Multitranche"
           : deal.dealType === "unitranche"
-          ? "Non-tranched"
+          ? "Unitranche"
           : null,
       value: "On-chain capital for this deal comes from multiple sources",
     },
