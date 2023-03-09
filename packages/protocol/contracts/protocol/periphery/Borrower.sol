@@ -11,7 +11,7 @@ import {ConfigHelper} from "../core/ConfigHelper.sol";
 import {GoldfinchConfig} from "../core/GoldfinchConfig.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ILoan} from "../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../interfaces/ILoan.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
 import {ContextUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
@@ -79,7 +79,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 amount,
     address addressToSendTo
   ) external onlyAdmin {
-    ITranchedPool(poolAddress).drawdown(amount);
+    ILoan(poolAddress).drawdown(amount);
 
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
       addressToSendTo = _msgSender();
@@ -104,7 +104,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256[] calldata exchangeDistribution
   ) public onlyAdmin {
     // Drawdown to the Borrower contract
-    ITranchedPool(poolAddress).drawdown(amount);
+    ILoan(poolAddress).drawdown(amount);
 
     // Do the swap
     swapOnOneInch(config.usdcAddress(), toToken, amount, minTargetAmount, exchangeDistribution);
@@ -163,7 +163,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Pay back a v2.0.0 pool
+   * @notice Pay back a v2.0.0 Tranched Pool
    * @param poolAddress The pool to be paid back
    * @param principalAmount principal amount to pay
    * @param interestAmount interest amount to pay
@@ -203,10 +203,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
       "Failed to transfer USDC"
     );
     _pay(poolAddress, amount);
-    require(
-      ITranchedPool(poolAddress).creditLine().balance() == 0,
-      "Failed to fully pay off creditline"
-    );
+    require(ILoan(poolAddress).creditLine().balance() == 0, "Failed to fully pay off creditline");
   }
 
   function payWithSwapOnOneInch(
@@ -251,7 +248,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   /* INTERNAL FUNCTIONS */
   function _pay(address poolAddress, uint256 amount) internal {
     config.getUSDC().safeERC20Approve(poolAddress, amount);
-    ITranchedPool(poolAddress).pay(amount);
+    ILoan(poolAddress).pay(amount);
   }
 
   function _payV2Separate(
