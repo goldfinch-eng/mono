@@ -21,6 +21,7 @@ import { RepaymentSchedule } from "@/lib/pools";
 
 const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
+const tickFormatter = new Intl.NumberFormat("en-US");
 
 interface RepaymentScheduleBarChartProps {
   className?: string;
@@ -143,6 +144,7 @@ export function RepaymentScheduleBarChart({
           domain={[0, maxYValue]}
           ticks={yAxisTicks}
           tickCount={5}
+          tickFormatter={(value) => tickFormatter.format(value)}
           width={40}
         />
         <CartesianGrid vertical={false} x={0} width={650} />

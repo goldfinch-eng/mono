@@ -28,6 +28,8 @@ import {
   REPAYMENT_SCHEDULE_FIELDS,
 } from "@/lib/pools";
 
+const tickFormatter = new Intl.NumberFormat("en-US");
+
 export const SENIOR_POOL_REPAYMENTS_FIELDS = gql`
   ${REPAYMENT_SCHEDULE_FIELDS}
   fragment SeniorPoolRepaymentFields on SeniorPool {
@@ -52,7 +54,7 @@ export function SeniorPoolRepaymentSection({
   seniorPool,
 }: SeniorPoolRepaymentSectionProps) {
   const { repayingPools } = seniorPool;
-  const [perspective, setPerspective] = useState<"past" | "future">("future");
+  const [perspective, setPerspective] = useState<"past" | "future">("past");
   const allIncomingRepayments = useMemo(() => {
     const now = new Date();
     const beginningOfThisMonth = new Date(
@@ -176,6 +178,7 @@ export function SeniorPoolRepaymentSection({
               mirror
               type="number"
               tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
+              tickFormatter={(value) => tickFormatter.format(value)}
             />
             <Tooltip content={<CustomChartTooltip />} />
             <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
