@@ -538,19 +538,15 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       : BigInt.fromI32(tranchedPool.fundableAt)
     const periodsInTerm = termInDays.div(paymentPeriodInDays)
     const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
+    const loanPrincipal = isBeforeClose ? tranchedPool.fundingLimit : tranchedPool.principalAmount
 
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = startTime.plus(BigInt.fromI32(period + 1).times(paymentPeriodInSeconds))
       const interest = interestPerSecond
         .times(paymentPeriodInSeconds)
-        .times(tranchedPool.fundingLimit)
+        .times(loanPrincipal)
         .div(BigInt.fromString("1000000000000000000"))
-      const principal =
-        period == periodsInTerm.toI32() - 1
-          ? isBeforeClose
-            ? tranchedPool.fundingLimit
-            : tranchedPool.principalAmount
-          : BigInt.zero()
+      const principal = period == periodsInTerm.toI32() - 1 ? loanPrincipal : BigInt.zero()
 
       const scheduledRepayment = new ScheduledRepayment(`${tranchedPool.id}-${period.toString()}`)
       scheduledRepayment.loan = tranchedPool.id
