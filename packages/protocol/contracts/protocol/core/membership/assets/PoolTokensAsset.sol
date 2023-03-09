@@ -43,9 +43,6 @@ library PoolTokensAsset {
     // Legacy TranchedPools do not support ILoan#getLoanType
     LoanType loanType = LoanType.TranchedPool;
 
-    // !! IMPORTANT As long as this is a view function, external call writes are prohibited.
-    // Regardless, the external calls are limited to tokenInfo.pool addresses which are a
-    // trusted subset of addresses.
     try ILoan(tokenInfo.pool).getLoanType() returns (LoanType _loanType) {
       loanType = _loanType;
     } catch {}
