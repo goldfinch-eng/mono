@@ -701,10 +701,12 @@ library CheckpointedCallableCreditLineLogic {
   using SaturatingSub for uint256;
 
   function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
     return cl._totalInterestOwedAtLastCheckpoint;
   }
 
   function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
     return cl._totalInterestAccruedAtLastCheckpoint;
   }
 
@@ -714,17 +716,20 @@ library CheckpointedCallableCreditLineLogic {
     uint256 principal,
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
     Tranche storage tranche = cl._waterfall.getTranche(trancheId);
     return tranche.proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
   /// Returns the total interest owed less total interest paid
   function interestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
     return cl._totalInterestOwedAtLastCheckpoint.saturatingSub(cl.totalInterestPaid());
   }
 
   /// Interest accrued up to now minus the max(totalInterestPaid, totalInterestOwedAt)
   function interestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
     return
       cl._totalInterestAccruedAtLastCheckpoint.saturatingSub(
         Math.max(cl._waterfall.totalInterestPaid(), cl._totalInterestOwedAtLastCheckpoint)

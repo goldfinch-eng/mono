@@ -28,7 +28,7 @@ contract TestCallableCreditLine is BaseTest {
   uint256 public constant DEFAULT_APR = 5 * 1e16;
   uint256 public constant DEFAULT_LATE_ADDITIONAL_APR = 1 * 1e16;
   uint256 public constant DEFAULT_NUM_LOCKUP_PERIODS = 2;
-  StaleCallableCreditLine internal callableCreditLine;
+  StaleCallableCreditLine internal staleCreditLine;
   IGoldfinchConfig internal config;
   IMonthlyScheduleRepo private monthlyScheduleRepo;
   ISchedule private schedule;
@@ -63,7 +63,7 @@ contract TestCallableCreditLine is BaseTest {
   }
 
   function testInitialize() public {
-    callableCreditLine.initialize({
+    staleCreditLine.initialize({
       _config: config,
       _fundableAt: fundableAt,
       _numLockupPeriods: DEFAULT_NUM_LOCKUP_PERIODS,
@@ -72,7 +72,7 @@ contract TestCallableCreditLine is BaseTest {
       _lateAdditionalApr: DEFAULT_LATE_ADDITIONAL_APR,
       _limit: DEFAULT_LIMIT
     });
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     assertEq(address(cpcl._config), address(config));
     assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
     assertEq(cpcl.interestApr(), DEFAULT_APR);
@@ -82,7 +82,7 @@ contract TestCallableCreditLine is BaseTest {
 
   function testDeposit(uint128 depositAmount) public {
     setupDefaultWithLimit(depositAmount);
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount);
@@ -94,7 +94,7 @@ contract TestCallableCreditLine is BaseTest {
   function testDrawdown(uint128 depositAmount, uint128 drawdownAmount) public {
     setupDefaultWithLimit(depositAmount);
     drawdownAmount = boundUint128(drawdownAmount, 0, depositAmount);
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     cpcl.drawdown(drawdownAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
@@ -109,8 +109,9 @@ contract TestCallableCreditLine is BaseTest {
     setupFullyFundedAndDrawndown(depositAmount);
     interest = boundUint128(interest, 0, depositAmount);
     principal = boundUint128(principal, 0, depositAmount - interest);
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
-    vm.warp(cpcl.termStartTime() + config.getDrawdownPeriodInSeconds() + 1);
+
+    vm.warp(staleCreditLine.termStartTime() + config.getDrawdownPeriodInSeconds() + 1);
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.pay({principalPayment: uint256(principal), interestPayment: uint256(interest)});
 
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount, "principal deposited");
@@ -134,7 +135,7 @@ contract TestCallableCreditLine is BaseTest {
     depositAmount = boundUint128(depositAmount, 1, type(uint128).max);
     calledAmount = boundUint128(calledAmount, 1, depositAmount);
     setupFullyFundedAndDrawndown(depositAmount);
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     vm.warp(cpcl.termStartTime() + config.getDrawdownPeriodInSeconds() + 1);
     cpcl.submitCall(calledAmount);
 
@@ -185,7 +186,7 @@ contract TestCallableCreditLine is BaseTest {
   function testTotalInterestAccruedAt() public {}
 
   function setupDefaultWithLimit(uint128 limit) public {
-    callableCreditLine.initialize({
+    staleCreditLine.initialize({
       _config: config,
       _fundableAt: fundableAt,
       _numLockupPeriods: DEFAULT_NUM_LOCKUP_PERIODS,
@@ -198,7 +199,7 @@ contract TestCallableCreditLine is BaseTest {
 
   function setupFullyFundedAndDrawndown(uint128 limit) public {
     setupDefaultWithLimit(limit);
-    CallableCreditLine storage cpcl = callableCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(uint256(limit));
     cpcl.drawdown(uint256(limit));
   }
