@@ -7,7 +7,7 @@ import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
   fragment RepaymentTermsStatsFields on Loan {
     fundableAt
-    termInDays
+    termInSeconds
     termStartTime
     termEndTime
     repaymentSchedule(first: 1000) {
@@ -27,16 +27,15 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
     : loan.fundableAt + secondsPerDay * 14;
   const termEndTime = !loan.termEndTime.isZero()
     ? loan.termEndTime.toNumber()
-    : termStartTime + loan.termInDays * secondsPerDay;
+    : termStartTime + loan.termInSeconds;
 
   return (
     <StatGrid bgColor="mustard-50">
       <Stat
         label="Loan term"
         tooltip="The duration of a loan and the period during which the borrower is expected to make payments to the lender."
-        value={formatDistanceStrict(0, loan.termInDays * secondsPerDay * 1000, {
+        value={formatDistanceStrict(0, loan.termInSeconds * 1000, {
           unit: "month",
-          roundingMethod: "ceil",
         })}
       />
       <Stat

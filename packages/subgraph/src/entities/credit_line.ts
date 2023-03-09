@@ -28,7 +28,6 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   creditLine.balance = contract.balance()
   creditLine.interestApr = contract.interestApr()
   creditLine.interestAccruedAsOf = contract.interestAccruedAsOf()
-  creditLine.termInDays = BigInt.fromI32(360)
   creditLine.nextDueTime = contract.nextDueTime()
   creditLine.limit = contract.limit()
   creditLine.termEndTime = contract.termEndTime()

@@ -39,7 +39,7 @@ gql`
     __typename
     id
     isPaused
-    termInDays
+    termInSeconds
     interestRate
     interestRateBigInt
     nextDueTime

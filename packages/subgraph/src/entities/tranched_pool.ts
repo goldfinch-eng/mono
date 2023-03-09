@@ -28,6 +28,8 @@ import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewa
 import {getListOfAllTranchedPoolAddresses} from "./protocol"
 
 const cancelledPoolAddresses = ["0xd43a4f3041069c6178b99d55295b00d0db955bb5"]
+const secondsPerYear_BigInt = BigInt.fromI32(31540000)
+const secondsPerYear_BigDecimal = secondsPerYear_BigInt.toBigDecimal()
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -178,7 +180,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.nextDueTime = creditLine.nextDueTime
   tranchedPool.termEndTime = creditLine.termEndTime
   tranchedPool.termStartTime = creditLine.termStartTime
-  tranchedPool.termInDays = creditLine.termInDays.toI32()
   tranchedPool.interestRate = creditLine.interestAprDecimal
   tranchedPool.interestRateBigInt = creditLine.interestApr
   tranchedPool.lateFeeRate = creditLine.lateFeeApr
@@ -229,12 +230,17 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.allowedUidTypes = ["NON_US_INDIVIDUAL", "US_ACCREDITED_INDIVIDUAL", "US_ENTITY", "NON_US_ENTITY"]
   }
 
-  tranchedPool.initialInterestOwed = calculateInitialInterestOwed(creditLine)
-
   tranchedPool.address = address
   if (isCreating) {
-    tranchedPool.repaymentSchedule = generateRepaymentScheduleForTranchedPool(tranchedPool)
+    const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+    tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+    tranchedPool.termInSeconds = schedulingResult.termInSeconds
   }
+  tranchedPool.initialInterestOwed = calculateInitialInterestOwed(
+    tranchedPool.principalAmount,
+    tranchedPool.interestRate,
+    tranchedPool.termInSeconds
+  )
   tranchedPool.usdcApy = estimateJuniorAPY(tranchedPool)
   tranchedPool.rawGfiApy = BigDecimal.zero()
   tranchedPool.save()
@@ -379,7 +385,7 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
     const perPrincipalDollar = reward.div(juniorPrincipalDollars)
 
-    const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
+    const numYears = BigInt.fromI32(tranchedPool.termInSeconds).divDecimal(secondsPerYear_BigDecimal)
     const annualizedPerPrincipalDollar = perPrincipalDollar.div(numYears)
     rewardsPerPrincipalDollar.set(tranchedPoolAddress, annualizedPerPrincipalDollar)
   }
@@ -387,11 +393,16 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
 }
 
 // Performs a simple (not compound) interest calculation on the creditLine, using the limit as the principal amount
-function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
-  const principal = creditLine.limit.toBigDecimal()
-  const interestRatePerDay = creditLine.interestAprDecimal.div(BigDecimal.fromString("365"))
-  const termInDays = creditLine.termInDays.toBigDecimal()
-  const interestOwed = principal.times(interestRatePerDay.times(termInDays))
+// TODO make this smarter, handle nontrivial interest cases
+function calculateInitialInterestOwed(
+  tp_principal: BigInt,
+  tp_interestRate: BigDecimal,
+  tp_termInSeconds: i32
+): BigInt {
+  const principal = tp_principal.toBigDecimal()
+  const interestRatePerSecond = tp_interestRate.div(secondsPerYear_BigDecimal)
+  const termInSeconds = BigInt.fromI32(tp_termInSeconds).toBigDecimal()
+  const interestOwed = principal.times(interestRatePerSecond.times(termInSeconds))
   return ceil(interestOwed)
 }
 
@@ -435,10 +446,20 @@ export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
   }
 }
 
-export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedPool): string[] {
+class SchedulingResult {
+  repaymentIds: string[]
+  termInSeconds: i32
+  constructor(r: string[], t: i32) {
+    this.repaymentIds = r
+    this.termInSeconds = t
+  }
+}
+
+export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedPool): SchedulingResult {
   const twoWeeksSeconds = 86400 * 14
-  const secondsPerYear = BigInt.fromI32(31540000)
+
   const repaymentIds: string[] = []
+  let termInSeconds = 0
   const tranchedPoolContract = TranchedPoolContract.bind(Address.fromBytes(tranchedPool.address))
   const creditLineContract = CreditLineContract.bind(tranchedPoolContract.creditLine())
   const cl_termStartTimeResult = creditLineContract.try_termStartTime()
@@ -449,9 +470,13 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     const scheduleContract = ScheduleContract.bind(creditLineContract.schedule().getSchedule())
     if (isBeforeClose) {
       // Assume termStartTime will be 2 weeks after funding opens if it's not already known
-      const startTime = scheduleContract.termStartTime(BigInt.fromI32(tranchedPool.fundableAt + twoWeeksSeconds))
+      const startTime = scheduleContract
+        .termStartTime(BigInt.fromI32(tranchedPool.fundableAt + twoWeeksSeconds))
+        .minus(BigInt.fromI32(1))
+      const endTime = scheduleContract.termEndTime(startTime)
+      termInSeconds = endTime.minus(startTime).toI32()
       const periodsInTerm = scheduleContract.periodsInTerm()
-      const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear)
+      const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
 
       let lastPeriodEndTime = startTime
       for (let period = 0; period < periodsInTerm.toI32(); period++) {
@@ -477,6 +502,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     } else {
       // Have to decrement by 1 or else the first period will accidentally be 1 further in the future
       const startTime = creditLineContract.termStartTime().minus(BigInt.fromI32(1))
+      termInSeconds = creditLineContract.termEndTime().minus(creditLineContract.termStartTime()).toI32()
       const periodsInTerm = scheduleContract.periodsInTerm()
       let prevInterest = BigInt.zero()
       let prevPrincipal = BigInt.zero()
@@ -502,6 +528,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     }
   } else {
     const termInDays = creditLineContract.termInDays()
+    termInSeconds = termInDays.times(BigInt.fromI32(86400)).toI32()
     const paymentPeriodInDays = creditLineContract.paymentPeriodInDays()
     const paymentPeriodInSeconds = paymentPeriodInDays.times(BigInt.fromI32(86400))
     const startTime = isBeforeClose
@@ -510,7 +537,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       ? cl_termStartTimeResult.value
       : BigInt.fromI32(tranchedPool.fundableAt)
     const periodsInTerm = termInDays.div(paymentPeriodInDays)
-    const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear)
+    const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
 
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = startTime.plus(BigInt.fromI32(period + 1).times(paymentPeriodInSeconds))
@@ -536,7 +563,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     }
   }
 
-  return repaymentIds
+  return new SchedulingResult(repaymentIds, termInSeconds)
 }
 export function deleteTranchedPoolRepaymentSchedule(tranchedPool: TranchedPool): void {
   const repaymentIds = tranchedPool.repaymentSchedule

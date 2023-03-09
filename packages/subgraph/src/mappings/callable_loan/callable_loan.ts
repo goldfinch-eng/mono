@@ -47,7 +47,9 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   deleteCallableLoanRepaymentSchedule(callableLoan)
-  callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.repaymentSchedule = schedulingResult.repaymentIds
+  callableLoan.termInSeconds = schedulingResult.termInSeconds
   callableLoan.save()
 }
 

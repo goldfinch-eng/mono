@@ -106,7 +106,6 @@ type CreditLine @entity {
   interestApr: BigInt!
   balance: BigInt!
   interestAccruedAsOf: BigInt!
-  termInDays: BigInt!
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
@@ -157,7 +156,7 @@ interface Loan {
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
-  termInDays: Int!
+  termInSeconds: Int!
   interestRate: BigDecimal!
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
@@ -193,7 +192,7 @@ type TranchedPool implements Loan @entity {
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
-  termInDays: Int!
+  termInSeconds: Int!
   interestRate: BigDecimal!
   interestRateBigInt: BigInt!
   lateFeeRate: BigDecimal!
@@ -528,7 +527,7 @@ type CallableLoan implements Loan @entity {
   nextDueTime: BigInt!
   termEndTime: BigInt!
   termStartTime: BigInt!
-  termInDays: Int!
+  termInSeconds: Int!
   interestRate: BigDecimal!
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
