@@ -37,7 +37,10 @@ export function RiskTable() {
       value: (
         <div>
           Investors can access borrower-reported updates via investment-gated{" "}
-          <Link href="https://discord.com/invite/HVeaca3fN8" openInNewTab>
+          <Link
+            href="https://discord.com/channels/793925570739044362/1034881143964717066"
+            openInNewTab
+          >
             Discord channel
           </Link>
         </div>
