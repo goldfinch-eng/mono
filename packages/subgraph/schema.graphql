@@ -163,6 +163,7 @@ interface Loan {
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
   borrowerContract: BorrowerContract!
+  creditLineAddress: Bytes!
 }
 
 type TranchedPool implements Loan @entity {
@@ -204,6 +205,7 @@ type TranchedPool implements Loan @entity {
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigDecimal
   creditLine: CreditLine!
+  creditLineAddress: Bytes!
   isPaused: Boolean!
   drawdownsPaused: Boolean!
   """
@@ -535,6 +537,7 @@ type CallableLoan implements Loan @entity {
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
   borrowerContract: BorrowerContract!
+  creditLineAddress: Bytes!
 
   repaymentSchedule: [ScheduledRepayment!]!
 }

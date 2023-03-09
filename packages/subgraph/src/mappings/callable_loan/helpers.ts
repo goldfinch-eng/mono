@@ -10,6 +10,8 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   const callableLoan = new CallableLoan(id)
   const callableLoanContract = CallableLoanContract.bind(address)
   callableLoan.address = address
+  const creditLineAddress = callableLoanContract.creditLine()
+  callableLoan.creditLineAddress = creditLineAddress
   callableLoan.fundingLimit = callableLoanContract.limit()
   callableLoan.principalAmount = BigInt.zero()
   callableLoan.initialInterestOwed = BigInt.zero() // TODO figure this out. There may be a view function for this
