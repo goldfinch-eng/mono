@@ -134,41 +134,13 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           },
         ]
       : []),
-    {
-      heading: "Post-close reporting",
-      value: (
-        <div>
-          Investors can access borrower-related updated via investment-gated
-          Discord Channel
-        </div>
-      ),
-    },
-    ...(deal.agreement
-      ? [
-          {
-            heading: "Legal recourse",
-            boldValue: (
-              <Link href={deal.agreement} openInNewTab>
-                Loan agreement
-              </Link>
-            ),
-            value:
-              "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
-          },
-        ]
-      : []),
+
     ...(deal.securitiesAndRecourse &&
     deal.securitiesAndRecourse.secured !== null
       ? [
           {
             heading: "Collateralization",
-            boldValue: deal.securitiesAndRecourse.secured
-              ? `Yes${
-                  deal.securitiesAndRecourse.type
-                    ? ` (${deal.securitiesAndRecourse.type})`
-                    : ""
-                }`
-              : "No",
+            boldValue: deal.securitiesAndRecourse.secured ? "Yes" : "No",
             value: (
               <RichText content={deal.securitiesAndRecourse.description} />
             ),
@@ -189,11 +161,30 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           {
             heading: "Recourse to borrower",
             boldValue: deal.securitiesAndRecourse.recourse ? "Yes" : "No",
-            value: (
-              <RichText
-                content={deal.securitiesAndRecourse.recourseDescription}
-              />
+            value: null,
+          },
+        ]
+      : []),
+    {
+      heading: "Post-close reporting",
+      value: (
+        <div>
+          Investors can access borrower-related updated via investment-gated
+          Discord Channel
+        </div>
+      ),
+    },
+    ...(deal.agreement
+      ? [
+          {
+            heading: "Legal recourse",
+            boldValue: (
+              <Link href={deal.agreement} openInNewTab>
+                Loan agreement
+              </Link>
             ),
+            value:
+              "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
           },
         ]
       : []),
