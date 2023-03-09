@@ -73,7 +73,9 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           : null,
       value: "On-chain capital for this deal comes from multiple sources",
     },
-    ...(loan.__typename === "TranchedPool" && loan.estimatedLeverageRatio
+    ...(loan.__typename === "TranchedPool" &&
+    loan.estimatedLeverageRatio &&
+    deal.dealType === "multitranche"
       ? [
           {
             heading: "Leverage ratio",
