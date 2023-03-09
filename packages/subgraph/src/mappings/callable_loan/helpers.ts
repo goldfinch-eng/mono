@@ -54,6 +54,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
 
   const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
+  callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
 
   return callableLoan
@@ -101,6 +102,10 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
         .div(BigInt.fromString("1000000000000000000"))
       const principal = period == periodsInTerm.toI32() - 1 ? callableLoan.fundingLimit : BigInt.zero()
 
+      if (interest.isZero() && principal.isZero()) {
+        continue
+      }
+
       const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
       scheduledRepayment.loan = callableLoan.id
       scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
@@ -126,6 +131,10 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
       const principal = principalOwedAt.minus(prevPrincipal)
       prevPrincipal = principalOwedAt
 
+      if (principal.isZero() && interest.isZero()) {
+        continue
+      }
+
       const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
       scheduledRepayment.loan = callableLoan.id
       scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
@@ -149,6 +158,7 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   callableLoan.repaymentSchedule = []
+  callableLoan.numRepayments = 0
 }
 
 // TODO this function exists for tranched pools too. Try to consolidate them?

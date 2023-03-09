@@ -234,6 +234,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
     tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+    tranchedPool.numRepayments = schedulingResult.repaymentIds.length
     tranchedPool.termInSeconds = schedulingResult.termInSeconds
   }
   tranchedPool.initialInterestOwed = calculateInitialInterestOwed(
@@ -479,6 +480,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
 
       let lastPeriodEndTime = startTime
+      // TODO need the versions of interestOwedAt and principalOwedAt that work before loan closes
       for (let period = 0; period < periodsInTerm.toI32(); period++) {
         const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
         const thisPeriodEndTime = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
@@ -489,6 +491,11 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
           .times(tranchedPool.fundingLimit)
           .div(BigInt.fromString("1000000000000000000"))
         const principal = period == periodsInTerm.toI32() - 1 ? tranchedPool.fundingLimit : BigInt.zero()
+
+        // Skip if there's no principal or interest due
+        if (interest.isZero() && principal.isZero()) {
+          continue
+        }
 
         const scheduledRepayment = new ScheduledRepayment(`${tranchedPool.id}-${period.toString()}`)
         scheduledRepayment.loan = tranchedPool.id
@@ -515,6 +522,11 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
         const principalOwedAt = creditLineContract.principalOwedAt(estimatedPaymentDate)
         const principal = principalOwedAt.minus(prevPrincipal)
         prevPrincipal = principalOwedAt
+
+        // Skip if there's no principal or interest due
+        if (interest.isZero() && principal.isZero()) {
+          continue
+        }
 
         const scheduledRepayment = new ScheduledRepayment(`${tranchedPool.id}-${period.toString()}`)
         scheduledRepayment.loan = tranchedPool.id
@@ -567,4 +579,5 @@ export function deleteTranchedPoolRepaymentSchedule(tranchedPool: TranchedPool):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   tranchedPool.repaymentSchedule = []
+  tranchedPool.numRepayments = 0
 }

@@ -150,6 +150,7 @@ interface Loan {
   isPaused: Boolean!
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
+  numRepayments: Int!
 
   # "Credit line" fields
   balance: BigInt!
@@ -183,6 +184,7 @@ type TranchedPool implements Loan @entity {
   numBackers: Int!
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
+  numRepayments: Int!
   """
   A null value indicates there have been no senior pool contributions to the pool yet
   """
@@ -534,6 +536,7 @@ type CallableLoan implements Loan @entity {
   borrowerContract: BorrowerContract!
 
   repaymentSchedule: [ScheduledRepayment!]!
+  numRepayments: Int!
 }
 
 type ScheduledRepayment @entity {
