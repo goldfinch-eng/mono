@@ -20,10 +20,11 @@ import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
+  loanType: "CallableLoan" | "TranchedPool";
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   borrowerContractAddress: string;
-  tranchedPoolAddress: string;
+  loanAddress: string;
   creditLineStatus?: CreditLineStatus;
   onClose: () => void;
 }
@@ -36,10 +37,11 @@ enum PaymentOption {
 }
 
 export function PaymentForm({
+  loanType,
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
   borrowerContractAddress,
-  tranchedPoolAddress,
+  loanAddress,
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
@@ -70,21 +72,29 @@ export function PaymentForm({
     }
     const usdc = stringToCryptoAmount(usdcAmount, "USDC");
 
-    const borrowerContract = await getContract({
-      name: "Borrower",
-      address: borrowerContractAddress,
-      provider,
-    });
+    const paymentContract =
+      loanType === "CallableLoan"
+        ? await getContract({
+            name: "CallableLoan",
+            address: loanAddress,
+            provider,
+          })
+        : await getContract({
+            name: "Borrower",
+            address: borrowerContractAddress,
+            provider,
+          });
+
     const usdcContract = await getContract({ name: "USDC", provider });
 
     await approveErc20IfRequired({
       account,
-      spender: borrowerContract.address,
+      spender: paymentContract.address,
       erc20Contract: usdcContract,
       amount: usdc.amount,
     });
     await toastTransaction({
-      transaction: borrowerContract.pay(tranchedPoolAddress, usdc.amount),
+      transaction: paymentContract.pay(loanAddress, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });

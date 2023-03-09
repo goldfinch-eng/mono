@@ -243,10 +243,11 @@ export default function PoolCreditLinePage({
                     />
                   ) : (
                     <PaymentForm
+                      loanType={loan.__typename}
                       remainingPeriodDueAmount={remainingPeriodDueAmount}
                       remainingTotalDueAmount={remainingTotalDueAmount}
                       borrowerContractAddress={loan.borrowerContract.id}
-                      tranchedPoolAddress={loan.id}
+                      loanAddress={loan.id}
                       creditLineStatus={creditLineStatus}
                       onClose={() => setShownForm(null)}
                     />
