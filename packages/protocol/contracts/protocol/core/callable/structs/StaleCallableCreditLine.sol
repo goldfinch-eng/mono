@@ -6,7 +6,8 @@ import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 
 import {Waterfall} from "./Waterfall.sol";
-import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo} from "./CallableCreditLine.sol";
+// solhint-disable-next-line max-line-length
+import {CallableCreditLine, CallableCreditLineLogic, PreviewCallableCreditLineLogic, SettledTrancheInfo} from "./CallableCreditLine.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../../schedule/PaymentSchedule.sol";
 
 struct StaleCallableCreditLine {
@@ -20,6 +21,8 @@ using StaleCallableCreditLineLogic for StaleCallableCreditLine global;
  * CallableCreditLine after checkpoint() is called.
  */
 library StaleCallableCreditLineLogic {
+  using PreviewCallableCreditLineLogic for CallableCreditLine;
+
   function initialize(
     StaleCallableCreditLine storage cl,
     IGoldfinchConfig _config,
@@ -84,14 +87,16 @@ library StaleCallableCreditLineLogic {
     return cl._cl.checkpointedAsOf();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cl.interestOwed();
+    return cl._cl.previewInterestOwed();
   }
 
   function principalOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.principalOwed();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestOwedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -106,6 +111,7 @@ library StaleCallableCreditLineLogic {
     return cl._cl.principalOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestOwedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -120,8 +126,9 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cl.totalInterestOwed();
+    return cl._cl.previewTotalInterestOwed();
   }
 
   function totalPrincipalDeposited(
@@ -196,19 +203,21 @@ library StaleCallableCreditLineLogic {
     uint256 feePercent
   ) internal view returns (uint256, uint256) {
     return
-      cl._cl.proportionalInterestAndPrincipalAvailable({
+      cl._cl.previewProportionalInterestAndPrincipalAvailable({
         trancheId: trancheId,
         principal: principal,
         feePercent: feePercent
       });
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestAccrued(
     StaleCallableCreditLine storage cl
   ) internal view returns (uint256) {
-    return cl._cl.totalInterestAccrued();
+    return cl._cl.previewTotalInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function totalInterestAccruedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp
@@ -216,10 +225,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalInterestAccruedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestAccrued(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cl.interestAccrued();
+    return cl._cl.previewInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestAccruedAt(
     StaleCallableCreditLine storage cl,
     uint256 timestamp

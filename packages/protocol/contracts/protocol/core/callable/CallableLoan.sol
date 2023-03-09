@@ -23,7 +23,7 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo} from "./structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, CheckpointedCallableCreditLineLogic, SettledTrancheInfo} from "./structs/CallableCreditLine.sol";
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
@@ -42,6 +42,7 @@ contract CallableLoan is
   IRequiresUID,
   IVersioned
 {
+  using CheckpointedCallableCreditLineLogic for CallableCreditLine;
   using CallableLoanConfigHelper for IGoldfinchConfig;
   using SafeERC20 for IERC20UpgradeableWithDec;
   using SaturatingSub for uint256;
@@ -188,7 +189,7 @@ contract CallableLoan is
         totalInterestWithdrawable -
         tokenInfo.interestRedeemed;
       if (netWithdrawableAmount > 0) {
-        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount);
+        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount, cl);
       }
     }
 
@@ -305,13 +306,14 @@ contract CallableLoan is
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
   ) external override nonReentrant whenNotPaused {
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     if (tokenIds.length != amounts.length) {
       revert ArrayLengthMismatch(tokenIds.length, amounts.length);
     }
 
     for (uint256 i = 0; i < amounts.length; i++) {
       IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenIds[i]);
-      _withdraw(tokenInfo, tokenIds[i], amounts[i]);
+      _withdraw(tokenInfo, tokenIds[i], amounts[i], cl);
     }
   }
 
@@ -579,7 +581,15 @@ contract CallableLoan is
     uint256 amount
   ) internal returns (uint256, uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    _withdraw(tokenInfo, tokenId, amount, cl);
+  }
 
+  function _withdraw(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 tokenId,
+    uint256 amount,
+    CallableCreditLine storage cl
+  ) internal returns (uint256, uint256) {
     if (amount == 0) {
       revert ZeroWithdrawAmount();
     }
@@ -589,7 +599,10 @@ contract CallableLoan is
     }
 
     // calculate the amount that will ever be redeemable
-    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(
+      tokenInfo,
+      cl
+    );
 
     if (amount > interestWithdrawable + principalWithdrawable) {
       revert WithdrawAmountExceedsWithdrawable(
@@ -636,14 +649,14 @@ contract CallableLoan is
   }
 
   function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
-    _staleCreditLine.checkpoint();
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
     if (totalWithdrawable == 0) {
       return (0, 0);
     }
-    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
+    return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
   /*================================================================================
@@ -681,6 +694,32 @@ contract CallableLoan is
     }
 
     (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = _staleCreditLine
+      .proportionalInterestAndPrincipalAvailable({
+        trancheId: tokenInfo.tranche,
+        principal: tokenInfo.principalAmount,
+        feePercent: _reserveFundsFeePercent()
+      });
+
+    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
+    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+
+    return (
+      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
+    );
+  }
+
+  function _availableToWithdraw(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    CallableCreditLine storage cl
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
+    if (tokenInfo.principalAmount == 0) {
+      // Bail out early to account for proportion of zero.
+      return (0, 0);
+    }
+
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
         principal: tokenInfo.principalAmount,
@@ -761,11 +800,13 @@ contract CallableLoan is
     return _staleCreditLine.isLate();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccrued() public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccruedAt(timestamp);
@@ -776,26 +817,31 @@ contract CallableLoan is
     return _staleCreditLine.totalInterestPaid();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwed();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccrued() public view override returns (uint256) {
     return _staleCreditLine.interestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestAccruedAt(timestamp);

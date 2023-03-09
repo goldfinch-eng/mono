@@ -898,7 +898,7 @@ async function createCallableLoanForBorrower({
   limitInDollars,
   interestApr = String(interestAprAsBN("13.00")),
   numLockPeriods = 2,
-  lateFeeApr = String(interestAprAsBN("5.00")), // TODO: Make this the Fazz deal late APR (good example of a late fee)
+  lateFeeApr = String(interestAprAsBN("2.00")),
   fundableAt = String(new BN(0)), // 0 means immediately
   numPeriods = CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
   gracePrincipalPeriods = CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods,
