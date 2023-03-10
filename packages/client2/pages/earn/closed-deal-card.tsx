@@ -122,7 +122,7 @@ function Status({
     case LoanRepaymentStatus.Current:
       return <span className="text-mint-450">On Time</span>;
     case LoanRepaymentStatus.Repaid:
-      return <span className="text-mint-450">Fully Repaid</span>;
+      return <span className="text-mint-600">Fully Repaid</span>;
     case LoanRepaymentStatus.Default:
       return <span className="text-clay-500">Default</span>;
     case LoanRepaymentStatus.NotDrawnDown:

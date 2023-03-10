@@ -6,12 +6,12 @@ export function HighValueInvestorNotice() {
       <div className="flex items-center gap-2">
         <Icon name="DollarSolid" className="text-mustard-500" size="sm" />
         <div>
-          Investors depositing <span className="font-medium">$250,000+</span>{" "}
+          Investors depositing <span className="font-medium">$100,000+</span>{" "}
           should get in touch for additional information
         </div>
       </div>
       <Link
-        href="mailto:hi@goldfinch.finance"
+        href="mailto:IR@warblerlabs.com"
         iconRight="ArrowTopRight"
         className="whitespace-nowrap"
       >

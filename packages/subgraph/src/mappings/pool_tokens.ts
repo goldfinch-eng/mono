@@ -6,6 +6,8 @@ import {
   Transfer,
   TokenPrincipalWithdrawn,
 } from "../../generated/PoolTokens/PoolTokens"
+import {TranchedPool as TranchedPoolContract} from "../../generated/PoolTokens/TranchedPool"
+import {CallableLoan as CallableLoanContract} from "../../generated/PoolTokens/CallableLoan"
 import {TranchedPool, PoolToken, User, CallableLoan} from "../../generated/schema"
 import {getOrInitUser} from "../entities/user"
 import {deleteZapAfterClaimMaybe} from "../entities/zapper"
@@ -39,7 +41,9 @@ export function handleTokenBurned(event: TokenBurned): void {
 
 export function handleTokenMinted(event: TokenMinted): void {
   const tranchedPool = TranchedPool.load(event.params.pool.toHexString())
+  const tranchedPoolContract = TranchedPoolContract.bind(event.params.pool)
   const callableLoan = CallableLoan.load(event.params.pool.toHexString())
+  const callableLoanContract = CallableLoanContract.bind(event.params.pool)
   const user = getOrInitUser(event.params.owner)
   if (tranchedPool || callableLoan) {
     const token = new PoolToken(event.params.tokenId.toString())
@@ -48,13 +52,18 @@ export function handleTokenMinted(event: TokenMinted): void {
     token.tranche = event.params.tranche
     token.principalAmount = event.params.amount
     token.principalRedeemed = BigInt.zero()
-    token.principalRedeemable = token.principalAmount
+    token.principalRedeemable = tranchedPool
+      ? tranchedPoolContract.availableToWithdraw(event.params.tokenId).value1
+      : callableLoan
+      ? callableLoanContract.availableToWithdraw(event.params.tokenId).value1
+      : token.principalAmount
     token.interestRedeemed = BigInt.zero()
     token.interestRedeemable = BigInt.zero()
     token.rewardsClaimable = BigInt.zero()
     token.rewardsClaimed = BigInt.zero()
     token.stakingRewardsClaimable = BigInt.zero()
     token.stakingRewardsClaimed = BigInt.zero()
+    token.isCapitalCalled = false
     if (tranchedPool) {
       token.loan = tranchedPool.id
       tranchedPool.tokens = tranchedPool.tokens.concat([token.id])

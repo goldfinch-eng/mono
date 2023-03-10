@@ -48,7 +48,7 @@ gql`
       usdcApy
       rawGfiApy
       principalAmount
-      termInDays
+      termInSeconds
       termEndTime
       ...FundingStatusLoanFields
       ...RepaymentStatusLoanFields
@@ -200,8 +200,6 @@ export default function EarnPage({
                 ? loan.rawGfiApy
                 : loanApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
-              const termLengthInMonths = Math.floor(loan.termInDays / 30);
-
               return (
                 <OpenDealCard
                   key={loan.id}
@@ -248,7 +246,7 @@ export default function EarnPage({
                       </div>
                     </div>
                   }
-                  termLengthInMonths={termLengthInMonths}
+                  termLengthInMs={loan.termInSeconds * 1000}
                   liquidity={
                     loan.__typename === "TranchedPool"
                       ? "End of loan term"

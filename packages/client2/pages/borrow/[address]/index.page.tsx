@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
-import { format as formatDate } from "date-fns";
+import { format as formatDate, formatDistanceStrict } from "date-fns";
 import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
 import { useState } from "react";
@@ -389,7 +389,10 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {loan.termInDays.toString()}
+                    {formatDistanceStrict(0, loan.termInSeconds * 1000, {
+                      unit: "day",
+                      roundingMethod: "ceil",
+                    })}
                   </div>
                   <div className="text-sand-500">Payback term</div>
                 </div>

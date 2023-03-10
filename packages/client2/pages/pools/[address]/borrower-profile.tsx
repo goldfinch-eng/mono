@@ -132,7 +132,7 @@ export function BorrowerProfile({
             value={numOtherPools}
           />
           <Stat
-            label="Default rate"
+            label="Total loss rate"
             tooltip="[TODO] content"
             value={formatPercent(borrowerDefaultRate)}
           />
@@ -145,12 +145,18 @@ export function BorrowerProfile({
             <table className="w-full text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
               <thead>
                 <tr className="border-b border-sand-200 bg-white text-right [&>th]:font-normal">
-                  <th scope="col" className="text-left">
+                  <th scope="col" className="w-1/4 text-left">
                     Deal name
                   </th>
-                  <th scope="col">Loan principal</th>
-                  <th scope="col">Maturity date</th>
-                  <th scope="col">Repayment status</th>
+                  <th scope="col" className="w-1/4">
+                    Loan principal
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Maturity date
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Repayment status
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sand-200">
@@ -159,7 +165,7 @@ export function BorrowerProfile({
                     key={pool.id}
                     className="relative text-right hover:bg-white"
                   >
-                    <td className="text-left">
+                    <td className="w-1/4 max-w-0 truncate text-left">
                       <NextLink passHref href={`/pools/${pool.id}`}>
                         <a className="before:absolute before:inset-0">
                           {pool.name}
@@ -207,13 +213,15 @@ function RepaymentStatusChip({
           ? "border-clay-200 bg-clay-100 text-clay-700"
           : repaymentStatus === LoanRepaymentStatus.Late
           ? "border-mustard-200 bg-mustard-100 text-mustard-700"
+          : repaymentStatus === LoanRepaymentStatus.Repaid
+          ? "border-mint-300 bg-mint-200 text-mint-800"
           : "border-mint-200 bg-mint-100 text-mint-700"
       )}
     >
       {repaymentStatus === LoanRepaymentStatus.Current
         ? "On time"
         : repaymentStatus === LoanRepaymentStatus.Late
-        ? "Late"
+        ? "Grace Period"
         : repaymentStatus === LoanRepaymentStatus.Default
         ? "Default"
         : repaymentStatus === LoanRepaymentStatus.NotDrawnDown

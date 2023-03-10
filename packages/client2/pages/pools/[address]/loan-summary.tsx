@@ -13,15 +13,14 @@ import {
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
-const secondsPerDay = 86400;
-
 export const LOAN_SUMMARY_FIELDS = gql`
   fragment LoanSummaryFields on Loan {
     __typename
     id
     usdcApy
+    interestRate
     rawGfiApy
-    termInDays
+    termInSeconds
   }
 `;
 
@@ -40,6 +39,7 @@ export const LOAN_SUMMARY_DEAL_FIELDS = gql`
     id
     name
     overview
+    dealType
   }
 `;
 
@@ -85,7 +85,11 @@ export function LoanSummary({
         <div className="text-left">
           <div className="mb-2 text-sm">Fixed USDC APY</div>
           <div className="font-serif text-4xl font-semibold text-sand-800">
-            {formatPercent(loan.usdcApy)}
+            {formatPercent(
+              deal.dealType === "multitranche"
+                ? loan.usdcApy
+                : loan.interestRate
+            )}
           </div>
         </div>
         {!loan.rawGfiApy.isZero() ? (
@@ -108,11 +112,9 @@ export function LoanSummary({
         <InfoLine
           label="Loan term"
           tooltip="Length of the loan term up until the principal is due."
-          value={formatDistanceStrict(
-            0,
-            loan.termInDays * secondsPerDay * 1000,
-            { unit: "month", roundingMethod: "ceil" }
-          )}
+          value={formatDistanceStrict(0, loan.termInSeconds * 1000, {
+            unit: "month",
+          })}
         />
         <InfoLine
           label="Liquidity"

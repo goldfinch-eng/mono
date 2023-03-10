@@ -551,8 +551,7 @@ export const REPAYMENT_SCHEDULE_FIELDS = gql`
     fundableAt
     termStartTime
     termEndTime
-    # paymentPeriodInDays
-    termInDays
+    termInSeconds
     interestRateBigInt
     principalAmount
     fundingLimit
@@ -573,7 +572,7 @@ export function generateRepaymentSchedule(
     : loan.fundableAt + secondsPerDay * 14;
   const termEndTime = !loan.termEndTime.isZero()
     ? loan.termEndTime.toNumber()
-    : termStartTime + loan.termInDays * secondsPerDay;
+    : termStartTime + loan.termInSeconds / secondsPerDay;
 
   const principal = !loan.principalAmount.isZero()
     ? loan.principalAmount

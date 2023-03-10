@@ -41,7 +41,7 @@ gql`
     __typename
     isPaused
     drawdownsPaused
-    termInDays
+    termInSeconds
     interestRate
     interestRateBigInt
     balance

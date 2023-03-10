@@ -1,6 +1,6 @@
 import {Address} from "@graphprotocol/graph-ts"
 
-import {TranchedPool, PoolToken, VaultedPoolToken} from "../../generated/schema"
+import {TranchedPool, PoolToken, VaultedPoolToken, ScheduledRepayment} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,
@@ -128,7 +128,10 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
   updatePoolTokensRedeemable(tranchedPool)
   deleteTranchedPoolRepaymentSchedule(tranchedPool)
-  tranchedPool.repaymentSchedule = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+  tranchedPool.numRepayments = schedulingResult.repaymentIds.length
+  tranchedPool.termInSeconds = schedulingResult.termInSeconds
   tranchedPool.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)

@@ -1,7 +1,8 @@
 import {Address} from "@graphprotocol/graph-ts"
-import {CallableLoan} from "../../../generated/schema"
+import {CallableLoan, PoolToken} from "../../../generated/schema"
 import {
   CallableLoan as CallableLoanContract,
+  CallRequestSubmitted,
   DepositMade,
   DrawdownMade,
   DrawdownsPaused,
@@ -57,9 +58,11 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.isPaused = callableLoanContract.paused()
   callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   deleteCallableLoanRepaymentSchedule(callableLoan)
-  const repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
-  callableLoan.repaymentSchedule = repaymentSchedule
-  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(repaymentSchedule)
+  const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.repaymentSchedule = schedulingResult.repaymentIds
+  callableLoan.numRepayments = schedulingResult.repaymentIds.length
+  callableLoan.termInSeconds = schedulingResult.termInSeconds
+  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
   callableLoan.save()
 }
 
@@ -88,4 +91,13 @@ export function handleDrawdownsUnpaused(event: DrawdownsUnpaused): void {
   const callableLoanContract = CallableLoanContract.bind(event.address)
   callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   callableLoan.save()
+}
+
+export function handleCallRequestSubmitted(event: CallRequestSubmitted): void {
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  const poolToken = assert(PoolToken.load(event.params.callRequestedTokenId.toString()))
+  poolToken.isCapitalCalled = true
+  poolToken.calledAt = event.block.timestamp.toI32()
+  poolToken.callDueAt = callableLoanContract.nextPrincipalDueTime().toI32()
+  poolToken.save()
 }

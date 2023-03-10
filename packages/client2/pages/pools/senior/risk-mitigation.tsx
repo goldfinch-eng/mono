@@ -11,9 +11,9 @@ export function RiskMitigation() {
               Senior Pool capital risk
             </div>
             <div className="mb-3 text-xs">
-              Senior Pool capital has the first lien on assets. It gives 20% of
-              nominal interest to the Junior Tranche&apos;s Backers as a “risk
-              premium.”
+              Senior Pool capital has the first lien on assets. In return for
+              this Seniority, it gives a portion of nominal interest to the
+              Junior Tranche&apos;s Backers as a “risk premium.”
             </div>
             <div className="mb-3 text-xs">
               An on-chain credit line finances real-world private debt deals.
@@ -56,11 +56,9 @@ export function RiskMitigation() {
               <div className="w-3/5">
                 <div className="mb-1 flex flex-col rounded-lg bg-mustard-600 py-2 px-3 text-sand-50">
                   <div className="text-sm">Junior Tranche</div>
-                  <div className="text-xs">20% of Borrower Pool</div>
                 </div>
                 <div className="flex h-[7rem] flex-col rounded-lg border border-twilight-400 bg-twilight-700 py-2 px-3 text-sand-50">
                   <div className="text-sm">Senior Tranche</div>
-                  <div className="text-xs">80% of Borrower Pool</div>
                 </div>
               </div>
               <div className="flex w-2/5 justify-center pl-3 text-xs font-medium text-sand-500">

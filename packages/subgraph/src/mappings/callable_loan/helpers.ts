@@ -52,15 +52,16 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.balance = callableLoanContract.balance()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
-  callableLoan.termInDays = 365 // TODO FIX THIS. Might be time to eliminate termInDays
   callableLoan.interestRate = callableLoan.usdcApy
   callableLoan.interestRateBigInt = callableLoanContract.interestApr()
   callableLoan.lateFeeRate = callableLoanContract.lateFeeApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.borrowerContract = callableLoanContract.borrower().toHexString()
 
-  const repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
-  callableLoan.repaymentSchedule = repaymentSchedule
-  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(repaymentSchedule)
+  const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.repaymentSchedule = schedulingResult.repaymentIds
+  callableLoan.numRepayments = schedulingResult.repaymentIds.length
+  callableLoan.termInSeconds = schedulingResult.termInSeconds
+  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
 
   return callableLoan
 }
@@ -68,8 +69,18 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
 const twoWeeksSeconds = 86400 * 14
 const secondsPerYear = BigInt.fromI32(31540000)
 
-export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): string[] {
+class SchedulingResult {
+  repaymentIds: string[]
+  termInSeconds: i32
+  constructor(r: string[], t: i32) {
+    this.repaymentIds = r
+    this.termInSeconds = t
+  }
+}
+
+export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): SchedulingResult {
   const repaymentIds: string[] = []
+  let termInSeconds = 0
   const callableLoanContract = CallableLoanContract.bind(Address.fromBytes(callableLoan.address))
   const scheduleContract = ScheduleContract.bind(callableLoanContract.schedule())
 
@@ -81,6 +92,7 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     const startTime = scheduleContract
       .termStartTime(BigInt.fromI32(callableLoan.fundableAt + twoWeeksSeconds))
       .minus(BigInt.fromI32(1))
+    termInSeconds = scheduleContract.termEndTime(startTime).minus(scheduleContract.termStartTime(startTime)).toI32()
     const periodsInTerm = scheduleContract.periodsInTerm()
     const interestPerSecond = callableLoan.interestRateBigInt.div(secondsPerYear)
 
@@ -96,6 +108,10 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
         .div(BigInt.fromString("1000000000000000000"))
       const principal = period == periodsInTerm.toI32() - 1 ? callableLoan.fundingLimit : BigInt.zero()
 
+      if (interest.isZero() && principal.isZero()) {
+        continue
+      }
+
       const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
       scheduledRepayment.loan = callableLoan.id
       scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
@@ -107,6 +123,7 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     }
   } else {
     const startTime = callableLoan.termStartTime.minus(BigInt.fromI32(1))
+    termInSeconds = callableLoanContract.termEndTime().minus(callableLoanContract.termStartTime()).toI32()
     const periodsInTerm = scheduleContract.periodsInTerm()
     let prevInterest = BigInt.zero()
     let prevPrincipal = BigInt.zero()
@@ -120,6 +137,10 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
       const principal = principalOwedAt.minus(prevPrincipal)
       prevPrincipal = principalOwedAt
 
+      if (principal.isZero() && interest.isZero()) {
+        continue
+      }
+
       const scheduledRepayment = new ScheduledRepayment(`${callableLoan.id}-${period.toString()}`)
       scheduledRepayment.loan = callableLoan.id
       scheduledRepayment.estimatedPaymentDate = estimatedPaymentDate.toI32()
@@ -131,7 +152,7 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     }
   }
 
-  return repaymentIds
+  return new SchedulingResult(repaymentIds, termInSeconds)
 }
 
 /**
@@ -144,6 +165,7 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
   }
   callableLoan.repaymentSchedule = []
   callableLoan.paymentFrequency = "Unknown"
+  callableLoan.numRepayments = 0
 }
 
 // TODO this function exists for tranched pools too. Try to consolidate them?
