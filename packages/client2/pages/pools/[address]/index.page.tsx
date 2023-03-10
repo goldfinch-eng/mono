@@ -341,7 +341,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             <Button
               as="a"
               variant="rounded"
-              size="lg"
+              size="sm"
               colorScheme="sand"
               iconLeft="ArrowLeft"
               className="mb-10 self-start"

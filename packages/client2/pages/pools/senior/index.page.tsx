@@ -150,7 +150,7 @@ export default function SeniorPoolPage({
             <Button
               as="a"
               variant="rounded"
-              size="lg"
+              size="sm"
               colorScheme="sand"
               iconLeft="ArrowLeft"
               className="mb-10 self-start"
