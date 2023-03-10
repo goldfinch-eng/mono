@@ -39,7 +39,7 @@ export function SeniorPoolLoanSummary({
         <Link
           href={
             seniorPool
-              ? `https://etherscan.io/contract/${seniorPool.address}`
+              ? `https://etherscan.io/address/${seniorPool.address}`
               : ""
           }
           openInNewTab
