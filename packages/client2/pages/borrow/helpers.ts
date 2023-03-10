@@ -30,6 +30,7 @@ gql`
     id
     totalDeposited
     totalPrincipalPaid
+    paymentFrequency
     periodDueAmount @client
     termDueAmount @client
     nextDueTime @client

@@ -384,7 +384,12 @@ export default function PoolCreditLinePage({
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">{`TODO days`}</div>
+                  <div className="mb-0.5 text-2xl">
+                    {loan.__typename === "CallableLoan"
+                      ? loan.paymentFrequency
+                      : // TODO: Zadra Pretty sure all Tranched pool period 30 days long?
+                        "30 days"}
+                  </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
                 <div>
