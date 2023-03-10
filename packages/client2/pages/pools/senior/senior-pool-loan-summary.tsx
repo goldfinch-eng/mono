@@ -69,7 +69,7 @@ export function SeniorPoolLoanSummary({
       <div className="mb-6 flex justify-between gap-5">
         <div className="text-left">
           <div className="mb-2 text-sm">USDC APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {seniorPool ? (
               formatPercent(seniorPool.estimatedApy)
             ) : (
@@ -79,7 +79,7 @@ export function SeniorPoolLoanSummary({
         </div>
         <div className="text-right">
           <div className="mb-2 text-sm">Variable GFI APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {seniorPool && fiatPerGfi ? (
               formatPercent(
                 computeApyFromGfiInFiat(
