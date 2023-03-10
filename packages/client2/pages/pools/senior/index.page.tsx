@@ -253,7 +253,9 @@ export default function SeniorPoolPage({
             ]}
           />
 
-          <TransactionTable />
+          <div className="px-4">
+            <TransactionTable />
+          </div>
         </div>
       </div>
     </>

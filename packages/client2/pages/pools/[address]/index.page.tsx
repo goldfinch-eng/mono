@@ -328,7 +328,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             }
           />
 
-          <div>
+          <div className="px-4">
             <h2 className="mb-6 font-semibold">Recent activity</h2>
             {tranchedPool ? (
               <TransactionTable tranchedPoolId={tranchedPool.id} />
