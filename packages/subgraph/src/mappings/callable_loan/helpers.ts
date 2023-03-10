@@ -22,6 +22,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.remainingCapacity = callableLoan.fundingLimit
   callableLoan.createdAt = block.timestamp.toI32()
   callableLoan.fundableAt = callableLoanContract.getFundableAt().toI32()
+  callableLoan.totalPrincipalPaid = callableLoanContract.totalPrincipalPaid()
   if (callableLoan.fundableAt == 0) {
     callableLoan.fundableAt = callableLoan.createdAt
   }

@@ -107,7 +107,7 @@ export default function PoolCreditLinePage({
       creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
     if (loan.__typename === "CallableLoan") {
-      availableForDrawdown = loan.totalDeposited;
+      availableForDrawdown = loan.totalPrincipalPaid;
     } else {
       const juniorTranche = loan.juniorTranches[0];
       const seniorTranche = loan.seniorTranches[0];

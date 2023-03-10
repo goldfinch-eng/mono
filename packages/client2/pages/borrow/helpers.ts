@@ -29,6 +29,7 @@ gql`
   fragment CallableLoanBorrowerAccountingFields on CallableLoan {
     id
     totalDeposited
+    totalPrincipalPaid
     periodDueAmount @client
     termDueAmount @client
     nextDueTime @client
@@ -351,6 +352,8 @@ export function getCreditLineAccountingAnalyisValues(
     termEndTime,
   } = loan;
 
+  // 'principalAmount' represents the limit once the pool has been locked.
+  // Thus when still raising, we show the limit as the max funding limit of the pool
   const creditLineLimit = principalAmount.gt(0)
     ? principalAmount
     : fundingLimit;
