@@ -28,14 +28,11 @@ export function Banner({
   return (
     <Disclosure
       as="div"
-      className={clsx(
-        "w-full border-b border-sand-200 text-mustard-700",
-        className
-      )}
+      className={clsx("group w-full text-mustard-700", className)}
     >
       {({ open }) => (
         <>
-          <Disclosure.Button className="flex w-full items-center justify-between py-3 px-6 text-xs md:px-10">
+          <Disclosure.Button className="flex w-full items-center gap-4 py-3 px-6 text-xs md:px-10">
             <div className="flex items-center gap-2">
               <Icon name="InfoCircle" className="text-mustard-500" size="sm" />
               <div className={clsx("text-left", open ? "opacity-70" : null)}>
@@ -46,8 +43,8 @@ export function Banner({
               name="ChevronDown"
               size="sm"
               className={clsx(
-                "transition-transform duration-200",
-                open ? "rotate-180" : null
+                "opacity-0 transition-all duration-200 group-hover:opacity-100",
+                open ? "rotate-180 opacity-100" : "rotate-0"
               )}
             />
           </Disclosure.Button>

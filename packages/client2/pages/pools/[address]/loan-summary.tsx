@@ -84,7 +84,7 @@ export function LoanSummary({
       <div className="mb-6 flex justify-between gap-5">
         <div className="text-left">
           <div className="mb-2 text-sm">Fixed USDC APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {formatPercent(
               deal.dealType === "multitranche"
                 ? loan.usdcApy
@@ -95,7 +95,7 @@ export function LoanSummary({
         {!loan.rawGfiApy.isZero() ? (
           <div className="text-right">
             <div className="mb-2 text-sm">Variable GFI APY</div>
-            <div className="font-serif text-4xl font-semibold text-sand-800">
+            <div className="font-serif text-3xl font-semibold text-sand-800">
               {formatPercent(
                 computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
                   computeApyFromGfiInFiat(

@@ -44,15 +44,8 @@ export function CapitalStats({ seniorPool }: CapitalStatsProps) {
         <div className="mb-5 flex justify-between gap-8">
           <div>
             <div className="mb-3 flex gap-2 text-sm">
-              Capital allocated <InfoIconTooltip content="TODO content" />
-            </div>
-            <div className="text-lg font-medium">
-              {formatCrypto({ token: "USDC", amount: totalLoansOutstanding })}
-            </div>
-          </div>
-          <div>
-            <div className="mb-3 flex gap-2 text-sm">
-              Total pool assets <InfoIconTooltip content="TODO content" />
+              Total pool assets{" "}
+              <InfoIconTooltip content="The amount of capital that Liquidity Providers currently have invested in the Goldfinch Senior Pool." />
             </div>
             <div className="text-lg font-medium">
               {formatCrypto({ token: "USDC", amount: assets })}

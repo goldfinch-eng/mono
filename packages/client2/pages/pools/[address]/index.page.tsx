@@ -328,7 +328,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             }
           />
 
-          <div>
+          <div className="px-4">
             <h2 className="mb-6 font-semibold">Recent activity</h2>
             {tranchedPool ? (
               <TransactionTable loanAddress={tranchedPool.id} />
@@ -341,7 +341,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             <Button
               as="a"
               variant="rounded"
-              size="lg"
+              size="sm"
               colorScheme="sand"
               iconLeft="ArrowLeft"
               className="mb-10 self-start"
