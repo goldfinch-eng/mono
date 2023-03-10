@@ -421,6 +421,11 @@ const transactionPresentation: Record<
     shortLabel: "Unvaulted Capital",
     icon: "ArrowDown",
   },
+  CALL_REQUEST_SUBMITTED: {
+    label: "Call Request Submitted",
+    shortLabel: "Capital Called",
+    icon: "ArrowDown",
+  },
 };
 
 export function getTransactionLabel(transaction: {
