@@ -87,6 +87,14 @@ library StaleCallableCreditLineLogic {
     return cl._cl.checkpointedAsOf();
   }
 
+  function numLockupPeriods(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cl.numLockupPeriods();
+  }
+
+  function inLockupPeriod(StaleCallableCreditLine storage cl) internal view returns (bool) {
+    return cl._cl.inLockupPeriod();
+  }
+
   /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   function interestOwed(StaleCallableCreditLine storage cl) internal view returns (uint256) {
     return cl._cl.previewInterestOwed();

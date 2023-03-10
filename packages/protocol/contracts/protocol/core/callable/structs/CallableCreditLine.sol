@@ -252,6 +252,10 @@ library CallableCreditLineLogic {
     }
   }
 
+  function numLockupPeriods(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._numLockupPeriods;
+  }
+
   function uncalledCapitalTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {

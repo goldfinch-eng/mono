@@ -75,9 +75,8 @@ interface ICallableLoan is ILoan {
   /// @param _config address of GoldfinchConfig
   /// @param _borrower address of borrower, a non-transferrable role for performing privileged actions like
   ///   drawdown
-  /// @param _limit the max USDC amount that can be drawn down across all pool slices
-  /// @param _limit the number of periods at the tail end of a principal period during which call requests rollover
-  ///   to the next principal period.
+  /// @param _numLockupPeriods the number of periods at the tail end of a principal period during which call requests
+  ///   are not allowed
   /// @param _interestApr interest rate for the loan
   /// @param _lateFeeApr late fee interest rate for the loan, which kicks in `LatenessGracePeriodInDays` days after a
   ///   payment becomes late
@@ -110,6 +109,10 @@ interface ICallableLoan is ILoan {
 
   function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
 
+  function numLockupPeriods() external view returns (uint256);
+
+  function inLockupPeriod() external view returns (bool);
+
   function getUncalledCapitalInfo() external view returns (UncalledCapitalInfo memory);
 
   function getCallRequestPeriod(
@@ -130,6 +133,13 @@ interface ICallableLoan is ILoan {
   /// @notice Returns a naive estimate of the interest owed at the timestamp.
   ///         Omits any late fees, and assumes no future payments.
   function estimateOwedInterestAt(uint256 timestamp) external view returns (uint256);
+
+  /// @notice Returns a naive estimate of the interest owed at the timestamp.
+  ///         Omits any late fees, and assumes no future payments.
+  function estimateOwedInterestAt(
+    uint256 balance,
+    uint256 timestamp
+  ) external view returns (uint256);
 
   /*================================================================================
   Events
