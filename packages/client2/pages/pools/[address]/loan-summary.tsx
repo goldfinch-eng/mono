@@ -3,7 +3,7 @@ import { formatDistanceStrict } from "date-fns";
 import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
-import { InfoLine } from "@/components/design-system";
+import { InfoLine, Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
@@ -18,6 +18,7 @@ const secondsPerDay = 86400;
 export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
   fragment LoanSummaryTranchedPoolFields on Loan {
     id
+    address
     usdcApy
     interestRate
     rawGfiApy
@@ -76,6 +77,14 @@ export function LoanSummary({
         </div>
         <span className="text-sm">{borrower.name}</span>
       </div>
+      <Link
+        href={`https://etherscan.io/address/${loan.address}`}
+        openInNewTab
+        iconRight="ArrowTopRight"
+        className="text-sm font-medium text-sand-500"
+      >
+        Etherscan
+      </Link>
       <div className="mb-8">
         <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
           {deal.name}
