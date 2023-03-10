@@ -5,19 +5,19 @@ export function SeniorPoolHighlights() {
     <HighlightGrid>
       <Highlight
         heading="Diversified capital"
-        body="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        body="The Senior Pool gives Liquidity Providers exposure to a variety of borrowers on the Goldfinch protocol. These borrowers span 25+ countries, and vary in use cases such as asset financing, SME loans and consumer loans. This is intended to serve the passive investor in search of diversified yield generated through real world economic activity."
+      />
+      <Highlight
+        heading="Protected by first-loss capital"
+        body="Protected by first-loss capital in each Borrower Pool."
       />
       <Highlight
         heading="Secured"
-        body="Collateralized with real-world (off-chain) assets"
-      />
-      <Highlight
-        heading="Real-world recourse"
-        body="Real-world, legally enforceable loan agreement"
+        body="Overcollaterlaized with real-world off-chain assets."
       />
       <Highlight
         heading="Ongoing monitoring"
-        body="Monthly reporting and direct-to-borrower communications"
+        body="Monthly reporting and direct-to-borrower communications."
       />
     </HighlightGrid>
   );

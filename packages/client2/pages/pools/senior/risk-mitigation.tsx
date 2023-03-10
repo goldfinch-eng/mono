@@ -6,23 +6,28 @@ export function RiskMitigation() {
     <div>
       <div className="mb-5 rounded-xl border border-sand-300 p-5">
         <div className="flex items-center">
-          <div className="w-1/2 pr-3">
+          <div className="w-1/2 pr-4">
             <div className="mb-3 text-sm text-sand-600">
               Senior Pool capital risk
             </div>
             <div className="mb-3 text-xs">
-              Senior Pool capital has the first lien on assets. In return for
-              this Seniority, it gives a portion of nominal interest to the
-              Junior Tranche&apos;s Backers as a “risk premium.”
+              Senior Pool capital is diversified across various borrower pools,
+              and has the first lien on the assets across these pools. In return
+              for this Seniority, it gives a portion of nominal interest to the
+              junior investors who participate in the individual borrower pools
+              as a “risk premium.”
             </div>
             <div className="mb-3 text-xs">
-              An on-chain credit line finances real-world private debt deals.
-              USDC is transferred off-chain to the Borrower to finance economic
-              activity, protected from on-chain DeFi volatility.
+              Capital from these pools is used to finance real-world private
+              debt transactions. USDC is converted to fiat by the Borrowers and
+              used off-chain to finance economic activity, thus protected from
+              on-chain DeFi volatility.
             </div>
             <div className="mb-6 text-xs">
-              For all Goldfinch debt deals, Goldfinch capital sits within the
-              Senior Secured deals off-chain.
+              There is a ~15% overcollateralization for all deals funded by the
+              Senior pool. Additionally, all Senior Pool capital lent to
+              Borrowers are structured as Senior Secured - this means Senior
+              Pool investors get paid back first before any other lenders.
             </div>
             <Button
               as="a"

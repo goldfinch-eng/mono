@@ -54,16 +54,12 @@ export function SeniorPoolLoanSummary({
           Goldfinch Senior Pool
         </h1>
         <div className="text-sm text-sand-500">
-          Supply capital to the Senior Pool in order to earn yields optimized
-          for ease and diversification. Capital is automatically diversified
-          across Borrower pools according to the{" "}
-          <Link
-            openInNewTab
-            href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/leveragemodel"
-          >
-            Leverage Model
-          </Link>{" "}
-          and protected by Backer capital.
+          The Senior Pool is a ‘blind pool’ of capital that is diversified
+          across all Borrower Pools on the Goldfinch protocol. Liquidity
+          Providers (LPs) who provide capital into the Senior Pool are capital
+          providers in search of passive, diversified exposure across all
+          Borrower Pools. This capital is protected by junior (first-loss)
+          capital in each Borrower Pool.
         </div>
       </div>
       <div className="mb-6 flex justify-between gap-5">
