@@ -264,6 +264,19 @@ type PoolToken @entity {
   stakingRewardsClaimed: BigInt!
 
   vaultedAsset: VaultedPoolToken
+
+  """
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `false` for other loan types.
+  """
+  isCapitalCalled: Boolean!
+  """
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `null` for other loan types.
+  """
+  calledAt: Int
+  """
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `null` for other loan types.
+  """
+  callDueAt: Int
 }
 
 type StakingRewardsData @entity {

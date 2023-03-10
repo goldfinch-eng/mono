@@ -21,6 +21,8 @@ import { gfiToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
+import { CallPanel } from "./call/submit-call-panel";
+
 export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment ClaimPanelPoolTokenFields on PoolToken {
     id
@@ -32,6 +34,7 @@ export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
     rewardsClaimed
     stakingRewardsClaimable
     stakingRewardsClaimed
+    ...CallPanelPoolTokenFields
   }
 `;
 
@@ -50,6 +53,9 @@ export const CLAIM_PANEL_LOAN_FIELDS = gql`
     __typename
     id
     isLate @client
+    ... on CallableLoan {
+      ...CallPanelCallableLoanFields
+    }
   }
 `;
 
@@ -261,6 +267,13 @@ export function ClaimPanel({
           You cannot claim GFI rewards from this pool because it is late on
           repayment.
         </Alert>
+      ) : null}
+      {loan.__typename === "CallableLoan" ? (
+        <CallPanel
+          className="mt-8"
+          callableLoan={loan}
+          poolTokens={poolTokens}
+        />
       ) : null}
     </div>
   );

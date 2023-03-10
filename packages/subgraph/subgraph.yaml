@@ -139,6 +139,8 @@ dataSources:
           file: ./abis/PoolTokens.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: CallableLoan
+          file: ./abis/CallableLoan.json
         - name: GoldfinchConfig
           file: ./abis/GoldfinchConfig.json
         - name: SeniorPool
@@ -667,8 +669,8 @@ templates:
         - name: Schedule
           file: ./abis/Schedule.json
       eventHandlers:
-        # - event: CallRequestSubmitted(indexed uint256,indexed uint256,indexed uint256,uint256)
-        #   handler: handleCallRequestSubmitted
+        - event: CallRequestSubmitted(indexed uint256,indexed uint256,indexed uint256,uint256)
+          handler: handleCallRequestSubmitted
         - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
           handler: handleDepositMade
         # - event: DepositsLocked(indexed address)
