@@ -16,6 +16,7 @@ import {
 } from "../../entities/protocol"
 import {getOrInitUser} from "../../entities/user"
 import {
+  calculateCallableLoanPaymentFrequency,
   deleteCallableLoanRepaymentSchedule,
   generateRepaymentScheduleForCallableLoan,
   updatePoolTokensRedeemable,
@@ -56,7 +57,9 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.isPaused = callableLoanContract.paused()
   callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   deleteCallableLoanRepaymentSchedule(callableLoan)
-  callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  const repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.repaymentSchedule = repaymentSchedule
+  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(repaymentSchedule)
   callableLoan.save()
 }
 

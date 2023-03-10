@@ -7,7 +7,7 @@ import { getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
 
-const loanAmountDue = async (
+const loanDueAmount = async (
   callableLoanId: string,
   repaymentDurationType: "period" | "term"
 ) => {
@@ -35,19 +35,19 @@ const loanAmountDue = async (
     return interestOwed.add(interestAccrued).add(principalOwed);
   }
 
-  let timestamp = BigNumber.from(0);
+  let owedAtTimestamp = termEndTime;
   const lastFullPaymentTime = await callableLoanContract.lastFullPaymentTime();
   if (repaymentDurationType === "period") {
-    timestamp = await callableLoanContract.nextDueTimeAt(lastFullPaymentTime);
-  } else {
-    timestamp = termEndTime;
+    owedAtTimestamp = await callableLoanContract.nextDueTimeAt(
+      lastFullPaymentTime
+    );
   }
 
   const [interestOwedAt, interestAccruedAt, principalOwedAt] =
     await Promise.all([
-      callableLoanContract.interestOwedAt(timestamp),
-      callableLoanContract.interestAccruedAt(timestamp),
-      callableLoanContract.principalOwedAt(timestamp),
+      callableLoanContract.interestOwedAt(owedAtTimestamp),
+      callableLoanContract.interestAccruedAt(owedAtTimestamp),
+      callableLoanContract.principalOwedAt(owedAtTimestamp),
     ]);
   return interestOwedAt.add(interestAccruedAt).add(principalOwedAt);
 };
@@ -138,11 +138,12 @@ export const callableLoanResolvers: Resolvers[string] = {
 
     return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
+  // TODO: Zadra round up to end of day logic since interest is accrued every second
   async periodDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
-    return loanAmountDue(callableLoan.id, "period");
+    return loanDueAmount(callableLoan.id, "period");
   },
   async termDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
-    return loanAmountDue(callableLoan.id, "term");
+    return loanDueAmount(callableLoan.id, "term");
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();

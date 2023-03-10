@@ -508,6 +508,12 @@ type SeniorPoolWithdrawalDisbursementPostponement @entity(immutable: true) {
   newEndsAt: Int!
 }
 
+enum PaymentFrequency {
+  Monthly
+  Quarterly
+  Unknown
+}
+
 type CallableLoan implements Loan @entity {
   id: ID!
   address: Bytes!
@@ -540,6 +546,7 @@ type CallableLoan implements Loan @entity {
   totalPrincipalPaid: BigInt!
   borrowerContract: BorrowerContract!
   creditLineAddress: Bytes!
+  paymentFrequency: PaymentFrequency!
 
   repaymentSchedule: [ScheduledRepayment!]!
 }

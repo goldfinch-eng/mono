@@ -2,6 +2,7 @@ import {Address, BigInt, BigDecimal, ethereum, store, log} from "@graphprotocol/
 import {CallableLoan, PoolToken, ScheduledRepayment} from "../../../generated/schema"
 import {CallableLoan as CallableLoanContract} from "../../../generated/templates/CallableLoan/CallableLoan"
 import {Schedule as ScheduleContract} from "../../../generated/templates/CallableLoan/Schedule"
+import {SECONDS_PER_DAY} from "../../constants"
 
 const INTEREST_DECIMALS = BigDecimal.fromString("1000000000000000000")
 
@@ -57,7 +58,9 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.lateFeeRate = callableLoanContract.lateFeeApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.borrowerContract = callableLoanContract.borrower().toHexString()
 
-  callableLoan.repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  const repaymentSchedule = generateRepaymentScheduleForCallableLoan(callableLoan)
+  callableLoan.repaymentSchedule = repaymentSchedule
+  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(repaymentSchedule)
 
   return callableLoan
 }
@@ -140,6 +143,7 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   callableLoan.repaymentSchedule = []
+  callableLoan.paymentFrequency = "Unknown"
 }
 
 // TODO this function exists for tranched pools too. Try to consolidate them?
@@ -156,5 +160,27 @@ export function updatePoolTokensRedeemable(callableLoan: CallableLoan): void {
       log.warning("availableToWithdraw reverted for pool token {} on CallableLoan {}", [poolToken.id, callableLoan.id])
     }
     poolToken.save()
+  }
+}
+
+export function calculateCallableLoanPaymentFrequency(repaymentSchedule: string[]): string {
+  if (repaymentSchedule.length < 2) {
+    return "Unknown"
+  }
+  const firstPeriod = assert(ScheduledRepayment.load(repaymentSchedule[0]))
+  const firstRepaymentDateTimestamp = firstPeriod.estimatedPaymentDate
+
+  const secondPeriod = assert(ScheduledRepayment.load(repaymentSchedule[1]))
+  const secondRepaymentDateTimestamp = secondPeriod.estimatedPaymentDate
+
+  const differenceInSeconds = secondRepaymentDateTimestamp - firstRepaymentDateTimestamp
+  const differenceInDays = Math.ceil(differenceInSeconds / SECONDS_PER_DAY.toI32()) as i32
+
+  if (differenceInDays <= 31) {
+    return "Monthly"
+  } else if (differenceInDays <= 92) {
+    return "Quarterly"
+  } else {
+    return "Unknown"
   }
 }
