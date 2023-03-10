@@ -480,9 +480,8 @@ library CallableCreditLineLogic {
       return false;
     }
 
-    uint256 gracePeriodInSeconds = cl._config.getLatenessGracePeriodInDays() * SECONDS_PER_DAY;
     uint256 oldestUnpaidDueTime = cl._paymentSchedule.nextDueTimeAt(cl.lastFullPaymentTime());
-    return timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
+    return timestamp > oldestUnpaidDueTime;
   }
 
   function totalPrincipalOutstandingBeforeReserves(

@@ -57,7 +57,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     depositAndDrawdown(callableLoan, limit);
 
-    timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + (10 days));
+    timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime());
 
     vm.warp(timestamp);
 
@@ -69,7 +69,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     uint256 limit = usdcVal(100);
     depositAndDrawdown(callableLoan, limit);
 
-    timestamp = bound(timestamp, cl.nextDueTime() + (10 days) + 1, cl.termEndTime());
+    timestamp = bound(timestamp, cl.nextDueTime() + 1, cl.termEndTime());
 
     vm.warp(timestamp);
 
@@ -92,7 +92,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     assertEq(cl.nextDueTime(), cl.termEndTime());
 
-    timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + (10 days));
+    timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime());
     vm.warp(timestamp);
 
     assertFalse(cl.isLate());
@@ -116,7 +116,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
 
     assertEq(cl.nextDueTime(), cl.termEndTime());
 
-    timestamp = bound(timestamp, cl.termEndTime() + 10 days + 1, cl.termEndTime() + 10000 days);
+    timestamp = bound(timestamp, cl.termEndTime() + 1, cl.termEndTime() + 10000 days);
     vm.warp(timestamp);
 
     assertTrue(cl.isLate());
