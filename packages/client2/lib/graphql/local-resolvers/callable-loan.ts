@@ -60,4 +60,24 @@ export const callableLoanResolvers: Resolvers[string] = {
       await callableLoanContract.withinPrincipalGracePeriod();
     return !termStartTime.isZero() && !withinPrincipalGracePeriod;
   },
+  async inLockupPeriod(callableLoan: CallableLoan): Promise<boolean> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    return callableLoanContract.inLockupPeriod();
+  },
+  async nextPrincipalDueTime(callableLoan: CallableLoan): Promise<number> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    return (await callableLoanContract.nextPrincipalDueTime()).toNumber();
+  },
 };

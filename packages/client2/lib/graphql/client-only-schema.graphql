@@ -35,6 +35,8 @@ extend type CallableLoan {
   borrowerLogo: String
   isLate: Boolean!
   isInDefault: Boolean!
+  inLockupPeriod: Boolean!
+  nextPrincipalDueTime: Int!
 }
 
 extend type CreditLine {

@@ -21,7 +21,7 @@ import { gfiToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import { CallPanel } from "./call/submit-call-panel";
+import { CallPanel } from "./call/call-panel";
 
 export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment ClaimPanelPoolTokenFields on PoolToken {
