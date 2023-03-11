@@ -174,7 +174,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   if (error) {
     return (
       <div className="text-2xl">
-        Unable to load the specified tranched pool.
+        Unable to load the specified loan. {error.message}
       </div>
     );
   }

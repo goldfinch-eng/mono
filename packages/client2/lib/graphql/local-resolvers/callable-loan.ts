@@ -68,7 +68,12 @@ export const callableLoanResolvers: Resolvers[string] = {
       useSigner: false,
       address: callableLoan.id,
     });
-    return callableLoanContract.inLockupPeriod();
+    try {
+      const inLockupPeriod = await callableLoanContract.inLockupPeriod();
+      return inLockupPeriod;
+    } catch (e) {
+      return false;
+    }
   },
   async nextPrincipalDueTime(callableLoan: CallableLoan): Promise<number> {
     const provider = await getProvider();
@@ -78,6 +83,13 @@ export const callableLoanResolvers: Resolvers[string] = {
       useSigner: false,
       address: callableLoan.id,
     });
-    return (await callableLoanContract.nextPrincipalDueTime()).toNumber();
+    try {
+      // This will throw on loans that are not closed
+      const nextPrincipalDueTime =
+        await callableLoanContract.nextPrincipalDueTime();
+      return nextPrincipalDueTime.toNumber();
+    } catch (e) {
+      return 0;
+    }
   },
 };
