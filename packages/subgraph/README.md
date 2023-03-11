@@ -198,7 +198,7 @@ graph test
 
 ### Local
 Typically we'd deploy the subgraph locally for a few reasons: 
-1. Adding logic that writes to the blockchain, 
+1. Adding logic that writes to the blockchain
 2. Adding subgraph indexers
 3. Having access to the latest smart contract logic. 
 
