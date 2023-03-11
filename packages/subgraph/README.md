@@ -197,8 +197,16 @@ graph test
 ## Deployment
 
 ### Local
+Typically we'd deploy the subgraph locally for a few reasons: 
+1. Adding logic that writes to the blockchain, 
+2. Adding subgraph indexers
+3. Having access to the latest smart contract logic. 
+
+It's a crucial step!
 
 #### Mac OS X
+
+**With Docker** 
 
 - Make sure you have docker and docker-compose installed
 - Start the local chain with `yarn start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
@@ -211,6 +219,36 @@ graph test
   - GraphQL HTTP server at: http://localhost:8000
   - Index node server at: http://localhost:8030
   - Metrics server at: http://localhost:8040
+
+
+**Without Docker - Optimization - Optional** 
+
+Docker is a third party software that runs on its own servers. Sometimes it crashes, leading to the tedious process of re-starting your computer and undergoing the process of re-deploying the subgraph over again. 
+
+Below are some steps to create and deploy the subgraph without needing to set up Docker first.
+
+- Install [Rust](https://www.rust-lang.org/tools/install)
+  In order to ensure the Rust compiler has installed correctly, you can use the command `rustc --version`
+- Install [Postgres](https://wiki.postgresql.org/wiki/Homebrew). Installing through homebrew is pretty convenient on mac. 
+  To connect/use it as your user, you can type in: `psql postgres`
+- Install [IPFS](https://docs.ipfs.tech/install/command-line/#install-official-binary-distributions)
+- Install [Protobuf](https://grpc.io/docs/protoc-installation/) 
+
+After the installation process, you'd need to go through a few steps to create and deploy the subgraph. 
+
+- On a split terminal window (recommended), start running `ipfs daemon`. 
+  Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
+  port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
+- Before following the steps to re-deploy the subgraphs, you would need to re-create the `graph_node` database by running the following commands: 
+```bash
+$psql postgres
+postgres=# drop database "graph-node"; create database "graph-node";
+```
+- The rest of the steps are the same as above (steps 2 through 6):
+  - start the local chain in `packages/protocol` with `yarn start`
+  - run `yarn start-local` in `packages/subgraph`
+  - run `yarn create-local`
+  - run `yarn deploy-local`
 
 #### Linux
 
