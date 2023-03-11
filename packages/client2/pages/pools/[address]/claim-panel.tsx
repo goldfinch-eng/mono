@@ -118,7 +118,11 @@ export function ClaimPanel({
       throw new Error("Wallet not properly connected");
     }
 
-    if (poolTokens.length > 0) {
+    const withrawablePoolTokens = poolTokens.filter((pt) =>
+      // TranchedPools throw an exception when trying to withdraw 0 amounts
+      pt.principalRedeemable.add(pt.interestRedeemable).gt(0)
+    );
+    if (withrawablePoolTokens.length > 0) {
       const loanContract = await getContract({
         name:
           loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
@@ -126,8 +130,8 @@ export function ClaimPanel({
         provider,
       });
       const usdcTransaction = loanContract.withdrawMultiple(
-        poolTokens.map((pt) => pt.id),
-        poolTokens.map((pt) =>
+        withrawablePoolTokens.map((pt) => pt.id),
+        withrawablePoolTokens.map((pt) =>
           pt.principalRedeemable.add(pt.interestRedeemable)
         )
       );
@@ -151,13 +155,19 @@ export function ClaimPanel({
       }
     }
 
-    if (vaultedPoolTokens.length > 0 && canClaimGfi) {
+    const withrawableVaultedPoolTokens = vaultedPoolTokens.filter((pt) =>
+      // TranchedPools throw an exception when trying to withdraw 0 amounts
+      pt.poolToken.principalRedeemable
+        .add(pt.poolToken.interestRedeemable)
+        .gt(0)
+    );
+    if (withrawableVaultedPoolTokens.length > 0 && canClaimGfi) {
       const membershipOrchestrator = await getContract({
         name: "MembershipOrchestrator",
         provider,
       });
       const transaction = membershipOrchestrator.harvest(
-        vaultedPoolTokens.map((vpt) => vpt.id)
+        withrawableVaultedPoolTokens.map((vpt) => vpt.id)
       );
       await toastTransaction({
         transaction,
