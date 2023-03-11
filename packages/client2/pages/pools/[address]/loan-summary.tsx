@@ -63,27 +63,29 @@ export function LoanSummary({
 }: LoanSummaryProps) {
   return (
     <div className={className}>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200">
-          {borrower.logo?.url ? (
-            <Image
-              fill
-              sizes="20px"
-              src={borrower.logo.url}
-              alt={`${borrower.name} logo`}
-            />
-          ) : null}
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200">
+            {borrower.logo?.url ? (
+              <Image
+                fill
+                sizes="20px"
+                src={borrower.logo.url}
+                alt={`${borrower.name} logo`}
+              />
+            ) : null}
+          </div>
+          <span className="text-sm">{borrower.name}</span>
         </div>
-        <span className="text-sm">{borrower.name}</span>
+        <Link
+          href={`https://etherscan.io/address/${loan.address}`}
+          openInNewTab
+          iconRight="ArrowTopRight"
+          className="text-sm font-medium text-sand-500"
+        >
+          Etherscan
+        </Link>
       </div>
-      <Link
-        href={`https://etherscan.io/address/${loan.address}`}
-        openInNewTab
-        iconRight="ArrowTopRight"
-        className="text-sm font-medium text-sand-500"
-      >
-        Etherscan
-      </Link>
       <div className="mb-8">
         <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
           {deal.name}
