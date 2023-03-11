@@ -42,6 +42,30 @@ export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const callablePoolTokens = poolTokens.filter((pt) => !pt.isCapitalCalled);
   const calledPoolTokens = poolTokens.filter((pt) => pt.isCapitalCalled);
+
+  const miniTableRows = Object.entries(
+    calledPoolTokens
+      .sort((a, b) => a.callDueAt ?? 0 - (b.callDueAt ?? 0))
+      .reduce((prev, current) => {
+        const key = current.callDueAt;
+        if (!key) {
+          return prev;
+        } else if (!prev[key]) {
+          prev[key] = { token: "USDC", amount: current.principalAmount };
+        } else {
+          prev[key] = {
+            token: "USDC",
+            amount: current.principalAmount.add(prev[key].amount),
+          };
+        }
+        return prev;
+      }, {} as Record<string, CryptoAmount<"USDC">>)
+  ).map(([dueTime, calledAmount]) => [
+    "USDC",
+    formatCrypto(calledAmount),
+    formatDate(parseInt(dueTime) * 1000, "MMMM d, yyyy"),
+  ]);
+
   return (
     <div className={className}>
       {calledPoolTokens.length === 0 ? (
@@ -72,17 +96,7 @@ export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
             <div>Call requests</div>
             <InfoIconTooltip content="TODO content" />
           </div>
-          <MiniTable
-            colorScheme="mustard"
-            rows={calledPoolTokens.map((poolToken) => [
-              "USDC",
-              formatCrypto({
-                token: "USDC",
-                amount: poolToken.principalAmount,
-              }),
-              formatDate((poolToken.callDueAt ?? 0) * 1000, "MMMM d, yyyy"),
-            ])}
-          />
+          <MiniTable colorScheme="mustard" rows={miniTableRows} />
           <Button
             size="xl"
             colorScheme="transparent-mustard"
