@@ -1,6 +1,5 @@
-import { gql } from "@apollo/client";
+import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
-import { useState } from "react";
 
 import { Button, HelperText, Link } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
@@ -8,16 +7,13 @@ import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
-  FUNDING_STATUS_LOAN_FIELDS,
   getLoanFundingStatus,
   getLoanRepaymentStatus,
   LoanFundingStatus,
-  REPAYMENT_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
-  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
@@ -26,13 +22,17 @@ import {
 
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
-const visiblePoolOnFirstLoad = 4;
-
 gql`
-  ${PROTOCOL_METRICS_FIELDS}
-  ${FUNDING_STATUS_LOAN_FIELDS}
-  ${REPAYMENT_STATUS_LOAN_FIELDS}
-  query EarnPage {
+  fragment PoolFields on TranchedPool {
+    id
+    usdcApy
+    rawGfiApy
+    principalAmount
+    termInDays
+    termEndTime
+    ...FundingStatusLoanFields
+  }
+  query EarnPage($numClosedPools: Int!) {
     seniorPools(first: 1) {
       id
       name @client
@@ -42,18 +42,25 @@ gql`
       estimatedApyFromGfiRaw
       sharePrice
     }
-    tranchedPools(orderBy: createdAt, orderDirection: desc) {
-      id
-      usdcApy
-      rawGfiApy
-      principalAmount
-      termInDays
-      termEndTime
-      ...FundingStatusLoanFields
+    openPools: tranchedPools(
+      orderBy: createdAt
+      orderDirection: desc
+      where: { termStartTime: 0 }
+    ) {
+      ...PoolFields
+    }
+    closedPools: tranchedPools(
+      orderBy: createdAt
+      orderDirection: desc
+      where: { termStartTime_not: 0 }
+      first: $numClosedPools
+    ) {
+      ...PoolFields
       ...RepaymentStatusLoanFields
     }
     protocols(first: 1) {
       id
+      numLoans
       ...ProtocolMetricsFields
     }
     gfiPrice(fiat: USD) @client {
@@ -92,38 +99,39 @@ const earnCmsQuery = gql`
 export default function EarnPage({
   dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { data, error } = useEarnPageQuery();
-
-  const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
+  const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
+    variables: { numClosedPools: 3 },
+    notifyOnNetworkStatusChange: true,
+  });
 
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
-  // Only display tranched pools for which we have deal metadata
-  const tranchedPools = data?.tranchedPools?.filter(
-    (tranchedPool) => !!dealMetadata[tranchedPool.id]
-  );
 
   const protocol = data?.protocols[0];
+  const numLoans = protocol?.numLoans ?? 0;
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
   const openTranchedPools =
-    tranchedPools?.filter(
+    data?.openPools.filter(
       (tranchedPool) =>
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open
+        (!!dealMetadata[tranchedPool.id] &&
+          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open) ||
+        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.ComingSoon
     ) ?? [];
   const closedTranchedPools =
-    tranchedPools?.filter(
+    data?.closedPools.filter(
       (tranchedPool) =>
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Closed ||
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Full
+        !!dealMetadata[tranchedPool.id] &&
+        (getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Closed ||
+          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Full)
     ) ?? [];
 
   // +1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
 
-  const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
+  const loading = !seniorPool || !fiatPerGfi || !protocol;
 
   return (
     <div>
@@ -264,18 +272,12 @@ export default function EarnPage({
 
           <EarnPageHeading>{`${closedTranchedPools.length} Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
-            {closedTranchedPools.map((tranchedPool, i) => {
+            {closedTranchedPools.map((tranchedPool) => {
               const deal = dealMetadata[tranchedPool.id];
               const repaymentStatus = getLoanRepaymentStatus(tranchedPool);
               return (
                 <ClosedDealCard
                   key={tranchedPool.id}
-                  // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
-                  className={
-                    !showMoreClosedPools && i >= visiblePoolOnFirstLoad
-                      ? "hidden"
-                      : undefined
-                  }
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}
                   dealName={deal.name}
@@ -287,16 +289,19 @@ export default function EarnPage({
               );
             })}
           </div>
-          {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
+          {data.openPools.length + data.closedPools.length < numLoans ? (
             <Button
-              onClick={() => setShowMoreClosedPools(true)}
+              onClick={() => fetchMore({ variables: { numClosedPools: 1000 } })}
               className="mt-2 w-full"
               colorScheme="sand"
               size="lg"
+              isLoading={networkStatus === NetworkStatus.fetchMore}
             >
-              {`View ${closedTranchedPools?.length - 4} more closed pools`}
+              {`View ${
+                numLoans - data.openPools.length - data.closedPools.length
+              } more closed pools`}
             </Button>
-          )}
+          ) : null}
         </>
       )}
     </div>
