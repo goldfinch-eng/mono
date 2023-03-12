@@ -18,7 +18,7 @@ import {
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
-import { LoanCallsDataTable } from "@/pages/borrow/[address]/loan-calls-data-table";
+import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
 import {
   calculateCreditLineMaxDrawdownAmount,
   calculatePoolFundsAvailable,
@@ -165,36 +165,6 @@ export default function PoolCreditLinePage({
   const formattedNextDueTime = loan
     ? formatDate(loan.nextDueTime.toNumber() * 1000, "MMM d")
     : "0";
-
-  const openCallsData = [
-    {
-      totalCalled: "$10,000.00",
-      dueDate: "June 31 2023",
-      status: "Open",
-      balance: "$10,000.00",
-    },
-    {
-      totalCalled: "$50,000.00",
-      dueDate: "March 31 2023",
-      status: "Open",
-      balance: "$10,000.00",
-    },
-  ];
-
-  const closedCallsData = [
-    {
-      totalCalled: "$10,000.00",
-      dueDate: "June 31 2022",
-      status: "Closed",
-      balance: "$10,000.00",
-    },
-    {
-      totalCalled: "$50,000.00",
-      dueDate: "March 31 2022",
-      status: "Closed",
-      balance: "$10,000.00",
-    },
-  ];
 
   return (
     <div>
@@ -359,15 +329,10 @@ export default function PoolCreditLinePage({
           </div>
 
           {loan.__typename === "CallableLoan" && (
-            <div className="mb-10 rounded-xl bg-sand-100 p-8">
-              <div className="mb-6 text-2xl">Active callable loans</div>
-              <LoanCallsDataTable callsData={openCallsData} className="mb-16" />
-              <div className="mb-6 text-2xl">Callable loans history</div>
-              <LoanCallsDataTable callsData={closedCallsData} />
-              <Button className="mt-2.5 w-full" colorScheme="sand" size="lg">
-                View more
-              </Button>
-            </div>
+            <CallableLoanCallsPanel
+              loanId={loan.id}
+              lastFullPaymentTime={loan.lastFullPaymentTime}
+            />
           )}
 
           <div className="rounded-xl bg-sand-100">

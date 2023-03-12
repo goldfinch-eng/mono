@@ -31,6 +31,7 @@ gql`
     totalDeposited
     totalPrincipalPaid
     paymentFrequency
+    lastFullPaymentTime
     periodInterestDueAmount @client
     periodPrincipalDueAmount @client
     termTotalDueAmount @client

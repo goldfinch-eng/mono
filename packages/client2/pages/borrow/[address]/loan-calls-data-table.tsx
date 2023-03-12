@@ -1,23 +1,30 @@
+import { format as formatDate } from "date-fns";
+import { BigNumber } from "ethers/lib/ethers";
 import React from "react";
 
-interface LoanCallsDataTableRow {
-  totalCalled: string;
-  dueDate: string;
+import { formatCrypto } from "@/lib/format";
+
+export interface LoanCallsDataTableRow {
+  totalCalled: BigNumber;
+  dueDate: number;
   status: string;
-  balance: string;
+  balance: BigNumber;
 }
 
 interface LoanCallsDataTableProps {
   callsData: LoanCallsDataTableRow[];
+  loading: boolean;
   className?: string;
 }
 
 export function LoanCallsDataTable({
   callsData,
+  loading,
   className,
 }: LoanCallsDataTableProps) {
   return (
     <div className={className}>
+      {loading && <div>Loading</div>}
       <table className="w-full text-xs [&_th]:py-2.5 [&_th]:text-base [&_th]:font-medium [&_th]:text-sand-500 [&_td]:py-4 [&_td]:text-lg">
         <thead>
           <tr className="bg-transparent">
@@ -44,8 +51,12 @@ export function LoanCallsDataTable({
         >
           {callsData.map(({ totalCalled, dueDate, status, balance }, i) => (
             <tr key={i}>
-              <td className="pl-5 text-left font-semibold">{totalCalled}</td>
-              <td className="text-right">{dueDate}</td>
+              <td className="pl-5 text-left font-semibold">
+                {formatCrypto({ amount: totalCalled, token: "USDC" })}
+              </td>
+              <td className="text-right">
+                {formatDate(dueDate * 1000, "MMM d, Y")}
+              </td>
               <td className="text-right">
                 <div className="flex items-center justify-end">
                   {status === "Open" && (
@@ -56,7 +67,9 @@ export function LoanCallsDataTable({
                   {status}
                 </div>
               </td>
-              <td className="pr-5 text-right font-semibold">{balance}</td>
+              <td className="pr-5 text-right font-semibold">
+                {formatCrypto({ amount: balance, token: "USDC" })}
+              </td>
             </tr>
           ))}
         </tbody>

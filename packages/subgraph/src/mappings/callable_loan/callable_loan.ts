@@ -17,7 +17,7 @@ import {
 } from "../../entities/protocol"
 import {getOrInitUser} from "../../entities/user"
 import {
-  calculateCallableLoanPaymentFrequency,
+  estimateCallableLoanPaymentFrequency,
   deleteCallableLoanRepaymentSchedule,
   generateRepaymentScheduleForCallableLoan,
   updatePoolTokensRedeemable,
@@ -62,7 +62,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
-  callableLoan.paymentFrequency = calculateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
+  callableLoan.paymentFrequency = estimateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
   callableLoan.save()
 }
 
@@ -72,6 +72,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   callableLoan.totalPrincipalPaid = callableLoanContract.totalPrincipalPaid()
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after a repayment is made (principal or interest can increase)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
+  callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
   callableLoan.save()
 
   updateTotalPrincipalCollected(event.params.principal)
