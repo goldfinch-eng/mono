@@ -31,8 +31,9 @@ gql`
     totalDeposited
     totalPrincipalPaid
     paymentFrequency
-    periodDueAmount @client
-    termDueAmount @client
+    periodInterestDueAmount @client
+    periodPrincipalDueAmount @client
+    termTotalDueAmount @client
     nextDueTime @client
   }
 `;
@@ -374,7 +375,7 @@ export function getCreditLineAccountingAnalyisValues(
 
   const remainingPeriodDueAmount =
     __typename === "CallableLoan"
-      ? loan.periodDueAmount
+      ? loan.periodInterestDueAmount.add(loan.periodPrincipalDueAmount)
       : calculateRemainingPeriodDueAmount({
           collectedPaymentBalance: loan.collectedPaymentBalance,
           nextDueTime,
@@ -385,7 +386,7 @@ export function getCreditLineAccountingAnalyisValues(
 
   const remainingTotalDueAmount =
     __typename === "CallableLoan"
-      ? loan.termDueAmount
+      ? loan.termTotalDueAmount
       : calculateRemainingTotalDueAmount({
           collectedPaymentBalance: loan.collectedPaymentBalance,
           balance,

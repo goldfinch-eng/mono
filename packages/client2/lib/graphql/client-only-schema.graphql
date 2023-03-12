@@ -37,8 +37,9 @@ extend type CallableLoan {
   isLate: Boolean!
   isInDefault: Boolean!
   isAfterTermEndTime: Boolean!
-  periodDueAmount: BigInt!
-  termDueAmount: BigInt!
+  periodInterestDueAmount: BigInt!
+  periodPrincipalDueAmount: BigInt!
+  termTotalDueAmount: BigInt!
   nextDueTime: BigInt!
 }
 

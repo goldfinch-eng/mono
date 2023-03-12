@@ -22,7 +22,10 @@ const loanDueAmount = async (
   // Loan has not started
   const termEndTime = await callableLoanContract.termEndTime();
   if (termEndTime.eq(0)) {
-    return BigNumber.from(0);
+    return {
+      interestOwed: BigNumber.from(0),
+      principalOwed: BigNumber.from(0),
+    };
   }
 
   const isLate = await isCallableLoanLate(callableLoanId);
@@ -32,7 +35,7 @@ const loanDueAmount = async (
       callableLoanContract.interestAccrued(),
       callableLoanContract.principalOwed(),
     ]);
-    return interestOwed.add(interestAccrued).add(principalOwed);
+    return { interestOwed: interestOwed.add(interestAccrued), principalOwed };
   }
 
   let owedAtTimestamp = termEndTime;
@@ -43,13 +46,13 @@ const loanDueAmount = async (
     );
   }
 
-  const [interestOwedAt, interestAccruedAt, principalOwedAt] =
-    await Promise.all([
-      callableLoanContract.interestOwedAt(owedAtTimestamp),
-      callableLoanContract.interestAccruedAt(owedAtTimestamp),
-      callableLoanContract.principalOwedAt(owedAtTimestamp),
-    ]);
-  return interestOwedAt.add(interestAccruedAt).add(principalOwedAt);
+  const [interestOwed, interestAccrued, principalOwed] = await Promise.all([
+    callableLoanContract.interestOwedAt(owedAtTimestamp),
+    callableLoanContract.interestAccruedAt(owedAtTimestamp),
+    callableLoanContract.principalOwedAt(owedAtTimestamp),
+  ]);
+
+  return { interestOwed: interestOwed.add(interestAccrued), principalOwed };
 };
 
 const isCallableLoanLate = async (callableLoanId: string) => {
@@ -139,11 +142,24 @@ export const callableLoanResolvers: Resolvers[string] = {
     return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
   // TODO: Zadra round up to end of day logic since interest is accrued every second
-  async periodDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
-    return loanDueAmount(callableLoan.id, "period");
+  async periodInterestDueAmount(
+    callableLoan: CallableLoan
+  ): Promise<BigNumber> {
+    const { interestOwed } = await loanDueAmount(callableLoan.id, "period");
+    return interestOwed;
   },
-  async termDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
-    return loanDueAmount(callableLoan.id, "term");
+  async periodPrincipalDueAmount(
+    callableLoan: CallableLoan
+  ): Promise<BigNumber> {
+    const { principalOwed } = await loanDueAmount(callableLoan.id, "period");
+    return principalOwed;
+  },
+  async termTotalDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
+    const { interestOwed, principalOwed } = await loanDueAmount(
+      callableLoan.id,
+      "term"
+    );
+    return interestOwed.add(principalOwed);
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();
