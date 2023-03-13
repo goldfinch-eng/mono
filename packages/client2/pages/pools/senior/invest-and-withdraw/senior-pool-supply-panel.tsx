@@ -8,50 +8,26 @@ import {
   Checkbox,
   DollarInput,
   Form,
-  Icon,
   InfoIconTooltip,
   Link,
-  MiniTable,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SeniorPoolSupplyPanelPoolFieldsFragment,
-  SeniorPoolSupplyPanelUserFieldsFragment,
-} from "@/lib/graphql/generated";
-import {
-  approveErc20IfRequired,
-  canUserParticipateInSeniorPool,
-  computeApyFromGfiInFiat,
-} from "@/lib/pools";
-import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
+import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated";
+import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
-    estimatedApy
     estimatedApyFromGfiRaw
-  }
-`;
-
-export const SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS = gql`
-  fragment SeniorPoolSupplyPanelUserFields on User {
-    id
-    isUsEntity
-    isNonUsEntity
-    isUsAccreditedIndividual
-    isUsNonAccreditedIndividual
-    isNonUsIndividual
-    isGoListed
   }
 `;
 
 interface SeniorPoolSupplyPanelProps {
   seniorPool: SeniorPoolSupplyPanelPoolFieldsFragment;
-  user: SeniorPoolSupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
 }
 
@@ -62,10 +38,8 @@ interface FormFields {
 
 export function SeniorPoolSupplyPanel({
   seniorPool,
-  user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
-  const seniorPoolApyUsdc = seniorPool.estimatedApy;
   const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
     seniorPool.estimatedApyFromGfiRaw,
     fiatPerGfi
@@ -189,17 +163,6 @@ export function SeniorPoolSupplyPanel({
     });
   };
 
-  const isUserVerified =
-    user?.isGoListed ||
-    user?.isUsEntity ||
-    user?.isNonUsEntity ||
-    user?.isUsAccreditedIndividual ||
-    user?.isUsNonAccreditedIndividual ||
-    user?.isNonUsIndividual;
-  const canUserParticipate = !user
-    ? false
-    : canUserParticipateInSeniorPool(user);
-
   const validateMaximumAmount = async (value: string) => {
     if (!account || !provider) {
       return;
@@ -234,145 +197,62 @@ export function SeniorPoolSupplyPanel({
   }, [account, provider]);
 
   return (
-    <div className="rounded-xl bg-midnight-01 p-5 text-white">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-sm">Total est. APY</span>
-        <InfoIconTooltip
-          className="!text-white/60"
-          content={
-            <div className="max-w-xs">
-              The Senior Pool&rsquo;s total current estimated APY, including the
-              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
-              volatile and changes based on several variables including the
-              price of GFI, the total capital deployed on Goldfinch, and Senior
-              Pool&rsquo;s utilization. Learn more in the{" "}
-              <Link
-                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
-                openInNewTab
-              >
-                Goldfinch Documentation
-              </Link>
-              .
-            </div>
+    <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
+      <div>
+        <DollarInput
+          control={control}
+          name="supply"
+          label="Investment amount"
+          colorScheme="light"
+          textSize="xl"
+          labelClassName="!text-sm !mb-3"
+          labelDecoration={
+            <span className="text-xs">Balance: {availableBalance}</span>
           }
+          className="mb-4"
+          maxValue={async () => {
+            if (!account || !provider) {
+              throw new Error(
+                "Wallet not connected when trying to compute max"
+              );
+            }
+            const usdcContract = await getContract({
+              name: "USDC",
+              provider,
+            });
+            const userUsdcBalance = await usdcContract.balanceOf(account);
+            return userUsdcBalance;
+          }}
+          rules={{ required: "Required", validate: validateMaximumAmount }}
         />
-      </div>
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <div className="text-6xl font-medium">
-            {formatPercent(
-              seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat)
-            )}
-          </div>
-        </div>
-        <MiniTable
-          deemphasizeRowHeadings
-          omitVerticalBorders
-          rows={[
-            ["USDC", formatPercent(seniorPoolApyUsdc)],
-            ["GFI", formatPercent(seniorPoolApyFromGfiFiat)],
-          ]}
+        <Checkbox
+          {...register("isStaking")}
+          label={`Stake to earn GFI (${formatPercent(
+            seniorPoolApyFromGfiFiat
+          )})`}
+          labelDecoration={
+            <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
+          }
+          colorScheme="light"
+          className="mb-3"
         />
-      </div>
-
-      {!account ? (
-        <Button
-          className="block w-full"
-          onClick={openWalletModal}
-          size="xl"
-          colorScheme="secondary"
-        >
-          Connect wallet
-        </Button>
-      ) : !isUserVerified ? (
-        <Button
-          className="block w-full"
-          onClick={openVerificationModal}
-          size="xl"
-          colorScheme="secondary"
-        >
-          Verify my identity
-        </Button>
-      ) : !canUserParticipate ? (
-        <div>
-          <Button
-            disabled
-            className="block w-full"
-            size="xl"
-            colorScheme="secondary"
-          >
-            Supply
-          </Button>
-          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
-            <Icon size="md" name="Exclamation" />
-            <div>
-              Sorry, you are not eligible to participate in the senior pool
-              because you do not have a suitable UID.
-            </div>
-          </div>
+        <div className="mb-4 text-xs">
+          By clicking &ldquo;Invest&rdquo; below, I hereby agree to the{" "}
+          <Link href="/senior-pool-agreement-interstitial">
+            Senior Pool Agreement
+          </Link>
+          . Please note the protocol deducts a 0.50% fee upon withdrawal for
+          protocol reserves.
         </div>
-      ) : (
-        <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-          <div>
-            <DollarInput
-              control={control}
-              name="supply"
-              label="Supply amount"
-              colorScheme="dark"
-              textSize="xl"
-              labelClassName="!text-sm !mb-3"
-              labelDecoration={
-                <span className="text-xs">Balance: {availableBalance}</span>
-              }
-              className="mb-4"
-              maxValue={async () => {
-                if (!account || !provider) {
-                  throw new Error(
-                    "Wallet not connected when trying to compute max"
-                  );
-                }
-                const usdcContract = await getContract({
-                  name: "USDC",
-                  provider,
-                });
-                const userUsdcBalance = await usdcContract.balanceOf(account);
-                return userUsdcBalance;
-              }}
-              rules={{ required: "Required", validate: validateMaximumAmount }}
-            />
-            <Checkbox
-              {...register("isStaking")}
-              label={`Stake to earn GFI (${formatPercent(
-                seniorPoolApyFromGfiFiat
-              )})`}
-              labelDecoration={
-                <InfoIconTooltip
-                  className="!text-white/60"
-                  content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance."
-                />
-              }
-              colorScheme="dark"
-              className="mb-3"
-            />
-            <div className="mb-4 text-xs">
-              By clicking “Supply” below, I hereby agree to the{" "}
-              <Link href="/senior-pool-agreement-interstitial">
-                Senior Pool Agreement
-              </Link>
-              . Please note the protocol deducts a 0.50% fee upon withdrawal for
-              protocol reserves.
-            </div>
-          </div>
-          <Button
-            className="block w-full"
-            size="xl"
-            colorScheme="secondary"
-            type="submit"
-          >
-            Supply
-          </Button>
-        </Form>
-      )}
-    </div>
+      </div>
+      <Button
+        className="block w-full"
+        size="xl"
+        colorScheme="mustard"
+        type="submit"
+      >
+        Invest
+      </Button>
+    </Form>
   );
 }

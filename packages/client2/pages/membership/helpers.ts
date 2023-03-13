@@ -12,7 +12,7 @@ export function convertPoolTokenToAsset(
 ): Asset {
   return {
     name: `Borrower Pool Position (Token #${poolToken.id})`,
-    description: poolToken.tranchedPool.name,
+    description: poolToken.loan.name,
     usdcAmount: {
       token: "USDC",
       amount: poolToken.principalAmount.sub(poolToken.principalRedeemed),

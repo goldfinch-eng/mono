@@ -1,6 +1,6 @@
 import {Address} from "@graphprotocol/graph-ts"
 
-import {TranchedPool, TranchedPoolToken, VaultedPoolToken} from "../../generated/schema"
+import {TranchedPool, PoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,
@@ -46,7 +46,7 @@ export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentAmount = event.params.amount
   transaction.sentToken = "USDC"
   transaction.receivedNftId = event.params.tokenId.toString()
@@ -70,7 +70,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
   const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
-  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
   let underlyingOwner = poolToken.user
   if (poolToken.vaultedAsset) {
     const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))
@@ -83,7 +83,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     Address.fromString(underlyingOwner)
   )
   transaction.transactionHash = event.transaction.hash
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentNftId = event.params.tokenId.toString()
   transaction.sentNftType = "POOL_TOKEN"
   transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
@@ -127,7 +127,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolTokensRedeemable(tranchedPool)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "USDC"
   transaction.save()
@@ -151,7 +151,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.sentToken = "USDC"
   transaction.save()

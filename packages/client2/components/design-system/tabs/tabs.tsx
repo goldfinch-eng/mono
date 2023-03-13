@@ -13,10 +13,8 @@ export function TabButton({ children }: TabProps) {
       {({ selected }) => (
         <button
           className={clsx(
-            "mr-1 -mb-px rounded-t-md border py-4 px-5 text-sm font-medium",
-            selected
-              ? "border-sand-200 border-b-white bg-white text-sand-900"
-              : "border-transparent !border-b-sand-200 bg-sand-100 text-sand-600"
+            "-mb-px border-b-2 p-2.5 text-sand-900",
+            selected ? "border-mustard-500 font-medium" : "border-transparent"
           )}
         >
           {children}
@@ -26,12 +24,11 @@ export function TabButton({ children }: TabProps) {
   );
 }
 
-export function TabContent({ children }: TabProps) {
-  return (
-    <Tab.Panel>
-      <div className="pt-12">{children}</div>
-    </Tab.Panel>
-  );
+export function TabContent({
+  children,
+  className,
+}: TabProps & { className?: string }) {
+  return <Tab.Panel className={clsx("pt-8", className)}>{children}</Tab.Panel>;
 }
 
 export function TabGroup(
@@ -43,7 +40,7 @@ export function TabGroup(
 export function TabList({ children }: TabProps) {
   return (
     <Tab.List>
-      <div className="border-b border-sand-200">{children}</div>
+      <div className="flex gap-2 border-b border-mustard-100">{children}</div>
     </Tab.List>
   );
 }

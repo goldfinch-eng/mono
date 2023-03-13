@@ -5,6 +5,7 @@ type Row = ReactNode[];
 
 interface MiniTableProps {
   className?: string;
+  colorScheme?: "white" | "mustard";
   rows: Row[];
   deemphasizeRowHeadings?: boolean;
   deemphasizeMiddleCols?: boolean;
@@ -13,6 +14,7 @@ interface MiniTableProps {
 
 export function MiniTable({
   className,
+  colorScheme = "white",
   rows,
   deemphasizeRowHeadings = false,
   deemphasizeMiddleCols = false,
@@ -21,7 +23,12 @@ export function MiniTable({
   return (
     <div
       className={clsx(
-        "rounded border border-white/25 text-xs text-white",
+        "rounded border text-xs",
+        colorScheme === "white"
+          ? "border-white/25 text-white"
+          : colorScheme === "mustard"
+          ? "border-mustard-600/20 text-sand-700"
+          : null,
         className
       )}
     >
@@ -39,6 +46,7 @@ export function MiniTable({
               {row.map((cell, cellIndex) => (
                 <MiniTableCell
                   key={`mini-table-cell-${rowIndex}-${cellIndex}`}
+                  colorScheme={colorScheme}
                   isRowHeading={cellIndex === 0}
                   fadedBg={cellIndex === 0 && !deemphasizeRowHeadings}
                   fadedText={
@@ -62,6 +70,7 @@ export function MiniTable({
 export function MiniTableCell({
   children,
   className,
+  colorScheme = "white",
   isRowHeading = false,
   fadedBg = false,
   fadedText = false,
@@ -69,6 +78,7 @@ export function MiniTableCell({
 }: {
   children: ReactNode;
   className?: string;
+  colorScheme?: "white" | "mustard";
   isRowHeading?: boolean;
   fadedBg?: boolean;
   fadedText?: boolean;
@@ -81,7 +91,12 @@ export function MiniTableCell({
       className={clsx(
         "py-2 px-3 font-normal",
         "text-right first:text-left",
-        "border border-white/25 first:border-l-0 last:border-r-0 group-[.first-row]:border-t-0 group-[.last-row]:border-b-0",
+        "border first:border-l-0 last:border-r-0 group-[.first-row]:border-t-0 group-[.last-row]:border-b-0",
+        colorScheme === "white"
+          ? "border-white/25"
+          : colorScheme === "mustard"
+          ? "border-mustard-600/20"
+          : null,
         omitVerticalBorders ? "border-r-0 border-l-0" : null,
         fadedBg ? "bg-white/5" : null,
         fadedText ? "opacity-60" : null,

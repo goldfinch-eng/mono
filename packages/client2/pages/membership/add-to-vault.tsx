@@ -41,13 +41,13 @@ import {
 import { Legalese } from "./legal-agreement";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
-type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
+type PoolToken = MembershipPageQuery["poolTokens"][number];
 
 export const ADD_TO_VAULT_POOL_TOKEN_FIELDS = gql`
-  fragment AddToVaultPoolTokenFields on TranchedPoolToken {
+  fragment AddToVaultPoolTokenFields on PoolToken {
     id
     principalAmount
-    tranchedPool {
+    loan {
       id
       name @client
     }
@@ -442,7 +442,7 @@ function ReviewStep({
       include: "active",
       updateCache(cache) {
         cache.evict({ fieldName: "user" });
-        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "poolTokens" });
         cache.evict({ fieldName: "seniorPoolStakedPositions" });
       },
     });

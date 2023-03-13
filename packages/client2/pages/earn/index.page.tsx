@@ -1,6 +1,5 @@
-import { gql } from "@apollo/client";
+import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
-import { useState } from "react";
 
 import { Button, HelperText, Link } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
@@ -8,14 +7,13 @@ import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
   computeApyFromGfiInFiat,
-  getTranchedPoolFundingStatus,
-  getTranchedPoolRepaymentStatus,
-  TranchedPoolFundingStatus,
+  getLoanFundingStatus,
+  getLoanRepaymentStatus,
+  LoanFundingStatus,
 } from "@/lib/pools";
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
-  PROTOCOL_METRICS_FIELDS,
 } from "@/pages/earn/goldfinch-pools-metrics";
 import {
   OpenDealCard,
@@ -24,11 +22,8 @@ import {
 
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
-const visiblePoolOnFirstLoad = 4;
-
 gql`
-  ${PROTOCOL_METRICS_FIELDS}
-  query EarnPage {
+  query EarnPage($numClosedPools: Int!) {
     seniorPools(first: 1) {
       id
       name @client
@@ -38,24 +33,32 @@ gql`
       estimatedApyFromGfiRaw
       sharePrice
     }
-    tranchedPools(orderBy: createdAt, orderDirection: desc) {
+    openPools: tranchedPools(
+      orderBy: createdAt
+      orderDirection: desc
+      where: { termStartTime: 0 }
+    ) {
+      __typename
       id
-      estimatedJuniorApy
-      estimatedJuniorApyFromGfiRaw
-      fundableAt
-      remainingCapacity
-      creditLine {
-        id
-        limit
-        balance
-        termInDays
-        termEndTime
-        isLate @client
-        isInDefault @client
-      }
+      usdcApy
+      rawGfiApy
+      termInDays
+      ...FundingStatusLoanFields
+    }
+    closedPools: tranchedPools(
+      orderBy: createdAt
+      orderDirection: desc
+      where: { termStartTime_not: 0 }
+      first: $numClosedPools
+    ) {
+      id
+      principalAmount
+      termEndTime
+      ...RepaymentStatusLoanFields
     }
     protocols(first: 1) {
       id
+      numLoans
       ...ProtocolMetricsFields
     }
     gfiPrice(fiat: USD) @client {
@@ -94,41 +97,33 @@ const earnCmsQuery = gql`
 export default function EarnPage({
   dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { data, error } = useEarnPageQuery();
-
-  const [showMoreClosedPools, setShowMoreClosedPools] = useState(false);
+  const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
+    variables: { numClosedPools: 3 },
+    notifyOnNetworkStatusChange: true,
+  });
 
   const seniorPool = data?.seniorPools?.[0]?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
-  // Only display tranched pools for which we have deal metadata
-  const tranchedPools = data?.tranchedPools?.filter(
-    (tranchedPool) => !!dealMetadata[tranchedPool.id]
-  );
 
   const protocol = data?.protocols[0];
+  const numLoans = protocol?.numLoans ?? 0;
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
   const openTranchedPools =
-    tranchedPools?.filter(
+    data?.openPools.filter(
       (tranchedPool) =>
-        getTranchedPoolFundingStatus(tranchedPool) ===
-        TranchedPoolFundingStatus.Open
+        (!!dealMetadata[tranchedPool.id] &&
+          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open) ||
+        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.ComingSoon
     ) ?? [];
-  const closedTranchedPools =
-    tranchedPools?.filter(
-      (tranchedPool) =>
-        getTranchedPoolFundingStatus(tranchedPool) ===
-          TranchedPoolFundingStatus.Closed ||
-        getTranchedPoolFundingStatus(tranchedPool) ===
-          TranchedPoolFundingStatus.Full
-    ) ?? [];
+  const closedTranchedPools = data?.closedPools ?? [];
 
   // +1 for Senior Pool
   const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
 
-  const loading = !seniorPool || !fiatPerGfi || !tranchedPools || !protocol;
+  const loading = !seniorPool || !fiatPerGfi || !protocol;
 
   return (
     <div>
@@ -194,7 +189,7 @@ export default function EarnPage({
               const dealDetails = dealMetadata[tranchedPool.id];
 
               const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-                tranchedPool.estimatedJuniorApyFromGfiRaw,
+                tranchedPool.rawGfiApy,
                 fiatPerGfi
               );
 
@@ -203,13 +198,12 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const apyFromGfi =
-                tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
-                  ? tranchedPool.estimatedJuniorApyFromGfiRaw
-                  : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
+              const apyFromGfi = tranchedPool.rawGfiApy.isZero()
+                ? tranchedPool.rawGfiApy
+                : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
 
               const termLengthInMonths = Math.floor(
-                tranchedPool.creditLine.termInDays.toNumber() / 30
+                tranchedPool.termInDays / 30
               );
 
               return (
@@ -218,7 +212,7 @@ export default function EarnPage({
                   icon={dealDetails.borrower.logo?.url}
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
-                  usdcApy={tranchedPool.estimatedJuniorApy}
+                  usdcApy={tranchedPool.usdcApy}
                   gfiApy={apyFromGfi}
                   gfiApyTooltip={
                     <div>
@@ -246,7 +240,7 @@ export default function EarnPage({
                           <div>LP rewards match GFI APY</div>
                           <div>
                             {formatPercent(
-                              tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                              tranchedPool.rawGfiApy.isZero()
                                 ? 0
                                 : seniorPoolApyFromGfi
                             )}
@@ -268,42 +262,40 @@ export default function EarnPage({
             })}
           </div>
 
-          <EarnPageHeading>{`${closedTranchedPools.length} Closed Deals`}</EarnPageHeading>
+          <EarnPageHeading>{`${
+            protocol.numLoans - data.openPools.length
+          } Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
-            {closedTranchedPools.map((tranchedPool, i) => {
+            {closedTranchedPools.map((tranchedPool) => {
               const deal = dealMetadata[tranchedPool.id];
-              const repaymentStatus =
-                getTranchedPoolRepaymentStatus(tranchedPool);
+              const repaymentStatus = getLoanRepaymentStatus(tranchedPool);
               return (
                 <ClosedDealCard
                   key={tranchedPool.id}
-                  // For SEO purposes, using invisible to hide pools but keep them in DOM before user clicks "view more pools"
-                  className={
-                    !showMoreClosedPools && i >= visiblePoolOnFirstLoad
-                      ? "hidden"
-                      : undefined
-                  }
                   borrowerName={deal.borrower.name}
                   icon={deal.borrower.logo?.url}
                   dealName={deal.name}
-                  loanAmount={tranchedPool.creditLine.limit}
-                  termEndTime={tranchedPool.creditLine.termEndTime}
+                  loanAmount={tranchedPool.principalAmount}
+                  termEndTime={tranchedPool.termEndTime}
                   repaymentStatus={repaymentStatus}
                   href={`/pools/${tranchedPool.id}`}
                 />
               );
             })}
           </div>
-          {!showMoreClosedPools && closedTranchedPools?.length > 4 && (
+          {data.openPools.length + data.closedPools.length < numLoans ? (
             <Button
-              onClick={() => setShowMoreClosedPools(true)}
+              onClick={() => fetchMore({ variables: { numClosedPools: 1000 } })}
               className="mt-2 w-full"
               colorScheme="sand"
               size="lg"
+              isLoading={networkStatus === NetworkStatus.fetchMore}
             >
-              {`View ${closedTranchedPools?.length - 4} more closed pools`}
+              {`View ${
+                numLoans - data.openPools.length - data.closedPools.length
+              } more closed pools`}
             </Button>
-          )}
+          ) : null}
         </>
       )}
     </div>

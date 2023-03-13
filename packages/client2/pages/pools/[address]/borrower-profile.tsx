@@ -1,24 +1,32 @@
 import { gql } from "@apollo/client";
+import clsx from "clsx";
+import { format } from "date-fns";
 import Image from "next/future/image";
+import NextLink from "next/link";
 
-import { ChipLink, Link } from "@/components/design-system";
+import { Chip, ChipLink, Stat, StatGrid } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   BorrowerProfileFieldsFragment,
-  BorrowerOtherPoolFieldsFragment,
+  BorrowerAllPoolFieldsFragment,
 } from "@/lib/graphql/generated";
-
-import { BorrowerTeam } from "./borrower-team";
 import {
-  BorrowerFinancialsTable,
-  UnderwritingPerformanceTable,
-} from "./deal-tables";
-import { DocumentsList } from "./documents-list";
+  getLoanRepaymentStatus,
+  getLoanRepaymentStatusLabel,
+  LoanRepaymentStatus,
+  REPAYMENT_STATUS_LOAN_FIELDS,
+  sum,
+} from "@/lib/pools";
 
 export const BORROWER_OTHER_POOL_FIELDS = gql`
-  fragment BorrowerOtherPoolFields on TranchedPool {
+  ${REPAYMENT_STATUS_LOAN_FIELDS}
+  fragment BorrowerAllPoolFields on TranchedPool {
     id
     name @client
+    principalAmount
+    termEndTime
+    ...RepaymentStatusLoanFields
   }
 `;
 
@@ -34,163 +42,184 @@ export const BORROWER_PROFILE_FIELDS = gql`
     website
     twitter
     linkedin
-    underwritingPerformance {
-      ...BorrowerPerformanceTableFields
-    }
-    borrowerFinancials {
-      ...BorrowerFinancialsTableFields
-    }
-    otherProducts
-    team {
-      description
-      members {
-        ...CMSTeamMemberFields
-      }
-    }
-    mediaLinks {
-      url
-      title
-    }
-    contactInfo
-    documents {
-      ...DocumentFields
-    }
-    deals {
-      id
-      name
-    }
   }
 `;
 
 interface BorrowerProfileProps {
   borrower: BorrowerProfileFieldsFragment;
-  borrowerPools: BorrowerOtherPoolFieldsFragment[];
+  borrowerAllPools: BorrowerAllPoolFieldsFragment[];
+  currentPoolAddress: string;
 }
 
 export function BorrowerProfile({
   borrower,
-  borrowerPools,
+  borrowerAllPools,
+  currentPoolAddress,
 }: BorrowerProfileProps) {
+  const otherPools = borrowerAllPools.filter(
+    (pool) => pool.id !== currentPoolAddress
+  );
+  const numOtherPools = otherPools.length;
+  const borrowerDefaultRate = 0; // TODO calculate this when we have proper off-chain writedown amounts per-pool
+  const totalLoanPrincipal = sum("principalAmount", borrowerAllPools);
   return (
-    <div className="space-y-20">
-      <div>
-        <div className="mb-8">
-          <div className="mb-3 items-center justify-between lg:flex">
-            <div className="flex items-center gap-3">
-              {borrower.logo && (
+    <div className="space-y-6">
+      <div className="space-y-5 rounded-xl bg-mustard-100 p-6">
+        <div className="flex items-start justify-between gap-5">
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-10 overflow-hidden rounded-full bg-mustard-50">
+              {borrower.logo?.url ? (
                 <Image
-                  src={borrower.logo.url as string}
-                  alt={borrower.name}
-                  className="h-8 w-8 overflow-hidden rounded-full border border-sand-200 object-contain"
-                  height={32}
-                  width={32}
+                  alt={`${borrower.name} logo`}
+                  src={borrower.logo.url}
+                  quality={100}
+                  sizes="40px"
+                  fill
                 />
-              )}
-
-              <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
+              ) : null}
             </div>
-            <div className="flex gap-2">
-              {borrower.website ? (
-                <ChipLink
-                  iconLeft="Link"
-                  href={borrower.website}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Website
-                </ChipLink>
-              ) : null}
-              {borrower.linkedin ? (
-                <ChipLink
-                  iconLeft="LinkedIn"
-                  href={borrower.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  LinkedIn
-                </ChipLink>
-              ) : null}
-              {borrower.twitter ? (
-                <ChipLink
-                  iconLeft="Twitter"
-                  href={borrower.twitter}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Twitter
-                </ChipLink>
-              ) : null}
+            <div>
+              <div className="font-medium">{borrower.name}</div>
+              <div className="text-xs text-sand-500">{borrower.orgType}</div>
             </div>
           </div>
-          {borrower.orgType ? (
-            <div className="text-sm text-sand-500">{borrower.orgType}</div>
+          <Chip
+            iconLeft="Checkmark"
+            colorScheme="mint"
+            className="flex items-center gap-2"
+          >
+            Experienced borrower
+          </Chip>
+        </div>
+        <RichText className="text-sm" content={borrower.bio} />
+        <div className="flex flex-wrap gap-2">
+          {borrower.website ? (
+            <ChipLink
+              iconLeft="Link"
+              href={borrower.website}
+              target="_blank"
+              rel="noopener"
+            >
+              Website
+            </ChipLink>
+          ) : null}
+          {borrower.linkedin ? (
+            <ChipLink
+              iconLeft="LinkedIn"
+              href={borrower.linkedin}
+              target="_blank"
+              rel="noopener"
+            >
+              LinkedIn
+            </ChipLink>
+          ) : null}
+          {borrower.twitter ? (
+            <ChipLink
+              iconLeft="Twitter"
+              href={borrower.twitter}
+              target="_blank"
+              rel="noopener"
+            >
+              Twitter
+            </ChipLink>
           ) : null}
         </div>
-
-        {borrower.bio ? (
-          <RichText content={borrower.bio} className="mb-8" />
-        ) : null}
       </div>
-
-      <BorrowerFinancialsTable
-        otherPools={borrowerPools}
-        borrowerFinancials={borrower.borrowerFinancials}
-      />
-
-      {borrower.otherProducts ? (
-        <div>
-          <h3 className="mb-8 text-lg font-semibold">Other Products Offered</h3>
-          <RichText content={borrower.otherProducts} />
-        </div>
-      ) : null}
-
-      <UnderwritingPerformanceTable
-        details={borrower.underwritingPerformance}
-      />
-
-      {borrower.team &&
-      ((borrower.team.members && borrower.team.members.length > 0) ||
-        borrower.team?.description) ? (
-        <BorrowerTeam
-          members={borrower.team.members}
-          description={borrower.team.description}
-        />
-      ) : null}
-
-      {borrower.mediaLinks && borrower.mediaLinks.length > 0 ? (
-        <div>
-          <h3 className="mb-8 text-lg font-semibold">Media</h3>
-          <ul>
-            {borrower.mediaLinks.map((link, idx) => (
-              <li
-                key={`borrower-media-link-${link.url}-${idx}`}
-                className="py-1"
-              >
-                <Link
-                  href={link.url as string}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-eggplant-700 underline sm:gap-2"
-                  iconRight="ArrowTopRight"
-                >
-                  {link.title as string}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {borrower.contactInfo ? (
-        <div>
-          <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
-          <RichText content={borrower.contactInfo} />
-        </div>
-      ) : null}
-
-      {borrower.documents && borrower.documents.length > 0 ? (
-        <DocumentsList documents={borrower.documents} />
+      {numOtherPools > 0 ? (
+        <StatGrid bgColor="mustard-50" numColumns={3}>
+          <Stat
+            label="Other deals"
+            tooltip="[TODO] content"
+            value={numOtherPools}
+          />
+          <Stat
+            label="Total loss rate"
+            tooltip="[TODO] content"
+            value={formatPercent(borrowerDefaultRate)}
+          />
+          <Stat
+            label="Total loan principal"
+            tooltip="[TODO] content"
+            value={formatCrypto({ token: "USDC", amount: totalLoanPrincipal })}
+          />
+          <div className="col-span-full bg-mustard-50">
+            <table className="w-full text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
+              <thead>
+                <tr className="border-b border-sand-200 bg-mustard-100 text-right [&>th]:font-normal">
+                  <th scope="col" className="w-1/4 text-left">
+                    Deal name
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Loan principal
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Maturity date
+                  </th>
+                  <th scope="col" className="w-1/4">
+                    Repayment status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sand-200">
+                {otherPools.map((pool) => (
+                  <tr
+                    key={pool.id}
+                    className="relative text-right hover:bg-white"
+                  >
+                    <td className="w-1/4 max-w-0 truncate text-left">
+                      <NextLink passHref href={`/pools/${pool.id}`}>
+                        <a className="before:absolute before:inset-0">
+                          {pool.name}
+                        </a>
+                      </NextLink>
+                    </td>
+                    <td>
+                      {formatCrypto({
+                        token: "USDC",
+                        amount: pool.principalAmount,
+                      })}
+                    </td>
+                    <td>
+                      {format(
+                        pool.termEndTime.toNumber() * 1000,
+                        "MMM dd, yyyy"
+                      )}
+                    </td>
+                    <td>
+                      <RepaymentStatusChip
+                        repaymentStatus={getLoanRepaymentStatus(pool)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </StatGrid>
       ) : null}
     </div>
+  );
+}
+
+function RepaymentStatusChip({
+  repaymentStatus,
+}: {
+  repaymentStatus: LoanRepaymentStatus;
+}) {
+  return (
+    <span
+      className={clsx(
+        "rounded-full border px-2 py-1 text-xs",
+        repaymentStatus === LoanRepaymentStatus.Default
+          ? "border-clay-200 bg-clay-100 text-clay-700"
+          : repaymentStatus === LoanRepaymentStatus.Late
+          ? "border-mustard-200 bg-mustard-100 text-mustard-700"
+          : repaymentStatus === LoanRepaymentStatus.Repaid
+          ? "border-mint-300 bg-mint-200 text-mint-800"
+          : "border-mint-200 bg-mint-100 text-mint-700"
+      )}
+    >
+      {getLoanRepaymentStatusLabel(repaymentStatus)}
+    </span>
   );
 }

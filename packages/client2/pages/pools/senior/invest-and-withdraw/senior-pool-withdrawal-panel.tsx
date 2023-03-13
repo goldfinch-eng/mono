@@ -1,6 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { format } from "date-fns";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber } from "ethers";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -15,9 +15,9 @@ import { formatCrypto } from "@/lib/format";
 import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment,
+  SeniorPoolWithdrawalPanelFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
-import { openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -30,6 +30,14 @@ import {
   WithdrawalRequestModal,
   WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS,
 } from "./withdrawal-request-modal";
+
+export const SENIOR_POOL_WITHDRAWAL_PANEL_FIELDS = gql`
+  fragment SeniorPoolWithdrawalPanelFields on SeniorPool {
+    sharePrice
+    epochEndsAt @client
+    withdrawalCancellationFee
+  }
+`;
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -51,27 +59,26 @@ export const SENIOR_POOL_WITHDRAWAL_PANEL_WITHDRAWAL_REQUEST_FIELDS = gql`
 `;
 
 interface SeniorPoolWithdrawalPanelProps {
-  canUserParticipate: boolean;
+  seniorPool: SeniorPoolWithdrawalPanelFieldsFragment;
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   vaultedStakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
-  seniorPoolSharePrice: BigNumber;
-  epochEndsAt: number;
-  cancellationFee: FixedNumber;
   existingWithdrawalRequest?: SeniorPoolWithdrawalPanelWithdrawalRequestFieldsFragment;
 }
 
 export function SeniorPoolWithdrawalPanel({
-  canUserParticipate,
+  seniorPool,
   fiduBalance = { token: "FIDU", amount: BigNumber.from(0) },
-  seniorPoolSharePrice,
   stakedPositions = [],
-  epochEndsAt,
-  cancellationFee,
   vaultedStakedPositions = [],
   existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
   const { provider } = useWallet();
+  const {
+    sharePrice: seniorPoolSharePrice,
+    epochEndsAt,
+    withdrawalCancellationFee: cancellationFee,
+  } = seniorPool;
 
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isIncreaseModalOpen, setIsIncreaseModalOpen] = useState(false); // This should be separate from the modal for new requests because otherwise the New Request modal will become the increase modal as it closes (existingWithdrawalRequest becomes defined)
@@ -79,19 +86,6 @@ export function SeniorPoolWithdrawalPanel({
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const rhfMethodsForWithdrawingUsdc = useForm();
-  const totalUserFidu = sumTotalShares(
-    fiduBalance,
-    {
-      amount:
-        existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
-      token: "FIDU",
-    },
-    stakedPositions.concat(vaultedStakedPositions)
-  );
-  const totalSharesUsdc = sharesToUsdc(
-    totalUserFidu,
-    seniorPoolSharePrice
-  ).amount;
   const currentRequestUsdc = sharesToUsdc(
     existingWithdrawalRequest?.previewFiduRequested ?? BigNumber.from(0),
     seniorPoolSharePrice
@@ -119,38 +113,11 @@ export function SeniorPoolWithdrawalPanel({
 
   return (
     <>
-      <div className="rounded-xl bg-midnight-01 p-5 text-white">
-        <div className="mb-6">
-          <div className="mb-3 flex items-center justify-between gap-1 text-sm">
-            <div>Your current position</div>
-            <InfoIconTooltip
-              className="!text-white/60"
-              content="The USD value of your current position in the Senior Pool."
-            />
-          </div>
-          <div className="mb-3 flex items-center gap-3 text-5xl font-medium">
-            {formatCrypto({
-              token: "USDC",
-              amount: totalSharesUsdc,
-            })}
-          </div>
-          <div>
-            {formatCrypto(
-              {
-                token: "FIDU",
-                amount: totalUserFidu,
-              },
-              { includeToken: true }
-            )}
-          </div>
-        </div>
+      <div>
         <div className="mb-5">
           <div className="mb-2 flex items-center justify-between gap-2 text-sm">
             <div>Ready to withdraw</div>
-            <InfoIconTooltip
-              className="!text-white/60"
-              content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet."
-            />
+            <InfoIconTooltip content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet." />
           </div>
           <div className="flex items-center gap-2">
             <div className="text-3xl font-medium">
@@ -172,7 +139,7 @@ export function SeniorPoolWithdrawalPanel({
           >
             <Button
               type="submit"
-              colorScheme="secondary"
+              colorScheme="mustard"
               size="xl"
               disabled={existingWithdrawalRequest.previewUsdcWithdrawable.isZero()}
               className="mb-2 block w-full"
@@ -180,23 +147,14 @@ export function SeniorPoolWithdrawalPanel({
               Withdraw USDC
             </Button>
           </Form>
-        ) : canUserParticipate ? (
+        ) : (
           <Button
-            colorScheme="secondary"
+            colorScheme="mustard"
             size="xl"
             onClick={() => setIsRequestModalOpen(true)}
             className="mb-2 block w-full"
           >
             Request withdrawal
-          </Button>
-        ) : (
-          <Button
-            colorScheme="secondary"
-            size="xl"
-            onClick={openVerificationModal}
-            className="mb-2 block w-full"
-          >
-            Verify my identity
           </Button>
         )}
 
@@ -204,10 +162,7 @@ export function SeniorPoolWithdrawalPanel({
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Withdrawal request</div>
-              <InfoIconTooltip
-                className="!text-white/60"
-                content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request."
-              />
+              <InfoIconTooltip content="FIDU you have submitted a request to withdraw that is pending distribution. You can cancel your request to withdraw FIDU, or withdraw more FIDU by increasing your request." />
             </div>
             <div className="mb-3 flex items-end justify-between gap-2">
               <div className="text-3xl font-medium">
@@ -229,10 +184,7 @@ export function SeniorPoolWithdrawalPanel({
 
             <div className="mb-2 flex items-center justify-between gap-2 text-sm">
               <div>Next distribution</div>
-              <InfoIconTooltip
-                className="!text-white/60"
-                content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled."
-              />
+              <InfoIconTooltip content="The next date that the FIDU submitted in withdrawal requests will be distributed to requestors. Distributions happen every two weeks, and requests automatically roll-over to the next period until they are fully fulfilled." />
             </div>
             <div className="mb-5 flex items-end justify-between gap-1">
               <div className="text-2xl">
@@ -240,7 +192,7 @@ export function SeniorPoolWithdrawalPanel({
               </div>
               <button
                 onClick={() => setIsHistoryModalOpen(true)}
-                className="text-xs text-white underline"
+                className="text-xs underline"
               >
                 View request history
               </button>
@@ -249,7 +201,7 @@ export function SeniorPoolWithdrawalPanel({
             <div className="flex gap-2">
               <div className="flex-1">
                 <Button
-                  colorScheme="twilight"
+                  colorScheme="transparent-mustard"
                   size="xl"
                   className="block w-full"
                   onClick={() => setIsIncreaseModalOpen(true)}
@@ -260,7 +212,7 @@ export function SeniorPoolWithdrawalPanel({
               <div className="flex-1">
                 <Button
                   onClick={() => setIsCancelModalOpen(true)}
-                  colorScheme="twilight"
+                  colorScheme="transparent-mustard"
                   size="xl"
                   className="block w-full"
                   disabled={existingWithdrawalRequest.previewFiduRequested.isZero()}
@@ -322,28 +274,4 @@ export function SeniorPoolWithdrawalPanel({
       />
     </>
   );
-}
-
-function sumStakedShares(
-  staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
-): BigNumber {
-  const totalStaked = staked.reduce(
-    (previous, current) => previous.add(current.amount),
-    BigNumber.from(0)
-  );
-
-  return totalStaked;
-}
-
-function sumTotalShares(
-  unstaked: CryptoAmount,
-  requested: CryptoAmount,
-  staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
-): BigNumber {
-  if (unstaked.token !== "FIDU") {
-    throw new Error("Unstaked is not a CryptoAmount in FIDU");
-  }
-  const totalStaked = sumStakedShares(staked);
-
-  return unstaked.amount.add(totalStaked).add(requested.amount);
 }
