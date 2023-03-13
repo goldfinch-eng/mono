@@ -143,17 +143,17 @@ export function SeniorPoolRepaymentSection({
               <Menu.Item>
                 <button
                   className="block px-3 py-3 text-left hover:bg-sand-50"
-                  onClick={() => setPerspective("future")}
+                  onClick={() => setPerspective("past")}
                 >
-                  Future repayments
+                  Past repayments
                 </button>
               </Menu.Item>
               <Menu.Item>
                 <button
                   className="block px-3 py-3 text-left hover:bg-sand-50"
-                  onClick={() => setPerspective("past")}
+                  onClick={() => setPerspective("future")}
                 >
-                  Past repayments
+                  Future repayments
                 </button>
               </Menu.Item>
             </Menu.Items>
