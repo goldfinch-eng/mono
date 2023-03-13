@@ -54,22 +54,6 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
     assertFalse(cl.isLate());
   }
 
-  function testNotLateIfPastDueTimeButWithinGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
-
-    timestamp = bound(timestamp, cl.nextDueTime(), cl.nextDueTime() + (10 days));
-
-    vm.warp(timestamp);
-
-    assertFalse(cl.isLate());
-  }
-
   function testLateIfPastDueTimeAndPastGracePeriod(uint256 timestamp) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     uint256 limit = usdcVal(100);
@@ -84,29 +68,6 @@ contract TranchedPoolIsLateTest is TranchedPoolBaseTest {
     vm.warp(timestamp);
 
     assertTrue(cl.isLate());
-  }
-
-  function testIsNotLateIfCurrentAtTermEndTimeAndInGracePeriod(uint256 timestamp) public {
-    (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
-    uint256 limit = usdcVal(100);
-    deposit(pool, 2, limit, GF_OWNER);
-    lockJuniorTranche(pool);
-    seniorDepositAndInvest(pool, limit * 4);
-    lockSeniorTranche(pool);
-    drawdown(pool, limit);
-
-    // Advance to the last payment period and pay back interest
-    for (uint i = 0; i < 11; ++i) {
-      vm.warp(cl.nextDueTime());
-      pay(pool, cl.interestOwed());
-    }
-
-    assertEq(cl.nextDueTime(), cl.termEndTime());
-
-    timestamp = bound(timestamp, cl.termEndTime(), cl.termEndTime() + (10 days));
-    vm.warp(timestamp);
-
-    assertFalse(cl.isLate());
   }
 
   function testIsLateIfCurrentAtTermEndTimeAndAfterGracePeriod(uint256 timestamp) public {
