@@ -236,20 +236,26 @@ Below are some steps to create and deploy the subgraph without needing to set up
 
 After the installation process, you'd need to go through a few steps to create and deploy the subgraph. 
 
-- On a split terminal window (recommended), start running `ipfs daemon`. 
+- Clone the [`graph-node codebase`](https://github.com/graphprotocol/graph-node). Note that the instructions below are similar to what's found on the ReadMe of the repo. 
+- On a new terminal window, start running `ipfs daemon`. 
   Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
   port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
-- Before following the steps to re-deploy the subgraphs, you would need to re-create the `graph_node` database by running the following commands: 
+- Before starting the `graph_node` server, you would need to re-create the `graph_node` database by running the following commands: 
 ```bash
 $psql postgres
 postgres=# drop database "graph-node"; create database "graph-node";
 ```
-- Then proceed with running the `graph-node` server using the following command template:
-```bash
-cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:<IPFS API Server port name>
-```
+The reason being that when you run the dApp locally, you start running hardhat, which provides test data. The smart contract will emit events that the `graph-node` database stores during that server session. That data becomes irrelevant however, in the next session you run the server. That's why in order to keep the database uncorrupted with stale data, we need to re-create it. 
 - Run the local chain from the root directory `mono/` with `yarn-start local` so that it can start up `hardhat` and other software packages.
-
+- Enter into the `graph-node` directory. Build the binary for the Graph Node before you run it for the first time, with `cargo build`. 
+- Proceed with running the `graph-node` server using the following command template within the `graph-node` directory:
+```bash
+cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:5002
+```
+Below are the following descriptions for each component of the above command: 
+--postgres-url postgresql://user:pass@localhost:5432/graph-node is a connection string for a postgresDB running on the local machine. user/pass will vary depending on your system. usually your OS username will suffice. graph-node is the name of an empty database that we created
+--ethereum-rpc localhost:http://localhost:8545 indicates that we want Graph Node to read from the RPC for hardhat, and we're giving this network the codename "localhost" (instead of "mainnet")
+--ipfs http://localhost:5002 this is the API server for IPFS, port may vary depending on your config
 - The rest of the steps are similar to what's above (steps 4 through 6):
   - run `yarn create-local` - creates the subgraph instance titled: `goldfinch-subgraph` 
   - run `yarn deploy-local` - deploys the subgraph to `localhost:8000` 
