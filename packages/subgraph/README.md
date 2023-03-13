@@ -223,7 +223,7 @@ It's a crucial step!
 
 **Without Docker - Optimization - Optional** 
 
-Docker is a third party software that runs on its own servers. Sometimes it crashes, leading to the tedious process of re-starting your computer and undergoing the process of re-deploying the subgraph over again. 
+Docker is a virtual machine platform that can be used to package up all of the other services that a Graph Node depends on and run them together. It offers a big advantage in terms of convenience, but time has shown that when it comes to running Graph Node, it's rather brittle and tends to crash often, which leads to Docker itself hanging and becoming unresponsive. This forces you to restart your whole machine and start over, which is a major annoyance.
 
 Below are some steps to create and deploy the subgraph without needing to set up Docker first.
 
