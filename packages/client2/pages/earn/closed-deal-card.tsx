@@ -7,8 +7,7 @@ import { ReactNode, ReactElement } from "react";
 
 import { Shimmer } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { LoanRepaymentStatus } from "@/lib/pools";
-import { assertUnreachable } from "@/lib/utils";
+import { getLoanRepaymentStatusLabel, LoanRepaymentStatus } from "@/lib/pools";
 
 interface LayoutProps {
   className?: string;
@@ -116,20 +115,23 @@ function Status({
 }: {
   poolRepaymentStatus: LoanRepaymentStatus;
 }) {
-  switch (poolRepaymentStatus) {
-    case LoanRepaymentStatus.Late:
-      return <span className="text-mustard-450">Grace Period</span>;
-    case LoanRepaymentStatus.Current:
-      return <span className="text-mint-450">On Time</span>;
-    case LoanRepaymentStatus.Repaid:
-      return <span className="text-mint-600">Fully Repaid</span>;
-    case LoanRepaymentStatus.Default:
-      return <span className="text-clay-500">Default</span>;
-    case LoanRepaymentStatus.NotDrawnDown:
-      return <span>Not Drawn Down</span>;
-    default:
-      assertUnreachable(poolRepaymentStatus);
-  }
+  return (
+    <span
+      className={
+        poolRepaymentStatus === LoanRepaymentStatus.Late
+          ? "text-mustard-450"
+          : poolRepaymentStatus === LoanRepaymentStatus.Current
+          ? "text-mint-450"
+          : poolRepaymentStatus === LoanRepaymentStatus.Repaid
+          ? "text-mint-600"
+          : poolRepaymentStatus === LoanRepaymentStatus.Default
+          ? "text-clay-500"
+          : undefined
+      }
+    >
+      {getLoanRepaymentStatusLabel(poolRepaymentStatus)}
+    </span>
+  );
 }
 
 interface ClosedDealCardProps {

@@ -63,6 +63,20 @@ export function getLoanRepaymentStatus(
   }
 }
 
+const repaymentStatusLabels: Record<LoanRepaymentStatus, string> = {
+  [LoanRepaymentStatus.Current]: "On Time",
+  [LoanRepaymentStatus.Late]: "Grace Period",
+  [LoanRepaymentStatus.Default]: "Default",
+  [LoanRepaymentStatus.Repaid]: "Fully Repaid",
+  [LoanRepaymentStatus.NotDrawnDown]: "Not Drawn Down",
+};
+
+export function getLoanRepaymentStatusLabel(
+  repaymentStatus: LoanRepaymentStatus
+): string {
+  return repaymentStatusLabels[repaymentStatus];
+}
+
 export enum LoanFundingStatus {
   ComingSoon,
   Open,

@@ -13,6 +13,7 @@ import {
 } from "@/lib/graphql/generated";
 import {
   getLoanRepaymentStatus,
+  getLoanRepaymentStatusLabel,
   LoanRepaymentStatus,
   REPAYMENT_STATUS_LOAN_FIELDS,
   sum,
@@ -218,15 +219,7 @@ function RepaymentStatusChip({
           : "border-mint-200 bg-mint-100 text-mint-700"
       )}
     >
-      {repaymentStatus === LoanRepaymentStatus.Current
-        ? "On time"
-        : repaymentStatus === LoanRepaymentStatus.Late
-        ? "Grace Period"
-        : repaymentStatus === LoanRepaymentStatus.Default
-        ? "Default"
-        : repaymentStatus === LoanRepaymentStatus.NotDrawnDown
-        ? "Not Drawn Down"
-        : "Fully Repaid"}
+      {getLoanRepaymentStatusLabel(repaymentStatus)}
     </span>
   );
 }
