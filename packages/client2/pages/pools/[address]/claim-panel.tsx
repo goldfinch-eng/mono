@@ -191,7 +191,7 @@ export function ClaimPanel({
           <div>Your current position value</div>
           <InfoIconTooltip content="The remaining principal on this position plus any accrued interest." />
         </div>
-        <div className="font-serif text-5xl font-semibold">
+        <div className="text-3xl font-semibold">
           {formatCrypto(positionValue)}
         </div>
       </div>
