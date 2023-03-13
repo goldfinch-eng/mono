@@ -244,11 +244,15 @@ After the installation process, you'd need to go through a few steps to create a
 $psql postgres
 postgres=# drop database "graph-node"; create database "graph-node";
 ```
-- The rest of the steps are the same as above (steps 2 through 6):
-  - start the local chain in `packages/protocol` with `yarn start`
-  - run `yarn start-local` in `packages/subgraph`
-  - run `yarn create-local`
-  - run `yarn deploy-local`
+- Then proceed with running the `graph-node` server using the following command template:
+```bash
+cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:<IPFS API Server port name>
+```
+- Run the local chain from the root directory `mono/` with `yarn-start local` so that it can start up `hardhat` and other software packages.
+
+- The rest of the steps are similar to what's above (steps 4 through 6):
+  - run `yarn create-local` - creates the subgraph instance titled: `goldfinch-subgraph` 
+  - run `yarn deploy-local` - deploys the subgraph to `localhost:8000` 
 
 #### Linux
 
