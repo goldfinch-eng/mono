@@ -7,7 +7,7 @@ import { formatCrypto } from "@/lib/format";
 export interface LoanCallsDataTableRow {
   totalCalled: BigNumber;
   dueDate: number;
-  status: string;
+  status: "Open" | "Closed";
   balance: BigNumber;
 }
 

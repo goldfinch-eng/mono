@@ -329,10 +329,7 @@ export default function PoolCreditLinePage({
           </div>
 
           {loan.__typename === "CallableLoan" && (
-            <CallableLoanCallsPanel
-              loanId={loan.id}
-              lastFullPaymentTime={loan.lastFullPaymentTime}
-            />
+            <CallableLoanCallsPanel loanId={loan.id} />
           )}
 
           <div className="rounded-xl bg-sand-100">

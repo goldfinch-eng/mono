@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
+import { roundUpUsdcPenny } from "@/lib/format";
 import { getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
@@ -28,24 +28,16 @@ const loanDueAmount = async (callableLoanId: string) => {
 
   const isLate = await callableLoanContract.isLate();
   if (isLate) {
-    const [interestOwed, interestAccrued, principalOwed] = await Promise.all([
+    // Should a user be paying the interest accrued over the current period when they're late?
+    // Or should they just be paying the interest they would have owed for the periods they missed?
+    const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwed(),
-      callableLoanContract.interestAccrued(),
       callableLoanContract.principalOwed(),
     ]);
 
-    // eslint-disable-next-line no-console
-    console.log({
-      interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
-      interestAccrued: formatCrypto({ amount: interestAccrued, token: "USDC" }),
-      principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
-    });
-
     return {
-      interestOwed: interestOwed
-        .add(interestAccrued)
-        // TODO: Zadra Add 24 hr interest accrual since it accrues every second
-        .add(BigNumber.from(100000)),
+      // STILL getting dust issues on atomic amounts of USDC even when value comes from smart contract
+      interestOwed: roundUpUsdcPenny(interestOwed),
       principalOwed,
     };
   }
@@ -59,15 +51,8 @@ const loanDueAmount = async (callableLoanId: string) => {
     callableLoanContract.principalOwedAt(owedAtTimestamp),
   ]);
 
-  // eslint-disable-next-line no-console
-  console.log({
-    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
-    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
-    owedAtTimestamp: owedAtTimestamp.toNumber(),
-  });
-
   return {
-    interestOwed,
+    interestOwed: roundUpUsdcPenny(interestOwed),
     principalOwed,
   };
 };

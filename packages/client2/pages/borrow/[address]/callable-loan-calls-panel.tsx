@@ -12,7 +12,6 @@ import {
 
 interface CallableLoanCallsPanel {
   loanId: string;
-  lastFullPaymentTime: number;
 }
 
 gql`
@@ -26,26 +25,8 @@ gql`
 `;
 
 gql`
-  query CallableLoanCallPoolTokens(
-    $loanId: String!
-    $lastFullPaymentTime: Int!
-  ) {
-    activePoolTokens: poolTokens(
-      where: {
-        loan: $loanId
-        isCapitalCalled: true
-        callDueAt_gte: $lastFullPaymentTime
-      }
-    ) {
-      ...CallableLoanCallPoolTokensFields
-    }
-    paidPoolTokens: poolTokens(
-      where: {
-        loan: $loanId
-        isCapitalCalled: true
-        callDueAt_lt: $lastFullPaymentTime
-      }
-    ) {
+  query CallableLoanCallPoolTokens($loanId: String!) {
+    poolTokens(where: { loan: $loanId, isCapitalCalled: true }) {
       ...CallableLoanCallPoolTokensFields
     }
   }
@@ -55,7 +36,7 @@ const generateCallsTableData = (
   poolTokens?: CallableLoanCallPoolTokensFieldsFragment[]
 ) => {
   if (!poolTokens || poolTokens.length === 0) {
-    return [];
+    return { activeCallsTableData: [], closedCallsTableData: [] };
   }
 
   const callsTableDataIndexedByCallDueAt: {
@@ -97,25 +78,26 @@ const generateCallsTableData = (
     (a, b) => a.dueDate - b.dueDate
   );
 
-  return callsTableData;
+  const activeCallsTableData = callsTableData.filter(
+    (tableData) => tableData.status === "Open"
+  );
+  const closedCallsTableData = callsTableData.filter(
+    (tableData) => tableData.status === "Closed"
+  );
+
+  return { activeCallsTableData, closedCallsTableData };
 };
 
-export function CallableLoanCallsPanel({
-  loanId,
-  lastFullPaymentTime,
-}: CallableLoanCallsPanel) {
+export function CallableLoanCallsPanel({ loanId }: CallableLoanCallsPanel) {
   const { data, loading } = useCallableLoanCallPoolTokensQuery({
     variables: {
       loanId,
-      lastFullPaymentTime,
     },
   });
 
-  const activePoolTokens = data?.activePoolTokens;
-  const paidPoolTokens = data?.paidPoolTokens;
-
-  const activeCallsTableData = generateCallsTableData(activePoolTokens);
-  const paidCallsTableData = generateCallsTableData(paidPoolTokens);
+  const poolTokens = data?.poolTokens;
+  const { activeCallsTableData, closedCallsTableData } =
+    generateCallsTableData(poolTokens);
 
   return (
     <div className="mb-10 rounded-xl bg-sand-100 p-8">
@@ -126,8 +108,8 @@ export function CallableLoanCallsPanel({
         className="mb-16"
       />
       <div className="mb-6 text-2xl">Callable loans history</div>
-      <LoanCallsDataTable callsData={paidCallsTableData} loading={loading} />
-      {paidCallsTableData.length > 5 && (
+      <LoanCallsDataTable callsData={closedCallsTableData} loading={loading} />
+      {closedCallsTableData.length > 5 && (
         <Button className="mt-2.5 w-full" colorScheme="sand" size="lg">
           View more
         </Button>
