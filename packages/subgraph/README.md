@@ -237,9 +237,10 @@ Below are some steps to create and deploy the subgraph without needing to set up
 
 After the installation process, you'd need to go through a few steps to create and deploy the subgraph. 
 
-- On a new terminal window, start running `ipfs daemon`. 
-  Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
-  port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
+- Enter into the `graph-node` directory. Build the binary for the Graph Node before you run it for the first time, with `cargo build`.
+- On a new terminal window, start running `ipfs daemon`. Note: We'd recommend opening a split terminal, where you can run `ipfs` on one side, and the `graph-node` server on the other. 
+Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
+port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
 - Before starting the `graph_node` server, you would need to re-create the `graph_node` database by running the following commands: 
 ```bash
 $psql postgres
