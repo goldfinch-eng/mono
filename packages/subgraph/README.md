@@ -227,6 +227,7 @@ Docker is a virtual machine platform that can be used to package up all of the o
 
 Below are some steps to create and deploy the subgraph without needing to set up Docker first.
 
+- Clone the [`graph-node codebase`](https://github.com/graphprotocol/graph-node). Note that the instructions for pre-installation on the ReadMe are similar to what's found below.
 - Install [Rust](https://www.rust-lang.org/tools/install)
   In order to ensure the Rust compiler has installed correctly, you can use the command `rustc --version`
 - Install [Postgres](https://wiki.postgresql.org/wiki/Homebrew). Installing through homebrew is pretty convenient on mac. 
@@ -236,7 +237,6 @@ Below are some steps to create and deploy the subgraph without needing to set up
 
 After the installation process, you'd need to go through a few steps to create and deploy the subgraph. 
 
-- Clone the [`graph-node codebase`](https://github.com/graphprotocol/graph-node). Note that the instructions below are similar to what's found on the ReadMe of the repo. 
 - On a new terminal window, start running `ipfs daemon`. 
   Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
   port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
