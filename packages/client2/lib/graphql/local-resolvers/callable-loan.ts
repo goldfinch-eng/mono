@@ -3,14 +3,12 @@ import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
+import { formatCrypto } from "@/lib/format";
 import { getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
 
-const loanDueAmount = async (
-  callableLoanId: string,
-  repaymentDurationType: "period" | "term"
-) => {
+const loanDueAmount = async (callableLoanId: string) => {
   const provider = await getProvider();
   const callableLoanContract = await getContract({
     name: "CallableLoan",
@@ -28,53 +26,50 @@ const loanDueAmount = async (
     };
   }
 
-  const isLate = await isCallableLoanLate(callableLoanId);
+  const isLate = await callableLoanContract.isLate();
   if (isLate) {
     const [interestOwed, interestAccrued, principalOwed] = await Promise.all([
       callableLoanContract.interestOwed(),
       callableLoanContract.interestAccrued(),
       callableLoanContract.principalOwed(),
     ]);
-    return { interestOwed: interestOwed.add(interestAccrued), principalOwed };
+
+    // eslint-disable-next-line no-console
+    console.log({
+      interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
+      interestAccrued: formatCrypto({ amount: interestAccrued, token: "USDC" }),
+      principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
+    });
+
+    return {
+      interestOwed: interestOwed
+        .add(interestAccrued)
+        // TODO: Zadra Add 24 hr interest accrual since it accrues every second
+        .add(BigNumber.from(100000)),
+      principalOwed,
+    };
   }
 
-  let owedAtTimestamp = termEndTime;
   const lastFullPaymentTime = await callableLoanContract.lastFullPaymentTime();
-  if (repaymentDurationType === "period") {
-    owedAtTimestamp = await callableLoanContract.nextDueTimeAt(
-      lastFullPaymentTime
-    );
-  }
-
-  const [interestOwed, interestAccrued, principalOwed] = await Promise.all([
+  const owedAtTimestamp = await callableLoanContract.nextDueTimeAt(
+    lastFullPaymentTime
+  );
+  const [interestOwed, principalOwed] = await Promise.all([
     callableLoanContract.interestOwedAt(owedAtTimestamp),
-    callableLoanContract.interestAccruedAt(owedAtTimestamp),
     callableLoanContract.principalOwedAt(owedAtTimestamp),
   ]);
 
-  return { interestOwed: interestOwed.add(interestAccrued), principalOwed };
-};
-
-const isCallableLoanLate = async (callableLoanId: string) => {
-  const provider = await getProvider();
-  const callableLoanContract = await getContract({
-    name: "CallableLoan",
-    provider,
-    useSigner: false,
-    address: callableLoanId,
+  // eslint-disable-next-line no-console
+  console.log({
+    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
+    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
+    owedAtTimestamp: owedAtTimestamp.toNumber(),
   });
-  const lastFullPaymentTime = await callableLoanContract.lastFullPaymentTime();
-  if (lastFullPaymentTime.isZero()) {
-    // Brand new creditline
-    return false;
-  }
 
-  const [currentBlock, nextDueTime] = await Promise.all([
-    provider.getBlock("latest"),
-    callableLoanContract.nextDueTimeAt(lastFullPaymentTime),
-  ]);
-
-  return currentBlock.timestamp > nextDueTime.toNumber();
+  return {
+    interestOwed,
+    principalOwed,
+  };
 };
 
 export const callableLoanResolvers: Resolvers[string] = {
@@ -108,9 +103,16 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
     return null;
   },
-  // TODO: Zadra update naming??
   async isLate(callableLoan: CallableLoan): Promise<boolean> {
-    return isCallableLoanLate(callableLoan.id);
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+
+    return callableLoanContract.isLate();
   },
   async isInDefault(callableLoan: CallableLoan): Promise<boolean> {
     const provider = await getProvider();
@@ -141,25 +143,17 @@ export const callableLoanResolvers: Resolvers[string] = {
 
     return termEndTime.gt(0) && currentBlock.timestamp > termEndTime.toNumber();
   },
-  // TODO: Zadra round up to end of day logic since interest is accrued every second
   async periodInterestDueAmount(
     callableLoan: CallableLoan
   ): Promise<BigNumber> {
-    const { interestOwed } = await loanDueAmount(callableLoan.id, "period");
+    const { interestOwed } = await loanDueAmount(callableLoan.id);
     return interestOwed;
   },
   async periodPrincipalDueAmount(
     callableLoan: CallableLoan
   ): Promise<BigNumber> {
-    const { principalOwed } = await loanDueAmount(callableLoan.id, "period");
+    const { principalOwed } = await loanDueAmount(callableLoan.id);
     return principalOwed;
-  },
-  async termTotalDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
-    const { interestOwed, principalOwed } = await loanDueAmount(
-      callableLoan.id,
-      "term"
-    );
-    return interestOwed.add(principalOwed);
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();

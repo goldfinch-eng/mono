@@ -5,7 +5,6 @@ import { getContract } from "@/lib/contracts";
 import { CreditLine } from "@/lib/graphql/generated";
 import { getProvider } from "@/lib/wallet";
 
-// TODO: Zadra update naming??
 export async function isLate(creditLineAddress: string): Promise<boolean> {
   const provider = await getProvider();
 
@@ -16,31 +15,32 @@ export async function isLate(creditLineAddress: string): Promise<boolean> {
     useSigner: false,
   });
 
-  // try {
-  //   return await creditLineContract.isLate();
-  // } catch (e) {
-  // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
-  const [currentBlock, lastFullPaymentTime, paymentPeriodInDays] =
-    await Promise.all([
-      provider.getBlock("latest"),
-      creditLineContract.lastFullPaymentTime(),
-      creditLineContract.paymentPeriodInDays(),
-    ]);
+  try {
+    return await creditLineContract.isLate();
+  } catch (e) {
+    // Not all CreditLine contracts have an 'isLate' accessor - use block timestamp to calc
+    const [currentBlock, lastFullPaymentTime, paymentPeriodInDays] =
+      await Promise.all([
+        provider.getBlock("latest"),
+        creditLineContract.lastFullPaymentTime(),
+        creditLineContract.paymentPeriodInDays(),
+      ]);
 
-  if (lastFullPaymentTime.isZero()) {
-    // Brand new creditline
-    return false;
+    if (lastFullPaymentTime.isZero()) {
+      // Brand new creditline
+      return false;
+    }
+
+    const secondsSinceLastFullPayment =
+      currentBlock.timestamp - lastFullPaymentTime.toNumber();
+
+    const secondsPerDay = 60 * 60 * 24;
+
+    return (
+      secondsSinceLastFullPayment >
+      paymentPeriodInDays.toNumber() * secondsPerDay
+    );
   }
-
-  const secondsSinceLastFullPayment =
-    currentBlock.timestamp - lastFullPaymentTime.toNumber();
-
-  const secondsPerDay = 60 * 60 * 24;
-
-  return (
-    secondsSinceLastFullPayment > paymentPeriodInDays.toNumber() * secondsPerDay
-  );
-  // }
 }
 
 export async function isInDefault(creditLineAddress: string): Promise<boolean> {
