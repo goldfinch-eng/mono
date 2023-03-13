@@ -4,7 +4,7 @@ import { BigNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
 import { useState } from "react";
 
-import { Chip } from "@/components/design-system";
+import { Chip, Link } from "@/components/design-system";
 import { DropdownMenu } from "@/components/design-system/dropdown-menu";
 import { computePercentage, formatCrypto, formatPercent } from "@/lib/format";
 import {
@@ -63,7 +63,8 @@ const GROUP_BY_OPTIONS = [
 ];
 
 interface PoolTableData {
-  name?: string;
+  name: string;
+  href?: string;
   icon?: string | null;
   portfolioShare: number;
   capitalOwed: BigNumber;
@@ -123,6 +124,7 @@ const getTableDataByDeal = (
 
     poolTableData.push({
       name: dealDetails.name,
+      href: `/pools/${pool.id}`,
       icon: dealDetails.borrower.logo?.url,
       portfolioShare,
       capitalOwed: actualSeniorPoolInvestment,
@@ -253,6 +255,7 @@ export function PortfolioCurrentDistribution({
           {tableData?.map(
             ({
               name,
+              href,
               icon,
               portfolioShare,
               capitalOwed,
@@ -260,7 +263,7 @@ export function PortfolioCurrentDistribution({
               poolRepaymentStatus,
             }) => {
               return (
-                <tr key={name}>
+                <tr key={name} className="relative">
                   <td className="w-[30%] max-w-0 !pr-0 text-left">
                     <div className="flex items-center gap-1.5">
                       <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
@@ -274,7 +277,16 @@ export function PortfolioCurrentDistribution({
                           />
                         ) : null}
                       </div>
-                      <div className="truncate">{name}</div>
+                      {href ? (
+                        <Link
+                          className="!block truncate !no-underline before:absolute before:inset-0 hover:!underline"
+                          href={href}
+                        >
+                          {name}
+                        </Link>
+                      ) : (
+                        <div className="truncate">{name}</div>
+                      )}
                     </div>
                   </td>
                   <td className="text-right">

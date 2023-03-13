@@ -20,7 +20,7 @@ import {
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 
-import { Icon } from "@/components/design-system";
+import { Icon, Link } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -84,6 +84,7 @@ export function SeniorPoolRepaymentSection({
           ...r,
           name: pool.name,
           borrowerLogo: pool.borrowerLogo,
+          href: `/pools/${pool.id}`,
         }))
       )
       .filter((repayment) => {
@@ -220,6 +221,7 @@ export function SeniorPoolRepaymentSection({
               (
                 {
                   name,
+                  href,
                   borrowerLogo,
                   estimatedPaymentDate,
                   principal,
@@ -227,7 +229,7 @@ export function SeniorPoolRepaymentSection({
                 },
                 index
               ) => (
-                <tr key={index}>
+                <tr key={index} className="relative">
                   <td className="w-1/2 max-w-0 !pr-0 text-left">
                     <div className="flex items-center gap-1.5">
                       <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
@@ -235,7 +237,12 @@ export function SeniorPoolRepaymentSection({
                           <Image src={borrowerLogo} fill sizes="12px" alt="" />
                         ) : null}
                       </div>
-                      <div className="truncate">{name}</div>
+                      <Link
+                        className="!block truncate !no-underline before:absolute before:inset-0 hover:!underline"
+                        href={href}
+                      >
+                        {name}
+                      </Link>
                     </div>
                   </td>
                   <td className="text-left">

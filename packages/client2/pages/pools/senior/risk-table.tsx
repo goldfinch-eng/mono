@@ -32,7 +32,6 @@ export function RiskTable() {
     },
     {
       heading: "Post-close reporting",
-      boldValue: "Monthly",
       value: (
         <div>
           Investors can access borrower-reported updates via the
