@@ -253,9 +253,11 @@ The reason being that when you run the dApp locally, you start running hardhat, 
 cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:5002
 ```
 Below are the following descriptions for each component of the above command: 
+```
 --postgres-url postgresql://user:pass@localhost:5432/graph-node is a connection string for a postgresDB running on the local machine. user/pass will vary depending on your system. usually your OS username will suffice. graph-node is the name of an empty database that we created
 --ethereum-rpc localhost:http://localhost:8545 indicates that we want Graph Node to read from the RPC for hardhat, and we're giving this network the codename "localhost" (instead of "mainnet")
 --ipfs http://localhost:5002 this is the API server for IPFS, port may vary depending on your config
+```
 - The rest of the steps are similar to what's above (steps 4 through 6):
   - run `yarn create-local` - creates the subgraph instance titled: `goldfinch-subgraph` 
   - run `yarn deploy-local` - deploys the subgraph to `localhost:8000` 
