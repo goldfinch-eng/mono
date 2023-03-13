@@ -53,7 +53,7 @@ export function ScrollingSectionedContainer({
       <Sentinel onVisibilityChange={setIsTopScrolled} />
       <div
         className={clsx(
-          "sticky top-0 isolate z-50 flex flex-wrap items-center justify-between gap-2 bg-mustard-50 p-2 transition-shadow"
+          "sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-mustard-50 p-2 transition-shadow"
         )}
         style={{
           boxShadow: !isTopScrolled
