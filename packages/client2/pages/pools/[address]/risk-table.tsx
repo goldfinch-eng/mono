@@ -171,7 +171,7 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
       heading: "Post-close reporting",
       value: (
         <div>
-          Investors can access borrower-related updated via investment-gated{" "}
+          Investors can access borrower-related updated via the investment-gated{" "}
           <Link
             href="https://discord.com/channels/793925570739044362/1034881143964717066"
             openInNewTab
