@@ -23,15 +23,6 @@ import {
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
 gql`
-  fragment PoolFields on Loan {
-    id
-    usdcApy
-    rawGfiApy
-    principalAmount
-    termInSeconds
-    termEndTime
-    ...FundingStatusLoanFields
-  }
   query EarnPage($numClosedPools: Int!) {
     seniorPools(first: 1) {
       id
@@ -47,7 +38,12 @@ gql`
       orderDirection: desc
       where: { termStartTime: 0 }
     ) {
-      ...PoolFields
+      __typename
+      id
+      usdcApy
+      rawGfiApy
+      termInSeconds
+      ...FundingStatusLoanFields
     }
     closedPools: loans(
       orderBy: createdAt
@@ -55,7 +51,9 @@ gql`
       where: { termStartTime_not: 0 }
       first: $numClosedPools
     ) {
-      ...PoolFields
+      id
+      principalAmount
+      termEndTime
       ...RepaymentStatusLoanFields
     }
     protocols(first: 1) {
@@ -120,13 +118,7 @@ export default function EarnPage({
           getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open) ||
         getLoanFundingStatus(tranchedPool) === LoanFundingStatus.ComingSoon
     ) ?? [];
-  const closedLoans =
-    data?.closedPools.filter(
-      (tranchedPool) =>
-        !!dealMetadata[tranchedPool.id] &&
-        (getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Closed ||
-          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Full)
-    ) ?? [];
+  const closedLoans = data?.closedPools ?? [];
 
   // +1 for Senior Pool
   const openDealsCount = openLoans ? openLoans.length + 1 : 0;
@@ -268,7 +260,9 @@ export default function EarnPage({
             })}
           </div>
 
-          <EarnPageHeading>{`${closedLoans.length} Closed Deals`}</EarnPageHeading>
+          <EarnPageHeading>{`${
+            protocol.numLoans - data.openPools.length
+          } Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
             {closedLoans.map((loan) => {
               const deal = dealMetadata[loan.id];
