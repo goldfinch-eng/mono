@@ -252,6 +252,10 @@ library CallableCreditLineLogic {
     }
   }
 
+  function numLockupPeriods(CallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._numLockupPeriods;
+  }
+
   function uncalledCapitalTrancheIndex(
     CallableCreditLine storage cl
   ) internal view returns (uint256) {
@@ -476,9 +480,8 @@ library CallableCreditLineLogic {
       return false;
     }
 
-    uint256 gracePeriodInSeconds = cl._config.getLatenessGracePeriodInDays() * SECONDS_PER_DAY;
     uint256 oldestUnpaidDueTime = cl._paymentSchedule.nextDueTimeAt(cl.lastFullPaymentTime());
-    return timestamp > oldestUnpaidDueTime + gracePeriodInSeconds;
+    return timestamp > oldestUnpaidDueTime;
   }
 
   function totalPrincipalOutstandingBeforeReserves(

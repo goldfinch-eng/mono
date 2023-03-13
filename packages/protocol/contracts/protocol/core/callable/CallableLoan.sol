@@ -404,14 +404,30 @@ contract CallableLoan is
     return allowedUIDTypes;
   }
 
+  function inLockupPeriod() public view override returns (bool) {
+    return _staleCreditLine.inLockupPeriod();
+  }
+
+  function numLockupPeriods() public view override returns (uint256) {
+    return _staleCreditLine.numLockupPeriods();
+  }
+
   /// TODO: Low priority tests - only used for frontend estimations of interest payments.
   /// @inheritdoc ICallableLoan
   function estimateOwedInterestAt(uint256 timestamp) external view override returns (uint256) {
+    return estimateOwedInterestAt(interestBearingBalance(), timestamp);
+  }
+
+  /// @inheritdoc ICallableLoan
+  function estimateOwedInterestAt(
+    uint256 balance,
+    uint256 timestamp
+  ) public view override returns (uint256) {
     return
       _staleCreditLine.interestOwed() +
       CallableLoanAccountant.calculateInterest(
         timestamp - block.timestamp,
-        interestBearingBalance(),
+        balance,
         _staleCreditLine.interestApr()
       );
   }
