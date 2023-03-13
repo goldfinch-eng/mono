@@ -58,12 +58,12 @@ export function RiskMitigation() {
             </div>
 
             <div className="flex items-center rounded-lg border border-sand-300 p-2">
-              <div className="w-3/5">
-                <div className="mb-1 flex flex-col rounded-lg bg-mustard-600 py-2 px-3 text-sand-50">
-                  <div className="text-sm">Junior Tranche</div>
-                </div>
+              <div className="w-3/5 space-y-1">
                 <div className="flex h-[7rem] flex-col rounded-lg border border-twilight-400 bg-twilight-700 py-2 px-3 text-sand-50">
                   <div className="text-sm">Senior Tranche</div>
+                </div>
+                <div className="mb-1 flex flex-col rounded-lg bg-mustard-600 py-2 px-3 text-sand-50">
+                  <div className="text-sm">Junior Tranche</div>
                 </div>
               </div>
               <div className="flex w-2/5 justify-center pl-3 text-xs font-medium text-sand-500">
