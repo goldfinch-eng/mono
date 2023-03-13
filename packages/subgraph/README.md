@@ -227,7 +227,7 @@ Docker is a virtual machine platform that can be used to package up all of the o
 
 Below are some steps to create and deploy the subgraph without needing to set up Docker first.
 
-- Clone the [`graph-node codebase`](https://github.com/graphprotocol/graph-node). Note that the instructions for pre-installation on the ReadMe are similar to what's found below.
+- Clone the [graph-node codebase](https://github.com/graphprotocol/graph-node). Note that the instructions for pre-installation on the ReadMe are similar to what's found below.
 - Install [Rust](https://www.rust-lang.org/tools/install)
   In order to ensure the Rust compiler has installed correctly, you can use the command `rustc --version`
 - Install [Postgres](https://wiki.postgresql.org/wiki/Homebrew). Installing through homebrew is pretty convenient on mac. 
