@@ -23,12 +23,12 @@ import {
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
 gql`
-  fragment PoolFields on TranchedPool {
+  fragment PoolFields on Loan {
     id
     usdcApy
     rawGfiApy
     principalAmount
-    termInDays
+    termInSeconds
     termEndTime
     ...FundingStatusLoanFields
   }
@@ -47,7 +47,6 @@ gql`
       orderDirection: desc
       where: { termStartTime: 0 }
     ) {
-      termInSeconds
       ...PoolFields
     }
     closedPools: loans(
