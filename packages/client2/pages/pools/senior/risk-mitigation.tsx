@@ -43,20 +43,6 @@ export function RiskMitigation() {
             </Button>
           </div>
           <div className="w-1/2">
-            <div className="ml-2 w-[calc(100%_-_theme(space.4))]">
-              <div className="relative mb-1.5 w-3/5 rounded-lg border border-mustard-200 bg-mustard-100 py-2 px-3 font-medium text-black">
-                <div className="absolute -right-[8.4rem] -top-5 text-xs">
-                  <Icon
-                    name="ArrowDown"
-                    className="absolute top-3 -left-1.5"
-                    size="xs"
-                  />
-                  ~15% overcollateralization
-                </div>
-                <div className="text-sm">Additional Collateral</div>
-              </div>
-            </div>
-
             <div className="flex items-center rounded-lg border border-sand-300 p-2">
               <div className="w-3/5 space-y-1">
                 <div className="flex h-[7rem] flex-col rounded-lg border border-twilight-400 bg-twilight-700 py-2 px-3 text-sand-50">
@@ -70,6 +56,19 @@ export function RiskMitigation() {
                 <div className="max-w-[6rem] text-center">
                   Borrower Pool Principal Value
                 </div>
+              </div>
+            </div>
+            <div className="ml-2 w-[calc(100%_-_theme(space.4))]">
+              <div className="relative mt-1.5 w-3/5 rounded-lg border border-mustard-200 bg-mustard-100 py-2 px-3 font-medium text-black">
+                <div className="absolute -right-[8.4rem] -bottom-5 text-xs">
+                  <Icon
+                    name="ArrowUp"
+                    className="absolute bottom-3 -left-1.5"
+                    size="xs"
+                  />
+                  ~15% overcollateralization
+                </div>
+                <div className="text-sm">Additional Collateral</div>
               </div>
             </div>
           </div>
