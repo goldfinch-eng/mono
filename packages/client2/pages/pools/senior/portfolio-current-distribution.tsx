@@ -11,7 +11,11 @@ import {
   SeniorPoolPortfolioDistributionFieldsFragment,
   SeniorPoolPortfolioPoolsDealsFieldsFragment,
 } from "@/lib/graphql/generated";
-import { getLoanRepaymentStatus, LoanRepaymentStatus } from "@/lib/pools";
+import {
+  getLoanRepaymentStatus,
+  getLoanRepaymentStatusLabel,
+  LoanRepaymentStatus,
+} from "@/lib/pools";
 
 gql`
   fragment SeniorPoolPortfolioDistributionFields on SeniorPool {
@@ -78,28 +82,22 @@ function PoolStatus({
 }: {
   poolRepaymentStatus: LoanRepaymentStatus;
 }) {
-  switch (poolRepaymentStatus) {
-    case LoanRepaymentStatus.Late:
-      return (
-        <Chip colorScheme="mustard" size="sm">
-          Grace Period
-        </Chip>
-      );
-    case LoanRepaymentStatus.Current:
-      return (
-        <Chip colorScheme="dark-mint" size="sm">
-          On Time
-        </Chip>
-      );
-    case LoanRepaymentStatus.Default:
-      return (
-        <Chip colorScheme="yellow" size="sm">
-          Default
-        </Chip>
-      );
-    default:
-      return null;
-  }
+  return (
+    <Chip
+      size="sm"
+      colorScheme={
+        poolRepaymentStatus === LoanRepaymentStatus.Late
+          ? "mustard"
+          : poolRepaymentStatus === LoanRepaymentStatus.Current
+          ? "dark-mint"
+          : poolRepaymentStatus === LoanRepaymentStatus.Default
+          ? "clay"
+          : undefined
+      }
+    >
+      {getLoanRepaymentStatusLabel(poolRepaymentStatus)}
+    </Chip>
+  );
 }
 
 const getTableDataByDeal = (
