@@ -28,7 +28,7 @@ import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewa
 import {getListOfAllTranchedPoolAddresses} from "./protocol"
 
 const cancelledPoolAddresses = ["0xd43a4f3041069c6178b99d55295b00d0db955bb5"]
-const secondsPerYear_BigInt = BigInt.fromI32(31540000)
+const secondsPerYear_BigInt = BigInt.fromI32(60 * 60 * 24 * 365)
 const secondsPerYear_BigDecimal = secondsPerYear_BigInt.toBigDecimal()
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {

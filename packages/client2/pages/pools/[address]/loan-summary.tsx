@@ -3,7 +3,7 @@ import { formatDistanceStrict } from "date-fns";
 import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
-import { InfoLine } from "@/components/design-system";
+import { InfoLine, Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
@@ -17,6 +17,7 @@ export const LOAN_SUMMARY_FIELDS = gql`
   fragment LoanSummaryFields on Loan {
     __typename
     id
+    address
     usdcApy
     interestRate
     rawGfiApy
@@ -62,18 +63,28 @@ export function LoanSummary({
 }: LoanSummaryProps) {
   return (
     <div className={className}>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200">
-          {borrower.logo?.url ? (
-            <Image
-              fill
-              sizes="20px"
-              src={borrower.logo.url}
-              alt={`${borrower.name} logo`}
-            />
-          ) : null}
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200">
+            {borrower.logo?.url ? (
+              <Image
+                fill
+                sizes="20px"
+                src={borrower.logo.url}
+                alt={`${borrower.name} logo`}
+              />
+            ) : null}
+          </div>
+          <span className="text-sm">{borrower.name}</span>
         </div>
-        <span className="text-sm">{borrower.name}</span>
+        <Link
+          href={`https://etherscan.io/address/${loan.address}`}
+          openInNewTab
+          iconRight="ArrowTopRight"
+          className="text-sm font-medium text-sand-500"
+        >
+          Etherscan
+        </Link>
       </div>
       <div className="mb-8">
         <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
@@ -84,7 +95,7 @@ export function LoanSummary({
       <div className="mb-6 flex justify-between gap-5">
         <div className="text-left">
           <div className="mb-2 text-sm">Fixed USDC APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {formatPercent(
               deal.dealType === "multitranche"
                 ? loan.usdcApy
@@ -95,7 +106,7 @@ export function LoanSummary({
         {!loan.rawGfiApy.isZero() ? (
           <div className="text-right">
             <div className="mb-2 text-sm">Variable GFI APY</div>
-            <div className="font-serif text-4xl font-semibold text-sand-800">
+            <div className="font-serif text-3xl font-semibold text-sand-800">
               {formatPercent(
                 computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
                   computeApyFromGfiInFiat(

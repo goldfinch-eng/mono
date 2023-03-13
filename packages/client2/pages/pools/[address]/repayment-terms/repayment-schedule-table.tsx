@@ -36,7 +36,7 @@ export function RepaymentScheduleTable({
           {repaymentSchedule.map(
             ({ paymentPeriod, estimatedPaymentDate, interest, principal }) => (
               <tr key={paymentPeriod}>
-                <td className="text-left">{paymentPeriod}</td>
+                <td className="text-left">{paymentPeriod + 1}</td>
                 <td className="text-left">
                   {formatDate(estimatedPaymentDate * 1000, "MMM d, y")}
                 </td>

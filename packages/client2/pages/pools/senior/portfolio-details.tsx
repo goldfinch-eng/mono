@@ -82,16 +82,16 @@ export function PortfolioDetails({
         </div>
         <div className="mb-5 text-sm">
           The Goldfinch Senior Pool is automatically managed by The Goldfinch
-          protocol. Capital is automatically allocated from The Goldfinch Senior
-          Pool across the senior tranches (second-loss) of tranched Goldfinch
-          direct-lending deals according to the{" "}
+          protocol. Capital is automatically allocated from the Senior Pool into
+          the senior tranches of various direct-lending deals on Goldfinch
+          according to the{" "}
           <Link
             openInNewTab
             href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/leveragemodel"
           >
             Leverage Model
           </Link>
-          .
+          . This capital is protected by first-loss capital in all deals.
         </div>
         <div className="flex">
           <Button
@@ -136,8 +136,7 @@ export function PortfolioDetails({
         <Stat
           label="No. of portfolio loans"
           value={seniorPool.poolsOrderedBySpInvestment.length}
-          // TODO: No. of portfolio loans tooltip
-          tooltip="TODO: No. of portfolio loans"
+          tooltip="The number of Borrower Pools into which the Senior Pool has lent capital."
         />
         <Stat
           label="Total loss rate"

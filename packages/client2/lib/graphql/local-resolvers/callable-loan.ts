@@ -127,6 +127,38 @@ export const callableLoanResolvers: Resolvers[string] = {
       await callableLoanContract.withinPrincipalGracePeriod();
     return !termStartTime.isZero() && !withinPrincipalGracePeriod;
   },
+  async inLockupPeriod(callableLoan: CallableLoan): Promise<boolean> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    try {
+      const inLockupPeriod = await callableLoanContract.inLockupPeriod();
+      return inLockupPeriod;
+    } catch (e) {
+      return false;
+    }
+  },
+  async nextPrincipalDueTime(callableLoan: CallableLoan): Promise<number> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+    try {
+      // This will throw on loans that are not closed
+      const nextPrincipalDueTime =
+        await callableLoanContract.nextPrincipalDueTime();
+      return nextPrincipalDueTime.toNumber();
+    } catch (e) {
+      return 0;
+    }
+  },
   async isAfterTermEndTime(callableLoan: CallableLoan): Promise<boolean> {
     const provider = await getProvider();
     const callableLoanContract = await getContract({

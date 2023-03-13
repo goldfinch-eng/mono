@@ -5,7 +5,7 @@ import { formatCrypto } from "@/lib/format";
 import { AmountStatsFieldsFragment } from "@/lib/graphql/generated";
 import {
   getLoanRepaymentStatus,
-  LoanRepaymentStatus,
+  getLoanRepaymentStatusLabel,
   REPAYMENT_STATUS_LOAN_FIELDS,
 } from "@/lib/pools";
 
@@ -49,19 +49,7 @@ export function AmountStats({ loan }: AmountStatsProps) {
       />
       <Stat
         label="Repayment status"
-        value={
-          repaymentStatus === LoanRepaymentStatus.Current
-            ? "On time"
-            : repaymentStatus === LoanRepaymentStatus.Late
-            ? "Grace period"
-            : repaymentStatus === LoanRepaymentStatus.Default
-            ? "Default"
-            : repaymentStatus === LoanRepaymentStatus.Repaid
-            ? "Fully repaid"
-            : repaymentStatus === LoanRepaymentStatus.NotDrawnDown
-            ? "Not drawn down"
-            : null
-        }
+        value={getLoanRepaymentStatusLabel(repaymentStatus)}
       />
     </StatGrid>
   );

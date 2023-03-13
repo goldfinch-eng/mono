@@ -59,6 +59,7 @@ const subtractiveIconTransactionCategories = [
   "TRANCHED_POOL_WITHDRAWAL",
   "TRANCHED_POOL_DRAWDOWN",
   "SENIOR_POOL_REDEMPTION",
+  "CALL_REQUEST_SUBMITTED",
 ];
 
 const sentTokenCategories = [

@@ -73,7 +73,6 @@ export function SeniorPoolRepaymentSection({
     const allIncomingRepayments = repayingPools
       .flatMap((pool) =>
         pool.repaymentSchedule.map((r) => ({
-          paymentPeriod: r.paymentPeriod,
           interest: r.interest,
           principal: r.principal,
           estimatedPaymentDate: r.estimatedPaymentDate * 1000,

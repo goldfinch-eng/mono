@@ -239,6 +239,7 @@ type Protocol @entity {
   totalInterestCollected: BigInt!
   totalReserveCollected: BigInt!
   loans: [Loan!]!
+  numLoans: Int!
 }
 
 type PoolToken @entity {
@@ -343,6 +344,7 @@ enum TransactionCategory {
   MEMBERSHIP_GFI_WITHDRAWAL
   MEMBERSHIP_CAPITAL_DEPOSIT
   MEMBERSHIP_CAPITAL_WITHDRAWAL
+  CALL_REQUEST_SUBMITTED
 }
 
 enum SupportedCrypto {

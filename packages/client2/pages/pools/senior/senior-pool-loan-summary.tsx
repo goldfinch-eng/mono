@@ -39,7 +39,7 @@ export function SeniorPoolLoanSummary({
         <Link
           href={
             seniorPool
-              ? `https://etherscan.io/contract/${seniorPool.address}`
+              ? `https://etherscan.io/address/${seniorPool.address}`
               : ""
           }
           openInNewTab
@@ -54,22 +54,18 @@ export function SeniorPoolLoanSummary({
           Goldfinch Senior Pool
         </h1>
         <div className="text-sm text-sand-500">
-          Supply capital to the Senior Pool in order to earn yields optimized
-          for ease and diversification. Capital is automatically diversified
-          across Borrower pools according to the{" "}
-          <Link
-            openInNewTab
-            href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/leveragemodel"
-          >
-            Leverage Model
-          </Link>{" "}
-          and protected by Backer capital.
+          The Senior Pool is a ‘blind pool’ of capital that is diversified
+          across all Borrower Pools on the Goldfinch protocol. Liquidity
+          Providers (LPs) who provide capital into the Senior Pool are capital
+          providers in search of passive, diversified exposure across all
+          Borrower Pools. This capital is protected by junior (first-loss)
+          capital in each Borrower Pool.
         </div>
       </div>
       <div className="mb-6 flex justify-between gap-5">
         <div className="text-left">
           <div className="mb-2 text-sm">USDC APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {seniorPool ? (
               formatPercent(seniorPool.estimatedApy)
             ) : (
@@ -79,7 +75,7 @@ export function SeniorPoolLoanSummary({
         </div>
         <div className="text-right">
           <div className="mb-2 text-sm">Variable GFI APY</div>
-          <div className="font-serif text-4xl font-semibold text-sand-800">
+          <div className="font-serif text-3xl font-semibold text-sand-800">
             {seniorPool && fiatPerGfi ? (
               formatPercent(
                 computeApyFromGfiInFiat(

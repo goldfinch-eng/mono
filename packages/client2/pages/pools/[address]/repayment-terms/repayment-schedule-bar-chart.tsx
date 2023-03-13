@@ -92,7 +92,7 @@ export function RepaymentScheduleBarChart({
   repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
   const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
-    ...data,
+    paymentPeriod: data.paymentPeriod + 1,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
     principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
   }));

@@ -52,11 +52,18 @@ export function handleTokenMinted(event: TokenMinted): void {
     token.tranche = event.params.tranche
     token.principalAmount = event.params.amount
     token.principalRedeemed = BigInt.zero()
-    token.principalRedeemable = tranchedPool
-      ? tranchedPoolContract.availableToWithdraw(event.params.tokenId).value1
-      : callableLoan
-      ? callableLoanContract.availableToWithdraw(event.params.tokenId).value1
-      : token.principalAmount
+    token.principalRedeemable = token.principalAmount
+    if (tranchedPool) {
+      const result = tranchedPoolContract.try_availableToWithdraw(event.params.tokenId)
+      if (!result.reverted) {
+        token.principalRedeemable = result.value.value1
+      }
+    } else if (callableLoan) {
+      const result = callableLoanContract.try_availableToWithdraw(event.params.tokenId)
+      if (!result.reverted) {
+        token.principalRedeemable = result.value.value1
+      }
+    }
     token.interestRedeemed = BigInt.zero()
     token.interestRedeemable = BigInt.zero()
     token.rewardsClaimable = BigInt.zero()

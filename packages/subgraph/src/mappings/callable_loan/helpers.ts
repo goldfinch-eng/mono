@@ -68,7 +68,6 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
 }
 
 const twoWeeksSeconds = 86400 * 14
-const secondsPerYear = BigInt.fromI32(31540000)
 
 class SchedulingResult {
   repaymentIds: string[]
@@ -95,18 +94,17 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
       .minus(BigInt.fromI32(1))
     termInSeconds = scheduleContract.termEndTime(startTime).minus(scheduleContract.termStartTime(startTime)).toI32()
     const periodsInTerm = scheduleContract.periodsInTerm()
-    const interestPerSecond = callableLoan.interestRateBigInt.div(secondsPerYear)
 
-    let lastPeriodEndTime = startTime
+    let prevInterest = BigInt.zero()
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-      const thisPeriodEndTime = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-      const periodLengthSeconds = thisPeriodEndTime.minus(lastPeriodEndTime)
-      lastPeriodEndTime = thisPeriodEndTime
-      const interest = interestPerSecond
-        .times(periodLengthSeconds)
-        .times(callableLoan.fundingLimit)
-        .div(BigInt.fromString("1000000000000000000"))
+      const interestOwedAt = callableLoanContract.estimateOwedInterestAt1(
+        callableLoan.fundingLimit,
+        estimatedPaymentDate
+      )
+      const interest = interestOwedAt.minus(prevInterest)
+      prevInterest = interestOwedAt
+      // TODO need estimateOwedPrincipalAt
       const principal = period == periodsInTerm.toI32() - 1 ? callableLoan.fundingLimit : BigInt.zero()
 
       if (interest.isZero() && principal.isZero()) {
@@ -128,10 +126,9 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     const periodsInTerm = scheduleContract.periodsInTerm()
     let prevInterest = BigInt.zero()
     let prevPrincipal = BigInt.zero()
-    // TODO revisit this when we have access to the function for interestOwedAtSansLateFees
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-      const interestOwedAt = callableLoanContract.interestOwedAt(estimatedPaymentDate)
+      const interestOwedAt = callableLoanContract.estimateOwedInterestAt(estimatedPaymentDate)
       const interest = interestOwedAt.minus(prevInterest)
       prevInterest = interestOwedAt
       const principalOwedAt = callableLoanContract.principalOwedAt(estimatedPaymentDate)

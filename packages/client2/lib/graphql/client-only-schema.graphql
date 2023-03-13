@@ -40,6 +40,8 @@ extend type CallableLoan {
   periodInterestDueAmount: BigInt!
   periodPrincipalDueAmount: BigInt!
   nextDueTime: BigInt!
+  inLockupPeriod: Boolean!
+  nextPrincipalDueTime: Int!
 }
 
 extend type CreditLine {

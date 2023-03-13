@@ -12,18 +12,17 @@ export function RiskTable() {
       heading: "Deal structure",
       boldValue: "Liquidity pool",
       value:
-        "Supply capital to the Senior Pool, and the Goldfinch protocol will automatically diversify the capital across other vetted Goldfinch Borrower Pools",
+        "The Goldfinch protocol automatically allocates Senior Pool capital across various vetted Borrower Pools. Senior Pool capital is also protected by junior (first loss) capital invested in each individual borrower pool.",
     },
     {
       heading: "On-chain capital priority",
-      boldValue: "Junior",
-      value: "First-loss capital",
+      boldValue: "Senior",
+      value: null,
     },
     {
       heading: "Off-chain capital priority",
       boldValue: "Senior",
-      value:
-        "If the borrower has received other off-chain funding for this pool, this capital will be prioritized first",
+      value: null,
     },
     {
       heading: "Collateralization",
@@ -36,7 +35,8 @@ export function RiskTable() {
       boldValue: "Monthly",
       value: (
         <div>
-          Investors can access borrower-reported updates via investment-gated{" "}
+          Investors can access borrower-reported updates via the
+          investment-gated{" "}
           <Link
             href="https://discord.com/channels/793925570739044362/1034881143964717066"
             openInNewTab
@@ -50,11 +50,10 @@ export function RiskTable() {
       heading: "Legal recourse",
       boldValue: (
         <Link href="/senior-pool-agreement-interstitial" openInNewTab>
-          Loan agreement
+          Senior Pool Agreement
         </Link>
       ),
-      value:
-        "Specifies the loan terms agreed to by the borrower and all investors; legally enforceable off-chain",
+      value: null,
     },
   ];
 

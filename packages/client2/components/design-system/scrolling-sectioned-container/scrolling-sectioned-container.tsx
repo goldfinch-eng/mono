@@ -53,7 +53,7 @@ export function ScrollingSectionedContainer({
       <Sentinel onVisibilityChange={setIsTopScrolled} />
       <div
         className={clsx(
-          "sticky top-0 isolate z-10 flex flex-wrap justify-between gap-2 bg-mustard-50 px-2 pb-4 pt-1 text-sm transition-shadow"
+          "sticky top-0 isolate z-10 flex flex-wrap items-center justify-between gap-2 bg-mustard-50 px-2 py-1 transition-shadow"
         )}
         style={{
           boxShadow: !isTopScrolled
@@ -126,7 +126,7 @@ function ScrollNavLink({
   return (
     <a
       className={clsx(
-        "rounded-full px-4 py-2.5",
+        "rounded-full px-2 py-1 text-sm",
         isScrolled
           ? "bg-mustard-100 font-medium"
           : "font-normal hover:bg-sand-200"
@@ -152,6 +152,7 @@ export function AddonNavLink({
         colorScheme="sand"
         variant="rounded"
         iconRight="ArrowTopRight"
+        size="sm"
       >
         {children}
       </Button>

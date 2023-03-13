@@ -13,6 +13,7 @@ import {
 } from "@/lib/graphql/generated";
 import {
   getLoanRepaymentStatus,
+  getLoanRepaymentStatusLabel,
   LoanRepaymentStatus,
   REPAYMENT_STATUS_LOAN_FIELDS,
   sum,
@@ -144,7 +145,7 @@ export function BorrowerProfile({
           <div className="col-span-full bg-mustard-50">
             <table className="w-full text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
               <thead>
-                <tr className="border-b border-sand-200 bg-white text-right [&>th]:font-normal">
+                <tr className="border-b border-sand-200 bg-mustard-100 text-right [&>th]:font-normal">
                   <th scope="col" className="w-1/4 text-left">
                     Deal name
                   </th>
@@ -218,15 +219,7 @@ function RepaymentStatusChip({
           : "border-mint-200 bg-mint-100 text-mint-700"
       )}
     >
-      {repaymentStatus === LoanRepaymentStatus.Current
-        ? "On time"
-        : repaymentStatus === LoanRepaymentStatus.Late
-        ? "Grace Period"
-        : repaymentStatus === LoanRepaymentStatus.Default
-        ? "Default"
-        : repaymentStatus === LoanRepaymentStatus.NotDrawnDown
-        ? "Not Drawn Down"
-        : "Fully Repaid"}
+      {getLoanRepaymentStatusLabel(repaymentStatus)}
     </span>
   );
 }

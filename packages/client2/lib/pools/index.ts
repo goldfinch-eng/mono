@@ -63,6 +63,20 @@ export function getLoanRepaymentStatus(
   }
 }
 
+const repaymentStatusLabels: Record<LoanRepaymentStatus, string> = {
+  [LoanRepaymentStatus.Current]: "On Time",
+  [LoanRepaymentStatus.Late]: "Grace Period",
+  [LoanRepaymentStatus.Default]: "Default",
+  [LoanRepaymentStatus.Repaid]: "Fully Repaid",
+  [LoanRepaymentStatus.NotDrawnDown]: "Not Drawn Down",
+};
+
+export function getLoanRepaymentStatusLabel(
+  repaymentStatus: LoanRepaymentStatus
+): string {
+  return repaymentStatusLabels[repaymentStatus];
+}
+
 export enum LoanFundingStatus {
   ComingSoon,
   Open,
@@ -421,6 +435,11 @@ const transactionPresentation: Record<
   MEMBERSHIP_CAPITAL_WITHDRAWAL: {
     label: "Removed Capital from Vault",
     shortLabel: "Unvaulted Capital",
+    icon: "ArrowDown",
+  },
+  CALL_REQUEST_SUBMITTED: {
+    label: "Call Request Submitted",
+    shortLabel: "Capital Called",
     icon: "ArrowDown",
   },
 };
