@@ -35,7 +35,8 @@ export function RiskTable() {
       boldValue: "Monthly",
       value: (
         <div>
-          Investors can access borrower-reported updates via investment-gated{" "}
+          Investors can access borrower-reported updates via the
+          investment-gated{" "}
           <Link
             href="https://discord.com/channels/793925570739044362/1034881143964717066"
             openInNewTab
