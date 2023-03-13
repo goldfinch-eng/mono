@@ -66,6 +66,15 @@ export function SeniorPoolRepaymentSection({
       0,
       0
     );
+    const endOfThisMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      -1
+    );
     const oneYearFromBeginningOfMonth = new Date(
       beginningOfThisMonth.getTime() + 3.154e7 * 1000
     );
@@ -85,7 +94,7 @@ export function SeniorPoolRepaymentSection({
               oneYearFromBeginningOfMonth.getTime()
           );
         } else {
-          return repayment.estimatedPaymentDate < now.getTime();
+          return repayment.estimatedPaymentDate < endOfThisMonth.getTime();
         }
       });
     allIncomingRepayments.sort(
