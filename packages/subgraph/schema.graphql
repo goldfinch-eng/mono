@@ -237,6 +237,7 @@ type Protocol @entity {
   totalInterestCollected: BigInt!
   totalReserveCollected: BigInt!
   loans: [Loan!]!
+  numLoans: Int!
 }
 
 type PoolToken @entity {
