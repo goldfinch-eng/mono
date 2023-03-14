@@ -412,12 +412,6 @@ contract CallableLoan is
     return _staleCreditLine.numLockupPeriods();
   }
 
-  /// TODO: Low priority tests - only used for frontend estimations of interest payments.
-  /// @inheritdoc ICallableLoan
-  function estimateOwedInterestAt(uint256 timestamp) external view override returns (uint256) {
-    return estimateOwedInterestAt(interestBearingBalance(), timestamp);
-  }
-
   /// @inheritdoc ICallableLoan
   function estimateOwedInterestAt(
     uint256 balance,
@@ -430,6 +424,24 @@ contract CallableLoan is
         balance,
         _staleCreditLine.interestApr()
       );
+  }
+
+  /// @inheritdoc ICallableLoan
+  function estimateOwedInterestAt(uint256 timestamp) external view override returns (uint256) {
+    return estimateOwedInterestAt(interestBearingBalance(), timestamp);
+  }
+
+  /// @inheritdoc ICallableLoan
+  function loanPhase() public view override returns (LoanPhase) {
+    return _staleCreditLine.loanPhase();
+  }
+
+  /// TODO: Low priority tests - currently only used for tests and frontend
+  /// @inheritdoc ICallableLoan
+  function interestBearingBalance() public view override returns (uint256) {
+    return
+      _staleCreditLine.totalPrincipalDeposited() -
+      _staleCreditLine.totalPrincipalPaidAt(block.timestamp);
   }
 
   /// @inheritdoc ILoan
@@ -483,14 +495,6 @@ contract CallableLoan is
         principalPaid: info.principalPaid,
         principalReserved: info.principalReserved
       });
-  }
-
-  /// TODO: Low priority tests - currently only used for tests and frontend
-  /// @inheritdoc ICallableLoan
-  function interestBearingBalance() public view override returns (uint256) {
-    return
-      _staleCreditLine.totalPrincipalDeposited() -
-      _staleCreditLine.totalPrincipalPaidAt(block.timestamp);
   }
 
   function availableToCall(uint256 tokenId) public view override returns (uint256) {
