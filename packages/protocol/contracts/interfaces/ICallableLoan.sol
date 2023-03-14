@@ -123,6 +123,10 @@ interface ICallableLoan is ILoan {
 
   function availableToCall(uint256 tokenId) external view returns (uint256);
 
+  /// @notice Returns the current phase of the loan.
+  ///         See documentation on LoanPhase enum.
+  function loanPhase() external view returns (LoanPhase);
+
   /// @notice Returns the current balance of the loan which will be used for
   ///         interest calculations.
   ///         Settles any principal reserved if a call request period has

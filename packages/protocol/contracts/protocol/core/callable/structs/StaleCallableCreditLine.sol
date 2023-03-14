@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
-
+import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
 import {Waterfall} from "./Waterfall.sol";
 // solhint-disable-next-line max-line-length
 import {CallableCreditLine, CallableCreditLineLogic, PreviewCallableCreditLineLogic, SettledTrancheInfo} from "./CallableCreditLine.sol";
@@ -81,6 +81,10 @@ library StaleCallableCreditLineLogic {
 
   function isLate(StaleCallableCreditLine storage cl) internal view returns (bool) {
     return cl._cl.isLate();
+  }
+
+  function loanPhase(StaleCallableCreditLine storage cl) internal view returns (LoanPhase) {
+    return cl._cl.loanPhase();
   }
 
   function checkpointedAsOf(StaleCallableCreditLine storage cl) internal view returns (uint256) {
