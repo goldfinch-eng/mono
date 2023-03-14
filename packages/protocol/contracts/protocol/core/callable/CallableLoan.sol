@@ -420,14 +420,14 @@ contract CallableLoan is
 
   /// @inheritdoc ICallableLoan
   function estimateOwedInterestAt(
-    uint256 balance,
+    uint256 assumedBalance,
     uint256 timestamp
   ) public view override returns (uint256) {
     return
       _staleCreditLine.interestOwed() +
       CallableLoanAccountant.calculateInterest(
         timestamp - block.timestamp,
-        balance,
+        assumedBalance,
         _staleCreditLine.interestApr()
       );
   }
@@ -808,7 +808,7 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function lateFeeApr() public view override returns (uint256) {
-    return _staleCreditLine.lateFeeApr();
+    return _staleCreditLine.lateAdditionalApr();
   }
 
   /// @inheritdoc ICreditLine

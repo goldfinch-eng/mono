@@ -76,7 +76,7 @@ contract TestCallableCreditLine is BaseTest {
     assertEq(address(cpcl._config), address(config));
     assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
     assertEq(cpcl.interestApr(), DEFAULT_APR);
-    assertEq(cpcl.lateFeeAdditionalApr(), DEFAULT_LATE_ADDITIONAL_APR);
+    assertEq(cpcl.lateAdditionalApr(), DEFAULT_LATE_ADDITIONAL_APR);
     assertEq(cpcl.limit(), DEFAULT_LIMIT);
   }
 
@@ -87,7 +87,6 @@ contract TestCallableCreditLine is BaseTest {
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount);
     assertEq(cpcl.totalPrincipalOutstanding(), 0);
-    assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
   }
 
@@ -100,7 +99,6 @@ contract TestCallableCreditLine is BaseTest {
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount - drawdownAmount);
     assertEq(cpcl.totalPrincipalOutstanding(), drawdownAmount);
-    assertEq(cpcl.totalInterestAccrued(), 0);
     assertEq(cpcl.interestOwed(), 0);
   }
 

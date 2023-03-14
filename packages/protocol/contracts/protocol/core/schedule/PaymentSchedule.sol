@@ -21,12 +21,13 @@ library PaymentScheduleLogic {
     s.startTime = uint64(timestamp);
   }
 
-  function previousDueTimeAt(
-    PaymentSchedule storage s,
-    uint256 timestamp
-  ) internal view isActiveMod(s) returns (uint256) {
-    return s.schedule.previousDueTimeAt(s.startTime, timestamp);
-  }
+  // Currently unused.
+  // function previousDueTimeAt(
+  //   PaymentSchedule storage s,
+  //   uint256 timestamp
+  // ) internal view isActiveMod(s) returns (uint256) {
+  //   return s.schedule.previousDueTimeAt(s.startTime, timestamp);
+  // }
 
   function previousInterestDueTimeAt(
     PaymentSchedule storage s,
@@ -78,9 +79,10 @@ library PaymentScheduleLogic {
     return s.schedule.periodAt(s.startTime, timestamp);
   }
 
-  function totalPrincipalPeriods(PaymentSchedule storage s) internal view returns (uint256) {
-    return s.schedule.totalPrincipalPeriods();
-  }
+  // Currently unused.
+  // function totalPrincipalPeriods(PaymentSchedule storage s) internal view returns (uint256) {
+  //   return s.schedule.totalPrincipalPeriods();
+  // }
 
   function isActive(PaymentSchedule storage s) internal view returns (bool) {
     return s.startTime != 0;

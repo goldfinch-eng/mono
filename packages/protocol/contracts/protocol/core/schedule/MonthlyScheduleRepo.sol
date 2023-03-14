@@ -16,7 +16,7 @@ import {Schedule} from "./Schedule.sol";
  * Goldfinch protocol.
  */
 contract MonthlyScheduleRepo is IMonthlyScheduleRepo {
-  IPeriodMapper public override periodMapper;
+  IPeriodMapper public immutable override periodMapper;
 
   mapping(bytes32 => address) private schedules;
 
