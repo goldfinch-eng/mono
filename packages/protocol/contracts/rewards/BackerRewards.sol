@@ -113,8 +113,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     if (_interestPaymentAmount > 0) {
       _allocateRewards(_interestPaymentAmount);
     }
-
-    _allocateStakingRewards();
   }
 
   /**
@@ -166,46 +164,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   }
 
   /// @inheritdoc IBackerRewards
-  function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool nonReentrant {
-    ITranchedPool pool = ITranchedPool(_msgSender());
-    IStakingRewards stakingRewards = _getUpdatedStakingRewards();
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
-    ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(
-      pool,
-      sliceIndex
-    );
-    uint256 newRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-
-    // On the first drawdown in the lifetime of the pool, we need to initialize
-    // the pool local accumulator
-    bool poolRewardsHaventBeenInitialized = !_poolStakingRewardsInfoHaveBeenInitialized(poolInfo);
-    if (poolRewardsHaventBeenInitialized) {
-      _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
-    }
-
-    bool isNewSlice = !_sliceRewardsHaveBeenInitialized(pool, sliceIndex);
-    if (isNewSlice) {
-      ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
-      uint256 principalDeployedAtDrawdown = _getPrincipalDeployedForTranche(juniorTranche);
-      uint256 fiduSharePriceAtDrawdown = seniorPool.sharePrice();
-
-      // initialize new slice params
-      StakingRewardsSliceInfo memory sliceInfo = _initializeStakingRewardsSliceInfo(
-        fiduSharePriceAtDrawdown,
-        principalDeployedAtDrawdown,
-        newRewardsAccumulator
-      );
-
-      poolStakingRewards[pool].slicesInfo.push(sliceInfo);
-    } else {
-      // otherwise, its nth drawdown of the slice
-      // we need to checkpoint the values here to account for the amount of principal
-      // that was at risk between the last checkpoint and now, but we don't publish
-      // because backer's shouldn't be able to claim rewards for a drawdown.
-      _checkpointSliceStakingRewards(pool, sliceIndex, false);
-    }
-
-    _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
+  function onTranchedPoolDrawdown(uint256 _sliceIndex) external override onlyPool nonReentrant {
+    // No-op so the call doesn't revert
   }
 
   /**
