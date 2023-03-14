@@ -1,6 +1,5 @@
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import BN from "bn.js"
-import {ethers} from "hardhat"
 import _ from "lodash"
 import {interestAprAsBN, USDCDecimals} from "../../blockchain_scripts/deployHelpers"
 import {getDeploymentFor} from "../../test/util/fixtures"
