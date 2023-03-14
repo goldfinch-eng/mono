@@ -907,24 +907,24 @@ contract CallableLoan is
     uint256 principalPayment,
     uint256 interestPayment
   ) external override(ICreditLine) nonReentrant whenNotPaused returns (PaymentAllocation memory) {
-    revert("US");
+    revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
   function maxLimit() external view override returns (uint256) {
-    revert("US");
+    revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
 
   function setMaxLimit(uint256 newAmount) external override {
-    revert("US");
+    revert UnsupportedOperation();
   }
 
   /// Unsupported ICreditLine method kept for ICreditLine conformance
 
   function setLimit(uint256 newAmount) external override {
-    revert("US");
+    revert UnsupportedOperation();
   }
 
   /*================================================================================

@@ -11,13 +11,13 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 contract CallableLoanSetters is CallableLoanBaseTest {
   function testSetLimitReverts(uint256 limit) public impersonating(GF_OWNER) {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    vm.expectRevert(bytes("US"));
+    vm.expectRevert(ICallableLoanErrors.UnsupportedOperation.selector);
     callableLoan.setLimit(limit);
   }
 
   function testSetMaxLimitReverts(uint256 limit) public impersonating(GF_OWNER) {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    vm.expectRevert(bytes("US"));
+    vm.expectRevert(ICallableLoanErrors.UnsupportedOperation.selector);
     callableLoan.setMaxLimit(limit);
   }
 

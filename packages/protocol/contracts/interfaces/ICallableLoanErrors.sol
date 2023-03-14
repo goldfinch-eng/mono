@@ -70,6 +70,7 @@ interface ICallableLoanErrors {
   error HasInsufficientTranches(uint256 numPrincipalPeriods, uint256 minimumNumPrincipalPeriods);
   error CannotReinitialize();
   error InvalidNumLockupPeriods(uint256 numLockupPeriods, uint256 periodsPerPrincipalPeriod);
+  error UnsupportedOperation();
 
   /*================================================================================
   Timestamps
