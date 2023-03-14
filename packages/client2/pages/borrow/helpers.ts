@@ -11,7 +11,7 @@ gql`
   fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
     interestOwed @client
     collectedPaymentBalance @client
-    isLate @client
+    delinquency @client
     isAfterTermEndTime @client
     interestAccruedAsOf
     fundingLimit
@@ -328,7 +328,7 @@ export function calculateCreditLineMaxDrawdownAmount({
 export function getCreditLineAccountingAnalyisValues({
   principalAmount,
   fundingLimit,
-  isLate,
+  delinquency,
   interestOwed,
   interestRateBigInt,
   nextDueTime,
@@ -344,6 +344,7 @@ export function getCreditLineAccountingAnalyisValues({
   remainingTotalDueAmount: BigNumber;
   creditLineStatus: CreditLineStatus;
 } {
+  const isLate = delinquency !== "CURRENT"; // For the purpose of this calculation, "grace period" is the same as late
   const creditLineLimit = principalAmount.gt(0)
     ? principalAmount
     : fundingLimit;

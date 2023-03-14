@@ -40,8 +40,7 @@ export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
     id
     balance
     termEndTime
-    isLate @client
-    isInDefault @client
+    delinquency @client
   }
 `;
 
@@ -52,9 +51,9 @@ export function getLoanRepaymentStatus(
     return LoanRepaymentStatus.Repaid;
   } else if (loan.balance.isZero()) {
     return LoanRepaymentStatus.NotDrawnDown;
-  } else if (loan.isInDefault) {
+  } else if (loan.delinquency === "LATE") {
     return LoanRepaymentStatus.Default;
-  } else if (loan.isLate) {
+  } else if (loan.delinquency === "GRACE_PERIOD") {
     return LoanRepaymentStatus.Late;
   } else {
     return LoanRepaymentStatus.Current;
