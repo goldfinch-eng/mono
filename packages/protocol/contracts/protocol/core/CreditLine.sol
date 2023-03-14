@@ -365,9 +365,8 @@ contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable
   }
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
-    uint256 gracePeriodInSeconds = config.getLatenessGracePeriodInDays().mul(SECONDS_PER_DAY);
     uint256 oldestUnpaidDueTime = schedule.nextDueTimeAt(lastFullPaymentTime);
-    return balance > 0 && timestamp > oldestUnpaidDueTime.add(gracePeriodInSeconds);
+    return balance > 0 && timestamp > oldestUnpaidDueTime;
   }
 }
 
