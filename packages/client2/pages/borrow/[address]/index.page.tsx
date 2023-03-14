@@ -309,7 +309,6 @@ export default function PoolCreditLinePage({
                   <div className="mb-5 text-2xl">
                     {formattedAvailableForDrawdown}
                   </div>
-                  {/* TODO: Zadra disclaimer for first drawdown causing pool to lock and prevent further lender deposits */}
                   <Button
                     as="button"
                     className="w-full text-xl"
@@ -347,7 +346,9 @@ export default function PoolCreditLinePage({
                     onClick={() => setShownForm("payment")}
                     disabled={
                       creditLineStatus === CreditLineStatus.Repaid ||
-                      creditLineStatus === CreditLineStatus.Open
+                      creditLineStatus === CreditLineStatus.Open ||
+                      (loan.__typename === "CallableLoan" &&
+                        loan.loanPhase !== LoanPhase.InProgress)
                     }
                   >
                     Pay
