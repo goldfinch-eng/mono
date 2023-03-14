@@ -35,6 +35,7 @@ gql`
     periodInterestDueAmount @client
     periodPrincipalDueAmount @client
     nextDueTime @client
+    loanPhase @client
   }
 `;
 
@@ -360,10 +361,9 @@ export function getCreditLineAccountingAnalyisValues(
     ? principalAmount
     : fundingLimit;
 
-  // TODO: Zadra figure out value for callableloan vs 0
   const currentInterestOwed =
     __typename === "CallableLoan"
-      ? BigNumber.from(0)
+      ? loan.periodInterestDueAmount
       : calculateInterestOwed({
           isLate,
           interestOwed: loan.interestOwed,

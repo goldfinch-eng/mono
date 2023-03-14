@@ -55,7 +55,7 @@ export function LoanCallsDataTable({
                 {formatCrypto({ amount: totalCalled, token: "USDC" })}
               </td>
               <td className="text-right">
-                {formatDate(dueDate * 1000, "MMM d, Y")}
+                {formatDate(dueDate * 1000, "MMMM d, yyyy")}
               </td>
               <td className="text-right">
                 <div className="flex items-center justify-end">

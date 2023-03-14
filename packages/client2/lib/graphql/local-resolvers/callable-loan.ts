@@ -4,9 +4,17 @@ import { BigNumber } from "ethers";
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { roundUpUsdcPenny } from "@/lib/format";
+import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
+
+export enum LoanPhase {
+  Prefunding = "Prefunding",
+  Funding = "Funding",
+  DrawdownPeriod = "DrawdownPeriod",
+  InProgress = "InProgress",
+}
 
 const loanDueAmount = async (callableLoanId: string) => {
   const provider = await getProvider();
@@ -29,7 +37,7 @@ const loanDueAmount = async (callableLoanId: string) => {
   const isLate = await callableLoanContract.isLate();
   if (isLate) {
     // Should a user be paying the interest accrued over the current period when they're late?
-    // Or should they just be paying the interest they would have owed for the periods they missed?
+    // Or should they just be paying the interest + principal they would have owed for the periods they missed?
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwed(),
       callableLoanContract.principalOwed(),
@@ -37,7 +45,9 @@ const loanDueAmount = async (callableLoanId: string) => {
 
     return {
       // STILL getting dust issues on atomic amounts of USDC even when value comes from smart contract
-      interestOwed: roundUpUsdcPenny(interestOwed),
+      interestOwed: interestOwed.isZero()
+        ? interestOwed
+        : roundUpUsdcPenny(interestOwed),
       principalOwed,
     };
   }
@@ -52,7 +62,9 @@ const loanDueAmount = async (callableLoanId: string) => {
   ]);
 
   return {
-    interestOwed: roundUpUsdcPenny(interestOwed),
+    interestOwed: interestOwed.isZero()
+      ? interestOwed
+      : roundUpUsdcPenny(interestOwed),
     principalOwed,
   };
 };
@@ -184,5 +196,29 @@ export const callableLoanResolvers: Resolvers[string] = {
     const lastFullPaymentTime =
       await callableLoanContract.lastFullPaymentTime();
     return callableLoanContract.nextDueTimeAt(lastFullPaymentTime);
+  },
+  async loanPhase(callableLoan: CallableLoan): Promise<LoanPhase> {
+    const provider = await getProvider();
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      useSigner: false,
+      address: callableLoan.id,
+    });
+
+    const loanPhase = await callableLoanContract.loanPhase();
+
+    switch (loanPhase) {
+      case 0:
+        return LoanPhase.Prefunding;
+      case 1:
+        return LoanPhase.Funding;
+      case 2:
+        return LoanPhase.DrawdownPeriod;
+      case 3:
+        return LoanPhase.InProgress;
+      default:
+        return assertUnreachable(loanPhase as never);
+    }
   },
 };

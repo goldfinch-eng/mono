@@ -3,9 +3,14 @@ import clsx from "clsx";
 import { format as formatDate, formatDistanceStrict } from "date-fns";
 import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
-import { Button, Heading, Icon } from "@/components/design-system";
+import {
+  Button,
+  confirmDialog,
+  Heading,
+  Icon,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -16,6 +21,7 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
+import { LoanPhase } from "@/lib/graphql/local-resolvers/callable-loan";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
@@ -108,7 +114,12 @@ export default function PoolCreditLinePage({
       creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
     if (loan.__typename === "CallableLoan") {
-      availableForDrawdown = loan.totalPrincipalPaid;
+      // For Callable Loans, a borrower can only drawdown during the funding and drawdown period
+      availableForDrawdown =
+        loan.loanPhase === LoanPhase.Funding ||
+        loan.loanPhase === LoanPhase.DrawdownPeriod
+          ? loan.totalPrincipalPaid
+          : BigNumber.from(0);
     } else {
       const juniorTranche = loan.juniorTranches[0];
       const seniorTranche = loan.seniorTranches[0];
@@ -165,6 +176,27 @@ export default function PoolCreditLinePage({
   const formattedNextDueTime = loan
     ? formatDate(loan.nextDueTime.toNumber() * 1000, "MMM d")
     : "0";
+
+  const handleDrawdownButtonClick = useCallback(async () => {
+    let drawdownDisclaimerAcknowledged = true;
+    if (loan?.__typename === "CallableLoan" && loan.termEndTime.eq(0)) {
+      drawdownDisclaimerAcknowledged = await confirmDialog(
+        <div>
+          <div className="mb-2">
+            When you draw down funds from this pool, lenders will
+            <span className="font-semibold">
+              {" "}
+              no longer be able to supply more capital.
+            </span>
+          </div>
+          <div>Do you wish to continue?</div>
+        </div>
+      );
+    }
+    if (drawdownDisclaimerAcknowledged) {
+      setShownForm("drawdown");
+    }
+  }, [loan, setShownForm]);
 
   return (
     <div>
@@ -254,19 +286,16 @@ export default function PoolCreditLinePage({
                   </div>
                   {shownForm === "drawdown" ? (
                     <DrawdownForm
+                      loan={loan}
                       availableForDrawdown={availableForDrawdown}
-                      borrowerContractAddress={loan.borrowerContract.id}
-                      tranchedPoolAddress={loan.id}
                       creditLineStatus={creditLineStatus}
-                      isAfterTermEndTime={loan.isAfterTermEndTime}
                       onClose={() => setShownForm(null)}
                     />
                   ) : (
                     <PaymentForm
+                      loan={loan}
                       remainingPeriodDueAmount={remainingPeriodDueAmount}
                       remainingTotalDueAmount={remainingTotalDueAmount}
-                      borrowerContractAddress={loan.borrowerContract.id}
-                      loanAddress={loan.id}
                       creditLineStatus={creditLineStatus}
                       onClose={() => setShownForm(null)}
                     />
@@ -287,12 +316,12 @@ export default function PoolCreditLinePage({
                     size="xl"
                     iconLeft="ArrowDown"
                     colorScheme="mustard"
-                    onClick={() => setShownForm("drawdown")}
+                    onClick={() => handleDrawdownButtonClick()}
                     disabled={
                       loan.isPaused ||
                       loan.drawdownsPaused ||
-                      // TODO: Zadra do we need this?
-                      // juniorTranche?.lockedUntil.isZero() ||
+                      (loan.__typename === "TranchedPool" &&
+                        loan?.juniorTranches[0]?.lockedUntil.isZero()) ||
                       availableForDrawdown.lte(BigNumber.from(0))
                     }
                   >

@@ -30,6 +30,13 @@ extend type TranchedPool {
   collectedPaymentBalance: BigInt!
 }
 
+enum LoanPhase {
+  Prefunding
+  Funding
+  DrawdownPeriod
+  InProgress
+}
+
 extend type CallableLoan {
   name: String!
   borrowerName: String!
@@ -42,6 +49,7 @@ extend type CallableLoan {
   nextDueTime: BigInt!
   inLockupPeriod: Boolean!
   nextPrincipalDueTime: Int!
+  loanPhase: LoanPhase!
 }
 
 extend type CreditLine {
