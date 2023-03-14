@@ -86,11 +86,11 @@ function PoolStatus({
     <Chip
       size="sm"
       colorScheme={
-        poolRepaymentStatus === LoanRepaymentStatus.Late
+        poolRepaymentStatus === LoanRepaymentStatus.GracePeriod
           ? "mustard"
           : poolRepaymentStatus === LoanRepaymentStatus.Current
           ? "dark-mint"
-          : poolRepaymentStatus === LoanRepaymentStatus.Default
+          : poolRepaymentStatus === LoanRepaymentStatus.Late
           ? "clay"
           : undefined
       }

@@ -10,20 +10,24 @@ extend type SeniorPool {
   epochEndsAt: Int!
 }
 
+enum LoanDelinquency {
+  CURRENT
+  GRACE_PERIOD
+  LATE
+}
+
 extend type Loan {
   name: String!
   borrowerName: String!
   borrowerLogo: String
-  isLate: Boolean!
-  isInDefault: Boolean!
+  delinquency: LoanDelinquency!
 }
 
 extend type TranchedPool {
   name: String!
   borrowerName: String!
   borrowerLogo: String
-  isLate: Boolean!
-  isInDefault: Boolean!
+  delinquency: LoanDelinquency!
   isAfterTermEndTime: Boolean!
   interestOwed: BigInt!
   collectedPaymentBalance: BigInt!
@@ -33,8 +37,7 @@ extend type CallableLoan {
   name: String!
   borrowerName: String!
   borrowerLogo: String
-  isLate: Boolean!
-  isInDefault: Boolean!
+  delinquency: LoanDelinquency!
   inLockupPeriod: Boolean!
   nextPrincipalDueTime: Int!
 }
