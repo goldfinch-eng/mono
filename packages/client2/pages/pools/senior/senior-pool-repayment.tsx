@@ -152,7 +152,7 @@ export function SeniorPoolRepaymentSection({
                 : "Past repayments"}
               <Icon name="ChevronDown" />
             </Menu.Button>
-            <Menu.Items className="absolute left-0 z-50 mt-1 flex flex-col rounded-md bg-white text-xs">
+            <Menu.Items className="absolute left-0 z-10 mt-1 flex flex-col rounded-md bg-white text-xs">
               <Menu.Item>
                 <button
                   className="block px-3 py-3 text-left hover:bg-sand-50"
