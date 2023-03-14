@@ -248,7 +248,6 @@ postgres=# drop database "graph-node"; create database "graph-node";
 ```
 The reason being that when we run the chain locally, we start running hardhat, which provides test data. The smart contract will emit events that the `graph-node` database stores during that server session. That data becomes irrelevant however, in the next session we run the server. That's why in order to keep the database uncorrupted with stale data, we'd need to re-create it. 
 - Run the local chain from the root directory `mono/` with `yarn-start local` so that it can start up `hardhat` and other software packages.
-- Enter into the `graph-node` directory. Build the binary for the Graph Node before you run it for the first time, with `cargo build`. 
 - Proceed with running the `graph-node` server using the following command template within the `graph-node` directory:
 ```bash
 cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:5002
