@@ -16,9 +16,12 @@ export const signAgreement = genRequestHandler({
       return res.status(403).send({error: "Invalid address"})
     }
     const fullName = (req.body.fullName || "").trim()
+    const email = (req.body.email || "").trim()
 
-    if (pool === "" || fullName === "") {
-      return res.status(403).send({error: "Invalid name or pool"})
+    // handle the format of the email
+
+    if (pool === "" || fullName === "" || email === "") {
+      return res.status(403).send({error: "Invalid name or pool or email"})
     }
 
     const agreements = getAgreements(admin.firestore())
@@ -28,6 +31,7 @@ export const signAgreement = genRequestHandler({
       address: address,
       pool: pool,
       fullName: fullName,
+      email: email,
       signedAt: Date.now(),
     })
     return res.status(200).send({status: "success"})
