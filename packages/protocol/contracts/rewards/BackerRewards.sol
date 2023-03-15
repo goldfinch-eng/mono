@@ -9,12 +9,9 @@ import {SafeERC20Transfer} from "../library/SafeERC20Transfer.sol";
 import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
 import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
 import {BaseUpgradeablePausable} from "../protocol/core/BaseUpgradeablePausable.sol";
-import {ICreditLine} from "../interfaces/ICreditLine.sol";
 import {IPoolTokens} from "../interfaces/IPoolTokens.sol";
-import {IStakingRewards} from "../interfaces/IStakingRewards.sol";
 import {ITranchedPool} from "../interfaces/ITranchedPool.sol";
 import {IBackerRewards} from "../interfaces/IBackerRewards.sol";
-import {ISeniorPool} from "../interfaces/ISeniorPool.sol";
 import {IEvents} from "../interfaces/IEvents.sol";
 import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
 
@@ -72,49 +69,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     config = _config;
   }
 
-  /// @notice intialize the first slice of a StakingRewardsPoolInfo
-  /// @dev this is _only_ meant to be called on pools that didnt qualify for the backer rewards airdrop
-  ///       but were deployed before this contract.
-  function forceInitializeStakingRewardsPoolInfo(
-    ITranchedPool pool,
-    uint256 fiduSharePriceAtDrawdown,
-    uint256 principalDeployedAtDrawdown,
-    uint256 rewardsAccumulatorAtDrawdown
-  ) external onlyAdmin {
-    require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
-    require(fiduSharePriceAtDrawdown != 0, "Invalid: 0");
-    require(principalDeployedAtDrawdown != 0, "Invalid: 0");
-    require(rewardsAccumulatorAtDrawdown != 0, "Invalid: 0");
-
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
-    require(poolInfo.slicesInfo.length <= 1, "trying to overwrite multi slice rewards info!");
-
-    // NOTE: making this overwrite behavior to make it so that we have
-    //           an escape hatch in case the incorrect value is set for some reason
-    bool firstSliceHasAlreadyBeenInitialized = poolInfo.slicesInfo.length != 0;
-
-    poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = rewardsAccumulatorAtDrawdown;
-    StakingRewardsSliceInfo memory sliceInfo = _initializeStakingRewardsSliceInfo(
-      fiduSharePriceAtDrawdown,
-      principalDeployedAtDrawdown,
-      rewardsAccumulatorAtDrawdown
-    );
-
-    if (firstSliceHasAlreadyBeenInitialized) {
-      poolInfo.slicesInfo[0] = sliceInfo;
-    } else {
-      poolInfo.slicesInfo.push(sliceInfo);
-    }
-  }
-
   /// @inheritdoc IBackerRewards
   function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool nonReentrant {
     // note: do not use a require statment because that will TranchedPool kill execution
     if (_interestPaymentAmount > 0) {
       _allocateRewards(_interestPaymentAmount);
     }
-
-    _allocateStakingRewards();
   }
 
   /**
@@ -166,46 +126,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   }
 
   /// @inheritdoc IBackerRewards
-  function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool nonReentrant {
-    ITranchedPool pool = ITranchedPool(_msgSender());
-    IStakingRewards stakingRewards = _getUpdatedStakingRewards();
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
-    ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(
-      pool,
-      sliceIndex
-    );
-    uint256 newRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-
-    // On the first drawdown in the lifetime of the pool, we need to initialize
-    // the pool local accumulator
-    bool poolRewardsHaventBeenInitialized = !_poolStakingRewardsInfoHaveBeenInitialized(poolInfo);
-    if (poolRewardsHaventBeenInitialized) {
-      _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
-    }
-
-    bool isNewSlice = !_sliceRewardsHaveBeenInitialized(pool, sliceIndex);
-    if (isNewSlice) {
-      ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
-      uint256 principalDeployedAtDrawdown = _getPrincipalDeployedForTranche(juniorTranche);
-      uint256 fiduSharePriceAtDrawdown = seniorPool.sharePrice();
-
-      // initialize new slice params
-      StakingRewardsSliceInfo memory sliceInfo = _initializeStakingRewardsSliceInfo(
-        fiduSharePriceAtDrawdown,
-        principalDeployedAtDrawdown,
-        newRewardsAccumulator
-      );
-
-      poolStakingRewards[pool].slicesInfo.push(sliceInfo);
-    } else {
-      // otherwise, its nth drawdown of the slice
-      // we need to checkpoint the values here to account for the amount of principal
-      // that was at risk between the last checkpoint and now, but we don't publish
-      // because backer's shouldn't be able to claim rewards for a drawdown.
-      _checkpointSliceStakingRewards(pool, sliceIndex, false);
-    }
-
-    _updateStakingRewardsPoolInfoAccumulator(poolInfo, newRewardsAccumulator);
+  function onTranchedPoolDrawdown(uint256 _sliceIndex) external override onlyPool nonReentrant {
+    // No-op so the call doesn't revert
   }
 
   /**
@@ -454,116 +376,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
   }
 
-  function _allocateStakingRewards() internal {
-    ITranchedPool pool = ITranchedPool(_msgSender());
-
-    // only accrue rewards on a full repayment
-    ICreditLine cl = pool.creditLine();
-    bool wasFullRepayment = cl.lastFullPaymentTime() > 0 &&
-      cl.lastFullPaymentTime() <= block.timestamp &&
-      cl.principalOwed() == 0 &&
-      cl.interestOwed() == 0;
-    if (wasFullRepayment) {
-      // in the case of a full repayment, we want to checkpoint rewards and make them claimable
-      // to backers by publishing
-      _checkpointPoolStakingRewards(pool, true);
-    }
-  }
-
-  /**
-   * @notice Checkpoints staking reward accounting for a given pool.
-   * @param pool pool to checkpoint
-   * @param publish if true, the updated rewards values will be immediately available for
-   *                 backers to withdraw. otherwise, the accounting will be updated but backers
-   *                 will not be able to withdraw
-   */
-  function _checkpointPoolStakingRewards(ITranchedPool pool, bool publish) internal {
-    IStakingRewards stakingRewards = _getUpdatedStakingRewards();
-    uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
-
-    // If for any reason the new accumulator is less than our last one, abort for safety.
-    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
-      emit SafetyCheckTriggered();
-      return;
-    }
-
-    // iterate through all of the slices and checkpoint
-    for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
-      _checkpointSliceStakingRewards(pool, sliceIndex, publish);
-    }
-
-    _updateStakingRewardsPoolInfoAccumulator(poolInfo, newStakingRewardsAccumulator);
-  }
-
-  /**
-   * @notice checkpoint the staking rewards accounting for a single tranched pool slice
-   * @param pool pool that the slice belongs to
-   * @param sliceIndex index of slice to checkpoint rewards accounting for
-   * @param publish if true, the updated rewards values will be immediately available for
-   *                 backers to withdraw. otherwise, the accounting will be updated but backers
-   *                 will not be able to withdraw
-   */
-  function _checkpointSliceStakingRewards(
-    ITranchedPool pool,
-    uint256 sliceIndex,
-    bool publish
-  ) internal {
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
-    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
-    IStakingRewards stakingRewards = _getUpdatedStakingRewards();
-    ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(
-      pool,
-      sliceIndex
-    );
-    uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-
-    // If for any reason the new accumulator is less than our last one, abort for safety.
-    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
-      emit SafetyCheckTriggered();
-      return;
-    }
-    uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
-      poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
-    );
-
-    // We pro rate rewards if we're beyond the term date by approximating
-    // taking the current reward rate and multiplying it by the time
-    // that we left in the term divided by the time since we last updated
-    bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
-    if (shouldProRate) {
-      rewardsAccruedSinceLastCheckpoint = _calculateProRatedRewardsForPeriod(
-        rewardsAccruedSinceLastCheckpoint,
-        poolInfo.lastUpdateTime,
-        block.timestamp,
-        pool.creditLine().termEndTime()
-      );
-    }
-
-    uint256 newPrincipalDeployed = _getPrincipalDeployedForTranche(juniorTranche);
-
-    // the percentage we need to scale the rewards accumualated by
-    uint256 deployedScalingFactor = _usdcToAtomic(
-      sliceInfo.principalDeployedAtLastCheckpoint.mul(USDC_MANTISSA).div(
-        juniorTranche.principalDeposited
-      )
-    );
-
-    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint
-      .mul(deployedScalingFactor)
-      .div(FIDU_MANTISSA);
-
-    sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-      .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
-      .add(scaledRewardsForPeriod);
-
-    sliceInfo.principalDeployedAtLastCheckpoint = newPrincipalDeployed;
-    if (publish) {
-      sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-        .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint;
-    }
-  }
-
   /**
    * @notice Updates the staking rewards accounting for for a given tokenId
    * @param tokenId token id to checkpoint
@@ -703,29 +515,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
     return _usdcToAtomic(amount).mul(FIDU_MANTISSA).div(sharePrice);
   }
 
-  /// @notice Returns the junior tranche id for the given slice index
-  /// @param index slice index
-  /// @return junior tranche id of given slice index
-  function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256) {
-    return index.add(1).mul(2);
-  }
-
   /// @notice Returns the slice index for the given junior tranche id
   /// @param trancheId tranche id
   /// @return slice index that the given tranche id belongs to
   function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (uint256) {
     return trancheId.sub(1).div(2);
-  }
-
-  /// @notice get the StakingRewards contract after checkpoint the rewards values
-  /// @return StakingRewards with updated rewards values
-  function _getUpdatedStakingRewards() internal returns (IStakingRewards) {
-    IStakingRewards stakingRewards = IStakingRewards(config.stakingRewardsAddress());
-    if (stakingRewards.lastUpdateTime() != block.timestamp) {
-      // This triggers rewards to update
-      stakingRewards.kick(0);
-    }
-    return stakingRewards;
   }
 
   /// @notice Returns true if a TranchedPool's rewards parameters have been initialized, otherwise false
@@ -790,80 +584,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
       );
       return tokenInfo.accumulatedRewardsPerTokenAtLastWithdraw;
     }
-  }
-
-  /// @notice Returns the junior tranche of a pool given a slice index
-  /// @param pool pool to retreive tranche from
-  /// @param sliceIndex slice index
-  /// @return tranche in specified slice and pool
-  function _getJuniorTrancheForTranchedPoolSlice(
-    ITranchedPool pool,
-    uint256 sliceIndex
-  ) internal view returns (ITranchedPool.TrancheInfo memory) {
-    uint256 trancheId = _sliceIndexToJuniorTrancheId(sliceIndex);
-    return pool.getTranche(trancheId);
-  }
-
-  /// @notice Return the amount of principal currently deployed in a given slice
-  /// @param tranche tranche to get principal outstanding of
-  function _getPrincipalDeployedForTranche(
-    ITranchedPool.TrancheInfo memory tranche
-  ) internal pure returns (uint256) {
-    return
-      tranche.principalDeposited.sub(
-        _atomicToUsdc(
-          tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(
-            FIDU_MANTISSA
-          )
-        )
-      );
-  }
-
-  /// @notice Return an initialized StakingRewardsSliceInfo with the given parameters
-  function _initializeStakingRewardsSliceInfo(
-    uint256 fiduSharePriceAtDrawdown,
-    uint256 principalDeployedAtDrawdown,
-    uint256 rewardsAccumulatorAtDrawdown
-  ) internal pure returns (StakingRewardsSliceInfo memory) {
-    return
-      StakingRewardsSliceInfo({
-        fiduSharePriceAtDrawdown: fiduSharePriceAtDrawdown,
-        principalDeployedAtLastCheckpoint: principalDeployedAtDrawdown,
-        accumulatedRewardsPerTokenAtDrawdown: rewardsAccumulatorAtDrawdown,
-        accumulatedRewardsPerTokenAtLastCheckpoint: rewardsAccumulatorAtDrawdown,
-        unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint: rewardsAccumulatorAtDrawdown
-      });
-  }
-
-  /// @notice Returns the amount of rewards accrued from `lastUpdatedTime` to `endTime`
-  ///           We assume the reward rate was linear during this time
-  /// @param rewardsAccruedSinceLastCheckpoint rewards accumulated between `lastUpdatedTime` and `currentTime`
-  /// @param lastUpdatedTime the last timestamp the rewards accumulator was updated
-  /// @param currentTime the current timestamp
-  /// @param endTime the end time of the period that is elligible to accrue rewards
-  /// @return approximate rewards accrued from `lastUpdateTime` to `endTime`
-  function _calculateProRatedRewardsForPeriod(
-    uint256 rewardsAccruedSinceLastCheckpoint,
-    uint256 lastUpdatedTime,
-    uint256 currentTime,
-    uint256 endTime
-  ) internal pure returns (uint256) {
-    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(FIDU_MANTISSA);
-    uint256 slopeDivisor = currentTime.sub(lastUpdatedTime);
-
-    uint256 slope = slopeNumerator.div(slopeDivisor);
-    uint256 span = endTime.sub(lastUpdatedTime);
-    uint256 rewards = slope.mul(span).div(FIDU_MANTISSA);
-    return rewards;
-  }
-
-  /// @notice update a Pool's staking rewards accumulator
-  function _updateStakingRewardsPoolInfoAccumulator(
-    StakingRewardsPoolInfo storage poolInfo,
-    uint256 newAccumulatorValue
-  ) internal {
-    poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newAccumulatorValue;
-    poolInfo.lastUpdateTime = block.timestamp;
   }
 
   /* ======== MODIFIERS  ======== */

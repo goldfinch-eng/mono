@@ -2509,34 +2509,6 @@
                   "internalType": "contract ITranchedPool",
                   "name": "pool",
                   "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "fiduSharePriceAtDrawdown",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "principalDeployedAtDrawdown",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "rewardsAccumulatorAtDrawdown",
-                  "type": "uint256"
-                }
-              ],
-              "name": "forceInitializeStakingRewardsPoolInfo",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "contract ITranchedPool",
-                  "name": "pool",
-                  "type": "address"
                 }
               ],
               "name": "getBackerStakingRewardsPoolInfo",
@@ -2785,7 +2757,7 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "sliceIndex",
+                  "name": "_sliceIndex",
                   "type": "uint256"
                 }
               ],
@@ -3321,7 +3293,7 @@
           ]
         },
         "BackerRewards_Implementation": {
-          "address": "0xB495eb987E053368624cf7FD9bd09453Bc0043C2",
+          "address": "0x7bcB287059E871ca194474b3e538AdE985efB6A7",
           "abi": [
             {
               "anonymous": false,
@@ -3621,34 +3593,6 @@
                   "internalType": "contract ITranchedPool",
                   "name": "pool",
                   "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "fiduSharePriceAtDrawdown",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "principalDeployedAtDrawdown",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "rewardsAccumulatorAtDrawdown",
-                  "type": "uint256"
-                }
-              ],
-              "name": "forceInitializeStakingRewardsPoolInfo",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "contract ITranchedPool",
-                  "name": "pool",
-                  "type": "address"
                 }
               ],
               "name": "getBackerStakingRewardsPoolInfo",
@@ -3897,7 +3841,7 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "sliceIndex",
+                  "name": "_sliceIndex",
                   "type": "uint256"
                 }
               ],
@@ -49143,7 +49087,7 @@
       "chainId": "31337",
       "contracts": {
         "AccessControl": {
-          "address": "0xAd5d57aD9bB17d34Debb88566ab2F5dB879Cc46F",
+          "address": "0x1a6a3e7Bb246158dF31d8f924B84D961669Ba4e5",
           "abi": [
             {
               "anonymous": false,
@@ -49412,7 +49356,7 @@
           ]
         },
         "AccessControl_Implementation": {
-          "address": "0xE5BD5bDC03371fB239956dbbF40bD185D6c2ea28",
+          "address": "0xc63d2a04762529edB649d7a4cC3E57A0085e8544",
           "abi": [
             {
               "inputs": [
@@ -49538,7 +49482,7 @@
           ]
         },
         "AccessControl_Proxy": {
-          "address": "0xAd5d57aD9bB17d34Debb88566ab2F5dB879Cc46F",
+          "address": "0x1a6a3e7Bb246158dF31d8f924B84D961669Ba4e5",
           "abi": [
             {
               "inputs": [
@@ -49768,9 +49712,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "contract ICreditLine",
+                  "internalType": "contract CreditLine",
                   "name": "cl",
-                  "type": "ICreditLine"
+                  "type": "CreditLine"
                 },
                 {
                   "internalType": "uint256",
@@ -49802,9 +49746,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "contract ICreditLine",
+                  "internalType": "contract CreditLine",
                   "name": "cl",
-                  "type": "ICreditLine"
+                  "type": "CreditLine"
                 },
                 {
                   "internalType": "uint256",
@@ -49841,9 +49785,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "contract ICreditLine",
+                  "internalType": "contract CreditLine",
                   "name": "cl",
-                  "type": "ICreditLine"
+                  "type": "CreditLine"
                 },
                 {
                   "internalType": "uint256",
@@ -49875,9 +49819,9 @@
             {
               "inputs": [
                 {
-                  "internalType": "contract ICreditLine",
+                  "internalType": "contract CreditLine",
                   "name": "cl",
-                  "type": "ICreditLine"
+                  "type": "CreditLine"
                 },
                 {
                   "internalType": "uint256",
@@ -50027,11 +49971,1356 @@
               ],
               "stateMutability": "view",
               "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract CreditLine",
+                  "name": "cl",
+                  "type": "CreditLine"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "gracePeriodInDays",
+                  "type": "uint256"
+                }
+              ],
+              "name": "lateFeeApplicable",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
+        "BackerMerkleDirectDistributor": {
+          "address": "0x8613A4029EaA95dA61AE65380aC2e7366451bF2b",
+          "abi": [
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousImplementation",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "ProxyImplementationUpdated",
+              "type": "event"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "fallback"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "id",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "upgradeTo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "upgradeToAndCall",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Paused",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Unpaused",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "OWNER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "PAUSER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "__BaseUpgradeablePausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "__PauserPausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getRoleMember",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleMemberCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "gfi",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_gfi",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "_merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "initialize",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "pause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "paused",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "unpause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "implementationAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ownerAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "payable",
+              "type": "constructor"
+            }
+          ]
+        },
+        "BackerMerkleDirectDistributor_Implementation": {
+          "address": "0xF818A7C2AFC45cF4B9DDC48933C9A1edD624e46f",
+          "abi": [
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Paused",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Unpaused",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "OWNER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "PAUSER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "__BaseUpgradeablePausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "__PauserPausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getRoleMember",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleMemberCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "gfi",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_gfi",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "_merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "initialize",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "pause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "paused",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "unpause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ]
+        },
+        "BackerMerkleDirectDistributor_Proxy": {
+          "address": "0x8613A4029EaA95dA61AE65380aC2e7366451bF2b",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "implementationAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ownerAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "payable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousImplementation",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "ProxyImplementationUpdated",
+              "type": "event"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "fallback"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "id",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "upgradeTo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "upgradeToAndCall",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
+            }
+          ]
+        },
+        "BackerMerkleDistributor": {
+          "address": "0xC76A71C4492c11bbaDC841342C4Cb470b5d12193",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "communityRewards_",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "merkleRoot_",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "vestingLength",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "cliffLength",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "vestingInterval",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "vestingLength",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "cliffLength",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "vestingInterval",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "communityRewards",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             }
           ]
         },
         "BackerRewards": {
-          "address": "0x8613A4029EaA95dA61AE65380aC2e7366451bF2b",
+          "address": "0x55cb3b67D9E65F0Cf4eABCAC84564a1bE6E3b06A",
           "abi": [
             {
               "anonymous": false,
@@ -50422,19 +51711,6 @@
               "type": "function"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "clearTokenInfo",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
               "inputs": [],
               "name": "config",
               "outputs": [
@@ -50473,69 +51749,6 @@
               "name": "forceInitializeStakingRewardsPoolInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "contract ITranchedPool",
-                  "name": "pool",
-                  "type": "address"
-                }
-              ],
-              "name": "getBackerStakingRewardsPoolInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "lastUpdateTime",
-                      "type": "uint256"
-                    },
-                    {
-                      "components": [
-                        {
-                          "internalType": "uint256",
-                          "name": "fiduSharePriceAtDrawdown",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "principalDeployedAtLastCheckpoint",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "accumulatedRewardsPerTokenAtDrawdown",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint",
-                          "type": "uint256"
-                        }
-                      ],
-                      "internalType": "struct IBackerRewards.StakingRewardsSliceInfo[]",
-                      "name": "slicesInfo",
-                      "type": "tuple[]"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsPoolInfo",
-                  "name": "",
-                  "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -50595,63 +51808,6 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "poolTokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getStakingRewardsTokenInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
-                  "name": "",
-                  "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "poolTokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getTokenInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "rewardsClaimed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "accRewardsPerPrincipalDollarAtMint",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -50859,53 +52015,6 @@
             {
               "inputs": [
                 {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "rewardsClaimed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "accRewardsPerPrincipalDollarAtMint",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
-                  "name": "originalBackerRewardsTokenInfo",
-                  "type": "tuple"
-                },
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
-                  "name": "originalStakingRewardsTokenInfo",
-                  "type": "tuple"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newTokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newRewardsClaimed",
-                  "type": "uint256"
-                }
-              ],
-              "name": "setBackerAndStakingRewardsTokenInfoOnSplit",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "uint256",
                   "name": "_maxInterestDollarsEligible",
                   "type": "uint256"
@@ -51096,13 +52205,7 @@
                 }
               ],
               "name": "withdraw",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
+              "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -51143,7 +52246,7 @@
           ]
         },
         "BackerRewards_Implementation": {
-          "address": "0xF818A7C2AFC45cF4B9DDC48933C9A1edD624e46f",
+          "address": "0x130A46b6E41DB6E1e18fb9c759F223c459190e90",
           "abi": [
             {
               "anonymous": false,
@@ -51412,19 +52515,6 @@
               "type": "function"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "clearTokenInfo",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
               "inputs": [],
               "name": "config",
               "outputs": [
@@ -51463,69 +52553,6 @@
               "name": "forceInitializeStakingRewardsPoolInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "contract ITranchedPool",
-                  "name": "pool",
-                  "type": "address"
-                }
-              ],
-              "name": "getBackerStakingRewardsPoolInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "lastUpdateTime",
-                      "type": "uint256"
-                    },
-                    {
-                      "components": [
-                        {
-                          "internalType": "uint256",
-                          "name": "fiduSharePriceAtDrawdown",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "principalDeployedAtLastCheckpoint",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "accumulatedRewardsPerTokenAtDrawdown",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "accumulatedRewardsPerTokenAtLastCheckpoint",
-                          "type": "uint256"
-                        },
-                        {
-                          "internalType": "uint256",
-                          "name": "unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint",
-                          "type": "uint256"
-                        }
-                      ],
-                      "internalType": "struct IBackerRewards.StakingRewardsSliceInfo[]",
-                      "name": "slicesInfo",
-                      "type": "tuple[]"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsPoolInfo",
-                  "name": "",
-                  "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -51585,63 +52612,6 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "poolTokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getStakingRewardsTokenInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
-                  "name": "",
-                  "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "poolTokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getTokenInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "rewardsClaimed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "accRewardsPerPrincipalDollarAtMint",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -51849,53 +52819,6 @@
             {
               "inputs": [
                 {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "rewardsClaimed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "accRewardsPerPrincipalDollarAtMint",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.BackerRewardsTokenInfo",
-                  "name": "originalBackerRewardsTokenInfo",
-                  "type": "tuple"
-                },
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "accumulatedRewardsPerTokenAtLastWithdraw",
-                      "type": "uint256"
-                    }
-                  ],
-                  "internalType": "struct IBackerRewards.StakingRewardsTokenInfo",
-                  "name": "originalStakingRewardsTokenInfo",
-                  "type": "tuple"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newTokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newRewardsClaimed",
-                  "type": "uint256"
-                }
-              ],
-              "name": "setBackerAndStakingRewardsTokenInfoOnSplit",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "uint256",
                   "name": "_maxInterestDollarsEligible",
                   "type": "uint256"
@@ -52086,13 +53009,7 @@
                 }
               ],
               "name": "withdraw",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
+              "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -52112,7 +53029,7 @@
           ]
         },
         "BackerRewards_Proxy": {
-          "address": "0x8613A4029EaA95dA61AE65380aC2e7366451bF2b",
+          "address": "0x55cb3b67D9E65F0Cf4eABCAC84564a1bE6E3b06A",
           "abi": [
             {
               "inputs": [
@@ -52886,7 +53803,7 @@
           ]
         },
         "CapitalLedger": {
-          "address": "0xD499f5F7d3C918D0e553BA03954c4E02af16B6e4",
+          "address": "0x84227190685c25c4aF662EE1bD0E4cd82e57360D",
           "abi": [
             {
               "anonymous": false,
@@ -53089,17 +54006,6 @@
               "inputs": [
                 {
                   "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "NotGoListed",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
                   "name": "resource",
                   "type": "address"
                 },
@@ -53164,25 +54070,6 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "assetAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "CapitalERC721Harvest",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -53207,31 +54094,6 @@
                 }
               ],
               "name": "CapitalERC721Withdrawal",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "assetAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "usdcEquivalent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "CapitalPositionAdjustment",
               "type": "event"
             },
             {
@@ -53318,19 +54180,6 @@
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "harvest",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -53542,7 +54391,7 @@
           ]
         },
         "CapitalLedger_Implementation": {
-          "address": "0xa85b028984bC54A2a3D844B070544F59dDDf89DE",
+          "address": "0x1D99a347B5EcdbAa3C5365470d461Cf66B77ECd2",
           "abi": [
             {
               "inputs": [
@@ -53634,17 +54483,6 @@
               "inputs": [
                 {
                   "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "NotGoListed",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
                   "name": "resource",
                   "type": "address"
                 },
@@ -53709,25 +54547,6 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "assetAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "CapitalERC721Harvest",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -53752,31 +54571,6 @@
                 }
               ],
               "name": "CapitalERC721Withdrawal",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "assetAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "usdcEquivalent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "CapitalPositionAdjustment",
               "type": "event"
             },
             {
@@ -53863,19 +54657,6 @@
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "positionId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "harvest",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -54066,7 +54847,7 @@
           ]
         },
         "CapitalLedger_Proxy": {
-          "address": "0xD499f5F7d3C918D0e553BA03954c4E02af16B6e4",
+          "address": "0x84227190685c25c4aF662EE1bD0E4cd82e57360D",
           "abi": [
             {
               "inputs": [
@@ -56868,7 +57649,7 @@
           ]
         },
         "Context": {
-          "address": "0x0AFdAcD509e73115EA1654B1a770f1a807e7c9C0",
+          "address": "0xa85b028984bC54A2a3D844B070544F59dDDf89DE",
           "abi": [
             {
               "anonymous": false,
@@ -57029,7 +57810,7 @@
           ]
         },
         "Context_Implementation": {
-          "address": "0x7290f72B5C67052DDE8e6E179F7803c493e90d3f",
+          "address": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
           "abi": [
             {
               "inputs": [
@@ -57058,7 +57839,7 @@
           ]
         },
         "Context_Proxy": {
-          "address": "0x0AFdAcD509e73115EA1654B1a770f1a807e7c9C0",
+          "address": "0xa85b028984bC54A2a3D844B070544F59dDDf89DE",
           "abi": [
             {
               "inputs": [
@@ -58248,7 +59029,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "",
+                  "name": "seniorPool",
                   "type": "address"
                 },
                 {
@@ -58408,7 +59189,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "",
+                  "name": "seniorPool",
                   "type": "address"
                 },
                 {
@@ -58559,7 +59340,7 @@
           ]
         },
         "ERC20Splitter": {
-          "address": "0xA82ED5224ba72f2f776e09B11DC99E30Ee65Da8d",
+          "address": "0x199c27B10a195ee79e02d50846e59A4aFB82CAD1",
           "abi": [
             {
               "anonymous": false,
@@ -58956,7 +59737,7 @@
           ]
         },
         "ERC20Splitter_Implementation": {
-          "address": "0xbe241D1B7b54bF06742cefd45A3440C6562f7603",
+          "address": "0xDDEec1224034F4A68A2697eF13379a014fa60261",
           "abi": [
             {
               "inputs": [
@@ -59226,7 +60007,7 @@
           ]
         },
         "ERC20Splitter_Proxy": {
-          "address": "0xA82ED5224ba72f2f776e09B11DC99E30Ee65Da8d",
+          "address": "0x199c27B10a195ee79e02d50846e59A4aFB82CAD1",
           "abi": [
             {
               "inputs": [
@@ -61294,7 +62075,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "",
+                  "name": "seniorPool",
                   "type": "address"
                 },
                 {
@@ -61318,7 +62099,7 @@
               "inputs": [
                 {
                   "internalType": "contract ITranchedPool",
-                  "name": "",
+                  "name": "pool",
                   "type": "address"
                 }
               ],
@@ -61459,7 +62240,7 @@
               "inputs": [
                 {
                   "internalType": "contract ISeniorPool",
-                  "name": "",
+                  "name": "seniorPool",
                   "type": "address"
                 },
                 {
@@ -62273,7 +63054,7 @@
           ]
         },
         "GFILedger": {
-          "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
+          "address": "0xA82ED5224ba72f2f776e09B11DC99E30Ee65Da8d",
           "abi": [
             {
               "anonymous": false,
@@ -62765,7 +63546,7 @@
           ]
         },
         "GFILedger_Implementation": {
-          "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
+          "address": "0xbe241D1B7b54bF06742cefd45A3440C6562f7603",
           "abi": [
             {
               "inputs": [
@@ -63125,7 +63906,7 @@
           ]
         },
         "GFILedger_Proxy": {
-          "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
+          "address": "0xA82ED5224ba72f2f776e09B11DC99E30Ee65Da8d",
           "abi": [
             {
               "inputs": [
@@ -63273,7 +64054,7 @@
           ]
         },
         "Go": {
-          "address": "0xC76A71C4492c11bbaDC841342C4Cb470b5d12193",
+          "address": "0xAd5d57aD9bB17d34Debb88566ab2F5dB879Cc46F",
           "abi": [
             {
               "anonymous": false,
@@ -63734,19 +64515,6 @@
                   "internalType": "contract GoldfinchConfig",
                   "name": "",
                   "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "getAllIdTypes",
-              "outputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "",
-                  "type": "uint256[]"
                 }
               ],
               "stateMutability": "view",
@@ -64107,7 +64875,7 @@
           ]
         },
         "Go_Implementation": {
-          "address": "0x5370F78c6af2Da9cF6642382A3a75F9D5aEc9cc1",
+          "address": "0xE5BD5bDC03371fB239956dbbF40bD185D6c2ea28",
           "abi": [
             {
               "anonymous": false,
@@ -64452,19 +65220,6 @@
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "getAllIdTypes",
-              "outputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "",
-                  "type": "uint256[]"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "bytes32",
@@ -64798,7 +65553,7 @@
           ]
         },
         "Go_Proxy": {
-          "address": "0xC76A71C4492c11bbaDC841342C4Cb470b5d12193",
+          "address": "0xAd5d57aD9bB17d34Debb88566ab2F5dB879Cc46F",
           "abi": [
             {
               "inputs": [
@@ -67016,7 +67771,7 @@
           ]
         },
         "MembershipCollector": {
-          "address": "0x84227190685c25c4aF662EE1bD0E4cd82e57360D",
+          "address": "0xf69E1dFAc3D43F438Bae80090b8E186B0231CFeb",
           "abi": [
             {
               "anonymous": false,
@@ -67330,7 +68085,7 @@
           ]
         },
         "MembershipCollector_Implementation": {
-          "address": "0x1D99a347B5EcdbAa3C5365470d461Cf66B77ECd2",
+          "address": "0xE4F89Fb0dBb45378633c05ACAb071eB998F0A736",
           "abi": [
             {
               "inputs": [
@@ -67517,7 +68272,7 @@
           ]
         },
         "MembershipCollector_Proxy": {
-          "address": "0x84227190685c25c4aF662EE1bD0E4cd82e57360D",
+          "address": "0xf69E1dFAc3D43F438Bae80090b8E186B0231CFeb",
           "abi": [
             {
               "inputs": [
@@ -67665,7 +68420,7 @@
           ]
         },
         "MembershipDirector": {
-          "address": "0x093e8F4d8f267d2CeEc9eB889E2054710d187beD",
+          "address": "0x23d351BA89eaAc4E328133Cb48e050064C219A1E",
           "abi": [
             {
               "inputs": [
@@ -67939,7 +68694,7 @@
           ]
         },
         "MembershipLedger": {
-          "address": "0x49FcbCC4E425add3a45AFC82F4dD0E5c227A0Ff8",
+          "address": "0x8990C5DAAA40673eF8826990A6Fd8284a0a17d61",
           "abi": [
             {
               "anonymous": false,
@@ -68227,7 +68982,7 @@
           ]
         },
         "MembershipLedger_Implementation": {
-          "address": "0x35D2F51DBC8b401B11fA3FE04423E0f5cd9fEDb4",
+          "address": "0x17C8b71E5eE01A726766c99d397D619219C8CAF3",
           "abi": [
             {
               "inputs": [
@@ -68383,7 +69138,7 @@
           ]
         },
         "MembershipLedger_Proxy": {
-          "address": "0x49FcbCC4E425add3a45AFC82F4dD0E5c227A0Ff8",
+          "address": "0x8990C5DAAA40673eF8826990A6Fd8284a0a17d61",
           "abi": [
             {
               "inputs": [
@@ -68531,7 +69286,7 @@
           ]
         },
         "MembershipOrchestrator": {
-          "address": "0x1a6a3e7Bb246158dF31d8f924B84D961669Ba4e5",
+          "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
           "abi": [
             {
               "anonymous": false,
@@ -68656,6 +69411,16 @@
               "type": "receive"
             },
             {
+              "inputs": [],
+              "name": "CannotWithdrawForAddress0",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "CannotWithdrawForMultipleOwners",
+              "type": "error"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -68663,7 +69428,12 @@
                   "type": "address"
                 }
               ],
-              "name": "CannotOperateOnUnownedAsset",
+              "name": "CannotWithdrawUnownedAsset",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "MustWithdrawSomething",
               "type": "error"
             },
             {
@@ -68680,11 +69450,6 @@
                 }
               ],
               "name": "RequiresOperator",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "RequiresValidInput",
               "type": "error"
             },
             {
@@ -68896,19 +69661,6 @@
             {
               "inputs": [],
               "name": "finalizeEpochs",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "capitalPositionIds",
-                  "type": "uint256[]"
-                }
-              ],
-              "name": "harvest",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -69151,7 +69903,7 @@
           ]
         },
         "MembershipOrchestrator_Implementation": {
-          "address": "0xc63d2a04762529edB649d7a4cC3E57A0085e8544",
+          "address": "0xD499f5F7d3C918D0e553BA03954c4E02af16B6e4",
           "abi": [
             {
               "inputs": [
@@ -69165,6 +69917,16 @@
               "type": "constructor"
             },
             {
+              "inputs": [],
+              "name": "CannotWithdrawForAddress0",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "CannotWithdrawForMultipleOwners",
+              "type": "error"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -69172,7 +69934,12 @@
                   "type": "address"
                 }
               ],
-              "name": "CannotOperateOnUnownedAsset",
+              "name": "CannotWithdrawUnownedAsset",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "MustWithdrawSomething",
               "type": "error"
             },
             {
@@ -69189,11 +69956,6 @@
                 }
               ],
               "name": "RequiresOperator",
-              "type": "error"
-            },
-            {
-              "inputs": [],
-              "name": "RequiresValidInput",
               "type": "error"
             },
             {
@@ -69405,19 +70167,6 @@
             {
               "inputs": [],
               "name": "finalizeEpochs",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "capitalPositionIds",
-                  "type": "uint256[]"
-                }
-              ],
-              "name": "harvest",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -69639,7 +70388,7 @@
           ]
         },
         "MembershipOrchestrator_Proxy": {
-          "address": "0x1a6a3e7Bb246158dF31d8f924B84D961669Ba4e5",
+          "address": "0xDadd1125B8Df98A66Abd5EB302C0d9Ca5A061dC2",
           "abi": [
             {
               "inputs": [
@@ -69787,7 +70536,7 @@
           ]
         },
         "MembershipVault": {
-          "address": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
+          "address": "0x49FcbCC4E425add3a45AFC82F4dD0E5c227A0Ff8",
           "abi": [
             {
               "anonymous": false,
@@ -70609,7 +71358,7 @@
           ]
         },
         "MembershipVault_Implementation": {
-          "address": "0xBa3e08b4753E68952031102518379ED2fDADcA30",
+          "address": "0x35D2F51DBC8b401B11fA3FE04423E0f5cd9fEDb4",
           "abi": [
             {
               "inputs": [
@@ -71318,7 +72067,7 @@
           ]
         },
         "MembershipVault_Proxy": {
-          "address": "0x34ee84036C47d852901b7069aBD80171D9A489a6",
+          "address": "0x49FcbCC4E425add3a45AFC82F4dD0E5c227A0Ff8",
           "abi": [
             {
               "inputs": [
@@ -71462,6 +72211,1322 @@
             {
               "stateMutability": "payable",
               "type": "receive"
+            }
+          ]
+        },
+        "MerkleDirectDistributor": {
+          "address": "0x5370F78c6af2Da9cF6642382A3a75F9D5aEc9cc1",
+          "abi": [
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousImplementation",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "ProxyImplementationUpdated",
+              "type": "event"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "fallback"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "id",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "upgradeTo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "upgradeToAndCall",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Paused",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Unpaused",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "OWNER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "PAUSER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "__BaseUpgradeablePausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "__PauserPausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getRoleMember",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleMemberCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "gfi",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_gfi",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "_merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "initialize",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "pause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "paused",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "unpause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "implementationAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ownerAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "payable",
+              "type": "constructor"
+            }
+          ]
+        },
+        "MerkleDirectDistributor_Implementation": {
+          "address": "0xcEC91d876E8f003110D43381359b1bAd124e7F2b",
+          "abi": [
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Paused",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "Unpaused",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "OWNER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "PAUSER_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "__BaseUpgradeablePausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "__PauserPausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getRoleMember",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleMemberCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "gfi",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_gfi",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "_merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "initialize",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "pause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "paused",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "unpause",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ]
+        },
+        "MerkleDirectDistributor_Proxy": {
+          "address": "0x5370F78c6af2Da9cF6642382A3a75F9D5aEc9cc1",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "implementationAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ownerAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "payable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousImplementation",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "ProxyImplementationUpdated",
+              "type": "event"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "fallback"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "id",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "upgradeTo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "upgradeToAndCall",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
+            }
+          ]
+        },
+        "MerkleDistributor": {
+          "address": "0x0Cf17D5DcDA9cF25889cEc9ae5610B0FB9725F65",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "communityRewards_",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "merkleRoot_",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "vestingLength",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "cliffLength",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "vestingInterval",
+                  "type": "uint256"
+                }
+              ],
+              "name": "GrantAccepted",
+              "type": "event"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "vestingLength",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "cliffLength",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "vestingInterval",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "merkleProof",
+                  "type": "bytes32[]"
+                }
+              ],
+              "name": "acceptGrant",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "communityRewards",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "isGrantAccepted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "merkleRoot",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             }
           ]
         },
@@ -71644,6 +73709,25 @@
               "anonymous": false,
               "inputs": [
                 {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "who",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "configAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "GoldfinchConfigUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
                   "indexed": false,
                   "internalType": "address",
                   "name": "account",
@@ -71701,6 +73785,31 @@
                 }
               ],
               "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "newReceiver",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newRoyaltyPercent",
+                  "type": "uint256"
+                }
+              ],
+              "name": "RoyaltyParamsSet",
               "type": "event"
             },
             {
@@ -71843,55 +73952,6 @@
                 }
               ],
               "name": "TokenRedeemed",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "pool",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newTokenId1",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newPrincipal1",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newTokenId2",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newPrincipal2",
-                  "type": "uint256"
-                }
-              ],
-              "name": "TokenSplit",
               "type": "event"
             },
             {
@@ -72105,42 +74165,6 @@
                   "internalType": "address",
                   "name": "",
                   "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "pool",
-                  "type": "address"
-                }
-              ],
-              "name": "getPoolInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "totalMinted",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "totalPrincipalRedeemed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "created",
-                      "type": "bool"
-                    }
-                  ],
-                  "internalType": "struct IPoolTokens.PoolInfo",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -72708,35 +74732,6 @@
               ],
               "name": "setRoyaltyParams",
               "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newPrincipal1",
-                  "type": "uint256"
-                }
-              ],
-              "name": "splitToken",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId1",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId2",
-                  "type": "uint256"
-                }
-              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -73014,6 +75009,25 @@
               "anonymous": false,
               "inputs": [
                 {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "who",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "configAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "GoldfinchConfigUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
                   "indexed": false,
                   "internalType": "address",
                   "name": "account",
@@ -73071,6 +75085,31 @@
                 }
               ],
               "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "newReceiver",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newRoyaltyPercent",
+                  "type": "uint256"
+                }
+              ],
+              "name": "RoyaltyParamsSet",
               "type": "event"
             },
             {
@@ -73213,55 +75252,6 @@
                 }
               ],
               "name": "TokenRedeemed",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "pool",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newTokenId1",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newPrincipal1",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newTokenId2",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newPrincipal2",
-                  "type": "uint256"
-                }
-              ],
-              "name": "TokenSplit",
               "type": "event"
             },
             {
@@ -73475,42 +75465,6 @@
                   "internalType": "address",
                   "name": "",
                   "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "pool",
-                  "type": "address"
-                }
-              ],
-              "name": "getPoolInfo",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "totalMinted",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "totalPrincipalRedeemed",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "created",
-                      "type": "bool"
-                    }
-                  ],
-                  "internalType": "struct IPoolTokens.PoolInfo",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -74078,35 +76032,6 @@
               ],
               "name": "setRoyaltyParams",
               "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "newPrincipal1",
-                  "type": "uint256"
-                }
-              ],
-              "name": "splitToken",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId1",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId2",
-                  "type": "uint256"
-                }
-              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -74474,7 +76399,7 @@
           ]
         },
         "Router": {
-          "address": "0x55cb3b67D9E65F0Cf4eABCAC84564a1bE6E3b06A",
+          "address": "0xBa3e08b4753E68952031102518379ED2fDADcA30",
           "abi": [
             {
               "anonymous": false,
@@ -74691,7 +76616,7 @@
           ]
         },
         "Router_Implementation": {
-          "address": "0x130A46b6E41DB6E1e18fb9c759F223c459190e90",
+          "address": "0x093e8F4d8f267d2CeEc9eB889E2054710d187beD",
           "abi": [
             {
               "anonymous": false,
@@ -74765,7 +76690,7 @@
           ]
         },
         "Router_Proxy": {
-          "address": "0x55cb3b67D9E65F0Cf4eABCAC84564a1bE6E3b06A",
+          "address": "0xBa3e08b4753E68952031102518379ED2fDADcA30",
           "abi": [
             {
               "inputs": [
@@ -75117,31 +77042,6 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "epochId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newEndTime",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "oldEndTime",
-                  "type": "uint256"
-                }
-              ],
-              "name": "EpochExtended",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "payer",
                   "type": "address"
@@ -75274,12 +77174,6 @@
                   "type": "address"
                 },
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "reserve",
-                  "type": "address"
-                },
-                {
                   "indexed": false,
                   "internalType": "uint256",
                   "name": "amount",
@@ -75375,6 +77269,12 @@
                 },
                 {
                   "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
                   "internalType": "uint256",
                   "name": "fiduRequested",
                   "type": "uint256"
@@ -75394,14 +77294,14 @@
                 },
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
                   "type": "address"
                 },
                 {
@@ -75456,14 +77356,14 @@
                 },
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
                   "type": "address"
                 },
                 {
@@ -76339,31 +78239,6 @@
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "epochId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "newEndTime",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "oldEndTime",
-                  "type": "uint256"
-                }
-              ],
-              "name": "EpochExtended",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "payer",
                   "type": "address"
@@ -76496,12 +78371,6 @@
                   "type": "address"
                 },
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "reserve",
-                  "type": "address"
-                },
-                {
                   "indexed": false,
                   "internalType": "uint256",
                   "name": "amount",
@@ -76597,6 +78466,12 @@
                 },
                 {
                   "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
                   "internalType": "uint256",
                   "name": "fiduRequested",
                   "type": "uint256"
@@ -76616,14 +78491,14 @@
                 },
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
                   "type": "address"
                 },
                 {
@@ -76678,14 +78553,14 @@
                 },
                 {
                   "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "kycAddress",
                   "type": "address"
                 },
                 {
@@ -78709,13 +80584,7 @@
                 }
               ],
               "name": "getReward",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
+              "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -80630,13 +82499,7 @@
                 }
               ],
               "name": "getReward",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
+              "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -82226,7 +84089,7 @@
                 },
                 {
                   "internalType": "bool",
-                  "name": "",
+                  "name": "use_eth",
                   "type": "bool"
                 },
                 {
@@ -82424,22 +84287,22 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "i",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "j",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "dx",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "min_dy",
                   "type": "uint256"
                 }
               ],
@@ -82458,17 +84321,17 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "i",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "j",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "dx",
                   "type": "uint256"
                 }
               ],
@@ -82599,12 +84462,12 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "_amount",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256[2]",
-                  "name": "",
+                  "name": "min_amounts",
                   "type": "uint256[2]"
                 }
               ],
@@ -82623,17 +84486,17 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "token_amount",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "i",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "",
+                  "name": "min_amount",
                   "type": "uint256"
                 }
               ],
@@ -86600,7 +88463,7 @@
           ]
         },
         "UniqueIdentity": {
-          "address": "0xcEC91d876E8f003110D43381359b1bAd124e7F2b",
+          "address": "0xe0B39353F69b54e945364ffcdDD7901697Ca0166",
           "abi": [
             {
               "anonymous": false,
@@ -87410,34 +89273,6 @@
               "type": "function"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "recipient",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "id",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "expiresAt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "signature",
-                  "type": "bytes"
-                }
-              ],
-              "name": "mintTo",
-              "outputs": [],
-              "stateMutability": "payable",
-              "type": "function"
-            },
-            {
               "inputs": [],
               "name": "name",
               "outputs": [
@@ -87722,7 +89557,7 @@
           ]
         },
         "UniqueIdentity_Implementation": {
-          "address": "0x0Cf17D5DcDA9cF25889cEc9ae5610B0FB9725F65",
+          "address": "0x20Fbd46DeEd5EEDEB6e5c87eeB31924e9CA312ad",
           "abi": [
             {
               "anonymous": false,
@@ -88410,34 +90245,6 @@
               "type": "function"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "recipient",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "id",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "expiresAt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "signature",
-                  "type": "bytes"
-                }
-              ],
-              "name": "mintTo",
-              "outputs": [],
-              "stateMutability": "payable",
-              "type": "function"
-            },
-            {
               "inputs": [],
               "name": "name",
               "outputs": [
@@ -88720,7 +90527,7 @@
           ]
         },
         "UniqueIdentity_Proxy": {
-          "address": "0xcEC91d876E8f003110D43381359b1bAd124e7F2b",
+          "address": "0xe0B39353F69b54e945364ffcdDD7901697Ca0166",
           "abi": [
             {
               "inputs": [
@@ -90690,7 +92497,7 @@
           ]
         },
         "Zapper": {
-          "address": "0xe0B39353F69b54e945364ffcdDD7901697Ca0166",
+          "address": "0x0AFdAcD509e73115EA1654B1a770f1a807e7c9C0",
           "abi": [
             {
               "anonymous": false,
@@ -91385,7 +93192,7 @@
           ]
         },
         "Zapper_Implementation": {
-          "address": "0x20Fbd46DeEd5EEDEB6e5c87eeB31924e9CA312ad",
+          "address": "0x7290f72B5C67052DDE8e6E179F7803c493e90d3f",
           "abi": [
             {
               "anonymous": false,
@@ -91937,7 +93744,7 @@
           ]
         },
         "Zapper_Proxy": {
-          "address": "0xe0B39353F69b54e945364ffcdDD7901697Ca0166",
+          "address": "0x0AFdAcD509e73115EA1654B1a770f1a807e7c9C0",
           "abi": [
             {
               "inputs": [
