@@ -187,9 +187,11 @@ export function StepperFooter({
 
 export function Step({
   children,
+  className,
   nextButton,
 }: {
   children: ReactNode;
+  className?: string;
   nextButton?: ReactNode;
 }) {
   const { setDidScrollBottom } = useStepperContext();
@@ -208,7 +210,7 @@ export function Step({
 
   return (
     <div>
-      <div className="h-[75vh] overflow-auto">
+      <div className={clsx("h-[75vh] overflow-auto", className)}>
         <div className="px-6 pt-4 pb-1">
           {children}
           <Sentinel onVisibilityChange={setIsBottomVisible} />
@@ -236,12 +238,14 @@ interface FromStepProps<T extends FieldValues> {
   onSubmit?: FormProps<T>["onSubmit"];
   rhfMethods: FormProps<T>["rhfMethods"];
   children: ReactNode;
+  className?: string;
   submitButtonLabel?: string;
   requireScrolled?: boolean;
 }
 
 export function FormStep<T extends FieldValues>({
   children,
+  className,
   onSubmit,
   rhfMethods,
   submitButtonLabel,
@@ -290,6 +294,7 @@ export function FormStep<T extends FieldValues>({
       persistAfterSubmit
     >
       <Step
+        className={className}
         nextButton={
           <StepperButton
             direction="next"

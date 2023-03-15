@@ -103,7 +103,7 @@ function CallAmountStep({
     } as StepperDataType);
   };
   return (
-    <FormStep rhfMethods={rhfMethods} onSubmit={onSubmit}>
+    <FormStep className="max-h-96" rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <AssetInputBox
         asset={{
           name: "Withdrawable USDC",
@@ -166,7 +166,12 @@ function ReviewStep({
   };
 
   return (
-    <FormStep rhfMethods={useForm()} onSubmit={onSubmit} requireScrolled>
+    <FormStep
+      className="max-h-96"
+      rhfMethods={useForm()}
+      onSubmit={onSubmit}
+      requireScrolled
+    >
       <div className="mb-8 divide-y divide-sand-200 rounded-lg border border-sand-200 bg-white text-lg">
         <div className="flex items-center justify-between p-5">
           <div>Total USDC requested</div>
