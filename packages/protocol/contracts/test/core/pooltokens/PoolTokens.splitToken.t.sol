@@ -447,10 +447,10 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
       .getTokenInfo(tokenId);
     assertGt(backerRewardsTokenInfo.rewardsClaimed, 0);
 
-    // assertGt(
-    //   backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw,
-    //   0
-    // );
+    assertEq(
+      backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw,
+      0
+    );
 
     poolTokens.splitToken(tokenId, tokenInfo.principalAmount / 2);
     // Token no longer exists
