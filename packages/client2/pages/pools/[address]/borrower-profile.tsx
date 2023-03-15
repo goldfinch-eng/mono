@@ -210,9 +210,9 @@ function RepaymentStatusChip({
     <span
       className={clsx(
         "rounded-full border px-2 py-1 text-xs",
-        repaymentStatus === LoanRepaymentStatus.Default
+        repaymentStatus === LoanRepaymentStatus.Late
           ? "border-clay-200 bg-clay-100 text-clay-700"
-          : repaymentStatus === LoanRepaymentStatus.Late
+          : repaymentStatus === LoanRepaymentStatus.GracePeriod
           ? "border-mustard-200 bg-mustard-100 text-mustard-700"
           : repaymentStatus === LoanRepaymentStatus.Repaid
           ? "border-mint-300 bg-mint-200 text-mint-800"

@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { GetStaticPaths, GetStaticProps } from "next";
 import NextLink from "next/link";
 
+import { AdaptiveStickyContainer } from "@/components/adaptive-sticky-container";
 import {
   Button,
   Banner,
@@ -350,55 +351,51 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             </Button>
           </NextLink>
 
-          <div className="relative flex grow flex-col">
-            {/* This spacer exists to force the rest of the content to the bottom of the widget div. This allows sticky + bottom to work as intended */}
-            <div className="grow" />
-            <div className="sticky bottom-10">
-              <div
-                className={clsx(
-                  "divide-y divide-mustard-200 self-stretch rounded-3xl border [&>*]:p-5 [&>*]:lg:p-10",
-                  fundingStatus === LoanFundingStatus.Closed
-                    ? "border-sand-200 bg-white"
-                    : "border-transparent bg-mustard-100"
-                )}
-              >
-                {tranchedPool && seniorPool && fiatPerGfi ? (
-                  <>
-                    <LoanSummary
-                      loan={tranchedPool}
+          <AdaptiveStickyContainer>
+            <div
+              className={clsx(
+                "divide-y divide-mustard-200 self-stretch rounded-3xl border [&>*]:p-5 [&>*]:lg:p-10",
+                fundingStatus === LoanFundingStatus.Closed
+                  ? "border-sand-200 bg-white"
+                  : "border-transparent bg-mustard-100"
+              )}
+            >
+              {tranchedPool && seniorPool && fiatPerGfi ? (
+                <>
+                  <LoanSummary
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    borrower={borrower}
+                    seniorPoolEstimatedApyFromGfiRaw={
+                      seniorPool.estimatedApyFromGfiRaw
+                    }
+                    fiatPerGfi={fiatPerGfi}
+                  />
+                  {fundingStatus === LoanFundingStatus.Open ||
+                  fundingStatus === LoanFundingStatus.Cancelled ? (
+                    <InvestAndWithdrawTabs
+                      tranchedPool={tranchedPool}
+                      user={user}
                       deal={dealDetails}
-                      borrower={borrower}
-                      seniorPoolEstimatedApyFromGfiRaw={
-                        seniorPool.estimatedApyFromGfiRaw
-                      }
-                      fiatPerGfi={fiatPerGfi}
+                      poolTokens={user?.poolTokens ?? []}
                     />
-                    {fundingStatus === LoanFundingStatus.Open ||
-                    fundingStatus === LoanFundingStatus.Cancelled ? (
-                      <InvestAndWithdrawTabs
-                        tranchedPool={tranchedPool}
-                        user={user}
-                        deal={dealDetails}
-                        poolTokens={user?.poolTokens ?? []}
-                      />
-                    ) : fundingStatus === LoanFundingStatus.Closed &&
-                      user &&
-                      (user.poolTokens.length > 0 ||
-                        user.vaultedPoolTokens.length > 0) ? (
-                      <ClaimPanel
-                        poolTokens={user.poolTokens}
-                        vaultedPoolTokens={user.vaultedPoolTokens}
-                        fiatPerGfi={fiatPerGfi}
-                        loan={tranchedPool}
-                      />
-                    ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
-                      <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
+                  ) : fundingStatus === LoanFundingStatus.Closed &&
+                    user &&
+                    (user.poolTokens.length > 0 ||
+                      user.vaultedPoolTokens.length > 0) ? (
+                    <ClaimPanel
+                      poolTokens={user.poolTokens}
+                      vaultedPoolTokens={user.vaultedPoolTokens}
+                      fiatPerGfi={fiatPerGfi}
+                      loan={tranchedPool}
+                    />
+                  ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
+                    <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+                  ) : null}
+                </>
+              ) : null}
             </div>
-          </div>
+          </AdaptiveStickyContainer>
         </div>
       </div>
     </>

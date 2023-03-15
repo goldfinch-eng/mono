@@ -167,7 +167,7 @@ function ReviewStep({
 
   return (
     <FormStep rhfMethods={useForm()} onSubmit={onSubmit} requireScrolled>
-      <div className="divide-y divide-sand-200 rounded-lg border border-sand-200 bg-white text-lg">
+      <div className="mb-8 divide-y divide-sand-200 rounded-lg border border-sand-200 bg-white text-lg">
         <div className="flex items-center justify-between p-5">
           <div>Total USDC requested</div>
           <div>{formatCrypto(usdcToCall)}</div>
@@ -177,8 +177,18 @@ function ReviewStep({
           <div>{format(expectedRepaymentDate, "MMMM d, yyyy")}</div>
         </div>
       </div>
-      <Alert type="info">Lorem ipsum</Alert>
-      <div>Legalese goes here</div>
+      <Alert className="mb-6" type="info">
+        Lorem ipsum
+      </Alert>
+      <div className="text-xs text-sand-400">
+        Legalese goes here. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+        ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+        reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+        pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa
+        qui officia deserunt mollit anim id est laborum.
+      </div>
     </FormStep>
   );
 }

@@ -10,7 +10,7 @@ import { formatCrypto } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
 import { getFreshProvider, getProvider } from "@/lib/wallet";
 
-import { CallableLoan } from "../generated";
+import { CallableLoan, LoanDelinquency } from "../generated";
 
 export enum LoanPhase {
   Prefunding = "Prefunding",
@@ -202,29 +202,47 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
     return null;
   },
-  async isLate(callableLoan: CallableLoan): Promise<boolean> {
+  async delinquency(callableLoan: CallableLoan): Promise<LoanDelinquency> {
+    const secondsPerDay = 60 * 60 * 24;
     const provider = await getProvider();
     const callableLoanContract = await getContract({
-      name: "CallableLoan",
+      name: "TranchedPool",
       provider,
       useSigner: false,
       address: callableLoan.id,
     });
-
-    return callableLoanContract.isLate();
-  },
-  async isInDefault(callableLoan: CallableLoan): Promise<boolean> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
-      name: "CallableLoan",
+    const goldfinchConfigContract = await getContract({
+      name: "GoldfinchConfig",
+      address: await callableLoanContract.config(),
       provider,
       useSigner: false,
-      address: callableLoan.id,
     });
-    const termStartTime = await callableLoanContract.termStartTime();
-    const withinPrincipalGracePeriod =
-      await callableLoanContract.withinPrincipalGracePeriod();
-    return !termStartTime.isZero() && !withinPrincipalGracePeriod;
+    const creditLineContract = await getContract({
+      name: "CreditLine",
+      address: await callableLoanContract.creditLine(),
+      provider,
+    });
+    const [currentBlock, gracePeriodInDays, lastFullPaymentTime, isLate] =
+      await Promise.all([
+        provider.getBlock("latest"),
+        goldfinchConfigContract.getNumber(5),
+        creditLineContract.lastFullPaymentTime(),
+        creditLineContract.isLate(),
+      ]);
+    const gracePeriodInSeconds = gracePeriodInDays.toNumber() * secondsPerDay;
+    const oldestUnpaidDueTime = await creditLineContract.nextDueTimeAt(
+      lastFullPaymentTime
+    );
+    if (!isLate) {
+      return "CURRENT";
+    } else if (
+      currentBlock.timestamp <
+      oldestUnpaidDueTime.toNumber() + gracePeriodInSeconds
+    ) {
+      return "GRACE_PERIOD";
+    } else {
+      return "LATE";
+    }
   },
   async inLockupPeriod(callableLoan: CallableLoan): Promise<boolean> {
     const provider = await getProvider();

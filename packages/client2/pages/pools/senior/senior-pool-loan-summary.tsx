@@ -54,12 +54,12 @@ export function SeniorPoolLoanSummary({
           Goldfinch Senior Pool
         </h1>
         <div className="text-sm text-sand-500">
-          The Senior Pool is a ‘blind pool’ of capital that is diversified
-          across all Borrower Pools on the Goldfinch protocol. Liquidity
-          Providers (LPs) who provide capital into the Senior Pool are capital
-          providers in search of passive, diversified exposure across all
-          Borrower Pools. This capital is protected by junior (first-loss)
-          capital in each Borrower Pool.
+          The Senior Pool is a pool of capital that is diversified across all
+          Borrower Pools on the Goldfinch protocol. Liquidity Providers (LPs)
+          who provide capital into the Senior Pool are capital providers in
+          search of passive, diversified exposure across all Borrower Pools.
+          This capital is protected by junior (first-loss) capital in each
+          Borrower Pool.
         </div>
       </div>
       <div className="mb-6 flex justify-between gap-5">

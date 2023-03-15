@@ -3,6 +3,7 @@ import { BigNumber } from "ethers";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 import NextLink from "next/link";
 
+import { AdaptiveStickyContainer } from "@/components/adaptive-sticky-container";
 import {
   Banner,
   HelperText,
@@ -158,49 +159,46 @@ export default function SeniorPoolPage({
               Back to Open Deals
             </Button>
           </NextLink>
-          <div className="relative flex grow flex-col">
-            <div className="grow"></div>
-            <div className="sticky bottom-10">
-              <div className="divide-y divide-mustard-200 rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
-                <SeniorPoolLoanSummary
+          <AdaptiveStickyContainer>
+            <div className="divide-y divide-mustard-200 rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
+              <SeniorPoolLoanSummary
+                seniorPool={seniorPool}
+                fiatPerGfi={fiatPerGfi}
+              />
+
+              {seniorPool && fiatPerGfi ? (
+                <InvestAndWithdrawTabs
                   seniorPool={seniorPool}
+                  user={user}
+                  fiduBalance={
+                    data.viewer.fiduBalance ?? {
+                      token: "FIDU",
+                      amount: BigNumber.from(0),
+                    }
+                  }
+                  stakedPositions={data.seniorPoolStakedPositions}
+                  vaultedStakedPositions={data.vaultedStakedPositions.map(
+                    (vsp) => vsp.seniorPoolStakedPosition
+                  )}
+                  existingWithdrawalRequest={
+                    data.seniorPoolWithdrawalRequests[0]
+                  }
                   fiatPerGfi={fiatPerGfi}
                 />
+              ) : null}
 
-                {seniorPool && fiatPerGfi ? (
-                  <InvestAndWithdrawTabs
-                    seniorPool={seniorPool}
-                    user={user}
-                    fiduBalance={
-                      data.viewer.fiduBalance ?? {
-                        token: "FIDU",
-                        amount: BigNumber.from(0),
-                      }
-                    }
-                    stakedPositions={data.seniorPoolStakedPositions}
-                    vaultedStakedPositions={data.vaultedStakedPositions.map(
-                      (vsp) => vsp.seniorPoolStakedPosition
-                    )}
-                    existingWithdrawalRequest={
-                      data.seniorPoolWithdrawalRequests[0]
-                    }
-                    fiatPerGfi={fiatPerGfi}
-                  />
-                ) : null}
-
-                {data?.viewer.fiduBalance?.amount.gt(0) &&
-                seniorPool &&
-                fiatPerGfi ? (
-                  <UnstakedFiduBanner
-                    fiduBalance={data.viewer.fiduBalance}
-                    sharePrice={seniorPool.sharePrice}
-                    estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-                    fiatPerGfi={fiatPerGfi}
-                  />
-                ) : null}
-              </div>
+              {data?.viewer.fiduBalance?.amount.gt(0) &&
+              seniorPool &&
+              fiatPerGfi ? (
+                <UnstakedFiduBanner
+                  fiduBalance={data.viewer.fiduBalance}
+                  sharePrice={seniorPool.sharePrice}
+                  estimatedApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
+                  fiatPerGfi={fiatPerGfi}
+                />
+              ) : null}
             </div>
-          </div>
+          </AdaptiveStickyContainer>
         </div>
         <div style={{ gridArea: "info" }}>
           {error ? (

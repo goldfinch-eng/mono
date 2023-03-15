@@ -84,7 +84,7 @@ export function Popover({
             {...getFloatingProps({
               ref: floating,
               style: {
-                zIndex: 10,
+                zIndex: 999,
                 position: strategy,
                 top: y ?? "",
                 left: x ?? "",

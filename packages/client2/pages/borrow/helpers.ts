@@ -11,6 +11,13 @@ gql`
     interestAccruedAsOf
     interestOwed @client
     collectedPaymentBalance @client
+    interestAccruedAsOf
+    fundingLimit
+    principalAmount
+    drawdownsPaused
+    creditLine {
+      id
+    }
     juniorTranches {
       id
       principalSharePrice
@@ -32,6 +39,7 @@ gql`
     totalPrincipalPaid
     paymentFrequency
     lastFullPaymentTime
+    delinquency @client
     periodInterestDueAmount @client
     periodPrincipalDueAmount @client
     termTotalDueAmount @client
@@ -53,7 +61,7 @@ gql`
     principalAmount
     fundingLimit
     creditLineAddress
-    isLate @client
+    delinquency @client
     isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields
     ...CallableLoanBorrowerAccountingFields
@@ -349,15 +357,16 @@ export function getCreditLineAccountingAnalyisValues(
     __typename,
     principalAmount,
     fundingLimit,
-    isLate,
     interestRateBigInt,
     nextDueTime,
     balance,
     termEndTime,
+    delinquency,
   } = loan;
 
   // 'principalAmount' represents the limit once the pool has been locked.
   // Thus when still raising, we show the limit as the max funding limit of the pool
+  const isLate = delinquency !== "CURRENT"; // For the purpose of this calculation, "grace period" is the same as late
   const creditLineLimit = principalAmount.gt(0)
     ? principalAmount
     : fundingLimit;

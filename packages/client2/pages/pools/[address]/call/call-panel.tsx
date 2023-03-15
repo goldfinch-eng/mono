@@ -80,7 +80,7 @@ export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
             Submit call request
           </Button>
           {callableLoan.inLockupPeriod ? (
-            <div className="mt-1">
+            <div className="mt-1 text-sm text-sand-500">
               You may not call capital during the lockup period. Call requests
               become available after{" "}
               {formatDate(

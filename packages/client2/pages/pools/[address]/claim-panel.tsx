@@ -52,7 +52,7 @@ export const CLAIM_PANEL_LOAN_FIELDS = gql`
   fragment ClaimPanelLoanFields on Loan {
     __typename
     id
-    isLate @client
+    delinquency @client
     ... on CallableLoan {
       ...CallPanelCallableLoanFields
     }
@@ -76,7 +76,7 @@ export function ClaimPanel({
   fiatPerGfi,
   loan,
 }: ClaimPanelProps) {
-  const canClaimGfi = !loan.isLate;
+  const canClaimGfi = loan.delinquency === "CURRENT";
 
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
@@ -191,7 +191,7 @@ export function ClaimPanel({
           <div>Your current position value</div>
           <InfoIconTooltip content="The remaining principal on this position plus any accrued interest." />
         </div>
-        <div className="font-serif text-5xl font-semibold">
+        <div className="text-3xl font-semibold">
           {formatCrypto(positionValue)}
         </div>
       </div>

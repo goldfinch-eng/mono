@@ -29,8 +29,8 @@ const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
 export enum LoanRepaymentStatus {
   NotDrawnDown,
   Current,
+  GracePeriod,
   Late,
-  Default,
   Repaid,
 }
 
@@ -42,8 +42,7 @@ export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
     id
     balance
     termEndTime
-    isLate @client
-    isInDefault @client
+    delinquency @client
   }
 `;
 
@@ -54,10 +53,10 @@ export function getLoanRepaymentStatus(
     return LoanRepaymentStatus.Repaid;
   } else if (loan.balance.isZero()) {
     return LoanRepaymentStatus.NotDrawnDown;
-  } else if (loan.isInDefault) {
-    return LoanRepaymentStatus.Default;
-  } else if (loan.isLate) {
+  } else if (loan.delinquency === "LATE") {
     return LoanRepaymentStatus.Late;
+  } else if (loan.delinquency === "GRACE_PERIOD") {
+    return LoanRepaymentStatus.GracePeriod;
   } else {
     return LoanRepaymentStatus.Current;
   }
@@ -65,8 +64,8 @@ export function getLoanRepaymentStatus(
 
 const repaymentStatusLabels: Record<LoanRepaymentStatus, string> = {
   [LoanRepaymentStatus.Current]: "On Time",
-  [LoanRepaymentStatus.Late]: "Grace Period",
-  [LoanRepaymentStatus.Default]: "Default",
+  [LoanRepaymentStatus.GracePeriod]: "Grace Period",
+  [LoanRepaymentStatus.Late]: "Late",
   [LoanRepaymentStatus.Repaid]: "Fully Repaid",
   [LoanRepaymentStatus.NotDrawnDown]: "Not Drawn Down",
 };
