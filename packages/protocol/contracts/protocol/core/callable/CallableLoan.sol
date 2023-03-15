@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity 0.8.18;
 
 // solhint-disable-next-line max-line-length
 import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
@@ -392,7 +392,7 @@ contract CallableLoan is
   ================================================================================*/
 
   /// @inheritdoc ILoan
-  function getLoanType() external view override returns (LoanType) {
+  function getLoanType() external pure override returns (LoanType) {
     return LoanType.CallableLoan;
   }
 
@@ -904,26 +904,26 @@ contract CallableLoan is
 
   /// Unsupported in callable loans.
   function pay(
-    uint256 principalPayment,
-    uint256 interestPayment
-  ) external override(ICreditLine) nonReentrant whenNotPaused returns (PaymentAllocation memory) {
+    uint256,
+    uint256
+  ) external pure override(ICreditLine) returns (PaymentAllocation memory) {
     revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
-  function maxLimit() external view override returns (uint256) {
+  function maxLimit() external pure override returns (uint256) {
     revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
 
-  function setMaxLimit(uint256 newAmount) external override {
+  function setMaxLimit(uint256) external pure override {
     revert UnsupportedOperation();
   }
 
   /// Unsupported ICreditLine method kept for ICreditLine conformance
 
-  function setLimit(uint256 newAmount) external override {
+  function setLimit(uint256) external pure override {
     revert UnsupportedOperation();
   }
 

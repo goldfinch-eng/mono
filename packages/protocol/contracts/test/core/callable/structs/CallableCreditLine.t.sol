@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity 0.8.18;
 
 import "forge-std/Test.sol";
 // solhint-disable-next-line max-line-length
@@ -10,6 +10,8 @@ import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "../../../..
 import {PaymentSchedule, PaymentScheduleLogic} from "../../../../protocol/core/schedule/PaymentSchedule.sol";
 import {CallableLoanConfigHelper} from "../../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {IMonthlyScheduleRepo} from "../../../../interfaces/IMonthlyScheduleRepo.sol";
+import {ICallableLoanErrors} from "../../../../interfaces/ICallableLoanErrors.sol";
+import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
@@ -72,7 +74,7 @@ contract TestCallableCreditLine is BaseTest {
       _lateAdditionalApr: DEFAULT_LATE_ADDITIONAL_APR,
       _limit: DEFAULT_LIMIT
     });
-    CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
+    CallableCreditLine storage cpcl = staleCreditLine._cl;
     assertEq(address(cpcl._config), address(config));
     assertEq(address(cpcl._paymentSchedule.schedule), address(schedule));
     assertEq(cpcl.interestApr(), DEFAULT_APR);
@@ -80,18 +82,44 @@ contract TestCallableCreditLine is BaseTest {
     assertEq(cpcl.limit(), DEFAULT_LIMIT);
   }
 
+  function testCheckpointAndThereforeDepositFailsBeforeFundableAt(
+    uint128 depositAmount,
+    uint256 warpTime
+  ) public {
+    setupDefaultWithLimit(depositAmount);
+    warpTime = bound(warpTime, 0, staleCreditLine._cl._fundableAt - 1);
+
+    vm.warp(warpTime);
+    vm.expectRevert(bytes("NA"));
+    staleCreditLine.checkpoint();
+
+    // Unsafe get to get around checkpoint requirement for test.
+    CallableCreditLine storage cpcl = staleCreditLine._cl;
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InvalidLoanPhase.selector,
+        LoanPhase.Prefunding,
+        LoanPhase.Funding
+      )
+    );
+    cpcl.deposit(depositAmount);
+  }
+
   function testDeposit(uint128 depositAmount) public {
     setupDefaultWithLimit(depositAmount);
+    vm.warp(staleCreditLine._cl._fundableAt);
     CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
     assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
     assertEq(cpcl.totalPrincipalPaid(), depositAmount);
     assertEq(cpcl.totalPrincipalOutstanding(), 0);
-    assertEq(cpcl.interestOwed(), 0);
+    assertEq(staleCreditLine.totalInterestAccrued(), 0);
+    assertEq(staleCreditLine.interestOwed(), 0);
   }
 
   function testDrawdown(uint128 depositAmount, uint128 drawdownAmount) public {
     setupDefaultWithLimit(depositAmount);
+    vm.warp(staleCreditLine._cl._fundableAt);
     drawdownAmount = boundUint128(drawdownAmount, 0, depositAmount);
     CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(depositAmount);
@@ -137,9 +165,9 @@ contract TestCallableCreditLine is BaseTest {
     vm.warp(cpcl.termStartTime() + config.getDrawdownPeriodInSeconds() + 1);
     cpcl.submitCall(calledAmount);
 
-    // assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
-    // assertEq(cpcl.totalPrincipalPaid(), 0);
-    // assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
+    assertEq(cpcl.totalPrincipalDeposited(), depositAmount);
+    assertEq(cpcl.totalPrincipalPaid(), 0);
+    assertEq(cpcl.totalPrincipalOutstanding(), depositAmount);
 
     // assertEq(cpcl.totalInterestAccrued(), 0);
     // assertEq(cpcl.interestOwed(), 0);
@@ -197,6 +225,7 @@ contract TestCallableCreditLine is BaseTest {
 
   function setupFullyFundedAndDrawndown(uint128 limit) public {
     setupDefaultWithLimit(limit);
+    vm.warp(staleCreditLine._cl._fundableAt);
     CallableCreditLine storage cpcl = staleCreditLine.checkpoint();
     cpcl.deposit(uint256(limit));
     cpcl.drawdown(uint256(limit));

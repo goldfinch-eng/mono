@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity 0.8.18;
 
 // import {console2 as console} from "forge-std/console2.sol";
 
@@ -92,6 +92,7 @@ library CallableCreditLineLogic {
     cl._config = _config;
     cl._limit = _limit;
     cl._numLockupPeriods = _numLockupPeriods;
+    cl._fundableAt = _fundableAt;
     // Keep PaymentSchedule's startTime "0" until it is set at first drawdown (schedule start).
     cl._paymentSchedule = PaymentSchedule({schedule: _schedule, startTime: 0});
     cl._waterfall.initialize(_schedule.totalPrincipalPeriods());
@@ -136,6 +137,7 @@ library CallableCreditLineLogic {
     if (_loanPhase == LoanPhase.Funding) {
       cl._paymentSchedule.startAt(block.timestamp);
       cl._lastFullPaymentTime = block.timestamp;
+      cl._checkpointedAsOf = block.timestamp;
       _loanPhase = cl.loanPhase();
       emit DepositsLocked(address(this));
     }

@@ -60,6 +60,11 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
   ICallableLoan.UncalledCapitalInfo uncalledCapitalInfo;
   ICallableLoan.CallRequestPeriod callRequestPeriod;
 
+  /// Submit 1 call after the drawdown period.
+  /// Make a repayment after the first call submission.
+  /// Submit a second call after the repayment.
+  /// Warp to an invalid call submission time (lockup period). Assert a third call cannot be submitted.
+  /// Assert correct application of payment to principal and interest after the payment due date passes.
   function testCallableScenario1(
     uint256 depositAmount1,
     uint256 depositAmount2,
@@ -78,7 +83,7 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     totalDeposits = depositAmount1 + depositAmount2 + depositAmount3;
 
     drawdownAmount = bound(drawdownAmount, 1, totalDeposits);
-    (CallableLoan callableLoan, ) = callableLoanWithLimit(totalDeposits);
+    (callableLoan, ) = callableLoanWithLimit(totalDeposits);
 
     vm.assume(fuzzHelper.isAllowed(user1));
     vm.assume(fuzzHelper.isAllowed(user2));
