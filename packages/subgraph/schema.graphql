@@ -129,6 +129,16 @@ enum UidType {
   NON_US_ENTITY
 }
 
+enum RepaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  HALFLY
+  ANNUALLY
+}
+
 interface Loan {
   id: ID!
   address: Bytes!
@@ -164,6 +174,7 @@ interface Loan {
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
   borrowerContract: BorrowerContract!
+  repaymentFrequency: RepaymentFrequency!
 }
 
 type TranchedPool implements Loan @entity {
@@ -204,6 +215,7 @@ type TranchedPool implements Loan @entity {
   lateFeeRate: BigDecimal!
   interestAccruedAsOf: BigInt!
   borrowerContract: BorrowerContract!
+  repaymentFrequency: RepaymentFrequency!
 
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigDecimal
@@ -548,6 +560,7 @@ type CallableLoan implements Loan @entity {
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
   borrowerContract: BorrowerContract!
+  repaymentFrequency: RepaymentFrequency!
 
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!

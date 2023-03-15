@@ -17,6 +17,7 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
+  RepaymentFrequency,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
@@ -561,3 +562,19 @@ export type RepaymentSchedule = {
   principal: BigNumber;
   interest: BigNumber;
 }[];
+
+const repaymentFrequencyLabels: Record<RepaymentFrequency, string> = {
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Biweekly",
+  MONTHLY: "Monthly",
+  QUARTERLY: "Quarterly",
+  HALFLY: "Halfly",
+  ANNUALLY: "Annually",
+};
+
+export function getRepaymentFrequencyLabel(
+  repaymentFrequency: RepaymentFrequency
+): string {
+  return repaymentFrequencyLabels[repaymentFrequency];
+}
