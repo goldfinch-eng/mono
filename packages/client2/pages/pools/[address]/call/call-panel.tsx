@@ -15,7 +15,7 @@ gql`
   fragment CallPanelPoolTokenFields on PoolToken {
     id
     principalAmount
-    principalRedeemable
+    principalRedeemable @client
     principalRedeemed
     calledAt
     callDueAt

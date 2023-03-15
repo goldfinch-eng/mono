@@ -180,3 +180,7 @@ extend type SeniorPoolWithdrawalRequest {
   """
   previewFiduRequested: BigInt!
 }
+
+extend type PoolToken {
+  principalRedeemable: BigInt!
+}

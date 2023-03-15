@@ -439,7 +439,6 @@ export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
     const availableToWithdrawResult = tranchedPoolContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
     if (!availableToWithdrawResult.reverted) {
       poolToken.interestRedeemable = availableToWithdrawResult.value.value0
-      poolToken.principalRedeemable = availableToWithdrawResult.value.value1
     } else {
       log.warning("availableToWithdraw reverted for pool token {} on TranchedPool {}", [poolToken.id, tranchedPool.id])
     }

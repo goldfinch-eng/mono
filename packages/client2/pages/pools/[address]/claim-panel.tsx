@@ -27,13 +27,16 @@ export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment ClaimPanelPoolTokenFields on PoolToken {
     id
     principalAmount
-    principalRedeemable
+    principalRedeemable @client
     principalRedeemed
     interestRedeemable
     rewardsClaimable
     rewardsClaimed
     stakingRewardsClaimable
     stakingRewardsClaimed
+    loan {
+      id
+    }
     ...CallPanelPoolTokenFields
   }
 `;

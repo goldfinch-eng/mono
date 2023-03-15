@@ -249,9 +249,7 @@ type PoolToken @entity {
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
-  interestRedeemable: BigInt!
-  principalRedeemable: BigInt!
-
+  interestRedeemable: BigInt! # You may be wondering why principalRedeemable isn't also here. It's because when an early principal repayment happens on Callable Loans, that principal doesn't become withdrawable until the end of the principal period, and this is sadly not event driven behaviour.
   rewardsClaimable: BigInt!
   rewardsClaimed: BigInt!
 
