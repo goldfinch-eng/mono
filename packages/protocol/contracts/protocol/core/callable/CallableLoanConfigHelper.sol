@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.17;
 
 import {ConfigOptions} from "../ConfigOptions.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";

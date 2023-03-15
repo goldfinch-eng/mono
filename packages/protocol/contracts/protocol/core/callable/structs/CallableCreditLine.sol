@@ -196,10 +196,9 @@ library CallableCreditLineLogic {
   }
 
   /// Withdraws funds from the specified tranche.
-  function withdraw(CallableCreditLine storage cl, uint256 trancheId, uint256 amount) internal {
-    LoanPhase _loanPhase = cl.loanPhase();
-    if (_loanPhase != LoanPhase.Funding) {
-      revert ICallableLoanErrors.InvalidLoanPhase(_loanPhase, LoanPhase.Funding);
+  function withdraw(CallableCreditLine storage cl, uint256 amount) internal {
+    if (cl.loanPhase() != LoanPhase.Funding) {
+      revert ICallableLoanErrors.InvalidLoanPhase(cl.loanPhase(), LoanPhase.Funding);
     }
     cl._waterfall.withdraw(amount);
   }
@@ -684,18 +683,6 @@ library PreviewCallableCreditLineLogic {
 /// @notice Functions which assume a checkpoint has just occurred.
 library CheckpointedCallableCreditLineLogic {
   using SaturatingSub for uint256;
-
-  // Currently unused
-  // function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
-  //   assert(cl._checkpointedAsOf == block.timestamp);
-  //   return cl._totalInterestOwedAtLastCheckpoint;
-  // }
-
-  // Currently unused
-  // function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
-  //   assert(cl._checkpointedAsOf == block.timestamp);
-  //   return cl._totalInterestAccruedAtLastCheckpoint;
-  // }
 
   function proportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,

@@ -643,7 +643,7 @@ contract CallableLoan is
       } else if (loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
-        cl.withdraw(tokenInfo.tranche, principalToRedeem);
+        cl.withdraw(principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
       } else {
         revert CannotWithdrawInDrawdownPeriod();
