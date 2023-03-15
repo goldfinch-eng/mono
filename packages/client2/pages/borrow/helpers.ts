@@ -37,7 +37,6 @@ gql`
     id
     totalDeposited
     totalPrincipalPaid
-    paymentFrequency
     lastFullPaymentTime
     delinquency @client
     periodInterestDueAmount @client
@@ -61,6 +60,7 @@ gql`
     principalAmount
     fundingLimit
     creditLineAddress
+    paymentFrequency
     delinquency @client
     isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields

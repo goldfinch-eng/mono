@@ -18,7 +18,7 @@ import {
 } from "../../entities/protocol"
 import {getOrInitUser} from "../../entities/user"
 import {
-  estimateCallableLoanPaymentFrequency,
+  estimateLoanPaymentFrequency,
   deleteCallableLoanRepaymentSchedule,
   generateRepaymentScheduleForCallableLoan,
   updatePoolTokensRedeemable,
@@ -75,7 +75,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
-  callableLoan.paymentFrequency = estimateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
+  callableLoan.paymentFrequency = estimateLoanPaymentFrequency(schedulingResult.repaymentIds)
   callableLoan.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)

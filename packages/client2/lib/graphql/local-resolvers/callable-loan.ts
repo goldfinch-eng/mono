@@ -19,8 +19,12 @@ export enum LoanPhase {
   InProgress = "InProgress",
 }
 
-const getEndOfNextDayTimestamp = (timestamp: number) => {
-  const nextDay = addDays(fromUnixTime(timestamp), 1);
+/**
+ * Returns the Unix timestamp for the end of the next day after given timestamp.
+ *
+ */
+const getEndOfNextDayTimestamp = (currentTimestamp: number): number => {
+  const nextDay = addDays(fromUnixTime(currentTimestamp), 1);
   const endOfNextDay = endOfDay(nextDay);
 
   return getUnixTime(endOfNextDay);
@@ -46,14 +50,9 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 
   const isLate = await callableLoanContract.isLate();
 
-  // We are EARLY - the borrower will pre-pay interest + principal that would be due at the end of the month
+  // Scenario 1: We are EARLY - the borrower will pre-pay interest + principal that would be due at the end of the month
   if (!isLate) {
-    const lastFullPaymentTime =
-      await callableLoanContract.lastFullPaymentTime();
-    const nextDueTime = await callableLoanContract.nextDueTimeAt(
-      lastFullPaymentTime
-    );
-
+    const nextDueTime = await callableLoanContract.nextDueTime();
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwedAt(nextDueTime),
       callableLoanContract.principalOwedAt(nextDueTime),
@@ -71,7 +70,7 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
     "latest"
   );
   const isPastTermEndTime = currentTimestamp > termEndTime.toNumber();
-  // We are LATE and BEFORE termEndTime - the borrower owes interest only from the periods they missed. They will owe interest accrued on future payments
+  // Scenario 2: We are LATE and BEFORE termEndTime - the borrower owes interest + principal from the periods they missed
   if (!isPastTermEndTime) {
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwed(),
@@ -84,8 +83,8 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
     };
   }
 
-  // We are LATE and AFTER termEndTime - the borrower owes interest from the periods they missed + the interest that is actively accuring per second
-  // Add a buffer of the end of the next day to the calculated interest owed since interest is accrured per second
+  // Scenario 3: We are LATE and AFTER termEndTime - the borrower owes interest + principal from the periods they missed AND the interest that is actively accuring per second
+  // Note: We add a buffer of the end of the next day to the calculated interest owed since interest is accrued per second
   const endOfNextDayTimestamp = getEndOfNextDayTimestamp(currentTimestamp);
   const [interestOwed, principalOwed] = await Promise.all([
     // "interestOwedAt" will consider accruing interest when we're past "termEndTime"
@@ -106,10 +105,11 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 };
 
 const getLoanTermDueAmount = async (callableLoanId: string) => {
-  const provider = await getFreshProvider();
+  // TODO: Zadra remove - using for local testing
+  const uncachedProvider = getFreshProvider();
   const callableLoanContract = await getContract({
     name: "CallableLoan",
-    provider,
+    provider: uncachedProvider,
     useSigner: false,
     address: callableLoanId,
   });
@@ -120,18 +120,15 @@ const getLoanTermDueAmount = async (callableLoanId: string) => {
     return BigNumber.from(0);
   }
 
-  // TODO: Zadra remove - using for local testing
-  const uncachedProvider = getFreshProvider();
   const { timestamp: currentTimestamp } = await uncachedProvider.getBlock(
     "latest"
   );
-
   const currentNextDueTime = await callableLoanContract.nextDueTimeAt(
     currentTimestamp
   );
   const isLastPeriod = currentNextDueTime.toNumber() === termEndTime.toNumber();
 
-  // If we're not on the last period, then the total amount owed for the loan is the sum of:
+  // If we're NOT on the last period, then the total amount owed for the loan is the sum of:
   // - The total outstanding principal owed on the loan
   // - The total outstanding interest owed on the loan
   // - The total interest owed up to the next period due time (for callable loans only - not BPI)

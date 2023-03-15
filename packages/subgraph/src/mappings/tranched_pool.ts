@@ -37,6 +37,7 @@ import {
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 import {getAddressFromConfig} from "../utils"
+import {estimateLoanPaymentFrequency} from "./callable_loan/helpers"
 import {handleCreditLineBalanceChanged} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
@@ -129,6 +130,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolTokensRedeemable(tranchedPool)
   deleteTranchedPoolRepaymentSchedule(tranchedPool)
   const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.paymentFrequency = estimateLoanPaymentFrequency(schedulingResult.repaymentIds)
   tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
   tranchedPool.numRepayments = schedulingResult.repaymentIds.length
   tranchedPool.termInSeconds = schedulingResult.termInSeconds

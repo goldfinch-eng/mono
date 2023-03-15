@@ -10,6 +10,7 @@ export const REPAYMENT_TERMS_STATS_FIELDS = gql`
     termInSeconds
     termStartTime
     termEndTime
+    paymentFrequency
     repaymentSchedule(first: 1) {
       id
       estimatedPaymentDate
@@ -43,7 +44,7 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       <Stat
         label="Payment frequency"
         tooltip="The frequency of interest payments."
-        value="Monthly" // TODO don't hardcode this, find a way to express it
+        value={loan.paymentFrequency}
       />
       <Stat
         label="Total payments"

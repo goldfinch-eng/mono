@@ -62,7 +62,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
-  callableLoan.paymentFrequency = estimateCallableLoanPaymentFrequency(schedulingResult.repaymentIds)
+  callableLoan.paymentFrequency = estimateLoanPaymentFrequency(schedulingResult.repaymentIds)
 
   return callableLoan
 }
@@ -183,7 +183,7 @@ export function updatePoolTokensRedeemable(callableLoan: CallableLoan): void {
   }
 }
 
-export function estimateCallableLoanPaymentFrequency(repaymentSchedule: string[]): string {
+export function estimateLoanPaymentFrequency(repaymentSchedule: string[]): string {
   if (repaymentSchedule.length < 2) {
     return "Unknown"
   }
