@@ -565,7 +565,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     usdc.approve(address(tp), cl.interestOwed());
     tp.pay(cl.interestOwed());
 
-    // assertGt(backerRewards.poolTokenClaimableRewards(tokenId), 0);
+    assertGt(backerRewards.poolTokenClaimableRewards(tokenId), 0);
     backerRewards.withdraw(tokenId);
     assertZero(backerRewards.poolTokenClaimableRewards(tokenId));
 
