@@ -1,11 +1,14 @@
+/* eslint-disable no-console */
 import { Resolvers } from "@apollo/client";
+import { addDays, endOfDay, fromUnixTime, getUnixTime } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { roundUpUsdcPenny } from "@/lib/format";
+import { formatCrypto } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
-import { getProvider } from "@/lib/wallet";
+import { getFreshProvider, getProvider } from "@/lib/wallet";
 
 import { CallableLoan } from "../generated";
 
@@ -16,7 +19,14 @@ export enum LoanPhase {
   InProgress = "InProgress",
 }
 
-const loanDueAmount = async (callableLoanId: string) => {
+const getEndOfNextDayTimestamp = (timestamp: number) => {
+  const nextDay = addDays(fromUnixTime(timestamp), 1);
+  const endOfNextDay = endOfDay(nextDay);
+
+  return getUnixTime(endOfNextDay);
+};
+
+const getLoanPeriodDueAmount = async (callableLoanId: string) => {
   const provider = await getProvider();
   const callableLoanContract = await getContract({
     name: "CallableLoan",
@@ -35,38 +45,130 @@ const loanDueAmount = async (callableLoanId: string) => {
   }
 
   const isLate = await callableLoanContract.isLate();
-  if (isLate) {
-    // Should a user be paying the interest accrued over the current period when they're late?
-    // Or should they just be paying the interest + principal they would have owed for the periods they missed?
+
+  // We are EARLY - the borrower will pre-pay interest + principal that would be due at the end of the month
+  if (!isLate) {
+    const lastFullPaymentTime =
+      await callableLoanContract.lastFullPaymentTime();
+    const nextDueTime = await callableLoanContract.nextDueTimeAt(
+      lastFullPaymentTime
+    );
+
+    const [interestOwed, principalOwed] = await Promise.all([
+      callableLoanContract.interestOwedAt(nextDueTime),
+      callableLoanContract.principalOwedAt(nextDueTime),
+    ]);
+
+    return {
+      interestOwed,
+      principalOwed,
+    };
+  }
+
+  // TODO: Zadra remove - using for local testing
+  const uncachedProvider = getFreshProvider();
+  const { timestamp: currentTimestamp } = await uncachedProvider.getBlock(
+    "latest"
+  );
+  const isPastTermEndTime = currentTimestamp > termEndTime.toNumber();
+  // We are LATE and BEFORE termEndTime - the borrower owes interest only from the periods they missed. They will owe interest accrued on future payments
+  if (!isPastTermEndTime) {
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwed(),
       callableLoanContract.principalOwed(),
     ]);
 
     return {
-      // STILL getting dust issues on atomic amounts of USDC even when value comes from smart contract
-      interestOwed: interestOwed.isZero()
-        ? interestOwed
-        : roundUpUsdcPenny(interestOwed),
+      interestOwed,
       principalOwed,
     };
   }
 
-  const lastFullPaymentTime = await callableLoanContract.lastFullPaymentTime();
-  const owedAtTimestamp = await callableLoanContract.nextDueTimeAt(
-    lastFullPaymentTime
-  );
+  // We are LATE and AFTER termEndTime - the borrower owes interest from the periods they missed + the interest that is actively accuring per second
+  // Add a buffer of the end of the next day to the calculated interest owed since interest is accrured per second
+  const endOfNextDayTimestamp = getEndOfNextDayTimestamp(currentTimestamp);
   const [interestOwed, principalOwed] = await Promise.all([
-    callableLoanContract.interestOwedAt(owedAtTimestamp),
-    callableLoanContract.principalOwedAt(owedAtTimestamp),
+    // "interestOwedAt" will consider accruing interest when we're past "termEndTime"
+    callableLoanContract.interestOwedAt(endOfNextDayTimestamp),
+    callableLoanContract.principalOwedAt(endOfNextDayTimestamp),
   ]);
 
+  console.log({
+    endOfNextDayTimestamp,
+    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
+    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
+  });
+
   return {
-    interestOwed: interestOwed.isZero()
-      ? interestOwed
-      : roundUpUsdcPenny(interestOwed),
+    interestOwed,
     principalOwed,
   };
+};
+
+const getLoanTermDueAmount = async (callableLoanId: string) => {
+  const provider = await getFreshProvider();
+  const callableLoanContract = await getContract({
+    name: "CallableLoan",
+    provider,
+    useSigner: false,
+    address: callableLoanId,
+  });
+
+  // Loan has not started
+  const termEndTime = await callableLoanContract.termEndTime();
+  if (termEndTime.eq(0)) {
+    return BigNumber.from(0);
+  }
+
+  // TODO: Zadra remove - using for local testing
+  const uncachedProvider = getFreshProvider();
+  const { timestamp: currentTimestamp } = await uncachedProvider.getBlock(
+    "latest"
+  );
+
+  const currentNextDueTime = await callableLoanContract.nextDueTimeAt(
+    currentTimestamp
+  );
+  const isLastPeriod = currentNextDueTime.toNumber() === termEndTime.toNumber();
+
+  // If we're not on the last period, then the total amount owed for the loan is the sum of:
+  // - The total outstanding principal owed on the loan
+  // - The total outstanding interest owed on the loan
+  // - The total interest owed up to the next period due time (for callable loans only - not BPI)
+  if (!isLastPeriod) {
+    const nextPrincipalDueTime =
+      await callableLoanContract.nextPrincipalDueTime();
+
+    const [interestOwed, principalOwed] = await Promise.all([
+      callableLoanContract.interestOwedAt(nextPrincipalDueTime),
+      callableLoanContract.principalOwedAt(termEndTime),
+    ]);
+
+    console.log({
+      isLastPeriod,
+      nextPrincipalDueTime: formatDate(
+        nextPrincipalDueTime.toNumber() * 1000,
+        "MMM d"
+      ),
+      interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
+      principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
+    });
+
+    return interestOwed.add(principalOwed);
+  }
+
+  // If we're on the last period, then the total amount owed for the loan is simply the period due amount
+  const { interestOwed, principalOwed } = await getLoanPeriodDueAmount(
+    callableLoanId
+  );
+
+  console.log({
+    isLastPeriod,
+    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
+    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
+  });
+
+  return interestOwed.add(principalOwed);
 };
 
 export const callableLoanResolvers: Resolvers[string] = {
@@ -175,14 +277,17 @@ export const callableLoanResolvers: Resolvers[string] = {
   async periodInterestDueAmount(
     callableLoan: CallableLoan
   ): Promise<BigNumber> {
-    const { interestOwed } = await loanDueAmount(callableLoan.id);
+    const { interestOwed } = await getLoanPeriodDueAmount(callableLoan.id);
     return interestOwed;
   },
   async periodPrincipalDueAmount(
     callableLoan: CallableLoan
   ): Promise<BigNumber> {
-    const { principalOwed } = await loanDueAmount(callableLoan.id);
+    const { principalOwed } = await getLoanPeriodDueAmount(callableLoan.id);
     return principalOwed;
+  },
+  async termTotalDueAmount(callableLoan: CallableLoan): Promise<BigNumber> {
+    return getLoanTermDueAmount(callableLoan.id);
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
     const provider = await getProvider();

@@ -34,6 +34,7 @@ gql`
     lastFullPaymentTime
     periodInterestDueAmount @client
     periodPrincipalDueAmount @client
+    termTotalDueAmount @client
     nextDueTime @client
     loanPhase @client
   }
@@ -386,9 +387,7 @@ export function getCreditLineAccountingAnalyisValues(
 
   const remainingTotalDueAmount =
     __typename === "CallableLoan"
-      ? loan.periodInterestDueAmount
-          .add(loan.periodPrincipalDueAmount)
-          .add(loan.balance)
+      ? loan.termTotalDueAmount
       : calculateRemainingTotalDueAmount({
           collectedPaymentBalance: loan.collectedPaymentBalance,
           balance,
