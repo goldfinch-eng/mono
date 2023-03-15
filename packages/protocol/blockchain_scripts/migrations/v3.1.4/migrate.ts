@@ -3,14 +3,14 @@ import {ContractDeployer, ContractUpgrader} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
-  console.log("Starting v3.1.3 deploy")
+  console.log("Starting v3.1.4 deploy")
 
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
 
   const deployEffects = await getDeployEffects({
     title: "v3.1.4 upgrade",
-    description: "TODO",
+    description: "https://github.com/warbler-labs/mono/pull/1509",
   })
 
   const upgradedContracts = await upgrader.upgrade({
