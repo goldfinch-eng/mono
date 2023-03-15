@@ -196,11 +196,11 @@ export function ClaimPanel({
         </div>
       </div>
       <div className="mb-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-1 flex items-center justify-between gap-2">
           <div>Available to claim</div>
           <InfoIconTooltip content="The combined dollar value of claimable principal, interest, and GFI rewards on this position." />
         </div>
-        <div className="font-serif text-3xl">
+        <div className="text-3xl">
           {formatCrypto({
             token: "USDC",
             amount: claimableUsdc.amount.add(claimableGfiAsUsdc.amount),
