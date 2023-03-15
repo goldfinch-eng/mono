@@ -57,6 +57,9 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
 
+  callableLoan.principalAmountRepaid = BigInt.zero()
+  callableLoan.interestAmountRepaid = BigInt.zero()
+
   return callableLoan
 }
 

@@ -151,6 +151,8 @@ interface Loan {
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
 
   # "Credit line" fields
   balance: BigInt!
@@ -185,6 +187,8 @@ type TranchedPool implements Loan @entity {
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
   """
   A null value indicates there have been no senior pool contributions to the pool yet
   """
@@ -220,9 +224,6 @@ type TranchedPool implements Loan @entity {
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
-
-  principalAmountRepaid: BigInt!
-  interestAmountRepaid: BigInt!
 }
 
 """
@@ -550,6 +551,8 @@ type CallableLoan implements Loan @entity {
 
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
 }
 
 type ScheduledRepayment @entity {

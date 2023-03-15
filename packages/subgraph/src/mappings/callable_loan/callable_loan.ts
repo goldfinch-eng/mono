@@ -78,6 +78,8 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   const callableLoan = getCallableLoan(event.address)
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after a repayment is made (principal or interest can increase)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
+  callableLoan.principalAmountRepaid = callableLoan.principalAmountRepaid.plus(event.params.principal)
+  callableLoan.interestAmountRepaid = callableLoan.interestAmountRepaid.plus(event.params.interest)
   callableLoan.save()
 
   updateTotalPrincipalCollected(event.params.principal)
