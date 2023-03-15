@@ -17,10 +17,9 @@ export const signAgreement = genRequestHandler({
     }
     const fullName = (req.body.fullName || "").trim()
     const email = (req.body.email || "").trim()
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
 
-    const regExpEmailValidator = new RegExp("/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}$/i")
-
-    if (!regExpEmailValidator.test(email)) {
+    if (!emailPattern.test(email)) {
       return res.status(403).send({error: "Invalid email address"})
     }
 

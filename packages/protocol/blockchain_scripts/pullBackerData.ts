@@ -100,17 +100,16 @@ async function main() {
       const key = `${tranchedPool.address.toLowerCase()}-${addr.toLowerCase()}`
       const agreement = await agreements.doc(key).get()
       const fullName = agreement.data()?.fullName
-      const email = agreement.data()?.email
 
       const users = getUsers(admin.firestore())
       const user = await users.doc(`${addr.toLowerCase()}`).get()
       const personaInquiryId = user.data()?.persona?.id
-      let emailFromPersona
+      let emailAddress
       if (personaInquiryId) {
         const response = await axios.get(`${PERSONA_BASE_URL}/inquiries/${personaInquiryId}`, {
           headers: PERSONA_HEADERS,
         })
-        emailFromPersona = response.data.data.attributes.emailAddress
+        emailAddress = response.data.data.attributes.emailAddress
       }
 
       return {
@@ -120,7 +119,7 @@ async function main() {
         secondsSinceEpoch: block.timestamp,
         timestamp: String(new Date(block.timestamp * 1000)),
         fullName: fullName,
-        emailAddress: email !== "" && email != null ? email : emailFromPersona,
+        emailAddress: emailAddress,
       }
     })
   )

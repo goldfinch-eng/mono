@@ -309,7 +309,7 @@ export function SupplyPanel({
             {...register("email", {
               required: "Required",
               pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}$/i,
+                value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
                 message: "invalid email address",
               },
             })}
