@@ -18,6 +18,10 @@ export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
+export const EMAIL_REGEX_VALIDATOR_EXPRESSION = new RegExp(
+  "/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}$/i"
+);
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,

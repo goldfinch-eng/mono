@@ -18,7 +18,11 @@ export const signAgreement = genRequestHandler({
     const fullName = (req.body.fullName || "").trim()
     const email = (req.body.email || "").trim()
 
-    // handle the format of the email
+    const regExpEmailValidator = new RegExp("/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}$/i")
+
+    if (!regExpEmailValidator.test(email)) {
+      return res.status(403).send({error: "Invalid email address"})
+    }
 
     if (pool === "" || fullName === "" || email === "") {
       return res.status(403).send({error: "Invalid name or pool or email"})

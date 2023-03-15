@@ -12,7 +12,11 @@ import {
   Input,
   Link,
 } from "@/components/design-system";
-import { TRANCHES, USDC_DECIMALS } from "@/constants";
+import {
+  TRANCHES,
+  USDC_DECIMALS,
+  EMAIL_REGEX_VALIDATOR_EXPRESSION,
+} from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -309,7 +313,7 @@ export function SupplyPanel({
             {...register("email", {
               required: "Required",
               pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                value: EMAIL_REGEX_VALIDATOR_EXPRESSION,
                 message: "invalid email address",
               },
             })}
