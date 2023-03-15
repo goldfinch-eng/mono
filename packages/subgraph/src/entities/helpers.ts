@@ -30,8 +30,8 @@ export function getTotalDeposited(
   let totalDeposited = new BigInt(0)
 
   for (let i = 0, k = juniorTranches.length; i < k; ++i) {
-    let jrTranche = juniorTranches[i]
-    let srTranche = seniorTranches[i]
+    const jrTranche = juniorTranches[i]
+    const srTranche = seniorTranches[i]
 
     if (!jrTranche || !srTranche) {
       throw new Error(`Missing tranche information for ${address.toHexString()}`)
@@ -85,15 +85,15 @@ export function isV1StyleDeal(address: Address): boolean {
   return false
 }
 
-export function getCreatedAtOverride(address: Address): BigInt | null {
+export function getCreatedAtOverride(address: Address): i32 {
   const poolMetadata = MAINNET_METADATA.get(address.toHexString())
   if (poolMetadata != null) {
     const createdAt = poolMetadata.toObject().get("createdAt")
     if (createdAt != null) {
-      return createdAt.toBigInt()
+      return createdAt.toBigInt().toI32()
     }
   }
-  return null
+  return 0
 }
 
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
@@ -123,21 +123,21 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
-  let seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
-  let juniorFraction = leverageRatio
+  const seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
+  const juniorFraction = leverageRatio
     ? ONE.toBigDecimal().div(ONE.toBigDecimal().plus(leverageRatio))
     : ZERO.toBigDecimal()
-  let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
-  let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
-  let reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
+  const interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
+  const juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
+  const reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
 
-  let grossSeniorInterest = balance.toBigDecimal().times(interestRateFraction).times(seniorFraction)
-  let grossJuniorInterest = balance.toBigDecimal().times(interestRateFraction).times(juniorFraction)
+  const grossSeniorInterest = balance.toBigDecimal().times(interestRateFraction).times(seniorFraction)
+  const grossJuniorInterest = balance.toBigDecimal().times(interestRateFraction).times(juniorFraction)
   const juniorFee = grossSeniorInterest.times(juniorFeeFraction)
 
   const juniorReserveFeeOwed = grossJuniorInterest.times(reserveFeeFraction)
-  let netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
-  let juniorTranche = balance.toBigDecimal().times(juniorFraction)
+  const netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
+  const juniorTranche = balance.toBigDecimal().times(juniorFraction)
   return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
 }
 

@@ -26,6 +26,7 @@ import {STAKING_REWARDS_ADDRESS} from "../../address-manifest"
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../../constants"
 import {createTransactionFromEvent, usdcWithFiduPrecision} from "../../entities/helpers"
 import {updateTotalWriteDowns} from "../../entities/protocol"
+import {getOrInitTranchedPool} from "../../entities/tranched_pool"
 import {getOrInitUser} from "../../entities/user"
 import {getOrInitSeniorPoolWithdrawalRoster} from "../../entities/withdrawal_roster"
 import {getAddressFromConfig} from "../../utils"
@@ -80,7 +81,8 @@ export function handleInterestCollected(event: InterestCollected): void {
 function handleInvestmentMadeInTranchedPool(
   seniorPoolAddress: Address,
   tranchedPoolAddress: Address,
-  investedAmount: BigInt
+  investedAmount: BigInt,
+  timestamp: BigInt
 ): void {
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
@@ -96,17 +98,36 @@ function handleInvestmentMadeInTranchedPool(
     updateEstimatedSeniorPoolApy(seniorPool)
   }
 
+  const tranchedPool = getOrInitTranchedPool(tranchedPoolAddress, timestamp)
+  if (tranchedPool.actualSeniorPoolInvestment === null) {
+    tranchedPool.actualSeniorPoolInvestment = investedAmount
+  } else {
+    const currentActualSeniorPoolInvestment = tranchedPool.actualSeniorPoolInvestment as BigInt
+    tranchedPool.actualSeniorPoolInvestment = currentActualSeniorPoolInvestment.plus(investedAmount)
+  }
+
+  tranchedPool.save()
   seniorPool.save()
 }
 
 // Handling this event seems confusing because InvestmentMadeInJunior is no longer emitted in our current codebase. But in the old pools (before tranched existed), the Senior Pool actually made junior investments.
 // seniorPool.tranchedPools would not be complete if this event was not processed.
 export function handleInvestmentMadeInJunior(event: InvestmentMadeInJunior): void {
-  handleInvestmentMadeInTranchedPool(event.address, event.params.tranchedPool, event.params.amount)
+  handleInvestmentMadeInTranchedPool(
+    event.address,
+    event.params.tranchedPool,
+    event.params.amount,
+    event.block.timestamp
+  )
 }
 
 export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): void {
-  handleInvestmentMadeInTranchedPool(event.address, event.params.tranchedPool, event.params.amount)
+  handleInvestmentMadeInTranchedPool(
+    event.address,
+    event.params.tranchedPool,
+    event.params.amount,
+    event.block.timestamp
+  )
 }
 
 export function handlePrincipalCollected(event: PrincipalCollected): void {

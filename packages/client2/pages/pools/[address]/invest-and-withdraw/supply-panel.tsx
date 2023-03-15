@@ -1,5 +1,5 @@
 import { useApolloClient, gql } from "@apollo/client";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -11,20 +11,19 @@ import {
   InfoIconTooltip,
   Input,
   Link,
-  Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
-import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
+import { formatCrypto } from "@/lib/format";
 import {
-  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelLoanFieldsFragment,
   SupplyPanelUserFieldsFragment,
+  SupplyPanelDealFieldsFragment,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
   canUserParticipateInPool,
-  computeApyFromGfiInFiat,
   signAgreement,
   usdcWithinEpsilon,
 } from "@/lib/pools";
@@ -32,17 +31,17 @@ import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
 
-export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
-  fragment SupplyPanelTranchedPoolFields on TranchedPool {
+export const SUPPLY_PANEL_LOAN_FIELDS = gql`
+  fragment SupplyPanelLoanFields on Loan {
     id
-    estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
-    juniorDeposited
-    estimatedLeverageRatio
-    allowedUidTypes
-    creditLine {
-      maxLimit
+    usdcApy
+    rawGfiApy
+    ... on TranchedPool {
+      juniorDeposited
+      estimatedLeverageRatio
     }
+    allowedUidTypes
+    fundingLimit
   }
 `;
 
@@ -58,13 +57,18 @@ export const SUPPLY_PANEL_USER_FIELDS = gql`
   }
 `;
 
+export const SUPPLY_PANEL_DEAL_FIELDS = gql`
+  fragment SupplyPanelDealFields on Deal {
+    id
+    agreement
+    dealType
+  }
+`;
+
 interface SupplyPanelProps {
-  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  tranchedPool: SupplyPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
-  fiatPerGfi: number;
-  seniorPoolApyFromGfiRaw: FixedNumber;
-  agreement?: string | null;
-  isUnitrancheDeal?: boolean;
+  deal: SupplyPanelDealFieldsFragment;
 }
 
 interface SupplyForm {
@@ -72,21 +76,16 @@ interface SupplyForm {
   backerName: string;
 }
 
-export default function SupplyPanel({
+export function SupplyPanel({
   tranchedPool: {
     id: tranchedPoolAddress,
-    estimatedJuniorApy,
-    estimatedJuniorApyFromGfiRaw,
     juniorDeposited,
     estimatedLeverageRatio,
     allowedUidTypes,
-    creditLine: { maxLimit },
+    fundingLimit,
   },
   user,
-  fiatPerGfi,
-  seniorPoolApyFromGfiRaw,
-  agreement,
-  isUnitrancheDeal = false,
+  deal,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
@@ -104,12 +103,12 @@ export default function SupplyPanel({
     : false;
 
   const rhfMethods = useForm<SupplyForm>();
-  const { control, watch, register } = rhfMethods;
+  const { control, register } = rhfMethods;
 
   const remainingJuniorCapacity =
-    isUnitrancheDeal || !estimatedLeverageRatio
-      ? maxLimit.sub(juniorDeposited)
-      : maxLimit
+    deal.dealType === "unitranche" || !estimatedLeverageRatio
+      ? fundingLimit.sub(juniorDeposited)
+      : fundingLimit
           .sub(
             juniorDeposited.mul(
               utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1)
@@ -206,12 +205,11 @@ export default function SupplyPanel({
     await apolloClient.refetchQueries({
       include: "active",
       updateCache(cache) {
-        cache.evict({ fieldName: "tranchedPoolTokens" });
+        cache.evict({ fieldName: "poolTokens" });
       },
     });
   };
 
-  const supplyValue = watch("supply");
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
     if (!account || !provider) {
@@ -221,112 +219,9 @@ export default function SupplyPanel({
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) => setAvailableBalance(balance));
   }, [account, provider, user]);
-  const fiatApyFromGfi = computeApyFromGfiInFiat(
-    estimatedJuniorApyFromGfiRaw,
-    fiatPerGfi
-  );
-  const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
-    seniorPoolApyFromGfiRaw,
-    fiatPerGfi
-  );
-  const totalApyFromGfi = fiatApyFromGfi.addUnsafe(seniorPoolApyFromGfiFiat);
 
   return (
-    <div className="rounded-xl bg-sunrise-02 p-5 text-white">
-      <div className="mb-3 flex flex-row justify-between">
-        <span className="text-sm">Est. APY</span>
-        <InfoIconTooltip
-          size="sm"
-          content={
-            <div className="max-w-xs">
-              The Pool&rsquo;s total current estimated APY, including the
-              current USDC APY and est. GFI rewards APY. The GFI rewards APY is
-              volatile and changes based on several variables including the
-              price of GFI, the total capital deployed on Goldfinch, and Senior
-              Pool&rsquo;s utilization. Learn more in the{" "}
-              <Link
-                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
-                openInNewTab
-              >
-                Goldfinch Documentation
-              </Link>
-              .
-            </div>
-          }
-        />
-      </div>
-
-      <div className="mb-8 text-6xl font-medium">
-        {formatPercent(estimatedJuniorApy.addUnsafe(totalApyFromGfi))}
-      </div>
-
-      <table className="mb-8 w-full">
-        <thead>
-          <tr>
-            <th className="w-1/2 pb-3 text-left text-sm font-normal">
-              Est. APY breakdown
-            </th>
-            <th className="w-1/2 pb-3 text-left text-sm font-normal">
-              <div className="flex items-center justify-end gap-2">
-                <span>Est. return</span>
-                <InfoIconTooltip
-                  size="sm"
-                  content="The estimated annual return on investment based on the supply amount entered below. The USDC returns are based on the fixed-rate USDC APY defined by the Borrower Pool's financing terms. The GFI returns are based on the Pool's estimated GFI rewards APY, including Investor Rewards and the Backer Bonus."
-                />
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(estimatedJuniorApy)} APY
-            </td>
-            <td className="border border-[#674C69] p-3 text-right text-xl">
-              <div className="flex w-full items-center justify-end">
-                <span className="mr-2">
-                  {supplyValue
-                    ? formatFiat({
-                        symbol: "USD",
-                        amount:
-                          parseFloat(supplyValue) *
-                          estimatedJuniorApy.toUnsafeFloat(),
-                      })
-                    : "USDC"}
-                </span>
-                <Icon name="Usdc" aria-label="USDC logo" size="md" />
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(totalApyFromGfi)} APY
-            </td>
-            <td className="border border-[#674C69] p-3 text-right text-xl">
-              <div className="flex w-full items-center justify-end">
-                <span className="mr-2">
-                  {supplyValue
-                    ? formatFiat({
-                        symbol: "USD",
-                        amount:
-                          parseFloat(supplyValue) *
-                          totalApyFromGfi.toUnsafeFloat(),
-                      })
-                    : "GFI"}
-                </span>
-                <Tooltip
-                  content="This return is estimated based on the current value of GFI in US dollars."
-                  placement="top"
-                  useWrapper
-                >
-                  <Icon name="Gfi" aria-label="GFI logo" size="md" />
-                </Tooltip>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
+    <div>
       {!account ? (
         <Button
           className="block w-full"
@@ -351,9 +246,9 @@ export default function SupplyPanel({
             disabled
             className="block w-full"
             size="xl"
-            colorScheme="secondary"
+            colorScheme="mustard"
           >
-            Supply
+            Invest
           </Button>
           <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
             <Icon size="md" name="Exclamation" />
@@ -368,7 +263,7 @@ export default function SupplyPanel({
           <DollarInput
             control={control}
             name="supply"
-            label="Supply amount"
+            label="Investment amount"
             labelDecoration={
               <span className="text-xs">
                 Balance:{" "}
@@ -379,7 +274,7 @@ export default function SupplyPanel({
               </span>
             }
             rules={{ required: "Required", validate: validateMaximumAmount }}
-            colorScheme="dark"
+            colorScheme="light"
             textSize="xl"
             maxValue={
               availableBalance.lt(remainingJuniorCapacity)
@@ -400,17 +295,17 @@ export default function SupplyPanel({
               />
             }
             placeholder="First and last name"
-            colorScheme="dark"
+            colorScheme="light"
             textSize="xl"
             className="mb-3"
             labelClassName="!text-sm !mb-3"
           />
           <div className="mb-3 text-xs">
-            By entering my name and clicking “Supply” below, I hereby agree and
-            acknowledge that (i) I am electronically signing and becoming a
-            party to the{" "}
-            {agreement ? (
-              <Link href={agreement} target="_blank" rel="noreferrer">
+            By entering my name and clicking &ldquo;Invest&rdquo; below, I
+            hereby agree and acknowledge that (i) I am electronically signing
+            and becoming a party to the{" "}
+            {deal.agreement ? (
+              <Link href={deal.agreement} target="_blank" rel="noreferrer">
                 Loan Agreement
               </Link>
             ) : (
@@ -422,10 +317,10 @@ export default function SupplyPanel({
           <Button
             className="block w-full"
             size="xl"
-            colorScheme="secondary"
+            colorScheme="mustard"
             type="submit"
           >
-            Supply
+            Invest
           </Button>
         </Form>
       )}

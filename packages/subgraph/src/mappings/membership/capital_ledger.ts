@@ -1,12 +1,7 @@
 import {store} from "@graphprotocol/graph-ts"
 
 import {CapitalERC721Deposit, CapitalERC721Withdrawal} from "../../../generated/CapitalLedger/CapitalLedger"
-import {
-  VaultedStakedPosition,
-  VaultedPoolToken,
-  TranchedPoolToken,
-  SeniorPoolStakedPosition,
-} from "../../../generated/schema"
+import {VaultedStakedPosition, VaultedPoolToken, PoolToken, SeniorPoolStakedPosition} from "../../../generated/schema"
 
 import {STAKING_REWARDS_ADDRESS, POOL_TOKENS_ADDRESS} from "../../address-manifest"
 import {createTransactionFromEvent} from "../../entities/helpers"
@@ -34,8 +29,8 @@ export function handleCapitalErc721Deposit(event: CapitalERC721Deposit): void {
     vaultedPoolToken.usdcEquivalent = event.params.usdcEquivalent
     vaultedPoolToken.vaultedAt = event.block.timestamp.toI32()
     vaultedPoolToken.poolToken = event.params.assetTokenId.toString()
-    const poolToken = assert(TranchedPoolToken.load(event.params.assetTokenId.toString()))
-    vaultedPoolToken.tranchedPool = poolToken.tranchedPool
+    const poolToken = assert(PoolToken.load(event.params.assetTokenId.toString()))
+    vaultedPoolToken.loan = poolToken.loan
     vaultedPoolToken.save()
     poolToken.vaultedAsset = vaultedPoolToken.id
     poolToken.save()
@@ -70,7 +65,7 @@ export function handleCapitalErc721Withdrawal(event: CapitalERC721Withdrawal): v
 
     store.remove("VaultedPoolToken", id)
 
-    const poolToken = assert(TranchedPoolToken.load(vaultedPoolToken.poolToken))
+    const poolToken = assert(PoolToken.load(vaultedPoolToken.poolToken))
     poolToken.vaultedAsset = null
     poolToken.save()
   }

@@ -22,7 +22,7 @@ export function InfoLine({ className, label, value, tooltip }: InfoLineProps) {
         <div className="mr-1 text-xs sm:text-sm">{label}</div>
         {tooltip ? <InfoIconTooltip content={tooltip} size="sm" /> : null}
       </div>
-      <div className="text-right text-sm font-semibold sm:text-base">
+      <div className="text-right text-sm font-medium sm:text-base">
         {value ? value : <Shimmer style={{ width: "15ch" }} />}
       </div>
     </div>

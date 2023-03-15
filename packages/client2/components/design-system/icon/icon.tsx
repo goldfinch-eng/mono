@@ -5,6 +5,7 @@ import { forwardRef } from "react";
 import Curve from "./raster/curve.png";
 import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
+import ArrowLeft from "./svg/arrow-left.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUpCircle from "./svg/arrow-up-circle-solid.svg";
@@ -15,6 +16,7 @@ import ChevronDown from "./svg/chevron-down.svg";
 import Clock from "./svg/clock.svg";
 import Copy from "./svg/copy.svg";
 import Discord from "./svg/discord.svg";
+import DollarSolid from "./svg/dollar-solid.svg";
 import DotsHorizontal from "./svg/dots-horizontal.svg";
 import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
@@ -33,6 +35,7 @@ import X from "./svg/x.svg";
 export const iconManifest = {
   ArrowDown,
   ArrowDownCircle,
+  ArrowLeft,
   ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
@@ -44,6 +47,7 @@ export const iconManifest = {
   Copy,
   Curve,
   Discord,
+  DollarSolid,
   DotsHorizontal,
   Exclamation,
   ExclamationCircleSolid,
