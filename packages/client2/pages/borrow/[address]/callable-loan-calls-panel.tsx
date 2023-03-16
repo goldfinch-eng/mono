@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 
 import { Button } from "@/components/design-system";
@@ -10,8 +11,9 @@ import {
   LoanCallsDataTableRow,
 } from "@/pages/borrow/[address]/loan-calls-data-table";
 
-interface CallableLoanCallsPanel {
+interface CallableLoanCallsPanelProps {
   loanId: string;
+  principalAmountRepaid?: BigNumber;
 }
 
 gql`
@@ -19,8 +21,6 @@ gql`
     id
     principalAmount
     callDueAt
-    principalRedeemed
-    principalRedeemable
   }
 `;
 
@@ -33,9 +33,10 @@ gql`
 `;
 
 const generateCallsTableData = (
-  poolTokens?: CallableLoanCallPoolTokensFieldsFragment[]
+  poolTokens?: CallableLoanCallPoolTokensFieldsFragment[],
+  principalAmountRepaid?: BigNumber
 ) => {
-  if (!poolTokens || poolTokens.length === 0) {
+  if (!poolTokens || (poolTokens.length === 0 && !principalAmountRepaid)) {
     return { activeCallsTableData: [], closedCallsTableData: [] };
   }
 
@@ -43,6 +44,7 @@ const generateCallsTableData = (
     [key: number]: LoanCallsDataTableRow;
   } = {};
 
+  // Create map of calls table data indexed by "callDueAt"
   poolTokens.forEach((token) => {
     if (token?.callDueAt) {
       if (callsTableDataIndexedByCallDueAt[token.callDueAt]) {
@@ -51,44 +53,57 @@ const generateCallsTableData = (
         const newTotalCalled = existingCallEntry.totalCalled.add(
           token.principalAmount
         );
-        const newBalance = token.principalAmount
-          .sub(token.principalRedeemable)
-          .add(existingCallEntry.balance);
 
         callsTableDataIndexedByCallDueAt[token.callDueAt] = {
           ...existingCallEntry,
           totalCalled: newTotalCalled,
-          balance: newBalance,
-          status: newBalance.isZero() ? "Closed" : "Open",
+          balance: newTotalCalled,
         };
       } else {
-        const balance = token.principalAmount.sub(token.principalRedeemable);
-
         callsTableDataIndexedByCallDueAt[token.callDueAt] = {
           totalCalled: token.principalAmount,
           dueDate: token.callDueAt,
-          status: balance.isZero() ? "Closed" : "Open",
-          balance: token.principalAmount.sub(token.principalRedeemable),
+          status: "Open",
+          balance: token.principalAmount,
         };
       }
     }
   });
 
+  // Sort by "dueDate" ascending
   const callsTableData = Object.values(callsTableDataIndexedByCallDueAt).sort(
     (a, b) => a.dueDate - b.dueDate
   );
 
-  const activeCallsTableData = callsTableData.filter(
-    (tableData) => tableData.status === "Open"
-  );
-  const closedCallsTableData = callsTableData.filter(
-    (tableData) => tableData.status === "Closed"
-  );
+  const activeCallsTableData: LoanCallsDataTableRow[] = [];
+  const closedCallsTableData: LoanCallsDataTableRow[] = [];
+  let totalPrincipalAmountRepaid = principalAmountRepaid as BigNumber;
+
+  // This updates the balance and status of call entries using "principalAmountRepaid".
+  // It distributes the repayment amount among the entries and sets their status to "Open" or "Closed" accordingly.
+  for (const callData of callsTableData) {
+    if (totalPrincipalAmountRepaid.gte(callData.balance)) {
+      totalPrincipalAmountRepaid = totalPrincipalAmountRepaid.sub(
+        callData.balance
+      );
+      callData.balance = BigNumber.from(0);
+      callData.status = "Closed";
+      closedCallsTableData.push(callData);
+    } else {
+      callData.balance = callData.balance.sub(totalPrincipalAmountRepaid);
+      callData.status = "Open";
+      totalPrincipalAmountRepaid = BigNumber.from(0);
+      activeCallsTableData.push(callData);
+    }
+  }
 
   return { activeCallsTableData, closedCallsTableData };
 };
 
-export function CallableLoanCallsPanel({ loanId }: CallableLoanCallsPanel) {
+export function CallableLoanCallsPanel({
+  loanId,
+  principalAmountRepaid,
+}: CallableLoanCallsPanelProps) {
   const { data, loading } = useCallableLoanCallPoolTokensQuery({
     variables: {
       loanId,
@@ -96,8 +111,10 @@ export function CallableLoanCallsPanel({ loanId }: CallableLoanCallsPanel) {
   });
 
   const poolTokens = data?.poolTokens;
-  const { activeCallsTableData, closedCallsTableData } =
-    generateCallsTableData(poolTokens);
+  const { activeCallsTableData, closedCallsTableData } = generateCallsTableData(
+    poolTokens,
+    principalAmountRepaid
+  );
 
   return (
     <div className="mb-10 rounded-xl bg-sand-100 p-8">

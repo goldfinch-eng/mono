@@ -359,7 +359,10 @@ export default function PoolCreditLinePage({
           </div>
 
           {loan.__typename === "CallableLoan" && (
-            <CallableLoanCallsPanel loanId={loan.id} />
+            <CallableLoanCallsPanel
+              loanId={loan.id}
+              principalAmountRepaid={loan.principalAmountRepaid}
+            />
           )}
 
           <div className="rounded-xl bg-sand-100">

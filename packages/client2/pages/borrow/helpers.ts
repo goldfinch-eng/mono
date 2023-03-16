@@ -38,6 +38,7 @@ gql`
     totalDeposited
     totalPrincipalPaid
     lastFullPaymentTime
+    principalAmountRepaid
     delinquency @client
     periodInterestDueAmount @client
     periodPrincipalDueAmount @client
