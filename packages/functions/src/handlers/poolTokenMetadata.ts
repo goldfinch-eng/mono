@@ -1,3 +1,4 @@
+import {ethers} from "ethers"
 import {assertNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../helpers"
@@ -99,12 +100,14 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const termRemainingInDays = Math.max(0, Math.floor(termRemainingInSeconds / secondsInDay))
   const backerApr = new BigNumber(loan.usdcApy.toString())
 
-  const totalLoanSize = loan.principalAmount.isZero()
+  const totalLoanSize = ethers.BigNumber.from(loan.principalAmount).isZero()
     ? new BigNumber(loan.fundingLimit.toString()).dividedBy(1e6)
-    : new BigNumber(loan.principalAmount.toString()).dividedBy(1e6)
+    : new BigNumber(ethers.BigNumber.from(loan.principalAmount).toString()).dividedBy(1e6)
 
   const nextRepaymentDate =
-    isTermStarted(termEndTime) && !loan.nextDueTime.isZero() ? new Date(loan.nextDueTime.toNumber() * 1000) : undefined
+    isTermStarted(termEndTime) && !ethers.BigNumber.from(loan.nextDueTime).isZero()
+      ? new Date(ethers.BigNumber.from(loan.nextDueTime).toNumber() * 1000)
+      : undefined
 
   const principalAmount = new BigNumber(poolToken.principalAmount.toString())
   const monthlyInterestPayment = principalAmount.multipliedBy(backerApr).dividedBy(12)
