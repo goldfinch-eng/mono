@@ -111,6 +111,8 @@ interface ICallableLoan is ILoan {
 
   function nextDueTimeAt(uint256 timestamp) external view returns (uint256);
 
+  function nextPrincipalDueTime() external view returns (uint256);
+
   function numLockupPeriods() external view returns (uint256);
 
   function inLockupPeriod() external view returns (bool);

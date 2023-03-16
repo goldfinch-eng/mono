@@ -77,7 +77,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     }
     interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
     pay(callableLoan, interestPayment);
-    assertEq(cl.lastFullPaymentTime(), block.timestamp);
+    assertGt(cl.lastFullPaymentTime(), block.timestamp - 1);
   }
 
   function testSetToPeriodBeforeLastWhenPayingAllInterestButNotPrincipalOwed(

@@ -102,6 +102,7 @@ library CallableLoanAccountant {
     uint256 start,
     uint256 end,
     uint256 lateFeesStartsAt,
+    uint256 lateFeesEndAt,
     uint256 principal,
     uint256 interestApr,
     uint256 lateInterestAdditionalApr
@@ -109,8 +110,10 @@ library CallableLoanAccountant {
     if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
-    if (lateFeesStartsAt < end) {
-      uint256 lateDuration = end.saturatingSub(Math.max(lateFeesStartsAt, start));
+    if (lateFeesStartsAt < end && lateFeesEndAt > lateFeesStartsAt) {
+      uint256 lateDuration = Math.min(lateFeesEndAt, end).saturatingSub(
+        Math.max(lateFeesStartsAt, start)
+      );
       interest += calculateInterest(lateDuration, principal, lateInterestAdditionalApr);
     }
   }

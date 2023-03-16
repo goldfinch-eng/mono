@@ -71,7 +71,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   /**
    * @notice Allows anyone to create a new TranchedPool for a single borrower
    * Requirements:
-   *  You are the admin
+   *  You are the admin or a borrower
    */
   function createPool(
     address _borrower,
@@ -108,7 +108,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   /**
    * @notice Allows anyone to create a new CallableLoan for a single borrower
    * Requirements:
-   *  You are the admin
+   *  You are the admin or a borrower
    */
   function createCallableLoan(
     address _borrower,
