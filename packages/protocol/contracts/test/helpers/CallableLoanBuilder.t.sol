@@ -83,6 +83,11 @@ contract CallableLoanBuilder {
     return this;
   }
 
+  function withNumLockupPeriods(uint256 _numLockUpPeriods) external returns (CallableLoanBuilder) {
+    numLockUpPeriods = _numLockUpPeriods;
+    return this;
+  }
+
   function withAllowedUIDTypes(
     uint256[] calldata _allowedUIDTypes
   ) external returns (CallableLoanBuilder) {

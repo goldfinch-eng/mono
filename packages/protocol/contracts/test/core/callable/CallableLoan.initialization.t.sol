@@ -9,6 +9,8 @@ import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
+
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
 contract CallableLoanInitializationTest is CallableLoanBaseTest {
@@ -16,6 +18,14 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), BORROWER));
+  }
+
+  function testCannotInitializeInvalidNumLockupPeriods() public {
+    CallableLoanBuilder clb = callableLoanBuilder.withNumLockupPeriods(4);
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InvalidNumLockupPeriods.selector, 4, 3)
+    );
+    (CallableLoan callableLoan, ) = clb.build(BORROWER);
   }
 
   function testInitializationCantHappenTwice() public {

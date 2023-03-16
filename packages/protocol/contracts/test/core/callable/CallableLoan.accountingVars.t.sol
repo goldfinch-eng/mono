@@ -540,4 +540,8 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
   }
+
+  function testTotalInterestAccruedAtWhereLastFullPaymentTimeLandsOnPrincipalDueTime() public {
+    // TODO
+  }
 }

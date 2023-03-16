@@ -21,19 +21,35 @@ contract CallableLoanSetters is CallableLoanBaseTest {
     callableLoan.setMaxLimit(limit);
   }
 
-  function testSetAllowedUidTypesRevertsForNonLocker(address user) public impersonating(user) {
+  function testSettersRevertsForNonLocker(
+    address user,
+    uint256 fundableAt
+  ) public impersonating(user) {
+    vm.assume(user != BORROWER);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uint256[] memory ids = new uint256[](0);
     vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresLockerRole.selector, user));
     callableLoan.setAllowedUIDTypes(ids);
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresLockerRole.selector, user));
+    callableLoan.setFundableAt(fundableAt);
+  }
+
+  function testSettersRevertForNonAdmin(
+    address user,
+    uint256 fundableAt
+  ) public impersonating(user) {
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    vm.assume(user != GF_OWNER);
+    vm.expectRevert(bytes("Must have admin role to perform this action"));
+    callableLoan.pauseDrawdowns();
+    vm.expectRevert(bytes("Must have admin role to perform this action"));
+    callableLoan.unpauseDrawdowns();
   }
 
   function testSetAllowedUidTypesRevertsIfCapitalDeposited(
-    address user,
-    uint256 numSlices
+    address user
   ) public impersonating(BORROWER) {
-    numSlices = bound(numSlices, 1, 5);
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     vm.assume(fuzzHelper.isAllowed(user));
     uid._mintForTest(user, 1, 1, "");
@@ -59,9 +75,50 @@ contract CallableLoanSetters is CallableLoanBaseTest {
     }
   }
 
-  // TODO
-  function testPauseDrawdowns() public impersonating(BORROWER) {}
+  function testPauseDrawdowns(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount
+  ) public impersonating(GF_OWNER) {
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    depositAmount = bound(depositAmount, 1, callableLoan.limit());
+    drawdownAmount = bound(drawdownAmount, 1, depositAmount);
+    callableLoan.pauseDrawdowns();
+    assertTrue(callableLoan.drawdownsPaused());
 
-  // TODO
-  function testSetFundableAt() public impersonating(BORROWER) {}
+    vm.assume(fuzzHelper.isAllowed(user));
+    uid._mintForTest(user, 1, 1, "");
+    deposit(callableLoan, 3, depositAmount, user);
+
+    vm.expectRevert(ICallableLoanErrors.CannotDrawdownWhenDrawdownsPaused.selector);
+    callableLoan.drawdown(drawdownAmount);
+
+    callableLoan.unpauseDrawdowns();
+    assertFalse(callableLoan.drawdownsPaused());
+    callableLoan.drawdown(drawdownAmount);
+  }
+
+  function testSetFundableAt(
+    uint256 originalFundableAtMargin,
+    uint256 newFundableAt,
+    uint256 fundableAtMargin,
+    uint256 attemptedFundableAt
+  ) public impersonating(BORROWER) {
+    originalFundableAtMargin = bound(originalFundableAtMargin, 1, 10000 days);
+    fundableAtMargin = bound(fundableAtMargin, newFundableAt, type(uint256).max);
+    (CallableLoan callableLoan, ) = callableLoanBuilder
+      .withFundableAt(block.timestamp + originalFundableAtMargin)
+      .build(BORROWER);
+    callableLoan.setFundableAt(newFundableAt);
+    assertEq(callableLoan.getFundableAt(), newFundableAt);
+
+    vm.warp(fundableAtMargin);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.CannotSetFundableAtAfterFundableAt.selector,
+        newFundableAt
+      )
+    );
+    callableLoan.setFundableAt(attemptedFundableAt);
+  }
 }
