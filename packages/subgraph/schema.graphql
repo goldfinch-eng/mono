@@ -137,7 +137,6 @@ enum RepaymentFrequency {
   QUARTERLY
   HALFLY
   ANNUALLY
-  UNKNOWN
 }
 
 interface Loan {
@@ -534,12 +533,6 @@ type SeniorPoolWithdrawalDisbursementPostponement @entity(immutable: true) {
   extendedEpoch: BigInt! # The epoch that was extended
   oldEndsAt: Int!
   newEndsAt: Int!
-}
-
-enum PaymentFrequency {
-  Monthly
-  Quarterly
-  Unknown
 }
 
 type CallableLoan implements Loan @entity {
