@@ -1,5 +1,5 @@
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import {deployments, ethers} from "hardhat"
+import {deployments} from "hardhat"
 import {SIGNER_ROLE, getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
@@ -11,7 +11,7 @@ import {
 } from "@goldfinch-eng/protocol/typechain/truffle"
 const Borrower = artifacts.require("Borrower")
 import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {BN, advanceTime, expectAction, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {BN, advanceTime, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {NON_US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED, assertNonNullable} from "@goldfinch-eng/utils"
 import {BorrowerCreated} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {getERC20Address, MAINNET_CHAIN_ID} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
@@ -54,9 +54,7 @@ describe("v3.3.0", async function () {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({usdc, gfFactory, uniqueIdentity} = await setupTest())
     const {
-      getNamedAccounts,
-      deployments: {getOrNull, log},
-      getChainId,
+      deployments: {log},
     } = hre
     logger = log
     allSigners = await hre.ethers.getSigners()
@@ -67,7 +65,7 @@ describe("v3.3.0", async function () {
     await impersonateAccount(hre, borrowerAddress)
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), borrowerAddress)
     borrowerContract = await createBorrowerContract(borrowerAddress)
-    impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+    await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
     await uniqueIdentity.grantRole(SIGNER_ROLE, signer, {from: MAINNET_WARBLER_LABS_MULTISIG})
     await mintUidIfNotMinted(hre, new BN(NON_US_UID_TYPES[0] as number), uniqueIdentity, lenderAddress, signer)
 
@@ -109,30 +107,35 @@ describe("v3.3.0", async function () {
     })
 
     it("can successfully drawdown and transfer funds to the borrower address", async () => {
-      expectAction(async () => {
-        await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), borrowerAddress, {
-          from: borrowerAddress,
-        })
-      }).toChange([
-        [async () => await usdc.balanceOf(borrowerAddress), {by: usdcVal(100), increase: true}],
-        [async () => await usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), decrease: true}],
-      ])
-    })
+      const previousBorrowerBalance = await usdc.balanceOf(borrowerAddress)
+      const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
 
-    it("can successfully pay on behalf of the borrower using the pay function", async () => {
       await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), borrowerAddress, {
         from: borrowerAddress,
       })
+
+      expect(await usdc.balanceOf(borrowerAddress)).to.equal(previousBorrowerBalance.add(usdcVal(100)))
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100)))
+    })
+
+    it("can successfully pay on behalf of the borrower using the pay function", async () => {
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), borrowerAddress, {
+        from: borrowerAddress,
+      })
       await advanceTime({days: 90})
-      expectAction(async () => {
-        await usdc.approve(borrowerContract.address, usdcVal(100), {from: borrowerAddress})
-        await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, usdcVal(100), {
-          from: borrowerAddress,
-        })
-      }).toChange([
-        [async () => await usdc.balanceOf(borrowerAddress), {by: usdcVal(100), decrease: true}],
-        [async () => await usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), increase: true}],
-      ])
+
+      const previousBorrowerBalance = await usdc.balanceOf(borrowerAddress)
+      const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
+
+      await usdc.approve(borrowerContract.address, usdcVal(100), {from: borrowerAddress})
+
+      // Assumes a 10% reserve fee and assumes a $100 interest payment.
+      await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, usdcVal(100), {
+        from: borrowerAddress,
+      })
+
+      expect(await usdc.balanceOf(borrowerAddress)).to.equal(previousBorrowerBalance.sub(usdcVal(100)))
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.add(usdcVal(90)))
     })
 
     it("throws an error if anyone but the borrower attempts to call any of the functions", async () => {
