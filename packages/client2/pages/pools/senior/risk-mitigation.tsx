@@ -4,9 +4,9 @@ import { RiskTable } from "@/pages/pools/senior/risk-table";
 export function RiskMitigation() {
   return (
     <div>
-      <div className="mb-5 rounded-xl border border-sand-300 p-5">
-        <div className="flex items-center">
-          <div className="w-1/2 pr-4">
+      <div className="mb-5 rounded-xl border border-sand-300 p-5 pb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="pr-4 md:w-1/2">
             <div className="mb-3 text-sm text-sand-600">
               Senior Pool capital risk
             </div>
@@ -42,7 +42,7 @@ export function RiskMitigation() {
               Read more
             </Button>
           </div>
-          <div className="w-1/2">
+          <div className="md:w-1/2">
             <div className="flex items-center rounded-lg border border-sand-300 p-2">
               <div className="w-3/5 space-y-1">
                 <div className="flex h-[7rem] flex-col rounded-lg border border-twilight-400 bg-twilight-700 py-2 px-3 text-sand-50">
@@ -59,16 +59,18 @@ export function RiskMitigation() {
               </div>
             </div>
             <div className="ml-2 w-[calc(100%_-_theme(space.4))]">
-              <div className="relative mt-1.5 w-3/5 rounded-lg border border-mustard-200 bg-mustard-100 py-2 px-3 font-medium text-black">
-                <div className="absolute -right-[8.4rem] -bottom-5 text-xs">
-                  <Icon
-                    name="ArrowUp"
-                    className="absolute bottom-3 -left-1.5"
-                    size="xs"
-                  />
-                  ~15% overcollateralization
+              <div className="mt-1.5 w-3/5 rounded-lg border border-mustard-200 bg-mustard-100 py-2 px-3 font-medium text-black">
+                <div className="relative text-sm">
+                  Additional Collateral
+                  <div className="absolute -right-[8rem] -bottom-7 text-xs">
+                    <Icon
+                      name="ArrowUp"
+                      className="absolute bottom-3 -left-1.5"
+                      size="xs"
+                    />
+                    ~15% overcollateralization
+                  </div>
                 </div>
-                <div className="text-sm">Additional Collateral</div>
               </div>
             </div>
           </div>
