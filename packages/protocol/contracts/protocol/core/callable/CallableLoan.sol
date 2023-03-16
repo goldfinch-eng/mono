@@ -414,14 +414,14 @@ contract CallableLoan is
 
   /// @inheritdoc ICallableLoan
   function estimateOwedInterestAt(
-    uint256 balance,
+    uint256 assumedBalance,
     uint256 timestamp
   ) public view override returns (uint256) {
     return
       _staleCreditLine.interestOwed() +
       CallableLoanAccountant.calculateInterest(
         timestamp - block.timestamp,
-        balance,
+        assumedBalance,
         _staleCreditLine.interestApr()
       );
   }
@@ -647,7 +647,7 @@ contract CallableLoan is
       } else if (loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
-        cl.withdraw(tokenInfo.tranche, principalToRedeem);
+        cl.withdraw(principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
       } else {
         revert CannotWithdrawInDrawdownPeriod();
@@ -812,7 +812,7 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function lateFeeApr() public view override returns (uint256) {
-    return _staleCreditLine.lateFeeApr();
+    return _staleCreditLine.lateAdditionalApr();
   }
 
   /// @inheritdoc ICreditLine

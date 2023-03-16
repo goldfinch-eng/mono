@@ -69,7 +69,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Drawdown on a v1 or v2 tranched pool
+   * @notice Drawdown on a loan
    * @param poolAddress Pool to drawdown from
    * @param amount usdc amount to drawdown
    * @param addressToSendTo Address to send the funds. Null address or address(this) will send funds back to the caller

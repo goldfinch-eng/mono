@@ -97,7 +97,14 @@ library TrancheLogic {
       (t._principalDeposited * principalOutstandingToTake) /
       tranchePrincipalOutstandingBeforeReserves;
     principalPaidTaken = principalDepositedTaken - principalOutstandingToTake;
-    interestTaken = (t._interestPaid * principalDepositedTaken) / t._principalDeposited;
+
+    // Same formula, real implementation makes sure to multiply before dividing
+    // to reduce precision errors.
+    // interestTaken = (t._interestPaid * principalDepositedTaken) /
+    //                 tranchePrincipalOutstandingBeforeReserves;
+    interestTaken =
+      ((t._interestPaid * t._principalDeposited * principalOutstandingToTake)) /
+      (t._principalDeposited * tranchePrincipalOutstandingBeforeReserves);
 
     t._principalPaid -= principalPaidTaken;
     t._interestPaid -= interestTaken;

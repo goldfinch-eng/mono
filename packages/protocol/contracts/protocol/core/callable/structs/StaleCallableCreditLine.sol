@@ -75,8 +75,8 @@ library StaleCallableCreditLineLogic {
     return cl._cl.interestApr();
   }
 
-  function lateFeeApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
-    return cl._cl.lateFeeApr();
+  function lateAdditionalApr(StaleCallableCreditLine storage cl) internal view returns (uint256) {
+    return cl._cl.lateAdditionalApr();
   }
 
   function isLate(StaleCallableCreditLine storage cl) internal view returns (bool) {
@@ -159,11 +159,12 @@ library StaleCallableCreditLineLogic {
     return cl._cl.totalPrincipalOutstanding();
   }
 
-  function totalPrincipalOutstandingBeforeReserves(
-    StaleCallableCreditLine storage cl
-  ) internal view returns (uint256) {
-    return cl._cl.totalPrincipalOutstandingBeforeReserves();
-  }
+  // Currently unused
+  // function totalPrincipalOutstandingBeforeReserves(
+  //   StaleCallableCreditLine storage cl
+  // ) internal view returns (uint256) {
+  //   return cl._cl.totalPrincipalOutstandingBeforeReserves();
+  // }
 
   function nextInterestDueTimeAt(
     StaleCallableCreditLine storage cl,
@@ -178,12 +179,13 @@ library StaleCallableCreditLineLogic {
     return cl._cl.nextPrincipalDueTime();
   }
 
-  function nextPrincipalDueTimeAt(
-    StaleCallableCreditLine storage cl,
-    uint256 timestamp
-  ) internal view returns (uint256) {
-    return cl._cl.nextPrincipalDueTimeAt(timestamp);
-  }
+  // Currently unused
+  // function nextPrincipalDueTimeAt(
+  //   StaleCallableCreditLine storage cl,
+  //   uint256 timestamp
+  // ) internal view returns (uint256) {
+  //   return cl._cl.nextPrincipalDueTimeAt(timestamp);
+  // }
 
   function nextDueTimeAt(
     StaleCallableCreditLine storage cl,

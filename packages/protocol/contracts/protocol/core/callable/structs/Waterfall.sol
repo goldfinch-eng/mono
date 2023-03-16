@@ -32,7 +32,7 @@ library WaterfallLogic {
   ================================================================================*/
   uint256 internal constant MINIMUM_WATERFALL_TRANCHES = 2;
 
-  function initialize(Waterfall storage w, uint256 nTranches) internal returns (Waterfall storage) {
+  function initialize(Waterfall storage w, uint256 nTranches) internal {
     if (w._tranches.length != 0) {
       revert ICallableLoanErrors.CannotReinitialize();
     }
@@ -43,7 +43,6 @@ library WaterfallLogic {
       Tranche memory t;
       w._tranches.push(t);
     }
-    return w;
   }
 
   /*================================================================================

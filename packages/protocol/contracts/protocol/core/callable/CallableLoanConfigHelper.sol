@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.17;
+pragma solidity ^0.8.17;
 
 import {ConfigOptions} from "../ConfigOptions.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
@@ -26,46 +26,16 @@ library CallableLoanConfigHelper {
     return IPoolTokens(poolTokensAddress(config));
   }
 
-  function getGoldfinchFactory(IGoldfinchConfig config) internal view returns (IGoldfinchFactory) {
-    return IGoldfinchFactory(goldfinchFactoryAddress(config));
-  }
-
   function getGo(IGoldfinchConfig config) internal view returns (IGo) {
     return IGo(goAddress(config));
-  }
-
-  function creditLineImplementationAddress(
-    IGoldfinchConfig config
-  ) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
-  }
-
-  function configAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig));
   }
 
   function poolTokensAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
-  function goldfinchFactoryAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory));
-  }
-
-  function gfiAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.GFI));
-  }
-
-  function cusdcContractAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.CUSDCContract));
-  }
-
   function usdcAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.USDC));
-  }
-
-  function tranchedPoolAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
   }
 
   function reserveAddress(IGoldfinchConfig config) internal view returns (address) {
@@ -76,16 +46,16 @@ library CallableLoanConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.ProtocolAdmin));
   }
 
-  function borrowerImplementationAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.BorrowerImplementation));
-  }
-
   function goAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Go));
   }
 
-  function stakingRewardsAddress(IGoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.StakingRewards));
+  function getDrawdownPeriodInSeconds(IGoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
+  }
+
+  function getLatenessGracePeriodInDays(IGoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays));
   }
 
   function getReserveDenominator(IGoldfinchConfig config) internal view returns (uint256) {
@@ -94,23 +64,5 @@ library CallableLoanConfigHelper {
 
   function getWithdrawFeeDenominator(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator));
-  }
-
-  function getLatenessGracePeriodInDays(IGoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays));
-  }
-
-  function getLatenessMaxDays(IGoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxDays));
-  }
-
-  function getDrawdownPeriodInSeconds(IGoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
-  }
-
-  function getTransferRestrictionPeriodInDays(
-    IGoldfinchConfig config
-  ) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays));
   }
 }
