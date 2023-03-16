@@ -77,22 +77,18 @@ const generateCallsTableData = (
 
   const activeCallsTableData: LoanCallsDataTableRow[] = [];
   const closedCallsTableData: LoanCallsDataTableRow[] = [];
-  let totalPrincipalAmountRepaid = principalAmountRepaid as BigNumber;
-
-  // This updates the balance and status of call entries using "principalAmountRepaid".
-  // It distributes the repayment amount among the entries and sets their status to "Open" or "Closed" accordingly.
+  let remainingPrincipalRepaid = principalAmountRepaid as BigNumber;
+  // Update the balance & status of the callsTableData based on the total principal amount repaid so far
   for (const callData of callsTableData) {
-    if (totalPrincipalAmountRepaid.gte(callData.balance)) {
-      totalPrincipalAmountRepaid = totalPrincipalAmountRepaid.sub(
-        callData.balance
-      );
+    if (remainingPrincipalRepaid.gte(callData.balance)) {
+      remainingPrincipalRepaid = remainingPrincipalRepaid.sub(callData.balance);
       callData.balance = BigNumber.from(0);
       callData.status = "Closed";
       closedCallsTableData.push(callData);
     } else {
-      callData.balance = callData.balance.sub(totalPrincipalAmountRepaid);
+      callData.balance = callData.balance.sub(remainingPrincipalRepaid);
       callData.status = "Open";
-      totalPrincipalAmountRepaid = BigNumber.from(0);
+      remainingPrincipalRepaid = BigNumber.from(0);
       activeCallsTableData.push(callData);
     }
   }
