@@ -155,25 +155,21 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
   }
 
   let repaymentFrequency = ""
-  if (repayments.length < 2) {
-    repaymentFrequency = "UNKNOWN"
+  const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+  if (approximateSecondsPerPeriod <= secondsPerDay) {
+    repaymentFrequency = "DAILY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
+    repaymentFrequency = "WEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
+    repaymentFrequency = "BIWEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
+    repaymentFrequency = "MONTHLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
+    repaymentFrequency = "QUARTERLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
+    repaymentFrequency = "HALFLY"
   } else {
-    const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
-    if (approximateSecondsPerPeriod <= secondsPerDay) {
-      repaymentFrequency = "DAILY"
-    } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
-      repaymentFrequency = "WEEKLY"
-    } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
-      repaymentFrequency = "BIWEEKLY"
-    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
-      repaymentFrequency = "MONTHLY"
-    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
-      repaymentFrequency = "QUARTERLY"
-    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
-      repaymentFrequency = "HALFLY"
-    } else {
-      repaymentFrequency = "ANNUALLY"
-    }
+    repaymentFrequency = "ANNUALLY"
   }
 
   return new SchedulingResult(
