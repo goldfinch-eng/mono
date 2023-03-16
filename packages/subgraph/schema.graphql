@@ -137,6 +137,7 @@ enum RepaymentFrequency {
   QUARTERLY
   HALFLY
   ANNUALLY
+  UNKNOWN
 }
 
 interface Loan {
