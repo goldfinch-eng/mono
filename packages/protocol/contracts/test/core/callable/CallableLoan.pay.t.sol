@@ -7,14 +7,17 @@ import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {LoanPhase} from "../../../interfaces/ICallableLoan.sol";
+import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-
+import {CallableLoanAccountant} from "../../../protocol/core/callable/CallableLoanAccountant.sol";
+import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 contract CallableLoanPayTest is CallableLoanBaseTest {
+  using CallableLoanConfigHelper for IGoldfinchConfig;
   using SaturatingSub for uint256;
 
   event PaymentApplied(
@@ -198,5 +201,172 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
       "owed at next principal due time should be 0"
     );
     assertEq(cl.balance(), 0, "balance should be 0");
+  }
+
+  function testCanFullyPayOffExampleWithCallRequest(uint256 timestamp) public {
+    vm.warp(1681444800);
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
+    warpToAfterDrawdownPeriod(callableLoan);
+
+    _startImpersonation(DEPOSITOR);
+    callableLoan.submitCall(usdcVal(1000), tokenId);
+
+    uint256 totalOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) + cl.balance();
+
+    fundAddress(address(this), totalOwed);
+    usdc.approve(address(callableLoan), totalOwed);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(totalOwed);
+    assertEq(cl.interestAccrued(), 0, "accrued");
+    assertEq(cl.interestOwed(), 0, "owed");
+    assertApproxEqAbs(
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      1,
+      "owed at next principal due time should be 0"
+    );
+    assertEq(cl.balance(), 0, "balance should be 0");
+  }
+
+  function testCanFullyPayOffExampleWithCallRequestAfter60Days() public {
+    vm.warp(1681444800);
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
+    warpToAfterDrawdownPeriod(callableLoan);
+
+    _startImpersonation(DEPOSITOR);
+    callableLoan.submitCall(usdcVal(1000), tokenId);
+
+    vm.warp(block.timestamp + 60 days);
+
+    uint256 principalOwed = cl.principalOwedAt(callableLoan.nextPrincipalDueTime());
+    uint256 interestOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+      cl.interestAccruedAt(callableLoan.nextPrincipalDueTime());
+
+    console.log(
+      "cl.principalOwedAt(callableLoan.nextPrincipalDueTime() after 60 day warp",
+      principalOwed
+    );
+    console.log(
+      "cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) after 60 day warp",
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+        cl.interestAccruedAt(callableLoan.nextPrincipalDueTime())
+    );
+
+    assertEq(
+      cl.interestAccruedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      "interestAccruedAtNextPrincipalDueTime"
+    );
+
+    fundAddress(address(this), principalOwed + interestOwed);
+    usdc.approve(address(callableLoan), principalOwed + interestOwed);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(principalOwed + interestOwed);
+
+    console.log("owedInterestPayment", pa.owedInterestPayment);
+    console.log("accruedInterestPayment", pa.accruedInterestPayment);
+    console.log("principalPayment", pa.principalPayment);
+    console.log("additionalBalancePayment", pa.additionalBalancePayment);
+    console.log("paymentRemaining", pa.paymentRemaining);
+
+    assertEq(cl.interestAccrued(), 0, "accrued");
+    assertEq(cl.interestOwed(), 0, "owed");
+    assertApproxEqAbs(
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      1,
+      "owed at next principal due time should be 0"
+    );
+    assertApproxEqAbs(
+      cl.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      1,
+      "principal owed should be 0"
+    );
+    revert("test");
+  }
+
+  function testCanFullyPayOffExampleAfter60Days(uint256 timestamp) public {
+    vm.warp(1681444800);
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
+    warpToAfterDrawdownPeriod(callableLoan);
+
+    vm.warp(block.timestamp + 60 days);
+
+    uint256 principalOwed = cl.principalOwedAt(callableLoan.nextPrincipalDueTime());
+    uint256 interestOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime());
+
+    assertEq(cl.interestAccruedAt(callableLoan.nextPrincipalDueTime()), 0);
+
+    console.log(
+      "cl.principalOwedAt(callableLoan.nextPrincipalDueTime() after 60 day warp",
+      principalOwed
+    );
+    console.log(
+      "cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) + cl.interestAccruedAt(callableLoan.nextPrincipalDueTime()) after 60 day warp",
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
+        cl.interestAccruedAt(callableLoan.nextPrincipalDueTime())
+    );
+
+    fundAddress(address(this), principalOwed + interestOwed);
+    usdc.approve(address(callableLoan), principalOwed + interestOwed);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(principalOwed + interestOwed);
+
+    console.log("owedInterestPayment", pa.owedInterestPayment);
+    console.log("accruedInterestPayment", pa.accruedInterestPayment);
+    console.log("principalPayment", pa.principalPayment);
+    console.log("additionalBalancePayment", pa.additionalBalancePayment);
+    console.log("paymentRemaining", pa.paymentRemaining);
+
+    assertEq(cl.interestAccrued(), 0, "accrued");
+    assertEq(cl.interestOwed(), 0, "owed");
+    assertApproxEqAbs(
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      1,
+      "owed at next principal due time should be 0"
+    );
+    assertApproxEqAbs(
+      cl.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      1,
+      "principal owed should be 0"
+    );
+  }
+
+  function testAccountingVars(uint256 endTimestampJumpForward) public {
+    uint256 endTimestampJumpForward = bound(endTimestampJumpForward, 0, 90 days);
+    vm.warp(1681444800);
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
+    uint256 lateTime = callableLoan.nextDueTimeAt(cl.lastFullPaymentTime()) +
+      (gfConfig.getLatenessGracePeriodInDays() * (86400));
+    uint256 interestAccruedAtLateTimeStart = cl.interestAccruedAt(lateTime);
+    uint256 interestOwedAtLateTimeStart = cl.interestOwedAt(lateTime);
+
+    vm.warp(lateTime);
+    assertEq(cl.interestAccrued(), interestAccruedAtLateTimeStart, "interest accrued");
+    assertEq(cl.interestOwed(), interestOwedAtLateTimeStart, "interest owed");
+
+    uint256 endTimestamp = block.timestamp + endTimestampJumpForward;
+    uint256 expectedInterestDiff = CallableLoanAccountant.calculateInterest(
+      block.timestamp,
+      endTimestamp,
+      block.timestamp,
+      endTimestamp,
+      callableLoan.balance(),
+      callableLoan.interestApr(),
+      callableLoan.lateFeeApr()
+    );
+    vm.warp(endTimestamp);
+    assertApproxEqAbs(
+      cl.interestAccrued() +
+        cl.interestOwed() -
+        (interestAccruedAtLateTimeStart + interestOwedAtLateTimeStart),
+      expectedInterestDiff,
+      HUNDREDTH_CENT,
+      "diff in late interest"
+    );
   }
 }
