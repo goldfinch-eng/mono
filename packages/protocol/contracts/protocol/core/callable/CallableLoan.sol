@@ -720,7 +720,7 @@ contract CallableLoan is
 
     // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
     assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
 
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
