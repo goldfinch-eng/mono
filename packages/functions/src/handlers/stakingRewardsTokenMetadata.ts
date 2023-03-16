@@ -33,7 +33,7 @@ const doubleDigitFormatter = new Intl.NumberFormat("en-US", {
  * @return {Array<TokenAttribute>} A list of attributes
  */
 async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute>> {
-  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2")
+  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch")
   const sdk = getSdk(client)
 
   const graphQlResponse = await sdk.stakingRewardsTokenMetadata({id: tokenId.toString()})
