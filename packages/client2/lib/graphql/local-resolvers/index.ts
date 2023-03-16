@@ -7,6 +7,7 @@ import {
   directGfiGrantResolvers,
   indirectGfiGrantResolvers,
 } from "./gfi-grants";
+import { poolTokenResolvers } from "./pool-tokens";
 import { rootQueryResolvers } from "./query";
 import { seniorPoolResolvers } from "./senior-pool";
 import { seniorPoolWithdrawalRequestResolvers } from "./senior-pool-withdrawal-request";
@@ -28,4 +29,5 @@ export const resolvers: Resolvers = {
   SeniorPool: seniorPoolResolvers,
   User: userResolvers,
   CallableLoan: callableLoanResolvers,
+  PoolToken: poolTokenResolvers,
 };

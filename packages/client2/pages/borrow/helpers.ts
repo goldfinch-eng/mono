@@ -60,7 +60,7 @@ gql`
     principalAmount
     fundingLimit
     creditLineAddress
-    paymentFrequency
+    repaymentFrequency
     delinquency @client
     isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields

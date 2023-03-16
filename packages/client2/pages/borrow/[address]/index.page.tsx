@@ -438,7 +438,9 @@ export default function PoolCreditLinePage({
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">{loan.paymentFrequency}</div>
+                  <div className="mb-0.5 text-2xl">
+                    {loan.repaymentFrequency}
+                  </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
                 <div>

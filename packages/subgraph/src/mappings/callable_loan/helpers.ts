@@ -61,23 +61,30 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
+  callableLoan.repaymentFrequency = schedulingResult.repaymentFrequency
+
+  callableLoan.principalAmountRepaid = BigInt.zero()
+  callableLoan.interestAmountRepaid = BigInt.zero()
 
   return callableLoan
 }
 
-const twoWeeksSeconds = 86400 * 14
+const secondsPerDay = 86400
+const twoWeeksSeconds = secondsPerDay * 14
 
 class SchedulingResult {
   repaymentIds: string[]
   termInSeconds: i32
-  constructor(r: string[], t: i32) {
+  repaymentFrequency: string
+  constructor(r: string[], t: i32, f: string) {
     this.repaymentIds = r
     this.termInSeconds = t
+    this.repaymentFrequency = f
   }
 }
 
 export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableLoan): SchedulingResult {
-  const repaymentIds: string[] = []
+  const repayments: ScheduledRepayment[] = []
   let termInSeconds = 0
   const callableLoanContract = CallableLoanContract.bind(Address.fromBytes(callableLoan.address))
   const scheduleContract = ScheduleContract.bind(callableLoanContract.schedule())
@@ -116,7 +123,7 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
       scheduledRepayment.interest = interest
       scheduledRepayment.principal = principal
       scheduledRepayment.save()
-      repaymentIds.push(scheduledRepayment.id)
+      repayments.push(scheduledRepayment)
     }
   } else {
     const startTime = callableLoan.termStartTime.minus(BigInt.fromI32(1))
@@ -144,11 +151,33 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
       scheduledRepayment.interest = interest
       scheduledRepayment.principal = principal
       scheduledRepayment.save()
-      repaymentIds.push(scheduledRepayment.id)
+      repayments.push(scheduledRepayment)
     }
   }
 
-  return new SchedulingResult(repaymentIds, termInSeconds)
+  const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+  let repaymentFrequency = ""
+  if (approximateSecondsPerPeriod <= secondsPerDay) {
+    repaymentFrequency = "DAILY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
+    repaymentFrequency = "WEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
+    repaymentFrequency = "BIWEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
+    repaymentFrequency = "MONTHLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
+    repaymentFrequency = "QUARTERLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
+    repaymentFrequency = "HALFLY"
+  } else {
+    repaymentFrequency = "ANNUALLY"
+  }
+
+  return new SchedulingResult(
+    repayments.map<string>((repayment) => repayment.id),
+    termInSeconds,
+    repaymentFrequency
+  )
 }
 
 /**
@@ -172,7 +201,6 @@ export function updatePoolTokensRedeemable(callableLoan: CallableLoan): void {
     const availableToWithdrawResult = callableLoanContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
     if (!availableToWithdrawResult.reverted) {
       poolToken.interestRedeemable = availableToWithdrawResult.value.value0
-      poolToken.principalRedeemable = availableToWithdrawResult.value.value1
     } else {
       log.warning("availableToWithdraw reverted for pool token {} on CallableLoan {}", [poolToken.id, callableLoan.id])
     }

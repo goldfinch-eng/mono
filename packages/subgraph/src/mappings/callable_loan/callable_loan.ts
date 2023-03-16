@@ -74,6 +74,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
   callableLoan.numRepayments = schedulingResult.repaymentIds.length
   callableLoan.termInSeconds = schedulingResult.termInSeconds
+  callableLoan.repaymentFrequency = schedulingResult.repaymentFrequency
   callableLoan.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
@@ -90,6 +91,8 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after a repayment is made (principal or interest can increase)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
   callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
+  callableLoan.principalAmountRepaid = callableLoan.principalAmountRepaid.plus(event.params.principal)
+  callableLoan.interestAmountRepaid = callableLoan.interestAmountRepaid.plus(event.params.interest)
   callableLoan.save()
 
   updateTotalPrincipalCollected(event.params.principal)

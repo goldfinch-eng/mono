@@ -132,6 +132,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
   tranchedPool.numRepayments = schedulingResult.repaymentIds.length
   tranchedPool.termInSeconds = schedulingResult.termInSeconds
+  tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
   tranchedPool.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)

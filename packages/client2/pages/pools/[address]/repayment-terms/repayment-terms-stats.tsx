@@ -3,6 +3,7 @@ import { formatDistanceStrict, format as formatDate } from "date-fns";
 
 import { Stat, StatGrid } from "@/components/design-system";
 import { RepaymentTermsStatsFieldsFragment } from "@/lib/graphql/generated";
+import { getRepaymentFrequencyLabel } from "@/lib/pools";
 
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
   fragment RepaymentTermsStatsFields on Loan {
@@ -10,12 +11,12 @@ export const REPAYMENT_TERMS_STATS_FIELDS = gql`
     termInSeconds
     termStartTime
     termEndTime
-    paymentFrequency
     repaymentSchedule(first: 1) {
       id
       estimatedPaymentDate
     }
     numRepayments
+    repaymentFrequency
   }
 `;
 
@@ -44,7 +45,8 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       <Stat
         label="Payment frequency"
         tooltip="The frequency of interest payments."
-        value={loan.paymentFrequency}
+        className="capitalize"
+        value={getRepaymentFrequencyLabel(loan.repaymentFrequency)}
       />
       <Stat
         label="Total payments"

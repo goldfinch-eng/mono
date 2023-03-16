@@ -129,6 +129,16 @@ enum UidType {
   NON_US_ENTITY
 }
 
+enum RepaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  HALFLY
+  ANNUALLY
+}
+
 interface Loan {
   id: ID!
   address: Bytes!
@@ -152,6 +162,8 @@ interface Loan {
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
 
   # "Credit line" fields
   balance: BigInt!
@@ -163,6 +175,7 @@ interface Loan {
   lateFeeRate: BigDecimal!
   borrowerContract: BorrowerContract!
   creditLineAddress: Bytes!
+  repaymentFrequency: RepaymentFrequency!
 }
 
 type TranchedPool implements Loan @entity {
@@ -186,6 +199,8 @@ type TranchedPool implements Loan @entity {
   tokens: [PoolToken!]!
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
   """
   A null value indicates there have been no senior pool contributions to the pool yet
   """
@@ -201,6 +216,7 @@ type TranchedPool implements Loan @entity {
   lateFeeRate: BigDecimal!
   interestAccruedAsOf: BigInt!
   borrowerContract: BorrowerContract!
+  repaymentFrequency: RepaymentFrequency!
 
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigDecimal
@@ -222,9 +238,6 @@ type TranchedPool implements Loan @entity {
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
-
-  principalAmountRepaid: BigInt!
-  interestAmountRepaid: BigInt!
 }
 
 """
@@ -251,9 +264,7 @@ type PoolToken @entity {
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
-  interestRedeemable: BigInt!
-  principalRedeemable: BigInt!
-
+  interestRedeemable: BigInt! # You may be wondering why principalRedeemable isn't also here. It's because when an early principal repayment happens on Callable Loans, that principal doesn't become withdrawable until the end of the principal period, and this is sadly not event driven behaviour.
   rewardsClaimable: BigInt!
   rewardsClaimed: BigInt!
 
@@ -563,9 +574,12 @@ type CallableLoan implements Loan @entity {
   totalPrincipalPaid: BigInt!
   borrowerContract: BorrowerContract!
   creditLineAddress: Bytes!
+  repaymentFrequency: RepaymentFrequency!
 
   repaymentSchedule: [ScheduledRepayment!]!
   numRepayments: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
 }
 
 type ScheduledRepayment @entity {

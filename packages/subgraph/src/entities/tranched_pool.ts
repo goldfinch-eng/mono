@@ -238,6 +238,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
     tranchedPool.numRepayments = schedulingResult.repaymentIds.length
     tranchedPool.termInSeconds = schedulingResult.termInSeconds
+    tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
   }
   tranchedPool.initialInterestOwed = calculateInitialInterestOwed(
     tranchedPool.principalAmount,
@@ -441,7 +442,6 @@ export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
     const availableToWithdrawResult = tranchedPoolContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
     if (!availableToWithdrawResult.reverted) {
       poolToken.interestRedeemable = availableToWithdrawResult.value.value0
-      poolToken.principalRedeemable = availableToWithdrawResult.value.value1
     } else {
       log.warning("availableToWithdraw reverted for pool token {} on TranchedPool {}", [poolToken.id, tranchedPool.id])
     }
@@ -452,16 +452,19 @@ export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
 class SchedulingResult {
   repaymentIds: string[]
   termInSeconds: i32
-  constructor(r: string[], t: i32) {
+  repaymentFrequency: string
+  constructor(r: string[], t: i32, f: string) {
     this.repaymentIds = r
     this.termInSeconds = t
+    this.repaymentFrequency = f
   }
 }
 
 export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedPool): SchedulingResult {
-  const twoWeeksSeconds = 86400 * 14
+  const secondsPerDay = 86400
+  const twoWeeksSeconds = secondsPerDay * 14
 
-  const repaymentIds: string[] = []
+  const repayments: ScheduledRepayment[] = []
   let termInSeconds = 0
   const tranchedPoolContract = TranchedPoolContract.bind(Address.fromBytes(tranchedPool.address))
   const creditLineContract = CreditLineContract.bind(tranchedPoolContract.creditLine())
@@ -506,7 +509,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
         scheduledRepayment.interest = interest
         scheduledRepayment.principal = principal
         scheduledRepayment.save()
-        repaymentIds.push(scheduledRepayment.id)
+        repayments.push(scheduledRepayment)
       }
     } else {
       // Have to decrement by 1 or else the first period will accidentally be 1 further in the future
@@ -537,7 +540,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
         scheduledRepayment.interest = interest
         scheduledRepayment.principal = principal
         scheduledRepayment.save()
-        repaymentIds.push(scheduledRepayment.id)
+        repayments.push(scheduledRepayment)
       }
     }
   } else {
@@ -570,7 +573,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       scheduledRepayment.interest = interest
       scheduledRepayment.principal = principal
       scheduledRepayment.save()
-      repaymentIds.push(scheduledRepayment.id)
+      repayments.push(scheduledRepayment)
 
       // Handles final partial period
       if (period == periodsInTerm.toI32() - 1 && estimatedPaymentDate.lt(endTime)) {
@@ -585,12 +588,34 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
           .div(BigInt.fromString("1000000000000000000"))
         finalRepayment.principal = loanPrincipal
         finalRepayment.save()
-        repaymentIds.push(finalRepayment.id)
+        repayments.push(finalRepayment)
       }
     }
   }
 
-  return new SchedulingResult(repaymentIds, termInSeconds)
+  const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+  let repaymentFrequency = ""
+  if (approximateSecondsPerPeriod <= secondsPerDay) {
+    repaymentFrequency = "DAILY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
+    repaymentFrequency = "WEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
+    repaymentFrequency = "BIWEEKLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
+    repaymentFrequency = "MONTHLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
+    repaymentFrequency = "QUARTERLY"
+  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
+    repaymentFrequency = "HALFLY"
+  } else {
+    repaymentFrequency = "ANNUALLY"
+  }
+
+  return new SchedulingResult(
+    repayments.map<string>((repayment) => repayment.id),
+    termInSeconds,
+    repaymentFrequency
+  )
 }
 export function deleteTranchedPoolRepaymentSchedule(tranchedPool: TranchedPool): void {
   const repaymentIds = tranchedPool.repaymentSchedule

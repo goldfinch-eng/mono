@@ -15,7 +15,7 @@ gql`
   fragment CallPanelPoolTokenFields on PoolToken {
     id
     principalAmount
-    principalRedeemable
+    principalRedeemable @client
     principalRedeemed
     calledAt
     callDueAt
@@ -103,7 +103,7 @@ export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
             className="mt-5 block w-full"
             onClick={() => setIsCallRequestModalOpen(true)}
           >
-            Increase call request
+            Submit another call request
           </Button>
         </div>
       )}
