@@ -107,11 +107,6 @@
       "kind": "transparent"
     },
     {
-      "address": "0x384860F14B39CcD9C89A73519c70cD5f5394D0a6",
-      "txHash": "0xabfdae678419c4b240b182e267471ee6e21c892454b5974b02962b0b68171405",
-      "kind": "transparent"
-    },
-    {
       "address": "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df",
       "txHash": "0x84a4be75f4946aa541f58d7a4689077943fdaadf5552668438a9b3cfbebf01db",
       "kind": "transparent"
@@ -119,6 +114,11 @@
     {
       "address": "0x94e0bC3aedA93434B848C49752cfC58B1e7c5029",
       "txHash": "0xc70046000b26758d69769a5c34bb8f6d1d153003e7d15c74c7d12bc44dfd161c",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x384860F14B39CcD9C89A73519c70cD5f5394D0a6",
+      "txHash": "0xabfdae678419c4b240b182e267471ee6e21c892454b5974b02962b0b68171405",
       "kind": "transparent"
     }
   ],
@@ -14512,7 +14512,7 @@
             "label": "config",
             "offset": 0,
             "slot": "451",
-            "type": "t_contract(GoldfinchConfig)17191",
+            "type": "t_contract(GoldfinchConfig)19603",
             "contract": "BackerRewards",
             "src": "contracts/rewards/BackerRewards.sol:37"
           },
@@ -14552,7 +14552,7 @@
             "label": "tokens",
             "offset": 0,
             "slot": "456",
-            "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)9725_storage)",
+            "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)11372_storage)",
             "contract": "BackerRewards",
             "src": "contracts/rewards/BackerRewards.sol:58"
           },
@@ -14560,7 +14560,7 @@
             "label": "pools",
             "offset": 0,
             "slot": "457",
-            "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)9728_storage)",
+            "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)11375_storage)",
             "contract": "BackerRewards",
             "src": "contracts/rewards/BackerRewards.sol:59"
           },
@@ -14568,7 +14568,7 @@
             "label": "poolStakingRewards",
             "offset": 0,
             "slot": "458",
-            "type": "t_mapping(t_contract(ITranchedPool)11572,t_struct(StakingRewardsPoolInfo)9736_storage)",
+            "type": "t_mapping(t_contract(ITranchedPool)14064,t_struct(StakingRewardsPoolInfo)11383_storage)",
             "contract": "BackerRewards",
             "src": "contracts/rewards/BackerRewards.sol:60"
           },
@@ -14576,7 +14576,7 @@
             "label": "tokenStakingRewards",
             "offset": 0,
             "slot": "459",
-            "type": "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)9750_storage)",
+            "type": "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)11397_storage)",
             "contract": "BackerRewards",
             "src": "contracts/rewards/BackerRewards.sol:63"
           }
@@ -14590,7 +14590,7 @@
             "label": "bytes32[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(StakingRewardsSliceInfo)9747_storage)dyn_storage": {
+          "t_array(t_struct(StakingRewardsSliceInfo)11394_storage)dyn_storage": {
             "label": "struct IBackerRewards.StakingRewardsSliceInfo[]",
             "numberOfBytes": "32"
           },
@@ -14610,15 +14610,15 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(GoldfinchConfig)17191": {
+          "t_contract(GoldfinchConfig)19603": {
             "label": "contract GoldfinchConfig",
             "numberOfBytes": "20"
           },
-          "t_contract(ITranchedPool)11572": {
+          "t_contract(ITranchedPool)14064": {
             "label": "contract ITranchedPool",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_struct(BackerRewardsInfo)9728_storage)": {
+          "t_mapping(t_address,t_struct(BackerRewardsInfo)11375_storage)": {
             "label": "mapping(address => struct IBackerRewards.BackerRewardsInfo)",
             "numberOfBytes": "32"
           },
@@ -14630,15 +14630,15 @@
             "label": "mapping(bytes32 => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_contract(ITranchedPool)11572,t_struct(StakingRewardsPoolInfo)9736_storage)": {
+          "t_mapping(t_contract(ITranchedPool)14064,t_struct(StakingRewardsPoolInfo)11383_storage)": {
             "label": "mapping(contract ITranchedPool => struct IBackerRewards.StakingRewardsPoolInfo)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)9725_storage)": {
+          "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)11372_storage)": {
             "label": "mapping(uint256 => struct IBackerRewards.BackerRewardsTokenInfo)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)9750_storage)": {
+          "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)11397_storage)": {
             "label": "mapping(uint256 => struct IBackerRewards.StakingRewardsTokenInfo)",
             "numberOfBytes": "32"
           },
@@ -14654,7 +14654,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(BackerRewardsInfo)9728_storage": {
+          "t_struct(BackerRewardsInfo)11375_storage": {
             "label": "struct IBackerRewards.BackerRewardsInfo",
             "members": [
               {
@@ -14666,7 +14666,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(BackerRewardsTokenInfo)9725_storage": {
+          "t_struct(BackerRewardsTokenInfo)11372_storage": {
             "label": "struct IBackerRewards.BackerRewardsTokenInfo",
             "members": [
               {
@@ -14720,7 +14720,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(StakingRewardsPoolInfo)9736_storage": {
+          "t_struct(StakingRewardsPoolInfo)11383_storage": {
             "label": "struct IBackerRewards.StakingRewardsPoolInfo",
             "members": [
               {
@@ -14737,14 +14737,14 @@
               },
               {
                 "label": "slicesInfo",
-                "type": "t_array(t_struct(StakingRewardsSliceInfo)9747_storage)dyn_storage",
+                "type": "t_array(t_struct(StakingRewardsSliceInfo)11394_storage)dyn_storage",
                 "offset": 0,
                 "slot": "2"
               }
             ],
             "numberOfBytes": "96"
           },
-          "t_struct(StakingRewardsSliceInfo)9747_storage": {
+          "t_struct(StakingRewardsSliceInfo)11394_storage": {
             "label": "struct IBackerRewards.StakingRewardsSliceInfo",
             "members": [
               {
@@ -14780,7 +14780,7 @@
             ],
             "numberOfBytes": "160"
           },
-          "t_struct(StakingRewardsTokenInfo)9750_storage": {
+          "t_struct(StakingRewardsTokenInfo)11397_storage": {
             "label": "struct IBackerRewards.StakingRewardsTokenInfo",
             "members": [
               {
@@ -15447,6 +15447,415 @@
               }
             ],
             "numberOfBytes": "96"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      }
+    },
+    "4ccdcd4a6f08f629773bc08f0a4d2dc1a97fc50c14e01bb862cded9d7528fb5c": {
+      "address": "0x7bcB287059E871ca194474b3e538AdE985efB6A7",
+      "txHash": "0x60656bd118ec498d98af68770226c35cd07d9b3210282fd4ac0078dfd342ec6d",
+      "layout": {
+        "solcVersion": "0.6.12",
+        "storage": [
+          {
+            "label": "initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "label": "initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "label": "______gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)159_storage)",
+            "contract": "AccessControlUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:58"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:210"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:26"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:84"
+          },
+          {
+            "label": "_notEntered",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_bool",
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:21"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:63"
+          },
+          {
+            "label": "__gap1",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "BaseUpgradeablePausable",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:31"
+          },
+          {
+            "label": "__gap2",
+            "offset": 0,
+            "slot": "301",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "BaseUpgradeablePausable",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:32"
+          },
+          {
+            "label": "__gap3",
+            "offset": 0,
+            "slot": "351",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "BaseUpgradeablePausable",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:33"
+          },
+          {
+            "label": "__gap4",
+            "offset": 0,
+            "slot": "401",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "BaseUpgradeablePausable",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:34"
+          },
+          {
+            "label": "config",
+            "offset": 0,
+            "slot": "451",
+            "type": "t_contract(GoldfinchConfig)17192",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:34"
+          },
+          {
+            "label": "totalRewards",
+            "offset": 0,
+            "slot": "452",
+            "type": "t_uint256",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:44"
+          },
+          {
+            "label": "maxInterestDollarsEligible",
+            "offset": 0,
+            "slot": "453",
+            "type": "t_uint256",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:47"
+          },
+          {
+            "label": "totalInterestReceived",
+            "offset": 0,
+            "slot": "454",
+            "type": "t_uint256",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:50"
+          },
+          {
+            "label": "totalRewardPercentOfTotalGFI",
+            "offset": 0,
+            "slot": "455",
+            "type": "t_uint256",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:53"
+          },
+          {
+            "label": "tokens",
+            "offset": 0,
+            "slot": "456",
+            "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)9725_storage)",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:55"
+          },
+          {
+            "label": "pools",
+            "offset": 0,
+            "slot": "457",
+            "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)9728_storage)",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:56"
+          },
+          {
+            "label": "poolStakingRewards",
+            "offset": 0,
+            "slot": "458",
+            "type": "t_mapping(t_contract(ITranchedPool)11573,t_struct(StakingRewardsPoolInfo)9736_storage)",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:57"
+          },
+          {
+            "label": "tokenStakingRewards",
+            "offset": 0,
+            "slot": "459",
+            "type": "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)9750_storage)",
+            "contract": "BackerRewards",
+            "src": "contracts/rewards/BackerRewards.sol:60"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(StakingRewardsSliceInfo)9747_storage)dyn_storage": {
+            "label": "struct IBackerRewards.StakingRewardsSliceInfo[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(GoldfinchConfig)17192": {
+            "label": "contract GoldfinchConfig",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITranchedPool)11573": {
+            "label": "contract ITranchedPool",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(BackerRewardsInfo)9728_storage)": {
+            "label": "mapping(address => struct IBackerRewards.BackerRewardsInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)159_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_contract(ITranchedPool)11573,t_struct(StakingRewardsPoolInfo)9736_storage)": {
+            "label": "mapping(contract ITranchedPool => struct IBackerRewards.StakingRewardsPoolInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)9725_storage)": {
+            "label": "mapping(uint256 => struct IBackerRewards.BackerRewardsTokenInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)9750_storage)": {
+            "label": "mapping(uint256 => struct IBackerRewards.StakingRewardsTokenInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)2912_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2732_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(BackerRewardsInfo)9728_storage": {
+            "label": "struct IBackerRewards.BackerRewardsInfo",
+            "members": [
+              {
+                "label": "accRewardsPerPrincipalDollar",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(BackerRewardsTokenInfo)9725_storage": {
+            "label": "struct IBackerRewards.BackerRewardsTokenInfo",
+            "members": [
+              {
+                "label": "rewardsClaimed",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "accRewardsPerPrincipalDollarAtMint",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(RoleData)159_storage": {
+            "label": "struct AccessControlUpgradeSafe.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)2912_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(Set)2732_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(StakingRewardsPoolInfo)9736_storage": {
+            "label": "struct IBackerRewards.StakingRewardsPoolInfo",
+            "members": [
+              {
+                "label": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "slicesInfo",
+                "type": "t_array(t_struct(StakingRewardsSliceInfo)9747_storage)dyn_storage",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(StakingRewardsSliceInfo)9747_storage": {
+            "label": "struct IBackerRewards.StakingRewardsSliceInfo",
+            "members": [
+              {
+                "label": "fiduSharePriceAtDrawdown",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "principalDeployedAtLastCheckpoint",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "accumulatedRewardsPerTokenAtDrawdown",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "accumulatedRewardsPerTokenAtLastCheckpoint",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(StakingRewardsTokenInfo)9750_storage": {
+            "label": "struct IBackerRewards.StakingRewardsTokenInfo",
+            "members": [
+              {
+                "label": "accumulatedRewardsPerTokenAtLastWithdraw",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
           },
           "t_uint256": {
             "label": "uint256",

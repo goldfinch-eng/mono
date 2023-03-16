@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 import { formatDistanceStrict } from "date-fns";
-import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
 import { InfoLine, Link } from "@/components/design-system";
@@ -49,7 +48,6 @@ interface LoanSummaryProps {
   loan: LoanSummaryFieldsFragment;
   deal: LoanSummaryDealFieldsFragment;
   borrower: LoanSummaryBorrowerFieldsFragment;
-  seniorPoolEstimatedApyFromGfiRaw: FixedNumber;
   fiatPerGfi: number;
 }
 
@@ -58,7 +56,6 @@ export function LoanSummary({
   loan,
   deal,
   borrower,
-  seniorPoolEstimatedApyFromGfiRaw,
   fiatPerGfi,
 }: LoanSummaryProps) {
   return (
@@ -108,12 +105,7 @@ export function LoanSummary({
             <div className="mb-2 text-sm">Variable GFI APY</div>
             <div className="font-serif text-3xl font-semibold text-sand-800">
               {formatPercent(
-                computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi).addUnsafe(
-                  computeApyFromGfiInFiat(
-                    seniorPoolEstimatedApyFromGfiRaw,
-                    fiatPerGfi
-                  )
-                )
+                computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi)
               )}
             </div>
           </div>

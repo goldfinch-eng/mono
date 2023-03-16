@@ -76,7 +76,6 @@ gql`
     seniorPools(first: 1) {
       id
       estimatedApyFromGfiRaw
-      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -366,9 +365,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     loan={tranchedPool}
                     deal={dealDetails}
                     borrower={borrower}
-                    seniorPoolEstimatedApyFromGfiRaw={
-                      seniorPool.estimatedApyFromGfiRaw
-                    }
                     fiatPerGfi={fiatPerGfi}
                   />
                   {fundingStatus === LoanFundingStatus.Open ||

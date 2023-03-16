@@ -2,7 +2,6 @@ import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
 
 import { Button, HelperText, Link } from "@/components/design-system";
-import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -193,15 +192,6 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const seniorPoolApyFromGfi = computeApyFromGfiInFiat(
-                seniorPool.estimatedApyFromGfiRaw,
-                fiatPerGfi
-              );
-
-              const apyFromGfi = loan.rawGfiApy.isZero()
-                ? loan.rawGfiApy
-                : loanApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
-
               return (
                 <OpenDealCard
                   key={loan.id}
@@ -209,7 +199,7 @@ export default function EarnPage({
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
                   usdcApy={loan.usdcApy}
-                  gfiApy={apyFromGfi}
+                  gfiApy={loanApyFromGfi}
                   gfiApyTooltip={
                     <div>
                       <div className="mb-4">
@@ -226,25 +216,6 @@ export default function EarnPage({
                           Goldfinch Documentation
                         </Link>
                         .
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <div>Backer liquidity mining GFI APY</div>
-                          <div>{formatPercent(loanApyFromGfi)}</div>
-                        </div>
-                        <div className="flex justify-between">
-                          <div>LP rewards match GFI APY</div>
-                          <div>
-                            {formatPercent(
-                              loan.rawGfiApy.isZero() ? 0 : seniorPoolApyFromGfi
-                            )}
-                          </div>
-                        </div>
-                        <hr className="border-t border-sand-300" />
-                        <div className="flex justify-between">
-                          <div>Total Est. APY</div>
-                          <div>{formatPercent(apyFromGfi)}</div>
-                        </div>
                       </div>
                     </div>
                   }
