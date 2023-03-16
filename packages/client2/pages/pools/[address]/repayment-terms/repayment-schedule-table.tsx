@@ -14,8 +14,8 @@ export function RepaymentScheduleTable({
   repaymentSchedule,
 }: RepaymentScheduleTableProps) {
   return (
-    <div className={clsx(className, "max-h-80 overflow-y-auto")}>
-      <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
+    <div className={clsx(className, "max-h-80 overflow-auto")}>
+      <table className="w-full whitespace-nowrap text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
         <thead>
           <tr className="sticky top-0 bg-mustard-100">
             <th scope="col" className="w-1/12 text-left">

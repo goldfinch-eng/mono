@@ -204,7 +204,7 @@ export function SeniorPoolRepaymentSection({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="max-h-80 overflow-y-auto">
+      <div className="max-h-80 overflow-auto whitespace-nowrap">
         <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-3">
           <thead>
             <tr className="sticky top-0 z-10 bg-mustard-100">

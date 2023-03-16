@@ -28,8 +28,8 @@ export function Highlight({
     <div
       className={clsx(
         "flex flex-col justify-between gap-4 rounded-lg bg-sand-700 p-6",
-        "first:col-span-full first:flex-row first:gap-12 first:bg-sand-800",
-        "[&:first-child>.highlight-heading]:basis-1/2 [&:first-child>.highlight-heading]:text-2xl"
+        "first:col-span-full first:gap-12 first:bg-sand-800 first:sm:flex-row",
+        "[&:first-child>.highlight-heading]:shrink-0 [&:first-child>.highlight-heading]:text-2xl [&:first-child>.highlight-heading]:sm:w-1/4"
       )}
     >
       <div className="highlight-heading font-serif font-semibold text-mustard-200">
