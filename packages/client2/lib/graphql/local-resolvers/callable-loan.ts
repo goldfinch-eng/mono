@@ -1,12 +1,15 @@
 /* eslint-disable no-console */
 import { Resolvers } from "@apollo/client";
 import { addDays, endOfDay, fromUnixTime, getUnixTime } from "date-fns";
-import { format as formatDate } from "date-fns";
+// import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
+import {
+  // formatCrypto,
+  roundUpUsdcPenny,
+} from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
 import { getFreshProvider, getProvider } from "@/lib/wallet";
 
@@ -49,17 +52,18 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
   }
 
   const isLate = await callableLoanContract.isLate();
+  const nextDueTime = await callableLoanContract.nextDueTime();
 
   // Scenario 1: We are EARLY - the borrower will pre-pay interest + principal that would be due at the end of the month
   if (!isLate) {
-    const nextDueTime = await callableLoanContract.nextDueTime();
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwedAt(nextDueTime),
+      // TODO: Do callable loans support pre-paying called capital..?
       callableLoanContract.principalOwedAt(nextDueTime),
     ]);
 
     return {
-      interestOwed,
+      interestOwed: roundUpUsdcPenny(interestOwed),
       principalOwed,
     };
   }
@@ -78,7 +82,7 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
     ]);
 
     return {
-      interestOwed,
+      interestOwed: roundUpUsdcPenny(interestOwed),
       principalOwed,
     };
   }
@@ -89,17 +93,11 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
   const [interestOwed, principalOwed] = await Promise.all([
     // "interestOwedAt" will consider accruing interest when we're past "termEndTime"
     callableLoanContract.interestOwedAt(endOfNextDayTimestamp),
-    callableLoanContract.principalOwedAt(endOfNextDayTimestamp),
+    callableLoanContract.principalOwed(),
   ]);
 
-  console.log({
-    endOfNextDayTimestamp,
-    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
-    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
-  });
-
   return {
-    interestOwed,
+    interestOwed: roundUpUsdcPenny(interestOwed),
     principalOwed,
   };
 };
@@ -120,50 +118,28 @@ const getLoanTermDueAmount = async (callableLoanId: string) => {
     return BigNumber.from(0);
   }
 
-  const { timestamp: currentTimestamp } = await uncachedProvider.getBlock(
-    "latest"
-  );
-  const currentNextDueTime = await callableLoanContract.nextDueTimeAt(
-    currentTimestamp
-  );
-  const isLastPeriod = currentNextDueTime.toNumber() === termEndTime.toNumber();
+  const [nextDueTime, principalOwed] = await Promise.all([
+    callableLoanContract.nextDueTime(),
+    callableLoanContract.principalOwedAt(termEndTime),
+  ]);
 
   // If we're NOT on the last period, then the total amount owed for the loan is the sum of:
   // - The total outstanding principal owed on the loan
   // - The total outstanding interest owed on the loan
-  // - The total interest owed up to the next period due time (for callable loans only - not BPI)
+  // - The total interest owed up to the next period due time (unlike BPI pools, callable loans always expects interest up to next period due time)
+  const isLastPeriod = nextDueTime.toNumber() === termEndTime.toNumber();
   if (!isLastPeriod) {
     const nextPrincipalDueTime =
       await callableLoanContract.nextPrincipalDueTime();
-
-    const [interestOwed, principalOwed] = await Promise.all([
-      callableLoanContract.interestOwedAt(nextPrincipalDueTime),
-      callableLoanContract.principalOwedAt(termEndTime),
-    ]);
-
-    console.log({
-      isLastPeriod,
-      nextPrincipalDueTime: formatDate(
-        nextPrincipalDueTime.toNumber() * 1000,
-        "MMM d"
-      ),
-      interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
-      principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
-    });
+    const interestOwed = await callableLoanContract.interestOwedAt(
+      nextPrincipalDueTime
+    );
 
     return interestOwed.add(principalOwed);
   }
 
-  // If we're on the last period, then the total amount owed for the loan is simply the period due amount
-  const { interestOwed, principalOwed } = await getLoanPeriodDueAmount(
-    callableLoanId
-  );
-
-  console.log({
-    isLastPeriod,
-    interestOwed: formatCrypto({ amount: interestOwed, token: "USDC" }),
-    principalOwed: formatCrypto({ amount: principalOwed, token: "USDC" }),
-  });
+  // If we're on the last period, then we can derive interest from the current period interest owed
+  const { interestOwed } = await getLoanPeriodDueAmount(callableLoanId);
 
   return interestOwed.add(principalOwed);
 };
