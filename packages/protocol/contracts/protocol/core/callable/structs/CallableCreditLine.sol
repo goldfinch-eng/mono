@@ -125,7 +125,22 @@ library CallableCreditLineLogic {
     });
 
     if (cl.principalOwed() == 0 && cl.interestOwed() == 0) {
-      cl._lastFullPaymentTime = block.timestamp;
+      cl._lastFullPaymentTime = Math.max(block.timestamp, cl._lastFullPaymentTime);
+    }
+
+    for (
+      uint256 periodIndex = cl._paymentSchedule.currentPeriod();
+      periodIndex < cl._paymentSchedule.schedule.periodsInTerm();
+      periodIndex++
+    ) {
+      uint256 periodEndTime = cl._paymentSchedule.periodEndTime(periodIndex);
+
+      if (cl.principalOwedAt(periodEndTime) == 0 && cl.interestOwedAt(periodEndTime) == 0) {
+        cl._lastFullPaymentTime = Math.max(block.timestamp, periodEndTime);
+      } else {
+        // If we hit a period where there is still principal or interest owed, we can stop.
+        break;
+      }
     }
   }
 
@@ -365,6 +380,8 @@ library CallableCreditLineLogic {
   /// Assumes cl._waterfall.totalPrincipalOutstanding() for the principal balance that the interest is applied to.
   /// Assumes a checkpoint has occurred.
   /// If a checkpoint has not occurred, late fees will not account for balance settlement or future payments.
+  /// Late fees should be applied to interest accrued up until block.timestamp.
+  /// Should not account for late fees in interest which will accrue in the future as payments could occur.
   function totalInterestAccruedAt(
     CallableCreditLine storage cl,
     uint256 timestamp
@@ -377,7 +394,9 @@ library CallableCreditLineLogic {
       return 0;
     }
 
+    uint256 totalInterestOwedAtLastCheckpoint = cl._totalInterestOwedAtLastCheckpoint;
     totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
+
     uint256 firstInterestEndPoint = timestamp;
     if (cl._checkpointedAsOf < cl.termEndTime()) {
       firstInterestEndPoint = Math.min(
@@ -387,6 +406,9 @@ library CallableCreditLineLogic {
     }
 
     // TODO: Test scenario where cl._lastFullPaymentTime falls on due date.
+
+    // Late fees are already accounted for as of _checkpointedAsOf
+    // Late fees are already accounted for in _totalInterestAccruedAtLastCheckpoint
     uint256 lateFeesStartAt = Math.max(
       cl._checkpointedAsOf,
       cl._paymentSchedule.nextDueTimeAt(cl._lastFullPaymentTime) +
@@ -398,6 +420,7 @@ library CallableCreditLineLogic {
       cl._checkpointedAsOf,
       firstInterestEndPoint,
       lateFeesStartAt,
+      block.timestamp,
       cl._waterfall.totalPrincipalOutstandingBeforeReserves(),
       cl._interestApr,
       cl._lateAdditionalApr
@@ -409,6 +432,7 @@ library CallableCreditLineLogic {
         firstInterestEndPoint,
         timestamp,
         lateFeesStartAt,
+        block.timestamp,
         cl._waterfall.totalPrincipalOutstandingAfterReserves(),
         cl._interestApr,
         cl._lateAdditionalApr
@@ -453,7 +477,9 @@ library CallableCreditLineLogic {
 
     fullPaymentTime = cl._lastFullPaymentTime;
 
-    uint256 startPeriod = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
+    uint256 startPeriod = cl._paymentSchedule.periodAt(
+      Math.max(cl._checkpointedAsOf, fullPaymentTime)
+    );
     uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
 
     for (uint256 periodIndex = startPeriod; periodIndex < currentlyActivePeriod; periodIndex++) {

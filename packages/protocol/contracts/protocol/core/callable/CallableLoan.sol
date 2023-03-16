@@ -682,11 +682,11 @@ contract CallableLoan is
   /*================================================================================
   PaymentSchedule proxy functions
   ================================================================================*/
-  function nextPrincipalDueTime() public view returns (uint256) {
+  function nextPrincipalDueTime() public view override returns (uint256) {
     return _staleCreditLine.nextPrincipalDueTime();
   }
 
-  function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
+  function nextDueTimeAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.nextDueTimeAt(timestamp);
   }
 

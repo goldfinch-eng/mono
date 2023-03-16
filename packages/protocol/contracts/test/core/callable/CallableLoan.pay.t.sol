@@ -106,4 +106,30 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
       "balance"
     );
   }
+
+  function testCanFullyPayOffExample(uint256 timestamp) public {
+    vm.warp(1681444800);
+    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    depositAndDrawdown(callableLoan, usdcVal(10000));
+    // warpToAfterDrawdownPeriod(callableLoan);
+    // timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
+    vm.warp(block.timestamp + 30 days);
+
+    uint256 totalOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) + cl.balance();
+
+
+    fundAddress(address(this), totalOwed);
+    usdc.approve(address(callableLoan), totalOwed);
+    ILoan.PaymentAllocation memory pa = callableLoan.pay(totalOwed);
+
+    vm.warp(block.timestamp + 30 days);
+    assertEq(cl.interestAccrued(), 0, "accrued");
+    assertEq(cl.interestOwed(), 0, "owed");
+    assertEq(
+      cl.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+      0,
+      "owed at next principal due time should be 0"
+    );
+    assertEq(cl.balance(), 0, "balance should be 0");
+  }
 }
