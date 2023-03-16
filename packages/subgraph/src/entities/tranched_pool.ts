@@ -591,22 +591,25 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     }
   }
 
-  const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
-  let repaymentFrequency = ""
-  if (approximateSecondsPerPeriod <= secondsPerDay) {
-    repaymentFrequency = "DAILY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
-    repaymentFrequency = "WEEKLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
-    repaymentFrequency = "BIWEEKLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
-    repaymentFrequency = "MONTHLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
-    repaymentFrequency = "QUARTERLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
-    repaymentFrequency = "HALFLY"
-  } else {
-    repaymentFrequency = "ANNUALLY"
+  let repaymentFrequency = "MONTHLY"
+  // For some reason, early pools don't properly generate a repayment schedule (like block 13.1M), so this check needs to happen
+  if (repayments.length >= 2) {
+    const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+    if (approximateSecondsPerPeriod <= secondsPerDay) {
+      repaymentFrequency = "DAILY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
+      repaymentFrequency = "WEEKLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
+      repaymentFrequency = "BIWEEKLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
+      repaymentFrequency = "MONTHLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
+      repaymentFrequency = "QUARTERLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
+      repaymentFrequency = "HALFLY"
+    } else {
+      repaymentFrequency = "ANNUALLY"
+    }
   }
 
   return new SchedulingResult(
