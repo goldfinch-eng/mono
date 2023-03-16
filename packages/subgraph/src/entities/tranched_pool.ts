@@ -592,10 +592,10 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       }
     }
   }
-  let repaymentFrequency = ""
-  if (repayments.length < 2) {
-    repaymentFrequency = "UNKNOWN"
-  } else {
+
+  let repaymentFrequency = "MONTHLY"
+  // For some reason, early pools don't properly generate a repayment schedule (like block 13.1M), so this check needs to happen
+  if (repayments.length >= 2) {
     const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
     if (approximateSecondsPerPeriod <= secondsPerDay) {
       repaymentFrequency = "DAILY"

@@ -142,8 +142,8 @@ export function BorrowerProfile({
             tooltip="[TODO] content"
             value={formatCrypto({ token: "USDC", amount: totalLoanPrincipal })}
           />
-          <div className="col-span-full bg-mustard-50">
-            <table className="w-full text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
+          <div className="col-span-full overflow-auto bg-mustard-50">
+            <table className="w-full whitespace-nowrap text-xs [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3">
               <thead>
                 <tr className="border-b border-sand-200 bg-mustard-100 text-right [&>th]:font-normal">
                   <th scope="col" className="w-1/4 text-left">

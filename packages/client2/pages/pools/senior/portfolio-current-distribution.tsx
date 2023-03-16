@@ -210,7 +210,7 @@ export function PortfolioCurrentDistribution({
         );
 
   return (
-    <div className="rounded-xl border border-sand-300">
+    <div className="overflow-auto rounded-xl border border-sand-300">
       <div className="flex justify-between p-6">
         <div className="text-sm">Current distribution</div>
         <DropdownMenu
@@ -220,7 +220,7 @@ export function PortfolioCurrentDistribution({
         />
       </div>
 
-      <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
+      <table className="w-full whitespace-nowrap text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-2">
         <thead>
           <tr className="border-b border-sand-300 bg-mustard-100">
             <th scope="col" className="w-[30%] text-left">
