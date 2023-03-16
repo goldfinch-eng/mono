@@ -85,7 +85,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     vm.expectRevert("Pausable: paused");
     callableLoan.pay(usdcVal(1));
 
-    vm.expectRevert("Pausable: paused");
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.UnsupportedOperation.selector));
     callableLoan.pay(usdcVal(1), usdcVal(1));
   }
 

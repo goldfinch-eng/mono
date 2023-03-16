@@ -155,7 +155,7 @@
     "ethers": "^5.7.2",
     "firebase-admin": "^9.12.0",
     "ganache-cli": "^6.10.2",
-    "hardhat": "^2.12.2",
+    "hardhat": "^2.13.0",
     "hardhat-contract-sizer": "^2.5.1",
     "hardhat-deploy": "^0.11.14",
     "hardhat-gas-reporter": "^1.0.4",

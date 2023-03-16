@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity >=0.8.4;
 
 import {LoanPhase} from "./ICallableLoan.sol";
@@ -70,6 +72,7 @@ interface ICallableLoanErrors {
   error HasInsufficientTranches(uint256 numPrincipalPeriods, uint256 minimumNumPrincipalPeriods);
   error CannotReinitialize();
   error InvalidNumLockupPeriods(uint256 numLockupPeriods, uint256 periodsPerPrincipalPeriod);
+  error UnsupportedOperation();
 
   /*================================================================================
   Timestamps

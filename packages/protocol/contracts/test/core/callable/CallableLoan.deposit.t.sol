@@ -55,13 +55,30 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertEq(poolToken, 1);
   }
 
+  function testDepositRevertsBeforeFundableAt(
+    uint256 fundableAt,
+    uint256 warpDestination
+  ) public impersonating(DEPOSITOR) {
+    fundableAt = bound(fundableAt, 1, 1460 days);
+    warpDestination = bound(warpDestination, block.timestamp, block.timestamp + fundableAt);
+    vm.warp(warpDestination);
+    (CallableLoan callableLoan, ) = callableLoanBuilder
+      .withFundableAt(block.timestamp + fundableAt)
+      .build(BORROWER);
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    usdc.approve(address(callableLoan), type(uint256).max);
+
+    vm.expectRevert(bytes("NA"));
+    callableLoan.deposit(3, usdcVal(1));
+  }
+
   function testDepositRevertsForZeroDeposit() public impersonating(DEPOSITOR) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
 
     vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.ZeroDepositAmount.selector));
-    callableLoan.deposit(1, usdcVal(0));
+    callableLoan.deposit(3, usdcVal(0));
   }
 
   function testDepositRevertsIfPoolLocked() public impersonating(DEPOSITOR) {
