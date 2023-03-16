@@ -34,6 +34,7 @@ library CallableLoanAccountant {
   ///                      the next time principal is settled
   /// @param timeUntilNextPrincipalSettlement time at which the next principal payment is due
   /// @param principalOwed principal owed on the credit line
+  /// @param guaranteedFutureInterestPaid guaranteed future interest which has already been paid
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
     uint256 paymentAmount,
@@ -42,7 +43,8 @@ library CallableLoanAccountant {
     uint256 principalOwed,
     uint256 interestRate,
     uint256 timeUntilNextPrincipalSettlement,
-    uint256 balance
+    uint256 balance,
+    uint256 guaranteedFutureInterestPaid
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
     uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
@@ -61,7 +63,7 @@ library CallableLoanAccountant {
       interestApr: interestRate
     });
     uint256 guaranteedFutureAccruedInterestPayment = Math.min(
-      guaranteedFutureInterest,
+      guaranteedFutureInterest.saturatingSub(guaranteedFutureInterestPaid),
       paymentRemaining
     );
     paymentRemaining -= guaranteedFutureAccruedInterestPayment;

@@ -713,6 +713,16 @@ library PreviewCallableCreditLineLogic {
 library CheckpointedCallableCreditLineLogic {
   using SaturatingSub for uint256;
 
+  function totalInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
+    return cl._totalInterestOwedAtLastCheckpoint;
+  }
+
+  function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
+    assert(cl._checkpointedAsOf == block.timestamp);
+    return cl._totalInterestAccruedAtLastCheckpoint;
+  }
+
   function proportionalInterestAndPrincipalAvailable(
     CallableCreditLine storage cl,
     uint256 trancheId,
