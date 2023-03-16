@@ -1,15 +1,10 @@
-/* eslint-disable no-console */
 import { Resolvers } from "@apollo/client";
 import { addDays, endOfDay, fromUnixTime, getUnixTime } from "date-fns";
-// import { format as formatDate } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import {
-  // formatCrypto,
-  roundUpUsdcPenny,
-} from "@/lib/format";
+import { roundUpUsdcPenny } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
 import { getFreshProvider, getProvider } from "@/lib/wallet";
 
@@ -52,14 +47,17 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
   }
 
   const isLate = await callableLoanContract.isLate();
-  const nextDueTime = await callableLoanContract.nextDueTime();
 
-  // Scenario 1: We are EARLY - the borrower will pre-pay interest + principal that would be due at the end of the month
+  // Scenario 1: We are EARLY - the borrower can pre-pay (interest due at the end of the interest period) + (principal that would be due at the end of the principal period)
   if (!isLate) {
+    const [nextDueTime, nextPrinciPalDueTime] = await Promise.all([
+      callableLoanContract.nextDueTime(),
+      callableLoanContract.nextPrincipalDueTime(),
+    ]);
+
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwedAt(nextDueTime),
-      // TODO: Do callable loans support pre-paying called capital..?
-      callableLoanContract.principalOwedAt(nextDueTime),
+      callableLoanContract.principalOwedAt(nextPrinciPalDueTime),
     ]);
 
     return {
@@ -126,7 +124,7 @@ const getLoanTermDueAmount = async (callableLoanId: string) => {
   // If we're NOT on the last period, then the total amount owed for the loan is the sum of:
   // - The total outstanding principal owed on the loan
   // - The total outstanding interest owed on the loan
-  // - The total interest owed up to the next period due time (unlike BPI pools, callable loans always expects interest up to next period due time)
+  // - The total interest owed up to the next period due time (unlike BPI pools, callable loans always expects interest up to next period due time for full loan payment)
   const isLastPeriod = nextDueTime.toNumber() === termEndTime.toNumber();
   if (!isLastPeriod) {
     const nextPrincipalDueTime =
