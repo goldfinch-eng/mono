@@ -26,7 +26,6 @@ import {ceil, getAddressFromConfig, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2
 import {getBackerRewards} from "./backer_rewards"
 import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 import {getListOfAllTranchedPoolAddresses} from "./protocol"
-import {estimateLoanPaymentFrequency} from "../mappings/callable_loan/helpers"
 
 const cancelledPoolAddresses = ["0xd43a4f3041069c6178b99d55295b00d0db955bb5"]
 const secondsPerYear_BigInt = BigInt.fromI32(60 * 60 * 24 * 365)
@@ -237,7 +236,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
     tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
-    tranchedPool.paymentFrequency = estimateLoanPaymentFrequency(schedulingResult.repaymentIds)
     tranchedPool.numRepayments = schedulingResult.repaymentIds.length
     tranchedPool.termInSeconds = schedulingResult.termInSeconds
   }
@@ -600,6 +598,5 @@ export function deleteTranchedPoolRepaymentSchedule(tranchedPool: TranchedPool):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   tranchedPool.repaymentSchedule = []
-  tranchedPool.paymentFrequency = "Unknown"
   tranchedPool.numRepayments = 0
 }
