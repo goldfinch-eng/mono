@@ -135,7 +135,11 @@ library CallableCreditLineLogic {
     ) {
       uint256 periodEndTime = cl._paymentSchedule.periodEndTime(periodIndex);
 
-      if (cl.principalOwedAt(periodEndTime) == 0 && cl.interestOwedAt(periodEndTime) == 0) {
+      if (
+        periodEndTime <= cl.nextPrincipalDueTime() &&
+        cl.principalOwedAt(periodEndTime) == 0 &&
+        cl.interestOwedAt(periodEndTime) == 0
+      ) {
         cl._lastFullPaymentTime = Math.max(block.timestamp, periodEndTime);
       } else {
         // If we hit a period where there is still principal or interest owed, we can stop.
