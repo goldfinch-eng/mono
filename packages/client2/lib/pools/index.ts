@@ -571,6 +571,7 @@ const repaymentFrequencyLabels: Record<RepaymentFrequency, string> = {
   QUARTERLY: "Quarterly",
   HALFLY: "Halfly",
   ANNUALLY: "Annually",
+  UNKNOWN: "Unknown",
 };
 
 export function getRepaymentFrequencyLabel(
