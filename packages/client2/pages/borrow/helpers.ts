@@ -365,9 +365,10 @@ export function getCreditLineAccountingAnalyisValues(
     delinquency,
   } = loan;
 
+  const isLate = delinquency !== "CURRENT"; // For the purpose of this calculation, "grace period" is the same as late
+
   // 'principalAmount' represents the limit once the pool has been locked.
   // Thus when still raising, we show the limit as the max funding limit of the pool
-  const isLate = delinquency !== "CURRENT"; // For the purpose of this calculation, "grace period" is the same as late
   const creditLineLimit = principalAmount.gt(0)
     ? principalAmount
     : fundingLimit;

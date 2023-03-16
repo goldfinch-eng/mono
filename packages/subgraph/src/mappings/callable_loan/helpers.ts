@@ -154,8 +154,8 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     }
   }
 
-  let repaymentFrequency = ""
   const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+  let repaymentFrequency = ""
   if (approximateSecondsPerPeriod <= secondsPerDay) {
     repaymentFrequency = "DAILY"
   } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
