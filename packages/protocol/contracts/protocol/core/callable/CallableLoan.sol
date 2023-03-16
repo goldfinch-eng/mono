@@ -93,7 +93,6 @@ contract CallableLoan is
     // NOTE: This check can be replaced with an after deploy verification rather than
     //       a require statement which increases bytecode size.
     // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
-    // TODO: Test this.
     if (_numLockupPeriods >= _schedule.periodsPerPrincipalPeriod()) {
       revert InvalidNumLockupPeriods(_numLockupPeriods, _schedule.periodsPerPrincipalPeriod());
     }
@@ -223,7 +222,6 @@ contract CallableLoan is
       //    mint a new token representing the remainder.
       //    Redeem the principal paid and interest redeemed to make sure a user cannot
       //    double withdraw their redeemable balances on the call requested token.
-      // TODO: Write test for dust threshold.
       if (tokenInfo.principalAmount - principalDepositedMoved > SPLIT_TOKEN_DUST_THRESHOLD) {
         remainingTokenId = poolTokens.mint(
           IPoolTokens.MintParams({
@@ -548,7 +546,6 @@ contract CallableLoan is
     uint256 reserveFundsFee = (_reserveFundsFeePercent() * totalInterestPayment) / 100;
 
     cl.pay(totalPrincipalPayment, totalInterestPayment);
-    // TODO: Write test that correct event is emitted.
     emit PaymentApplied({
       payer: msg.sender,
       pool: address(this),

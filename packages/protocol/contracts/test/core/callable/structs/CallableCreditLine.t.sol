@@ -82,16 +82,11 @@ contract TestCallableCreditLine is BaseTest {
     assertEq(cpcl.limit(), DEFAULT_LIMIT);
   }
 
-  function testCheckpointAndThereforeDepositFailsBeforeFundableAt(
-    uint128 depositAmount,
-    uint256 warpTime
-  ) public {
+  function testDepositFailsBeforeFundableAt(uint128 depositAmount, uint256 warpTime) public {
     setupDefaultWithLimit(depositAmount);
     warpTime = bound(warpTime, 0, staleCreditLine._cl._fundableAt - 1);
 
     vm.warp(warpTime);
-    vm.expectRevert(bytes("NA"));
-    staleCreditLine.checkpoint();
 
     // Unsafe get to get around checkpoint requirement for test.
     CallableCreditLine storage cpcl = staleCreditLine._cl;

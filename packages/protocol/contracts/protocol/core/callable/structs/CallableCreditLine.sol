@@ -226,7 +226,7 @@ library CallableCreditLineLogic {
 
   /// Settles payment reserves and updates the checkpointed values.
   function checkpoint(CallableCreditLine storage cl) internal {
-    if (cl.loanPhase() == LoanPhase.Funding) {
+    if (cl.loanPhase() == LoanPhase.Funding || cl.loanPhase() == LoanPhase.Prefunding) {
       return;
     }
 
@@ -251,7 +251,6 @@ library CallableCreditLineLogic {
   }
 
   function setFundableAt(CallableCreditLine storage cl, uint256 newFundableAt) internal {
-    // TODO: Needs unit test
     if (cl.loanPhase() != LoanPhase.Prefunding) {
       revert ICallableLoanErrors.CannotSetFundableAtAfterFundableAt(cl._fundableAt);
     }
@@ -408,8 +407,6 @@ library CallableCreditLineLogic {
         timestamp
       );
     }
-
-    // TODO: Test scenario where cl._lastFullPaymentTime falls on due date.
 
     // Late fees are already accounted for as of _checkpointedAsOf
     // Late fees are already accounted for in _totalInterestAccruedAtLastCheckpoint

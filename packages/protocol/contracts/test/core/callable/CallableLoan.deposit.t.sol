@@ -68,7 +68,13 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     usdc.approve(address(callableLoan), type(uint256).max);
 
-    vm.expectRevert(bytes("NA"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InvalidLoanPhase.selector,
+        LoanPhase.Prefunding,
+        LoanPhase.Funding
+      )
+    );
     callableLoan.deposit(3, usdcVal(1));
   }
 

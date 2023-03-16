@@ -12,6 +12,10 @@ import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
+  function testPoolTokenDustLimit() public {
+    // TODO
+  }
+
   function testDoesNotLetYouSubmitCallForPoolTokenYouDontOwn(
     address poolTokenOwner,
     address rando,
