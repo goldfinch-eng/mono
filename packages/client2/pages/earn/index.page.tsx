@@ -2,7 +2,6 @@ import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
 
 import { Button, HelperText, Link } from "@/components/design-system";
-import { formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -193,15 +192,6 @@ export default function EarnPage({
                 fiatPerGfi
               );
 
-              const seniorPoolApyFromGfi = computeApyFromGfiInFiat(
-                seniorPool.estimatedApyFromGfiRaw,
-                fiatPerGfi
-              );
-
-              const apyFromGfi = tranchedPool.rawGfiApy.isZero()
-                ? tranchedPool.rawGfiApy
-                : tranchedPoolApyFromGfi.addUnsafe(seniorPoolApyFromGfi);
-
               const termLengthInMonths = Math.floor(
                 tranchedPool.termInDays / 30
               );
@@ -213,45 +203,22 @@ export default function EarnPage({
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
                   usdcApy={tranchedPool.usdcApy}
-                  gfiApy={apyFromGfi}
+                  gfiApy={tranchedPoolApyFromGfi}
                   gfiApyTooltip={
-                    <div>
-                      <div className="mb-4">
-                        The Pool&rsquo;s total current estimated APY, including
-                        the current USDC APY and est. GFI rewards APY. The GFI
-                        rewards APY is volatile and changes based on several
-                        variables including the price of GFI, the total capital
-                        deployed on Goldfinch, and Senior Pool&rsquo;s
-                        utilization. Learn more in the{" "}
-                        <Link
-                          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
-                          openInNewTab
-                        >
-                          Goldfinch Documentation
-                        </Link>
-                        .
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <div>Backer liquidity mining GFI APY</div>
-                          <div>{formatPercent(tranchedPoolApyFromGfi)}</div>
-                        </div>
-                        <div className="flex justify-between">
-                          <div>LP rewards match GFI APY</div>
-                          <div>
-                            {formatPercent(
-                              tranchedPool.rawGfiApy.isZero()
-                                ? 0
-                                : seniorPoolApyFromGfi
-                            )}
-                          </div>
-                        </div>
-                        <hr className="border-t border-sand-300" />
-                        <div className="flex justify-between">
-                          <div>Total Est. APY</div>
-                          <div>{formatPercent(apyFromGfi)}</div>
-                        </div>
-                      </div>
+                    <div className="mb-4">
+                      The Pool&rsquo;s total current estimated APY, including
+                      the current USDC APY and est. GFI rewards APY. The GFI
+                      rewards APY is volatile and changes based on several
+                      variables including the price of GFI, the total capital
+                      deployed on Goldfinch, and Senior Pool&rsquo;s
+                      utilization. Learn more in the{" "}
+                      <Link
+                        href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                        openInNewTab
+                      >
+                        Goldfinch Documentation
+                      </Link>
+                      .
                     </div>
                   }
                   termLengthInMonths={termLengthInMonths}
