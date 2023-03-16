@@ -50,14 +50,10 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 
   // Scenario 1: We are EARLY - the borrower can pre-pay (interest due at the end of the interest period) + (principal that would be due at the end of the principal period)
   if (!isLate) {
-    const [nextDueTime, nextPrinciPalDueTime] = await Promise.all([
-      callableLoanContract.nextDueTime(),
-      callableLoanContract.nextPrincipalDueTime(),
-    ]);
-
+    const nextDueTime = await callableLoanContract.nextDueTime();
     const [interestOwed, principalOwed] = await Promise.all([
       callableLoanContract.interestOwedAt(nextDueTime),
-      callableLoanContract.principalOwedAt(nextPrinciPalDueTime),
+      callableLoanContract.principalOwedAt(nextDueTime),
     ]);
 
     return {

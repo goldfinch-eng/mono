@@ -22,6 +22,7 @@ import {
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
 import { LoanPhase } from "@/lib/graphql/local-resolvers/callable-loan";
+import { getRepaymentFrequencyLabel } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
@@ -442,7 +443,7 @@ export default function PoolCreditLinePage({
                 </div>
                 <div>
                   <div className="mb-0.5 text-2xl">
-                    {loan.repaymentFrequency}
+                    {getRepaymentFrequencyLabel(loan.repaymentFrequency)}
                   </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
