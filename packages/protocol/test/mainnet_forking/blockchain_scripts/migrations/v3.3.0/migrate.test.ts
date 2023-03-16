@@ -97,7 +97,6 @@ describe("v3.3.0", async function () {
 
   describe("Borrower", async () => {
     it("throws an error when attempting to lockJuniorCapital", async () => {
-      // await borrowerContract.lockJuniorCapital(callableLoanInstance.address, {from: borrowerAddress})
       await expect(
         borrowerContract.lockJuniorCapital(callableLoanInstance.address, {from: borrowerAddress})
       ).to.eventually.be.rejectedWith()
@@ -115,8 +114,8 @@ describe("v3.3.0", async function () {
           from: borrowerAddress,
         })
       }).toChange([
-        [() => usdc.balanceOf(borrowerAddress), {by: usdcVal(100)}],
-        [() => usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), decrease: true}],
+        [async () => await usdc.balanceOf(borrowerAddress), {by: usdcVal(100), increase: true}],
+        [async () => await usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), decrease: true}],
       ])
     })
 
@@ -131,8 +130,8 @@ describe("v3.3.0", async function () {
           from: borrowerAddress,
         })
       }).toChange([
-        [() => usdc.balanceOf(borrowerAddress), {by: usdcVal(100), decrease: true}],
-        [() => usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), increase: true}],
+        [async () => await usdc.balanceOf(borrowerAddress), {by: usdcVal(100), decrease: true}],
+        [async () => await usdc.balanceOf(callableLoanInstance.address), {by: usdcVal(100), increase: true}],
       ])
     })
 

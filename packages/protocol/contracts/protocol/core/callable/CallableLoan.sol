@@ -601,7 +601,7 @@ contract CallableLoan is
     uint256 amount
   ) internal returns (uint256, uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    _withdraw(tokenInfo, tokenId, amount, cl);
+    return _withdraw(tokenInfo, tokenId, amount, cl);
   }
 
   function _withdraw(
