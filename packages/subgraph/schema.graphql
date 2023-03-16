@@ -568,10 +568,7 @@ type CallableLoan implements Loan @entity {
   interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
   lateFeeRate: BigDecimal!
   lastFullPaymentTime: Int!
-  """
-  Represents the max amount that can be drawndown as a borrower
-  """
-  totalPrincipalPaid: BigInt!
+  availableForDrawdown: BigInt!
   borrowerContract: BorrowerContract!
   creditLineAddress: Bytes!
   repaymentFrequency: RepaymentFrequency!

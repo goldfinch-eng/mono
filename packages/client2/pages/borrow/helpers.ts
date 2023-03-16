@@ -36,7 +36,7 @@ gql`
   fragment CallableLoanBorrowerAccountingFields on CallableLoan {
     id
     totalDeposited
-    totalPrincipalPaid
+    availableForDrawdown
     lastFullPaymentTime
     principalAmountRepaid
     delinquency @client

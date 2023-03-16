@@ -118,7 +118,7 @@ export default function PoolCreditLinePage({
       availableForDrawdown =
         loan.loanPhase === LoanPhase.Funding ||
         loan.loanPhase === LoanPhase.DrawdownPeriod
-          ? loan.totalPrincipalPaid
+          ? loan.availableForDrawdown
           : BigNumber.from(0);
     } else {
       const juniorTranche = loan.juniorTranches[0];
