@@ -4,7 +4,6 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./openzeppelin/IERC721.sol";
-import "./IGoldfinchConfig.sol";
 
 interface IPoolTokens is IERC721 {
   struct TokenInfo {
