@@ -797,6 +797,13 @@ contract StakingRewards is
     emit RewardAdded(rewards);
   }
 
+  /// @notice Transfer rewards from staking rewards, to the caller
+  function removeRewards(uint256 amount) external onlyAdmin updateReward(0) {
+    rewardsAvailable = rewardsAvailable.sub(amount);
+    rewardsToken().safeTransfer(msg.sender, amount);
+    emit RewardRemoved(amount);
+  }
+
   function setRewardsParameters(
     uint256 _targetCapacity,
     uint256 _minRate,
