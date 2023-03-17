@@ -33,20 +33,29 @@ function usdcFromAtomic(amount: BigNumberish) {
  * called `backer-data.json`. This can be piped into jq to output a CSV.
  */
 async function main() {
-  assertNonNullable(process.env.FIREBASE_ACCOUNT_KEYS_FILE, "FIREBASE_ACCOUNT_KEYS_FILE envvar is required")
+  // - add more context
+  assertNonNullable(process.env.FIREBASE_PROJECT_ID, "FIREBASE_PROJECT_ID is required")
   assertNonNullable(process.env.POOL, "POOL envvar is required")
   assertNonNullable(process.env.ALCHEMY_API_KEY, "ALCHEMY_API_KEY is required")
 
-  // Use AlchemyProvider directly to bypass hardhat's global timeout on provider
   const provider = new ethers.providers.AlchemyProvider("mainnet", process.env.ALCHEMY_API_KEY)
 
   const poolAddress = process.env.POOL
+  const projectId = process.env.FIREBASE_PROJECT_ID
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const serviceAccount = require(process.env.FIREBASE_ACCOUNT_KEYS_FILE)
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  })
+  if (projectId == "goldfinch-frontends-prod") {
+    assertNonNullable(process.env.FIREBASE_ACCOUNT_KEYS_FILE, "FIREBASE_ACCOUNT_KEYS_FILE envvar is required")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const serviceAccount = require(process.env.FIREBASE_ACCOUNT_KEYS_FILE)
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    })
+  } else {
+    // Emulator endpoints for testing the script with a local firebase instance.
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099"
+    process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080"
+    admin.initializeApp({projectId})
+  }
 
   const tranchedPool = ((await getDeployedContract(deployments, "TranchedPool")) as TranchedPool).attach(poolAddress)
 
@@ -100,16 +109,17 @@ async function main() {
       const key = `${tranchedPool.address.toLowerCase()}-${addr.toLowerCase()}`
       const agreement = await agreements.doc(key).get()
       const fullName = agreement.data()?.fullName
+      const email = agreement.data()?.email
 
       const users = getUsers(admin.firestore())
       const user = await users.doc(`${addr.toLowerCase()}`).get()
       const personaInquiryId = user.data()?.persona?.id
-      let emailAddress
+      let emailAddressFromPersona
       if (personaInquiryId) {
         const response = await axios.get(`${PERSONA_BASE_URL}/inquiries/${personaInquiryId}`, {
           headers: PERSONA_HEADERS,
         })
-        emailAddress = response.data.data.attributes.emailAddress
+        emailAddressFromPersona = response.data.data.attributes.emailAddress
       }
 
       return {
@@ -119,7 +129,7 @@ async function main() {
         secondsSinceEpoch: block.timestamp,
         timestamp: String(new Date(block.timestamp * 1000)),
         fullName: fullName,
-        emailAddress: emailAddress,
+        emailAddress: email ?? emailAddressFromPersona,
       }
     })
   )
