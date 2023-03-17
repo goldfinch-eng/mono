@@ -36,7 +36,7 @@ const generateCallsTableData = (
   poolTokens?: CallableLoanCallPoolTokensFieldsFragment[],
   principalAmountRepaid?: BigNumber
 ) => {
-  if (!poolTokens || (poolTokens.length === 0 && !principalAmountRepaid)) {
+  if (!poolTokens || poolTokens.length === 0 || !principalAmountRepaid) {
     return { activeCallsTableData: [], closedCallsTableData: [] };
   }
 
