@@ -7,15 +7,9 @@ import { getContract } from "@/lib/contracts";
 import { roundUpUsdcPenny } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
 import { getFreshProvider, getProvider } from "@/lib/wallet";
+import { LoanPhase } from "@/pages/borrow/helpers";
 
 import { CallableLoan, LoanDelinquency } from "../generated";
-
-export enum LoanPhase {
-  Prefunding = "Prefunding",
-  Funding = "Funding",
-  DrawdownPeriod = "DrawdownPeriod",
-  InProgress = "InProgress",
-}
 
 /**
  * Returns the Unix timestamp for the end of the next day after given timestamp.
@@ -306,13 +300,13 @@ export const callableLoanResolvers: Resolvers[string] = {
 
     switch (loanPhase) {
       case 0:
-        return LoanPhase.Prefunding;
+        return "Prefunding";
       case 1:
-        return LoanPhase.Funding;
+        return "Funding";
       case 2:
-        return LoanPhase.DrawdownPeriod;
+        return "DrawdownPeriod";
       case 3:
-        return LoanPhase.InProgress;
+        return "InProgress";
       default:
         return assertUnreachable(loanPhase as never);
     }

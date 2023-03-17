@@ -21,7 +21,6 @@ import {
   PoolCreditLinePageCmsQueryVariables,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
-import { LoanPhase } from "@/lib/graphql/local-resolvers/callable-loan";
 import { getRepaymentFrequencyLabel } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
@@ -117,8 +116,7 @@ export default function PoolCreditLinePage({
     if (loan.__typename === "CallableLoan") {
       // For Callable Loans, a borrower can only drawdown during the funding and drawdown period
       availableForDrawdown =
-        loan.loanPhase === LoanPhase.Funding ||
-        loan.loanPhase === LoanPhase.DrawdownPeriod
+        loan.loanPhase === "Funding" || loan.loanPhase === "DrawdownPeriod"
           ? loan.availableForDrawdown
           : BigNumber.from(0);
     } else {
@@ -349,7 +347,7 @@ export default function PoolCreditLinePage({
                       creditLineStatus === CreditLineStatus.Repaid ||
                       creditLineStatus === CreditLineStatus.Open ||
                       (loan.__typename === "CallableLoan" &&
-                        loan.loanPhase !== LoanPhase.InProgress)
+                        loan.loanPhase !== "InProgress")
                     }
                   >
                     Pay

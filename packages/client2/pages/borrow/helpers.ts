@@ -198,6 +198,12 @@ export enum CreditLineStatus {
   Repaid,
 }
 
+export type LoanPhase =
+  | "Prefunding"
+  | "Funding"
+  | "DrawdownPeriod"
+  | "InProgress";
+
 function getCreditLineStatus({
   isLate,
   remainingPeriodDueAmount,
