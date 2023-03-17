@@ -184,7 +184,7 @@ describe.skip("v2.5.0", async function () {
             expect(interestOwedBefore.gt(new BN(0))).to.be.true
 
             await usdc.approve(tranchedPool.address, interestOwedBefore, {from: owner})
-            await tranchedPool.pay(interestOwedBefore.toString(), {from: owner})
+            await tranchedPool.methods["pay(uint256)"](interestOwedBefore.toString(), {from: owner})
 
             const interestOwedAfter = await creditLine.interestOwed()
             expect(interestOwedAfter).to.bignumber.equal(new BN(0))
@@ -249,7 +249,6 @@ describe.skip("v2.5.0", async function () {
         const {tranchedPool} = await createPoolWithCreditLine({
           people: {borrower, owner: await getProtocolOwner()},
           usdc,
-          goldfinchFactory,
           allowedUIDTypes,
         })
 

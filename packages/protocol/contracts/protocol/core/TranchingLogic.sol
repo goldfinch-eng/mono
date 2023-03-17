@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -97,7 +97,7 @@ library TranchingLogic {
   // We need to create this struct so we don't run into a stack too deep error due to too many variables
   function getSliceInfo(
     ITranchedPool.PoolSlice memory slice,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 totalDeployed,
     uint256 reserveFeePercent
   ) public view returns (SliceInfo memory) {
@@ -116,7 +116,7 @@ library TranchingLogic {
 
   function getTotalInterestAndPrincipal(
     ITranchedPool.PoolSlice memory slice,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 totalDeployed
   ) public view returns (uint256, uint256) {
     uint256 principalAccrued = creditLine.principalOwed();
@@ -163,7 +163,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 juniorFeePercent
   ) external returns (uint256) {
     ApplyResult memory result = TranchingLogic.applyToAllSeniorTranches(
@@ -198,7 +198,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine,
+    ICreditLine creditLine,
     uint256 juniorFeePercent
   ) internal returns (ApplyResult memory) {
     ApplyResult memory seniorApplyResult;
@@ -242,7 +242,7 @@ library TranchingLogic {
     uint256 principal,
     uint256 reserveFeePercent,
     uint256 totalDeployed,
-    IV2CreditLine creditLine
+    ICreditLine creditLine
   ) internal returns (uint256 totalReserveAmount) {
     for (uint256 i = 0; i < numSlices; i++) {
       SliceInfo memory sliceInfo = getSliceInfo(
@@ -384,26 +384,6 @@ library TranchingLogic {
         oldInterestSharePrice: oldInterestSharePrice,
         oldPrincipalSharePrice: oldPrincipalSharePrice
       });
-  }
-
-  function migrateAccountingVariables(IV2CreditLine originalCl, IV2CreditLine newCl) external {
-    // Copy over all accounting variables
-    newCl.setBalance(originalCl.balance());
-    newCl.setLimit(originalCl.limit());
-    newCl.setInterestOwed(originalCl.interestOwed());
-    newCl.setPrincipalOwed(originalCl.principalOwed());
-    newCl.setTermEndTime(originalCl.termEndTime());
-    newCl.setNextDueTime(originalCl.nextDueTime());
-    newCl.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
-    newCl.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
-    newCl.setTotalInterestAccrued(originalCl.totalInterestAccrued());
-  }
-
-  function closeCreditLine(IV2CreditLine cl) external {
-    // Close out old CL
-    cl.setBalance(0);
-    cl.setLimit(0);
-    cl.setMaxLimit(0);
   }
 
   function trancheIdToSliceIndex(uint256 trancheId) external pure returns (uint256) {

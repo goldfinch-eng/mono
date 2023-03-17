@@ -528,7 +528,7 @@ describe.skip("v2.8.0", async function () {
       for (const poolAddress of applicablePoolAddresses) {
         const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", poolAddress)
         await usdc.approve(poolAddress, usdcPaymentVal, {from: mainUser})
-        await tranchedPool.pay(usdcPaymentVal, {from: mainUser})
+        await tranchedPool.methods["pay(uint256)"](usdcPaymentVal, {from: mainUser})
       }
       expectCorrectDistributions = async () => {
         const originalErc20SplitterBalance = await usdc.balanceOf(erc20Splitter.address)

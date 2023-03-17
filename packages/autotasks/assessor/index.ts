@@ -4,7 +4,13 @@ import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/
 import axios from "axios"
 import {asNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
 import baseHandler from "../core/handler"
-import {CreditLine, ERC20, PoolTokens, SeniorPool, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  ERC20,
+  ILegacyCreditLine,
+  ILegacyTranchedPool,
+  PoolTokens,
+  SeniorPool,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 
 const CONFIG = {
   mainnet: {
@@ -71,11 +77,11 @@ exports.handler = baseHandler("assessor", async function (credentials) {
   }
 
   const poolAbi = await getAbifor(config.etherscanApi, pools[0], provider, etherscanApiKey)
-  const pool = new ethers.Contract(asNonNullable(pools[0]), poolAbi, signer) as TranchedPool
+  const pool = new ethers.Contract(asNonNullable(pools[0]), poolAbi, signer) as ILegacyTranchedPool
 
   const creditLineAddress = await pool.creditLine()
   const creditLineAbi = await getAbifor(config.etherscanApi, creditLineAddress, provider, etherscanApiKey)
-  const creditLine = new ethers.Contract(creditLineAddress, creditLineAbi, signer) as CreditLine
+  const creditLine = new ethers.Contract(creditLineAddress, creditLineAbi, signer) as ILegacyCreditLine
 
   console.log(`Found ${pools.length} tranched pools`)
   let success = 0
@@ -97,8 +103,8 @@ exports.handler = baseHandler("assessor", async function (credentials) {
 })
 
 const assessIfRequired = async function assessIfRequired(
-  tranchedPool: TranchedPool,
-  creditLineContract: CreditLine,
+  tranchedPool: ILegacyTranchedPool,
+  creditLineContract: ILegacyCreditLine,
   provider: DefenderRelayProvider,
   seniorPool: SeniorPool,
   poolTokens: PoolTokens,
@@ -171,7 +177,7 @@ const assessIfRequired = async function assessIfRequired(
   return false
 }
 
-async function isLate(creditLine: CreditLine, balance: BigNumber, timestamp: BigNumber) {
+async function isLate(creditLine: ILegacyCreditLine, balance: BigNumber, timestamp: BigNumber) {
   try {
     return await creditLine.isLate()
   } catch {
@@ -188,7 +194,7 @@ async function isLate(creditLine: CreditLine, balance: BigNumber, timestamp: Big
   }
 }
 
-async function assessAndRedeem(tranchedPool: TranchedPool, seniorPool: SeniorPool, poolTokens: PoolTokens) {
+async function assessAndRedeem(tranchedPool: ILegacyTranchedPool, seniorPool: SeniorPool, poolTokens: PoolTokens) {
   await tranchedPool.assess()
 
   // Now get the tokenId for the senior pool so we can redeem (or writedown if required)

@@ -1,10 +1,9 @@
 // /* globals ethers */
-import {INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
+import {TRANCHES} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
 import {MAINNET_GOVERNANCE_MULTISIG} from "./mainnetForkingHelpers"
 import {Borrower, CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
-import {BigNumber} from "bignumber.js"
 import {Signer} from "ethers"
 import hre from "hardhat"
 const {getNamedAccounts} = hre
@@ -43,8 +42,6 @@ async function main() {
     await tranchedPool.assess()
   } else if (action == "investJuniorAndLock") {
     await investJuniorAndLock(tranchedPool)
-  } else if (action == "migrateCreditLine") {
-    await migrateCreditLine(tranchedPool)
   } else if (action == "drawdown") {
     await drawdown(tranchedPool)
   }
@@ -67,42 +64,6 @@ async function drawdown(tranchedPool: TranchedPool) {
 
   await borrower.drawdown(tranchedPool.address, limit, endBorrower)
   console.log(`Drew down ${limit.toString()} as ${endBorrower} (${borrowerAddress}) from pool ${tranchedPool.address}`)
-}
-
-async function migrateCreditLine(tranchedPool: TranchedPool): Promise<void> {
-  assertNonNullable(process.env.BORROWER_ADDRESS)
-  assertNonNullable(process.env.LIMIT)
-  assertNonNullable(process.env.INTEREST_APR)
-  assertNonNullable(process.env.PAYMENT_PERIOD_IN_DAYS)
-  assertNonNullable(process.env.TERM_IN_DAYS)
-  assertNonNullable(process.env.LATE_FEE_APR)
-  assertNonNullable(process.env.PRINCIPAL_GRACE_PERIOD_IN_DAYS)
-
-  const borrowerAddress = process.env.BORROWER_ADDRESS
-  const limit = new BigNumber(process.env.LIMIT).multipliedBy(USDCDecimals.toString())
-  const interestApr = new BigNumber(process.env.INTEREST_APR).multipliedBy(INTEREST_DECIMALS.toString())
-  const paymentPeriodInDays = new BigNumber(process.env.PAYMENT_PERIOD_IN_DAYS)
-  const termInDays = new BigNumber(process.env.TERM_IN_DAYS)
-  const lateFeeApr = new BigNumber(process.env.LATE_FEE_APR).multipliedBy(INTEREST_DECIMALS.toString())
-  const principalGracePeriodInDays = process.env.PRINCIPAL_GRACE_PERIOD_IN_DAYS
-
-  await tranchedPool.migrateCreditLine(
-    borrowerAddress,
-    limit.toString(),
-    interestApr.toString(),
-    paymentPeriodInDays.toString(),
-    termInDays.toString(),
-    lateFeeApr.toString(),
-    principalGracePeriodInDays
-  )
-
-  console.log("Migrated credit line with the following parameters:")
-  console.log("borrowerAddress:", borrowerAddress)
-  console.log("limit:", limit.toString())
-  console.log("interestApr:", interestApr.toString())
-  console.log("paymentPeriodInDays:", paymentPeriodInDays.toString())
-  console.log("termInDays:", termInDays.toString())
-  console.log("lateFeeApr:", lateFeeApr.toString())
 }
 
 async function lockJunior(pool) {

@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
   function testAddToWithdrawalRequestEoaGoListedWorks(
@@ -292,7 +292,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     uint256 tokenId = requestWithdrawalFrom(user, fiduVal(100));
 
     // Invest 1/5th of senior pool usdcAvailable to deplete it
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
 
@@ -331,7 +331,7 @@ contract SeniorPoolAddToWithdrawalRequestTest is SeniorPoolBaseTest {
     // usdcAvailable = $3600, fiduRequested = 3500
     depositToSpFrom(user1, usdcVal(4000));
     // Invest in a pool to suck up liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);

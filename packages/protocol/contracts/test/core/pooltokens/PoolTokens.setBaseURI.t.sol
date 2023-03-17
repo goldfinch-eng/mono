@@ -4,7 +4,7 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 contract PoolTokensSetBaseURITest is PoolTokensBaseTest {
@@ -26,7 +26,7 @@ contract PoolTokensSetBaseURITest is PoolTokensBaseTest {
   }
 
   function testTokenUriUsesBaseUri() public impersonating(GF_OWNER) {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
 
     poolTokens.setBaseURI("http://example.com/");
     poolTokens._disablePoolValidation(true);
