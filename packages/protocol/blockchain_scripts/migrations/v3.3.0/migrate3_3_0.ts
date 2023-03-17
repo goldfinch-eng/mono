@@ -77,11 +77,10 @@ export async function main() {
     ],
   })
 
-  // TODO: GoldfinchFactory upgrade is not required while migration 3.2.1 is being run before this one.
-  // const upgrader = new ContractUpgrader(deployer)
-  // const upgradedContracts = await upgrader.upgrade({contracts: ["GoldfinchFactory"]})
+  const upgrader = new ContractUpgrader(deployer)
+  const upgradedContracts = await upgrader.upgrade({contracts: ["GoldfinchFactory", "CapitalLedger"]})
 
-  // await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
+  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
   await deployEffects.executeDeferred()
 
