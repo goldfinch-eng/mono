@@ -115,7 +115,7 @@ async function main() {
       const user = await users.doc(`${addr.toLowerCase()}`).get()
       const personaInquiryId = user.data()?.persona?.id
       let emailAddressFromPersona
-      if (personaInquiryId) {
+      if (personaInquiryId && !email) {
         const response = await axios.get(`${PERSONA_BASE_URL}/inquiries/${personaInquiryId}`, {
           headers: PERSONA_HEADERS,
         })
@@ -128,7 +128,7 @@ async function main() {
         amount: usdcFromAtomic(amount.toString()),
         secondsSinceEpoch: block.timestamp,
         timestamp: String(new Date(block.timestamp * 1000)),
-        fullName: fullName,
+        fullName,
         emailAddress: email ?? emailAddressFromPersona,
       }
     })
