@@ -33,7 +33,6 @@ function usdcFromAtomic(amount: BigNumberish) {
  * called `backer-data.json`. This can be piped into jq to output a CSV.
  */
 async function main() {
-  // - add more context
   assertNonNullable(process.env.FIREBASE_PROJECT_ID, "FIREBASE_PROJECT_ID is required")
   assertNonNullable(process.env.POOL, "POOL envvar is required")
   assertNonNullable(process.env.ALCHEMY_API_KEY, "ALCHEMY_API_KEY is required")
