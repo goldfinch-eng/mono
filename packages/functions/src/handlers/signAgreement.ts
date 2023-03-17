@@ -35,10 +35,10 @@ export const signAgreement = genRequestHandler({
     const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
     const agreement = await agreements.doc(key)
     await agreement.set({
-      address: address,
-      pool: pool,
-      fullName: fullName,
-      email: email,
+      address,
+      pool,
+      fullName,
+      email,
       signedAt: Date.now(),
     })
     return res.status(200).send({status: "success"})
