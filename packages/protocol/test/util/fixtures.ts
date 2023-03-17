@@ -10,7 +10,9 @@ import {
   CreditLineInstance,
   ERC20Instance,
   GoldfinchFactoryInstance,
+  ScheduleInstance,
   TestAccountantInstance,
+  TestGoldfinchConfigInstance,
   TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {deployments, getNamedAccounts} from "hardhat"
@@ -23,13 +25,15 @@ import {
   deployAllContracts,
   DeployAllContractsOptions,
   erc20Approve,
+  getDefaultMonthlySchedule,
   getDeployedAsTruffleContract,
+  Numberish,
   usdcVal,
 } from "../testHelpers"
 
 type FixtureFuncWithOptions<T, O> = (hre: HardhatRuntimeEnvironment, options: O) => Promise<T>
-export function createFixtureWithRequiredOptions<T, O>(func: FixtureFuncWithOptions<T, O>) {
-  return deployments.createFixture(func as FixtureFunc<T, O>)
+export function createFixtureWithRequiredOptions<T, O>(func: FixtureFuncWithOptions<T, O>, id?: string) {
+  return deployments.createFixture(func as FixtureFunc<T, O>, id)
 }
 
 /**
@@ -57,10 +61,7 @@ interface CreditLineParams {
   borrower: string
   maxLimit: BN | string
   interestApr: BN | string
-  paymentPeriodInDays: BN | string
-  termInDays: BN | string
   lateFeeApr: BN | string
-  principalGracePeriodInDays: BN | string
 }
 
 /**
@@ -112,29 +113,11 @@ export const deployInitializedCreditLineFixture = createFixtureWithRequiredOptio
   async (_hre, options: CreditLineParams) => {
     const {creditLine, ...others} = await deployUninitializedCreditLineFixture()
     assertNonNullable(options)
-    const {
-      config,
-      owner,
-      borrower,
-      maxLimit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays,
-    } = options
+    const {config, owner, borrower, maxLimit, interestApr, lateFeeApr} = options
 
-    await creditLine.initialize(
-      config,
-      owner,
-      borrower,
-      maxLimit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays
-    )
+    const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+
+    await creditLine.initialize(config, owner, borrower, maxLimit, interestApr, schedule.address, lateFeeApr)
 
     return {
       creditLine,
@@ -143,18 +126,14 @@ export const deployInitializedCreditLineFixture = createFixtureWithRequiredOptio
   }
 )
 
-interface TranchedPoolOptions {
+export interface TranchedPoolOptions {
   borrower: string
-  juniorFeePercent?: string | BN
-  limit?: string | BN
-  interestApr?: string | BN
-  paymentPeriodInDays?: string | BN
-  termInDays?: string | BN
-  lateFeeApr?: string | BN
-  principalGracePeriodInDays?: string | BN
-  fundableAt?: string | BN
-  allowedUIDTypes?: (string | BN | number)[]
-  id: string
+  juniorFeePercent?: Numberish
+  limit?: Numberish
+  interestApr?: Numberish
+  lateFeeApr?: Numberish
+  fundableAt?: Numberish
+  allowedUIDTypes?: Numberish[]
 }
 
 /**
@@ -182,142 +161,71 @@ interface TranchedPoolOptions {
  *
  * @returns a newly created tranched pool and credit line
  */
-export const deployTranchedPoolWithGoldfinchFactoryFixture = createFixtureWithRequiredOptions(
-  async (
-    hre,
-    {
-      borrower,
-      juniorFeePercent = new BN("20"),
-      limit = usdcVal(10_000),
-      interestApr = interestAprAsBN("15.0"),
-      paymentPeriodInDays = new BN(30),
-      termInDays = new BN(365),
-      lateFeeApr = interestAprAsBN("3.0"),
-      principalGracePeriodInDays = new BN(185),
-      fundableAt = new BN(0),
-      allowedUIDTypes = [0],
-      usdcAddress,
-    }: TranchedPoolOptions & {usdcAddress: string}
-  ) => {
-    const {protocol_owner: owner} = await hre.getNamedAccounts()
-    const usdc = await getTruffleContract("ERC20", {at: usdcAddress})
-    const goldfinchFactoryDeployment = await deployments.get("GoldfinchFactory")
-    const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
-      at: goldfinchFactoryDeployment.address,
-    })
-    const result = await goldfinchFactory.createPool(
-      borrower,
-      juniorFeePercent,
-      limit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays,
-      fundableAt,
-      allowedUIDTypes,
-      {from: owner}
-    )
-    assertNonNullable(result.logs)
-    const event = result.logs[result.logs.length - 1] as $TSFixMe
-    const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: event.args.pool})
-    const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: await pool.creditLine()})
-    const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", {at: pool.address})
+export const deployTranchedPoolWithGoldfinchFactoryFixture = (fixtureId?: string) =>
+  createFixtureWithRequiredOptions(
+    async (
+      hre,
+      {
+        borrower,
+        juniorFeePercent = new BN("20"),
+        limit = usdcVal(10_000),
+        interestApr = interestAprAsBN("15.0"),
+        lateFeeApr = interestAprAsBN("3.0"),
+        fundableAt = new BN(0),
+        allowedUIDTypes = [0],
+        usdcAddress,
+      }: TranchedPoolOptions & {usdcAddress: string}
+    ) => {
+      const {protocol_owner: owner} = await hre.getNamedAccounts()
+      const usdc = await getTruffleContract("ERC20", {at: usdcAddress})
+      const goldfinchFactoryDeployment = await deployments.get("GoldfinchFactory")
+      const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
+        at: goldfinchFactoryDeployment.address,
+      })
 
-    expect(await pool.creditLine()).to.be.eq(creditLine.address)
+      // Set the credit line implementation to point to the correct version
+      const goldfinchConfig = await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
+      const creditLineDeployment = await deployments.get("CreditLine")
+      await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
 
-    await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [owner])
+      const result = await goldfinchFactory.createPool(
+        borrower,
+        juniorFeePercent,
+        limit,
+        interestApr,
+        await getDefaultMonthlySchedule(goldfinchConfig),
+        lateFeeApr,
+        fundableAt,
+        allowedUIDTypes,
+        {from: owner}
+      )
+      assertNonNullable(result.logs)
+      const event = result.logs[result.logs.length - 1] as $TSFixMe
+      const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: event.args.pool})
+      const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: await pool.creditLine()})
 
-    // Only approve if borrower is an EOA (could be a borrower contract)
-    if ((await web3.eth.getCode(borrower)) === "0x") {
-      await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [borrower])
-    }
+      expect(await pool.creditLine()).to.be.eq(creditLine.address)
 
-    return {tranchedPool, creditLine}
-  }
-)
+      await erc20Approve(usdc, pool.address, MAX_UINT, [owner])
 
-/**
- * Deploy a tranched pool and borrower contracts for a given borrower address
- *
- * Note: this is a re-usable fixture that creates a cached snapshot, calling
- *        this function multiple times results in reverting the EVM unless
- *        different parameters are given.
- *
- * @param hre hardhat runtime environment
- * @param params
- * @param params.borrower the user that will eb borrowing from the pool
- * @param params.juniorFeePercent the percentage of interest the junior tranche will have allocated
- * @param params.limt the credit limit
- * @param params.interestApr interest apr
- * @param params.paymentPeriodInDays number of days in a payment period
- * @param params.fundableAt when the pool will be fundable
- * @param params.allowedUIDTypes allowed UID types
- * @param params.usdcAddress address of usdc
- * @param params.id id of fixture, when a fixture function is called with the same `id`
- *            and the same parameters, it wil result in reverting the chain to
- *            the block the fixture was created in. If the this is done multiple
- *            times in the same test it can result in incorrect behavior. If you
- *            need to create two fixtures with the same parameters in the same
- *            test block, make sure they have different id fields.
- *
- * @returns a newly created tranched pool, credit line, and borrower contract
- */
-export const deployTranchedPoolAndBorrowerWithGoldfinchFactoryFixture = createFixtureWithRequiredOptions(
-  async (
-    hre,
-    {
-      borrower,
-      usdcAddress,
-      juniorFeePercent = new BN("20"),
-      limit = usdcVal(10_000),
-      interestApr = interestAprAsBN("15.0"),
-      paymentPeriodInDays = new BN(30),
-      termInDays = new BN(365),
-      lateFeeApr = interestAprAsBN("3.0"),
-      principalGracePeriodInDays = new BN(185),
-      fundableAt = new BN(0),
-      allowedUIDTypes = [0],
-      id,
-    }: TranchedPoolOptions & {usdcAddress: string}
-  ) => {
-    const {protocol_owner: owner} = await hre.getNamedAccounts()
+      // Only approve if borrower is an EOA (could be a borrower contract)
+      if ((await web3.eth.getCode(borrower)) === "0x") {
+        await erc20Approve(usdc, pool.address, MAX_UINT, [borrower])
+      }
 
-    const goldfinchFactoryDeploy = await hre.deployments.get("GoldfinchFactory")
-    const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
-      at: goldfinchFactoryDeploy.address,
-    })
+      // Return the addresses. It's up to the caller to cast to the type that corresponds to the
+      // version
+      return {poolAddress: pool.address, clAddress: creditLine.address}
+    },
+    fixtureId
+  )
 
-    const result = await goldfinchFactory.createBorrower(borrower, {from: owner})
-    const event = result.logs[result.logs.length - 1] as $TSFixMe
-    const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {at: event.args.borrower})
+export async function getDeploymentFor<T extends Truffle.ContractInstance>(contractName: string) {
+  const deployment = await deployments.get(contractName)
+  return getTruffleContract<T>(contractName, {at: deployment.address})
+}
 
-    const otherDeploys = await deployTranchedPoolWithGoldfinchFactoryFixture({
-      usdcAddress: usdcAddress,
-      borrower: borrowerContract.address,
-      juniorFeePercent,
-      limit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      principalGracePeriodInDays,
-      fundableAt,
-      allowedUIDTypes,
-      id,
-    })
-
-    return {
-      borrowerContract,
-      ...otherDeploys,
-    }
-  }
-)
-
-/**
- * Deploy an tranched pool without calling `initialize` on it. This can also be thought of as an "invalid pool"
- */
-export const deployUninitializedTranchedPoolFixture = deployments.createFixture(async (hre) => {
+export const deployUninitializedV2TranchedPoolFixture = deployments.createFixture(async (hre) => {
   const {protocol_owner: owner} = await hre.getNamedAccounts()
   assertNonNullable(owner)
 
@@ -330,10 +238,7 @@ export const deployUninitializedTranchedPoolFixture = deployments.createFixture(
       ["Accountant"]: accountant.address,
     },
   })
-  const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: tranchedPoolResult.address})
-  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", {
-    at: pool.address,
-  })
+  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: tranchedPoolResult.address})
 
   return {
     tranchedPool,
@@ -425,11 +330,15 @@ export const deployFundedTranchedPool = createFixtureWithRequiredOptions(
   ) => {
     const {protocol_owner: owner} = await hre.getNamedAccounts()
     assertNonNullable(owner)
-    const {tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+
+    const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(id)({
       borrower: borrowerContractAddress,
       usdcAddress,
-      id,
     })
+
+    // Instantiate a v1 contract to fund and deposit the pool (the implementation is not necessarily) a
+    // v1 contract, but we assume all version have the grantRole, revokeRole, deposit, and lockPool functions
+    const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: poolAddress})
 
     const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {at: borrowerContractAddress})
     const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: usdcAddress})
@@ -445,8 +354,8 @@ export const deployFundedTranchedPool = createFixtureWithRequiredOptions(
     await tranchedPool.revokeRole(seniorRole, owner) // clean up
 
     return {
-      tranchedPool,
-      creditLine,
+      poolAddress,
+      clAddress,
     }
   }
 )

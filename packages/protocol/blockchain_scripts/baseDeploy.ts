@@ -26,6 +26,7 @@ import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveL
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 import * as migrate280 from "../blockchain_scripts/migrations/v2.8.0/migrate"
 import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
+import {deployMonthlyScheduleRepo} from "./baseDeploy/deployMonthlyScheduleRepo"
 import {BackerRewardsInstance, CapitalLedgerInstance, RouterInstance} from "../typechain/truffle"
 import {routingIdOf} from "./deployHelpers/routingIdOf"
 
@@ -105,6 +106,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await migrate280.main()
 
   console.log("Set legacy go list")
+
+  await deployMonthlyScheduleRepo(deployer, deployEffects, config)
 
   const router = await getTruffleContract<RouterInstance>("Router")
   const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")

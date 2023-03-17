@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 
 contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
   uint256 private tokenId;
   IPoolTokens.TokenInfo private tokenInfo;
@@ -70,7 +70,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
     // Make a junior deposit
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
     tokenId = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -337,6 +337,14 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testUsesAccRewardsPerPrincipalDollarAtMintForSplitTokens() public {
+    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
+    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
+    fundAddress(address(this), usdcVal(10_000));
+    usdc.approve(address(tp), type(uint256).max);
+    tokenId = tp.deposit(2, usdcVal(5));
+    tokenInfo = poolTokens.getTokenInfo(tokenId);
+    grantRole(address(tp), TestConstants.SENIOR_ROLE, GF_OWNER);
+
     _startImpersonation(GF_OWNER);
     tp.lockJuniorCapital();
     usdc.approve(address(tp), usdcVal(20));

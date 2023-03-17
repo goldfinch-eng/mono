@@ -4,15 +4,15 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {FixedLeverageRatioStrategyBaseTest} from "./FixedLeverageRatioStrategyBase.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 
 contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioStrategyBaseTest {
   function testLeversJuniorAmountUsingRatio(uint256 juniorAmount) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     uint256 expectedSeniorInvestment = juniorAmount * 4;
     assertEq(fixedStrat.estimateInvestment(sp, tp), expectedSeniorInvestment);
@@ -22,7 +22,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
     uint256 juniorAmount
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
 
     // Set leverage ratio to 3.5
     gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), (1e18 * 3) / 2);
@@ -36,7 +36,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
     uint256 juniorAmount
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     uint256 expectedSeniorInvestment = juniorAmount * 4;
     assertEq(fixedStrat.estimateInvestment(sp, tp), expectedSeniorInvestment);
@@ -46,7 +46,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
     uint256 juniorAmount
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
 
@@ -60,7 +60,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, usdcVal(1), juniorAmount * 4);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch
@@ -79,7 +79,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, usdcVal(1), juniorAmount * 4);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch
@@ -97,7 +97,7 @@ contract FixedLeverageRatioStrategyEstimateInvestmentTest is FixedLeverageRatioS
   ) public impersonating(GF_OWNER) {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(10_000_000));
     seniorAmount = bound(seniorAmount, juniorAmount * 4, juniorAmount * 10);
-    (TestTranchedPool tp, ) = defaultTranchedPool();
+    (TranchedPool tp, ) = defaultTranchedPool();
     depositToTpFrom(tp, GF_OWNER, juniorAmount);
     lockJuniorCap(tp);
     // Grant senior role to gf owner so it can deposit in the senior tranch

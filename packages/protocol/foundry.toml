@@ -42,6 +42,7 @@ verbosity = 0
 via_ir = false
 fs_permissions = [{ access = "read", path = "./artifacts/" }, { access = "read", path = './contracts/test/fixtures' }]
 no_match_path="./test/forge/mainnet/*.t.sol"
+max_test_rejects = 131072 # double the default
 
 [profile.default.rpc_storage_caching]
 chains = 'all'

@@ -4,12 +4,13 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {IVersioned} from "../../interfaces/IVersioned.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {SafeERC20Transfer} from "../../library/SafeERC20Transfer.sol";
 import {BaseUpgradeablePausable} from "../core/BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "../core/ConfigHelper.sol";
-import {CreditLine} from "../core/CreditLine.sol";
 import {GoldfinchConfig} from "../core/GoldfinchConfig.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
@@ -28,8 +29,10 @@ import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math
  */
 
 contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
-  GoldfinchConfig public config;
+  using SafeERC20Transfer for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
+
+  GoldfinchConfig public config;
 
   address private constant USDT_ADDRESS = address(0xdAC17F958D2ee523a2206206994597C13D831ec7);
   address private constant BUSD_ADDRESS = address(0x4Fabb145d64652a948d72533023f6E7A623C7C53);
@@ -66,12 +69,10 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Allows a borrower to drawdown on their credit line through a TranchedPool.
-   * @param poolAddress The creditline from which they would like to drawdown
-   * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
-   * @param addressToSendTo The address where they would like the funds sent. If the zero address is passed,
-   *  it will be defaulted to the contracts address (msg.sender). This is a convenience feature for when they would
-   *  like the funds sent to an exchange or alternate wallet, different from the authentication address
+   * @notice Drawdown on a v1 or v2 tranched pool
+   * @param poolAddress Pool to drawdown from
+   * @param amount usdc amount to drawdown
+   * @param addressToSendTo Address to send the funds. Null address or address(this) will send funds back to the caller
    */
   function drawdown(
     address poolAddress,
@@ -87,6 +88,13 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     transferERC20(config.usdcAddress(), addressToSendTo, amount);
   }
 
+  /**
+   * @notice Drawdown on a v1 or v2 pool and swap the usdc to the desired token using OneInch
+   * @param amount usdc amount to drawdown from the pool
+   * @param addressToSendTo address to send the `toToken` to
+   * @param toToken address of the ERC20 to swap to
+   * @param minTargetAmount min amount of `toToken` you're willing to accept from the swap (i.e. a slippage tolerance)
+   */
   function drawdownWithSwapOnOneInch(
     address poolAddress,
     uint256 amount,
@@ -118,17 +126,23 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Allows a borrower to pay back loans by calling the `pay` function directly on a TranchedPool
-   * @param poolAddress The credit line to be paid back
-   * @param amount The amount, in USDC atomic units, that the borrower wishes to pay
+   * @notice Pay back a v1 or v2 tranched pool
+   * @param poolAddress pool address
+   * @param amount USDC amount to pay
    */
   function pay(address poolAddress, uint256 amount) external onlyAdmin {
-    IERC20withDec usdc = config.getUSDC();
-    bool success = usdc.transferFrom(_msgSender(), address(this), amount);
-    require(success, "Failed to transfer USDC");
-    _transferAndPay(usdc, poolAddress, amount);
+    require(
+      config.getUSDC().transferFrom(_msgSender(), address(this), amount),
+      "Failed to transfer USDC"
+    );
+    _pay(poolAddress, amount);
   }
 
+  /**
+   * @notice Pay back multiple pools. Supports v0.1.0 and v1.0.0 pools
+   * @param pools list of pool addresses for which the caller is the borrower
+   * @param amounts amounts to pay back
+   */
   function payMultiple(address[] calldata pools, uint256[] calldata amounts) external onlyAdmin {
     require(pools.length == amounts.length, "Pools and amounts must be the same length");
 
@@ -137,22 +151,58 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
       totalAmount = totalAmount.add(amounts[i]);
     }
 
-    IERC20withDec usdc = config.getUSDC();
     // Do a single transfer, which is cheaper
-    bool success = usdc.transferFrom(_msgSender(), address(this), totalAmount);
-    require(success, "Failed to transfer USDC");
+    require(
+      config.getUSDC().transferFrom(_msgSender(), address(this), totalAmount),
+      "Failed to transfer USDC"
+    );
 
     for (uint256 i = 0; i < amounts.length; i++) {
-      _transferAndPay(usdc, pools[i], amounts[i]);
+      _pay(pools[i], amounts[i]);
     }
   }
 
-  function payInFull(address poolAddress, uint256 amount) external onlyAdmin {
-    IERC20withDec usdc = config.getUSDC();
-    bool success = usdc.transferFrom(_msgSender(), address(this), amount);
-    require(success, "Failed to transfer USDC");
+  /**
+   * @notice Pay back a v2.0.0 pool
+   * @param poolAddress The pool to be paid back
+   * @param principalAmount principal amount to pay
+   * @param interestAmount interest amount to pay
+   */
+  function pay(
+    address poolAddress,
+    uint256 principalAmount,
+    uint256 interestAmount
+  ) external onlyAdmin {
+    // Take the minimum USDC to cover actual amounts owed
+    ITranchedPool pool = ITranchedPool(poolAddress);
+    uint256 maxPrincipalPayment = pool.creditLine().balance();
+    uint256 maxInterestPayment = pool.creditLine().interestOwed().add(
+      pool.creditLine().interestAccrued()
+    );
+    uint256 principalPayment = Math.min(principalAmount, maxPrincipalPayment);
+    uint256 interestPayment = Math.min(interestAmount, maxInterestPayment);
+    config.getUSDC().safeERC20TransferFrom(
+      _msgSender(),
+      address(this),
+      principalPayment + interestPayment
+    );
 
-    _transferAndPay(usdc, poolAddress, amount);
+    ITranchedPool.PaymentAllocation memory pa = _payV2Separate(
+      poolAddress,
+      principalPayment,
+      interestPayment
+    );
+
+    // Since we took the exact amounts owed, any payment remaining would be indicative of a bug
+    assert(pa.paymentRemaining == 0);
+  }
+
+  function payInFull(address poolAddress, uint256 amount) external onlyAdmin {
+    require(
+      config.getUSDC().transferFrom(_msgSender(), address(this), amount),
+      "Failed to transfer USDC"
+    );
+    _pay(poolAddress, amount);
     require(
       ITranchedPool(poolAddress).creditLine().balance() == 0,
       "Failed to fully pay off creditline"
@@ -170,7 +220,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
     uint256 usdcBalance = usdc.balanceOf(address(this));
-    _transferAndPay(usdc, poolAddress, usdcBalance);
+    _pay(poolAddress, usdcBalance);
   }
 
   function payMultipleWithSwapOnOneInch(
@@ -190,24 +240,28 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     transferFrom(fromToken, _msgSender(), address(this), originAmount);
 
     IERC20withDec usdc = config.getUSDC();
+
     swapOnOneInch(fromToken, address(usdc), originAmount, totalMinAmount, exchangeDistribution);
 
     for (uint256 i = 0; i < minAmounts.length; i++) {
-      _transferAndPay(usdc, pools[i], minAmounts[i]);
-    }
-
-    uint256 remainingUSDC = usdc.balanceOf(address(this));
-    if (remainingUSDC > 0) {
-      _transferAndPay(usdc, pools[0], remainingUSDC);
+      _pay(pools[i], minAmounts[i]);
     }
   }
 
-  function _transferAndPay(IERC20withDec usdc, address poolAddress, uint256 amount) internal {
+  /* INTERNAL FUNCTIONS */
+  function _pay(address poolAddress, uint256 amount) internal {
+    config.getUSDC().safeERC20Approve(poolAddress, amount);
+    ITranchedPool(poolAddress).pay(amount);
+  }
+
+  function _payV2Separate(
+    address poolAddress,
+    uint256 principalAmount,
+    uint256 interestAmount
+  ) internal returns (ITranchedPool.PaymentAllocation memory) {
     ITranchedPool pool = ITranchedPool(poolAddress);
-    // We don't use transferFrom since it would require a separate approval per creditline
-    bool success = usdc.transfer(address(pool.creditLine()), amount);
-    require(success, "USDC Transfer to creditline failed");
-    pool.assess();
+    config.getUSDC().safeERC20Approve(poolAddress, principalAmount + interestAmount);
+    return pool.pay(principalAmount, interestAmount);
   }
 
   function transferFrom(address erc20, address sender, address recipient, uint256 amount) internal {

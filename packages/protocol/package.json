@@ -95,6 +95,7 @@
     "@truffle/contract": "^4.6.9",
     "@typechain/web3-v1": "^3.1.0",
     "@uniswap/lib": "^4.0.1-alpha",
+    "BokkyPooBahsDateTimeLibrary": "https://github.com/warbler-labs/BokkyPooBahsDateTimeLibrary.git",
     "bn.js": "^5.1.3",
     "commander": "^8.2.0",
     "contract-proxy-kit": "^2.2.0-alpha.1",

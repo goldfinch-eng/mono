@@ -17,7 +17,7 @@ import {
   MAINNET_TRUSTED_SIGNER_ADDRESS,
 } from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 
 const {deployments, ethers, artifacts, web3} = hre
@@ -41,7 +41,6 @@ import {
   getFirstLog,
   toEthers,
   mineInSameBlock,
-  mineBlock,
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
@@ -58,6 +57,7 @@ import {
   getCurrentTimestamp,
   getTruffleContractAtAddress,
   SECONDS_PER_DAY,
+  getMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -75,6 +75,7 @@ import {
   ICurveLPInstance,
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
+  MonthlyScheduleRepoInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
@@ -113,8 +114,10 @@ import {
   TranchedPool,
   UniqueIdentity,
   Borrower as EthersBorrower,
+  GoldfinchFactory,
+  ERC20,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {ContractReceipt, Wallet} from "ethers"
+import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
 import {
   BorrowerCreated,
@@ -268,6 +271,9 @@ describe("mainnet forking tests", async function () {
     merkleDirectDistributor: MerkleDirectDistributorInstance,
     legacyGoldfinchConfig: GoldfinchConfigInstance,
     uniqueIdentity: UniqueIdentityInstance,
+    ethersUniqueIdentity: UniqueIdentity,
+    signer: Signer,
+    network,
     poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
@@ -347,6 +353,94 @@ describe("mainnet forking tests", async function () {
     })
   })
 
+  describe("daily interest accrual tranched pools", () => {
+    it("initializes a pool with a monthly schedule", async () => {
+      // Create a schedule for a 1 yr bullet loan
+      const monthlyScheduleRepoAddress = await goldfinchConfig.getAddress(
+        CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo
+      )
+      expect(monthlyScheduleRepoAddress).to.not.eq(ZERO_ADDRESS)
+      const monthylScheduleRepo = await getTruffleContract<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo", {
+        at: monthlyScheduleRepoAddress,
+      })
+
+      const periodsInTerm = 12
+      const periodsPerPrincipalPeriod = 12
+      const periodsPerInterestPeriod = 1
+      const principalGracePeriods = 0
+      await monthylScheduleRepo.createSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+      const oneYearBulletSchedule = await monthylScheduleRepo.getSchedule(
+        periodsInTerm,
+        periodsPerPrincipalPeriod,
+        periodsPerInterestPeriod,
+        principalGracePeriods
+      )
+
+      // Create the pool
+      const borrower = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D" // stratos EOA
+      await impersonateAccount(hre, borrower)
+
+      const protocolAdminAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.ProtocolAdmin)
+      const protocolAdminSigner = await ethers.provider.getSigner(protocolAdminAddress)
+      assertNonNullable(protocolAdminSigner)
+
+      const gfFactoryEthers = await (
+        await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {at: goldfinchFactory.address})
+      ).connect(protocolAdminSigner)
+
+      const poolCreationTx = await (
+        await gfFactoryEthers.createPool(
+          borrower,
+          0,
+          "100000000",
+          "135000000000000000",
+          oneYearBulletSchedule,
+          "0",
+          `${await getCurrentTimestamp()}`,
+          ["0", "1", "2", "3", "4"]
+        )
+      ).wait()
+
+      const event = asNonNullable(poolCreationTx.events![poolCreationTx.events!.length - 1])
+      const poolAddress = event.args!.pool
+      const pool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
+
+      // Advance time to august to avoid race conditions in the tests
+      // 	Thu Aug 24 2023 18:21:12 GMT+0000
+      await advanceAndMineBlock({toSecond: 1692901272})
+
+      // Fund the pool and drawdown
+      await fundWithWhales(["USDC"], [protocolAdminAddress])
+      const usdcEthers = await getEthersContract<ERC20>("ERC20", {at: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"})
+      await usdcEthers.connect(protocolAdminSigner).approve(poolAddress, `${usdcVal(10)}`)
+      await pool.connect(protocolAdminSigner).deposit(2, `${usdcVal(10)}`)
+
+      // Now that there's an investment, the borrower draws down
+      const borrowerSigner = await ethers.provider.getSigner(borrower)
+      await pool.connect(borrowerSigner).lockJuniorCapital()
+      await pool.connect(borrowerSigner).lockPool()
+      await pool.connect(borrowerSigner).drawdown(`${usdcVal(10)}`)
+
+      // Assert it has a monthly payment schedule as expected
+      const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
+      // Term start time should be Sept 1st (when the stub period ends)
+      console.log(`current time is ${await getCurrentTimestamp()}`)
+      expect(await creditLine.termStartTime()).to.bignumber.eq("1693526400") // Fri Sep 01 2023 00:00:00 GMT+0000
+      // Next due time should be the end of the period after the stub period (Oct 1st)
+      expect(await creditLine.nextDueTime()).to.bignumber.eq("1696118400") // Sun Oct 01 2023 00:00:00 GMT+0000
+    })
+  })
+
+  /**
+   * This test takes three staked fidu holders, unstakes their fidu, and then requets to withdraw their full fidu amount
+   * We advance time, keeping track of pool repayments and the amount of usdc available for each epoch. Then after four
+   * epochs we claim their requests and assert the amounts are correct and sent to the right addresses
+   */
   describe("epoch withdrawals", () => {
     async function repayPool(i: number, owner) {
       const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: borrowers[i]!.poolAddress})
@@ -365,7 +459,7 @@ describe("mainnet forking tests", async function () {
       await fundWithWhales(["USDC"], [owner.address])
       await impersonateAccount(hre, owner.address)
       await usdc.approve(pool.address, interestOwed, {from: owner.address})
-      await pool.pay(await cl.interestOwed(), {from: owner.address})
+      await pool.methods["pay(uint256)"](await cl.interestOwed(), {from: owner.address})
     }
 
     async function redeemPool(token: number) {
@@ -380,8 +474,6 @@ describe("mainnet forking tests", async function () {
       return interestRedeemed.add(principalRedeemed)
     }
 
-    // NOTE: This test can fail when the forked mainnet block is moved forward since the repayPool function
-    //       advances time to the next due time. The duration until the next due time is variable depending on the current time.
     it("withdraws", async () => {
       const [owner] = await ethers.getSigners()
       assertNonNullable(owner)
@@ -393,6 +485,7 @@ describe("mainnet forking tests", async function () {
       const expectedUsdcAllocatedByEpoch: BN[] = []
       const fiduRequestedByEpoch: BN[] = []
       const withdrawalRequestsByEpoch: any[] = []
+      const requestIds: BN[] = []
 
       // Each staked fidu holder is going to unstake and request to withdraw
       const currentEpoch = await seniorPool.currentEpoch()
@@ -400,18 +493,19 @@ describe("mainnet forking tests", async function () {
 
       fiduRequestedByEpoch.push(new BN(currentEpoch.fiduRequested))
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
-        const fiduBalance = await stakingRewards.stakedBalanceOf(stakedFiduHolders[i]!.stakingRewardsTokenId)
-        await impersonateAccount(hre, stakedFiduHolders[i]!.address)
-        await stakingRewards.unstake(stakedFiduHolders[i]!.stakingRewardsTokenId, fiduBalance, {
-          from: stakedFiduHolders[i]!.address,
+        const {stakingRewardsTokenId, address} = stakedFiduHolders[i]!
+        const fiduBalance = await stakingRewards.stakedBalanceOf(stakingRewardsTokenId)
+        await impersonateAccount(hre, address)
+        await stakingRewards.unstake(stakingRewardsTokenId, fiduBalance, {
+          from: address,
         })
-        await fidu.approve(seniorPool.address, fiduBalance, {from: stakedFiduHolders[i]!.address})
-        await expectAction(() =>
-          seniorPool.requestWithdrawal(fiduBalance, {from: stakedFiduHolders[i]!.address})
-        ).toChange([
-          [() => fidu.balanceOf(stakedFiduHolders[i]!.address), {by: fiduBalance.neg()}],
+        await fidu.approve(seniorPool.address, fiduBalance, {from: address})
+        await expectAction(() => seniorPool.requestWithdrawal(fiduBalance, {from: address})).toChange([
+          [() => fidu.balanceOf(address), {by: fiduBalance.neg()}],
           [() => fidu.balanceOf(seniorPool.address), {by: fiduBalance}],
         ])
+
+        requestIds.push(await requestTokens.tokenOfOwnerByIndex(address, "0"))
 
         fiduRequestedByEpoch[0] = fiduRequestedByEpoch[0]!.add(fiduBalance)
       }
@@ -429,8 +523,6 @@ describe("mainnet forking tests", async function () {
       await repayPool(0, owner)
 
       // IN EPOCH 2
-      // console.log(`Should be in epoch 2`)
-      // console.log(`currentEpoch: ${JSON.stringify(await seniorPool.currentEpoch())}`)
       usdcAvailable = await redeemPool(613)
       fiduRequestedByEpoch.push(fiduRequestedByEpoch[0]!.sub(expectedFiduLiquidatedByEpoch[0]!))
       expectedFiduLiquidatedByEpoch.push(getNumShares(usdcAvailable, await seniorPool.sharePrice()))
@@ -447,8 +539,6 @@ describe("mainnet forking tests", async function () {
       await advanceAndMineBlock({days: 14})
 
       // IN EPOCH 3
-      // console.log(`Should be in epoch 3`)
-      // console.log(`currentEpoch: ${JSON.stringify(await seniorPool.currentEpoch())}`)
       fiduRequestedByEpoch.push(fiduRequestedByEpoch[1]!.sub(expectedFiduLiquidatedByEpoch[1]!))
 
       const depositAmount = usdcFromShares(fiduRequestedByEpoch[2]!, await seniorPool.sharePrice())
@@ -472,8 +562,6 @@ describe("mainnet forking tests", async function () {
       await advanceAndMineBlock({days: 14})
 
       // IN EPOCH 4
-      // console.log(`Should be in epoch 4`)
-      // console.log(`currentEpoch: ${JSON.stringify(await seniorPool.currentEpoch())}`)
 
       // Full liquidation
       expectedFiduLiquidatedByEpoch.push(ZERO)
@@ -494,9 +582,9 @@ describe("mainnet forking tests", async function () {
         cumulativeFiduLiquidatedByRequest.push(ZERO)
       }
       for (let epoch = 0; epoch < 3; ++epoch) {
-        for (let requestId = 0; requestId < stakedFiduHolders.length; ++requestId) {
-          const requestBeforeLiquidation = withdrawalRequestsByEpoch[epoch][requestId]!
-          const requestAfterLiquidation = withdrawalRequestsByEpoch[epoch + 1][requestId]!
+        for (let i = 0; i < stakedFiduHolders.length; ++i) {
+          const requestBeforeLiquidation = withdrawalRequestsByEpoch[epoch][i]!
+          const requestAfterLiquidation = withdrawalRequestsByEpoch[epoch + 1][i]!
 
           const proRataUsdc = new BN(expectedUsdcAllocatedByEpoch[epoch]!)
             .mul(new BN(requestBeforeLiquidation.fiduRequested))
@@ -506,11 +594,11 @@ describe("mainnet forking tests", async function () {
             .mul(new BN(requestBeforeLiquidation.fiduRequested))
             .div(new BN(fiduRequestedByEpoch[epoch]!))
 
-          const expectedUsdcWithdrawable = cumulativeUsdcWithdrawableByRequest[requestId]!.add(proRataUsdc)
+          const expectedUsdcWithdrawable = cumulativeUsdcWithdrawableByRequest[i]!.add(proRataUsdc)
           expect(requestAfterLiquidation.usdcWithdrawable).to.bignumber.eq(expectedUsdcWithdrawable)
 
-          const expectedFiduRequested = new BN(withdrawalRequestsByEpoch[0][requestId].fiduRequested)
-            .sub(cumulativeFiduLiquidatedByRequest[requestId]!)
+          const expectedFiduRequested = new BN(withdrawalRequestsByEpoch[0][i].fiduRequested)
+            .sub(cumulativeFiduLiquidatedByRequest[i]!)
             .sub(fiduLiquidated)
 
           // Compare the usdc equivalent of fiduRequested because there could be some dust leftover
@@ -518,10 +606,8 @@ describe("mainnet forking tests", async function () {
             usdcFromShares(new BN(requestAfterLiquidation.fiduRequested), await seniorPool.sharePrice())
           ).to.bignumber.eq(usdcFromShares(new BN(expectedFiduRequested), await seniorPool.sharePrice()))
 
-          cumulativeUsdcWithdrawableByRequest[requestId] =
-            cumulativeUsdcWithdrawableByRequest[requestId]!.add(proRataUsdc)
-          cumulativeFiduLiquidatedByRequest[requestId] =
-            cumulativeFiduLiquidatedByRequest[requestId]!.add(fiduLiquidated)
+          cumulativeUsdcWithdrawableByRequest[i] = cumulativeUsdcWithdrawableByRequest[i]!.add(proRataUsdc)
+          cumulativeFiduLiquidatedByRequest[i] = cumulativeFiduLiquidatedByRequest[i]!.add(fiduLiquidated)
         }
       }
 
@@ -553,12 +639,12 @@ describe("mainnet forking tests", async function () {
       }
     })
 
-    it("takes cancelation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
-      const fiduHolder = stakedFiduHolders[1]!
-      await impersonateAccount(hre, fiduHolder.address)
-      await stakingRewards.unstake(fiduHolder.stakingRewardsTokenId, fiduVal(10_000), {from: fiduHolder.address})
-      await fidu.approve(seniorPool.address, fiduVal(10_000), {from: fiduHolder.address})
-      await seniorPool.requestWithdrawal(fiduVal(10_000), {from: fiduHolder.address})
+    it("takes cancellation fees according to SeniorPoolWithdrawalCancelationFeeInBps", async () => {
+      const {address: stakedFiduHolder, stakingRewardsTokenId} = stakedFiduHolders[1]!
+      await impersonateAccount(hre, stakedFiduHolder)
+      await stakingRewards.unstake(stakingRewardsTokenId, fiduVal(10_000), {from: stakedFiduHolder})
+      await fidu.approve(seniorPool.address, fiduVal(10_000), {from: stakedFiduHolder})
+      await seniorPool.requestWithdrawal(fiduVal(10_000), {from: stakedFiduHolder})
 
       const cancelationFeeInBps = await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeInBps)
       const expectedCancelationFee = fiduVal(10_000).mul(cancelationFeeInBps).div(new BN(10_000))
@@ -568,8 +654,8 @@ describe("mainnet forking tests", async function () {
 
       const totalSupply = await requestTokens._tokenIdTracker()
 
-      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: fiduHolder.address})).toChange([
-        [() => fidu.balanceOf(fiduHolder.address), {by: expectedFiduReturnedToUser}],
+      await expectAction(() => seniorPool.cancelWithdrawalRequest(totalSupply, {from: stakedFiduHolder})).toChange([
+        [() => fidu.balanceOf(stakedFiduHolder), {by: expectedFiduReturnedToUser}],
         [() => fidu.balanceOf(protocolAdminAddress), {by: expectedCancelationFee}],
         [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(10_000).neg()}],
       ])
@@ -772,7 +858,7 @@ describe("mainnet forking tests", async function () {
 
         await stratosPool.assess()
         const interestOwed = await stratosCl.interestOwed()
-        await stratosBrwContract.pay(stratosPool.address, interestOwed)
+        await stratosBrwContract["pay(address,uint256)"](stratosPool.address, interestOwed)
       }
 
       const sharePriceBefore = await seniorPool.sharePrice()
@@ -795,7 +881,6 @@ describe("mainnet forking tests", async function () {
       bwrCon = await createBorrowerContract()
       ;({tranchedPool} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-        goldfinchFactory,
         usdc,
       }))
       await initializeTranchedPool(tranchedPool, bwrCon)
@@ -923,14 +1008,13 @@ describe("mainnet forking tests", async function () {
 
   describe("paying back via another currency", async function () {
     let bwrCon, cl, oneSplit
-    const amount = usdcVal(100)
+    const amount = usdcVal(1)
     beforeEach(async function () {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
         people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-        goldfinchFactory,
         usdc,
       }))
 
@@ -939,38 +1023,35 @@ describe("mainnet forking tests", async function () {
     })
 
     it("should allow you to pay with another currency", async () => {
-      // USDT has the same decimals as USDC, so USDC val is fine here.
-      const rawAmount = 10
-      const usdtAmount = usdcVal(rawAmount)
-      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, usdtAmount, 10, 0, {
+      await advanceAndMineBlock({toSecond: await cl.nextDueTime()})
+      const interestOwed = await cl.interestOwed()
+      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, interestOwed, 10, 0, {
         from: bwr,
       })
+
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
           tranchedPool.address,
-          usdtAmount,
+          interestOwed,
           usdt.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
         )
       }).toChange([
-        [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
-        [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
-      ])
-      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => tranchedPool.assess()).toChange([
-        [async () => await cl.balance(), {decrease: true}],
-        [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
+        [async () => await getBalance(bwr, usdt), {by: interestOwed.neg()}],
+        [async () => await cl.interestOwed(), {toCloseTo: ZERO, threshold: HALF_CENT}],
       ])
     }).timeout(TEST_TIMEOUT)
 
     it("Works with BUSD", async () => {
-      const rawAmount = 10
+      const rawAmount = 1
       const busdAmount = bigVal(rawAmount)
       const expectedReturn = await oneSplit.getExpectedReturn(busd.address, usdc.address, busdAmount, 10, 0, {
         from: bwr,
       })
+      await advanceAndMineBlock({toSecond: await cl.nextDueTime()})
+      const interestOwed = await cl.interestOwed()
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
           tranchedPool.address,
@@ -982,24 +1063,21 @@ describe("mainnet forking tests", async function () {
         )
       }).toChange([
         [async () => await getBalance(bwr, busd), {by: busdAmount.neg()}],
-        [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
-      ])
-      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
-        [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
+        // It was an excess payment so we expect the interest to be fully cleared
+        // (or decreased by the total interestOwed)
+        [async () => await cl.interestOwed(), {byCloseTo: interestOwed.neg()}],
       ])
     }).timeout(TEST_TIMEOUT)
 
     describe("payMultipleWithSwapOnOneInch", async () => {
       let tranchedPool2, cl2
-      const amount2 = usdcVal(50)
+      const amount2 = usdcVal(2)
 
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
         ;({tranchedPool: tranchedPool2, creditLine: cl2} = await createPoolWithCreditLine({
           people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
-          goldfinchFactory,
           usdc,
         }))
 
@@ -1011,16 +1089,12 @@ describe("mainnet forking tests", async function () {
       })
 
       it("should pay back multiple loans", async () => {
-        const padding = usdcVal(50)
+        await advanceAndMineBlock({toSecond: (await cl.nextDueTime()).add(new BN(1))})
+        const padding = usdcVal(1)
         const originAmount = amount.add(amount2).add(padding)
         const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, originAmount, 10, 0, {
           from: bwr,
         })
-        const totalMinAmount = amount.add(amount2)
-        const expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
-
-        await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
-        await tranchedPool.assess()
 
         await expectAction(() =>
           bwrCon.payMultipleWithSwapOnOneInch(
@@ -1033,14 +1107,15 @@ describe("mainnet forking tests", async function () {
           )
         ).toChange([
           // CreditLine should be paid down by `amount`
-          [async () => (await cl.balance()).add(await cl.interestOwed()), {by: amount.neg()}],
+          [async () => await cl.interestOwed(), {to: ZERO}],
+          [async () => await cl2.interestOwed(), {to: ZERO}],
           // Excess USDC from swap should be added to the first CreditLine's contract balance
           // rather than applied as payment
-          [() => getBalance(cl.address, usdc), {byCloseTo: expectedExtra}],
-          [() => getBalance(cl2.address, usdc), {by: amount2}],
           [() => getBalance(bwr, usdt), {by: originAmount.neg()}],
+          // Borrower con's usdc balance should increase because the excess usdt payment was converted
+          // to an excess usdc payment and the usdc sits in the borrower contract.
+          [() => getBalance(bwrCon.address, usdc), {increase: true}],
         ])
-        expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
         expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
       }).timeout(TEST_TIMEOUT)
     })
@@ -1099,7 +1174,6 @@ describe("mainnet forking tests", async function () {
         ;({tranchedPool} = await createPoolWithCreditLine({
           people: {borrower: bwr, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
-          goldfinchFactory,
         }))
         await fundWithWhales(["USDC"], [unGoListedUser])
         await erc20Approve(usdc, seniorPool.address, MAX_UINT, [unGoListedUser])
@@ -1139,7 +1213,6 @@ describe("mainnet forking tests", async function () {
         ;({tranchedPool} = await createPoolWithCreditLine({
           people: {borrower, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
-          goldfinchFactory,
         }))
         await fundWithWhales(["USDC"], [goListedUser])
         const goldfinchConfigWithGoListAddress = await go.legacyGoList()
@@ -1300,7 +1373,6 @@ describe("mainnet forking tests", async function () {
               borrower: person3,
             },
             usdc,
-            goldfinchFactory,
           }))
           bwr = person3
           bwrCon = await createBorrowerContract()
@@ -1316,9 +1388,7 @@ describe("mainnet forking tests", async function () {
 
         describe("when I try to withdraw", async () => {
           it("it fails", async () => {
-            await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(400), bwr, {from: bwr})).to.be.rejectedWith(
-              /Must have locker role/i
-            )
+            await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(400), bwr, {from: bwr})).to.be.rejectedWith(/NA/)
           })
         })
       })
@@ -1333,7 +1403,6 @@ describe("mainnet forking tests", async function () {
               borrower: bwr,
             },
             usdc,
-            goldfinchFactory,
           }))
           await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
           await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
@@ -1364,7 +1433,8 @@ describe("mainnet forking tests", async function () {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
-            await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+            await expect(bwrCon.methods["pay(address,uint256)"](tranchedPool.address, usdcVal(10_000), {from: bwr})).to
+              .be.fulfilled
 
             // verify accRewardsPerPrincipalDollar
             const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
@@ -1382,7 +1452,8 @@ describe("mainnet forking tests", async function () {
               await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
               await advanceTime({days: 90})
               await ethers.provider.send("evm_mine", [])
-              await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+              await expect(bwrCon.methods["pay(address,uint256)"](tranchedPool.address, usdcVal(10_000), {from: bwr}))
+                .to.be.fulfilled
               const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
               // right now rewards rates aren't set, so no rewards should be claimable
               expect(rewards).to.bignumber.eq("0")

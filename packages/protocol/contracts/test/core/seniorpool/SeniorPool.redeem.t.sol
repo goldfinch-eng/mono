@@ -4,12 +4,13 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 
 contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   function testRedeemRedeemsMaximumFromTranchedPool() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -19,7 +20,8 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
 
     vm.warp(tp.creditLine().termEndTime());
 
-    payTp(usdcVal(105), tp);
+    uint256 interestOwed = cl.interestOwed();
+    payTp(interestOwed + cl.principalOwed(), tp);
 
     uint256 spUsdcBefore = usdc.balanceOf(address(sp));
     uint256 reserveUsdcBefore = usdc.balanceOf(TREASURY);
@@ -34,8 +36,9 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
     uint256 principalRedeemedExpected = usdcVal(400);
     uint256 interestRedeemed = poolTokens.getTokenInfo(poolToken).interestRedeemed -
       tokenBefore.interestRedeemed;
-    // $5 of interest * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
-    uint256 interestRedeemedExpected = usdcVal(2) + (usdcVal(1) / 100) * 80;
+    // interestRedeemed * (4/5) * (1 - (0.2 + 0.1)) = 0.56 * interestRedeemed
+    // 0.2 is juniorFeePercent and 0.1 is protocolFee
+    uint256 interestRedeemedExpected = (interestOwed * 56) / 100;
 
     assertEq(principalRedeemed, principalRedeemedExpected);
     assertEq(interestRedeemed, interestRedeemedExpected);
@@ -47,7 +50,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemShouldAdjustSharePriceBasedOnInterestRedeemed() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -76,7 +79,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemEmitsInterestPrincipalCollected() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -86,10 +89,12 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
 
     vm.warp(tp.creditLine().termEndTime());
 
-    payTp(usdcVal(105), tp);
+    uint256 interestOwed = cl.interestOwed();
+    payTp(cl.interestOwed() + cl.principalOwed(), tp);
 
-    // $5 of interest * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
-    uint256 interestRedeemedExpected = usdcVal(2) + (usdcVal(1) / 100) * 80;
+    // interestRedeemed * (4/5) * (1 - (0.2 + 0.1)) = 0.56 * interestRedeemed
+    // 0.2 is juniorFeePercent and 0.1 is protocolFee
+    uint256 interestRedeemedExpected = (interestOwed * 56) / 100;
     vm.expectEmit(true, false, false, true);
     emit InterestCollected(address(tp), interestRedeemedExpected);
 
@@ -103,7 +108,7 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
   }
 
   function testRedeemIncreasesUsdcAvailableByAmountRedeemed() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(400));
@@ -113,10 +118,12 @@ contract SeniorPoolRedeemTest is SeniorPoolBaseTest {
 
     vm.warp(tp.creditLine().termEndTime());
 
-    payTp(usdcVal(105), tp);
+    uint256 interestOwed = cl.interestOwed();
+    payTp(interestOwed + cl.principalOwed(), tp);
 
-    // $5 of interest * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
-    uint256 interestRedeemedExpected = usdcVal(2) + (usdcVal(1) / 100) * 80;
+    // interestRedeemed * (4/5) * (1 - (0.2 + 0.1)) = 0.56 * interestRedeemed
+    // 0.2 is juniorFeePercent and 0.1 is protocolFee
+    uint256 interestRedeemedExpected = (interestOwed * 56) / 100;
     // Junior contributed 100$, senior levered by 4x (400$). Total limit 500$. Since
     // everything was paid back, senior can redeem full amount.
     uint256 principalRedeemedExpected = usdcVal(400);

@@ -3,19 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../protocol/core/Accountant.sol";
-import "../protocol/core/CreditLine.sol";
+import {FixedPoint} from "../external/FixedPoint.sol";
+import {Accountant} from "../protocol/core/Accountant.sol";
+import {CreditLine} from "../protocol/core/CreditLine.sol";
 
 contract TestAccountant {
-  function calculateInterestAndPrincipalAccrued(
-    address creditLineAddress,
-    uint256 timestamp,
-    uint256 lateFeeGracePeriod
-  ) public view returns (uint256, uint256) {
-    CreditLine cl = CreditLine(creditLineAddress);
-    return Accountant.calculateInterestAndPrincipalAccrued(cl, timestamp, lateFeeGracePeriod);
-  }
-
   function calculateWritedownFor(
     address creditLineAddress,
     uint256 blockNumber,
