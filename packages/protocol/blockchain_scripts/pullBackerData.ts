@@ -37,6 +37,7 @@ async function main() {
   assertNonNullable(process.env.POOL, "POOL envvar is required")
   assertNonNullable(process.env.ALCHEMY_API_KEY, "ALCHEMY_API_KEY is required")
 
+  // Use AlchemyProvider directly to bypass hardhat's global timeout on provider
   const provider = new ethers.providers.AlchemyProvider("mainnet", process.env.ALCHEMY_API_KEY)
 
   const poolAddress = process.env.POOL
