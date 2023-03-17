@@ -13,18 +13,15 @@ export interface LoanCallsDataTableRow {
 
 interface LoanCallsDataTableProps {
   callsData: LoanCallsDataTableRow[];
-  loading: boolean;
   className?: string;
 }
 
 export function LoanCallsDataTable({
   callsData,
-  loading,
   className,
 }: LoanCallsDataTableProps) {
   return (
     <div className={className}>
-      {loading && <div>Loading</div>}
       <table className="w-full text-xs [&_th]:py-2.5 [&_th]:text-base [&_th]:font-medium [&_th]:text-sand-500 [&_td]:py-4 [&_td]:text-lg">
         <thead>
           <tr className="bg-transparent">

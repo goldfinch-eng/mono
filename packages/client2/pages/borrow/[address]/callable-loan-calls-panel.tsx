@@ -100,7 +100,7 @@ export function CallableLoanCallsPanel({
   loanId,
   principalAmountRepaid,
 }: CallableLoanCallsPanelProps) {
-  const { data, loading } = useCallableLoanCallPoolTokensQuery({
+  const { data } = useCallableLoanCallPoolTokensQuery({
     variables: {
       loanId,
     },
@@ -115,13 +115,9 @@ export function CallableLoanCallsPanel({
   return (
     <div className="mb-10 rounded-xl bg-sand-100 p-8">
       <div className="mb-6 text-2xl">Active callable loans</div>
-      <LoanCallsDataTable
-        callsData={activeCallsTableData}
-        loading={loading}
-        className="mb-16"
-      />
+      <LoanCallsDataTable callsData={activeCallsTableData} className="mb-16" />
       <div className="mb-6 text-2xl">Callable loans history</div>
-      <LoanCallsDataTable callsData={closedCallsTableData} loading={loading} />
+      <LoanCallsDataTable callsData={closedCallsTableData} />
       {closedCallsTableData.length > 5 && (
         <Button className="mt-2.5 w-full" colorScheme="sand" size="lg">
           View more
