@@ -183,7 +183,7 @@ export function SeniorPoolRepaymentSection({
               dataKey="period"
               tick={{ fontSize: "8px" }}
               interval={
-                screenSize === "xs" ? 3 : perspective === "future" ? 0 : 1
+                screenSize === "xs" ? 2 : perspective === "future" ? 0 : 1
               }
               padding={{ left: 36 }}
             />
