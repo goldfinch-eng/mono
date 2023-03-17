@@ -14,8 +14,8 @@ import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 /// In Funding, lenders can deposit principal to mint a pool token and they can withdraw their deposited principal.
 /// @param DrawdownPeriod Starts when the first borrower drawdown occurs and
 /// ends after ConfigHelper.DrawdownPeriodInSeconds elapses.
-/// In DrawdownPeriod, the lender can deposit principal to mint a pool token and they can withdraw
-/// their deposited principal.
+/// In DrawdownPeriod, the borrower can drawdown principal as many times as they want.
+/// Lenders cannot withdraw their principal, deposit new principal, or submit call requests.
 /// @param InProgress Starts after ConfigHelper.DrawdownPeriodInSeconds elapses and never ends.
 /// In InProgress, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
 /// When a loan is fully paid back, we do not update the loan state, but most of these actions will
@@ -28,7 +28,8 @@ enum LoanPhase {
 }
 
 /// @dev A CallableLoan is a loan which allows the lender to call the borrower's principal.
-///     The lender can call the borrower's principal at any time, but the borrower must pay back the principal
+///     The lender can call the borrower's principal at any time, and the borrower must pay back the principal
+///     by the end of the call request period.
 /// @dev The ICallableLoanErrors interface contains all errors due to Solidity version compatibility with custom errors.
 interface ICallableLoan is ILoan {
   /*================================================================================

@@ -36,7 +36,7 @@ library WaterfallLogic {
     if (w._tranches.length != 0) {
       revert ICallableLoanErrors.CannotReinitialize();
     }
-    if (nTranches < 2) {
+    if (nTranches < MINIMUM_WATERFALL_TRANCHES) {
       revert ICallableLoanErrors.HasInsufficientTranches(nTranches, MINIMUM_WATERFALL_TRANCHES);
     }
     for (uint256 i = 0; i < nTranches; i++) {

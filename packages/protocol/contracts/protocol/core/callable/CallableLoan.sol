@@ -534,10 +534,11 @@ contract CallableLoan is
       interestAccrued: interestAccruedBeforePayment,
       principalOwed: cl.principalOwed(),
       interestRate: cl.interestApr(),
+      balance: cl.totalPrincipalOutstanding(),
       timeUntilNextPrincipalSettlement: cl.nextPrincipalDueTimeAt(block.timestamp).saturatingSub(
         block.timestamp
       ),
-      balance: cl.totalPrincipalOutstanding()
+      guaranteedFutureInterestPaid: cl.totalInterestPaid().saturatingSub(cl.totalInterestAccrued())
     });
 
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
@@ -719,7 +720,7 @@ contract CallableLoan is
 
     // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
     assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
 
     return (
       totalInterestWithdrawable - tokenInfo.interestRedeemed,
