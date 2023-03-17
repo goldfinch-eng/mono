@@ -8,7 +8,7 @@ import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deplo
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 import {BigNumber} from "bignumber.js"
 
-export const rewardsToRemoveFromStakingRewards = bigVal(1_250_000) // 1.25m GFI
+export const rewardsToRemoveFromStakingRewards = bigVal(1_200_000) // 1.2m GFI
 export const maxInterestDollarsEllibile = bigVal(34_000_000) // 34m 1e18
 export const rewardsMargin = bigVal(30_000) // 1 month of rewards
 
