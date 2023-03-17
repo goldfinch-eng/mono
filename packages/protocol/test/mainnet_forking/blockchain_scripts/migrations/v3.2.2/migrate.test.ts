@@ -33,9 +33,9 @@ describe("v3.1.2", async function () {
   // GFI balances before
   let stakingRewardsGfiBalanceBefore: BN
   let backerRewardsGfiBalanceBefore: BN
+  let governanceGfiBalanceBefore: BN
 
   let backerRewardsTotalRewardsBefore: BN
-  let backerRewardsMaxInterestDollarsElligibleBefore: BN
 
   // StakingRewards rewards params
   let stakingRewardsTargetCapacityBefore: BN
@@ -48,11 +48,13 @@ describe("v3.1.2", async function () {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({stakingRewards, backerRewards, gfi} = await setupTest())
 
+    const protocolOwner = await getProtocolOwner()
+
     backerRewardsGfiBalanceBefore = await gfi.balanceOf(backerRewards.address)
     stakingRewardsGfiBalanceBefore = await gfi.balanceOf(stakingRewards.address)
+    governanceGfiBalanceBefore = await gfi.balanceOf(protocolOwner)
 
     backerRewardsTotalRewardsBefore = await backerRewards.totalRewards()
-    backerRewardsMaxInterestDollarsElligibleBefore = await backerRewards.maxInterestDollarsEligible()
 
     stakingRewardsTargetCapacityBefore = await stakingRewards.targetCapacity()
     stakingRewardsMinRateBefore = await stakingRewards.minRate()
@@ -104,6 +106,14 @@ describe("v3.1.2", async function () {
 
       it("maxRateAtPercent is the same", async () => {
         expect(await stakingRewards.maxRateAtPercent()).to.be.bignumber.eq(stakingRewardsMaxRateAtPercentBefore)
+      })
+    })
+
+    describe("ProtocolOwner", async () => {
+      it("should have the same GFI balance", async () => {
+        // Because governance is sweeping rewards and then immediately transferring the rewards it should have
+        // the same GFI balance as before.
+        expect(await gfi.balanceOf(await getProtocolOwner())).to.bignumber.eq(governanceGfiBalanceBefore)
       })
     })
 
