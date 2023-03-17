@@ -4,11 +4,11 @@ import tailwindConfig from "../tailwind.config";
 
 const parseSize = (size: string): number => parseInt(size.replace("px", ""));
 
-type ScreenSizeString = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
-type ScreenConfig = Record<ScreenSizeString, string>;
+type ScreenSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+type ScreenConfig = Record<ScreenSize, string>;
 
-const useScreenSize = (): ScreenSizeString => {
-  const [screenSize, setScreenSize] = useState<ScreenSizeString>("xs");
+const useScreenSize = (): ScreenSize | undefined => {
+  const [screenSize, setScreenSize] = useState<ScreenSize>();
 
   useEffect(() => {
     const calculateSize = (): void => {
@@ -20,9 +20,9 @@ const useScreenSize = (): ScreenSizeString => {
         return;
       }
 
-      let newSize: ScreenSizeString = "xs";
+      let newSize: ScreenSize = "xs";
       for (const screen in screens) {
-        const breakpoint = screen as ScreenSizeString;
+        const breakpoint = screen as ScreenSize;
         if (windowWidth >= parseSize(screens[breakpoint])) {
           newSize = breakpoint;
         } else {
