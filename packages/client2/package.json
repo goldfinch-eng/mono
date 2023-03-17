@@ -53,7 +53,8 @@
     "react-toastify": "^8.2.0",
     "react-use-wizard": "^2.2.0",
     "recharts": "^2.1.16",
-    "styled-components": "^5.3.5"
+    "styled-components": "^5.3.5",
+    "validator": "^13.9.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",

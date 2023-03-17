@@ -2,7 +2,7 @@ import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import isEmail from "validator/es/lib/isEmail";
+import isEmail from "validator/lib/isEmail";
 
 import {
   Button,
@@ -309,7 +309,7 @@ export function SupplyPanel({
           <Input
             {...register("email", {
               required: "Required",
-              validate: isEmail,
+              validate: (value) => (isEmail(value) ? true : "Invalid email"),
             })}
             label="Email"
             colorScheme="light"

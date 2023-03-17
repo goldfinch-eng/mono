@@ -2,6 +2,7 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getAgreements} from "../db"
 import {genRequestHandler} from "../helpers"
 import * as admin from "firebase-admin"
+import isEmail from "validator/lib/isEmail"
 
 // signAgreement is used to be shared with the borrowers
 export const signAgreement = genRequestHandler({
@@ -17,14 +18,17 @@ export const signAgreement = genRequestHandler({
     }
     const fullName = (req.body.fullName || "").trim()
     const email = (req.body.email || "").trim()
-    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
 
-    if (!emailPattern.test(email)) {
-      return res.status(403).send({error: "Invalid email address"})
+    if (pool === "") {
+      return res.status(400).send({error: "Invalid pool address"})
     }
 
-    if (pool === "" || fullName === "" || email === "") {
-      return res.status(403).send({error: "Invalid name or pool or email"})
+    if (fullName === "") {
+      return res.status(400).send({error: "Invalid full name"})
+    }
+
+    if (!isEmail(email) || email === "") {
+      return res.status(400).send({error: "Invalid email address"})
     }
 
     const agreements = getAgreements(admin.firestore())
