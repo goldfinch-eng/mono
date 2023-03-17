@@ -6,15 +6,15 @@ pragma experimental ABIEncoderV2;
 import {ImplementationRepository as Repo} from "../../../protocol/core/proxy/ImplementationRepository.sol";
 import {UcuProxy} from "../../../protocol/core/proxy/UcuProxy.sol";
 import {Test} from "forge-std/Test.sol";
-import {console2 as console} from "forge-std/console2.sol";
 
 contract TestImplementationRepository is Test {
-  address internal constant repoOwner = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
-  address internal constant proxyOwner = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
+  address internal constant REPO_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
+  address internal constant PROXY_OWNER = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
 
   // impls
   BaseImpl internal addingImpl = new AddingImplementation();
   BaseImpl internal subtractingImpl = new SubtractingImplementation();
+  BaseImpl internal doublingImpl = new DoublingImpl();
   BaseImpl internal failingImpl = new FailingImplementation();
   BaseImpl internal initialImpl = addingImpl;
 
@@ -23,18 +23,18 @@ contract TestImplementationRepository is Test {
   BaseImpl internal proxyAsImpl;
 
   function setUp() public {
-    repo.initialize(repoOwner, address(initialImpl));
-    proxy = new UcuProxy(repo, proxyOwner);
+    repo.initialize(REPO_OWNER, address(initialImpl));
+    proxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
     proxyAsImpl = BaseImpl(address(proxy));
     vm.label(address(proxy), "proxy");
-    vm.label(repoOwner, "repoOwner");
-    vm.label(proxyOwner, "proxyOwner");
-    assertTrue(repoOwner != proxyOwner);
+    vm.label(REPO_OWNER, "REPO_OWNER");
+    vm.label(PROXY_OWNER, "PROXY_OWNER");
+    assertTrue(REPO_OWNER != PROXY_OWNER);
   }
 
   function testProxyFailsToUpgradeConstructAndUpgradeWhenRepoIsPaused()
     public
-    impersonating(repoOwner)
+    impersonating(REPO_OWNER)
   {
     // there should be an upgrade available
     repo.append(address(subtractingImpl));
@@ -43,9 +43,10 @@ contract TestImplementationRepository is Test {
     repo.pause();
 
     vm.stopPrank();
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
+    uint256 lineageId = repo.currentLineageId();
     vm.expectRevert("Pausable: paused");
-    new UcuProxy(repo, repoOwner);
+    new UcuProxy(repo, REPO_OWNER, lineageId);
 
     vm.expectRevert("Pausable: paused");
     proxy.upgradeImplementation();
@@ -54,20 +55,22 @@ contract TestImplementationRepository is Test {
   function testProxyContructorRevertsIfRepoIsNotAContract(
     Repo _repo
   ) public notContract(address(_repo)) {
+    uint256 lineageId = repo.currentLineageId();
     vm.expectRevert("bad repo");
-    new UcuProxy(_repo, proxyOwner);
+    new UcuProxy(_repo, PROXY_OWNER, lineageId);
   }
 
   function testProxyConstructorRevertsIfOwnerIsNull() public {
+    uint256 lineageId = repo.currentLineageId();
     vm.expectRevert(bytes("bad owner"));
-    new UcuProxy(repo, address(0));
+    new UcuProxy(repo, address(0), lineageId);
   }
 
-  function testProxyDoesntSwallowErrorsOnImplementationRevert() public impersonating(repoOwner) {
+  function testProxyDoesntSwallowErrorsOnImplementationRevert() public impersonating(REPO_OWNER) {
     repo.append(address(failingImpl));
     vm.stopPrank();
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     proxy.upgradeImplementation();
     vm.expectRevert("failed in proxied call");
     proxyAsImpl.fn();
@@ -80,14 +83,14 @@ contract TestImplementationRepository is Test {
     proxyAsImpl.fn();
     assertEq(proxyAsImpl.value(), 26);
 
-    vm.startPrank(repoOwner);
+    vm.startPrank(REPO_OWNER);
     {
       repo.createLineage(address(subtractingImpl));
       assertEq(repo.currentImplementation(), address(subtractingImpl));
     }
     vm.stopPrank();
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     {
       assertEq(proxyAsImpl.value(), 26);
       proxyAsImpl.fn();
@@ -102,7 +105,7 @@ contract TestImplementationRepository is Test {
     vm.stopPrank();
 
     address newImpl = address(new SubtractingImplementation());
-    vm.startPrank(repoOwner);
+    vm.startPrank(REPO_OWNER);
     {
       repo.append(newImpl, startingSetId);
       assertEq(repo.currentImplementation(), address(subtractingImpl));
@@ -110,7 +113,7 @@ contract TestImplementationRepository is Test {
     }
     vm.stopPrank();
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     {
       vm.expectEmit(true, false, false, false);
       emit Upgraded(newImpl);
@@ -123,7 +126,7 @@ contract TestImplementationRepository is Test {
 
   function testProxyDoesNotDelegateCallWithUpgradeDataWhenCreated()
     public
-    impersonating(repoOwner)
+    impersonating(REPO_OWNER)
   {
     repo.append(address(failingImpl));
     repo.setUpgradeDataFor(
@@ -133,14 +136,14 @@ contract TestImplementationRepository is Test {
 
     // if the proxy were delegate calling on creation it would fail here because
     // the data we passed to delegate call unconditionally reverts
-    new UcuProxy(repo, proxyOwner);
+    new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
   }
 
   function testProxyUpgradeRevertsWhenUpgradeDataDelegateCallFails()
     public
-    impersonating(repoOwner)
+    impersonating(REPO_OWNER)
   {
-    UcuProxy newProxy = new UcuProxy(repo, proxyOwner);
+    UcuProxy newProxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
 
     repo.append(address(failingImpl));
     repo.setUpgradeDataFor(
@@ -149,12 +152,12 @@ contract TestImplementationRepository is Test {
     );
 
     vm.stopPrank();
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     vm.expectRevert("failed in proxied call");
     newProxy.upgradeImplementation();
   }
 
-  function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(repoOwner) {
+  function testProxyDelegateCallsWithUpgradeDataWhenUpgrading() public impersonating(REPO_OWNER) {
     repo.append(address(subtractingImpl));
     repo.setUpgradeDataFor(
       address(subtractingImpl),
@@ -162,21 +165,50 @@ contract TestImplementationRepository is Test {
     );
     vm.stopPrank();
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     uint256 valueBefore = proxyAsImpl.value();
     proxy.upgradeImplementation();
     // subtract should have been called while migrating
     assertEq(proxyAsImpl.value(), valueBefore - 1);
   }
 
+  function testCanCreateProxiesForValidLineages() public {
+    vm.startPrank(REPO_OWNER);
+
+    // Setup three lineages
+    uint256 lineageId1 = repo.currentLineageId();
+    repo.createLineage(address(subtractingImpl));
+    uint256 lineageId2 = repo.currentLineageId();
+    repo.createLineage(address(doublingImpl));
+    uint256 lineageId3 = repo.currentLineageId();
+
+    // Proxy for adder impl should return 5 + 1 = 6
+    UcuProxy adderProxy = new UcuProxy(repo, PROXY_OWNER, lineageId1);
+    BaseImpl adder = BaseImpl(address(adderProxy));
+    adder.initialize(5);
+    assertEq(adder.fn(), 6);
+
+    // Proxy for subber impl should return 5 - 1 = 4
+    UcuProxy subberProxy = new UcuProxy(repo, PROXY_OWNER, lineageId2);
+    BaseImpl subber = BaseImpl(address(subberProxy));
+    subber.initialize(5);
+    assertEq(subber.fn(), 4);
+
+    // Proxy for doubler impl should return 5 * 2 = 10
+    UcuProxy doublerProxy = new UcuProxy(repo, PROXY_OWNER, lineageId3);
+    BaseImpl doubler = BaseImpl(address(doublerProxy));
+    doubler.initialize(5);
+    assertEq(doubler.fn(), 10);
+  }
+
   function testProxyWillUseCurrentImplementationFromCurrentSet() public {
-    vm.startPrank(repoOwner);
+    vm.startPrank(REPO_OWNER);
     uint256 newSetId = repo.createLineage(address(subtractingImpl));
     assertEq(repo.currentImplementation(), address(subtractingImpl));
 
     // the head of the latest lineage is the subtracting impl, so fn should
     // decrement value
-    UcuProxy subberProxy = new UcuProxy(repo, proxyOwner);
+    UcuProxy subberProxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
     BaseImpl subber = BaseImpl(address(subberProxy));
     subber.initialize(25);
     assertEq(subber.value(), 25);
@@ -193,7 +225,7 @@ contract TestImplementationRepository is Test {
     assertEq(subber.value(), 23);
 
     // the latest impl is adding, so a new proxy should add
-    UcuProxy adderProxy = new UcuProxy(repo, proxyOwner);
+    UcuProxy adderProxy = new UcuProxy(repo, PROXY_OWNER, repo.currentLineageId());
     BaseImpl adder = BaseImpl(address(adderProxy));
     adder.initialize(25);
     assertEq(adder.value(), 25);
@@ -201,7 +233,7 @@ contract TestImplementationRepository is Test {
     assertEq(adder.value(), 26);
     vm.stopPrank();
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     subberProxy.upgradeImplementation(); // subber to adder
     assertEq(subber.value(), 23);
     subber.fn();
@@ -217,12 +249,12 @@ contract TestImplementationRepository is Test {
     proxyAsImpl.fn();
     assertEq(proxyAsImpl.value(), 26);
 
-    vm.startPrank(repoOwner);
+    vm.startPrank(REPO_OWNER);
     repo.append(address(subtractingImpl));
     vm.stopPrank();
     assertEq(address(repo.currentImplementation()), address(subtractingImpl));
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     vm.expectEmit(true, false, false, false);
     emit Upgraded(address(subtractingImpl));
     proxy.upgradeImplementation();
@@ -233,12 +265,12 @@ contract TestImplementationRepository is Test {
     proxyAsImpl.fn();
     assertEq(proxyAsImpl.value(), 25);
 
-    vm.startPrank(proxyOwner);
+    vm.startPrank(PROXY_OWNER);
     vm.expectRevert("no upgrade");
     proxy.upgradeImplementation();
   }
 
-  function testTransferOwnershipWorksAsOwner(address newOwner) public impersonating(proxyOwner) {
+  function testTransferOwnershipWorksAsOwner(address newOwner) public impersonating(PROXY_OWNER) {
     vm.expectEmit(true, true, false, false);
     emit OwnershipTransferred(proxy.owner(), newOwner);
     proxy.transferOwnership(newOwner);
@@ -264,7 +296,7 @@ contract TestImplementationRepository is Test {
 
   function testProxyUpgradeImplementationFailsIfNextImplIsNotRegistered()
     public
-    impersonating(proxyOwner)
+    impersonating(PROXY_OWNER)
   {
     address currentImpl = repo.currentImplementation();
     assertFalse(repo.hasNext(address(currentImpl)));
@@ -290,6 +322,7 @@ contract TestImplementationRepository is Test {
 
   modifier notContract(address x) {
     uint32 nBytes;
+    // solhint-disable-next-line no-inline-assembly
     assembly {
       nBytes := extcodesize(x)
     }
@@ -309,23 +342,32 @@ abstract contract BaseImpl {
     value = _value;
   }
 
-  function fn() external virtual;
+  function fn() external virtual returns (uint256);
 }
 
 contract SubtractingImplementation is BaseImpl {
-  function fn() external override {
+  function fn() external override returns (uint256) {
     value -= 1;
+    return value;
   }
 }
 
 contract AddingImplementation is BaseImpl {
-  function fn() external override {
+  function fn() external override returns (uint256) {
     value += 1;
+    return value;
+  }
+}
+
+contract DoublingImpl is BaseImpl {
+  function fn() external override returns (uint256) {
+    value *= 2;
+    return value;
   }
 }
 
 contract FailingImplementation is BaseImpl {
-  function fn() external override {
+  function fn() external override returns (uint256) {
     revert("failed in proxied call");
   }
 }

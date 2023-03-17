@@ -3,7 +3,6 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
@@ -12,14 +11,14 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 
 contract PoolTokensMintTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
 
   function setUp() public override {
     super.setUp();
     (tp, cl) = defaultTp();
     fundAddress(address(this), usdcVal(2_000_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
   }
 
   function testRevertsForPoolNotCreatedByGfFactory() public {
@@ -31,10 +30,8 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
       _juniorFeePercent: 20,
       _limit: usdcVal(1000),
       _interestApr: 15000,
-      _paymentPeriodInDays: 30,
-      _termInDays: 360,
+      _schedule: tpBuilder.defaultSchedule(),
       _lateFeeApr: 350,
-      _principalGracePeriodInDays: 180,
       _fundableAt: 0,
       _allowedUIDTypes: uidTypes
     });
@@ -82,6 +79,11 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
   }
 
   function testUsesCurrentAccRewardsPerPrincipalDollarAtMintOnSecondDrawdown() public {
+    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
+    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
+    fundAddress(address(this), usdcVal(2_000_000));
+    usdc.approve(address(tp), type(uint256).max);
+
     _startImpersonation(GF_OWNER);
     // Setup backer rewards
     gfi.setCap(100_000_000 * 1e18);

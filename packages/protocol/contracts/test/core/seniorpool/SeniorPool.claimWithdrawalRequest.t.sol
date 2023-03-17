@@ -6,8 +6,8 @@ pragma experimental ABIEncoderV2;
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
   function testClaimWithdrawalEoaWorksGoListed(address user) public {
@@ -163,7 +163,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, sp.getNumShares(usdcVal(3000)));
 
     // Use a TP to suck up all liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -256,7 +256,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     address user1,
     address user2
   ) public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -341,7 +341,9 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     address user1,
     address user2
   ) public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.warp(1672513372); // December 31st. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -367,7 +369,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     depositToSpFrom(GF_OWNER, usdcVal(500));
 
     // Epoch 3, when first tp payment is due. Pay and redeem
-    vm.warp(block.timestamp + 1 + 30 days);
+    vm.warp(block.timestamp + 32 days);
     tp.assess();
     payTp(cl.interestOwed(), tp);
     // Make a deposit such that inflows for this epoch total $200
@@ -430,7 +432,9 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     address user1,
     address user2
   ) public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.warp(1672513372); // December 31st. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     vm.assume(user1 != user2 && fuzzHelper.isAllowed(user1) && fuzzHelper.isAllowed(user2));
     addToGoList(user1);
     addToGoList(user2);
@@ -459,8 +463,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     depositToSpFrom(GF_OWNER, usdcVal(1000));
 
     // EPOCH 3 - tranched pool repayment
-    vm.warp(block.timestamp + 17 days);
-    tp.assess();
+    vm.warp(block.timestamp + 18 days);
     assertTrue(cl.interestOwed() > 0);
     payTp(cl.interestOwed(), tp);
     assertZero(cl.interestOwed());
@@ -470,8 +473,7 @@ contract SeniorPoolClaimWithdrawalRequestTest is SeniorPoolBaseTest {
     depositToSpFrom(GF_OWNER, usdcVal(500));
 
     // EPOCH 5 - tranched pool repayment
-    vm.warp(block.timestamp + 17 days);
-    tp.assess();
+    vm.warp(block.timestamp + 18 days);
     assertTrue(cl.interestOwed() > 0, "Has interest owed");
     payTp(cl.interestOwed(), tp);
     assertZero(cl.interestOwed(), "No more interest owed");

@@ -3,36 +3,20 @@ import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_GF_DEPLOYER,
 } from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {
-  ERC20Instance,
-  GoInstance,
-  GoldfinchConfigInstance,
-  GoldfinchFactoryInstance,
-} from "@goldfinch-eng/protocol/typechain/truffle"
+import {ERC20Instance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {createPoolWithCreditLine, getTruffleContractAtAddress} from "../testHelpers"
 
 interface CreateTranchedPool {
   hre: HardhatRuntimeEnvironment
   borrowerAddress: string
-  ownerAddress: string
   go: GoInstance
   goldfinchConfig: GoldfinchConfigInstance
-  goldfinchFactory: GoldfinchFactoryInstance
   usdc: ERC20Instance
 }
-export async function createTranchedPool({
-  hre,
-  borrowerAddress,
-  ownerAddress,
-  go,
-  goldfinchConfig,
-  goldfinchFactory,
-  usdc,
-}: CreateTranchedPool) {
+export async function createTranchedPool({hre, borrowerAddress, go, goldfinchConfig, usdc}: CreateTranchedPool) {
   const {tranchedPool} = await createPoolWithCreditLine({
     people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: borrowerAddress},
-    goldfinchFactory,
     usdc,
   })
   await goldfinchConfig.addToGoList(tranchedPool.address)

@@ -59,6 +59,11 @@ library SafeMath {
     return OzSafeMath.sub(a, b, errorMessage);
   }
 
+  /// @notice Do a - b. If that would result in overflow then return 0
+  function saturatingSub(uint256 a, uint256 b) internal pure returns (uint256) {
+    return b > a ? 0 : a - b;
+  }
+
   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
     // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
     // benefit is lost if 'b' is also tested.

@@ -3,63 +3,83 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {SafeMath} from "../../library/SafeMath.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {Accountant} from "./Accountant.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {ISchedule} from "../../interfaces/ISchedule.sol";
 
 /**
  * @title CreditLine
  * @notice A contract that represents the agreement between Backers and
- *  a Borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
- *  A CreditLine belongs to a TranchedPool, and is fully controlled by that TranchedPool. It does not
- *  operate in any standalone capacity. It should generally be considered internal to the TranchedPool.
- * @author Goldfinch
+ *  a Borrower. Includes the terms of the loan, as well as the accounting state such as interest owed.
+ *  A CreditLine instance belongs to a TranchedPool instance and is fully controlled by that TranchedPool
+ *  instance. It should not operate in any standalone capacity and should generally be considered internal
+ *  to the TranchedPool instance.
+ * @author Warbler Labs Engineering
  */
 
-// solhint-disable-next-line max-states-count
 contract CreditLine is BaseUpgradeablePausable, ICreditLine {
-  uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
+  using ConfigHelper for GoldfinchConfig;
+  using PaymentScheduleLib for PaymentSchedule;
 
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+  uint256 internal constant INTEREST_DECIMALS = 1e18;
+  uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
+  uint256 internal constant SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
+
+  GoldfinchConfig public config;
 
   // Credit line terms
+  /// @inheritdoc ICreditLine
   address public override borrower;
-  uint256 public currentLimit;
+  /// @inheritdoc ICreditLine
+  uint256 public override currentLimit;
+  /// @inheritdoc ICreditLine
   uint256 public override maxLimit;
+  /// @inheritdoc ICreditLine
   uint256 public override interestApr;
-  uint256 public override paymentPeriodInDays;
-  uint256 public override termInDays;
-  uint256 public override principalGracePeriodInDays;
+  /// @inheritdoc ICreditLine
   uint256 public override lateFeeApr;
 
   // Accounting variables
+  /// @inheritdoc ICreditLine
   uint256 public override balance;
-  uint256 public override interestOwed;
-  uint256 public override principalOwed;
-  uint256 public override termEndTime;
-  uint256 public override nextDueTime;
-  uint256 public override interestAccruedAsOf;
+  /// @inheritdoc ICreditLine
+  uint256 public override totalInterestPaid;
+  /// @inheritdoc ICreditLine
   uint256 public override lastFullPaymentTime;
-  uint256 public totalInterestAccrued;
 
-  GoldfinchConfig public config;
-  using ConfigHelper for GoldfinchConfig;
+  // Cumulative interest up to checkpointedAsOf
+  uint256 internal _totalInterestAccrued;
+  // Cumulative interest owed, i.e. a snapshot of _totalInterestAccrued up to
+  // the last due time
+  uint256 internal _totalInterestOwed;
+  // The last time `_checkpoint()` was called
+  uint256 internal _checkpointedAsOf;
 
+  // Schedule variables
+  PaymentSchedule public schedule;
+
+  /*==============================================================================
+  External functions
+  =============================================================================*/
+
+  /// @inheritdoc ICreditLine
   function initialize(
     address _config,
     address owner,
     address _borrower,
     uint256 _maxLimit,
     uint256 _interestApr,
-    uint256 _paymentPeriodInDays,
-    uint256 _termInDays,
-    uint256 _lateFeeApr,
-    uint256 _principalGracePeriodInDays
-  ) public initializer {
+    ISchedule _schedule,
+    uint256 _lateFeeApr
+  ) public override initializer {
     require(
       _config != address(0) && owner != address(0) && _borrower != address(0),
       "Zero address passed in"
@@ -69,268 +89,354 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     borrower = _borrower;
     maxLimit = _maxLimit;
     interestApr = _interestApr;
-    paymentPeriodInDays = _paymentPeriodInDays;
-    termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
-    principalGracePeriodInDays = _principalGracePeriodInDays;
-    interestAccruedAsOf = block.timestamp;
+    _checkpointedAsOf = block.timestamp;
+    schedule.schedule = _schedule;
 
     // Unlock owner, which is a TranchedPool, for infinite amount
-    bool success = config.getUSDC().approve(owner, uint256(-1));
-    require(success, "Failed to approve USDC");
+    assert(config.getUSDC().approve(owner, uint256(-1)));
   }
 
-  function limit() external view override returns (uint256) {
-    return currentLimit;
+  function pay(
+    uint256 paymentAmount
+  ) external override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
+    (uint256 interestAmount, uint256 principalAmount) = Accountant.splitPayment(
+      paymentAmount,
+      balance,
+      interestOwed(),
+      interestAccrued(),
+      principalOwed()
+    );
+
+    return pay(principalAmount, interestAmount);
   }
 
-  /**
-   * @notice Updates the internal accounting to track a drawdown as of current block timestamp.
-   * Does not move any money
-   * @param amount The amount in USDC that has been drawndown
-   */
-  function drawdown(uint256 amount) external onlyAdmin {
-    uint256 timestamp = currentTime();
-    require(termEndTime == 0 || (timestamp < termEndTime), "After termEndTime");
-    require(amount.add(balance) <= currentLimit, "Cannot drawdown more than the limit");
+  /// @inheritdoc ICreditLine
+  /// @dev II: insufficient interest
+  function pay(
+    uint256 principalPayment,
+    uint256 interestPayment
+  ) public override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
+    // The balance might change here.. Checkpoint amounts owed!
+    _checkpoint();
+
+    // Allocate payments
+    ITranchedPool.PaymentAllocation memory pa = Accountant.allocatePayment(
+      Accountant.AllocatePaymentParams({
+        principalPayment: principalPayment,
+        interestPayment: interestPayment,
+        balance: balance,
+        interestOwed: interestOwed(),
+        interestAccrued: interestAccrued(),
+        principalOwed: principalOwed()
+      })
+    );
+
+    uint256 totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
+    uint256 totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
+
+    totalInterestPaid = totalInterestPaid.add(totalInterestPayment);
+    balance = balance.sub(totalPrincipalPayment);
+
+    // If no new interest or principal owed than it was a full payment
+    if (interestOwed() == 0 && principalOwed() == 0) {
+      lastFullPaymentTime = block.timestamp;
+    }
+
+    return pa;
+  }
+
+  /// @inheritdoc ICreditLine
+  function drawdown(uint256 amount) external override onlyAdmin {
+    require(
+      !schedule.isActive() || block.timestamp < termEndTime(),
+      "Uninitialized or after termEndTime"
+    );
+    require(amount.add(balance) <= limit(), "Cannot drawdown more than the limit");
     require(amount > 0, "Invalid drawdown amount");
 
     if (balance == 0) {
-      setInterestAccruedAsOf(timestamp);
-      setLastFullPaymentTime(timestamp);
-      setTotalInterestAccrued(0);
-      // Set termEndTime only once to prevent extending
-      // the loan's end time on every 0 balance drawdown
-      if (termEndTime == 0) {
-        setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
+      lastFullPaymentTime = block.timestamp;
+      if (!schedule.isActive()) {
+        schedule.startAt(block.timestamp);
       }
     }
 
-    (uint256 _interestOwed, uint256 _principalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(
-      timestamp
-    );
+    // The balance is about to change.. checkpoint amounts owed!
+    _checkpoint();
+
+    // TODO - find a better way to enforce that the balance can only be updated on a "non-stale"
+    // credit line. I.e. follow the same pattern done for callable loans with StaleCallableCreditLine
     balance = balance.add(amount);
-
-    updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
-    require(!_isLate(timestamp), "Cannot drawdown when payments are past due");
+    require(!_isLate(block.timestamp), "Cannot drawdown when payments are past due");
   }
 
-  function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {
-    lateFeeApr = newLateFeeApr;
-  }
+  // ------------------------------------------------------------------------------
+  // Tranched Pool Proxy methods
+  // ------------------------------------------------------------------------------
 
-  function setLimit(uint256 newAmount) external onlyAdmin {
+  function setLimit(uint256 newAmount) external override onlyAdmin {
     require(newAmount <= maxLimit, "Cannot be more than the max limit");
     currentLimit = newAmount;
   }
 
-  function setMaxLimit(uint256 newAmount) external onlyAdmin {
+  function setMaxLimit(uint256 newAmount) external override onlyAdmin {
     maxLimit = newAmount;
   }
 
-  function termStartTime() external view returns (uint256) {
-    return _termStartTime();
+  /*==============================================================================
+  External view functions
+  =============================================================================*/
+  /// @notice We keep this to conform to the ICreditLine interface, but it's redundant information
+  ///   now that we have `checkpointedAsOf`
+  function interestAccruedAsOf() public view virtual override returns (uint256) {
+    return _checkpointedAsOf;
   }
 
+  /// @inheritdoc ICreditLine
   function isLate() external view override returns (bool) {
     return _isLate(block.timestamp);
   }
 
-  function withinPrincipalGracePeriod() external view override returns (bool) {
-    if (termEndTime == 0) {
-      // Loan hasn't started yet
-      return true;
-    }
-    return block.timestamp < _termStartTime().add(principalGracePeriodInDays.mul(SECONDS_PER_DAY));
+  /// @inheritdoc ICreditLine
+  function withinPrincipalGracePeriod() public view override returns (bool) {
+    return schedule.withinPrincipalGracePeriodAt(block.timestamp);
   }
 
-  function setTermEndTime(uint256 newTermEndTime) public onlyAdmin {
-    termEndTime = newTermEndTime;
+  /// @inheritdoc ICreditLine
+  function interestOwed() public view virtual override returns (uint256) {
+    return totalInterestOwed().saturatingSub(totalInterestPaid);
   }
 
-  function setNextDueTime(uint256 newNextDueTime) public onlyAdmin {
-    nextDueTime = newNextDueTime;
+  /// @inheritdoc ICreditLine
+  function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
+    /// @dev IT: Invalid timestamp
+    require(timestamp >= _checkpointedAsOf, "IT");
+    return totalInterestOwedAt(timestamp).saturatingSub(totalInterestPaid);
   }
 
-  function setBalance(uint256 newBalance) public onlyAdmin {
-    balance = newBalance;
+  /// @inheritdoc ICreditLine
+  function totalInterestAccrued() public view override returns (uint256) {
+    return totalInterestAccruedAt(block.timestamp);
   }
 
-  function setTotalInterestAccrued(uint256 _totalInterestAccrued) public onlyAdmin {
-    totalInterestAccrued = _totalInterestAccrued;
+  /// @inheritdoc ICreditLine
+  function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
+    require(timestamp >= _checkpointedAsOf, "IT");
+    return _totalInterestAccrued.add(_interestAccruedOverPeriod(_checkpointedAsOf, timestamp));
   }
 
-  function setInterestOwed(uint256 newInterestOwed) public onlyAdmin {
-    interestOwed = newInterestOwed;
-  }
-
-  function setPrincipalOwed(uint256 newPrincipalOwed) public onlyAdmin {
-    principalOwed = newPrincipalOwed;
-  }
-
-  function setInterestAccruedAsOf(uint256 newInterestAccruedAsOf) public onlyAdmin {
-    interestAccruedAsOf = newInterestAccruedAsOf;
-  }
-
-  function setLastFullPaymentTime(uint256 newLastFullPaymentTime) public onlyAdmin {
-    lastFullPaymentTime = newLastFullPaymentTime;
-  }
-
-  /**
-   * @notice Triggers an assessment of the creditline. Any USDC balance available in the creditline is applied
-   * towards the interest and principal.
-   * @return Any amount remaining after applying payments towards the interest and principal
-   * @return Amount applied towards interest
-   * @return Amount applied towards principal
-   */
-  function assess() public onlyAdmin returns (uint256, uint256, uint256) {
-    // Do not assess until a full period has elapsed or past due
-    require(balance > 0, "Must have balance to assess credit line");
-
-    // Don't assess credit lines early!
-    if (currentTime() < nextDueTime && !_isLate(currentTime())) {
-      return (0, 0, 0);
-    }
-    uint256 timeToAssess = calculateNextDueTime();
-    setNextDueTime(timeToAssess);
-
-    // We always want to assess for the most recently *past* nextDueTime.
-    // So if the recalculation above sets the nextDueTime into the future,
-    // then ensure we pass in the one just before this.
-    if (timeToAssess > currentTime()) {
-      uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
-      timeToAssess = timeToAssess.sub(secondsPerPeriod);
-    }
-    return handlePayment(_getUSDCBalance(address(this)), timeToAssess);
-  }
-
-  function calculateNextDueTime() internal view returns (uint256) {
-    uint256 newNextDueTime = nextDueTime;
-    uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
-    uint256 curTimestamp = currentTime();
-    // You must have just done your first drawdown
-    if (newNextDueTime == 0 && balance > 0) {
-      return curTimestamp.add(secondsPerPeriod);
+  /// @inheritdoc ICreditLine
+  function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
+    require(timestamp >= _checkpointedAsOf, "IT");
+    // After loan maturity there is no concept of additional interest. All interest accrued
+    // automatically beocmes interest owed.
+    if (timestamp > termEndTime()) {
+      return totalInterestAccruedAt(timestamp);
     }
 
-    // Active loan that has entered a new period, so return the *next* newNextDueTime.
-    // But never return something after the termEndTime
-    if (balance > 0 && curTimestamp >= newNextDueTime) {
-      uint256 secondsToAdvance = (curTimestamp.sub(newNextDueTime).div(secondsPerPeriod))
-        .add(1)
-        .mul(secondsPerPeriod);
-      newNextDueTime = newNextDueTime.add(secondsToAdvance);
-      return Math.min(newNextDueTime, termEndTime);
-    }
+    // If we crossed a payment period then add all interest accrued between last checkpoint and
+    // the most recent crossed period
+    uint256 mostRecentInterestDueTime = schedule.previousInterestDueTimeAt(timestamp);
+    bool crossedPeriod = _checkpointedAsOf <= mostRecentInterestDueTime &&
+      mostRecentInterestDueTime <= timestamp;
+    return
+      crossedPeriod // Interest owed doesn't change within a payment period
+        ? _totalInterestAccrued.add(
+          _interestAccruedOverPeriod(_checkpointedAsOf, mostRecentInterestDueTime)
+        )
+        : _totalInterestOwed;
+  }
 
-    // You're paid off, or have not taken out a loan yet, so no next due time.
-    if (balance == 0 && newNextDueTime != 0) {
+  /// @inheritdoc ICreditLine
+  function limit() public view override returns (uint256) {
+    return currentLimit.sub(totalPrincipalOwed());
+  }
+
+  /// @inheritdoc ICreditLine
+  function totalPrincipalPaid() public view override returns (uint256) {
+    return currentLimit.sub(balance);
+  }
+
+  /// @inheritdoc ICreditLine
+  function totalInterestOwed() public view override returns (uint256) {
+    return totalInterestOwedAt(block.timestamp);
+  }
+
+  /// @inheritdoc ICreditLine
+  function interestAccrued() public view override returns (uint256) {
+    return interestAccruedAt(block.timestamp);
+  }
+
+  /// @inheritdoc ICreditLine
+  function principalOwedAt(uint256 timestamp) public view override returns (uint256) {
+    return totalPrincipalOwedAt(timestamp).saturatingSub(totalPrincipalPaid());
+  }
+
+  /// @inheritdoc ICreditLine
+  function totalPrincipalOwedAt(uint256 timestamp) public view override returns (uint256) {
+    if (!schedule.isActive()) {
       return 0;
     }
-    // Active loan in current period, where we've already set the newNextDueTime correctly, so should not change.
-    if (balance > 0 && curTimestamp < newNextDueTime) {
-      return newNextDueTime;
-    }
-    revert("Error: could not calculate next due time.");
+
+    uint256 currentPrincipalPeriod = schedule.principalPeriodAt(timestamp);
+    uint256 totalPrincipalPeriods = schedule.totalPrincipalPeriods();
+    return currentLimit.mul(currentPrincipalPeriod).div(totalPrincipalPeriods);
   }
 
-  function currentTime() internal view virtual returns (uint256) {
-    return block.timestamp;
+  /// @inheritdoc ICreditLine
+  function principalOwed() public view override returns (uint256) {
+    return totalPrincipalOwedAt(block.timestamp).saturatingSub(totalPrincipalPaid());
+  }
+
+  /// @inheritdoc ICreditLine
+  function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
+    require(timestamp >= _checkpointedAsOf, "IT");
+    return
+      totalInterestAccruedAt(timestamp).sub(
+        (Math.max(totalInterestPaid, totalInterestOwedAt(timestamp)))
+      );
+  }
+
+  /// @inheritdoc ICreditLine
+  function nextDueTime() external view override returns (uint256) {
+    return schedule.nextDueTimeAt(block.timestamp);
+  }
+
+  function nextDueTimeAt(uint256 timestamp) external view returns (uint256) {
+    return schedule.nextDueTimeAt(timestamp);
+  }
+
+  /// @inheritdoc ICreditLine
+  function termStartTime() public view override returns (uint256) {
+    return schedule.termStartTime();
+  }
+
+  /// @inheritdoc ICreditLine
+  function termEndTime() public view override returns (uint256) {
+    return schedule.termEndTime();
+  }
+
+  /// @inheritdoc ICreditLine
+  function totalPrincipalOwed() public view override returns (uint256) {
+    return totalPrincipalOwedAt(block.timestamp);
+  }
+
+  /*==============================================================================
+  Internal function
+  =============================================================================*/
+
+  /// @notice Updates accounting variables. This should be called before any changes to `balance`!
+  function _checkpoint() internal {
+    _totalInterestOwed = totalInterestOwed();
+    _totalInterestAccrued = totalInterestAccrued();
+    _checkpointedAsOf = block.timestamp;
+  }
+
+  /*==============================================================================
+  Internal view functions
+  =============================================================================*/
+
+  function _interestAccruedOverPeriod(uint256 start, uint256 end) internal view returns (uint256) {
+    uint256 secondsElapsed = end.sub(start);
+    uint256 totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS);
+    uint256 regularInterest = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+    uint256 lateFeeInterest = _lateFeesAccuredOverPeriod(start, end);
+    return regularInterest.add(lateFeeInterest);
+  }
+
+  function _lateFeesAccuredOverPeriod(uint256 start, uint256 end) internal view returns (uint256) {
+    uint256 oldestUnpaidDueTime = schedule.nextDueTimeAt(lastFullPaymentTime);
+
+    uint256 lateFeeStartsAt = Math.max(
+      start,
+      oldestUnpaidDueTime.add(config.getLatenessGracePeriodInDays().mul(SECONDS_PER_DAY))
+    );
+
+    if (lateFeeStartsAt < end) {
+      uint256 lateSecondsElapsed = end.sub(lateFeeStartsAt);
+      uint256 lateFeeInterestPerYear = balance.mul(lateFeeApr).div(INTEREST_DECIMALS);
+      return lateFeeInterestPerYear.mul(lateSecondsElapsed).div(SECONDS_PER_YEAR);
+    }
+
+    return 0;
   }
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
-    uint256 secondsElapsedSinceFullPayment = timestamp.sub(lastFullPaymentTime);
-    return balance > 0 && secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
+    uint256 oldestUnpaidDueTime = schedule.nextDueTimeAt(lastFullPaymentTime);
+    return balance > 0 && timestamp > oldestUnpaidDueTime;
+  }
+}
+
+/// @notice Convenience struct for passing startTime to all Schedule methods
+struct PaymentSchedule {
+  ISchedule schedule;
+  uint64 startTime;
+}
+
+library PaymentScheduleLib {
+  using SafeCast for uint256;
+  using PaymentScheduleLib for PaymentSchedule;
+
+  function startAt(PaymentSchedule storage s, uint256 timestamp) internal {
+    assert(s.startTime == 0);
+    s.startTime = timestamp.toUint64();
   }
 
-  function _termStartTime() internal view returns (uint256) {
-    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
-  }
-
-  /**
-   * @notice Applies `amount` of payment for a given credit line. This moves already collected money into the Pool.
-   *  It also updates all the accounting variables. Note that interest is always paid back first, then principal.
-   *  Any extra after paying the minimum will go towards existing principal (reducing the
-   *  effective interest rate). Any extra after the full loan has been paid off will remain in the
-   *  USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
-   * @param paymentAmount The amount, in USDC atomic units, to be applied
-   * @param timestamp The timestamp on which accrual calculations should be based. This allows us
-   *  to be precise when we assess a Credit Line
-   */
-  function handlePayment(
-    uint256 paymentAmount,
+  function previousDueTimeAt(
+    PaymentSchedule storage s,
     uint256 timestamp
-  ) internal returns (uint256, uint256, uint256) {
-    (uint256 newInterestOwed, uint256 newPrincipalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(
-      timestamp
-    );
-    Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
-      paymentAmount,
-      balance,
-      newInterestOwed,
-      newPrincipalOwed
-    );
-
-    uint256 newBalance = balance.sub(pa.principalPayment);
-    // Apply any additional payment towards the balance
-    newBalance = newBalance.sub(pa.additionalBalancePayment);
-    uint256 totalPrincipalPayment = balance.sub(newBalance);
-    uint256 paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
-
-    updateCreditLineAccounting(
-      newBalance,
-      newInterestOwed.sub(pa.interestPayment),
-      newPrincipalOwed.sub(pa.principalPayment)
-    );
-
-    assert(paymentRemaining.add(pa.interestPayment).add(totalPrincipalPayment) == paymentAmount);
-
-    return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
+  ) internal view isActiveMod(s) returns (uint256) {
+    return s.schedule.previousDueTimeAt(s.startTime, timestamp);
   }
 
-  function _updateAndGetInterestAndPrincipalOwedAsOf(
+  function previousInterestDueTimeAt(
+    PaymentSchedule storage s,
     uint256 timestamp
-  ) internal returns (uint256, uint256) {
-    (uint256 interestAccrued, uint256 principalAccrued) = Accountant
-      .calculateInterestAndPrincipalAccrued(this, timestamp, config.getLatenessGracePeriodInDays());
-    if (interestAccrued > 0) {
-      // If we've accrued any interest, update interestAccruedAsOf to the time that we've
-      // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
-      // time the entire period is taken into account.
-      setInterestAccruedAsOf(timestamp);
-      totalInterestAccrued = totalInterestAccrued.add(interestAccrued);
-    }
-    return (interestOwed.add(interestAccrued), principalOwed.add(principalAccrued));
+  ) internal view isActiveMod(s) returns (uint256) {
+    return s.schedule.previousInterestDueTimeAt(s.startTime, timestamp);
   }
 
-  function updateCreditLineAccounting(
-    uint256 newBalance,
-    uint256 newInterestOwed,
-    uint256 newPrincipalOwed
-  ) internal nonReentrant {
-    setBalance(newBalance);
-    setInterestOwed(newInterestOwed);
-    setPrincipalOwed(newPrincipalOwed);
-
-    // This resets lastFullPaymentTime. These conditions assure that they have
-    // indeed paid off all their interest and they have a real nextDueTime. (ie. creditline isn't pre-drawdown)
-    uint256 _nextDueTime = nextDueTime;
-    if (newInterestOwed == 0 && _nextDueTime != 0) {
-      // If interest was fully paid off, then set the last full payment as the previous due time
-      uint256 mostRecentLastDueTime;
-      if (currentTime() < _nextDueTime) {
-        uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
-        mostRecentLastDueTime = _nextDueTime.sub(secondsPerPeriod);
-      } else {
-        mostRecentLastDueTime = _nextDueTime;
-      }
-      setLastFullPaymentTime(mostRecentLastDueTime);
-    }
-
-    setNextDueTime(calculateNextDueTime());
+  function principalPeriodAt(
+    PaymentSchedule storage s,
+    uint256 timestamp
+  ) internal view isActiveMod(s) returns (uint256) {
+    return s.schedule.principalPeriodAt(s.startTime, timestamp);
   }
 
-  function _getUSDCBalance(address _address) internal view returns (uint256) {
-    return config.getUSDC().balanceOf(_address);
+  function totalPrincipalPeriods(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.schedule.totalPrincipalPeriods();
+  }
+
+  function isActive(PaymentSchedule storage s) internal view returns (bool) {
+    return s.startTime != 0;
+  }
+
+  function termEndTime(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.termEndTime(s.startTime) : 0;
+  }
+
+  function termStartTime(PaymentSchedule storage s) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.termStartTime(s.startTime) : 0;
+  }
+
+  function nextDueTimeAt(
+    PaymentSchedule storage s,
+    uint256 timestamp
+  ) internal view returns (uint256) {
+    return s.isActive() ? s.schedule.nextDueTimeAt(s.startTime, timestamp) : 0;
+  }
+
+  function withinPrincipalGracePeriodAt(
+    PaymentSchedule storage s,
+    uint256 timestamp
+  ) internal view returns (bool) {
+    return !s.isActive() || s.schedule.withinPrincipalGracePeriodAt(s.startTime, timestamp);
+  }
+
+  modifier isActiveMod(PaymentSchedule storage s) {
+    // @dev: NA: not active
+    require(s.isActive(), "NA");
+    _;
   }
 }

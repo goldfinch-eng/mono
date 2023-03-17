@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
@@ -27,56 +28,14 @@ library Accountant {
   uint256 private constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 private constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
 
-  struct PaymentAllocation {
-    uint256 interestPayment;
+  /// @notice Input params for allocating a payment
+  struct AllocatePaymentParams {
     uint256 principalPayment;
-    uint256 additionalBalancePayment;
-  }
-
-  function calculateInterestAndPrincipalAccrued(
-    ICreditLine cl,
-    uint256 timestamp,
-    uint256 lateFeeGracePeriod
-  ) public view returns (uint256, uint256) {
-    uint256 balance = cl.balance(); // gas optimization
-    uint256 interestAccrued = calculateInterestAccrued(cl, balance, timestamp, lateFeeGracePeriod);
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, timestamp);
-    return (interestAccrued, principalAccrued);
-  }
-
-  function calculateInterestAndPrincipalAccruedOverPeriod(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 lateFeeGracePeriod
-  ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccruedOverPeriod(
-      cl,
-      balance,
-      startTime,
-      endTime,
-      lateFeeGracePeriod
-    );
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, endTime);
-    return (interestAccrued, principalAccrued);
-  }
-
-  function calculatePrincipalAccrued(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 timestamp
-  ) public view returns (uint256) {
-    // If we've already accrued principal as of the term end time, then don't accrue more principal
-    uint256 termEndTime = cl.termEndTime();
-    if (cl.interestAccruedAsOf() >= termEndTime) {
-      return 0;
-    }
-    if (timestamp >= termEndTime) {
-      return balance;
-    } else {
-      return 0;
-    }
+    uint256 interestPayment;
+    uint256 balance;
+    uint256 interestOwed;
+    uint256 interestAccrued;
+    uint256 principalOwed;
   }
 
   function calculateWritedownFor(
@@ -145,80 +104,106 @@ library Accountant {
     return interestOwedForOneDay.add(cl.principalOwed());
   }
 
-  function calculateInterestAccrued(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 timestamp,
-    uint256 lateFeeGracePeriodInDays
-  ) public view returns (uint256) {
-    // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
-    // numSecondsElapsed. Typically this shouldn't be possible, because
-    // the interestAccruedAsOf couldn't be *after* the current timestamp. However, when assessing
-    // we allow this function to be called with a past timestamp, which raises the possibility
-    // of overflow.
-    // This use of min should not generate incorrect interest calculations, since
-    // this function's purpose is just to normalize balances, and handing in a past timestamp
-    // will necessarily return zero interest accrued (because zero elapsed time), which is correct.
-    uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
-    return
-      calculateInterestAccruedOverPeriod(
-        cl,
-        balance,
-        startTime,
-        timestamp,
-        lateFeeGracePeriodInDays
-      );
-  }
-
-  function calculateInterestAccruedOverPeriod(
-    ICreditLine cl,
-    uint256 balance,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 lateFeeGracePeriodInDays
-  ) public view returns (uint256 interestOwed) {
-    uint256 secondsElapsed = endTime.sub(startTime);
-    uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    uint256 normalInterestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-
-    // Interest accrued in the current period isn't owed until nextDueTime. After that the borrower
-    // has a grace period before late fee interest starts to accrue. This grace period applies for
-    // every due time (termEndTime is not a special case).
-    uint256 lateFeeInterestOwed = 0;
-    uint256 lateFeeStartsAt = Math.max(
-      startTime,
-      cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY))
-    );
-    if (lateFeeStartsAt < endTime) {
-      uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
-      uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      lateFeeInterestOwed = lateFeeInterestPerYear.mul(lateSecondsElapsed).div(SECONDS_PER_YEAR);
-    }
-
-    return normalInterestOwed.add(lateFeeInterestOwed);
-  }
-
-  function allocatePayment(
+  /**
+   * @notice Given a lump sum, returns the amount of the payment that should be allocated
+   *         to paying interest, and the amount that should be allocated to paying principal
+   */
+  function splitPayment(
     uint256 paymentAmount,
     uint256 balance,
     uint256 interestOwed,
+    uint256 interestAccrued,
     uint256 principalOwed
-  ) public pure returns (PaymentAllocation memory) {
-    uint256 paymentRemaining = paymentAmount;
-    uint256 interestPayment = Math.min(interestOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining.sub(interestPayment);
+  ) external pure returns (uint interestPayment, uint principalPayment) {
+    uint owedInterestPayment = Math.min(interestOwed, paymentAmount);
+    paymentAmount = paymentAmount.sub(owedInterestPayment);
 
-    uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining.sub(principalPayment);
+    uint owedPrincipalPayment = Math.min(principalOwed, paymentAmount);
+    paymentAmount = paymentAmount.sub(owedPrincipalPayment);
 
-    uint256 balanceRemaining = balance.sub(principalPayment);
-    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
+    uint accruedInterestPayment = Math.min(interestAccrued, paymentAmount);
+    paymentAmount = paymentAmount.sub(accruedInterestPayment);
+
+    uint balanceRemaining = balance.sub(owedPrincipalPayment);
+    uint additionalBalancePayment = Math.min(balanceRemaining, paymentAmount);
+
+    return (
+      owedInterestPayment.add(accruedInterestPayment),
+      owedPrincipalPayment.add(additionalBalancePayment)
+    );
+  }
+
+  /**
+   * @notice Allocate a payment.
+   *  1. interestOwed must be paid before principalOwed
+   *  2. principalOwed must be paid before interestAccrued
+   *  3. interestAccrued must be paid before the rest of the balance
+   * @param params specifying payment amounts and amounts owed
+   * @return payment allocation
+   *
+   * @dev IO - Interest Owed
+   * @dev PO - Principal Owed
+   * @dev AI - Accrued Interest
+   */
+  function allocatePayment(
+    AllocatePaymentParams memory params
+  ) public pure returns (ITranchedPool.PaymentAllocation memory) {
+    require(params.principalPayment > 0 || params.interestPayment > 0, "ZZ");
+
+    uint256 remainingPrincipalPayment = params.principalPayment;
+    uint256 remainingInterestPayment = params.interestPayment;
+
+    // The payment waterfall works like this:
+
+    // 1. Any interest that is _currently_ owed must be paid
+    uint owedInterestPayment = Math.min(params.interestOwed, remainingInterestPayment);
+    remainingInterestPayment = remainingInterestPayment.sub(owedInterestPayment);
+
+    // 2. Any principal that is _currently_ owed must be paid
+    // If you still owe interest then you can't pay back principal or pay down balance
+    if (owedInterestPayment < params.interestOwed && params.principalPayment > 0) {
+      revert("IO");
+    }
+    uint owedPrincipalPayment = Math.min(remainingPrincipalPayment, params.principalOwed);
+    remainingPrincipalPayment = remainingPrincipalPayment.sub(owedPrincipalPayment);
+
+    // 3. Any accured interest, meaning any interest that has accrued since the last payment
+    //    date but isn't actually currently owed must be paid
+    // If you still owe principal then you can't pay accrued interest
+    if (
+      owedPrincipalPayment < params.principalOwed &&
+      remainingInterestPayment > 0 &&
+      params.interestAccrued > 0
+    ) {
+      revert("PO");
+    }
+    uint accruedInterestPayment = Math.min(remainingInterestPayment, params.interestAccrued);
+    remainingInterestPayment = remainingInterestPayment.sub(accruedInterestPayment);
+
+    // 4. If there's remaining principal payment, it can be applied to remaining balance
+    // But if you still have additional interest then you can't pay back balance
+    if (
+      accruedInterestPayment < params.interestAccrued &&
+      remainingPrincipalPayment > 0 &&
+      params.balance.sub(owedPrincipalPayment) > 0
+    ) {
+      revert("AI");
+    }
+
+    uint balanceRemaining = params.balance.sub(owedPrincipalPayment);
+    uint additionalBalancePayment = Math.min(balanceRemaining, remainingPrincipalPayment);
+    remainingPrincipalPayment = remainingPrincipalPayment.sub(additionalBalancePayment);
+
+    // 5. Any remaining payment is not applied
+    uint paymentRemaining = remainingPrincipalPayment.add(remainingInterestPayment);
 
     return
-      PaymentAllocation({
-        interestPayment: interestPayment,
-        principalPayment: principalPayment,
-        additionalBalancePayment: additionalBalancePayment
+      ITranchedPool.PaymentAllocation({
+        owedInterestPayment: owedInterestPayment,
+        accruedInterestPayment: accruedInterestPayment,
+        principalPayment: owedPrincipalPayment,
+        additionalBalancePayment: additionalBalancePayment,
+        paymentRemaining: paymentRemaining
       });
   }
 }
