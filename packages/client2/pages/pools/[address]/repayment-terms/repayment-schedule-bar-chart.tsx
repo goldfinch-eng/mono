@@ -134,12 +134,11 @@ export function RepaymentScheduleBarChart({
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
           interval={
-            screenSize === "xs"
-              ? 2
-              : repaymentScheduleFloat.length <=
-                MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
-              ? 0
-              : 1
+            screenSize === "xs" ||
+            repaymentScheduleFloat.length >
+              MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
+              ? 1
+              : 0
           }
         />
         <YAxis

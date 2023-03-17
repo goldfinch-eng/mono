@@ -173,10 +173,17 @@ export function SeniorPoolRepaymentSection({
           </Menu>
         </div>
         <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 20 }}>
+          <BarChart
+            data={chartData}
+            margin={{ top: screenSize === "xs" ? 45 : 20 }}
+          >
             <Legend
               content={CustomChartLegend}
-              wrapperStyle={{ top: "-1.5rem", right: 0, width: "max-content" }}
+              wrapperStyle={{
+                top: screenSize === "xs" ? "0.2rem" : "-1.5rem",
+                right: screenSize === "xs" ? "inherit" : 0,
+                width: "max-content",
+              }}
             />
             <CartesianGrid vertical={false} />
             <XAxis
