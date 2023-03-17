@@ -260,10 +260,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await erc20.connect(signer).approve(fazzExampleCallableLoan.address, String(depositAmount))
     await txn.wait()
 
-    await fazzExampleCallableLoan.deposit(FAZZ_UNCALLED_CAPITAL_TRANCHE, String(depositAmount), {
-      from: await signer.getAddress(),
-    })
-
     /*** CALLABLE LOAN FAZZ EXAMPLE END ***/
 
     /*** CALLABLE LOAN CLOSED START ***/
