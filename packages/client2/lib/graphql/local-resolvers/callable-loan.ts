@@ -6,7 +6,7 @@ import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { roundUpUsdcPenny } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
-import { getFreshProvider, getProvider } from "@/lib/wallet";
+import { getProvider } from "@/lib/wallet";
 import { LoanPhase } from "@/pages/borrow/helpers";
 
 import { CallableLoan, LoanDelinquency } from "../generated";
@@ -56,11 +56,7 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
     };
   }
 
-  // TODO: Zadra remove - using for local testing
-  const uncachedProvider = getFreshProvider();
-  const { timestamp: currentTimestamp } = await uncachedProvider.getBlock(
-    "latest"
-  );
+  const { timestamp: currentTimestamp } = await provider.getBlock("latest");
   const isPastTermEndTime = currentTimestamp > termEndTime.toNumber();
   // Scenario 2: We are LATE and BEFORE termEndTime - the borrower owes interest + principal from the periods they missed
   if (!isPastTermEndTime) {
@@ -91,11 +87,10 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 };
 
 const getLoanTermDueAmount = async (callableLoanId: string) => {
-  // TODO: Zadra remove - using for local testing
-  const uncachedProvider = getFreshProvider();
+  const provider = await getProvider();
   const callableLoanContract = await getContract({
     name: "CallableLoan",
-    provider: uncachedProvider,
+    provider: provider,
     useSigner: false,
     address: callableLoanId,
   });
