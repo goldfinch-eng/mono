@@ -16,6 +16,7 @@ import {
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 
+import useScreenSize from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatFiat } from "@/lib/format";
 import { RepaymentSchedule } from "@/lib/pools";
 
@@ -91,6 +92,8 @@ export function RepaymentScheduleBarChart({
   className,
   repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
+  const screenSize = useScreenSize();
+
   const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
@@ -131,8 +134,10 @@ export function RepaymentScheduleBarChart({
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
           interval={
-            repaymentScheduleFloat.length <=
-            MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
+            screenSize === "xs"
+              ? 2
+              : repaymentScheduleFloat.length <=
+                MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
               ? 0
               : 1
           }

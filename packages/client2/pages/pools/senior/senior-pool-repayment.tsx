@@ -21,6 +21,7 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { Icon, Link } from "@/components/design-system";
+import useScreenSize from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -53,6 +54,8 @@ interface SeniorPoolRepaymentSectionProps {
 export function SeniorPoolRepaymentSection({
   seniorPool,
 }: SeniorPoolRepaymentSectionProps) {
+  const screenSize = useScreenSize();
+
   const { repayingPools } = seniorPool;
   const [perspective, setPerspective] = useState<"past" | "future">("past");
   const allIncomingRepayments = useMemo(() => {
@@ -179,7 +182,9 @@ export function SeniorPoolRepaymentSection({
             <XAxis
               dataKey="period"
               tick={{ fontSize: "8px" }}
-              interval={perspective === "future" ? 0 : 1}
+              interval={
+                screenSize === "xs" ? 3 : perspective === "future" ? 0 : 1
+              }
               padding={{ left: 36 }}
             />
             <YAxis
