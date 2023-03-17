@@ -96,8 +96,8 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     } catch (e) {
       const paymentPeriodInDays = 30; // This is lazy, but all old CreditLines that don't have `isLate()` implemented have 30 day payment periods
       isLate =
-        currentBlock.timestamp <
-        lastFullPaymentTime.toNumber() + paymentPeriodInDays;
+        currentBlock.timestamp >
+        lastFullPaymentTime.toNumber() + paymentPeriodInDays * secondsPerDay;
     }
     const gracePeriodInSeconds = gracePeriodInDays.toNumber() * secondsPerDay;
     let isPostBpi = true;
