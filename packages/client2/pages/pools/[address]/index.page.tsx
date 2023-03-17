@@ -187,8 +187,8 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =
-    tranchedPool?.allowedUidTypes.includes("US_ACCREDITED_INDIVIDUAL") ||
-    tranchedPool?.allowedUidTypes.includes("US_ENTITY");
+    tranchedPool?.allowedUidTypes?.includes("US_ACCREDITED_INDIVIDUAL") ||
+    tranchedPool?.allowedUidTypes?.includes("US_ENTITY");
   const noUid =
     !user?.isNonUsEntity &&
     !user?.isNonUsIndividual &&

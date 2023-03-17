@@ -188,6 +188,7 @@ export const callableLoanResolvers: Resolvers[string] = {
       name: "CreditLine",
       address: await callableLoanContract.creditLine(),
       provider,
+      useSigner: false,
     });
     const [currentBlock, gracePeriodInDays, lastFullPaymentTime, isLate] =
       await Promise.all([
