@@ -4421,6 +4421,7 @@ __metadata:
     "@types/node": ^18.11.9
     "@types/react": 17.0.39
     "@types/react-dom": 17.0.6
+    "@types/validator": ^13.7.14
     "@typescript-eslint/eslint-plugin": ^5.45.0
     "@typescript-eslint/parser": ^5.45.0
     "@walletconnect/ethereum-provider": ^1.7.7
@@ -4462,6 +4463,7 @@ __metadata:
     ts-node: ^10.9.1
     typechain: ^8.1.1
     typescript: ^4.9.3
+    validator: ^13.9.0
     webpack: ^5.70.0
   languageName: unknown
   linkType: soft
@@ -4535,6 +4537,7 @@ __metadata:
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.9
     "@types/sinon": ^10.0.2
+    "@types/validator": ^13.7.14
     "@typescript-eslint/eslint-plugin": ^5.45.0
     "@typescript-eslint/parser": ^5.45.0
     bignumber.js: ^9.0.2
@@ -4568,6 +4571,7 @@ __metadata:
     ts-node: ^10.9.1
     tsconfig-paths: ^3.11.0
     typescript: ^4.9.3
+    validator: ^13.9.0
   languageName: unknown
   linkType: soft
 
@@ -10988,6 +10992,13 @@ __metadata:
   version: 8.3.4
   resolution: "@types/uuid@npm:8.3.4"
   checksum: 6f11f3ff70f30210edaa8071422d405e9c1d4e53abbe50fdce365150d3c698fe7bbff65c1e71ae080cbfb8fded860dbb5e174da96fdbbdfcaa3fb3daa474d20f
+  languageName: node
+  linkType: hard
+
+"@types/validator@npm:^13.7.14":
+  version: 13.7.14
+  resolution: "@types/validator@npm:13.7.14"
+  checksum: 51bd82cd08aa7d8006f97357b5768a77bfca30e4823b5962e63bbf6446f46b5afe236bec1089148a15fd04cc0a748a10e2dd1a559f07163ec5e4e9fb5581896e
   languageName: node
   linkType: hard
 
@@ -40193,6 +40204,13 @@ __metadata:
     spdx-correct: ^3.0.0
     spdx-expression-parse: ^3.0.0
   checksum: 35703ac889d419cf2aceef63daeadbe4e77227c39ab6287eeb6c1b36a746b364f50ba22e88591f5d017bc54685d8137bc2d328d0a896e4d3fd22093c0f32a9ad
+  languageName: node
+  linkType: hard
+
+"validator@npm:^13.9.0":
+  version: 13.9.0
+  resolution: "validator@npm:13.9.0"
+  checksum: e2c936f041f61faa42bafd17c6faddf939498666cd82e88d733621c286893730b008959f4cb12ab3e236148a4f3805c30b85e3dcf5e0efd8b0cbcd36c02bfc0c
   languageName: node
   linkType: hard
 
