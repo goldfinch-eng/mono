@@ -1,7 +1,6 @@
 import { BigNumber } from "ethers/lib/ethers";
 import { gql } from "graphql-request";
 
-import { Button } from "@/components/design-system";
 import {
   CallableLoanCallPoolTokensFieldsFragment,
   useCallableLoanCallPoolTokensQuery,
@@ -118,11 +117,11 @@ export function CallableLoanCallsPanel({
       <LoanCallsDataTable callsData={activeCallsTableData} className="mb-16" />
       <div className="mb-6 text-2xl">Callable loans history</div>
       <LoanCallsDataTable callsData={closedCallsTableData} />
-      {closedCallsTableData.length > 5 && (
+      {/* {closedCallsTableData.length > 5 && (
         <Button className="mt-2.5 w-full" colorScheme="sand" size="lg">
           View more
         </Button>
-      )}
+      )} */}
     </div>
   );
 }
