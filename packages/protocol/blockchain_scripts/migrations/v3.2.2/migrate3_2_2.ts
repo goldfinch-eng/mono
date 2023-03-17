@@ -57,7 +57,7 @@ export async function main() {
       await stakingRewards.populateTransaction.setRewardsParameters(
         await stakingRewards.targetCapacity(),
         await stakingRewards.minRate(),
-        (await stakingRewards.maxRate()).mul(2).div(5), // 40%
+        (await stakingRewards.maxRate()).div(2), // 50%
         await stakingRewards.minRateAtPercent(),
         await stakingRewards.maxRateAtPercent()
       ),
@@ -70,7 +70,7 @@ export async function main() {
 
   await deployEffects.executeDeferred()
 
-  console.log("Finished deploy 3.2.1")
+  console.log("Finished deploy 3.2.2")
   return {
     newTotalRewardsParam: ethers.BigNumber.from(newTotalRewardsParam.toFixed(0)),
   }
