@@ -21,7 +21,7 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { Icon, Link } from "@/components/design-system";
-import useScreenSize from "@/hooks/useScreenSize";
+import { useScreenSize } from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {

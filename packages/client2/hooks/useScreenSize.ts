@@ -5,15 +5,17 @@ import tailwindConfig from "../tailwind.config";
 const parseSize = (size: string): number => parseInt(size.replace("px", ""));
 
 type ScreenSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
-type ScreenConfig = Record<ScreenSize, string>;
+type ScreenSizeTailwindConfig = Record<ScreenSize, string>;
 
-const useScreenSize = (): ScreenSize | undefined => {
+export const useScreenSize = (): ScreenSize | undefined => {
   const [screenSize, setScreenSize] = useState<ScreenSize>();
 
   useEffect(() => {
     const calculateSize = (): void => {
       const windowWidth = window.innerWidth;
-      const screens = tailwindConfig.theme?.screens as ScreenConfig | undefined;
+      const screens = tailwindConfig.theme?.screens as
+        | ScreenSizeTailwindConfig
+        | undefined;
 
       if (!screens) {
         console.warn("No screens defined in tailwind.config.js");
@@ -25,8 +27,6 @@ const useScreenSize = (): ScreenSize | undefined => {
         const breakpoint = screen as ScreenSize;
         if (windowWidth >= parseSize(screens[breakpoint])) {
           newSize = breakpoint;
-        } else {
-          break;
         }
       }
 
@@ -40,5 +40,3 @@ const useScreenSize = (): ScreenSize | undefined => {
 
   return screenSize;
 };
-
-export default useScreenSize;

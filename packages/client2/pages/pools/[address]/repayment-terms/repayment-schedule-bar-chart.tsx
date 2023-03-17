@@ -16,7 +16,7 @@ import {
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 
-import useScreenSize from "@/hooks/useScreenSize";
+import { useScreenSize } from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatFiat } from "@/lib/format";
 import { RepaymentSchedule } from "@/lib/pools";
 
