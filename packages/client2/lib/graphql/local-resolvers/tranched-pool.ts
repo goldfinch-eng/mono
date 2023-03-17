@@ -80,6 +80,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
       name: "CreditLine",
       address: await tranchedPoolContract.creditLine(),
       provider,
+      useSigner: false,
     });
     const [currentBlock, gracePeriodInDays, lastFullPaymentTime] =
       await Promise.all([
