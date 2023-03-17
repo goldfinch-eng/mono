@@ -179,12 +179,59 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   }
 
   function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(
-    address user,
     uint256 depositAmount,
-    uint256 drawdownAmount,
-    uint256 callAmount,
-    uint256 secondsElapsed
-  ) public {}
+    uint256 callAmount
+  ) public {
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    callAmount = bound(callAmount, depositAmount + 1, usdcVal(100_000_000_000));
+    (CallableLoan callableLoan, ) = callableLoanWithLimit(depositAmount);
+
+    fundAddress(DEPOSITOR, depositAmount);
+
+    uint uncalledTrancheIndex = callableLoan.uncalledCapitalTrancheIndex();
+    vm.startPrank(DEPOSITOR);
+    usdc.approve(address(callableLoan), depositAmount);
+    uint256 tokenId = callableLoan.deposit(uncalledTrancheIndex, depositAmount);
+    vm.stopPrank();
+
+    vm.prank(BORROWER);
+    callableLoan.drawdown(depositAmount);
+
+    // this should be a unlocked period
+    vm.warp(callableLoan.nextDueTime() - 1);
+    vm.startPrank(DEPOSITOR);
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        tokenId,
+        callAmount,
+        depositAmount
+      )
+    );
+    callableLoan.submitCall(callAmount, tokenId);
+
+    // leave 1 atom left in the call request
+    uint256 validCallAmount = depositAmount - 1e6;
+    (uint256 callRequestTokenId, uint256 remainingTokenId) = callableLoan.submitCall(
+      validCallAmount,
+      tokenId
+    );
+
+    uint remainingAmount = depositAmount - validCallAmount;
+    uint invalidCallAmount = remainingAmount + 1;
+
+    // call for
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        remainingTokenId,
+        invalidCallAmount,
+        remainingAmount
+      )
+    );
+    callableLoan.submitCall(invalidCallAmount, remainingTokenId);
+  }
 
   function testSubmitsCallForCorrectTranche(
     address user,
@@ -192,5 +239,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 drawdownAmount,
     uint256 callAmount,
     uint256 secondsElapsed
-  ) public {}
+  ) public {
+    // TODO(PR):
+  }
 }
