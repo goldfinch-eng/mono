@@ -100,7 +100,6 @@ export function OpenDealCard({
               termLengthInMs
                 ? formatDistanceStrict(0, termLengthInMs, {
                     unit: "month",
-                    roundingMethod: "ceil",
                   })
                 : "Open-ended"
             }
