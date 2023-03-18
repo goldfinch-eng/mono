@@ -206,7 +206,9 @@ It's a crucial step!
 
 #### Mac OS X
 
-**With Docker** 
+##### With Docker
+
+Docker is a virtual machine platform that can be used to package up all of the other services that a Graph Node depends on and run them together. It offers a big advantage in terms of convenience, but time has shown that when it comes to running Graph Node, it's rather brittle and tends to crash often, which leads to Docker itself hanging and becoming unresponsive. This forces you to restart your whole machine and start over, which is a major annoyance. Please refer to the "Without Docker" section below to proceed without needing to deal with this.
 
 - Make sure you have docker and docker-compose installed
 - Start the local chain with `yarn start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
@@ -221,25 +223,26 @@ It's a crucial step!
   - Metrics server at: http://localhost:8040
 
 
-**Without Docker - Optimization - Optional** 
+##### Without Docker - Optimization (optional)
 
-Docker is a virtual machine platform that can be used to package up all of the other services that a Graph Node depends on and run them together. It offers a big advantage in terms of convenience, but time has shown that when it comes to running Graph Node, it's rather brittle and tends to crash often, which leads to Docker itself hanging and becoming unresponsive. This forces you to restart your whole machine and start over, which is a major annoyance.
+Below are some steps to create and deploy the subgraph **without** needing to set up Docker first.
 
-Below are some steps to create and deploy the subgraph without needing to set up Docker first.
+**Installation**
 
 - Clone the [graph-node codebase](https://github.com/graphprotocol/graph-node). Note that the instructions for pre-installation on the ReadMe are similar to what's found below.
-- Install [Rust](https://www.rust-lang.org/tools/install)
-  In order to ensure the Rust compiler has installed correctly, you can use the command `rustc --version`
-- Install [Postgres](https://wiki.postgresql.org/wiki/Homebrew). Installing through homebrew is pretty convenient on mac. 
-  To connect/use it as your user, you can type in: `psql postgres`
+- Install [Rust](https://www.rust-lang.org/tools/install)  
+  NOTE: In order to ensure the Rust compiler has installed correctly, you can use the command `rustc --version`
+- Install [Postgres](https://wiki.postgresql.org/wiki/Homebrew). Installing through homebrew is pretty convenient on mac. To connect/use it as your user, you can type in: `psql postgres`  
 - Install [IPFS](https://docs.ipfs.tech/install/command-line/#install-official-binary-distributions)
 - Install [Protobuf](https://grpc.io/docs/protoc-installation/) 
 
-After the installation process, you'd need to go through a few steps to create and deploy the subgraph. 
+After the installation process, you'd need to go through a few steps to create and deploy the subgraph.
+
+**Development**
 
 - Enter into the `graph-node` directory. Build the binary for the Graph Node before you run it for the first time, with `cargo build`.
 - On a new terminal window, start running `ipfs daemon`. Note: We'd recommend opening a split terminal, where you can run `ipfs` on one side, and the `graph-node` server on the other. 
-Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of ipfs to listen on a different 
+Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of `ipfs` to listen in on a different 
 port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
 - Before starting the `graph_node` server, you would need to re-create the `graph_node` database by running the following commands: 
 ```bash
@@ -250,7 +253,7 @@ The reason being that when we run the chain locally, we start running hardhat, w
 - Run the local chain from the root directory `mono/` with `yarn-start local` so that it can start up `hardhat` and other software packages.
 - Proceed with running the `graph-node` server using the following command template within the `graph-node` directory:
 ```bash
-cargo run -p graph-node --release -- --postgres-url postgresql://shalinipyapali:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:5002
+cargo run -p graph-node --release -- --postgres-url postgresql://user:pass@localhost:5432/graph-node --ethereum-rpc localhost:http://localhost:8545 --ipfs 127.0.0.1:5002
 ```
 Below are the following descriptions for each component of the above command: 
 ```
