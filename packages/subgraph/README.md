@@ -206,7 +206,7 @@ It's a crucial step!
 
 #### Mac OS X
 
-##### With Docker
+**With Docker**
 
 Docker is a virtual machine platform that can be used to package up all of the other services that a Graph Node depends on and run them together. It offers a big advantage in terms of convenience, but time has shown that when it comes to running Graph Node, it's rather brittle and tends to crash often, which leads to Docker itself hanging and becoming unresponsive. This forces you to restart your whole machine and start over, which is a major annoyance. Please refer to the "Without Docker" section below to proceed without needing to deal with this.
 
@@ -223,11 +223,11 @@ Docker is a virtual machine platform that can be used to package up all of the o
   - Metrics server at: http://localhost:8040
 
 
-##### Without Docker - Optimization (optional)
+**Without Docker - Optimization (optional)**
 
 Below are some steps to create and deploy the subgraph **without** needing to set up Docker first.
 
-**Installation**
+*Installation*
 
 - Clone the [graph-node codebase](https://github.com/graphprotocol/graph-node). Note that the instructions for pre-installation on the ReadMe are similar to what's found below.
 - Install [Rust](https://www.rust-lang.org/tools/install)  
@@ -238,7 +238,7 @@ Below are some steps to create and deploy the subgraph **without** needing to se
 
 After the installation process, you'd need to go through a few steps to create and deploy the subgraph.
 
-**Development**
+*Development*
 
 - Enter into the `graph-node` directory. Build the binary for the Graph Node before you run it for the first time, with `cargo build`.
 - On a new terminal window, start running `ipfs daemon`. Note: We'd recommend opening a split terminal, where you can run `ipfs` on one side, and the `graph-node` server on the other. 
