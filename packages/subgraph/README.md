@@ -245,7 +245,7 @@ After the installation process, you'd need to go through a few steps to create a
 Pro-tip: if you run into an issue with the port not connecting to `localhost:5001`, you can change the config of `ipfs` to listen in on a different 
 port with the following command: `ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/5002` for example. 
 - Before starting the `graph_node` server, you would need to re-create the `graph_node` database by running the following commands: 
-```bash
+```postgres
 $psql postgres
 postgres=# drop database "graph-node"; create database "graph-node";
 ```
