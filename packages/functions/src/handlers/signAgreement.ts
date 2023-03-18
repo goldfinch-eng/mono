@@ -27,7 +27,7 @@ export const signAgreement = genRequestHandler({
       return res.status(400).send({error: "Invalid full name"})
     }
 
-    if (!isEmail(email)) {
+    if (!isEmail(email) || email === "") {
       return res.status(400).send({error: "Invalid email address"})
     }
 
