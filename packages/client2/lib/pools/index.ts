@@ -93,12 +93,18 @@ export const FUNDING_STATUS_LOAN_FIELDS = gql`
   }
 `;
 
-export function getLoanFundingStatus(loan: FundingStatusLoanFieldsFragment) {
+export function getLoanFundingStatus(
+  loan: FundingStatusLoanFieldsFragment,
+  currentBlockTimestamp: number
+) {
   if (loan.id === CAURIS_POOL_ID) {
     return LoanFundingStatus.Cancelled;
   } else if (!loan.balance.isZero() || !loan.termEndTime.isZero()) {
     return LoanFundingStatus.Closed;
-  } else if (loan.termEndTime.isZero() && Date.now() / 1000 < loan.fundableAt) {
+  } else if (
+    loan.termEndTime.isZero() &&
+    currentBlockTimestamp < loan.fundableAt
+  ) {
     return LoanFundingStatus.ComingSoon;
   } else if (loan.remainingCapacity.isZero()) {
     return LoanFundingStatus.Full;

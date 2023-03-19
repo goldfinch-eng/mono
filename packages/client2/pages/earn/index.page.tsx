@@ -70,6 +70,9 @@ gql`
     viewer @client {
       fiduBalance
     }
+    currentBlock @client {
+      timestamp
+    }
   }
 `;
 
@@ -114,8 +117,10 @@ export default function EarnPage({
     data?.openPools.filter(
       (tranchedPool) =>
         (!!dealMetadata[tranchedPool.id] &&
-          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open) ||
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.ComingSoon
+          getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp) ===
+            LoanFundingStatus.Open) ||
+        getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp) ===
+          LoanFundingStatus.ComingSoon
     ) ?? [];
   const closedLoans = data?.closedPools ?? [];
 

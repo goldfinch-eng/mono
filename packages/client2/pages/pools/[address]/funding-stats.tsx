@@ -1,5 +1,10 @@
 import { gql } from "@apollo/client";
-import { format as formatDate, formatDistanceToNow } from "date-fns";
+import {
+  format as formatDate,
+  fromUnixTime,
+  formatDistance,
+  isAfter,
+} from "date-fns";
 import { FixedNumber, utils } from "ethers";
 
 import { InfoIconTooltip, Stat, StatGrid } from "@/components/design-system";
@@ -33,11 +38,15 @@ export const FUNDING_STATS_DEAL_FIELDS = gql`
 interface FundingStatsProps {
   loan: FundingStatsLoanFieldsFragment;
   deal: FundingStatsDealFieldsFragment;
+  currentBlockTimestamp: number;
 }
 
-export function FundingStats({ loan, deal }: FundingStatsProps) {
-  if (loan.__typename === "TranchedPool") {
-  }
+export function FundingStats({
+  loan,
+  deal,
+  currentBlockTimestamp,
+}: FundingStatsProps) {
+  const now = fromUnixTime(currentBlockTimestamp);
   const fundedAmount =
     loan.__typename === "TranchedPool"
       ? deal.dealType === "multitranche" && loan.estimatedLeverageRatio
@@ -65,7 +74,8 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
         <div className="mb-5 flex justify-between gap-8">
           <div>
             <div className="mb-3 flex gap-2 text-sm">
-              Capital supplied <InfoIconTooltip content="TODO content" />
+              Capital supplied{" "}
+              <InfoIconTooltip content="The amount of capital currently supplied for this deal." />
             </div>
             <div className="text-lg font-medium">
               {formatCrypto({ token: "USDC", amount: fundedAmount })}
@@ -73,7 +83,8 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           </div>
           <div>
             <div className="mb-3 flex gap-2 text-sm">
-              Maximum deal size <InfoIconTooltip content="TODO content" />
+              Maximum deal size{" "}
+              <InfoIconTooltip content="The maximum amount of capital that can be supplied for this deal." />
             </div>
             <div className="text-lg font-medium">
               {formatCrypto({ token: "USDC", amount: maxFundingAmount })}
@@ -91,19 +102,17 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           />
         </div>
       </div>
-      <Stat
-        label="Percent filled"
-        tooltip="TODO content"
-        value={formatPercent(fillRatio)}
-      />
+      <Stat label="Percent filled" value={formatPercent(fillRatio)} />
       <Stat
         label="Est. time left to invest"
-        tooltip="TODO content"
-        value={formatDistanceToNow(estimatedCloseDate)}
+        value={
+          isAfter(now, estimatedCloseDate)
+            ? "-"
+            : formatDistance(now, estimatedCloseDate)
+        }
       />
       <Stat
         label="Est. deal close date"
-        tooltip="TODO content"
         value={formatDate(estimatedCloseDate, "MMM dd, yyyy")}
       />
     </StatGrid>

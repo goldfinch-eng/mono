@@ -180,7 +180,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   }
 
   const fundingStatus = tranchedPool
-    ? getLoanFundingStatus(tranchedPool)
+    ? getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp)
     : null;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
@@ -245,7 +245,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 content: !tranchedPool ? (
                   <div className="h-60 rounded-xl border border-sand-200" />
                 ) : fundingStatus === LoanFundingStatus.Open ? (
-                  <FundingStats loan={tranchedPool} deal={dealDetails} />
+                  <FundingStats
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    currentBlockTimestamp={data.currentBlock.timestamp}
+                  />
                 ) : (
                   <AmountStats loan={tranchedPool} />
                 ),

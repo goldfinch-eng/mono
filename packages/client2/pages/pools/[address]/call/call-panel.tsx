@@ -94,7 +94,7 @@ export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
         <div>
           <div className="mb-3 flex justify-between text-sm">
             <div>Call requests</div>
-            <InfoIconTooltip content="TODO content" />
+            <InfoIconTooltip content="Call requests you have made for this deal." />
           </div>
           <MiniTable colorScheme="mustard" rows={miniTableRows} />
           <Button
