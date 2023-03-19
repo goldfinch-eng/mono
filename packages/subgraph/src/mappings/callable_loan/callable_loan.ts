@@ -63,7 +63,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after the pool is drawn down (they become 0)
   const callableLoanContract = CallableLoanContract.bind(event.address)
   callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
-  callableLoan.principalAmount = event.params.amount
+  callableLoan.principalAmount = callableLoan.principalAmount.plus(event.params.amount)
   callableLoan.balance = callableLoanContract.balance()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
