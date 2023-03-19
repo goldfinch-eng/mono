@@ -1,6 +1,5 @@
 import { format as formatDate } from "date-fns";
-import { BigNumber } from "ethers/lib/ethers";
-import React from "react";
+import { BigNumber } from "ethers";
 
 import { formatCrypto } from "@/lib/format";
 
