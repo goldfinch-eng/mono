@@ -127,19 +127,13 @@ export function BorrowerProfile({
       </div>
       {numOtherPools > 0 ? (
         <StatGrid bgColor="mustard-50" numColumns={3}>
-          <Stat
-            label="Other deals"
-            tooltip="[TODO] content"
-            value={numOtherPools}
-          />
+          <Stat label="Other deals" value={numOtherPools} />
           <Stat
             label="Total loss rate"
-            tooltip="[TODO] content"
             value={formatPercent(borrowerDefaultRate)}
           />
           <Stat
             label="Total loan principal"
-            tooltip="[TODO] content"
             value={formatCrypto({ token: "USDC", amount: totalLoanPrincipal })}
           />
           <div className="col-span-full overflow-auto bg-mustard-50">
