@@ -79,8 +79,6 @@ export function ClaimPanel({
   fiatPerGfi,
   loan,
 }: ClaimPanelProps) {
-  const canClaimGfi = loan.delinquency === "CURRENT";
-
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
   );
@@ -111,6 +109,8 @@ export function ClaimPanel({
     ),
   } as const;
   const claimableGfiAsUsdc = gfiToUsdc(claimableGfi, fiatPerGfi);
+  const canClaimGfi =
+    loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
   const { provider } = useWallet();
