@@ -5,7 +5,6 @@ import {
 } from "@/components/design-system";
 import { HighValueInvestorNotice } from "@/pages/pools/high-value-investor-notice";
 
-// TODO: We need a run through of the content here from product
 export function RiskTable() {
   const riskTableRows: VerboseTableRowProps[] = [
     {

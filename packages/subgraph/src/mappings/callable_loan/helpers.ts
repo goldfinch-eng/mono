@@ -10,6 +10,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   const callableLoan = new CallableLoan(id)
   const callableLoanContract = CallableLoanContract.bind(address)
   callableLoan.address = address
+  callableLoan.creditLineAddress = callableLoanContract.creditLine()
   callableLoan.fundingLimit = callableLoanContract.limit()
   callableLoan.principalAmount = BigInt.zero()
   callableLoan.initialInterestOwed = BigInt.zero() // TODO figure this out. There may be a view function for this
@@ -19,6 +20,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.remainingCapacity = callableLoan.fundingLimit
   callableLoan.createdAt = block.timestamp.toI32()
   callableLoan.fundableAt = callableLoanContract.getFundableAt().toI32()
+  callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
   if (callableLoan.fundableAt == 0) {
     callableLoan.fundableAt = callableLoan.createdAt
   }
@@ -40,16 +42,17 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   }
   callableLoan.backers = []
   callableLoan.numBackers = 0
-  callableLoan.isPaused = false
+  callableLoan.isPaused = callableLoanContract.paused()
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   callableLoan.tokens = []
 
   callableLoan.balance = callableLoanContract.balance()
-  callableLoan.nextDueTime = callableLoanContract.nextDueTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.interestRate = callableLoan.usdcApy
   callableLoan.interestRateBigInt = callableLoanContract.interestApr()
   callableLoan.lateFeeRate = callableLoanContract.lateFeeApr().divDecimal(INTEREST_DECIMALS)
+  callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
   callableLoan.borrowerContract = callableLoanContract.borrower().toHexString()
 
   const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)

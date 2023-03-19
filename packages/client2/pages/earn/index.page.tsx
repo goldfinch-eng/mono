@@ -239,16 +239,18 @@ export default function EarnPage({
               const deal = dealMetadata[loan.id];
               const repaymentStatus = getLoanRepaymentStatus(loan);
               return (
-                <ClosedDealCard
-                  key={loan.id}
-                  borrowerName={deal.borrower.name}
-                  icon={deal.borrower.logo?.url}
-                  dealName={deal.name}
-                  loanAmount={loan.principalAmount}
-                  termEndTime={loan.termEndTime}
-                  repaymentStatus={repaymentStatus}
-                  href={`/pools/${loan.id}`}
-                />
+                deal && (
+                  <ClosedDealCard
+                    key={loan.id}
+                    borrowerName={deal.borrower.name}
+                    icon={deal.borrower.logo?.url}
+                    dealName={deal.name}
+                    loanAmount={loan.principalAmount}
+                    termEndTime={loan.termEndTime}
+                    repaymentStatus={repaymentStatus}
+                    href={`/pools/${loan.id}`}
+                  />
+                )
               );
             })}
           </div>

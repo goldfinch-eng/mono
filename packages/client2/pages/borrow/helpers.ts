@@ -2,17 +2,15 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { roundUpUsdcPenny } from "@/lib/format";
-import {
-  LoanBorrowerAccountingFieldsFragment,
-  TranchedPoolBorrowerAccountingFieldsFragment,
-} from "@/lib/graphql/generated";
+import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 
 gql`
   fragment TranchedPoolBorrowerAccountingFields on TranchedPool {
+    id
+    nextDueTime
+    interestAccruedAsOf
     interestOwed @client
     collectedPaymentBalance @client
-    delinquency @client
-    isAfterTermEndTime @client
     interestAccruedAsOf
     fundingLimit
     principalAmount
@@ -35,17 +33,39 @@ gql`
 `;
 
 gql`
+  fragment CallableLoanBorrowerAccountingFields on CallableLoan {
+    id
+    totalDeposited
+    availableForDrawdown
+    lastFullPaymentTime
+    principalAmountRepaid
+    delinquency @client
+    periodInterestDueAmount @client
+    periodPrincipalDueAmount @client
+    termTotalDueAmount @client
+    nextDueTime @client
+    loanPhase @client
+  }
+`;
+
+gql`
   fragment LoanBorrowerAccountingFields on Loan {
     __typename
-    id
     isPaused
+    drawdownsPaused
     termInSeconds
     interestRate
     interestRateBigInt
-    nextDueTime
     balance
     termEndTime
+    principalAmount
+    fundingLimit
+    creditLineAddress
+    repaymentFrequency
+    delinquency @client
+    isAfterTermEndTime @client
     ...TranchedPoolBorrowerAccountingFields
+    ...CallableLoanBorrowerAccountingFields
     borrowerContract {
       id
     }
@@ -177,6 +197,12 @@ export enum CreditLineStatus {
   PeriodPaid,
   Repaid,
 }
+
+export type LoanPhase =
+  | "Prefunding"
+  | "Funding"
+  | "DrawdownPeriod"
+  | "InProgress";
 
 function getCreditLineStatus({
   isLate,
@@ -325,52 +351,65 @@ export function calculateCreditLineMaxDrawdownAmount({
  * @returns {BigNumber} [remainingTotalDueAmount] - the remaining total due amount considering payments made so far
  * @returns {CreditLineStatus} [creditLineStatus] - the status of credit line
  */
-export function getCreditLineAccountingAnalyisValues({
-  principalAmount,
-  fundingLimit,
-  delinquency,
-  interestOwed,
-  interestRateBigInt,
-  nextDueTime,
-  interestAccruedAsOf,
-  balance,
-  collectedPaymentBalance,
-  termEndTime,
-}: LoanBorrowerAccountingFieldsFragment &
-  TranchedPoolBorrowerAccountingFieldsFragment): {
+export function getCreditLineAccountingAnalyisValues(
+  loan: LoanBorrowerAccountingFieldsFragment
+): {
   creditLineLimit: BigNumber;
   currentInterestOwed: BigNumber;
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
   creditLineStatus: CreditLineStatus;
 } {
+  const {
+    __typename,
+    principalAmount,
+    fundingLimit,
+    interestRateBigInt,
+    nextDueTime,
+    balance,
+    termEndTime,
+    delinquency,
+  } = loan;
+
   const isLate = delinquency !== "CURRENT"; // For the purpose of this calculation, "grace period" is the same as late
+
+  // 'principalAmount' represents the limit once the pool has been locked.
+  // Thus when still raising, we show the limit as the max funding limit of the pool
   const creditLineLimit = principalAmount.gt(0)
     ? principalAmount
     : fundingLimit;
 
-  const currentInterestOwed = calculateInterestOwed({
-    isLate,
-    interestOwed,
-    interestRateBigInt,
-    nextDueTime,
-    interestAccruedAsOf,
-    balance,
-  });
+  const currentInterestOwed =
+    __typename === "CallableLoan"
+      ? loan.periodInterestDueAmount
+      : calculateInterestOwed({
+          isLate,
+          interestOwed: loan.interestOwed,
+          interestRateBigInt,
+          nextDueTime,
+          interestAccruedAsOf: loan.interestAccruedAsOf,
+          balance,
+        });
 
-  const remainingPeriodDueAmount = calculateRemainingPeriodDueAmount({
-    collectedPaymentBalance,
-    nextDueTime,
-    termEndTime,
-    balance,
-    currentInterestOwed,
-  });
+  const remainingPeriodDueAmount =
+    __typename === "CallableLoan"
+      ? loan.periodInterestDueAmount.add(loan.periodPrincipalDueAmount)
+      : calculateRemainingPeriodDueAmount({
+          collectedPaymentBalance: loan.collectedPaymentBalance,
+          nextDueTime,
+          termEndTime,
+          balance,
+          currentInterestOwed,
+        });
 
-  const remainingTotalDueAmount = calculateRemainingTotalDueAmount({
-    collectedPaymentBalance,
-    balance,
-    currentInterestOwed,
-  });
+  const remainingTotalDueAmount =
+    __typename === "CallableLoan"
+      ? loan.termTotalDueAmount
+      : calculateRemainingTotalDueAmount({
+          collectedPaymentBalance: loan.collectedPaymentBalance,
+          balance,
+          currentInterestOwed,
+        });
 
   const creditLineStatus = getCreditLineStatus({
     isLate,

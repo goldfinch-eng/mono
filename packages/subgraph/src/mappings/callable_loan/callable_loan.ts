@@ -5,6 +5,8 @@ import {
   CallRequestSubmitted,
   DepositMade,
   DrawdownMade,
+  DrawdownsPaused,
+  DrawdownsUnpaused,
   PaymentApplied,
   WithdrawalMade,
 } from "../../../generated/templates/CallableLoan/CallableLoan"
@@ -27,6 +29,8 @@ function getCallableLoan(address: Address): CallableLoan {
 
 export function handleDepositMade(event: DepositMade): void {
   const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
   callableLoan.totalDeposited = callableLoan.totalDeposited.plus(event.params.amount)
   const user = getOrInitUser(event.params.owner)
   callableLoan.backers = callableLoan.backers.concat([user.id])
@@ -42,6 +46,8 @@ export function handleDepositMade(event: DepositMade): void {
 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
   callableLoan.totalDeposited = callableLoan.totalDeposited.minus(event.params.principalWithdrawn)
   callableLoan.save()
 
@@ -56,10 +62,13 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   const callableLoan = getCallableLoan(event.address)
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after the pool is drawn down (they become 0)
   const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
   callableLoan.principalAmount = event.params.amount
   callableLoan.balance = callableLoanContract.balance()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
+  callableLoan.isPaused = callableLoanContract.paused()
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   deleteCallableLoanRepaymentSchedule(callableLoan)
   const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
   callableLoan.repaymentSchedule = schedulingResult.repaymentIds
@@ -76,9 +85,12 @@ export function handleDrawdownMade(event: DrawdownMade): void {
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
+  const callableLoanContract = CallableLoanContract.bind(event.address)
   const callableLoan = getCallableLoan(event.address)
+  callableLoan.availableForDrawdown = callableLoanContract.totalPrincipalPaid()
   updatePoolTokensRedeemable(callableLoan) // Results of availableToWithdraw change after a repayment is made (principal or interest can increase)
   callableLoan.balance = callableLoan.balance.minus(event.params.principal)
+  callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
   callableLoan.principalAmountRepaid = callableLoan.principalAmountRepaid.plus(event.params.principal)
   callableLoan.interestAmountRepaid = callableLoan.interestAmountRepaid.plus(event.params.interest)
   callableLoan.save()
@@ -92,6 +104,20 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   transaction.sentToken = "USDC"
   transaction.sentAmount = event.params.principal.plus(event.params.interest)
   transaction.save()
+}
+
+export function handleDrawdownsPaused(event: DrawdownsPaused): void {
+  const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
+  callableLoan.save()
+}
+
+export function handleDrawdownsUnpaused(event: DrawdownsUnpaused): void {
+  const callableLoan = getCallableLoan(event.address)
+  const callableLoanContract = CallableLoanContract.bind(event.address)
+  callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
+  callableLoan.save()
 }
 
 export function handleCallRequestSubmitted(event: CallRequestSubmitted): void {

@@ -1,6 +1,6 @@
 import {Address} from "@graphprotocol/graph-ts"
 
-import {TranchedPool, PoolToken, VaultedPoolToken, ScheduledRepayment} from "../../generated/schema"
+import {TranchedPool, PoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,

@@ -3,23 +3,28 @@ import clsx from "clsx";
 import { format as formatDate, formatDistanceStrict } from "date-fns";
 import { BigNumber } from "ethers";
 import { GetStaticPaths, GetStaticProps } from "next";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
-import { Button, Heading, Icon } from "@/components/design-system";
+import {
+  Button,
+  confirmDialog,
+  Heading,
+  Icon,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   AllDealsQuery,
-  LoanBorrowerAccountingFieldsFragment,
   Deal,
   PoolCreditLinePageCmsDocument,
   PoolCreditLinePageCmsQuery,
   PoolCreditLinePageCmsQueryVariables,
-  TranchedPoolBorrowerAccountingFieldsFragment,
   usePoolCreditLinePageQuery,
 } from "@/lib/graphql/generated";
+import { getRepaymentFrequencyLabel } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
+import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
 import {
   calculateCreditLineMaxDrawdownAmount,
   calculatePoolFundsAvailable,
@@ -90,17 +95,14 @@ export default function PoolCreditLinePage({
     },
   });
 
-  const loan = data?.loan as LoanBorrowerAccountingFieldsFragment &
-    TranchedPoolBorrowerAccountingFieldsFragment;
-  const juniorTranche = loan?.juniorTranches?.[0];
-  const seniorTranche = loan?.seniorTranches?.[0];
+  const loan = data?.loan;
 
   let creditLineStatus;
   let creditLineLimit = BigNumber.from(0);
   let remainingTotalDueAmount = BigNumber.from(0);
   let remainingPeriodDueAmount = BigNumber.from(0);
   let availableForDrawdown = BigNumber.from(0);
-  if (loan && juniorTranche && seniorTranche) {
+  if (loan) {
     const creditLineAccountingAnalysisValues =
       getCreditLineAccountingAnalyisValues(loan);
 
@@ -111,37 +113,48 @@ export default function PoolCreditLinePage({
     remainingPeriodDueAmount =
       creditLineAccountingAnalysisValues.remainingPeriodDueAmount;
 
-    const juniorTrancheShareInfo = {
-      principalDeposited: juniorTranche.principalDeposited,
-      sharePrice: juniorTranche.principalSharePrice,
-    };
+    if (loan.__typename === "CallableLoan") {
+      // For Callable Loans, a borrower can only drawdown during the funding and drawdown period
+      availableForDrawdown =
+        loan.loanPhase === "Funding" || loan.loanPhase === "DrawdownPeriod"
+          ? loan.availableForDrawdown
+          : BigNumber.from(0);
+    } else {
+      const juniorTranche = loan.juniorTranches[0];
+      const seniorTranche = loan.seniorTranches[0];
 
-    const seniorTrancheShareInfo = {
-      principalDeposited: seniorTranche.principalDeposited,
-      sharePrice: seniorTranche.principalSharePrice,
-    };
+      const juniorTrancheShareInfo = {
+        principalDeposited: juniorTranche.principalDeposited,
+        sharePrice: juniorTranche.principalSharePrice,
+      };
 
-    const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
-      collectedPaymentBalance: loan.collectedPaymentBalance,
-      nextDueTime: loan.nextDueTime,
-      termEndTime: loan.termEndTime,
-      balance: loan.balance,
-      currentInterestOwed:
-        creditLineAccountingAnalysisValues.currentInterestOwed,
-      principalAmount: creditLineLimit,
-    });
+      const seniorTrancheShareInfo = {
+        principalDeposited: seniorTranche.principalDeposited,
+        sharePrice: seniorTranche.principalSharePrice,
+      };
 
-    const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
-      juniorTrancheShareInfo,
-      seniorTrancheShareInfo,
-    });
+      const creditLineMaxDrawdownAmount = calculateCreditLineMaxDrawdownAmount({
+        collectedPaymentBalance: loan.collectedPaymentBalance,
+        nextDueTime: loan.nextDueTime,
+        termEndTime: loan.termEndTime,
+        balance: loan.balance,
+        currentInterestOwed:
+          creditLineAccountingAnalysisValues.currentInterestOwed,
+        principalAmount: creditLineLimit,
+      });
 
-    // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
-    // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
-    // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
-    availableForDrawdown = poolFundsAvailableForDrawdown;
-    if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
-      availableForDrawdown = creditLineMaxDrawdownAmount;
+      const poolFundsAvailableForDrawdown = calculatePoolFundsAvailable({
+        juniorTrancheShareInfo,
+        seniorTrancheShareInfo,
+      });
+
+      // Actual amount available for dradown is the minimum of poolFundsAvailableForDrawdown & creditLineMaxDrawdownAmount
+      // This is b/c TranchedPool.drawdown() SC code requires: drawdownAmount <= poolFundsAvailableForDrawdown
+      // Subsequently CreditLine.drawdown() SC code requires: drawdownAmount.add(balance) <= limit
+      availableForDrawdown = poolFundsAvailableForDrawdown;
+      if (creditLineMaxDrawdownAmount.lt(availableForDrawdown)) {
+        availableForDrawdown = creditLineMaxDrawdownAmount;
+      }
     }
   }
 
@@ -162,6 +175,27 @@ export default function PoolCreditLinePage({
   const formattedNextDueTime = loan
     ? formatDate(loan.nextDueTime.toNumber() * 1000, "MMM d")
     : "0";
+
+  const handleDrawdownButtonClick = useCallback(async () => {
+    let drawdownDisclaimerAcknowledged = true;
+    if (loan?.__typename === "CallableLoan" && loan.termEndTime.eq(0)) {
+      drawdownDisclaimerAcknowledged = await confirmDialog(
+        <div>
+          <div className="mb-2">
+            When you draw down funds from this pool, lenders will
+            <span className="font-semibold">
+              {" "}
+              no longer be able to supply more capital.
+            </span>
+          </div>
+          <div>Do you wish to continue?</div>
+        </div>
+      );
+    }
+    if (drawdownDisclaimerAcknowledged) {
+      setShownForm("drawdown");
+    }
+  }, [loan, setShownForm]);
 
   return (
     <div>
@@ -225,6 +259,25 @@ export default function PoolCreditLinePage({
                   >
                     Cancel
                   </Button>
+                  {loan.__typename === "CallableLoan" &&
+                    shownForm === "payment" && (
+                      <div className="text-sand-400">
+                        <div>
+                          Interest due:{" "}
+                          {formatCrypto({
+                            amount: loan.periodInterestDueAmount,
+                            token: "USDC",
+                          })}
+                        </div>
+                        <div>
+                          Called capital:{" "}
+                          {formatCrypto({
+                            amount: loan.periodPrincipalDueAmount,
+                            token: "USDC",
+                          })}
+                        </div>
+                      </div>
+                    )}
                 </div>
                 <div className="p-8">
                   <div className="mb-4 text-2xl font-medium">
@@ -232,19 +285,16 @@ export default function PoolCreditLinePage({
                   </div>
                   {shownForm === "drawdown" ? (
                     <DrawdownForm
+                      loan={loan}
                       availableForDrawdown={availableForDrawdown}
-                      borrowerContractAddress={loan.borrowerContract.id}
-                      tranchedPoolAddress={loan.id}
                       creditLineStatus={creditLineStatus}
-                      isAfterTermEndTime={loan.isAfterTermEndTime}
                       onClose={() => setShownForm(null)}
                     />
                   ) : (
                     <PaymentForm
+                      loan={loan}
                       remainingPeriodDueAmount={remainingPeriodDueAmount}
                       remainingTotalDueAmount={remainingTotalDueAmount}
-                      borrowerContractAddress={loan.borrowerContract.id}
-                      tranchedPoolAddress={loan.id}
                       creditLineStatus={creditLineStatus}
                       onClose={() => setShownForm(null)}
                     />
@@ -264,11 +314,12 @@ export default function PoolCreditLinePage({
                     size="xl"
                     iconLeft="ArrowDown"
                     colorScheme="mustard"
-                    onClick={() => setShownForm("drawdown")}
+                    onClick={() => handleDrawdownButtonClick()}
                     disabled={
                       loan.isPaused ||
                       loan.drawdownsPaused ||
-                      juniorTranche?.lockedUntil.isZero() ||
+                      (loan.__typename === "TranchedPool" &&
+                        loan?.juniorTranches[0]?.lockedUntil.isZero()) ||
                       availableForDrawdown.lte(BigNumber.from(0))
                     }
                   >
@@ -294,7 +345,9 @@ export default function PoolCreditLinePage({
                     onClick={() => setShownForm("payment")}
                     disabled={
                       creditLineStatus === CreditLineStatus.Repaid ||
-                      creditLineStatus === CreditLineStatus.Open
+                      creditLineStatus === CreditLineStatus.Open ||
+                      (loan.__typename === "CallableLoan" &&
+                        loan.loanPhase !== "InProgress")
                     }
                   >
                     Pay
@@ -303,6 +356,13 @@ export default function PoolCreditLinePage({
               </div>
             )}
           </div>
+
+          {loan.__typename === "CallableLoan" && (
+            <CallableLoanCallsPanel
+              loanId={loan.id}
+              principalAmountRepaid={loan.principalAmountRepaid}
+            />
+          )}
 
           <div className="rounded-xl bg-sand-100">
             <div className="border-b border-sand-200 p-8">
@@ -380,7 +440,9 @@ export default function PoolCreditLinePage({
                   <div className="text-sand-500">Interest rate APR</div>
                 </div>
                 <div>
-                  <div className="mb-0.5 text-2xl">{`TODO days`}</div>
+                  <div className="mb-0.5 text-2xl">
+                    {getRepaymentFrequencyLabel(loan.repaymentFrequency)}
+                  </div>
                   <div className="text-sand-500">Payment frequency</div>
                 </div>
                 <div>

@@ -33,10 +33,11 @@ const secondsPerYear_BigDecimal = secondsPerYear_BigInt.toBigDecimal()
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
-  const creditLineAddress = contract.creditLine().toHexString()
-  const creditLine = initOrUpdateCreditLine(Address.fromString(creditLineAddress), timestamp)
+  const creditLineAddress = contract.creditLine()
+  const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
   const tranchedPool = getOrInitTranchedPool(address, timestamp)
   tranchedPool.creditLine = creditLine.id
+  tranchedPool.creditLineAddress = creditLineAddress
   tranchedPool.save()
 }
 
@@ -171,9 +172,10 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.fundableAt = fundableAt == 0 ? tranchedPool.createdAt : fundableAt
   tranchedPool.principalAmount = BigInt.zero()
 
-  const creditLineAddress = poolContract.creditLine().toHexString()
-  const creditLine = initOrUpdateCreditLine(Address.fromString(creditLineAddress), timestamp)
+  const creditLineAddress = poolContract.creditLine()
+  const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
   tranchedPool.creditLine = creditLine.id
+  tranchedPool.creditLineAddress = creditLineAddress
   tranchedPool.fundingLimit = creditLine.maxLimit
   tranchedPool.principalAmount = creditLine.limit
   tranchedPool.balance = creditLine.balance

@@ -19,7 +19,7 @@ export function confirmDialog(children: ReactNode): Promise<boolean> {
       document.body.removeChild(confirmRoot);
     };
     render(
-      <Modal title="Confirm" isOpen size="xs" onClose={handleClose(false)}>
+      <Modal title="Alert" isOpen size="xs" onClose={handleClose(false)}>
         <div className="text-center">{children}</div>
         <div className="mt-4 flex gap-4">
           <Button

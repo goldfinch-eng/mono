@@ -7,10 +7,8 @@ import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
-  LoanBorrowerAccountingFieldsFragment,
   BorrowPageCmsDocument,
   BorrowPageCmsQuery,
-  TranchedPoolBorrowerAccountingFieldsFragment,
   useBorrowPageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
@@ -137,10 +135,7 @@ export default function BorrowPage({
               creditLineLimit,
               remainingPeriodDueAmount,
               creditLineStatus,
-            } = getCreditLineAccountingAnalyisValues(
-              loan as LoanBorrowerAccountingFieldsFragment &
-                TranchedPoolBorrowerAccountingFieldsFragment
-            );
+            } = getCreditLineAccountingAnalyisValues(loan);
 
             const dueDateLabel = getDueDateLabel({
               creditLineStatus,
