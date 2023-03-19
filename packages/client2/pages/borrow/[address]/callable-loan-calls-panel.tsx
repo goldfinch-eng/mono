@@ -113,9 +113,9 @@ export function CallableLoanCallsPanel({
 
   return (
     <div className="mb-10 rounded-xl bg-sand-100 p-8">
-      <div className="mb-6 text-2xl">Active callable loans</div>
+      <div className="mb-6 text-2xl">Active calls</div>
       <LoanCallsDataTable callsData={activeCallsTableData} className="mb-16" />
-      <div className="mb-6 text-2xl">Callable loans history</div>
+      <div className="mb-6 text-2xl">Call history</div>
       <LoanCallsDataTable callsData={closedCallsTableData} />
     </div>
   );
