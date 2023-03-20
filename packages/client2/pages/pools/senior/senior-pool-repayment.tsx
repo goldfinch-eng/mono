@@ -143,7 +143,7 @@ export function SeniorPoolRepaymentSection({
     <div className="overflow-hidden rounded-lg border border-sand-300">
       <div className="px-6 pt-8">
         <div>
-          <Menu as="div" className="relative mb-2">
+          <Menu as="div" className="relative mb-8 sm:mb-2">
             <Menu.Button className="flex items-center gap-2 text-xs font-medium">
               {perspective === "future"
                 ? "Future repayments"
@@ -170,51 +170,38 @@ export function SeniorPoolRepaymentSection({
             </Menu.Items>
           </Menu>
         </div>
-        {/* Workaround for mobile responsive legend */}
-        <div className="senior-pool-graph pt-8 sm:pt-0">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top: 20 }}>
-              <Legend
-                content={CustomChartLegend}
-                wrapperStyle={{
-                  top: "-1.5rem",
-                  right: 0,
-                  width: "max-content",
-                }}
-              />
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="period"
-                tick={{ fontSize: "8px" }}
-                interval={
-                  "equidistantPreserveStart" as AxisInterval | undefined
-                }
-                padding={{ left: 36 }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                mirror
-                type="number"
-                tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
-                tickFormatter={(value) => tickFormatter.format(value)}
-              />
-              <Tooltip content={<CustomChartTooltip />} />
-              <Bar
-                dataKey="amount"
-                fill="#65C397"
-                stroke="#65C397"
-                stackId="a"
-              />
-              <Bar
-                dataKey="futureAmount"
-                fill="rgba(178, 225, 203, 0.35)"
-                stroke="#65C397"
-                stackId="a"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={chartData} margin={{ top: 20 }}>
+            <Legend
+              content={CustomChartLegend}
+              align="right"
+              verticalAlign="top"
+            />
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="period"
+              tick={{ fontSize: "8px" }}
+              interval={"equidistantPreserveStart" as AxisInterval | undefined}
+              padding={{ left: 36 }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              mirror
+              type="number"
+              tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
+              tickFormatter={(value) => tickFormatter.format(value)}
+            />
+            <Tooltip content={<CustomChartTooltip />} />
+            <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
+            <Bar
+              dataKey="futureAmount"
+              fill="rgba(178, 225, 203, 0.35)"
+              stroke="#65C397"
+              stackId="a"
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       <div className="max-h-80 overflow-auto whitespace-nowrap">
         <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-3">
@@ -331,7 +318,7 @@ function CustomChartTooltip({
 
 const CustomChartLegend: ContentType = ({ payload }) => {
   return (
-    <div className="flex gap-4">
+    <div className="absolute -top-10 flex gap-4 sm:right-0">
       {payload?.map(({ value, color }) => (
         <div key={value} className="flex items-center gap-2 text-xs">
           <div
