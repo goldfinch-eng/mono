@@ -15,12 +15,11 @@ import {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
+import { AxisInterval } from "recharts/types/util/types";
 
-import { useScreenSize } from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatFiat } from "@/lib/format";
 import { RepaymentSchedule } from "@/lib/pools";
 
-const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 const tickFormatter = new Intl.NumberFormat("en-US");
 
@@ -92,8 +91,6 @@ export function RepaymentScheduleBarChart({
   className,
   repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
-  const screenSize = useScreenSize();
-
   const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
     ...data,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
@@ -133,13 +130,7 @@ export function RepaymentScheduleBarChart({
         <XAxis
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
-          interval={
-            screenSize === "xs" ||
-            repaymentScheduleFloat.length >
-              MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
-              ? 1
-              : 0
-          }
+          interval={"equidistantPreserveStart" as AxisInterval | undefined}
         />
         <YAxis
           axisLine={false}

@@ -97,3 +97,15 @@
 .Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
   background: currentColor;
 }
+
+.senior-pool-graph .recharts-legend-wrapper {
+  left: 0;
+  right: inherit;
+}
+
+@screen sm {
+  .senior-pool-graph .recharts-legend-wrapper {
+    left: inherit;
+    right: 0;
+  }
+}

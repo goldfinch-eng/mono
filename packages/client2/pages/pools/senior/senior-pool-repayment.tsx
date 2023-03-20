@@ -19,9 +19,9 @@ import {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
+import { AxisInterval } from "recharts/types/util/types";
 
 import { Icon, Link } from "@/components/design-system";
-import { useScreenSize } from "@/hooks/useScreenSize";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -54,8 +54,6 @@ interface SeniorPoolRepaymentSectionProps {
 export function SeniorPoolRepaymentSection({
   seniorPool,
 }: SeniorPoolRepaymentSectionProps) {
-  const screenSize = useScreenSize();
-
   const { repayingPools } = seniorPool;
   const [perspective, setPerspective] = useState<"past" | "future">("past");
   const allIncomingRepayments = useMemo(() => {
@@ -172,46 +170,51 @@ export function SeniorPoolRepaymentSection({
             </Menu.Items>
           </Menu>
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart
-            data={chartData}
-            margin={{ top: screenSize === "xs" ? 45 : 20 }}
-          >
-            <Legend
-              content={CustomChartLegend}
-              wrapperStyle={{
-                top: screenSize === "xs" ? "0.2rem" : "-1.5rem",
-                right: screenSize === "xs" ? "inherit" : 0,
-                width: "max-content",
-              }}
-            />
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="period"
-              tick={{ fontSize: "8px" }}
-              interval={
-                screenSize === "xs" ? 2 : perspective === "future" ? 0 : 1
-              }
-              padding={{ left: 36 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              mirror
-              type="number"
-              tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
-              tickFormatter={(value) => tickFormatter.format(value)}
-            />
-            <Tooltip content={<CustomChartTooltip />} />
-            <Bar dataKey="amount" fill="#65C397" stroke="#65C397" stackId="a" />
-            <Bar
-              dataKey="futureAmount"
-              fill="rgba(178, 225, 203, 0.35)"
-              stroke="#65C397"
-              stackId="a"
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        {/* Workaround for mobile responsive legend */}
+        <div className="senior-pool-graph pt-8 sm:pt-0">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ top: 20 }}>
+              <Legend
+                content={CustomChartLegend}
+                wrapperStyle={{
+                  top: "-1.5rem",
+                  right: 0,
+                  width: "max-content",
+                }}
+              />
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="period"
+                tick={{ fontSize: "8px" }}
+                interval={
+                  "equidistantPreserveStart" as AxisInterval | undefined
+                }
+                padding={{ left: 36 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                mirror
+                type="number"
+                tick={{ fontSize: "8px", dx: -8, dy: -6, textAnchor: "start" }}
+                tickFormatter={(value) => tickFormatter.format(value)}
+              />
+              <Tooltip content={<CustomChartTooltip />} />
+              <Bar
+                dataKey="amount"
+                fill="#65C397"
+                stroke="#65C397"
+                stackId="a"
+              />
+              <Bar
+                dataKey="futureAmount"
+                fill="rgba(178, 225, 203, 0.35)"
+                stroke="#65C397"
+                stackId="a"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
       <div className="max-h-80 overflow-auto whitespace-nowrap">
         <table className="w-full text-xs [&_th]:px-3.5 [&_th]:py-2 [&_th]:font-normal [&_td]:px-3.5 [&_td]:py-3">
