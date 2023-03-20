@@ -61,7 +61,7 @@ describe("v3.3.0", async function () {
     const signer = (await allSigners[0]?.getAddress()) as string
     lenderAddress = (await allSigners[1]?.getAddress()) as string
     borrowerAddress = (await allSigners[2]?.getAddress()) as string
-    await fundWithWhales(["USDC", "ETH"], [lenderAddress, borrowerAddress])
+    await fundWithWhales(["USDC", "ETH"], [lenderAddress, borrowerAddress, MAINNET_WARBLER_LABS_MULTISIG])
     await impersonateAccount(hre, borrowerAddress)
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), borrowerAddress)
     borrowerContract = await createBorrowerContract(borrowerAddress)
