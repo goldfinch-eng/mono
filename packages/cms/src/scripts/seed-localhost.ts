@@ -203,7 +203,7 @@ const importDeals = async () => {
         category: _.sample(["NFT Loans", "Luncheon", "Prank"]),
         description:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero.",
-        highlights: ["Uno", "Dos", "Tres"],
+        dealHighlights: ["Uno", "Dos", "Tres"],
         borrower: borrower.id,
       };
       if (dealMapping[borrower.id]) {
@@ -220,7 +220,7 @@ const importDeals = async () => {
             ...deal,
             id,
             overview: [{ text: deal.description }],
-            details: deal.highlights
+            details: deal.dealHighlights
               ? [
                   {
                     children: [
@@ -231,7 +231,7 @@ const importDeals = async () => {
                     type: "h3",
                   },
                   {
-                    children: deal.highlights.map((item) => ({
+                    children: deal.dealHighlights.map((item) => ({
                       children: [
                         {
                           text: item,

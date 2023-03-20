@@ -22,7 +22,7 @@ gql`
     $skip: Int!
   ) {
     transactions(
-      where: { tranchedPool: $tranchedPoolId }
+      where: { loan: $tranchedPoolId }
       orderBy: timestamp
       orderDirection: desc
       first: $first
@@ -41,7 +41,7 @@ gql`
       receivedAmount
       receivedToken
       timestamp
-      tranchedPool {
+      loan {
         id
         borrowerName @client
         borrowerLogo @client
@@ -77,15 +77,15 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
 
   const rows = filteredTxs.map((transaction) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const tranchedPool = transaction.tranchedPool!;
+    const loan = transaction.loan!;
 
     const user =
       transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
       transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
         <div className="flex items-center gap-2">
-          {tranchedPool.borrowerLogo ? (
+          {loan.borrowerLogo ? (
             <Image
-              src={tranchedPool.borrowerLogo}
+              src={loan.borrowerLogo}
               alt=""
               width={24}
               height={24}
@@ -97,7 +97,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
               className="shrink-0 rounded-full bg-sand-200"
             />
           )}
-          <span>{tranchedPool.borrowerName}</span>
+          <span>{loan.borrowerName}</span>
         </div>
       ) : transaction.category === "SENIOR_POOL_REDEMPTION" ? (
         <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         href={`https://etherscan.io/tx/${transaction.transactionHash}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sand-400"
+        className="text-mustard-700"
         key={`${transaction.id}-link`}
         iconRight="ArrowTopRight"
       >

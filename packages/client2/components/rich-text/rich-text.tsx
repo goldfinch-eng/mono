@@ -39,31 +39,31 @@ function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
     switch (node.type) {
       case "h1":
         return (
-          <Heading key={i} level={1} className="mb-8 !text-lg">
+          <Heading key={i} level={1} className="!text-lg">
             {renderRichText(node.children)}
           </Heading>
         );
       case "h2":
         return (
-          <Heading key={i} level={2} className="mb-8 !text-lg">
+          <Heading key={i} level={2} className="!text-lg">
             {renderRichText(node.children)}
           </Heading>
         );
       case "h3":
         return (
-          <Heading key={i} level={3} className="mb-8 !text-lg">
+          <Heading key={i} level={3} className="!text-lg">
             {renderRichText(node.children)}
           </Heading>
         );
       case "h4":
         return (
-          <Heading key={i} level={4} className="mb-8 !text-base">
+          <Heading key={i} level={4} className="!text-base">
             {renderRichText(node.children)}
           </Heading>
         );
       case "h5":
         return (
-          <Heading key={i} level={5} className="mb-8 !text-sm">
+          <Heading key={i} level={5} className="!text-sm">
             {renderRichText(node.children)}
           </Heading>
         );
@@ -93,11 +93,7 @@ function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
           </Link>
         );
       default:
-        return (
-          <p key={i} className="mb-8">
-            {renderRichText(node.children)}
-          </p>
-        );
+        return <div key={i}>{renderRichText(node.children)}</div>;
     }
   });
 }
@@ -108,5 +104,9 @@ interface RichTextProps {
 }
 
 export function RichText({ content, className }: RichTextProps) {
-  return <div className={className}>{renderRichText(content)}</div>;
+  return (
+    <div className={clsx("space-y-8", className)}>
+      {renderRichText(content)}
+    </div>
+  );
 }

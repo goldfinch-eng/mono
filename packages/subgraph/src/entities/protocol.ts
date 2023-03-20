@@ -12,6 +12,7 @@ function getOrInitProtocol(): Protocol {
     protocol.totalPrincipalCollected = BigInt.zero()
     protocol.totalInterestCollected = BigInt.zero()
     protocol.totalReserveCollected = BigInt.zero()
+    protocol.numLoans = 0
   }
   return protocol
 }
@@ -23,6 +24,7 @@ export function getListOfAllTranchedPoolAddresses(): string[] {
 export function addToListOfAllTranchedPools(tranchedPoolAddress: Address): void {
   const protocol = getOrInitProtocol()
   protocol.tranchedPools = protocol.tranchedPools.concat([tranchedPoolAddress.toHexString()])
+  protocol.numLoans = protocol.tranchedPools.length
   protocol.save()
 }
 

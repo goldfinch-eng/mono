@@ -10,80 +10,23 @@ import {
 } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
-  TranchedPoolStatusFieldsFragment,
-  TranchedPoolRepaymentStatusFieldsFragment,
-  TranchedPoolFundingStatusFieldsFragment,
+  RepaymentStatusLoanFieldsFragment,
+  FundingStatusLoanFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
+  RepaymentScheduleFieldsFragment,
 } from "@/lib/graphql/generated";
+import { calculateInterestOwed } from "@/pages/borrow/helpers";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
 const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
 
-/**
- * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
- */
-export const TRANCHED_POOL_STATUS_FIELDS = gql`
-  fragment TranchedPoolStatusFields on TranchedPool {
-    id
-    isPaused
-    remainingCapacity
-    fundableAt
-    creditLine {
-      id
-      balance
-      termEndTime
-      isLate @client
-    }
-  }
-`;
-
-export enum PoolStatus {
-  Closed,
-  Paused,
-  Repaid,
-  Full,
-  ComingSoon,
-  Open,
-  Default,
-}
-
-/**
- * Get the current status of the tranched pool
- * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
- * @returns the status of the pool
- * @deprecated Deprecated in favor of getTranchedPoolRepaymentStatus and getTranchedPoolFundingStatus
- */
-export function getTranchedPoolStatus(
-  pool: TranchedPoolStatusFieldsFragment
-): PoolStatus {
-  if (pool.id === CAURIS_POOL_ID) {
-    return PoolStatus.Closed;
-  } else if (pool.isPaused) {
-    return PoolStatus.Paused;
-  } else if (
-    pool.creditLine.balance.isZero() &&
-    pool.creditLine.termEndTime.gt(0)
-  ) {
-    return PoolStatus.Repaid;
-  } else if (pool.remainingCapacity.isZero()) {
-    return PoolStatus.Full;
-  } else if (
-    pool.creditLine.termEndTime.isZero() &&
-    Date.now() / 1000 < parseInt(pool.fundableAt.toString())
-  ) {
-    return PoolStatus.ComingSoon;
-  } else {
-    return PoolStatus.Open;
-  }
-}
-
-export enum PoolRepaymentStatus {
+export enum LoanRepaymentStatus {
   NotDrawnDown,
   Current,
   Late,
@@ -92,41 +35,49 @@ export enum PoolRepaymentStatus {
 }
 
 /**
- * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolRepaymentStatus
+ * Include this graphQL fragment on a query for Loan to ensure it has the correct fields for computing LoanRepaymentStatus
  */
-export const TRANCHED_POOL_REPAYMENT_STATUS_FIELDS = gql`
-  fragment TranchedPoolRepaymentStatusFields on TranchedPool {
+export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
+  fragment RepaymentStatusLoanFields on Loan {
     id
-    creditLine {
-      id
-      balance
-      termEndTime
-      isLate @client
-      isInDefault @client
-    }
+    balance
+    termEndTime
+    isLate @client
+    isInDefault @client
   }
 `;
 
-export function getTranchedPoolRepaymentStatus(
-  tranchedPool: TranchedPoolRepaymentStatusFieldsFragment
+export function getLoanRepaymentStatus(
+  loan: RepaymentStatusLoanFieldsFragment
 ) {
-  if (
-    tranchedPool.creditLine.balance.isZero() &&
-    tranchedPool.creditLine.termEndTime.gt(0)
-  ) {
-    return PoolRepaymentStatus.Repaid;
-  } else if (tranchedPool.creditLine.balance.isZero()) {
-    return PoolRepaymentStatus.NotDrawnDown;
-  } else if (tranchedPool.creditLine.isInDefault) {
-    return PoolRepaymentStatus.Default;
-  } else if (tranchedPool.creditLine.isLate) {
-    return PoolRepaymentStatus.Late;
+  if (loan.balance.isZero() && loan.termEndTime.gt(0)) {
+    return LoanRepaymentStatus.Repaid;
+  } else if (loan.balance.isZero()) {
+    return LoanRepaymentStatus.NotDrawnDown;
+  } else if (loan.isInDefault) {
+    return LoanRepaymentStatus.Default;
+  } else if (loan.isLate) {
+    return LoanRepaymentStatus.Late;
   } else {
-    return PoolRepaymentStatus.Current;
+    return LoanRepaymentStatus.Current;
   }
 }
 
-export enum TranchedPoolFundingStatus {
+const repaymentStatusLabels: Record<LoanRepaymentStatus, string> = {
+  [LoanRepaymentStatus.Current]: "On Time",
+  [LoanRepaymentStatus.Late]: "Grace Period",
+  [LoanRepaymentStatus.Default]: "Default",
+  [LoanRepaymentStatus.Repaid]: "Fully Repaid",
+  [LoanRepaymentStatus.NotDrawnDown]: "Not Drawn Down",
+};
+
+export function getLoanRepaymentStatusLabel(
+  repaymentStatus: LoanRepaymentStatus
+): string {
+  return repaymentStatusLabels[repaymentStatus];
+}
+
+export enum LoanFundingStatus {
   ComingSoon,
   Open,
   Closed,
@@ -134,37 +85,27 @@ export enum TranchedPoolFundingStatus {
   Cancelled,
 }
 
-export const TRANCHED_POOL_FUNDING_STATUS_FIELDS = gql`
-  fragment TranchedPoolFundingStatusFields on TranchedPool {
+export const FUNDING_STATUS_LOAN_FIELDS = gql`
+  fragment FundingStatusLoanFields on Loan {
     id
     remainingCapacity
     fundableAt
-    creditLine {
-      balance
-      termEndTime
-    }
+    balance
+    termEndTime
   }
 `;
 
-export function getTranchedPoolFundingStatus(
-  tranchedPool: TranchedPoolFundingStatusFieldsFragment
-) {
-  if (tranchedPool.id === CAURIS_POOL_ID) {
-    return TranchedPoolFundingStatus.Cancelled;
-  } else if (
-    !tranchedPool.creditLine.balance.isZero() ||
-    !tranchedPool.creditLine.termEndTime.isZero()
-  ) {
-    return TranchedPoolFundingStatus.Closed;
-  } else if (
-    tranchedPool.creditLine.termEndTime.isZero() &&
-    Date.now() / 1000 < tranchedPool.fundableAt.toNumber()
-  ) {
-    return TranchedPoolFundingStatus.ComingSoon;
-  } else if (tranchedPool.remainingCapacity.isZero()) {
-    return TranchedPoolFundingStatus.Full;
+export function getLoanFundingStatus(loan: FundingStatusLoanFieldsFragment) {
+  if (loan.id === CAURIS_POOL_ID) {
+    return LoanFundingStatus.Cancelled;
+  } else if (!loan.balance.isZero() || !loan.termEndTime.isZero()) {
+    return LoanFundingStatus.Closed;
+  } else if (loan.termEndTime.isZero() && Date.now() / 1000 < loan.fundableAt) {
+    return LoanFundingStatus.ComingSoon;
+  } else if (loan.remainingCapacity.isZero()) {
+    return LoanFundingStatus.Full;
   } else {
-    return TranchedPoolFundingStatus.Open;
+    return LoanFundingStatus.Open;
   }
 }
 
@@ -274,6 +215,7 @@ export function canUserParticipateInSeniorPool(
 export async function signAgreement(
   account: string,
   fullName: string,
+  email: string,
   pool: string
 ) {
   try {
@@ -283,7 +225,7 @@ export async function signAgreement(
         "x-goldfinch-address": account,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fullName, pool }),
+      body: JSON.stringify({ fullName, pool, email }),
     });
     if (!response.ok) {
       const responseBody = await response.json();
@@ -610,4 +552,95 @@ export function gfiToUsdc(
     token: "USDC",
     amount: BigNumber.from(amount.toString().split(".")[0]),
   };
+}
+
+export type RepaymentSchedule = {
+  paymentPeriod: number;
+  estimatedPaymentDate: number;
+  principal: BigNumber;
+  interest: BigNumber;
+}[];
+
+export const REPAYMENT_SCHEDULE_FIELDS = gql`
+  fragment RepaymentScheduleFields on Loan {
+    fundableAt
+    termStartTime
+    termEndTime
+    paymentPeriodInDays
+    termInDays
+    interestRateBigInt
+    principalAmount
+    fundingLimit
+  }
+`;
+
+export function generateRepaymentSchedule(
+  loan: RepaymentScheduleFieldsFragment
+): RepaymentSchedule {
+  const repaymentSchedule: RepaymentSchedule = [];
+  const secondsPerDay = 24 * 60 * 60;
+
+  const termStartTime = !loan.termStartTime.isZero()
+    ? loan.termStartTime.toNumber()
+    : loan.fundableAt + secondsPerDay * 14;
+  const termEndTime = !loan.termEndTime.isZero()
+    ? loan.termEndTime.toNumber()
+    : termStartTime + loan.termInDays * secondsPerDay;
+
+  const principal = !loan.principalAmount.isZero()
+    ? loan.principalAmount
+    : loan.fundingLimit;
+
+  // Number of seconds in 'paymentPeriodInDays'
+  const paymentPeriodInSeconds =
+    loan.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
+
+  // Keep track of period start & end and payment period number
+  let periodStartTimestamp = termStartTime;
+  let paymentPeriod = 1;
+
+  for (
+    let periodEndTimestamp = termStartTime + paymentPeriodInSeconds;
+    periodEndTimestamp <= termEndTime;
+    periodEndTimestamp += paymentPeriodInSeconds
+  ) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.interestRateBigInt,
+      nextDueTime: BigNumber.from(periodEndTimestamp),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: principal,
+    });
+    repaymentSchedule.push({
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: periodEndTimestamp * 1000,
+      principal: BigNumber.from(0),
+      interest: expectedInterest,
+    });
+
+    paymentPeriod++;
+    periodStartTimestamp = periodEndTimestamp;
+  }
+
+  // Catch the remainder of time when there's not a perfect diff of 'paymentPeriodInDays' on the last period
+  // i.e startTime Dec 6th 2024, endTime Dec 16th 2024 and paymentPeriodInDays is 30 days
+  if (periodStartTimestamp <= termEndTime) {
+    const expectedInterest = calculateInterestOwed({
+      isLate: false,
+      interestOwed: BigNumber.from(0),
+      interestApr: loan.interestRateBigInt,
+      nextDueTime: BigNumber.from(termEndTime),
+      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
+      balance: principal,
+    });
+    repaymentSchedule.push({
+      paymentPeriod: paymentPeriod,
+      estimatedPaymentDate: termEndTime * 1000,
+      principal: principal,
+      interest: expectedInterest,
+    });
+  }
+
+  return repaymentSchedule;
 }

@@ -28,20 +28,23 @@ export function Banner({
   return (
     <Disclosure
       as="div"
-      className={clsx("w-full bg-sky-500 px-5 text-white", className)}
+      className={clsx("group w-full text-mustard-700", className)}
     >
       {({ open }) => (
-        <div className="mx-auto max-w-7xl">
-          <Disclosure.Button className="flex w-full items-center justify-between py-4 text-xs">
-            <div className={clsx("text-left", open ? "opacity-70" : null)}>
-              {initialContent}
+        <>
+          <Disclosure.Button className="flex w-full items-center gap-4 py-3 px-6 text-xs md:px-10">
+            <div className="flex items-center gap-2">
+              <Icon name="InfoCircle" className="text-mustard-500" size="sm" />
+              <div className={clsx("text-left", open ? "opacity-70" : null)}>
+                {initialContent}
+              </div>
             </div>
             <Icon
               name="ChevronDown"
               size="sm"
               className={clsx(
-                "transition-transform duration-200",
-                open ? "rotate-180" : null
+                "opacity-0 transition-all duration-200 group-hover:opacity-100",
+                open ? "rotate-180 opacity-100" : "rotate-0"
               )}
             />
           </Disclosure.Button>
@@ -88,16 +91,16 @@ export function Banner({
           >
             <Disclosure.Panel>
               <div
-                className="text-xs transition-[max-height]"
+                className="px-6 text-xs transition-[max-height] md:px-10"
                 ref={transitionRef}
               >
                 {expandedContent}
                 {/* this looks silly but it's necessary in order to make this contribute to the parent div's scrollHeight (which must be accurate for animation) */}
-                <div className="pb-4" />
+                <div className="pb-3" />
               </div>
             </Disclosure.Panel>
           </Transition>
-        </div>
+        </>
       )}
     </Disclosure>
   );

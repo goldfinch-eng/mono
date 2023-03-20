@@ -13,15 +13,12 @@ import { useWallet } from "@/lib/wallet";
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
 export const BACKER_CARD_TOKEN_FIELDS = gql`
-  fragment BackerCardTokenFields on TranchedPoolToken {
+  fragment BackerCardTokenFields on PoolToken {
     id
-    tranchedPool {
+    loan {
       id
       name @client
-      creditLine {
-        id
-        isLate @client
-      }
+      isLate @client
       isPaused
     }
     mintedAt
@@ -55,8 +52,8 @@ export function BackerCard({
 
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
-    !token.tranchedPool.creditLine.isLate &&
-    !token.tranchedPool.isPaused;
+    !token.loan.isLate &&
+    !token.loan.isPaused;
 
   const handleClaim = async () => {
     if (!provider) {
@@ -85,7 +82,7 @@ export function BackerCard({
 
   return (
     <RewardCardScaffold
-      heading={`Backer of ${token.tranchedPool.name}`}
+      heading={`Backer of ${token.loan.name}`}
       subheading={`${formatCrypto(
         { token: "GFI", amount: totalAmount },
         { includeToken: true }
@@ -143,9 +140,9 @@ export function BackerCard({
         </>
       }
       warning={
-        token.tranchedPool.creditLine.isLate
+        token.loan.isLate
           ? "Claiming is disabled because a repayment is due"
-          : token.tranchedPool.isPaused
+          : token.loan.isPaused
           ? "Claiming is disabled because this pool is paused"
           : undefined
       }

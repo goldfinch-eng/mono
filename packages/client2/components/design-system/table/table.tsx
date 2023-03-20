@@ -70,7 +70,7 @@ export function Table({
                 {row.map((col, index) => (
                   <td
                     key={index}
-                    className="border-y-2 border-white bg-sand-50 px-5 py-3.5 text-center first:rounded-l first:text-left last:rounded-r last:text-right"
+                    className="border-y-2 border-mustard-50 bg-mustard-100 px-3 py-3 text-center first:rounded-l first:text-left last:rounded-r last:text-right"
                   >
                     {col}
                   </td>
@@ -86,7 +86,7 @@ export function Table({
           className="pointer-events-none absolute top-0 left-0 h-full w-full"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(0, 0, 0, 0) 80%, white)",
+              "linear-gradient(to bottom, rgba(0, 0, 0, 0) 80%, #FAF7F0)",
           }}
         />
       ) : null}

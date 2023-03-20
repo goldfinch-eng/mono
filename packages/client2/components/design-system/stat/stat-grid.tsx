@@ -15,6 +15,7 @@ interface StatGridProps {
   bgColor?: "white" | "mustard-50";
   borderColor?: "sand-200" | "sand-300";
   size?: "md" | "lg";
+  numColumns?: 3 | 4;
 }
 
 const StatGridContext = createContext<
@@ -30,9 +31,11 @@ export function StatGrid({
   bgColor = "white",
   borderColor = "sand-200",
   size = "md",
+  numColumns,
 }: StatGridProps) {
   const numChildren = Children.count(children);
-  const isRowsOfFour = numChildren % 4 === 0;
+  const _numColumns =
+    numColumns ?? (numChildren === 4 ? 2 : numChildren % 4 === 0 ? 4 : 3);
 
   return (
     <div
@@ -44,9 +47,11 @@ export function StatGrid({
           : borderColor === "sand-300"
           ? "border-sand-300 bg-sand-300"
           : null,
-        isRowsOfFour
-          ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
-          : "grid-cols-1 sm:grid-cols-3"
+        _numColumns === 2
+          ? "grid-cols-2"
+          : _numColumns === 3
+          ? "grid-cols-1 sm:grid-cols-3"
+          : "grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
       )}
     >
       <StatGridContext.Provider value={{ bgColor, borderColor, size }}>

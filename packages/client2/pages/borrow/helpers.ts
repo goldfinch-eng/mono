@@ -11,7 +11,7 @@ import { CreditLineAccountingFieldsFragment } from "@/lib/graphql/generated";
  *
  * After crossing the nextDueTime any interest that accrued during that payment period becomes interest owed and interestOwed becomes non-zero on the SC.
  */
-function calculateInterestOwed({
+export function calculateInterestOwed({
   isLate,
   interestOwed,
   interestApr,
