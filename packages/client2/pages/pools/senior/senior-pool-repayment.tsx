@@ -19,6 +19,7 @@ import {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
+import { AxisInterval } from "recharts/types/util/types";
 
 import { Icon, Link } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
@@ -145,7 +146,7 @@ export function SeniorPoolRepaymentSection({
     <div className="overflow-hidden rounded-lg border border-sand-300">
       <div className="px-6 pt-8">
         <div>
-          <Menu as="div" className="relative mb-2">
+          <Menu as="div" className="relative mb-8 sm:mb-2">
             <Menu.Button className="flex items-center gap-2 text-xs font-medium">
               {perspective === "future"
                 ? "Future repayments"
@@ -176,13 +177,14 @@ export function SeniorPoolRepaymentSection({
           <BarChart data={chartData} margin={{ top: 20 }}>
             <Legend
               content={CustomChartLegend}
-              wrapperStyle={{ top: "-1.5rem", right: 0, width: "max-content" }}
+              align="right"
+              verticalAlign="top"
             />
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="period"
               tick={{ fontSize: "8px" }}
-              interval={perspective === "future" ? 0 : 1}
+              interval={"equidistantPreserveStart" as AxisInterval | undefined}
               padding={{ left: 36 }}
             />
             <YAxis
@@ -319,7 +321,7 @@ function CustomChartTooltip({
 
 const CustomChartLegend: ContentType = ({ payload }) => {
   return (
-    <div className="flex gap-4">
+    <div className="absolute -top-10 flex gap-4 sm:right-0">
       {payload?.map(({ value, color }) => (
         <div key={value} className="flex items-center gap-2 text-xs">
           <div

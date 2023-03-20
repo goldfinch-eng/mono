@@ -1,5 +1,5 @@
 import chai from "chai"
-import hardhat, {artifacts, web3, ethers, getNamedAccounts} from "hardhat"
+import hardhat, {artifacts, web3, ethers, getNamedAccounts, deployments} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -15,6 +15,7 @@ import {
   OWNER_ROLE,
   getTruffleContract,
   getProtocolOwner,
+  isMainnetForking,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -43,8 +44,9 @@ import {
   TestSeniorPoolCallerInstance,
   MembershipCollectorInstance,
   ERC20SplitterInstance,
+  TestGoldfinchConfigInstance,
+  MonthlyScheduleRepoInstance,
 } from "../typechain/truffle"
-import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/contracts/protocol/core/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -59,6 +61,8 @@ const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
+import {getDeploymentFor} from "./util/fixtures"
+import {CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -304,7 +308,6 @@ async function deployAllContracts(
   seniorPool: SeniorPoolInstance
   seniorPoolCaller: TestSeniorPoolCallerInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
-  seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
   fidu: FiduInstance
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
@@ -330,10 +333,6 @@ async function deployAllContracts(
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
     "FixedLeverageRatioStrategy"
-  )
-  const seniorPoolDynamicStrategy = await getDeployedAsTruffleContract<DynamicLeverageRatioStrategyInstance>(
-    deployments,
-    "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
@@ -401,7 +400,6 @@ async function deployAllContracts(
     seniorPool,
     seniorPoolCaller,
     seniorPoolFixedStrategy,
-    seniorPoolDynamicStrategy,
     usdc,
     fidu,
     fiduUSDCCurveLP,
@@ -494,26 +492,56 @@ async function getBalance(address, erc20) {
   return new BN(await web3.eth.getBalance(address))
 }
 
+export async function getTranchedPoolAndCreditLine(poolAddress: string, clAddress: string) {
+  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: poolAddress})
+  const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: clAddress})
+  return {tranchedPool, creditLine}
+}
+
+const getDefaultMonthlySchedule = async (goldfinchConfig: GoldfinchConfigInstance) => {
+  return getMonthlySchedule(goldfinchConfig, "12", "1", "12", "0")
+}
+
+const getMonthlySchedule = async (
+  goldfinchConfig: GoldfinchConfigInstance,
+  periodsInTerm: Numberish,
+  periodsPerInterestPeriod: Numberish,
+  periodsPerPrincipalPeriod: Numberish,
+  gracePrincipalPeriods: Numberish
+) => {
+  const scheduleRepoAddress = await goldfinchConfig.getAddress(CONFIG_KEYS_BY_TYPE.addresses.MonthlyScheduleRepo)
+  const scheduleRepo = await getTruffleContractAtAddress<MonthlyScheduleRepoInstance>(
+    "MonthlyScheduleRepo",
+    scheduleRepoAddress
+  )
+  await scheduleRepo.createSchedule(
+    periodsInTerm,
+    periodsPerPrincipalPeriod,
+    periodsPerInterestPeriod,
+    gracePrincipalPeriods
+  )
+  return await scheduleRepo.getSchedule(
+    periodsInTerm,
+    periodsPerPrincipalPeriod,
+    periodsPerInterestPeriod,
+    gracePrincipalPeriods
+  )
+}
+
 const createPoolWithCreditLine = async ({
   people,
-  goldfinchFactory,
   usdc,
   juniorFeePercent = new BN("20"),
   interestApr = interestAprAsBN("15.0"),
-  paymentPeriodInDays = new BN(30),
-  termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
-  principalGracePeriodInDays = new BN(185),
   fundableAt = new BN(0),
   allowedUIDTypes = [0],
 }: {
   people: {owner: string; borrower: string}
   usdc: ERC20Instance
-  goldfinchFactory: GoldfinchFactoryInstance
   juniorFeePercent?: Numberish
   interestApr?: Numberish
-  paymentPeriodInDays?: Numberish
   termInDays?: Numberish
   limit?: Numberish
   lateFeeApr?: Numberish
@@ -532,32 +560,42 @@ const createPoolWithCreditLine = async ({
     throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
   }
 
+  const goldfinchConfig = isMainnetForking()
+    ? await getDeploymentFor<GoldfinchConfigInstance>("GoldfinchConfig")
+    : await getDeploymentFor<TestGoldfinchConfigInstance>("TestGoldfinchConfig")
+
+  const creditLineDeployment = await deployments.get("CreditLine")
+  await goldfinchConfig.setCreditLineImplementation(creditLineDeployment.address)
+
+  const goldfinchFactory = await getDeploymentFor<GoldfinchFactoryInstance>("GoldfinchFactory")
+  const scheduleAddress = await getDefaultMonthlySchedule(goldfinchConfig)
+
   const result = await goldfinchFactory.createPool(
     thisBorrower,
     juniorFeePercent,
     limit,
     interestApr,
-    paymentPeriodInDays,
-    termInDays,
+    scheduleAddress,
     lateFeeApr,
-    principalGracePeriodInDays,
     fundableAt,
     allowedUIDTypes,
     {from: thisOwner}
   )
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
-  const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
-  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
+  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
+  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
+    "CreditLine",
+    await tranchedPool.creditLine()
+  )
 
-  await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
+  await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [thisOwner])
 
   // Only approve if borrower is an EOA (could be a borrower contract)
   if ((await web3.eth.getCode(thisBorrower)) === "0x") {
-    await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
+    await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [thisBorrower])
   }
 
-  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TestTranchedPool", pool.address)
   return {tranchedPool, creditLine}
 }
 
@@ -792,4 +830,6 @@ export {
   toEthers,
   fundWithEthFromLocalWhale,
   setupBackerRewards,
+  getMonthlySchedule,
+  getDefaultMonthlySchedule,
 }

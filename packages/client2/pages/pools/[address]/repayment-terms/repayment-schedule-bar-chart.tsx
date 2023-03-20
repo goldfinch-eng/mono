@@ -15,11 +15,11 @@ import {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
+import { AxisInterval } from "recharts/types/util/types";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
 import { RepaymentTableLoanFieldsFragment } from "@/lib/graphql/generated";
 
-const MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW = 40;
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 const tickFormatter = new Intl.NumberFormat("en-US");
 
@@ -130,12 +130,7 @@ export function RepaymentScheduleBarChart({
         <XAxis
           dataKey="paymentPeriod"
           tick={{ fontSize: "8px" }}
-          interval={
-            repaymentScheduleFloat.length <=
-            MAX_X_AXIS_TICKS_BEFORE_LABEL_OVERFLOW
-              ? 0
-              : 1
-          }
+          interval={"equidistantPreserveStart" as AxisInterval | undefined}
         />
         <YAxis
           axisLine={false}

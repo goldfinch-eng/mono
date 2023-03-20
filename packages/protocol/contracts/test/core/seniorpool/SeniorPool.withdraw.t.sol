@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
   function testNonZapperCannotWithdraw(
@@ -73,7 +73,7 @@ contract SeniorPoolWithdrawTest is SeniorPoolBaseTest {
     fundAddress(user, depositAmount);
     depositToSpFrom(user, depositAmount);
 
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1), tp);
     lockJuniorCap(tp);
     sp.invest(tp);

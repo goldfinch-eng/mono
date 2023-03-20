@@ -65,7 +65,7 @@ export function BorrowerProfile({
   return (
     <div className="space-y-6">
       <div className="space-y-5 rounded-xl bg-mustard-100 p-6">
-        <div className="flex items-start justify-between gap-5">
+        <div className="flex flex-col items-start justify-between gap-5 sm:flex-row">
           <div className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-full bg-mustard-50">
               {borrower.logo?.url ? (

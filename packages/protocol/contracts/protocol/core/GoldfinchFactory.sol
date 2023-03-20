@@ -3,12 +3,14 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
-import {IBorrower} from "../../interfaces/IBorrower.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {IBorrower} from "../../interfaces/IBorrower.sol";
+import {ISchedule} from "../../interfaces/ISchedule.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {IPeriodMapper} from "../../interfaces/IPeriodMapper.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {UcuProxy} from "./proxy/UcuProxy.sol";
 
@@ -29,7 +31,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
-  event CreditLineCreated(IV2CreditLine indexed creditLine);
+  event CreditLineCreated(ICreditLine indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(
@@ -46,10 +48,8 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    * @dev There is no value to calling this function directly. It is only meant to be called
    *  by a TranchedPool during it's creation process.
    */
-  function createCreditLine() external returns (IV2CreditLine) {
-    IV2CreditLine creditLine = IV2CreditLine(
-      _deployMinimal(config.creditLineImplementationAddress())
-    );
+  function createCreditLine() external returns (ICreditLine) {
+    ICreditLine creditLine = ICreditLine(_deployMinimal(config.creditLineImplementationAddress()));
     emit CreditLineCreated(creditLine);
     return creditLine;
   }
@@ -68,20 +68,6 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   /**
    * @notice Allows anyone to create a new TranchedPool for a single borrower
-   * @param _borrower The borrower for whom the CreditLine will be created
-   * @param _juniorFeePercent The percent of senior interest allocated to junior investors, expressed as
-   *  integer percents. eg. 20% is simply 20
-   * @param _limit The maximum amount a borrower can drawdown from this CreditLine
-   * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
-   *  We assume 18 digits of precision. For example, to submit 15.34%, you would pass up 153400000000000000,
-   *  and 5.34% would be 53400000000000000
-   * @param _paymentPeriodInDays How many days in each payment period.
-   *  ie. the frequency with which they need to make payments.
-   * @param _termInDays Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.
-   *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
-   * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
-   *  normal rate is 15%, then you will pay 18% while you are late. Also expressed as an 18 decimal precision integer
-   *
    * Requirements:
    *  You are the admin
    */
@@ -90,18 +76,15 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _juniorFeePercent,
     uint256 _limit,
     uint256 _interestApr,
-    uint256 _paymentPeriodInDays,
-    uint256 _termInDays,
+    ISchedule _schedule,
     uint256 _lateFeeApr,
-    uint256 _principalGracePeriodInDays,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external onlyAdminOrBorrower returns (ITranchedPool) {
-    ITranchedPool pool;
+  ) external onlyAdminOrBorrower returns (ITranchedPool pool) {
     // need to enclose in a scope to avoid overflowing stack
     {
       ImplementationRepository repo = config.getTranchedPoolImplementationRepository();
-      UcuProxy poolProxy = new UcuProxy(repo, _borrower);
+      UcuProxy poolProxy = new UcuProxy(repo, _borrower, repo.currentLineageId());
       pool = ITranchedPool(address(poolProxy));
     }
 
@@ -111,16 +94,13 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       _juniorFeePercent,
       _limit,
       _interestApr,
-      _paymentPeriodInDays,
-      _termInDays,
+      _schedule,
       _lateFeeApr,
-      _principalGracePeriodInDays,
       _fundableAt,
       _allowedUIDTypes
     );
     emit PoolCreated(pool, _borrower);
     config.getPoolTokens().onPoolCreated(address(pool));
-    return pool;
   }
 
   // Stolen from:

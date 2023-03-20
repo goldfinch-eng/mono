@@ -2,6 +2,7 @@ import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import isEmail from "validator/lib/isEmail";
 
 import {
   Button,
@@ -77,6 +78,7 @@ interface SupplyPanelProps {
 interface SupplyForm {
   supply: string;
   backerName: string;
+  email: string;
 }
 
 export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
@@ -139,7 +141,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       throw new Error("Wallet not connected properly");
     }
 
-    await signAgreement(account, data.backerName, loan.address);
+    await signAgreement(account, data.backerName, data.email, loan.address);
 
     // Ensures the user doesn't leave any dust behind when they choose to supply max
     let value = utils.parseUnits(data.supply, USDC_DECIMALS);
@@ -304,7 +306,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
           />
           <Input
             {...register("backerName", { required: "Required" })}
-            label="Full legal name"
+            label="Full name"
             labelDecoration={
               <InfoIconTooltip
                 size="sm"
@@ -312,7 +314,17 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
                 content="Your full name as it appears on your government-issued identification. This should be the same as your full legal name used to register your UID."
               />
             }
-            placeholder="First and last name"
+            colorScheme="light"
+            textSize="xl"
+            className="mb-3"
+            labelClassName="!text-sm !mb-3"
+          />
+          <Input
+            {...register("email", {
+              required: "Required",
+              validate: (value) => (isEmail(value) ? true : "Invalid email"),
+            })}
+            label="Email"
             colorScheme="light"
             textSize="xl"
             className="mb-3"

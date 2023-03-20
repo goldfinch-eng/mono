@@ -32,15 +32,20 @@ contract UcuProxy is IERC173, Proxy {
 
   // ///////////////////// EXTERNAL ///////////////////////////////////////////////////////////////////////////
 
+  /// @notice Instantiate a proxy pointing to the current implementation in `_repository` of lineage `_lineageId`.
   /// @param _repository repository used for sourcing upgrades
   /// @param _owner owner of proxy
-  /// @dev reverts if either `_repository` or `_owner` is null
-  constructor(Repo _repository, address _owner) public {
+  /// @param _lineageId id of the lineage whose current implementation to set as the proxy's implementation.
+  /// @dev Reverts if either `_repository` or `_owner` is null
+  /// @dev Double check your lineageId because it can't be changed. In most cases you'll want the repository's
+  ///   currentLineageId
+  constructor(Repo _repository, address _owner, uint256 _lineageId) public {
     require(_owner != address(0), "bad owner");
     _setOwner(_owner);
     _setRepository(_repository);
     // this will validate that the passed in repo is a contract
-    _upgradeToAndCall(_repository.currentImplementation(), "");
+    address currentImpl = _repository.currentImplementation(_lineageId);
+    _upgradeToAndCall(currentImpl, "");
   }
 
   /// @notice upgrade the proxy implementation

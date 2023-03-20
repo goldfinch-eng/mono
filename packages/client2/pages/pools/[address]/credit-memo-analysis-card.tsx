@@ -49,7 +49,7 @@ export function CreditMemoAnalysisCard({
   return (
     <div className={clsx(className, "rounded-xl bg-mustard-100 p-6")}>
       <div className="mb-5 flex flex-col items-start justify-between gap-2 md:flex-row">
-        <div className="flex items-start pr-8">
+        <div className="flex items-start pr-0 sm:pr-8">
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sand-200">
             {thumbnail?.url ? (
               <Image
@@ -69,14 +69,14 @@ export function CreditMemoAnalysisCard({
         <Chip
           iconLeft="Checkmark"
           colorScheme="mint"
-          className="flex h-8 min-w-fit items-center"
+          className="mt-2 flex h-8 min-w-fit items-center sm:mt-0"
         >
           Vetted reviewer
         </Chip>
       </div>
       <div className="mb-5 text-sm">{content}</div>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {executiveSummaryUrl && (
             <Button
               as="a"

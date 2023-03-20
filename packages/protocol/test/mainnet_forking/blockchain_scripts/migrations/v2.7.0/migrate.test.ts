@@ -124,7 +124,7 @@ xdescribe("v2.7.0", async function () {
           }
           await usdc.approve(borrowerContract.address, interestOwed.toString(), {from: borrowerEoa})
           await fundWithWhales(["USDC"], [borrowerEoa])
-          const tx = await borrowerContract.pay(tranchedPool.address, interestOwed)
+          const tx = await borrowerContract["pay(address,uint256)"](tranchedPool.address, interestOwed)
           const receipt = await tx.wait()
           return {repaymentBlockNumber: receipt.blockNumber}
         })

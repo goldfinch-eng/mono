@@ -50,6 +50,8 @@ import {
 import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
+import {getDeploymentFor} from "../test/util/fixtures"
+import {ScheduleInstance} from "../typechain/truffle"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -288,11 +290,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
     const payAmount = new BN(100).mul(USDCDecimals)
     await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
-    await bwrCon.pay(commonPool.address, payAmount.toString())
+    await bwrCon["pay(address,uint256)"](commonPool.address, payAmount.toString())
 
     await advanceTime({days: 32})
 
-    await bwrCon.pay(commonPool.address, payAmount.toString())
+    await bwrCon["pay(address,uint256)"](commonPool.address, payAmount.toString())
     /*** COMMON POOL END ***/
 
     await seniorPool.redeem(tokenId)
@@ -769,13 +771,11 @@ async function createPoolForBorrower({
   allowedUIDTypes: Array<number>
   limitInDollars?: number
 }): Promise<TranchedPool> {
+  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
-  const paymentPeriodInDays = String(new BN(30))
-  const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
-  const principalGracePeriodInDays = String(new BN(185))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
   const result = await (
@@ -786,10 +786,8 @@ async function createPoolForBorrower({
         juniorFeePercent,
         limit,
         interestApr,
-        paymentPeriodInDays,
-        termInDays,
+        schedule.address,
         lateFeeApr,
-        principalGracePeriodInDays,
         fundableAt,
         allowedUIDTypes
       )

@@ -56,6 +56,7 @@ library ConfigOptions {
     StakingRewards,
     FiduUSDCCurveLP,
     TranchedPoolImplementationRepository,
-    WithdrawalRequestToken
+    WithdrawalRequestToken,
+    MonthlyScheduleRepo
   }
 }

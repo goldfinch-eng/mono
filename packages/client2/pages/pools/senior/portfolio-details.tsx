@@ -1,7 +1,13 @@
 import { gql } from "@apollo/client";
 import Image from "next/future/image";
 
-import { Button, Stat, StatGrid, Link } from "@/components/design-system";
+import {
+  Button,
+  Stat,
+  StatGrid,
+  Link,
+  ChipLink,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SeniorPoolPortfolioDetailsFieldsFragment,
@@ -51,7 +57,7 @@ export function PortfolioDetails({
   return (
     <>
       <div className="mb-6 rounded-xl bg-mustard-100 p-6">
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex flex-col items-start justify-between sm:flex-row sm:items-center">
           <div className="flex">
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-mustard-300">
               <Image
@@ -71,7 +77,7 @@ export function PortfolioDetails({
             colorScheme="secondary"
             variant="rounded"
             iconRight="ArrowTopRight"
-            className="mr-1.5"
+            className="mr-1.5 mt-5 sm:mt-0"
             target="_blank"
             rel="noopener"
             href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
@@ -93,10 +99,7 @@ export function PortfolioDetails({
           . This capital is protected by first-loss capital in all deals.
         </div>
         <div className="flex">
-          <Button
-            as="a"
-            colorScheme="secondary"
-            variant="rounded"
+          <ChipLink
             iconLeft="Link"
             className="mr-2"
             target="_blank"
@@ -104,11 +107,8 @@ export function PortfolioDetails({
             href="https://goldfinch.finance/"
           >
             Website
-          </Button>
-          <Button
-            as="a"
-            colorScheme="secondary"
-            variant="rounded"
+          </ChipLink>
+          <ChipLink
             iconLeft="LinkedIn"
             className="mr-2"
             target="_blank"
@@ -116,11 +116,8 @@ export function PortfolioDetails({
             href="https://www.linkedin.com/company/goldfinchfinance/"
           >
             LinkedIn
-          </Button>
-          <Button
-            as="a"
-            colorScheme="secondary"
-            variant="rounded"
+          </ChipLink>
+          <ChipLink
             iconLeft="Twitter"
             className="mr-2"
             target="_blank"
@@ -128,7 +125,7 @@ export function PortfolioDetails({
             href="https://twitter.com/goldfinch_fi"
           >
             Twitter
-          </Button>
+          </ChipLink>
         </div>
       </div>
       <StatGrid className="mb-6" bgColor="mustard-50" borderColor="sand-300">

@@ -3,21 +3,25 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   function testInvestRevertsForInvalidPool() public {
-    TestTranchedPool tp = new TestTranchedPool();
+    TranchedPool tp = new TranchedPool();
     uint256[] memory ids = new uint256[](1);
-    tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, 1, 1, 1, 1, block.timestamp, ids);
+    tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, defaultSchedule(), 1, block.timestamp, ids);
     vm.expectRevert("Pool must be valid");
     sp.invest(tp);
   }
 
   function testInvestCallableByAnyone(uint256 juniorAmount, address user) public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
@@ -32,25 +36,34 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
   function testInvestWorksWhenSeniorTrancheNonEmpty(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
-    tp._setSeniorTranchePrincipalDeposited(usdcVal(1));
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
 
     uint256 investmentAmount = sp.estimateInvestment(tp);
+
+    depositToSpFrom(GF_OWNER, investmentAmount);
+    sp.invest(tp);
+
+    // Now increase the leverage ratio
+    _startImpersonation(GF_OWNER);
+    gfConfig.setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), LEVERAGE_RATIO * 2);
+    _stopImpersonation();
+
     depositToSpFrom(GF_OWNER, investmentAmount);
 
+    // Second investment
     sp.invest(tp);
 
     assertEq(
       tp.getTranche((uint256(ITranchedPool.Tranches.Senior))).principalDeposited,
-      investmentAmount + usdcVal(1)
+      investmentAmount * 2
     );
   }
 
   function testInvestDepositsToSeniorTranche(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -64,7 +77,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
   function testInvestEmitsInvestmentMadeInSeniorEvent(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -78,7 +91,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
   function testInvestCountsInvestmentAmountInAssets(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -96,7 +109,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   }
 
   function testInvestRevertsForZeroInvestmentAmount() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     lockJuniorCap(tp);
 
     vm.expectRevert("Investment amount must be positive");
@@ -105,7 +118,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
   function testInvestDecreasesUsdcAvailable(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -119,9 +132,10 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
   function testInvestLiquidatesEpochIfOneOrMoreEpochsHaveEnded(
     address user,
     uint256 epochsElapsed
-  ) public goListed(user) tokenApproved(user) {
-    (TestTranchedPool tp, ) = defaultTp();
+  ) public onlyAllowListed(user) tokenApproved(user) {
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
+    addToGoList(user);
     epochsElapsed = bound(epochsElapsed, 1, 10);
     uint256 juniorAmount = usdcVal(100);
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
@@ -147,7 +161,7 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
     uint256 juniorAmount
   ) public {
     juniorAmount = bound(juniorAmount, usdcVal(2), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
     uint256 investmentAmount = sp.estimateInvestment(tp);
@@ -165,5 +179,31 @@ contract SeniorPoolInvestTest is SeniorPoolBaseTest {
 
     vm.expectRevert("not enough usdc");
     sp.invest(tp);
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 }
