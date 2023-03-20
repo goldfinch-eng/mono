@@ -141,6 +141,7 @@ contract CallableLoan is
     whenNotPaused
     returns (uint256 callRequestedTokenId, uint256 remainingTokenId)
   {
+    revert RequiresUpgrade();
     // 1. Checkpoint the credit line and perform basic validation on the call request.
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -356,6 +357,7 @@ contract CallableLoan is
     whenNotPaused
     returns (PaymentAllocation memory)
   {
+    revert RequiresUpgrade();
     return _pay(amount);
   }
 

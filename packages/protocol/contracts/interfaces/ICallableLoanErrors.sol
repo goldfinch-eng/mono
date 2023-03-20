@@ -65,6 +65,7 @@ interface ICallableLoanErrors {
   error CannotSetAllowedUIDTypesAfterDeposit();
   error CannotSetFundableAtAfterFundableAt(uint256 existingFundableAt);
   error RequiresLockerRole(address nonLockerAddress);
+  error RequiresUpgrade();
 
   /*================================================================================
   Initialization
