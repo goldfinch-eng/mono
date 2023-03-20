@@ -17,6 +17,7 @@ import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ITestUSDC} from "../../../ITestUSDC.t.sol";
 import {Test} from "forge-std/Test.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 
@@ -203,14 +204,14 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
 
   function test_basicFlow() public {
     /* Deposit into loan */ {
-      lender.deposit(100);
+      lender.deposit(1000);
       assertTrue(loan.loanPhase() == LoanPhase.Funding);
     }
 
     /* Partial drawdown */ {
       skip(1);
 
-      borrower.drawdown(95);
+      borrower.drawdown(950);
       assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
     }
 
@@ -222,18 +223,18 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     /* Drawdown the rest */ {
       skip(1);
 
-      borrower.drawdown(5);
+      borrower.drawdown(50);
       assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
     }
 
     /* Can't drawdown more */ {
       vm.expectRevert();
-      borrower.drawdown(1);
+      borrower.drawdown(10);
     }
 
     /* Can't deposit more */ {
       vm.expectRevert();
-      lender.deposit(10);
+      lender.deposit(100);
     }
 
     /* Fast forward past drawdown period */ {
@@ -244,14 +245,18 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     }
 
     /* Immediately submit a call */ {
-      lender.submitCall(10);
+      lender.submitCall(100);
     }
 
-    /* Pay back call + interest */ {
-      skip(1);
+    /* Pay back call + interest */
+    skip(1);
+    uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
+    uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
 
-      borrower.pay(10 + loan.estimateOwedInterestAt(loan.nextDueTimeAt(block.timestamp)));
-    }
+    console.log("estimatedInterest:", estimatedInterest);
+    console.log("interestOwedAt:", interestOwedAt);
+
+    borrower.pay(100 + estimatedInterest);
 
     /* Fast forward to just before repayment due date */ {
       vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
@@ -259,15 +264,33 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
 
     /* Can't yet claim call */ {
       vm.expectRevert();
-      lender.withdraw(10);
+      lender.withdraw(100);
     }
 
     /* Now go to repayment date */ {
       vm.warp(loan.nextDueTimeAt(block.timestamp));
     }
 
-    /* Claim call */ {
-      lender.withdraw(10);
+    (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
+      lender.callRequestTokenId()
+    );
+
+    /* Cannot claim call */ {
+      vm.expectRevert();
+      lender.withdraw(100);
+    }
+
+    vm.warp(loan.nextPrincipalDueTime());
+    /* Can claim interest and principal */
+    // Owed interest on called token is:
+    // Tranche interest paid = (tranche deposit size/total deposit size) * estimatedInterest
+    // (called deposit size/tranche deposit size) * Tranche interest paid  * (100% - reserve fee percent).
+    // Can be off by 1 due to rounding errors in between tranches.
+    // In this case, the Tranche interest paid is 100/1000 * estimatedInterest
+    // and 100% - reserve fee percent is 100% - 10% = 90 / 100
+    {
+      uint256 trancheInterestPaid = ((100 * estimatedInterest) / 1000);
+      lender.withdraw(100 + ((trancheInterestPaid * 90) / (100)));
     }
   }
 }
