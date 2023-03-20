@@ -275,6 +275,46 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertZero(usdc.allowance(user, address(callableLoan)));
   }
 
+  // One user deposits an amount under the limit successfully, and then another
+  // user deposits fails to deposit an amount greater than the remaining limit
+  function testLimitDoesNotAllowDepositThatExceedsLimitWithAnotherDeposit(
+    uint256 limit,
+    // a deposit that will go under the limit
+    uint256 underLimitDeposit,
+    // a deposit that will go over the limit
+    uint256 overLimitDeposit
+  ) public {
+    limit = bound(limit, usdcVal(1), usdcVal(100_000_000));
+    address depositor2 = address(0xDEADBEEF);
+    (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(limit).build(BORROWER);
+    underLimitDeposit = bound(underLimitDeposit, 1, limit);
+    uint256 remainingLimit = limit - underLimitDeposit;
+    overLimitDeposit = bound(overLimitDeposit, remainingLimit + 1, remainingLimit + 100_000e6);
+
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    uid._mintForTest(depositor2, 1, 1, "");
+
+    fundAddress(DEPOSITOR, underLimitDeposit);
+
+    uint256 uncalledCapitalTrancheIndex = callableLoan.uncalledCapitalTrancheIndex();
+
+    vm.startPrank(DEPOSITOR);
+    usdc.approve(address(callableLoan), underLimitDeposit);
+    callableLoan.deposit(uncalledCapitalTrancheIndex, underLimitDeposit);
+    vm.stopPrank();
+
+    vm.startPrank(depositor2);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.DepositExceedsLimit.selector,
+        overLimitDeposit,
+        underLimitDeposit,
+        limit
+      )
+    );
+    callableLoan.deposit(uncalledCapitalTrancheIndex, overLimitDeposit);
+  }
+
   function testLimitDoesNotAllowDepositThatExceedsLimit(
     uint256 limit,
     uint256 depositAmount
