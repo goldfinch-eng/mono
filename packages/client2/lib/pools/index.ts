@@ -215,6 +215,7 @@ export function canUserParticipateInSeniorPool(
 export async function signAgreement(
   account: string,
   fullName: string,
+  email: string,
   pool: string
 ) {
   try {
@@ -224,7 +225,7 @@ export async function signAgreement(
         "x-goldfinch-address": account,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fullName, pool }),
+      body: JSON.stringify({ fullName, pool, email }),
     });
     if (!response.ok) {
       const responseBody = await response.json();
