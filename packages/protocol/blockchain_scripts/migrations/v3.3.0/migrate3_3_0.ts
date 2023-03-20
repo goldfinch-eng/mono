@@ -13,8 +13,10 @@ import {MAINNET_WARBLER_LABS_MULTISIG} from "../../mainnetForkingHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
-  console.log(`Upgrading contracts`)
   const deployer = new ContractDeployer(console.log, hre)
+  const upgrader = new ContractUpgrader(deployer)
+
+  console.log(`Upgrading contracts`)
   const deployEffects = await getDeployEffects({
     title: "v3.3.0 Upgrade",
     description: "",
@@ -77,10 +79,8 @@ export async function main() {
       ),
     ],
   })
-
-  const upgrader = new ContractUpgrader(deployer)
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["GoldfinchFactory", {name: "CapitalLedger", args: [context.address]}],
+    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory"],
   })
 
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
