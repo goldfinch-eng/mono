@@ -58,7 +58,6 @@ type AttributeType =
   | "POOL_ADDRESS"
   | "BORROWER_NAME"
   | "BACKER_POSITION_PRINCIPAL"
-  | "BACKER_POSITION_NAV"
   | "MONTHLY_INTEREST_PAYMENT"
   | "USDC_INTEREST_RATE"
   | "TOTAL_LOAN_SIZE"
@@ -66,7 +65,6 @@ type AttributeType =
   | "PAYMENT_TERM"
   | "TERM_REMAINING"
   | "TOTAL_AMOUNT_REPAID"
-  | "NEXT_REPAYMENT_DATE"
   | "LAST_UPDATED_AT"
 type TokenAttribute = {type: AttributeType; value: string}
 
@@ -103,11 +101,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const totalLoanSize = ethers.BigNumber.from(loan.principalAmount).isZero()
     ? new BigNumber(loan.fundingLimit.toString()).dividedBy(1e6)
     : new BigNumber(ethers.BigNumber.from(loan.principalAmount).toString()).dividedBy(1e6)
-
-  const nextRepaymentDate =
-    isTermStarted(termEndTime) && !ethers.BigNumber.from(loan.nextDueTime).isZero()
-      ? new Date(ethers.BigNumber.from(loan.nextDueTime).toNumber() * 1000)
-      : undefined
 
   const principalAmount = new BigNumber(poolToken.principalAmount.toString())
   const monthlyInterestPayment = principalAmount.multipliedBy(backerApr).dividedBy(12)
@@ -162,10 +155,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
       value: `$${doubleDigitFormatter.format(totalAmountRepaid.dividedBy(1e6).toNumber())}`,
     },
     {
-      type: "NEXT_REPAYMENT_DATE",
-      value: nextRepaymentDate?.toISOString() || "N/A",
-    },
-    {
       type: "LAST_UPDATED_AT",
       value: now.toISOString(),
     },
@@ -183,7 +172,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     POOL_ADDRESS: "Pool Address",
     BORROWER_NAME: "Borrower Name",
     BACKER_POSITION_PRINCIPAL: "Backer Position Principal",
-    BACKER_POSITION_NAV: "Backer Position NAV",
     MONTHLY_INTEREST_PAYMENT: "Backer Position Monthly Interest Payment",
     USDC_INTEREST_RATE: "USDC Interest Rate",
     TOTAL_LOAN_SIZE: "Total Loan Size",
@@ -191,7 +179,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     PAYMENT_TERM: "Payment Term",
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
-    NEXT_REPAYMENT_DATE: "Next Repayment Date",
     LAST_UPDATED_AT: "Last Updated At",
   }
 
@@ -212,7 +199,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     POOL_ADDRESS: "Pool Address",
     BORROWER_NAME: "Borrower",
     BACKER_POSITION_PRINCIPAL: "Principal",
-    BACKER_POSITION_NAV: "NAV",
     MONTHLY_INTEREST_PAYMENT: "Monthly Interest Payment",
     USDC_INTEREST_RATE: "USDC Interest Rate",
     TOTAL_LOAN_SIZE: "Total Loan Size",
@@ -220,7 +206,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     PAYMENT_TERM: "Payment Term",
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
-    NEXT_REPAYMENT_DATE: "Next Repayment Date",
     LAST_UPDATED_AT: "Updated At",
   }
 

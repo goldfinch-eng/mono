@@ -20,15 +20,15 @@ export const signAgreement = genRequestHandler({
     const email = (req.body.email || "").trim()
 
     if (pool === "") {
-      return res.status(400).send({error: "Invalid pool address"})
+      return res.status(403).send({error: "Invalid pool address"})
     }
 
     if (fullName === "") {
-      return res.status(400).send({error: "Invalid full name"})
+      return res.status(403).send({error: "Invalid full name"})
     }
 
     if (!isEmail(email)) {
-      return res.status(400).send({error: "Invalid email address"})
+      return res.status(403).send({error: "Invalid email address"})
     }
 
     const agreements = getAgreements(admin.firestore())
