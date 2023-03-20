@@ -7,6 +7,7 @@ import { getRepaymentFrequencyLabel } from "@/lib/pools";
 
 export const REPAYMENT_TERMS_STATS_FIELDS = gql`
   fragment RepaymentTermsStatsFields on Loan {
+    __typename
     fundableAt
     termInSeconds
     termStartTime
@@ -56,7 +57,7 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       <Stat
         label="Repayment structure"
         tooltip="This refers to the schedule of repayments that the borrower is expected to make to the lender. An amortizing loan is one in which the borrower makes regular payments of principal and interest over the life of the loan, resulting in a zero balance at the end of the term. A bullet loan is one in which the borrower makes interest-only payments for a period of time, followed by a balloon payment of the remaining principal at the end of the term."
-        value="Bullet"
+        value={loan.__typename === "CallableLoan" ? "Callable" : "Bullet"}
       />
       <Stat
         label="Est. repayment start date"
