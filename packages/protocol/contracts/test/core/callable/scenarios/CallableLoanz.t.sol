@@ -16,6 +16,7 @@ import {IGoldfinchFactory} from "../../../../interfaces/IGoldfinchFactory.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ITestUSDC} from "../../../ITestUSDC.t.sol";
 import {Test} from "forge-std/Test.sol";
+import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 
@@ -70,9 +71,10 @@ contract CallableLender is CallableActor {
   uint256 public callRequestTokenId;
 
   function submitCall(uint256 amount) external expectUsdcIncrease(0) {
-    (uint256 _callRequestTokenId, ) = loan.submitCall(amount, tokenId);
+    (uint256 _callRequestTokenId, uint256 _tokenId) = loan.submitCall(amount, tokenId);
 
     callRequestTokenId = _callRequestTokenId;
+    tokenId = _tokenId;
   }
 
   function deposit(uint256 amount) external expectUsdcDecrease(amount) {
@@ -90,6 +92,7 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
   CallableBorrower private borrower;
   CallableLender private lender;
   ICallableLoan private loan;
+  ICreditLine private creditLine;
 
   function setUp() public virtual override {
     super.setUp();
@@ -106,7 +109,7 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
 
     _stopImpersonation();
 
-    (CallableLoan _loan, ) = callableLoanBuilder.build(address(borrower));
+    (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder.build(address(borrower));
 
     lender.setLoan(_loan);
     lender.setUSDC(usdc);
@@ -114,6 +117,7 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     borrower.setUSDC(usdc);
 
     loan = _loan;
+    creditLine = _creditLine;
   }
 
   function test_depositThenWithdraw() public {
@@ -151,9 +155,9 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     }
   }
 
-  function test_availableToWithdraw() public {
-    lender.deposit(10);
-    borrower.drawdown(10);
+  function test_availableToCall() public {
+    lender.deposit(10e6);
+    borrower.drawdown(10e6);
 
     /* Fast forward past drawdown period */ {
       while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
@@ -162,10 +166,39 @@ contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
       assertTrue(loan.loanPhase() == LoanPhase.InProgress);
     }
 
-    lender.submitCall(10);
-    borrower.pay(10);
+    // If this is 10e6, it errors `MustSubmitCallToUncalledTranche`.
+    // It should instead complain that tokenId is 0
+    lender.submitCall(5e6);
+    borrower.pay(2e6);
 
-    loan.availableToCall(1);
+    assertEq(loan.availableToCall(lender.tokenId()), 5e6);
+  }
+
+  function test_availableToWithdraw() public {
+    lender.deposit(10e6);
+    borrower.drawdown(10e6);
+
+    /* Fast forward past drawdown period */ {
+      while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+        skip(60 * 60 * 24);
+      }
+      assertTrue(loan.loanPhase() == LoanPhase.InProgress);
+    }
+
+    uint256 interestRedeemable;
+    uint256 principalRedeemable;
+
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(lender.tokenId());
+    assertEq(interestRedeemable, 0);
+    assertEq(principalRedeemable, 0);
+
+    /* Fast forward to payment due date */ {
+      vm.warp(loan.nextDueTimeAt(block.timestamp));
+    }
+
+    borrower.pay(creditLine.interestOwed());
+
+    // in progress ..
   }
 
   function test_basicFlow() public {
