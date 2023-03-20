@@ -333,6 +333,7 @@ contract CallableLoan is
   function drawdown(
     uint256 amount
   ) external override(ICreditLine, ILoan) nonReentrant onlyLocker whenNotPaused {
+    revert RequiresUpgrade();
     if (drawdownsPaused) {
       revert CannotDrawdownWhenDrawdownsPaused();
     }
