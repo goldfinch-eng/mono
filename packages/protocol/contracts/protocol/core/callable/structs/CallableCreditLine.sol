@@ -227,6 +227,7 @@ library CallableCreditLineLogic {
   /// Settles payment reserves and updates the checkpointed values.
   function checkpoint(CallableCreditLine storage cl) internal {
     if (cl.loanPhase() == LoanPhase.Funding || cl.loanPhase() == LoanPhase.Prefunding) {
+      cl._checkpointedAsOf = block.timestamp;
       return;
     }
 
