@@ -15,25 +15,17 @@ import {CallableLoanBuilder} from "../../../helpers/CallableLoanBuilder.t.sol";
 import {IGoldfinchFactory} from "../../../../interfaces/IGoldfinchFactory.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ITestUSDC} from "../../../ITestUSDC.t.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 
-contract CallableBorrower {
-  ICallableLoan private loan;
+/**
+ * Actor in a Callable loan scenario. Will either be a Lender or a Borrower and
+ * can be trusted to complain if they end up with unexpected balances.
+ */
+abstract contract CallableActor is Test {
+  ICallableLoan internal loan;
   ITestUSDC internal usdc;
-
-  function pay(uint256 amount) external {
-    usdc.approve(address(loan), amount);
-    loan.pay(amount);
-
-    // assert usdc balance change
-  }
-
-  function drawdown(uint256 amount) external {
-    loan.drawdown(amount);
-
-    // assert USDC balance change
-  }
 
   function setLoan(ICallableLoan _loan) external {
     loan = _loan;
@@ -42,41 +34,55 @@ contract CallableBorrower {
   function setUSDC(ITestUSDC _usdc) external {
     usdc = _usdc;
   }
+
+  modifier expectUsdcIncrease(uint256 amount) {
+    uint256 balanceBefore = usdc.balanceOf(address(this));
+
+    _;
+
+    uint256 balanceAfter = usdc.balanceOf(address(this));
+    assertEq(balanceBefore + amount, balanceAfter);
+  }
+
+  modifier expectUsdcDecrease(uint256 amount) {
+    uint256 balanceBefore = usdc.balanceOf(address(this));
+
+    _;
+
+    uint256 balanceAfter = usdc.balanceOf(address(this));
+    assertEq(balanceBefore, balanceAfter + amount);
+  }
 }
 
-contract CallableLender {
-  ICallableLoan private loan;
-  ITestUSDC internal usdc;
+contract CallableBorrower is CallableActor {
+  function pay(uint256 amount) external expectUsdcDecrease(amount) {
+    usdc.approve(address(loan), amount);
+    loan.pay(amount);
+  }
 
+  function drawdown(uint256 amount) external expectUsdcIncrease(amount) {
+    loan.drawdown(amount);
+  }
+}
+
+contract CallableLender is CallableActor {
   uint256 public tokenId;
   uint256 public callRequestTokenId;
 
-  function submitCall(uint256 amount) external {
+  function submitCall(uint256 amount) external expectUsdcIncrease(0) {
     (uint256 _callRequestTokenId, ) = loan.submitCall(amount, tokenId);
 
     callRequestTokenId = _callRequestTokenId;
   }
 
-  function deposit(uint256 amount) external {
+  function deposit(uint256 amount) external expectUsdcDecrease(amount) {
     usdc.approve(address(loan), amount);
     tokenId = loan.deposit(loan.uncalledCapitalTrancheIndex(), amount);
-
-    // assert usdc balance change
-    // assert we got the nft
   }
 
-  function withdraw(uint256 amount) external {
-    loan.withdraw(callRequestTokenId, amount);
-
-    // assert usdc balance change
-  }
-
-  function setLoan(ICallableLoan _loan) external {
-    loan = _loan;
-  }
-
-  function setUSDC(ITestUSDC _usdc) external {
-    usdc = _usdc;
+  function withdraw(uint256 amount) external expectUsdcIncrease(amount) {
+    // If there's a call request, do that. Otherwise try with the held token
+    loan.withdraw(callRequestTokenId == 0 ? tokenId : callRequestTokenId, amount);
   }
 }
 
