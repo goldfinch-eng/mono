@@ -417,6 +417,7 @@ contract CallableLoan is
   ) public view override returns (uint256) {
     return
       _staleCreditLine.interestOwed() +
+      _staleCreditLine.interestAccrued() +
       CallableLoanAccountant.calculateInterest(
         timestamp - block.timestamp,
         assumedBalance,
@@ -525,13 +526,10 @@ contract CallableLoan is
       revert ZeroPaymentAmount();
     }
 
-    uint256 interestOwedBeforePayment = cl.interestOwed();
-    uint256 interestAccruedBeforePayment = cl.interestAccrued();
-
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
-      interestOwed: interestOwedBeforePayment,
-      interestAccrued: interestAccruedBeforePayment,
+      interestOwed: cl.interestOwed(),
+      interestAccrued: cl.interestAccrued(),
       principalOwed: cl.principalOwed(),
       interestRate: cl.interestApr(),
       balance: cl.totalPrincipalOutstanding(),

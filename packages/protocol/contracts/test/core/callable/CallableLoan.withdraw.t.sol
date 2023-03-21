@@ -98,13 +98,63 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
   }
 
   function testWithdrawSucceedsForNonGoListedWithAllowedUid(address user, uint256 amount) public {
-    amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
+    amount = bound(amount, 1, usdcVal(1_000_000_000));
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, amount, user);
+    uint256 token = deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), amount, user);
     assertEq(token, 1);
+
+    (uint256 interestRedeemed, uint256 principalRedeemed) = withdraw(
+      callableLoan,
+      token,
+      amount,
+      user
+    );
+    assertZero(interestRedeemed);
+    assertEq(principalRedeemed, amount);
+  }
+
+  function testWithdrawSucceedsWithMultipleDepositors(
+    address depositor1,
+    address depositor2,
+    address depositor3,
+    uint256 depositAmount1,
+    uint256 depositAmount2,
+    uint256 depositAmount3,
+    uint256 drawdownAmount
+  ) public {
+    depositAmount1 = bound(depositAmount1, 1, usdcVal(1_000_000_000));
+    depositAmount2 = bound(depositAmount2, 1, usdcVal(1_000_000_000));
+    depositAmount3 = bound(depositAmount3, 1, usdcVal(1_000_000_000));
+    bound(drawdownAmount, 1, usdcVal(1_000_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(
+      depositAmount1 + depositAmount2 + depositAmount3
+    );
+    vm.assume(fuzzHelper.isAllowed(depositor1)); // Assume after building callable loan to properly exclude contracts.
+    vm.assume(fuzzHelper.isAllowed(depositor2)); // Assume after building callable loan to properly exclude contracts.
+    vm.assume(fuzzHelper.isAllowed(depositor3)); // Assume after building callable loan to properly exclude contracts.
+
+    uid._mintForTest(depositor1, 1, 1, "");
+    uid._mintForTest(depositor2, 1, 1, "");
+    uid._mintForTest(depositor3, 1, 1, "");
+
+    uint256 token1 = deposit(callableLoan, 3, depositAmount1, depositor1);
+    uint256 token2 = deposit(callableLoan, 3, depositAmount2, depositor2);
+    uint256 token3 = deposit(callableLoan, 3, depositAmount3, depositor3);
+
+    {
+      uint256 userBalance1 = usdc.balanceOf(depositor1);
+      uint256 userBalance2 = usdc.balanceOf(depositor2);
+      uint256 userBalance3 = usdc.balanceOf(depositor3);
+
+      drawdown(callableLoan, depositAmount1 + depositAmount2 + depositAmount3);
+    }
+
+    callableLoan.withdrawMax(token1);
+    callableLoan.withdrawMax(token2);
+    callableLoan.withdrawMax(token3);
   }
 
   function testWithdrawFailsIfForNonPoolTokenOwner(
@@ -188,14 +238,18 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
   function testWithdrawBeforePoolLockedAllowsWithdrawalUpToMax(
     address user,
     uint256 depositAmount,
-    uint256 withdrawAmount
+    uint256 withdrawAmount,
+    uint256 timeBetweenDepositAndWithdraw
   ) public {
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_000));
     withdrawAmount = bound(withdrawAmount, usdcVal(1), depositAmount);
+    // 180 days = Arbitrary "long" length of time.
+    timeBetweenDepositAndWithdraw = bound(timeBetweenDepositAndWithdraw, 0, 180 days);
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
+    vm.warp(block.timestamp + timeBetweenDepositAndWithdraw);
     withdraw(callableLoan, token, withdrawAmount, user);
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token);
     assertEq(tokenInfo.principalAmount, depositAmount - withdrawAmount);
