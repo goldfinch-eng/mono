@@ -67,6 +67,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   callableLoan.balance = callableLoanContract.balance()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
+  callableLoan.initialInterestOwed = callableLoanContract.interestOwedAt(callableLoan.termEndTime)
   callableLoan.isPaused = callableLoanContract.paused()
   callableLoan.drawdownsPaused = callableLoanContract.drawdownsPaused()
   deleteCallableLoanRepaymentSchedule(callableLoan)

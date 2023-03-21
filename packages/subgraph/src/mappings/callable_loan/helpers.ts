@@ -13,7 +13,7 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.creditLineAddress = callableLoanContract.creditLine()
   callableLoan.fundingLimit = callableLoanContract.limit()
   callableLoan.principalAmount = BigInt.zero()
-  callableLoan.initialInterestOwed = BigInt.zero() // TODO figure this out. There may be a view function for this
+  callableLoan.initialInterestOwed = BigInt.zero() // This gets set on drawdown
   callableLoan.usdcApy = callableLoanContract.interestApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.rawGfiApy = BigDecimal.zero()
   callableLoan.totalDeposited = BigInt.zero()
