@@ -73,6 +73,8 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
   const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
   const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
+  poolToken.interestRedeemable = poolToken.interestRedeemable.minus(event.params.interestWithdrawn)
+  poolToken.save()
   let underlyingOwner = poolToken.user
   if (poolToken.vaultedAsset) {
     const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))

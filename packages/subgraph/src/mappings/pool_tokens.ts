@@ -75,7 +75,6 @@ export function handleTokenRedeemed(event: TokenRedeemed): void {
   if (!token) {
     return
   }
-  token.interestRedeemable = token.interestRedeemable.minus(event.params.interestRedeemed)
   token.interestRedeemed = token.interestRedeemed.plus(event.params.interestRedeemed)
   token.principalRedeemed = token.principalRedeemed.plus(event.params.principalRedeemed)
   token.save()

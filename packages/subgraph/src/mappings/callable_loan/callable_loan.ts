@@ -51,6 +51,10 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   callableLoan.totalDeposited = callableLoan.totalDeposited.minus(event.params.principalWithdrawn)
   callableLoan.save()
 
+  const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
+  poolToken.interestRedeemable = poolToken.interestRedeemable.minus(event.params.interestWithdrawn)
+  poolToken.save()
+
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_WITHDRAWAL", event.params.owner)
   transaction.loan = event.address.toHexString()
   transaction.receivedToken = "USDC"
