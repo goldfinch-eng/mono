@@ -1,7 +1,12 @@
 import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {deployments} from "hardhat"
-import {SIGNER_ROLE, getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
+import {
+  SIGNER_ROLE,
+  getProtocolOwner,
+  getTruffleContract,
+  USDCDecimals,
+} from "packages/protocol/blockchain_scripts/deployHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
   BorrowerInstance,
@@ -133,10 +138,16 @@ describe("v3.3.0", async function () {
 
       const scores = await membershipOrchestrator.memberScoreOf(lenderAddress)
       expect(scores[1]).to.equal(new BN(31622776601683))
+
+      const capital = await membershipOrchestrator.totalCapitalHeldBy(lenderAddress)
+      const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
+      expect(capital[1]).to.equal(depositAmount)
     })
 
     it("does not allow called tokens in membership", async () => {
       const gfiDepositAmount = 10000
+      const callAmount = 10000000
+
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
 
@@ -144,7 +155,7 @@ describe("v3.3.0", async function () {
         from: borrowerAddress,
       })
       await advanceTime({days: 30})
-      const callResult = await callableLoanInstance.submitCall(new BN(String(1000)), originalPoolTokenId, {
+      const callResult = await callableLoanInstance.submitCall(new BN(callAmount), originalPoolTokenId, {
         from: lenderAddress,
       })
       const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
@@ -206,6 +217,10 @@ describe("v3.3.0", async function () {
           {from: lenderAddress}
         )
       ).to.not.be.rejected
+
+      const capital = await membershipOrchestrator.totalCapitalHeldBy(lenderAddress)
+      const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
+      expect(capital[1]).to.equal(depositAmount.sub(new BN(callAmount)))
     })
   })
 
