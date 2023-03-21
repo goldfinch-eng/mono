@@ -26,12 +26,12 @@ contract CallableLoanLoanReachesMaxLimitScenarioTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user2));
 
     uint256 maxLimit = usdcVal(10_000_000);
-    (loan, ) = callableLoanWithLimit(usdcVal(10_000_000));
+    (loan, ) = callableLoanWithLimit(maxLimit);
 
     // Max sure first deposit amount is under the limit. Set the second
     // deposit amount such that they sum to the limit.
-    depositAmount1 = bound(depositAmount1, usdcVal(1), usdcVal(9_999_999));
-    uint256 depositAmount2 = usdcVal(10_000_000) - depositAmount1;
+    depositAmount1 = bound(depositAmount1, 1, maxLimit - 1);
+    uint256 depositAmount2 = maxLimit - depositAmount1;
 
     uid._mintForTest(user1, 1, 1, "");
     uid._mintForTest(user2, 1, 1, "");
@@ -43,24 +43,24 @@ contract CallableLoanLoanReachesMaxLimitScenarioTest is CallableLoanBaseTest {
     uint256 token2 = deposit(loan, depositAmount2, user2);
 
     // The third depositor tries to deposit over the limit. We expect it to fail
-    fundAddress(address(this), usdcVal(1));
+    fundAddress(address(this), 1);
     uint256 tranche = loan.uncalledCapitalTrancheIndex();
     vm.expectRevert(
       abi.encodeWithSelector(
         ICallableLoanErrors.DepositExceedsLimit.selector,
-        usdcVal(1),
+        1,
         usdcVal(10_000_000),
         usdcVal(10_000_000)
       )
     );
-    loan.deposit(tranche, usdcVal(1));
+    loan.deposit(tranche, 1);
 
     // The first depositor pulls some money out
-    withdrawalAmount1 = bound(withdrawalAmount1, usdcVal(1), depositAmount1);
+    withdrawalAmount1 = bound(withdrawalAmount1, 1, depositAmount1);
     withdraw(loan, token1, withdrawalAmount1, user1);
 
     // Now the smart contract should be able to put money in up to the limit
-    depositAmount3 = bound(depositAmount3, usdcVal(1), withdrawalAmount1);
+    depositAmount3 = bound(depositAmount3, 1, withdrawalAmount1);
     uint256 token3 = deposit(loan, depositAmount3, address(this));
 
     // Check user1
