@@ -178,6 +178,9 @@ contract CallableLoanBaseTest is BaseTest {
     returns (CallableLoan, ICreditLine)
   {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.build(BORROWER);
+    _startImpersonation(GF_OWNER);
+    callableLoan.unpauseDrawdowns();
+    _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
     ISchedule schedule = callableLoan.schedule();
@@ -192,6 +195,9 @@ contract CallableLoanBaseTest is BaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder
       .withLateFeeApr(lateFeeApr)
       .build(BORROWER);
+    _startImpersonation(GF_OWNER);
+    callableLoan.unpauseDrawdowns();
+    _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
     ISchedule schedule = callableLoan.schedule();
@@ -207,6 +213,9 @@ contract CallableLoanBaseTest is BaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.withLimit(amount).build(
       BORROWER
     );
+    _startImpersonation(GF_OWNER);
+    callableLoan.unpauseDrawdowns();
+    _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
     ISchedule schedule = callableLoan.schedule();

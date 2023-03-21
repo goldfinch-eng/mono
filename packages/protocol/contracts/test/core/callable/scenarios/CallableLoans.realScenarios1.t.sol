@@ -117,6 +117,10 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
 
     (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder.build(address(borrower));
 
+    _startImpersonation(GF_OWNER);
+    _loan.unpauseDrawdowns();
+    _stopImpersonation();
+
     lender.setLoan(_loan);
     lender.setUSDC(usdc);
     borrower.setLoan(_loan);

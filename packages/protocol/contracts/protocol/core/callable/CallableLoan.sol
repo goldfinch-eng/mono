@@ -89,7 +89,7 @@ contract CallableLoan is
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external initializer {
+  ) external override initializer {
     // NOTE: This check can be replaced with an after deploy verification rather than
     //       a require statement which increases bytecode size.
     // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
@@ -120,6 +120,8 @@ contract CallableLoan is
       _lateAdditionalApr: _lateFeeApr,
       _limit: _limit
     });
+    drawdownsPaused = true;
+    emit DrawdownsPaused(address(this));
   }
 
   /*================================================================================
@@ -333,7 +335,6 @@ contract CallableLoan is
   function drawdown(
     uint256 amount
   ) external override(ICreditLine, ILoan) nonReentrant onlyLocker whenNotPaused {
-    revert RequiresUpgrade();
     if (drawdownsPaused) {
       revert CannotDrawdownWhenDrawdownsPaused();
     }

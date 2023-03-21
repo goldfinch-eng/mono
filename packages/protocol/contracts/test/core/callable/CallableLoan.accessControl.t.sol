@@ -129,7 +129,11 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     withdrawMax(callableLoan, 2, user);
     drawdown(callableLoan, usdcVal(99));
     warpToAfterDrawdownPeriod(callableLoan);
-    pay(callableLoan, usdcVal(99));
+
+    // TODO: Revert after initial deposit/withdrawal deploy
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    callableLoan.pay(usdcVal(99));
+    // pay(callableLoan, usdcVal(99));
   }
 
   function testOwnerCanPause() public impersonating(GF_OWNER) {
