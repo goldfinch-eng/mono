@@ -55,6 +55,50 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertEq(poolToken, 1);
   }
 
+  function testLenderDepositsTwiceWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
+    uint256 loanLimit,
+    uint256 depositAmount1,
+    uint256 depositAmount2
+  ) public impersonating(DEPOSITOR) {
+    loanLimit = bound(loanLimit, usdcVal(1), usdcVal(100_000_000_000));
+
+    (CallableLoan loan, ) = callableLoanBuilder.withLimit(loanLimit).build(BORROWER);
+    // (CallableLoan loan, ) = defaultCallableLoan();
+    // Need to check deposit amounts individually before checking the sum otherwise there can be overflow
+    vm.assume(depositAmount1 < loan.limit() && depositAmount1 > 0);
+    vm.assume(depositAmount2 < loan.limit() && depositAmount2 > 0);
+    vm.assume(depositAmount1 + depositAmount2 <= loan.limit());
+
+    fundAddress(DEPOSITOR, loanLimit);
+    usdc.approve(address(loan), type(uint256).max);
+
+    // User should be able to make multiple deposits as long as the limit is not exceeded
+    uint256 token1 = loan.deposit(loan.uncalledCapitalTrancheIndex(), depositAmount1);
+    uint256 token2 = loan.deposit(loan.uncalledCapitalTrancheIndex(), depositAmount2);
+
+    // Validate first token
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = loan.availableToWithdraw(
+      token1
+    );
+    assertEq(principalWithdrawable, depositAmount1);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, depositAmount1);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+
+    // Validate second token
+    tokenInfo = poolTokens.getTokenInfo(token2);
+    (interestWithdrawable, principalWithdrawable) = loan.availableToWithdraw(token2);
+    assertEq(principalWithdrawable, depositAmount2);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, depositAmount2);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+  }
+
   function testDepositRevertsBeforeFundableAt(
     uint256 fundableAt,
     uint256 warpDestination
