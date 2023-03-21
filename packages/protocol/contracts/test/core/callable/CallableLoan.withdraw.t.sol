@@ -98,13 +98,22 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
   }
 
   function testWithdrawSucceedsForNonGoListedWithAllowedUid(address user, uint256 amount) public {
-    amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
+    amount = bound(amount, 1, usdcVal(1_000_000_000));
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, amount, user);
+    uint256 token = deposit(callableLoan, callableLoan.uncalledCapitalTrancheIndex(), amount, user);
     assertEq(token, 1);
+
+    (uint256 interestRedeemed, uint256 principalRedeemed) = withdraw(
+      callableLoan,
+      token,
+      amount,
+      user
+    );
+    assertZero(interestRedeemed);
+    assertEq(principalRedeemed, amount);
   }
 
   function testWithdrawSucceedsWithMultipleDepositors(
