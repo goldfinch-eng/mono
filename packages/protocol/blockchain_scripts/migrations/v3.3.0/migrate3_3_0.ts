@@ -1,6 +1,7 @@
 import {Context, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
+import {deployMonthlyScheduleRepo} from "../../baseDeploy/deployMonthlyScheduleRepo"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import {
   ContractDeployer,
@@ -30,6 +31,11 @@ export async function main() {
   const gfFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory")
   const context = await getEthersContract<Context>("Context", {path: "contracts/cake/Context.sol:Context"})
   const borrowerRole = await gfFactory.BORROWER_ROLE()
+  await deployMonthlyScheduleRepo(deployer, deployEffects, gfConfig)
+  const upgradedContracts = await upgrader.upgrade({
+    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory"],
+  })
+  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
   const borrowerImpl = await deployer.deploy("Borrower", {
     from: gf_deployer,
@@ -79,11 +85,6 @@ export async function main() {
       ),
     ],
   })
-  const upgradedContracts = await upgrader.upgrade({
-    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory"],
-  })
-
-  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
   await deployEffects.executeDeferred()
 
