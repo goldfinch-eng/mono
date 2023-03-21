@@ -99,6 +99,79 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertZero(interestWithdrawable);
   }
 
+  function testMultipleLendersDepositTwiceWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
+    uint256 loanLimit,
+    address lender1,
+    address lender2,
+    uint256 lender1Deposit1,
+    uint256 lender1Deposit2,
+    uint256 lender2Deposit1,
+    uint256 lender2Deposit2
+  ) public {
+    vm.assume(fuzzHelper.isAllowed(lender1));
+    vm.assume(fuzzHelper.isAllowed(lender2));
+
+    loanLimit = bound(loanLimit, usdcVal(1), usdcVal(100_000_000_000));
+    (CallableLoan loan, ) = callableLoanBuilder.withLimit(loanLimit).build(BORROWER);
+
+    // Need to filter deposit amounts individually before checking the sum otherwise there can be overflow
+    vm.assume(lender1Deposit1 > 0 && lender1Deposit1 < usdcVal(100_000_000_000));
+    vm.assume(lender1Deposit2 > 0 && lender1Deposit2 < usdcVal(100_000_000_000));
+    vm.assume(lender2Deposit1 > 0 && lender2Deposit1 < usdcVal(100_000_000_000));
+    vm.assume(lender2Deposit2 > 0 && lender2Deposit2 < usdcVal(100_000_000_000));
+    vm.assume(lender1Deposit1 + lender1Deposit2 + lender2Deposit1 + lender2Deposit2 <= loanLimit);
+
+    uid._mintForTest(lender1, 1, 1, "");
+    uid._mintForTest(lender2, 1, 1, "");
+
+    fundAddress(lender1, lender1Deposit1 + lender1Deposit2);
+    fundAddress(lender2, lender2Deposit1 + lender2Deposit2);
+
+    uint256 token1 = deposit(loan, lender1Deposit1, lender1);
+    uint256 token2 = deposit(loan, lender1Deposit2, lender1);
+
+    uint256 token3 = deposit(loan, lender2Deposit1, lender2);
+    uint256 token4 = deposit(loan, lender2Deposit2, lender2);
+
+    // Validate the first depositor's tokens
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = loan.availableToWithdraw(
+      token1
+    );
+    assertEq(principalWithdrawable, lender1Deposit1);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, lender1Deposit1);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+    tokenInfo = poolTokens.getTokenInfo(token2);
+    (interestWithdrawable, principalWithdrawable) = loan.availableToWithdraw(token2);
+    assertEq(principalWithdrawable, lender1Deposit2);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, lender1Deposit2);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+
+    // Validate the second depositor's tokens
+    tokenInfo = poolTokens.getTokenInfo(token3);
+    (interestWithdrawable, principalWithdrawable) = loan.availableToWithdraw(token3);
+    assertEq(principalWithdrawable, lender2Deposit1);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, lender2Deposit1);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+    tokenInfo = poolTokens.getTokenInfo(token4);
+    (interestWithdrawable, principalWithdrawable) = loan.availableToWithdraw(token4);
+    assertEq(principalWithdrawable, lender2Deposit2);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, lender2Deposit2);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
+  }
+
   function testDepositRevertsBeforeFundableAt(
     uint256 fundableAt,
     uint256 warpDestination
