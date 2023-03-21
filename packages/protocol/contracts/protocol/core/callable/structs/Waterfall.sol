@@ -93,17 +93,17 @@ library WaterfallLogic {
 
     // Use remaining interest to avoid USDC integer division precision error.
     {
-      uint256 lastTrancheIndex = w._tranches.length - 1;
-      Tranche storage lastTranche = w.getTranche(lastTrancheIndex);
+      uint256 uncalledCapitalTrancheIdx = w.uncalledCapitalTrancheIndex();
+      Tranche storage uncalledTranche = w.getTranche(uncalledCapitalTrancheIdx);
       uint256 principalPayment = Math.min(
-        lastTranche.principalOutstandingAfterReserves(),
+        uncalledTranche.principalOutstandingAfterReserves(),
         principalLeft
       );
       principalLeft -= principalPayment;
-      if (lastTrancheIndex < reserveTranchesIndexStart) {
-        lastTranche.pay({principalAmount: principalPayment, interestAmount: interestLeft});
+      if (uncalledCapitalTrancheIdx < reserveTranchesIndexStart) {
+        uncalledTranche.pay({principalAmount: principalPayment, interestAmount: interestLeft});
       } else {
-        lastTranche.reserve({principalAmount: principalPayment, interestAmount: interestLeft});
+        uncalledTranche.reserve({principalAmount: principalPayment, interestAmount: interestLeft});
       }
     }
 
