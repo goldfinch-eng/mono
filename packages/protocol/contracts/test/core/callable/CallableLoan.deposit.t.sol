@@ -55,6 +55,37 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertEq(poolToken, 1);
   }
 
+  function testLenderDepositsAgainWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
+    uint256 depositAmount1,
+    uint256 depositAmount2
+  ) public impersonating(DEPOSITOR) {
+    (CallableLoan loan, ) = defaultCallableLoan();
+    // Need to check deposit amounts individually before checking the sum otherwise there can be overflow
+    vm.assume(depositAmount1 < loan.limit() && depositAmount1 > 0);
+    vm.assume(depositAmount2 < loan.limit() && depositAmount2 > 0);
+    vm.assume(depositAmount1 + depositAmount2 <= loan.limit());
+
+    usdc.approve(address(loan), type(uint256).max);
+
+    // User should be able to make multiple deposits as long as the limit is not exceeded
+    uint256 token1 = loan.deposit(loan.uncalledCapitalTrancheIndex(), depositAmount1);
+    uint256 token2 = loan.deposit(loan.uncalledCapitalTrancheIndex(), depositAmount2);
+
+    // Validate first token
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, depositAmount1);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+
+    // Validate second token
+    tokenInfo = poolTokens.getTokenInfo(token2);
+    assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
+    assertEq(tokenInfo.principalAmount, depositAmount2);
+    assertZero(tokenInfo.principalRedeemed);
+    assertZero(tokenInfo.interestRedeemed);
+  }
+
   function testDepositRevertsBeforeFundableAt(
     uint256 fundableAt,
     uint256 warpDestination
