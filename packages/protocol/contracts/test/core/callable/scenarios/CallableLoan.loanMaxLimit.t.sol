@@ -10,12 +10,12 @@ contract CallableLoanLoanReachesMaxLimitScenarioTest is CallableLoanBaseTest {
   CallableLoan private loan;
 
   /*
-  1. Add deposits until the loan reaches its limit
-  2. Verify it rejects deposits that exceed the limit
-  3. Have users withdraw so we're under the limit again
-  4. Verify the loan accepts deposits again up to the limit 
+  1. Two users add deposits that reach the limit
+  2. Verify the pool rejects further deposits
+  3. One of the two depositors withdraws some (or all) principal
+  4. Verify the pool accepts a deposit from a third user up to the limit
   */
-  function testScenarioWhereLoanReachesMaxLimit(
+  function testScenarioWhereLoanReachesMaxLimitForDeposits(
     address user1,
     address user2,
     uint256 depositAmount1,
