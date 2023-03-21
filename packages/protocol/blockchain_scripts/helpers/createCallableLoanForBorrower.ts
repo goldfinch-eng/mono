@@ -27,7 +27,7 @@ export async function createCallableLoanForBorrower({
   gracePrincipalPeriods,
   numPeriodsPerInterestPeriod,
   numPeriodsPerPrincipalPeriod,
-  interestApr = String(interestAprAsBN("13.00")),
+  interestApr = String(interestAprAsBN("14.50")),
   numLockPeriods = 2,
   lateFeeApr = String(interestAprAsBN("2.00")),
   fundableAt = String(new BN(0)), // 0 means immediately

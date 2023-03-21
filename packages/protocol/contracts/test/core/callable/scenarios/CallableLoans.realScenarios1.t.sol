@@ -89,7 +89,7 @@ contract CallableLender is CallableActor {
   }
 }
 
-contract CallableLoanz_OneLender_OneBorrower_Test is CallableLoanBaseTest {
+contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
   CallableBorrower private borrower;
   CallableLender private lender;
   ICallableLoan private loan;

@@ -247,18 +247,14 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       borrower: protocolBorrowerCon,
       erc20: erc20Instance,
       allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
-      fundableAt: String(new BN(1679587200)), // Thu Mar 23 2023 09:00:00 GMT-0700 (Pacific Daylight Time)
+      fundableAt: String(new BN(1679587200)), // Tue Mar 28 2023 09:00:00 GMT-0700 (Pacific Daylight Time)
       numPeriods: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
       gracePrincipalPeriods: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods,
       numPeriodsPerInterestPeriod: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
       numPeriodsPerPrincipalPeriod: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriod,
     })
     // TODO: Pool metadata will be incorrect for now
-    await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "CALLABLE OPEN"})
-    await impersonateAccount(hre, borrower)
-    depositAmount = new BN(5000).mul(USDCDecimals)
-    txn = await erc20.connect(signer).approve(fazzExampleCallableLoan.address, String(depositAmount))
-    await txn.wait()
+    await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "FAZZ EXAMPLE"})
 
     /*** CALLABLE LOAN FAZZ EXAMPLE END ***/
 
