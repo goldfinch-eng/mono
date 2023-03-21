@@ -56,15 +56,20 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
   }
 
   function testLenderDepositsTwiceWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
+    uint256 loanLimit,
     uint256 depositAmount1,
     uint256 depositAmount2
   ) public impersonating(DEPOSITOR) {
-    (CallableLoan loan, ) = defaultCallableLoan();
+    loanLimit = bound(loanLimit, usdcVal(1), usdcVal(100_000_000_000));
+
+    (CallableLoan loan, ) = callableLoanBuilder.withLimit(loanLimit).build(BORROWER);
+    // (CallableLoan loan, ) = defaultCallableLoan();
     // Need to check deposit amounts individually before checking the sum otherwise there can be overflow
     vm.assume(depositAmount1 < loan.limit() && depositAmount1 > 0);
     vm.assume(depositAmount2 < loan.limit() && depositAmount2 > 0);
     vm.assume(depositAmount1 + depositAmount2 <= loan.limit());
 
+    fundAddress(DEPOSITOR, loanLimit);
     usdc.approve(address(loan), type(uint256).max);
 
     // User should be able to make multiple deposits as long as the limit is not exceeded
