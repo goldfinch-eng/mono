@@ -68,17 +68,19 @@ library WaterfallLogic {
     // assume that tranches are ordered in priority. First is highest priority
     // NOTE: if we start i at the earliest unpaid tranche/quarter and end at the current quarter
     //        then we skip iterations that would result in a no-op
-
-    for (uint256 i = 0; i < w._tranches.length; i++) {
+    uint256 principalLeft = principalAmount;
+    uint256 interestLeft = interestAmount;
+    for (uint256 i = 0; i < w._tranches.length - 1; i++) {
       Tranche storage tranche = w.getTranche(i);
       uint256 proRataInterestPayment = (interestAmount *
         tranche.principalOutstandingBeforeReserves()) / _totalPrincipalOutstandingBeforeReserves;
       uint256 principalPayment = Math.min(
         tranche.principalOutstandingAfterReserves(),
-        principalAmount
+        principalLeft
       );
       // subtract so that future iterations can't re-allocate a principal payment
-      principalAmount -= principalPayment;
+      principalLeft -= principalPayment;
+      interestLeft -= proRataInterestPayment;
       if (i < reserveTranchesIndexStart) {
         tranche.pay({principalAmount: principalPayment, interestAmount: proRataInterestPayment});
       } else {
@@ -89,8 +91,24 @@ library WaterfallLogic {
       }
     }
 
+    // Use remaining interest to avoid USDC integer division precision error.
+    {
+      uint256 lastTrancheIndex = w._tranches.length - 1;
+      Tranche storage lastTranche = w.getTranche(lastTrancheIndex);
+      uint256 principalPayment = Math.min(
+        lastTranche.principalOutstandingAfterReserves(),
+        principalLeft
+      );
+      principalLeft -= principalPayment;
+      if (lastTrancheIndex < reserveTranchesIndexStart) {
+        lastTranche.pay({principalAmount: principalPayment, interestAmount: interestLeft});
+      } else {
+        lastTranche.reserve({principalAmount: principalPayment, interestAmount: interestLeft});
+      }
+    }
+
     // Sanity check - CallableLoanAccountant should have already accounted for any excess payment.
-    assert(principalAmount == 0);
+    assert(principalLeft == 0);
   }
 
   function drawdown(Waterfall storage w, uint256 principalAmount) internal {
