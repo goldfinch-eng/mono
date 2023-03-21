@@ -417,6 +417,7 @@ contract CallableLoan is
   ) public view override returns (uint256) {
     return
       _staleCreditLine.interestOwed() +
+      _staleCreditLine.interestAccrued() +
       CallableLoanAccountant.calculateInterest(
         timestamp - block.timestamp,
         assumedBalance,
