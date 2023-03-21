@@ -55,7 +55,7 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     assertEq(poolToken, 1);
   }
 
-  function testLenderDepositsAgainWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
+  function testLenderDepositsTwiceWithinLimitAndBeforeEndOfFundingPeriodSucceeds(
     uint256 depositAmount1,
     uint256 depositAmount2
   ) public impersonating(DEPOSITOR) {
