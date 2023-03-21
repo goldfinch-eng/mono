@@ -73,17 +73,25 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
     // Validate first token
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = loan.availableToWithdraw(
+      token1
+    );
+    assertEq(principalWithdrawable, depositAmount1);
     assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
     assertEq(tokenInfo.principalAmount, depositAmount1);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
 
     // Validate second token
     tokenInfo = poolTokens.getTokenInfo(token2);
+    (interestWithdrawable, principalWithdrawable) = loan.availableToWithdraw(token2);
+    assertEq(principalWithdrawable, depositAmount2);
     assertEq(tokenInfo.tranche, loan.uncalledCapitalTrancheIndex());
     assertEq(tokenInfo.principalAmount, depositAmount2);
     assertZero(tokenInfo.principalRedeemed);
     assertZero(tokenInfo.interestRedeemed);
+    assertZero(interestWithdrawable);
   }
 
   function testDepositRevertsBeforeFundableAt(
