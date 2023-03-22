@@ -31,7 +31,8 @@ contract CallableLoanHandler is Test {
   }
 
   function deposit(uint256 amount) public {
-    uint256 maxDepositableAmount = loan.limit() - sumDeposited;
+    uint256 totalPrincipalDeposited = sumDeposited - sumWithdrawn;
+    uint256 maxDepositableAmount = loan.limit() - totalPrincipalDeposited;
 
     if (maxDepositableAmount == 0) {
       return;
@@ -121,7 +122,7 @@ contract CallableLoanFundingInvariantTest is CallableLoanBaseTest, InvariantTest
   function invariant_BalanceOfDepositorIsOriginalBalanceLessDepositsPlusWithdrawals() public {
     assertEq(
       usdc.balanceOf(address(handler)),
-      handlerOriginalUsdcBalance - handler.sumDeposited() + handler.sumWithdrawn()
+      handlerOriginalUsdcBalance - (handler.sumDeposited() - handler.sumWithdrawn())
     );
   }
 
