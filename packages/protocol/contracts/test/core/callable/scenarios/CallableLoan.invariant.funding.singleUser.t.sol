@@ -27,9 +27,13 @@ contract CallableLoanHandler is Test {
   uint256 public indexOfLastTokenInteractedWith = type(uint256).max;
 
   constructor(CallableLoan _loan, IERC20 usdc) public {
-    // vm = _vm;
     loan = _loan;
     usdc.approve(address(_loan), type(uint256).max);
+  }
+
+  function warp() public {
+    // Include random jumps in time
+    skip(1 days);
   }
 
   function deposit(uint256 amount) public {
@@ -105,9 +109,10 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
 
     // Manually override all the target contracts to be just the handler. We don't want any of the
     // contracts created in super's setUp to be called
-    bytes4[] memory selectors = new bytes4[](2);
+    bytes4[] memory selectors = new bytes4[](3);
     selectors[0] = handler.deposit.selector;
     selectors[1] = handler.withdraw.selector;
+    selectors[2] = handler.warp.selector;
     targetContract(address(handler));
     targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
   }
