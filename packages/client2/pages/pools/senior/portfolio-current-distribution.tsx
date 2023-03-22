@@ -261,8 +261,8 @@ export function PortfolioCurrentDistribution({
               poolRepaymentStatus,
             }) => {
               return (
-                <tr key={name} className="relative">
-                  <td className="w-[30%] max-w-0 !pr-0 text-left">
+                <tr key={name}>
+                  <td className="relative w-[30%] max-w-0 !pr-0 text-left">
                     <div className="flex items-center gap-1.5">
                       <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {icon ? (
