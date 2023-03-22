@@ -68,7 +68,11 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
         )}
       />
       <Stat
-        label="Est. loan maturity date"
+        label={
+          loan.termEndTime.isZero()
+            ? "Est. loan maturity date"
+            : "Loan maturity date"
+        }
         tooltip="The estimated date that the Pool’s payment term will end, and by which the Borrower is scheduled to have repaid their total loan amount in full, according to the Pool’s deal terms."
         value={formatDate(termEndTime * 1000, "MMM d, y")}
       />
