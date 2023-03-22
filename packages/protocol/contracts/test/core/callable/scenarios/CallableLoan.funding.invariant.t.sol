@@ -118,6 +118,9 @@ contract CallableLoanFundingInvariantTest is CallableLoanBaseTest, InvariantTest
 
   function invariantUncalledCapitalInfoPrincipalPaidIsZero() public {
     // Should this be 0?
-    assertZero(handler.loan().getUncalledCapitalInfo().principalPaid);
+    assertEq(
+      handler.loan().getUncalledCapitalInfo().principalPaid,
+      handler.sumDeposited() - handler.sumWithdrawn()
+    );
   }
 }
