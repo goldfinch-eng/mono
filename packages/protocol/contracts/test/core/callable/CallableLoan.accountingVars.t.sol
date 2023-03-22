@@ -511,13 +511,12 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
 
     // TODO: Revert after initial deposit/withdrawal deploy
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
-    pay(
-      callableLoan,
-      cl.interestAccruedAt(nextPrincipalDueTime) +
-        cl.interestOwedAt(nextPrincipalDueTime) +
-        cl.balance()
-    );
+    // pay(
+    //   callableLoan,
+    //   cl.interestAccruedAt(nextPrincipalDueTime) +
+    //     cl.interestOwedAt(nextPrincipalDueTime) +
+    //     cl.balance()
+    // );
     // assertZero(cl.balance());
     // assertZero(cl.interestOwed());
     // assertZero(cl.interestAccrued());

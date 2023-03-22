@@ -236,293 +236,295 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     /// Assert payment updates accounting correctly.
     /// Use {} to produce new stack frame and avoid stack too deep errors.
     console.log("Before pay frame");
-    {
-      paymentAmount = bound(paymentAmount, 1, usdcVal(100_000_000_000));
-      fundAddress(address(this), paymentAmount);
-      usdc.approve(address(callableLoan), paymentAmount);
-      loanContractBalanceBefore = usdc.balanceOf(address(callableLoan));
-      userBalanceBefore = usdc.balanceOf(address(this));
 
-      paymentAllocation = callableLoan.pay(paymentAmount);
-      assertEq(paymentAllocation.principalPayment, 0, "principal 0");
-      assertApproxEqAbs(
-        callableLoan.interestAccrued(),
-        firstInterestAccrued.saturatingSub(paymentAllocation.accruedInterestPayment),
-        HUNDREDTH_CENT,
-        "accrued"
-      );
+    // TODO: Revert comments after pay upgrade
+    // {
+    //   paymentAmount = bound(paymentAmount, 1, usdcVal(100_000_000_000));
+    //   fundAddress(address(this), paymentAmount);
+    //   usdc.approve(address(callableLoan), paymentAmount);
+    //   loanContractBalanceBefore = usdc.balanceOf(address(callableLoan));
+    //   userBalanceBefore = usdc.balanceOf(address(this));
 
-      assertEq(paymentAllocation.owedInterestPayment, 0, "paid 0");
-      assertEq(callableLoan.interestOwed(), 0, "owes 0");
+    //   paymentAllocation = callableLoan.pay(paymentAmount);
+    //   assertEq(paymentAllocation.principalPayment, 0, "principal 0");
+    //   assertApproxEqAbs(
+    //     callableLoan.interestAccrued(),
+    //     firstInterestAccrued.saturatingSub(paymentAllocation.accruedInterestPayment),
+    //     HUNDREDTH_CENT,
+    //     "accrued"
+    //   );
 
-      assertEq(
-        callableLoan.balance(),
-        originalBalance.saturatingSub(paymentAllocation.additionalBalancePayment),
-        "balance"
-      );
+    //   assertEq(paymentAllocation.owedInterestPayment, 0, "paid 0");
+    //   assertEq(callableLoan.interestOwed(), 0, "owes 0");
 
-      totalInterestPayment =
-        paymentAllocation.accruedInterestPayment +
-        paymentAllocation.owedInterestPayment;
-      totalPrincipalPayment =
-        paymentAllocation.principalPayment +
-        paymentAllocation.additionalBalancePayment;
-      assertApproxEqAbs(
-        usdc.balanceOf(address(callableLoan)),
-        loanContractBalanceBefore + totalPrincipalPayment + ((totalInterestPayment * 90) / 100),
-        HUNDREDTH_CENT,
-        "loan contract balance"
-      );
-      callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+    //   assertEq(
+    //     callableLoan.balance(),
+    //     originalBalance.saturatingSub(paymentAllocation.additionalBalancePayment),
+    //     "balance"
+    //   );
 
-      assertEq(
-        callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
-        callAmount1,
-        "callRequestPeriod principal outstanding"
-      );
-      assertEq(
-        callRequestPeriod.principalReserved,
-        Math.min(callAmount1, paymentAllocation.additionalBalancePayment),
-        "callRequestPeriod principal Reserved"
-      );
-      assertEq(
-        callRequestPeriod.interestPaid,
-        (paymentAllocation.accruedInterestPayment *
-          (callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid)) /
-          (callableLoan.interestBearingBalance()),
-        "callRequestPeriod interest paid"
-      );
+    //   totalInterestPayment =
+    //     paymentAllocation.accruedInterestPayment +
+    //     paymentAllocation.owedInterestPayment;
+    //   totalPrincipalPayment =
+    //     paymentAllocation.principalPayment +
+    //     paymentAllocation.additionalBalancePayment;
+    //   assertApproxEqAbs(
+    //     usdc.balanceOf(address(callableLoan)),
+    //     loanContractBalanceBefore + totalPrincipalPayment + ((totalInterestPayment * 90) / 100),
+    //     HUNDREDTH_CENT,
+    //     "loan contract balance"
+    //   );
+    //   callRequestPeriod = callableLoan.getCallRequestPeriod(0);
 
-      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
-    }
+    //   assertEq(
+    //     callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
+    //     callAmount1,
+    //     "callRequestPeriod principal outstanding"
+    //   );
+    //   assertEq(
+    //     callRequestPeriod.principalReserved,
+    //     Math.min(callAmount1, paymentAllocation.additionalBalancePayment),
+    //     "callRequestPeriod principal Reserved"
+    //   );
+    //   assertEq(
+    //     callRequestPeriod.interestPaid,
+    //     (paymentAllocation.accruedInterestPayment *
+    //       (callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid)) /
+    //       (callableLoan.interestBearingBalance()),
+    //     "callRequestPeriod interest paid"
+    //   );
 
-    /// Submit Call request 2 from user 2
-    /// Check that we update accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
-    console.log("Before 2nd call submission frame");
-    {
-      uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
-      uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
-        callableLoan.nextPrincipalDueTime()
-      );
+    //   uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    //   // TODO: uncalledCapitalInfo Assertions
+    // }
 
-      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    // /// Submit Call request 2 from user 2
+    // /// Check that we update accounting correctly.
+    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    // console.log("Before 2nd call submission frame");
+    // {
+    //   uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+    //   uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+    //     callableLoan.nextPrincipalDueTime()
+    //   );
 
-      if (user1PoolTokenIdUncalledSplit > 0) {
-        user1PoolTokenUncalledSplitAvailableToCall = callableLoan.availableToCall(
-          user1PoolTokenIdUncalledSplit
-        );
-        (
-          user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
-          user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw
-        ) = callableLoan.availableToWithdraw(user1PoolTokenIdUncalledSplit);
-      }
+    //   uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
 
-      if (user1PoolTokenIdCalledSplit > 0) {
-        (
-          user1PoolTokenCalledSplitInterestAvailableForWithdraw,
-          user1PoolTokenCalledSplitPrincipalAvailableForWithdraw
-        ) = callableLoan.availableToWithdraw(user1PoolTokenIdCalledSplit);
-      }
-      user2PoolTokenAvailableToCall = callableLoan.availableToCall(user2PoolTokenId);
-      user3PoolTokenAvailableToCall = callableLoan.availableToCall(user3PoolTokenId);
+    //   if (user1PoolTokenIdUncalledSplit > 0) {
+    //     user1PoolTokenUncalledSplitAvailableToCall = callableLoan.availableToCall(
+    //       user1PoolTokenIdUncalledSplit
+    //     );
+    //     (
+    //       user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
+    //       user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw
+    //     ) = callableLoan.availableToWithdraw(user1PoolTokenIdUncalledSplit);
+    //   }
 
-      (
-        user3TokenInterestAvailableForWithdraw,
-        user3TokenPrincipalAvailableForWithdraw
-      ) = callableLoan.availableToWithdraw(user3PoolTokenId);
+    //   if (user1PoolTokenIdCalledSplit > 0) {
+    //     (
+    //       user1PoolTokenCalledSplitInterestAvailableForWithdraw,
+    //       user1PoolTokenCalledSplitPrincipalAvailableForWithdraw
+    //     ) = callableLoan.availableToWithdraw(user1PoolTokenIdCalledSplit);
+    //   }
+    //   user2PoolTokenAvailableToCall = callableLoan.availableToCall(user2PoolTokenId);
+    //   user3PoolTokenAvailableToCall = callableLoan.availableToCall(user3PoolTokenId);
 
-      assertApproxEqAbs(
-        user2PoolTokenAvailableToCall,
-        (depositAmount2 *
-          (uncalledCapitalInfo.principalDeposited - uncalledCapitalInfo.principalPaid)) /
-          uncalledCapitalInfo.principalDeposited,
-        HUNDREDTH_CENT,
-        "Max available to call 2"
-      );
-      callAmount2 = bound(callAmount2, 0, user2PoolTokenAvailableToCall);
+    //   (
+    //     user3TokenInterestAvailableForWithdraw,
+    //     user3TokenPrincipalAvailableForWithdraw
+    //   ) = callableLoan.availableToWithdraw(user3PoolTokenId);
 
-      if (callAmount2 > 0) {
-        console.log("About to call, here are accounting variables");
-        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
+    //   assertApproxEqAbs(
+    //     user2PoolTokenAvailableToCall,
+    //     (depositAmount2 *
+    //       (uncalledCapitalInfo.principalDeposited - uncalledCapitalInfo.principalPaid)) /
+    //       uncalledCapitalInfo.principalDeposited,
+    //     HUNDREDTH_CENT,
+    //     "Max available to call 2"
+    //   );
+    //   callAmount2 = bound(callAmount2, 0, user2PoolTokenAvailableToCall);
 
-        uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-        console.log(
-          "uncalledCapitalInfo.principalDeposited:",
-          uncalledCapitalInfo.principalDeposited
-        );
-        console.log("uncalledCapitalInfo.principalPaid:", uncalledCapitalInfo.principalPaid);
-        (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
-          callableLoan,
-          callAmount2,
-          user2PoolTokenId,
-          user2
-        );
+    //   if (callAmount2 > 0) {
+    //     console.log("About to call, here are accounting variables");
+    //     callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+    //     console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
+    //     console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
 
-        console.log("Submitted call 2!");
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdCalledSplit);
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdUncalledSplit);
-        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
-      }
+    //     uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    //     console.log(
+    //       "uncalledCapitalInfo.principalDeposited:",
+    //       uncalledCapitalInfo.principalDeposited
+    //     );
+    //     console.log("uncalledCapitalInfo.principalPaid:", uncalledCapitalInfo.principalPaid);
+    //     (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
+    //       callableLoan,
+    //       callAmount2,
+    //       user2PoolTokenId,
+    //       user2
+    //     );
 
-      console.log("user1PoolTokenIdUncalledSplit", user1PoolTokenIdUncalledSplit);
-      if (user1PoolTokenIdUncalledSplit > 0) {
-        assertApproxEqAbs(
-          callableLoan.availableToCall(user1PoolTokenIdUncalledSplit),
-          user1PoolTokenUncalledSplitAvailableToCall,
-          HALF_CENT,
-          "Submitting a call should not affect how much others are owed - Principal outstanding 1"
-        );
-        (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
-          .availableToWithdraw(user1PoolTokenIdUncalledSplit);
-        assertApproxEqAbs(
-          interestAvailableToWithdraw,
-          user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
-          HUNDREDTH_CENT,
-          "Submitting a call should not affect how much others are owed - Interest 1"
-        );
-      }
-      if (user1PoolTokenIdCalledSplit > 0) {
-        (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
-          .availableToWithdraw(user1PoolTokenIdCalledSplit);
-        assertApproxEqAbs(
-          interestAvailableToWithdraw,
-          user1PoolTokenCalledSplitInterestAvailableForWithdraw,
-          HUNDREDTH_CENT,
-          "Submitting a call should not affect how much others are owed - Interest 1"
-        );
-      }
-      assertApproxEqAbs(
-        callableLoan.availableToCall(user3PoolTokenId),
-        user3PoolTokenAvailableToCall,
-        HUNDREDTH_CENT,
-        "Submitting a call should not affect how much others are owed - Principal outstanding 3"
-      );
+    //     console.log("Submitted call 2!");
+    //     console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdCalledSplit);
+    //     console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdUncalledSplit);
+    //     callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+    //     console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
+    //     console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
+    //   }
 
-      (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
-        .availableToWithdraw(user3PoolTokenId);
-      assertApproxEqAbs(
-        interestAvailableToWithdraw,
-        user3TokenInterestAvailableForWithdraw,
-        HALF_CENT,
-        "Submitting a call should not affect how much others are owed - Interest 3"
-      );
+    //   console.log("user1PoolTokenIdUncalledSplit", user1PoolTokenIdUncalledSplit);
+    //   if (user1PoolTokenIdUncalledSplit > 0) {
+    //     assertApproxEqAbs(
+    //       callableLoan.availableToCall(user1PoolTokenIdUncalledSplit),
+    //       user1PoolTokenUncalledSplitAvailableToCall,
+    //       HALF_CENT,
+    //       "Submitting a call should not affect how much others are owed - Principal outstanding 1"
+    //     );
+    //     (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+    //       .availableToWithdraw(user1PoolTokenIdUncalledSplit);
+    //     assertApproxEqAbs(
+    //       interestAvailableToWithdraw,
+    //       user1PoolTokenUncalledSplitInterestAvailableForWithdraw,
+    //       HUNDREDTH_CENT,
+    //       "Submitting a call should not affect how much others are owed - Interest 1"
+    //     );
+    //   }
+    //   if (user1PoolTokenIdCalledSplit > 0) {
+    //     (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+    //       .availableToWithdraw(user1PoolTokenIdCalledSplit);
+    //     assertApproxEqAbs(
+    //       interestAvailableToWithdraw,
+    //       user1PoolTokenCalledSplitInterestAvailableForWithdraw,
+    //       HUNDREDTH_CENT,
+    //       "Submitting a call should not affect how much others are owed - Interest 1"
+    //     );
+    //   }
+    //   assertApproxEqAbs(
+    //     callableLoan.availableToCall(user3PoolTokenId),
+    //     user3PoolTokenAvailableToCall,
+    //     HUNDREDTH_CENT,
+    //     "Submitting a call should not affect how much others are owed - Principal outstanding 3"
+    //   );
 
-      assertApproxEqAbs(
-        callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
-        HUNDREDTH_CENT,
-        "New principal owed"
-      );
+    //   (interestAvailableToWithdraw, principalAvailableToWithdraw) = callableLoan
+    //     .availableToWithdraw(user3PoolTokenId);
+    //   assertApproxEqAbs(
+    //     interestAvailableToWithdraw,
+    //     user3TokenInterestAvailableForWithdraw,
+    //     HALF_CENT,
+    //     "Submitting a call should not affect how much others are owed - Interest 3"
+    //   );
 
-      assertEq(
-        callableLoan.totalPrincipalPaid(),
-        totalDeposits - drawdownAmount,
-        "New principal paid"
-      );
-      assertApproxEqAbs(
-        callableLoan.interestOwedAt(callableLoan.nextDueTime()),
-        interestOwedAtNextDueTime,
-        HUNDREDTH_CENT,
-        "Interest owed at next due time"
-      );
-      assertApproxEqAbs(
-        callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime()),
-        interestOwedAtNextPrincipalDueTime,
-        HUNDREDTH_CENT,
-        "Interest owed at next principal due time"
-      );
+    //   assertApproxEqAbs(
+    //     callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+    //     (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+    //     HUNDREDTH_CENT,
+    //     "New principal owed"
+    //   );
 
-      callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-      assertEq(
-        callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
-        callAmount1 + callAmount2,
-        "callRequestPeriod principal outstanding"
-      );
-      assertEq(
-        callRequestPeriod.principalReserved,
-        Math.min(callAmount1 + callAmount2, paymentAllocation.additionalBalancePayment),
-        "callRequestPeriod principal Reserved"
-      );
-      assertApproxEqAbs(
-        callRequestPeriod.interestPaid,
-        (paymentAllocation.accruedInterestPayment *
-          (callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid)) /
-          (callableLoan.interestBearingBalance()),
-        HUNDREDTH_CENT,
-        "callRequestPeriod interest paid"
-      );
+    //   assertEq(
+    //     callableLoan.totalPrincipalPaid(),
+    //     totalDeposits - drawdownAmount,
+    //     "New principal paid"
+    //   );
+    //   assertApproxEqAbs(
+    //     callableLoan.interestOwedAt(callableLoan.nextDueTime()),
+    //     interestOwedAtNextDueTime,
+    //     HUNDREDTH_CENT,
+    //     "Interest owed at next due time"
+    //   );
+    //   assertApproxEqAbs(
+    //     callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime()),
+    //     interestOwedAtNextPrincipalDueTime,
+    //     HUNDREDTH_CENT,
+    //     "Interest owed at next principal due time"
+    //   );
 
-      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
-    }
+    //   callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+    //   assertEq(
+    //     callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
+    //     callAmount1 + callAmount2,
+    //     "callRequestPeriod principal outstanding"
+    //   );
+    //   assertEq(
+    //     callRequestPeriod.principalReserved,
+    //     Math.min(callAmount1 + callAmount2, paymentAllocation.additionalBalancePayment),
+    //     "callRequestPeriod principal Reserved"
+    //   );
+    //   assertApproxEqAbs(
+    //     callRequestPeriod.interestPaid,
+    //     (paymentAllocation.accruedInterestPayment *
+    //       (callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid)) /
+    //       (callableLoan.interestBearingBalance()),
+    //     HUNDREDTH_CENT,
+    //     "callRequestPeriod interest paid"
+    //   );
 
-    {
-      // Hash and bound user3 to get pseudorandom warp destination
-      // Cannot add another fuzzed variable because of stack size limits.
-      uint256 invalidCallSubmissionTime = uint256(keccak256(abi.encode(user3)));
-      invalidCallSubmissionTime = bound(
-        invalidCallSubmissionTime,
-        callableLoan.nextDueTime() + 1,
-        callableLoan.nextPrincipalDueTime() - 1
-      );
-      vm.warp(invalidCallSubmissionTime);
-      uint256 callAmount3Max = (depositAmount3 *
-        (drawdownAmount - paymentAllocation.additionalBalancePayment)) / totalDeposits;
-      // Hash and bound call amounts 1 and 2 to get pseudorandom call amount 3.
-      // Cannot add another fuzzed variable because of stack size limits.
-      uint256 callAmount3 = bound(uint256(keccak256(abi.encode(user1, user2))), 0, callAmount3Max);
+    //   uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    //   // TODO: uncalledCapitalInfo Assertions
+    // }
 
-      if (callAmount3 > 0) {
-        console.log("Submitting invalid call 3. Invalid since we are in a lock period.");
-        vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
-        submitCall(callableLoan, callAmount3, user3PoolTokenId, user3);
-      }
-    }
+    // {
+    //   // Hash and bound user3 to get pseudorandom warp destination
+    //   // Cannot add another fuzzed variable because of stack size limits.
+    //   uint256 invalidCallSubmissionTime = uint256(keccak256(abi.encode(user3)));
+    //   invalidCallSubmissionTime = bound(
+    //     invalidCallSubmissionTime,
+    //     callableLoan.nextDueTime() + 1,
+    //     callableLoan.nextPrincipalDueTime() - 1
+    //   );
+    //   vm.warp(invalidCallSubmissionTime);
+    //   uint256 callAmount3Max = (depositAmount3 *
+    //     (drawdownAmount - paymentAllocation.additionalBalancePayment)) / totalDeposits;
+    //   // Hash and bound call amounts 1 and 2 to get pseudorandom call amount 3.
+    //   // Cannot add another fuzzed variable because of stack size limits.
+    //   uint256 callAmount3 = bound(uint256(keccak256(abi.encode(user1, user2))), 0, callAmount3Max);
 
-    /// Warp to right principal payment period due time
-    vm.warp(callableLoan.nextPrincipalDueTime());
+    //   if (callAmount3 > 0) {
+    //     console.log("Submitting invalid call 3. Invalid since we are in a lock period.");
+    //     vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
+    //     submitCall(callableLoan, callAmount3, user3PoolTokenId, user3);
+    //   }
+    // }
 
-    /// Warp to first principal payment period due time
-    /// Check that we update accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
-    console.log("After principal payment period due time frame");
-    {
-      uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
-      uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
-        callableLoan.nextPrincipalDueTime()
-      );
+    // /// Warp to right principal payment period due time
+    // vm.warp(callableLoan.nextPrincipalDueTime());
 
-      assertApproxEqAbs(
-        callableLoan.principalOwed(),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
-        HUNDREDTH_CENT,
-        "Principal owed remains the same as previous principalOwedAt(nextPrincipalDueTime)"
-      );
+    // /// Warp to first principal payment period due time
+    // /// Check that we update accounting correctly.
+    // /// Use {} to produce new stack frame and avoid stack too deep errors.
+    // console.log("After principal payment period due time frame");
+    // {
+    //   uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+    //   uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
+    //     callableLoan.nextPrincipalDueTime()
+    //   );
 
-      assertApproxEqAbs(
-        callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
-        HUNDREDTH_CENT,
-        "Principal owed at next principal due time remains the same as previous principalOwedAt(nextPrincipalDueTime)"
-      );
+    //   assertApproxEqAbs(
+    //     callableLoan.principalOwed(),
+    //     (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+    //     HUNDREDTH_CENT,
+    //     "Principal owed remains the same as previous principalOwedAt(nextPrincipalDueTime)"
+    //   );
 
-      assertEq(
-        callableLoan.totalPrincipalPaid(),
-        totalDeposits - drawdownAmount + paymentAllocation.additionalBalancePayment,
-        "New principal paid"
-      );
+    //   assertApproxEqAbs(
+    //     callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
+    //     (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+    //     HUNDREDTH_CENT,
+    //     "Principal owed at next principal due time remains the same as previous principalOwedAt(nextPrincipalDueTime)"
+    //   );
 
-      callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-      // TODO: callRequestPeriod Assertions
+    //   assertEq(
+    //     callableLoan.totalPrincipalPaid(),
+    //     totalDeposits - drawdownAmount + paymentAllocation.additionalBalancePayment,
+    //     "New principal paid"
+    //   );
 
-      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
-    }
+    //   callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+    //   // TODO: callRequestPeriod Assertions
+
+    //   uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+    //   // TODO: uncalledCapitalInfo Assertions
+    // }
   }
 }
