@@ -42,7 +42,7 @@ jobs:
     - run: yarn workspaces focus @goldfinch-eng/autotasks
     - run: yarn workspaces foreach -ptR --from @goldfinch-eng/autotasks run build
       env:
-        NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
+        NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2
         NEXT_PUBLIC_NETWORK_NAME: mainnet
         NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
     - run: yarn workspace @goldfinch-eng/autotasks test
@@ -85,7 +85,7 @@ jobs:
     - run: yarn install --immutable
     - run: yarn build
       env:
-        NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
+        NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2
         NEXT_PUBLIC_NETWORK_NAME: mainnet
         NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
     - run: yarn run lint
@@ -133,7 +133,7 @@ jobs:
       - run: yarn workspaces focus @goldfinch-eng/functions
       - run: yarn workspaces foreach -ptR --from @goldfinch-eng/functions run build
         env:
-          NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
+          NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2
           NEXT_PUBLIC_NETWORK_NAME: mainnet
           NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
       - run: yarn workspace @goldfinch-eng/functions ci_test

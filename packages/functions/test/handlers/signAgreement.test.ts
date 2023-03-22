@@ -65,6 +65,7 @@ describe("signAgreement", async () => {
     config = {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
+      slack: {token: ""},
     }
     setEnvForTest(testFirestore, config)
     agreements = getAgreements(testFirestore)
@@ -82,6 +83,7 @@ describe("signAgreement", async () => {
     address: string,
     pool: string,
     fullName: string,
+    email: string,
     signature: string,
     signatureBlockNum: number | string | undefined,
   ) => {
@@ -91,7 +93,7 @@ describe("signAgreement", async () => {
         "x-goldfinch-signature": signature,
         "x-goldfinch-signature-block-num": signatureBlockNum,
       },
-      body: {pool, fullName},
+      body: {pool, fullName, email},
     } as unknown as Request
   }
   const pool = "0x1234asdADF"
@@ -99,8 +101,20 @@ describe("signAgreement", async () => {
   describe("validation", async () => {
     it("checks if address is present", async () => {
       await signAgreement(
-        generateAgreementRequest("", "", "", "", currentBlockNum),
+        generateAgreementRequest("", "0xbeef", "John Doe", "john@example.com", "sig", currentBlockNum),
         expectResponse(403, {error: "Invalid address"}),
+      )
+    })
+    it("checks if email is present", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
+      )
+    })
+    it("checks if email is valid", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "lol", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
       )
     })
   })
@@ -112,7 +126,7 @@ describe("signAgreement", async () => {
       expect((await agreements.doc(key).get()).exists).to.be.false
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -125,7 +139,7 @@ describe("signAgreement", async () => {
       const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -133,7 +147,7 @@ describe("signAgreement", async () => {
       expect(agreementDoc.data()).to.containSubset({fullName: "Test User"})
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User 2", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User 2", "test2@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 

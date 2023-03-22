@@ -14,9 +14,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const router = useRouter();
-  const isMustardBackgroundColor = router.pathname === "/earn";
-
+  const { pathname } = useRouter();
+  const isMustardBackgroundColor =
+    pathname === "/earn" || pathname.startsWith("/pools");
   return (
     <div
       className={clsx(

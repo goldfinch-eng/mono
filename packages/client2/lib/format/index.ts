@@ -1,4 +1,4 @@
-import { FixedNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 // Intl formatters are nice because they are sensitive to the user's device locale. For now they are hard-coded to en-US, but in the future this can be parameterized or even changed into hooks (to get locale from context)
 
@@ -14,6 +14,13 @@ export function formatPercent(n: number | FixedNumber) {
     return "<0.01%";
   }
   return percentageFormatter.format(nAsFloat);
+}
+
+export function computePercentage(n: BigNumber, total: BigNumber): number {
+  if (total.isZero()) {
+    return 0;
+  }
+  return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
 }
 
 export * from "./currency-units";

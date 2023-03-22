@@ -12,8 +12,6 @@ import {ConfigOptions} from "./ConfigOptions.sol";
  * @notice This contract stores mappings of useful "protocol config state", giving a central place
  *  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
  *  are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
- *  Note: While this inherits from BaseUpgradeablePausable, it is not deployed as an upgradeable contract (this
- *    is mostly to save gas costs of having each call go through a proxy)
  * @author Goldfinch
  */
 
@@ -88,6 +86,12 @@ contract GoldfinchConfig is BaseUpgradeablePausable, IGoldfinchConfig {
 
   function setGoldfinchConfig(address newAddress) public onlyAdmin {
     uint256 key = uint256(ConfigOptions.Addresses.GoldfinchConfig);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
+  function setMonthlyScheduleRepo(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.MonthlyScheduleRepo);
     emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
     addresses[key] = newAddress;
   }

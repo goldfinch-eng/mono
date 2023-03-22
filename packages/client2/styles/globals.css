@@ -15,6 +15,7 @@
   body,
   #__next {
     height: 100%;
+    @apply scroll-smooth;
   }
   body {
     @apply font-sans font-normal text-sand-700;
@@ -48,18 +49,15 @@
     grid-template-columns: 100%;
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      "heading"
       "widgets"
       "info";
   }
   @media screen(lg) {
     .pool-layout {
-      grid-template-columns: calc(65% - theme(spacing.5)) calc(
-          35% - theme(spacing.5)
+      grid-template-columns: calc(45% - theme(spacing.5)) calc(
+          55% - theme(spacing.5)
         );
-      grid-template-areas:
-        "heading widgets"
-        "info widgets";
+      grid-template-areas: "widgets info";
     }
   }
 }

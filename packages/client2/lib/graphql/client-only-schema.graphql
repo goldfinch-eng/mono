@@ -10,10 +10,20 @@ extend type SeniorPool {
   epochEndsAt: Int!
 }
 
+extend type Loan {
+  name: String!
+  borrowerName: String!
+  borrowerLogo: String
+  isLate: Boolean!
+  isInDefault: Boolean!
+}
+
 extend type TranchedPool {
   name: String!
   borrowerName: String!
   borrowerLogo: String
+  isLate: Boolean!
+  isInDefault: Boolean!
 }
 
 extend type CreditLine {

@@ -31,6 +31,7 @@ import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequest
 import {deployMonthlyScheduleRepo} from "./baseDeploy/deployMonthlyScheduleRepo"
 import {BackerRewardsInstance, CapitalLedgerInstance, RouterInstance} from "../typechain/truffle"
 import {routingIdOf} from "./deployHelpers/routingIdOf"
+import {deployCallableLoanImplementationRepository} from "./baseDeploy/deployCallableLoanImplementationRepository"
 
 const logger: Logger = console.log
 
@@ -52,6 +53,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const deployer = new ContractDeployer(logger, hre)
   logger("Starting deploy...")
   const {gf_deployer} = await getNamedAccounts()
+  assertNonNullable(gf_deployer)
   logger("Will be deploying using the gf_deployer account:", gf_deployer)
 
   const chainId = await getChainId()
@@ -110,7 +112,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   console.log("Set legacy go list")
 
   await deployMonthlyScheduleRepo(deployer, deployEffects, config)
-  await migrate330.main()
+
+  await deployCallableLoanImplementationRepository(deployer, config)
 
   const router = await getTruffleContract<RouterInstance>("Router")
   const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")

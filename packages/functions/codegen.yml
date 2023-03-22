@@ -1,5 +1,5 @@
 overwrite: true
-schema: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2"
+schema: "https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch"
 documents: "src/graphql/queries/**/*.graphql"
 generates:
   src/graphql/generated/graphql.ts:

@@ -7,7 +7,7 @@ import type {
   GrantReason,
   DirectGrantSource,
   IndirectGrantSource,
-  TranchedPoolToken,
+  PoolToken,
   SeniorPoolStakedPosition,
 } from "@/lib/graphql/generated";
 
@@ -125,7 +125,7 @@ export function stitchGrantsWithTokens<
 export function sumTotalClaimable(
   grantsWithTokens: ReturnType<typeof stitchGrantsWithTokens> = [],
   tranchedPoolTokens: Pick<
-    TranchedPoolToken,
+    PoolToken,
     "rewardsClaimable" | "stakingRewardsClaimable"
   >[] = [],
   seniorPoolStakedPositions: Pick<SeniorPoolStakedPosition, "claimable">[] = []

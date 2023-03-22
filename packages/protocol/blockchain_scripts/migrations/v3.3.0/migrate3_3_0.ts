@@ -31,6 +31,25 @@ export async function main() {
   const context = await getEthersContract<Context>("Context", {path: "contracts/cake/Context.sol:Context"})
   const borrowerRole = await gfFactory.BORROWER_ROLE()
 
+  const monthlyScheduleRepo = await deployer.deploy("MonthlyScheduleRepo", {
+    from: gf_deployer,
+  })
+
+  const upgradedContracts = await upgrader.upgrade({
+    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory", "GoldfinchConfig"],
+  })
+  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
+
+  // Set monthly schedule repo address in config - need to do this after upgrading GoldfinchConfig!
+  await deployEffects.add({
+    deferred: [
+      await populateTxAndLog(
+        gfConfig.populateTransaction.setMonthlyScheduleRepo(monthlyScheduleRepo.address),
+        `Populated tx to set the MonthlyScheduleRepo address to ${monthlyScheduleRepo.address}`
+      ),
+    ],
+  })
+
   const borrowerImpl = await deployer.deploy("Borrower", {
     from: gf_deployer,
   })
@@ -79,11 +98,6 @@ export async function main() {
       ),
     ],
   })
-  const upgradedContracts = await upgrader.upgrade({
-    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory"],
-  })
-
-  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
   await deployEffects.executeDeferred()
 
