@@ -39,7 +39,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     callableLoan.pay(paymentAmount);
   }
 
-  // TODO: Revert
+  // TODO: Revert comments after payment upgarde
   // function testRevertsIfPaymentEq0() public {
   //   (CallableLoan callableLoan, ) = defaultCallableLoan();
   //   depositAndDrawdown(callableLoan, usdcVal(400));
@@ -76,30 +76,34 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
   //     );
   //   }
 
-  //   function testRevertsIfStillInFundingStage() public {
-  //     (CallableLoan callableLoan, ) = defaultCallableLoan();
+  function testRevertsIfStillInFundingStage() public {
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
 
-  //     fundAddress(address(this), usdcVal(1));
-  //     usdc.approve(address(callableLoan), usdcVal(1));
-  //     vm.expectRevert(bytes("NA"));
-  //     callableLoan.pay(usdcVal(1));
-  //   }
+    fundAddress(address(this), usdcVal(1));
+    usdc.approve(address(callableLoan), usdcVal(1));
+    // TODO: Revert comments after payment upgarde
+    // vm.expectRevert(bytes("NA"));
+    vm.expectRevert(ICallableLoanErrors.RequiresUpgrade.selector);
+    callableLoan.pay(usdcVal(1));
+  }
 
-  //   function testRevertsIfStillInDrawdownPeriod() public {
-  //     (CallableLoan callableLoan, ) = defaultCallableLoan();
-  //     depositAndDrawdown(callableLoan, usdcVal(400000));
+  function testRevertsIfStillInDrawdownPeriod() public {
+    (CallableLoan callableLoan, ) = defaultCallableLoan();
+    depositAndDrawdown(callableLoan, usdcVal(400000));
 
-  //     fundAddress(address(this), usdcVal(1));
-  //     usdc.approve(address(callableLoan), usdcVal(1));
-  //     vm.expectRevert(
-  //       abi.encodeWithSelector(
-  //         ICallableLoanErrors.InvalidLoanPhase.selector,
-  //         LoanPhase.DrawdownPeriod,
-  //         LoanPhase.InProgress
-  //       )
-  //     );
-  //     callableLoan.pay(usdcVal(1));
-  //   }
+    fundAddress(address(this), usdcVal(1));
+    usdc.approve(address(callableLoan), usdcVal(1));
+    // TODO: Revert comments after payment upgarde
+    // vm.expectRevert(
+    //   abi.encodeWithSelector(
+    //     ICallableLoanErrors.InvalidLoanPhase.selector,
+    //     LoanPhase.DrawdownPeriod,
+    //     LoanPhase.InProgress
+    //   )
+    // );
+    vm.expectRevert(ICallableLoanErrors.RequiresUpgrade.selector);
+    callableLoan.pay(usdcVal(1));
+  }
 
   //   // Use storage variables to avoid stack too deep errors
   //   uint256 public interestOwedAtNextPrincipalDueDate;
