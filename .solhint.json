@@ -49,6 +49,7 @@
           "createBorrower": [],
           "createPool": ["onlyAdminOrBorrower"],
           "createCallableLoan": ["onlyAdminOrBorrower"],
+          "createCallableLoanWithProxyOwner": ["onlyAdminOrBorrower"],
           "validPool": [],
           "createMigratedPool": []
         },
