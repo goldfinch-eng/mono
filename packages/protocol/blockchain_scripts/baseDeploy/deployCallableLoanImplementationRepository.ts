@@ -1,4 +1,4 @@
-import {GoldfinchConfig, Fidu} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig, CallableLoanImplementationRepository} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {getNamedAccounts} from "hardhat"
 import {CONFIG_KEYS_BY_TYPE} from "../configKeys"
@@ -9,8 +9,8 @@ const logger = console.log
 export async function deployCallableLoanImplementationRepository(
   deployer: ContractDeployer,
   config: GoldfinchConfig
-): Promise<Fidu> {
-  logger("About to deploy Fidu...")
+): Promise<CallableLoanImplementationRepository> {
+  logger("About to deploy CallableLoanImplementationRepository...")
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
   const protocol_owner = await getProtocolOwner()
@@ -23,18 +23,21 @@ export async function deployCallableLoanImplementationRepository(
   console.log("CallableLoan address: ", callableLoan.address)
 
   // Deploy the callable loan implementation repository and add it to the config
-  const callableLoanImplRepo = await deployer.deploy("CallableLoanImplementationRepository", {
-    from: gf_deployer,
-    proxy: {
-      owner: protocol_owner,
-      execute: {
-        init: {
-          methodName: "initialize",
-          args: [protocol_owner, callableLoan.address],
+  const callableLoanImplRepo = await deployer.deploy<CallableLoanImplementationRepository>(
+    "CallableLoanImplementationRepository",
+    {
+      from: gf_deployer,
+      proxy: {
+        owner: protocol_owner,
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, callableLoan.address],
+          },
         },
       },
-    },
-  })
+    }
+  )
 
   await config.setAddress(
     CONFIG_KEYS_BY_TYPE.addresses.CallableLoanImplementationRepository,
