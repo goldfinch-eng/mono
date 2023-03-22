@@ -8,6 +8,7 @@ import {
   CallPanelCallableLoanFieldsFragment,
   CallPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
+import { getLoanRepaymentStatus, LoanRepaymentStatus } from "@/lib/pools";
 
 import { SubmitCallModal } from "./submit-call-modal";
 
@@ -30,6 +31,7 @@ gql`
     loanPhase @client
     inLockupPeriod @client
     nextPrincipalDueTime @client
+    ...RepaymentStatusLoanFields
   }
 `;
 
@@ -40,8 +42,11 @@ interface CallPanel {
 }
 
 export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
+  const repaymentStatus = getLoanRepaymentStatus(callableLoan);
   const shouldDisableCalls =
-    callableLoan.inLockupPeriod || callableLoan.loanPhase !== "InProgress";
+    callableLoan.inLockupPeriod ||
+    callableLoan.loanPhase !== "InProgress" ||
+    repaymentStatus === LoanRepaymentStatus.Repaid;
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const callablePoolTokens = poolTokens.filter((pt) => !pt.isCapitalCalled);
   const calledPoolTokens = poolTokens.filter((pt) => pt.isCapitalCalled);
