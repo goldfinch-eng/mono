@@ -22,14 +22,18 @@ gql`
 
 interface RepaymentTermsScheduleProps {
   loan: RepaymentTableLoanFieldsFragment;
+  currentBlockTimestamp: number;
   className?: string;
 }
 
 export function RepaymentTermsSchedule({
   loan,
+  currentBlockTimestamp,
   className,
 }: RepaymentTermsScheduleProps) {
-  const repaymentSchedule = loan.loanRepaymentSchedule;
+  const repaymentSchedule = loan.loanRepaymentSchedule.filter(
+    (r) => r.estimatedPaymentDate >= currentBlockTimestamp
+  );
 
   return (
     <div className={clsx(className, "rounded-xl border border-sand-300")}>
