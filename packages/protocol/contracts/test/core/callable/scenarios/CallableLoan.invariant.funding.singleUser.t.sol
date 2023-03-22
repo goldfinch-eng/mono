@@ -89,7 +89,7 @@ contract CallableLoanHandler is Test {
   }
 }
 
-contract CallableLoanFundingInvariantTest is CallableLoanBaseTest, InvariantTest {
+contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanHandler internal handler;
   uint256 private handlerOriginalUsdcBalance;
 
