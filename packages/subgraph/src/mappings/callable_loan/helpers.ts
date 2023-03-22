@@ -14,7 +14,6 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.fundingLimit = callableLoanContract.limit()
   callableLoan.principalAmount = BigInt.zero()
   callableLoan.initialInterestOwed = BigInt.zero() // This gets set on drawdown
-  callableLoan.usdcApy = callableLoanContract.interestApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.rawGfiApy = BigDecimal.zero()
   callableLoan.totalDeposited = BigInt.zero()
   callableLoan.remainingCapacity = callableLoan.fundingLimit
@@ -49,8 +48,9 @@ export function initCallableLoan(address: Address, block: ethereum.Block): Calla
   callableLoan.balance = callableLoanContract.balance()
   callableLoan.termEndTime = callableLoanContract.termEndTime()
   callableLoan.termStartTime = callableLoanContract.termStartTime()
-  callableLoan.interestRate = callableLoan.usdcApy
   callableLoan.interestRateBigInt = callableLoanContract.interestApr()
+  callableLoan.interestRate = callableLoan.interestRateBigInt.divDecimal(INTEREST_DECIMALS)
+  callableLoan.usdcApy = callableLoan.interestRate.times(BigDecimal.fromString("0.9")) // TODO could fetch the protocol fee from GoldfinchConfig, but this is OK for now
   callableLoan.lateFeeRate = callableLoanContract.lateFeeApr().divDecimal(INTEREST_DECIMALS)
   callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
   callableLoan.borrowerContract = callableLoanContract.borrower().toHexString()

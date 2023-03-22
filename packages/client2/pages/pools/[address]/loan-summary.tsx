@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { formatDistanceStrict } from "date-fns";
+import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
 import { InfoLine, Link } from "@/components/design-system";
@@ -94,9 +95,10 @@ export function LoanSummary({
           <div className="mb-2 text-sm">Fixed USDC APY</div>
           <div className="font-serif text-3xl font-semibold text-sand-800">
             {formatPercent(
-              deal.dealType === "multitranche"
-                ? loan.usdcApy
-                : loan.interestRate
+              loan.__typename === "TranchedPool" &&
+                deal.dealType === "unitranche"
+                ? loan.interestRate.mulUnsafe(FixedNumber.from("0.9")) // It would be nicer if the subgraph understood the USDC APY for a unitranche deal
+                : loan.usdcApy
             )}
           </div>
         </div>
