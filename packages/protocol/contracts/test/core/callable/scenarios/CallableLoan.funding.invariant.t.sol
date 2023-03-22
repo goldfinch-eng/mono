@@ -74,7 +74,7 @@ contract CallableLoanHandler is Test {
 
 contract CallableLoanFundingInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanHandler internal handler;
-  uint256 handlerOriginalUsdcBalance;
+  uint256 private handlerOriginalUsdcBalance;
 
   function setUp() public override {
     super.setUp();
@@ -95,28 +95,28 @@ contract CallableLoanFundingInvariantTest is CallableLoanBaseTest, InvariantTest
     targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
   }
 
-  function invariant_BalanceOfPoolIsDepositsLessWithdrawals() public {
+  function invariantBalanceOfPoolIsDepositsLessWithdrawals() public {
     assertEq(
       usdc.balanceOf(address(handler.loan())),
       handler.sumDeposited() - handler.sumWithdrawn()
     );
   }
 
-  function invariant_BalanceOfDepositorIsOriginalBalanceLessDepositsPlusWithdrawals() public {
+  function invariantBalanceOfDepositorIsOriginalBalanceLessDepositsPlusWithdrawals() public {
     assertEq(
       usdc.balanceOf(address(handler)),
       handlerOriginalUsdcBalance - handler.sumDeposited() + handler.sumWithdrawn()
     );
   }
 
-  function invariant_UncalledCapitalInfoPrincipalDepositedIsDepositsLessWithdrawals() public {
+  function invariantUncalledCapitalInfoPrincipalDepositedIsDepositsLessWithdrawals() public {
     assertEq(
       handler.loan().getUncalledCapitalInfo().principalDeposited,
       handler.sumDeposited() - handler.sumWithdrawn()
     );
   }
 
-  function invariant_UncalledCapitalInfoPrincipalPaidIsZero() public {
+  function invariantUncalledCapitalInfoPrincipalPaidIsZero() public {
     // Should this be 0?
     assertZero(handler.loan().getUncalledCapitalInfo().principalPaid);
   }
