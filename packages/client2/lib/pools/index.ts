@@ -18,7 +18,6 @@ import {
   StakedPositionType,
   SeniorPoolStakedPosition,
   RepaymentFrequency,
-  CallPanelCallableLoanFieldsFragment,
 } from "@/lib/graphql/generated";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
@@ -47,7 +46,7 @@ export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
 `;
 
 export function getLoanRepaymentStatus(
-  loan: RepaymentStatusLoanFieldsFragment | CallPanelCallableLoanFieldsFragment
+  loan: RepaymentStatusLoanFieldsFragment
 ) {
   if (loan.balance.isZero() && loan.termEndTime.gt(0)) {
     return LoanRepaymentStatus.Repaid;

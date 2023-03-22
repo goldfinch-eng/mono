@@ -34,6 +34,7 @@ gql`
     loanPhase @client
     inLockupPeriod @client
     nextPrincipalDueTime @client
+    ...RepaymentStatusLoanFields
   }
 `;
 
