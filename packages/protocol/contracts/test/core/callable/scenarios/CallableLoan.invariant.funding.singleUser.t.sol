@@ -9,8 +9,6 @@ import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 
-// import {console2 as console} from "forge-std/console2.sol";
-
 contract CallableLoanHandler is Test {
   struct TokenInfo {
     uint256 tokenId;
@@ -20,11 +18,21 @@ contract CallableLoanHandler is Test {
     uint256 withdrawn;
   }
 
+  /// @notice The contract under test
   CallableLoan public loan;
+
+  /// @notice Nondecreasing total amount deposited by the handler after the most recent call
   uint256 public sumDeposited;
+
+  /// @notice Nondecreasing total amount withdrawn by the handler after the most recent call
   uint256 public sumWithdrawn;
+
+  /// @notice All of the handler's pool tokens, including fully redeemed ones
   TokenInfo[] public poolTokens;
-  uint256 public indexOfLastTokenInteractedWith = type(uint256).max;
+
+  /// @notice Tokens involved in the last deposit, withdraw, or withdrawMultiple call. It SHOULD
+  ///   NOT persist across those calls. Persisting across other calls like `warp` is good
+  TokenInfo[] private poolTokensFromLastCall;
 
   constructor(CallableLoan _loan, IERC20 usdc) public {
     loan = _loan;
@@ -32,15 +40,15 @@ contract CallableLoanHandler is Test {
   }
 
   function warp() public {
-    // Include random jumps in time
     skip(1 days);
   }
 
-  function deposit(uint256 amount) public {
+  function deposit(uint256 amount) public clearCallState {
     uint256 totalPrincipalDeposited = sumDeposited - sumWithdrawn;
     uint256 maxDepositableAmount = loan.limit() - totalPrincipalDeposited;
 
     if (maxDepositableAmount == 0) {
+      // Token already fully withrawn - return!
       return;
     }
 
@@ -48,14 +56,19 @@ contract CallableLoanHandler is Test {
 
     uint256 token = loan.deposit(loan.uncalledCapitalTrancheIndex(), amount);
 
-    indexOfLastTokenInteractedWith = poolTokens.length;
     sumDeposited += amount;
-    poolTokens.push(TokenInfo({tokenId: token, originalDeposited: amount, withdrawn: 0}));
+    TokenInfo memory tokenInfo = TokenInfo({
+      tokenId: token,
+      originalDeposited: amount,
+      withdrawn: 0
+    });
+    poolTokens.push(tokenInfo);
+    poolTokensFromLastCall.push(tokenInfo);
   }
 
-  function withdraw(uint256 tokenIndex, uint256 amount) public {
+  function withdraw(uint256 tokenIndex, uint256 amount) public clearCallState {
     if (poolTokens.length == 0) {
-      // There aren't any deposits - return!
+      // There aren't any deposits yet - return!
       return;
     }
 
@@ -74,11 +87,56 @@ contract CallableLoanHandler is Test {
 
     sumWithdrawn += amount;
     tokenInfo.withdrawn += amount;
-    indexOfLastTokenInteractedWith = tokenIndex;
+    poolTokensFromLastCall.push(tokenInfo);
   }
 
-  function getTokenInfoByIndex(uint256 i) public view returns (TokenInfo memory) {
-    return poolTokens[i];
+  function withdrawMultiple(uint256 tokenIndexStart, uint256 tokenIndexEnd) public clearCallState {
+    if (poolTokens.length == 0) {
+      // There aren't any deposits yet - return!
+      return;
+    }
+
+    // Select a random range of pool tokens to withdraw from
+    tokenIndexStart = bound(tokenIndexStart, 0, poolTokens.length - 1);
+    tokenIndexEnd = bound(tokenIndexEnd, tokenIndexStart, poolTokens.length - 1);
+
+    // For all the pool tokens over the range choose an amount in [1, principalRedeemable]
+    // to withdraw. The number of pool tokens we withdraw on could be less than the number of
+    // pool tokens in the range if a token's principalRedeemable is 0
+    uint256 withdrawalAmount = 0;
+    uint256 totalWithdrawalAmount = 0;
+    uint256[] memory withdrawalAmounts = new uint256[](tokenIndexEnd - tokenIndexStart + 1);
+    uint256 withdrawalAmountIndex = 0;
+    for (uint256 i = tokenIndexStart; i <= tokenIndexEnd; ++i) {
+      TokenInfo storage tokenInfo = poolTokens[i];
+      (, uint256 principalRedeemable) = loan.availableToWithdraw(tokenInfo.tokenId);
+      if (principalRedeemable > 0) {
+        withdrawalAmount = bound(withdrawalAmount, 1, principalRedeemable);
+        tokenInfo.withdrawn += withdrawalAmount;
+        totalWithdrawalAmount += withdrawalAmount;
+        poolTokensFromLastCall.push(tokenInfo);
+        withdrawalAmounts[withdrawalAmountIndex] = withdrawalAmount;
+        withdrawalAmountIndex++;
+      }
+    }
+
+    sumWithdrawn += totalWithdrawalAmount;
+
+    // Now that we have withdrawal amounts for all the pool tokens in the range with non-zero
+    // principalRedeemable, We can make the call to withdrawMultiple
+    uint256[] memory tokenIdsForWithdrawMultiple = new uint256[](poolTokensFromLastCall.length);
+    uint256[] memory withdrawalAmountsForWithdrawMultiple = new uint256[](
+      poolTokensFromLastCall.length
+    );
+    for (uint256 i = 0; i < poolTokensFromLastCall.length; ++i) {
+      tokenIdsForWithdrawMultiple[i] = poolTokensFromLastCall[i].tokenId;
+      withdrawalAmountsForWithdrawMultiple[i] = withdrawalAmounts[i];
+    }
+    loan.withdrawMultiple(tokenIdsForWithdrawMultiple, withdrawalAmountsForWithdrawMultiple);
+  }
+
+  function getPoolTokensFromLastCall() external view returns (TokenInfo[] memory) {
+    return poolTokensFromLastCall;
   }
 
   // So we can mint UIDs to the test class
@@ -90,6 +148,12 @@ contract CallableLoanHandler is Test {
     bytes calldata
   ) external pure returns (bytes4) {
     return 0xf23a6e61;
+  }
+
+  /// @notice Clear state that doesn't persist across calls
+  modifier clearCallState() {
+    delete poolTokensFromLastCall;
+    _;
   }
 }
 
@@ -109,10 +173,11 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
 
     // Manually override all the target contracts to be just the handler. We don't want any of the
     // contracts created in super's setUp to be called
-    bytes4[] memory selectors = new bytes4[](3);
+    bytes4[] memory selectors = new bytes4[](4);
     selectors[0] = handler.deposit.selector;
     selectors[1] = handler.withdraw.selector;
     selectors[2] = handler.warp.selector;
+    selectors[3] = handler.withdrawMultiple.selector;
     targetContract(address(handler));
     targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
   }
@@ -160,66 +225,81 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   /// PoolTokenInfo invariants
 
   function invariant_TokenInfoTrancheIsUncalledCapitalTranche() public {
-    uint256 tokenIndex = handler.indexOfLastTokenInteractedWith();
-    if (tokenIndex == type(uint256).max) {
-      // Early return if there have been no deposits yet
+    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+      .getPoolTokensFromLastCall();
+    if (poolTokensFromLastInteraction.length == 0) {
+      // There haven't been any deposits - early return!
       return;
     }
 
-    assertEq(
-      poolTokens.getTokenInfo(handler.getTokenInfoByIndex(tokenIndex).tokenId).tranche,
-      handler.loan().uncalledCapitalTrancheIndex()
-    );
+    for (uint i = 0; i < poolTokensFromLastInteraction.length; ++i) {
+      assertEq(
+        poolTokens.getTokenInfo(poolTokensFromLastInteraction[i].tokenId).tranche,
+        handler.loan().uncalledCapitalTrancheIndex()
+      );
+    }
   }
 
   function invariant_TokenInfoPoolIsCallableLoan() public {
-    uint256 tokenIndex = handler.indexOfLastTokenInteractedWith();
-    if (tokenIndex == type(uint256).max) {
-      // Early return if there have been no deposits yet
+    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+      .getPoolTokensFromLastCall();
+    if (poolTokensFromLastInteraction.length == 0) {
+      // There haven't been any deposits - early return!
       return;
     }
 
-    assertEq(
-      poolTokens.getTokenInfo(handler.getTokenInfoByIndex(tokenIndex).tokenId).pool,
-      address(handler.loan())
-    );
+    for (uint i = 0; i < poolTokensFromLastInteraction.length; ++i) {
+      assertEq(
+        poolTokens.getTokenInfo(poolTokensFromLastInteraction[i].tokenId).pool,
+        address(handler.loan())
+      );
+    }
   }
 
   function invariant_TokenInfoPrincipalAmountIsAmountDeposited() public {
-    uint256 tokenIndex = handler.indexOfLastTokenInteractedWith();
-    if (tokenIndex == type(uint256).max) {
-      // Early return if there have been no deposits yet
+    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+      .getPoolTokensFromLastCall();
+    if (poolTokensFromLastInteraction.length == 0) {
+      // There haven't been any deposits - early return!
       return;
     }
 
-    assertEq(
-      poolTokens.getTokenInfo(handler.getTokenInfoByIndex(tokenIndex).tokenId).principalAmount,
-      handler.getTokenInfoByIndex(tokenIndex).originalDeposited -
-        handler.getTokenInfoByIndex(tokenIndex).withdrawn
-    );
+    for (uint i = 0; i < poolTokensFromLastInteraction.length; ++i) {
+      assertEq(
+        poolTokens.getTokenInfo(poolTokensFromLastInteraction[i].tokenId).principalAmount,
+        poolTokensFromLastInteraction[i].originalDeposited -
+          poolTokensFromLastInteraction[i].withdrawn
+      );
+    }
   }
 
   function invariant_TokenInfoPrincipalRedeemedIsZero() public {
-    uint256 tokenIndex = handler.indexOfLastTokenInteractedWith();
-    if (tokenIndex == type(uint256).max) {
-      // Early return if there have been no deposits yet
+    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+      .getPoolTokensFromLastCall();
+    if (poolTokensFromLastInteraction.length == 0) {
+      // There haven't been any deposits - early return!
       return;
     }
 
-    assertZero(
-      poolTokens.getTokenInfo(handler.getTokenInfoByIndex(tokenIndex).tokenId).principalRedeemed
-    );
+    for (uint i = 0; i < poolTokensFromLastInteraction.length; ++i) {
+      assertZero(
+        poolTokens.getTokenInfo(poolTokensFromLastInteraction[i].tokenId).principalRedeemed
+      );
+    }
   }
 
   function invariant_TokenInfoInterestRedeemedIsZero() public {
-    uint256 tokenIndex = handler.indexOfLastTokenInteractedWith();
-    if (tokenIndex == type(uint256).max) {
-      // Early return if there have been no deposits yet
+    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+      .getPoolTokensFromLastCall();
+    if (poolTokensFromLastInteraction.length == 0) {
+      // There haven't been any deposits - early return!
       return;
     }
 
-    assertZero(
-      poolTokens.getTokenInfo(handler.getTokenInfoByIndex(tokenIndex).tokenId).interestRedeemed
-    );
+    for (uint i = 0; i < poolTokensFromLastInteraction.length; ++i) {
+      assertZero(
+        poolTokens.getTokenInfo(poolTokensFromLastInteraction[i].tokenId).interestRedeemed
+      );
+    }
   }
 }
