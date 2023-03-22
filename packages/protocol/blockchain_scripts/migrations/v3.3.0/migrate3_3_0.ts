@@ -1,7 +1,6 @@
 import {Context, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
-import {deployMonthlyScheduleRepo} from "../../baseDeploy/deployMonthlyScheduleRepo"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import {
   ContractDeployer,
