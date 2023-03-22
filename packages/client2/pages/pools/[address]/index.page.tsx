@@ -163,7 +163,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       userId: account?.toLowerCase() ?? "",
       borrowerAllPools: otherPoolsFromThisBorrower,
     },
-    returnPartialData: true,
   });
 
   const tranchedPool = data?.loan;
