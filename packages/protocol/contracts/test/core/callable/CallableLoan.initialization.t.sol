@@ -14,6 +14,29 @@ import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
 contract CallableLoanInitializationTest is CallableLoanBaseTest {
+  function testInitializationPausesDrawdowns(uint256 drawdownAmount, uint256 randomJump) public {
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.build(BORROWER);
+    assertTrue(callableLoan.drawdownsPaused());
+    _startImpersonation(BORROWER);
+    uint256[] memory allowedTypes = new uint256[](1);
+    allowedTypes[0] = 0; // legacy UID type
+    callableLoan.setAllowedUIDTypes(allowedTypes);
+    _stopImpersonation();
+    addToGoList(DEPOSITOR);
+    _startImpersonation(DEPOSITOR);
+    usdc.approve(address(callableLoan), type(uint256).max);
+    uint256 poolToken = callableLoan.deposit(3, usdcVal(10));
+    _stopImpersonation();
+
+    _startImpersonation(BORROWER);
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.CannotDrawdownWhenDrawdownsPaused.selector)
+    );
+    randomJump = bound(randomJump, block.timestamp, block.timestamp + 1000 days);
+    vm.warp(randomJump);
+    callableLoan.drawdown(drawdownAmount);
+  }
+
   function testInitializationGrantsProperRoles() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), GF_OWNER));
