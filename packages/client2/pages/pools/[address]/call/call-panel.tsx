@@ -28,9 +28,6 @@ gql`
   fragment CallPanelCallableLoanFields on CallableLoan {
     id
     address
-    balance
-    termEndTime
-    delinquency @client
     loanPhase @client
     inLockupPeriod @client
     nextPrincipalDueTime @client
