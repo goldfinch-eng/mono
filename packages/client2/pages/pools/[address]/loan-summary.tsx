@@ -3,7 +3,12 @@ import { formatDistanceStrict } from "date-fns";
 import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
-import { InfoLine, Link } from "@/components/design-system";
+import {
+  InfoLine,
+  Link,
+  Shimmer,
+  ShimmerLines,
+} from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
@@ -130,6 +135,27 @@ export function LoanSummary({
               : "End of loan term"
           }
         />
+      </div>
+    </div>
+  );
+}
+
+export function LoanSummaryPlaceholder() {
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200"></div>
+          <span className="text-sm">
+            <Shimmer style={{ width: "15ch" }} />
+          </span>
+        </div>
+      </div>
+      <div className="mb-8">
+        <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
+          <Shimmer style={{ width: "25ch" }} />
+        </h1>
+        <ShimmerLines lines={3} />
       </div>
     </div>
   );

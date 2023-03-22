@@ -32,7 +32,7 @@ import { CreditMemoAnalysisCard } from "./credit-memo-analysis-card";
 import { DealHighlights } from "./deal-highlights";
 import { FundingStats } from "./funding-stats";
 import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
-import { LoanSummary } from "./loan-summary";
+import { LoanSummary, LoanSummaryPlaceholder } from "./loan-summary";
 import {
   RepaymentTermsSchedule,
   RepaymentTermsSchedulePlaceholder,
@@ -392,7 +392,9 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
                   ) : null}
                 </>
-              ) : null}
+              ) : (
+                <LoanSummaryPlaceholder />
+              )}
             </div>
           </AdaptiveStickyContainer>
         </div>
