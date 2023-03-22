@@ -28,6 +28,8 @@ gql`
   fragment SubmitCallModalPoolTokenFields on PoolToken {
     id
     principalAmount
+    principalRedeemable @client
+    interestRedeemable
   }
 `;
 
@@ -134,6 +136,13 @@ function ReviewStep({
   const { data } = useStepperContext();
   const { usdcToCall, expectedRepaymentDate } = data as StepperDataType;
 
+  const totalUsdcAutoRedeeming = {
+    token: "USDC" as const,
+    amount: sum("principalRedeemable", callablePoolTokens).add(
+      sum("interestRedeemable", callablePoolTokens)
+    ),
+  };
+
   const onSubmit = async () => {
     if (!provider) {
       throw new Error("Wallet not connected properly");
@@ -183,7 +192,9 @@ function ReviewStep({
         </div>
       </div>
       <Alert className="mb-6" type="info">
-        Lorem ipsum
+        By submitting a call request, your current claimable principal and
+        interest ({formatCrypto(totalUsdcAutoRedeeming)}) will be automatically
+        claimed.
       </Alert>
       <div className="text-xs text-sand-400">
         Legalese goes here. Lorem ipsum dolor sit amet, consectetur adipiscing

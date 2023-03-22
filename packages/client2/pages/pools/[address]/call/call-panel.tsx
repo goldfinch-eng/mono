@@ -21,6 +21,7 @@ gql`
     calledAt
     callDueAt
     isCapitalCalled
+    ...SubmitCallModalPoolTokenFields
   }
 `;
 
