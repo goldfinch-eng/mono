@@ -14,7 +14,9 @@ import {IERC20} from "../../../../interfaces/IERC20.sol";
 contract CallableLoanHandler is Test {
   struct TokenInfo {
     uint256 tokenId;
+    // Set once, upon deposit
     uint256 originalDeposited;
+    // Increased every time the token is randomly selected for withdrawals
     uint256 withdrawn;
   }
 
