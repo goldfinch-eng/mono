@@ -58,6 +58,7 @@ import {
   getCurrentTimestamp,
   getTruffleContractAtAddress,
   SECONDS_PER_DAY,
+  getMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -1688,7 +1689,7 @@ describe("mainnet forking tests", async function () {
     describe("Callable Loans upgradeability tests", () => {
       // goldfinchFactory.createC
       describe("createCallableLoanWithProxyOwner", async () => {
-        it("creates a proxy who's owner is different than the borrower", async () => {
+        it("creates a proxy whose owner is different than the borrower", async () => {
           const protocolOwner = await getProtocolOwner()
           const [proxyOwner, borrower] = await hre.getUnnamedAccounts()
 
@@ -1697,21 +1698,8 @@ describe("mainnet forking tests", async function () {
 
           assertNonNullable(proxyOwner)
           assertNonNullable(borrower)
-          const scheduleRepo = await getTruffleContract<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
 
-          await scheduleRepo.createSchedule(
-            24, // num periods
-            3, // num periods per principal period
-            1, // num periods per interest period
-            0 // num grace periods
-          )
-
-          const schedule = await scheduleRepo.getSchedule(
-            24, // num periods
-            3, // num periods per principal period
-            1, // num periods per interest period
-            0 // num grace periods
-          )
+          const schedule = await getMonthlySchedule(goldfinchConfig, 24, 1, 3, 0)
 
           // grant the borrower the ability to create a pool
           await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
@@ -1757,7 +1745,7 @@ describe("mainnet forking tests", async function () {
             at: callableLoanAddress,
           })
 
-          // Callable loans doesn't have this function, so we expect this to ervert
+          // Callable loans doesn't have this function, so we expect this to revert
           await expect(callableLoanProxyAsTranchedPool.SENIOR_ROLE()).to.be.rejected
           // The borrower shouldn't be able to upgrade the proxy
           await expect(callableLoanAsProxy.upgradeImplementation({from: borrower})).to.be.rejected
