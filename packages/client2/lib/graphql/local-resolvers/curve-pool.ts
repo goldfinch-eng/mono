@@ -84,10 +84,13 @@ export const curvePoolResolvers: Resolvers[string] = {
       .div(apyDecimals);
 
     const usdCostPerLpToken = await getUsdPerLpToken();
+    const apy = usdCostPerLpToken.isZero()
+      ? FixedNumber.fromString("0")
+      : FixedNumber.from(currentEarnRatePerYearPerCurveToken)
+          .divUnsafe(FixedNumber.from(apyDecimals))
+          .divUnsafe(usdCostPerLpToken);
 
-    return FixedNumber.from(currentEarnRatePerYearPerCurveToken)
-      .divUnsafe(FixedNumber.from(apyDecimals))
-      .divUnsafe(usdCostPerLpToken);
+    return apy;
   },
   async usdPerLpToken(): Promise<FixedNumber> {
     return getUsdPerLpToken();
