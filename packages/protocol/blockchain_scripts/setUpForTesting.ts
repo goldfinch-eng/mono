@@ -237,6 +237,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await openCallableLoan.deposit(FAZZ_UNCALLED_CAPITAL_TRANCHE, String(depositAmount), {
       from: await signer.getAddress(),
     })
+    await openCallableLoan.unpauseDrawdowns({from: protocol_owner})
     /*** CALLABLE LOAN OPEN END ***/
 
     /*** CALLABLE LOAN - FAZZ EXAMPLE START ***/
@@ -280,7 +281,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await closedCallableLoan.deposit(FAZZ_UNCALLED_CAPITAL_TRANCHE, String(depositAmount), {
       from: await signer.getAddress(),
     })
-
+    await closedCallableLoan.unpauseDrawdowns({from: protocol_owner})
     await closedCallableLoan.drawdown(String(depositAmount))
     /*** CALLABLE LOAN CLOSED END ***/
 
