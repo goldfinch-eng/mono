@@ -1,6 +1,12 @@
+import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {deployments} from "hardhat"
-import {SIGNER_ROLE, getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
+import {
+  SIGNER_ROLE,
+  getProtocolOwner,
+  getTruffleContract,
+  USDCDecimals,
+} from "packages/protocol/blockchain_scripts/deployHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
   BorrowerInstance,
@@ -8,10 +14,13 @@ import {
   ERC20Instance,
   CallableLoanInstance,
   UniqueIdentityInstance,
+  MembershipOrchestratorInstance,
+  PoolTokensInstance,
+  GFIInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 const Borrower = artifacts.require("Borrower")
 import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {BN, advanceTime, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {advanceTime, decodeAndGetFirstLog, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {NON_US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED, assertNonNullable} from "@goldfinch-eng/utils"
 import {BorrowerCreated} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {getERC20Address, MAINNET_CHAIN_ID} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
@@ -21,6 +30,7 @@ import hre from "hardhat"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdentity"
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
+import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/CallableLoan"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
@@ -31,6 +41,9 @@ const setupTest = deployments.createFixture(async () => {
   return {
     uniqueIdentity: await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity"),
     gfFactory: await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory"),
+    membershipOrchestrator: await getTruffleContract<MembershipOrchestratorInstance>("MembershipOrchestrator"),
+    poolTokens: await getTruffleContract<PoolTokensInstance>("PoolTokens"),
+    gfi: await getTruffleContract<GFIInstance>("GFI"),
     usdc: await getTruffleContract<ERC20Instance>("ERC20", {at: getERC20Address("USDC", MAINNET_CHAIN_ID)}),
   }
 })
@@ -43,6 +56,9 @@ describe("v3.3.0", async function () {
   let usdc: ERC20Instance
   let logger: Logger
   let gfFactory: GoldfinchFactoryInstance
+  let membershipOrchestrator: MembershipOrchestratorInstance
+  let poolTokens: PoolTokensInstance
+  let gfi: GFIInstance
   let uniqueIdentity: UniqueIdentityInstance
   let lenderAddress
   let borrowerAddress
@@ -52,7 +68,7 @@ describe("v3.3.0", async function () {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, gfFactory, uniqueIdentity} = await setupTest())
+    ;({usdc, gfFactory, uniqueIdentity, membershipOrchestrator, poolTokens, gfi} = await setupTest())
     const {
       deployments: {log},
     } = hre
@@ -61,7 +77,7 @@ describe("v3.3.0", async function () {
     const signer = (await allSigners[0]?.getAddress()) as string
     lenderAddress = (await allSigners[1]?.getAddress()) as string
     borrowerAddress = (await allSigners[2]?.getAddress()) as string
-    await fundWithWhales(["USDC", "ETH"], [lenderAddress, borrowerAddress, MAINNET_WARBLER_LABS_MULTISIG])
+    await fundWithWhales(["GFI", "USDC", "ETH"], [lenderAddress, borrowerAddress, MAINNET_WARBLER_LABS_MULTISIG])
     await impersonateAccount(hre, borrowerAddress)
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), borrowerAddress)
     borrowerContract = await createBorrowerContract(borrowerAddress)
@@ -90,6 +106,121 @@ describe("v3.3.0", async function () {
       const borrowerRole = await gfFactory.BORROWER_ROLE()
       await expect(MAINNET_WARBLER_LABS_MULTISIG).to.eq("0x229Db88850B319BD4cA751490F3176F511823372")
       await expect(gfFactory.hasRole(borrowerRole, "0x229Db88850B319BD4cA751490F3176F511823372")).to.eventually.be.true
+    })
+  })
+
+  describe("Membership", async () => {
+    let originalPoolTokenId: string
+
+    beforeEach(async () => {
+      originalPoolTokenId = (
+        await poolTokens.tokenOfOwnerByIndex(lenderAddress, (await poolTokens.balanceOf(lenderAddress)).sub(new BN(1)))
+      ).toString()
+    })
+
+    it("allows uncalled tokens in membership", async () => {
+      const gfiDepositAmount = 10000
+      await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
+      await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
+
+      await membershipOrchestrator.deposit(
+        {
+          gfi: String(gfiDepositAmount),
+          capitalDeposits: [
+            {
+              assetAddress: poolTokens.address,
+              id: originalPoolTokenId,
+            },
+          ],
+        },
+        {from: lenderAddress}
+      )
+
+      const scores = await membershipOrchestrator.memberScoreOf(lenderAddress)
+      expect(scores[1]).to.equal(new BN(31622776601683))
+
+      const capital = await membershipOrchestrator.totalCapitalHeldBy(lenderAddress)
+      const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
+      expect(capital[1]).to.equal(depositAmount)
+    })
+
+    it("does not allow called tokens in membership", async () => {
+      const gfiDepositAmount = 10000
+      const callAmount = 10000000
+
+      await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
+      await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
+
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), borrowerAddress, {
+        from: borrowerAddress,
+      })
+      await advanceTime({days: 30})
+      const callResult = await callableLoanInstance.submitCall(new BN(callAmount), originalPoolTokenId, {
+        from: lenderAddress,
+      })
+      const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
+        callResult.receipt.rawLogs,
+        callableLoanInstance,
+        "CallRequestSubmitted"
+      )
+
+      // can't submit old pool token anymore
+      await expect(
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: originalPoolTokenId,
+              },
+            ],
+          },
+          {from: lenderAddress}
+        )
+      ).to.be.rejected
+
+      // can't submit called pool token
+      await poolTokens.approve(membershipOrchestrator.address, callEvent.args.callRequestedTokenId, {
+        from: lenderAddress,
+      })
+      await expect(
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: callEvent.args.callRequestedTokenId,
+              },
+            ],
+          },
+          {from: lenderAddress}
+        )
+      ).to.be.rejected
+
+      // can submit new uncalled pool token
+      await poolTokens.approve(membershipOrchestrator.address, callEvent.args.remainingTokenId, {
+        from: lenderAddress,
+      })
+      await expect(
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: callEvent.args.remainingTokenId,
+              },
+            ],
+          },
+          {from: lenderAddress}
+        )
+      ).to.not.be.rejected
+
+      const capital = await membershipOrchestrator.totalCapitalHeldBy(lenderAddress)
+      const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
+      expect(capital[1]).to.equal(depositAmount.sub(new BN(callAmount)))
     })
   })
 

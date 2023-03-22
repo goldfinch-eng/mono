@@ -416,12 +416,12 @@ contract CallableLoan is
     uint256 timestamp
   ) public view override returns (uint256) {
     return
-      _staleCreditLine.interestOwed() +
-      CallableLoanAccountant.calculateInterest(
-        timestamp - block.timestamp,
-        assumedBalance,
-        _staleCreditLine.interestApr()
-      );
+      (_staleCreditLine.totalInterestAccrued() +
+        CallableLoanAccountant.calculateInterest(
+          timestamp - block.timestamp,
+          assumedBalance,
+          _staleCreditLine.interestApr()
+        )).saturatingSub(_staleCreditLine.totalInterestPaid());
   }
 
   /// @inheritdoc ICallableLoan

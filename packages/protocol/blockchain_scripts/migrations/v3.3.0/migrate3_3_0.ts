@@ -57,7 +57,7 @@ export async function main() {
     deferred: [
       await populateTxAndLog(
         gfConfig.populateTransaction.setBorrowerImplementation(borrowerImpl.address),
-        `Populated tx to set CreditLine impl to ${borrowerImpl.address}`
+        `Populated tx to set Borrower impl to ${borrowerImpl.address}`
       ),
     ],
   })

@@ -231,11 +231,13 @@ library CallableCreditLineLogic {
       return;
     }
 
-    uint256 currentlyActivePeriod = cl._paymentSchedule.currentPeriod();
-    uint256 activePeriodAtLastCheckpoint = cl._paymentSchedule.periodAt(cl._checkpointedAsOf);
+    uint256 currentlyActivePrincipalPeriod = cl._paymentSchedule.currentPrincipalPeriod();
+    uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
+      cl._checkpointedAsOf
+    );
 
-    if (currentlyActivePeriod > activePeriodAtLastCheckpoint) {
-      cl._waterfall.settleReserves(currentlyActivePeriod);
+    if (currentlyActivePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint) {
+      cl._waterfall.settleReserves(currentlyActivePrincipalPeriod);
     }
 
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
