@@ -30,21 +30,23 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     uint256 reserve
   );
 
-  function testRevertsIfPaymentEq0() public {
+  function testPayReverts(address payer, uint256 paymentAmount) public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
 
-    vm.expectRevert(ICallableLoanErrors.ZeroPaymentAmount.selector);
-    callableLoan.pay(0);
+    vm.expectRevert(ICallableLoanErrors.RequiresUpgrade.selector);
+    _startImpersonation(payer);
+    callableLoan.pay(paymentAmount);
   }
 
-  function testRevertsIfPaymentEq0() public {
-    (CallableLoan callableLoan, ) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
+  // TODO: Revert
+  // function testRevertsIfPaymentEq0() public {
+  //   (CallableLoan callableLoan, ) = defaultCallableLoan();
+  //   depositAndDrawdown(callableLoan, usdcVal(400));
 
-    vm.expectRevert(ICallableLoanErrors.ZeroPaymentAmount.selector);
-    callableLoan.pay(0);
-  }
+  //   vm.expectRevert(ICallableLoanErrors.ZeroPaymentAmount.selector);
+  //   callableLoan.pay(0);
+  // }
 
   //   function testOnlyTakesWhatsNeededForExcessPayment(uint256 amount, uint256 timestamp) public {
   //     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
