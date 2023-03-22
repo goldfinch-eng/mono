@@ -11,6 +11,7 @@ import {
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
+  ContractDeployer,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_GOVERNANCE_MULTISIG,
@@ -57,13 +58,14 @@ import {
   getCurrentTimestamp,
   getTruffleContractAtAddress,
   SECONDS_PER_DAY,
-  getMonthlySchedule,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
   BackerRewardsInstance,
   BorrowerInstance,
+  CallableLoanImplementationRepositoryInstance,
+  CallableLoanInstance,
   CommunityRewardsInstance,
   CreditLineInstance,
   FiduInstance,
@@ -81,6 +83,7 @@ import {
   StakingRewardsInstance,
   TranchedPoolContract,
   TranchedPoolInstance,
+  UcuProxyInstance,
   UniqueIdentityInstance,
   WithdrawalRequestTokenInstance,
   ZapperInstance,
@@ -116,6 +119,7 @@ import {
   Borrower as EthersBorrower,
   GoldfinchFactory,
   ERC20,
+  CallableLoanImplementationRepository,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
@@ -123,6 +127,7 @@ import {
   BorrowerCreated,
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
+import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -1677,6 +1682,89 @@ describe("mainnet forking tests", async function () {
             }
           }
         }).timeout(TEST_TIMEOUT)
+      })
+    })
+
+    describe("Callable Loans upgradeability tests", () => {
+      // goldfinchFactory.createC
+      describe("createCallableLoanWithProxyOwner", async () => {
+        it("creates a proxy who's owner is different than the borrower", async () => {
+          const protocolOwner = await getProtocolOwner()
+          const [proxyOwner, borrower] = await hre.getUnnamedAccounts()
+
+          // we want to make sure that these addresses arent the same
+          expect(proxyOwner).to.not.equal(borrower)
+
+          assertNonNullable(proxyOwner)
+          assertNonNullable(borrower)
+          const scheduleRepo = await getTruffleContract<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
+
+          await scheduleRepo.createSchedule(
+            24, // num periods
+            3, // num periods per principal period
+            1, // num periods per interest period
+            0 // num grace periods
+          )
+
+          const schedule = await scheduleRepo.getSchedule(
+            24, // num periods
+            3, // num periods per principal period
+            1, // num periods per interest period
+            0 // num grace periods
+          )
+
+          // grant the borrower the ability to create a pool
+          await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
+          const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
+            proxyOwner, // proxy owner
+            borrower, // borrower
+            usdcVal(1_000_000), // limit
+            bigVal(0.8), // interestApr
+            2, // numLockupPeriods
+            schedule, // schedule
+            0,
+            0,
+            [0],
+            {
+              from: borrower,
+            }
+          )
+          const lastEvent = result.logs[result.logs.length - 1]
+          const callableLoanAddress = (lastEvent?.args as {loan: string})?.loan
+          const callableLoan = await getTruffleContract<CallableLoanInstance>("CallableLoan", {at: callableLoanAddress})
+          const callableLoanAsProxy = await getTruffleContract<UcuProxyInstance>("UcuProxy", {at: callableLoanAddress})
+
+          // Proxy owner and borrower should be different
+          expect(await callableLoanAsProxy.owner()).to.eq(proxyOwner)
+          expect(await callableLoan.borrower()).to.eq(borrower)
+
+          const deployer = new ContractDeployer(console.log, hre)
+
+          // We need a contract that has `.version` method, in order to be able to push it to the
+          // CallableLoanImplementationRepository. TranchedPool complies to this interface so we'll
+          // use it for this purpose
+          const tranchedPoolImplAddr = await deployTranchedPool(deployer)
+          const callableLoanImplRepo = await getTruffleContract<CallableLoanImplementationRepositoryInstance>(
+            "CallableLoanImplementationRepository"
+          )
+
+          // Typechain is not picking up on the presence of the append method.
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          await callableLoanImplRepo.append(tranchedPoolImplAddr)
+
+          const callableLoanProxyAsTranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
+            at: callableLoanAddress,
+          })
+
+          // Callable loans doesn't have this function, so we expect this to ervert
+          await expect(callableLoanProxyAsTranchedPool.SENIOR_ROLE()).to.be.rejected
+          // The borrower shouldn't be able to upgrade the proxy
+          await expect(callableLoanAsProxy.upgradeImplementation({from: borrower})).to.be.rejected
+          await callableLoanAsProxy.upgradeImplementation({from: proxyOwner})
+          // Now that the proxy is upgraded, this call should succeed
+          await callableLoanProxyAsTranchedPool.SENIOR_ROLE()
+        })
       })
     })
 
