@@ -36,9 +36,6 @@ export function ExpandableCard({
   children,
 }: ExpandableCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const iconHeight = 48;
-  const scale = iconHeight / icon.height;
-  const iconWidth = icon.width * scale;
 
   const hasSlot3 = !!(slot3 && slot3Label);
 
@@ -68,7 +65,7 @@ export function ExpandableCard({
         <div className="grid grid-cols-12 items-center">
           <div className="col-span-11 xs:col-span-7 md:col-span-5">
             <div className="flex items-center">
-              <Image src={icon} height={iconHeight} width={iconWidth} alt="" />
+              <Image src={icon} height={48} width="auto" alt="" />
               <div className="ml-4">
                 <div className="mb-1.5 text-xl font-medium">{heading}</div>
                 <div className="text-sand-700">{subheading}</div>
