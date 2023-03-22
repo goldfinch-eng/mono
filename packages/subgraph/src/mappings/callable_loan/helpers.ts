@@ -125,13 +125,23 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     }
   } else {
     const startTime = callableLoan.termStartTime.minus(BigInt.fromI32(1))
+    const lastFullPaymentTime = callableLoanContract.lastFullPaymentTime()
     termInSeconds = callableLoanContract.termEndTime().minus(callableLoanContract.termStartTime()).toI32()
     const periodsInTerm = scheduleContract.periodsInTerm()
     let prevInterest = BigInt.zero()
     let prevPrincipal = BigInt.zero()
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-      const interestOwedAt = callableLoanContract.estimateOwedInterestAt(estimatedPaymentDate)
+      // Can't call estimateOwedInterestAt on timestamps in the past
+      if (estimatedPaymentDate.lt(lastFullPaymentTime)) {
+        continue
+      }
+      const interestOwedAt_result = callableLoanContract.try_estimateOwedInterestAt(estimatedPaymentDate)
+      // Just being cautious, in case the timestamp check above isn't good enought
+      if (interestOwedAt_result.reverted) {
+        continue
+      }
+      const interestOwedAt = interestOwedAt_result.value
       const interest = interestOwedAt.minus(prevInterest)
       prevInterest = interestOwedAt
       const principalOwedAt = callableLoanContract.principalOwedAt(estimatedPaymentDate)

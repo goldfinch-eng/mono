@@ -246,10 +246,14 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.termInSeconds
   )
   tranchedPool.usdcApy = estimateJuniorAPY(tranchedPool)
-  tranchedPool.rawGfiApy = BigDecimal.zero()
+  if (isCreating) {
+    tranchedPool.rawGfiApy = BigDecimal.zero()
+  }
   tranchedPool.save()
 
-  calculateApyFromGfiForAllPools()
+  if (isCreating) {
+    calculateApyFromGfiForAllPools()
+  }
 
   return tranchedPool
 }
@@ -283,7 +287,6 @@ export function calculateApyFromGfiForAllPools(): void {
   if (backerRewards.totalRewards == BigInt.zero() || backerRewards.maxInterestDollarsEligible == BigInt.zero()) {
     return
   }
-  // TODO this should exclude closed pools (like Cauris #3) but there's no on-chain indicator that can determine this.
   const tranchedPoolList = getListOfAllTranchedPoolAddresses()
   let repaymentSchedules: ScheduledRepayment[] = []
   for (let i = 0; i < tranchedPoolList.length; i++) {
@@ -322,6 +325,7 @@ export function calculateApyFromGfiForAllPools(): void {
       summedRewardsByTranchedPool.set(tranchedPoolAddress, reward.gfiAmount)
     }
   }
+  log.info("summedRewardsByTranchedPool: {}", [summedRewardsByTranchedPool.toString()])
   const gfiPerPrincipalDollar = calculateAnnualizedGfiRewardsPerPrincipalDollar(summedRewardsByTranchedPool)
   for (let i = 0; i < gfiPerPrincipalDollar.keys().length; i++) {
     const tranchedPoolAddress = gfiPerPrincipalDollar.keys()[i]
@@ -514,6 +518,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     } else {
       // Have to decrement by 1 or else the first period will accidentally be 1 further in the future
       const startTime = creditLineContract.termStartTime().minus(BigInt.fromI32(1))
+      const lastFullPaymentTime = creditLineContract.lastFullPaymentTime()
       termInSeconds = creditLineContract.termEndTime().minus(creditLineContract.termStartTime()).toI32()
       const periodsInTerm = scheduleContract.periodsInTerm()
       let prevInterest = BigInt.zero()
@@ -521,7 +526,16 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
       // TODO revisit this when we have access to the function for interestOwedAtSansLateFees
       for (let period = 0; period < periodsInTerm.toI32(); period++) {
         const estimatedPaymentDate = scheduleContract.periodEndTime(startTime, BigInt.fromI32(period))
-        const interestOwedAt = creditLineContract.interestOwedAt(estimatedPaymentDate)
+        // Can't call estimateOwedInterestAt on timestamps in the past
+        if (estimatedPaymentDate.lt(lastFullPaymentTime)) {
+          continue
+        }
+        const interestOwedAt_result = creditLineContract.try_interestOwedAt(estimatedPaymentDate)
+        // Just being cautious, in case the timestamp check above isn't good enought
+        if (interestOwedAt_result.reverted) {
+          continue
+        }
+        const interestOwedAt = interestOwedAt_result.value
         const interest = interestOwedAt.minus(prevInterest)
         prevInterest = interestOwedAt
         const principalOwedAt = creditLineContract.principalOwedAt(estimatedPaymentDate)

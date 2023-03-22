@@ -30,7 +30,9 @@ interface RepaymentScheduleBarChartProps {
 
 const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
   <div className="flex justify-between">
-    <div className="text-sm font-normal text-sand-600">Repayment schedule</div>
+    <div className="text-sm font-normal text-sand-600">
+      Upcoming repayment schedule
+    </div>
     <div className="flex">
       {payload?.map(({ value, color }) => (
         <div key={value} className="ml-4 flex items-center">

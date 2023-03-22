@@ -1,4 +1,4 @@
-import {Address} from "@graphprotocol/graph-ts"
+import {Address, log} from "@graphprotocol/graph-ts"
 
 import {TranchedPool, PoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
@@ -33,6 +33,7 @@ import {
   getLeverageRatioFromConfig,
   deleteTranchedPoolRepaymentSchedule,
   generateRepaymentScheduleForTranchedPool,
+  calculateApyFromGfiForAllPools,
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
@@ -146,6 +147,13 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   handleCreditLineBalanceChanged()
 
   updateTotalDrawdowns(event.params.amount)
+
+  if (event.address.toHexString() == "0x4998214436fa51defbf3c5334205e2468a036776") {
+    log.info("handling drawdown for 0x4998214436fa51defbf3c5334205e2468a036776, block no: {}", [
+      event.block.number.toString(),
+    ])
+  }
+  calculateApyFromGfiForAllPools()
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
@@ -156,6 +164,12 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
   tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principal)
   tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interest)
+  if (!event.params.principal.isZero()) {
+    deleteTranchedPoolRepaymentSchedule(tranchedPool)
+    const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+    tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+    tranchedPool.numRepayments = schedulingResult.repaymentIds.length
+  }
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)

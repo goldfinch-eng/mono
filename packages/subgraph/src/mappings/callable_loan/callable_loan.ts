@@ -98,6 +98,13 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   callableLoan.lastFullPaymentTime = callableLoanContract.lastFullPaymentTime().toI32()
   callableLoan.principalAmountRepaid = callableLoan.principalAmountRepaid.plus(event.params.principal)
   callableLoan.interestAmountRepaid = callableLoan.interestAmountRepaid.plus(event.params.interest)
+  if (!event.params.principal.isZero()) {
+    // Regenerate the repayment schedule when a principal payment is made
+    deleteCallableLoanRepaymentSchedule(callableLoan)
+    const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
+    callableLoan.repaymentSchedule = schedulingResult.repaymentIds
+    callableLoan.numRepayments = schedulingResult.repaymentIds.length
+  }
   callableLoan.save()
 
   updateTotalPrincipalCollected(event.params.principal)

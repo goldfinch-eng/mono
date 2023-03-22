@@ -289,7 +289,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     {tranchedPool ? (
                       <>
                         <RepaymentTermsStats loan={tranchedPool} />
-                        <RepaymentTermsSchedule loan={tranchedPool} />
+                        <RepaymentTermsSchedule
+                          loan={tranchedPool}
+                          currentBlockTimestamp={data.currentBlock.timestamp}
+                        />
                       </>
                     ) : (
                       <>
