@@ -178,7 +178,7 @@ describe("v3.3.0", async function () {
           },
           {from: lenderAddress}
         )
-      ).to.be.rejected
+      ).to.be.rejectedWith(/nonexistent token/)
 
       // can't submit called pool token
       await poolTokens.approve(membershipOrchestrator.address, callEvent.args.callRequestedTokenId, {
@@ -197,7 +197,7 @@ describe("v3.3.0", async function () {
           },
           {from: lenderAddress}
         )
-      ).to.be.rejected
+      ).to.be.rejectedWith(/InvalidAssetWithId/)
 
       // can submit new uncalled pool token
       await poolTokens.approve(membershipOrchestrator.address, callEvent.args.remainingTokenId, {
