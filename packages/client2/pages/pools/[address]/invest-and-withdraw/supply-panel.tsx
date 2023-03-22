@@ -123,7 +123,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
     }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.gt(remainingCapacity)) {
-      return "Amount exceeds remaining junior capacity";
+      return "Amount exceeds remaining capacity";
     }
     if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
       return "Must deposit more than $0.01";
