@@ -80,7 +80,7 @@ describe("v3.3.0", async function () {
     allSigners = await hre.ethers.getSigners()
     signer = (await allSigners[0]?.getAddress()) as string
     defaultLenderAddress = (await allSigners[1]?.getAddress()) as string
-    lenders = allSigners.slice(2, 5).map((signer) => signer.address)
+    lenders = allSigners.slice(2, 5).map((signer) => signer.address) as typeof lenders
 
     await fundWithWhales(["GFI", "USDC", "ETH"], [defaultLenderAddress, MAINNET_WARBLER_LABS_MULTISIG, ...lenders])
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), FAZZ_EOA)
@@ -289,7 +289,6 @@ describe("v3.3.0", async function () {
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousBalance.add(usdcVal(11100)))
     })
 
-    // TODO:
     it("can support a combination of deposits then withdrawals", async () => {
       const lender0OriginalBalance = await usdc.balanceOf(lenders[0])
       const lender1OriginalBalance = await usdc.balanceOf(lenders[1])
