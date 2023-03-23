@@ -1,12 +1,7 @@
 import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {deployments} from "hardhat"
-import {
-  SIGNER_ROLE,
-  getProtocolOwner,
-  getTruffleContract,
-  USDCDecimals,
-} from "packages/protocol/blockchain_scripts/deployHelpers"
+import {SIGNER_ROLE, getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
   BorrowerInstance,
@@ -19,18 +14,27 @@ import {
   GFIInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 const Borrower = artifacts.require("Borrower")
-import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {
+  MAINNET_GOVERNANCE_MULTISIG,
+  MAINNET_WARBLER_LABS_MULTISIG,
+} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {advanceTime, decodeAndGetFirstLog, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
-import {NON_US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED, assertNonNullable} from "@goldfinch-eng/utils"
+import {NON_US_UID_TYPES, assertNonNullable} from "@goldfinch-eng/utils"
 import {BorrowerCreated} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {getERC20Address, MAINNET_CHAIN_ID} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
-import {createCallableLoanForBorrower} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
+import {
+  createFazzExampleLoan,
+  FAZZ_DEAL_FUNDABLE_AT,
+  FAZZ_DEAL_LIMIT_IN_DOLLARS,
+  FAZZ_DEAL_UNCALLED_CAPITAL_TRANCHE,
+  FAZZ_EOA,
+} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 import {Logger} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import hre from "hardhat"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdentity"
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
-import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/CallableLoan"
+import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/callable/CallableLoan"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
@@ -47,10 +51,6 @@ const setupTest = deployments.createFixture(async () => {
     usdc: await getTruffleContract<ERC20Instance>("ERC20", {at: getERC20Address("USDC", MAINNET_CHAIN_ID)}),
   }
 })
-
-const LIMIT_IN_DOLLARS = 2_000_000
-// Fazz is the company which owns the borrower address for the first callable loan pool
-const FAZZ_EOA = "0x38665165d1ef46f706b8873e0985521de04947a4"
 
 describe("v3.3.0", async function () {
   this.timeout(TEST_TIMEOUT)
@@ -84,20 +84,14 @@ describe("v3.3.0", async function () {
     await uniqueIdentity.grantRole(SIGNER_ROLE, signer, {from: MAINNET_WARBLER_LABS_MULTISIG})
     await mintUidIfNotMinted(hre, new BN(NON_US_UID_TYPES[0] as number), uniqueIdentity, lenderAddress, signer)
 
-    callableLoanInstance = await createCallableLoanForBorrower({
+    callableLoanInstance = await createFazzExampleLoan({
       hre,
       logger,
       goldfinchFactory: gfFactory,
       callableLoanProxyOwner: MAINNET_WARBLER_LABS_MULTISIG,
-      borrower: borrowerContract.address,
-      depositor: lenderAddress,
+      fazzBorrowerContract: borrowerContract.address,
       erc20: usdc,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
-      limitInDollars: LIMIT_IN_DOLLARS,
-      numPeriods: 24,
-      gracePrincipalPeriods: 0,
-      numPeriodsPerInterestPeriod: 1,
-      numPeriodsPerPrincipalPeriod: 3,
+      txSender: MAINNET_GOVERNANCE_MULTISIG,
     })
 
     // Add Fazz signer for rest of tests
@@ -116,6 +110,7 @@ describe("v3.3.0", async function () {
     let originalPoolTokenId: string
 
     beforeEach(async () => {
+      await makeDeposit()
       originalPoolTokenId = (
         await poolTokens.tokenOfOwnerByIndex(lenderAddress, (await poolTokens.balanceOf(lenderAddress)).sub(new BN(1)))
       ).toString()
@@ -241,6 +236,8 @@ describe("v3.3.0", async function () {
     })
 
     it("can successfully drawdown and transfer funds to the borrower address", async () => {
+      await makeDeposit()
+
       const previousBorrowerBalance = await usdc.balanceOf(FAZZ_EOA)
       const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
 
@@ -253,6 +250,7 @@ describe("v3.3.0", async function () {
     })
 
     it("can successfully pay on behalf of the borrower using the pay function", async () => {
+      await makeDeposit()
       await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_EOA, {
         from: FAZZ_EOA,
       })
@@ -289,17 +287,17 @@ describe("v3.3.0", async function () {
           borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), randoUser, {from: randoUser})
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
-          borrowerContract.drawdown(callableLoanInstance.address, usdcVal(LIMIT_IN_DOLLARS), randoUser, {
+          borrowerContract.drawdown(callableLoanInstance.address, usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS), randoUser, {
             from: randoUser,
           })
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
           borrowerContract.drawdownWithSwapOnOneInch(
             callableLoanInstance.address,
-            usdcVal(LIMIT_IN_DOLLARS),
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
             randoUser,
             usdc.address,
-            usdcVal(LIMIT_IN_DOLLARS),
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
             [usdc.address],
             {
               from: randoUser,
@@ -307,25 +305,34 @@ describe("v3.3.0", async function () {
           )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
-          borrowerContract.transferERC20(usdc.address, randoUser, LIMIT_IN_DOLLARS, {from: randoUser})
-        ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
-        await expect(
-          borrowerContract.methods["pay(address,uint256)"](randoUser, LIMIT_IN_DOLLARS, {from: randoUser})
-        ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
-        await expect(
-          borrowerContract.methods["pay(address,uint256,uint256)"](randoUser, LIMIT_IN_DOLLARS, LIMIT_IN_DOLLARS, {
+          borrowerContract.transferERC20(usdc.address, randoUser, usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS), {
             from: randoUser,
           })
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
-          borrowerContract.payInFull(randoUser, LIMIT_IN_DOLLARS, {from: randoUser})
+          borrowerContract.methods["pay(address,uint256)"](randoUser, usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS), {
+            from: randoUser,
+          })
+        ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
+        await expect(
+          borrowerContract.methods["pay(address,uint256,uint256)"](
+            randoUser,
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
+            {
+              from: randoUser,
+            }
+          )
+        ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
+        await expect(
+          borrowerContract.payInFull(randoUser, usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS), {from: randoUser})
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
           borrowerContract.payWithSwapOnOneInch(
             callableLoanInstance.address,
-            LIMIT_IN_DOLLARS,
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
             usdc.address,
-            LIMIT_IN_DOLLARS,
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
             [1],
             {
               from: randoUser,
@@ -333,11 +340,30 @@ describe("v3.3.0", async function () {
           )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(
-          borrowerContract.payMultipleWithSwapOnOneInch([], [0], LIMIT_IN_DOLLARS, usdc.address, [1], {from: randoUser})
+          borrowerContract.payMultipleWithSwapOnOneInch(
+            [],
+            [0],
+            usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS),
+            usdc.address,
+            [1],
+            {
+              from: randoUser,
+            }
+          )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
       }
     })
   })
+
+  async function makeDeposit() {
+    await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+    const depositAmount = String(usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20)))
+    await impersonateAccount(hre, lenderAddress)
+    await usdc.approve(callableLoanInstance.address, String(depositAmount), {from: lenderAddress})
+    await callableLoanInstance.deposit(FAZZ_DEAL_UNCALLED_CAPITAL_TRANCHE, depositAmount, {
+      from: lenderAddress,
+    })
+  }
 
   async function createBorrowerContract(borrowerAddress: string) {
     const result = await gfFactory.createBorrower(borrowerAddress)
