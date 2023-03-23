@@ -36,6 +36,7 @@ contract CallableLoanFundingHandler is Test {
     uint256 maxDepositAmount = loan.limit() - totalPrincipalDeposited;
 
     if (maxDepositAmount == 0) {
+      // Loan is full - return!
       return;
     }
 
@@ -51,15 +52,19 @@ contract CallableLoanFundingHandler is Test {
 
   function withdraw(
     uint256 amount,
-    uint256 randActorIndex,
+    uint256 actorIndex,
     uint256 poolTokenIndex
   ) public createActor {
-    if (actorSet.count() == 0) return;
+    if (actorSet.count() == 0) {
+      // No deposits - return!
+      return;
+    }
 
     // Select a random actor that has already deposited to perform the withdraw
-    randActorIndex = bound(randActorIndex, 0, actorSet.count() - 1);
-    address actor = actorSet.actors[randActorIndex];
+    actorIndex = bound(actorIndex, 0, actorSet.count() - 1);
+    address actor = actorSet.actors[actorIndex];
 
+    // Select a random pool token to withdraw from
     uint256 poolTokenIndex = bound(
       poolTokenIndex,
       0,
@@ -68,7 +73,11 @@ contract CallableLoanFundingHandler is Test {
     uint256 tokenId = actorSet.actorInfo[actor].tokens[poolTokenIndex];
 
     (, uint256 principalRedeemable) = loan.availableToWithdraw(tokenId);
-    if (principalRedeemable == 0) return;
+
+    if (principalRedeemable == 0) {
+      // This token is fully redeemed already - return!
+      return;
+    }
 
     amount = bound(amount, 1, principalRedeemable);
 
@@ -79,6 +88,7 @@ contract CallableLoanFundingHandler is Test {
     sumWithdrawn += amount;
   }
 
+  /// @notice Reduce across the active actors
   function reduceActors(
     uint256 acc,
     function(uint256 acc, address actor, CallableLoanActorInfo memory info) external returns (uint256) func
@@ -86,6 +96,7 @@ contract CallableLoanFundingHandler is Test {
     return actorSet.reduce(acc, func);
   }
 
+  /// @notice Run a function on every active actor
   function forEachActor(
     function(address actor, CallableLoanActorInfo memory info) external fn
   ) public {
