@@ -21,6 +21,7 @@ export function ScrollingSectionedContainer({
   navAddons,
 }: ScrollingSectionedContainerProps) {
   const sectionNodes = useRef<HTMLDivElement[]>([]);
+  const navRef = useRef<HTMLDivElement>(null);
   const [isTopScrolled, setIsTopScrolled] = useState(true);
   const [scrolledNavIndex, setScrolledNavIndex] = useState(0);
 
@@ -38,6 +39,21 @@ export function ScrollingSectionedContainer({
             sorted[0].target.getAttribute("data-index") as string
           );
           setScrolledNavIndex(index);
+          if (navRef.current) {
+            const linkNode = navRef.current.querySelector(
+              `[data-index='${index}']`
+            );
+            if (linkNode) {
+              const offsetLeft = (linkNode as HTMLElement).offsetLeft;
+              const scrollLeft = navRef.current.scrollLeft;
+              const navWidth = navRef.current.clientWidth * 0.8; // * 0.8 just to make it a bit more forgiving
+              if (offsetLeft < scrollLeft || offsetLeft > scrollLeft + navWidth)
+                navRef.current.scrollTo({
+                  behavior: "smooth",
+                  left: (linkNode as HTMLElement).offsetLeft,
+                });
+            }
+          }
         }
       },
       { threshold: 0.3 }
@@ -52,21 +68,25 @@ export function ScrollingSectionedContainer({
     <div className="relative">
       <Sentinel onVisibilityChange={setIsTopScrolled} />
       <div
+        ref={navRef}
         className={clsx(
-          "sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-mustard-50 p-2 transition-shadow"
+          "sticky top-0 z-20 flex items-center justify-between gap-2 overflow-x-auto bg-mustard-50 p-2 transition-shadow [&::-webkit-scrollbar]:hidden"
         )}
         style={{
           boxShadow: !isTopScrolled
             ? "0px 20px 15px -18px rgba(0, 0, 0, 0.25)"
             : "none",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
         }}
       >
-        <div className="flex flex-wrap gap-1">
+        <div className="flex gap-1">
           {sections.map(({ navTitle }, index) => (
             <ScrollNavLink
               key={navTitle}
               href={`#${kebabCaseify(navTitle)}`}
               isScrolled={scrolledNavIndex === index}
+              index={index}
             >
               {navTitle}
             </ScrollNavLink>
@@ -118,10 +138,12 @@ function ScrollNavLink({
   children,
   href,
   isScrolled,
+  index,
 }: {
   children: ReactNode;
   href: string;
   isScrolled: boolean;
+  index: number;
 }) {
   return (
     <a
@@ -132,6 +154,7 @@ function ScrollNavLink({
           : "font-normal hover:bg-sand-200"
       )}
       href={href}
+      data-index={index}
     >
       {children}
     </a>
