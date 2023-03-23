@@ -129,6 +129,7 @@ import {
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
+import {createCallableLoanForBorrower} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -1683,6 +1684,67 @@ describe("mainnet forking tests", async function () {
             }
           }
         }).timeout(TEST_TIMEOUT)
+      })
+    })
+
+    describe("CallableLoans", () => {
+      it("does not earn backer rewards", async () => {
+        const protocolOwner = await getProtocolOwner()
+        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+        assertNonNullable(proxyOwner)
+        assertNonNullable(borrower)
+        assertNonNullable(lender)
+
+        const schedule = await getMonthlySchedule(goldfinchConfig, 24, 1, 3, 0)
+
+        const limit = usdcVal(400_000)
+
+        // grant the borrower the ability to create a pool
+        await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
+        const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
+          proxyOwner, // proxy owner
+          borrower, // borrower
+          limit, // limit
+          bigVal(0.8), // interestApr
+          2, // numLockupPeriods
+          schedule, // schedule
+          0,
+          0,
+          [0],
+          {
+            from: borrower,
+          }
+        )
+        const lastEvent = result.logs[result.logs.length - 1]
+        const callableLoanAddress = (lastEvent?.args as {loan: string})?.loan
+        const callableLoan = await getTruffleContract<CallableLoanInstance>("CallableLoan", {at: callableLoanAddress})
+
+        await fundWithWhales(["USDC", "ETH"], [lender, borrower])
+        console.log((await usdc.balanceOf(lender)).toString())
+        await usdc.approve(callableLoan.address, limit, {from: lender})
+        const receipt = await callableLoan.deposit(await callableLoan.uncalledCapitalTrancheIndex(), limit, {
+          from: lender,
+        })
+        const depositMadeEvent = getOnlyLog<DepositMade>(
+          decodeLogs(receipt.receipt.rawLogs, callableLoan, "DepositMade")
+        )
+        const tokenId = depositMadeEvent.args.tokenId
+        await callableLoan.drawdown(limit, {from: borrower})
+        const termEndTime = await callableLoan.termEndTime()
+        await advanceAndMineBlock({toSecond: termEndTime})
+        const interestOwed = await callableLoan.interestOwedAt(termEndTime.add(new BN("100")))
+        const principalOwed = await callableLoan.principalOwed()
+        const payment = interestOwed.add(principalOwed)
+
+        await usdc.approve(callableLoan.address, payment, {from: borrower})
+        // NOTE: typeschain is not picking up the pay method for some reason
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        await callableLoan.pay(payment, {from: borrower})
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
       })
     })
 
