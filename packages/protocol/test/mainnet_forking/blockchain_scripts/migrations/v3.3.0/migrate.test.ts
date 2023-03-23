@@ -49,6 +49,8 @@ const setupTest = deployments.createFixture(async () => {
 })
 
 const LIMIT_IN_DOLLARS = 2_000_000
+// Fazz is the company which owns the borrower address for the first callable loan pool
+const FAZZ_EOA = "0x38665165d1ef46f706b8873e0985521de04947a4"
 
 describe("v3.3.0", async function () {
   this.timeout(TEST_TIMEOUT)
@@ -61,7 +63,6 @@ describe("v3.3.0", async function () {
   let gfi: GFIInstance
   let uniqueIdentity: UniqueIdentityInstance
   let lenderAddress
-  let borrowerAddress
   let borrowerContract: BorrowerInstance
   let callableLoanInstance: CallableLoanInstance
   let allSigners: SignerWithAddress[]
@@ -76,11 +77,9 @@ describe("v3.3.0", async function () {
     allSigners = await hre.ethers.getSigners()
     const signer = (await allSigners[0]?.getAddress()) as string
     lenderAddress = (await allSigners[1]?.getAddress()) as string
-    borrowerAddress = (await allSigners[2]?.getAddress()) as string
-    await fundWithWhales(["GFI", "USDC", "ETH"], [lenderAddress, borrowerAddress, MAINNET_WARBLER_LABS_MULTISIG])
-    await impersonateAccount(hre, borrowerAddress)
-    await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), borrowerAddress)
-    borrowerContract = await createBorrowerContract(borrowerAddress)
+    await fundWithWhales(["GFI", "USDC", "ETH"], [lenderAddress, MAINNET_WARBLER_LABS_MULTISIG])
+    await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), FAZZ_EOA)
+    borrowerContract = await createBorrowerContract(FAZZ_EOA)
     await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
     await uniqueIdentity.grantRole(SIGNER_ROLE, signer, {from: MAINNET_WARBLER_LABS_MULTISIG})
     await mintUidIfNotMinted(hre, new BN(NON_US_UID_TYPES[0] as number), uniqueIdentity, lenderAddress, signer)
@@ -89,6 +88,7 @@ describe("v3.3.0", async function () {
       hre,
       logger,
       goldfinchFactory: gfFactory,
+      callableLoanProxyOwner: MAINNET_WARBLER_LABS_MULTISIG,
       borrower: borrowerContract.address,
       depositor: lenderAddress,
       erc20: usdc,
@@ -99,6 +99,9 @@ describe("v3.3.0", async function () {
       numPeriodsPerInterestPeriod: 1,
       numPeriodsPerPrincipalPeriod: 3,
     })
+
+    // Add Fazz signer for rest of tests
+    await impersonateAccount(hre, FAZZ_EOA)
   })
 
   describe("GoldfinchFactory", async () => {
@@ -151,8 +154,8 @@ describe("v3.3.0", async function () {
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
 
-      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), borrowerAddress, {
-        from: borrowerAddress,
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_EOA, {
+        from: FAZZ_EOA,
       })
       await advanceTime({days: 30})
       const callResult = await callableLoanInstance.submitCall(new BN(callAmount), originalPoolTokenId, {
@@ -227,45 +230,45 @@ describe("v3.3.0", async function () {
   describe("Borrower", async () => {
     it("throws an error when attempting to lockJuniorCapital", async () => {
       await expect(
-        borrowerContract.lockJuniorCapital(callableLoanInstance.address, {from: borrowerAddress})
+        borrowerContract.lockJuniorCapital(callableLoanInstance.address, {from: FAZZ_EOA})
       ).to.eventually.be.rejectedWith()
     })
 
     it("throws an error when attempting to lockPool", async () => {
       await expect(
-        borrowerContract.lockPool(callableLoanInstance.address, {from: borrowerAddress})
+        borrowerContract.lockPool(callableLoanInstance.address, {from: FAZZ_EOA})
       ).to.eventually.be.rejectedWith()
     })
 
     it("can successfully drawdown and transfer funds to the borrower address", async () => {
-      const previousBorrowerBalance = await usdc.balanceOf(borrowerAddress)
+      const previousBorrowerBalance = await usdc.balanceOf(FAZZ_EOA)
       const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
 
-      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), borrowerAddress, {
-        from: borrowerAddress,
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), FAZZ_EOA, {
+        from: FAZZ_EOA,
       })
 
-      expect(await usdc.balanceOf(borrowerAddress)).to.equal(previousBorrowerBalance.add(usdcVal(100)))
+      expect(await usdc.balanceOf(FAZZ_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100)))
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100)))
     })
 
     it("can successfully pay on behalf of the borrower using the pay function", async () => {
-      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), borrowerAddress, {
-        from: borrowerAddress,
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_EOA, {
+        from: FAZZ_EOA,
       })
       await advanceTime({days: 90})
 
-      const previousBorrowerBalance = await usdc.balanceOf(borrowerAddress)
+      const previousBorrowerBalance = await usdc.balanceOf(FAZZ_EOA)
       const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
 
-      await usdc.approve(borrowerContract.address, usdcVal(100), {from: borrowerAddress})
+      await usdc.approve(borrowerContract.address, usdcVal(100), {from: FAZZ_EOA})
 
       // Assumes a 10% reserve fee and assumes a $100 interest payment.
       await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, usdcVal(100), {
-        from: borrowerAddress,
+        from: FAZZ_EOA,
       })
 
-      expect(await usdc.balanceOf(borrowerAddress)).to.equal(previousBorrowerBalance.sub(usdcVal(100)))
+      expect(await usdc.balanceOf(FAZZ_EOA)).to.equal(previousBorrowerBalance.sub(usdcVal(100)))
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.add(usdcVal(90)))
     })
 
