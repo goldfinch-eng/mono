@@ -251,7 +251,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       callableLoanProxyOwner: protocol_owner,
       erc20: erc20Instance,
       fazzBorrowerContract: protocolBorrowerCon,
-      callableLoanProxyOwner: protocol_owner,
       txSender: protocol_owner,
     })
     // TODO: Pool metadata will be incorrect for now

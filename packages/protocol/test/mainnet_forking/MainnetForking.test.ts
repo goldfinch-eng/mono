@@ -1725,7 +1725,10 @@ describe("mainnet forking tests", async function () {
 
         console.log((await usdc.balanceOf(lender)).toString())
 
-        await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+        const currentTimestamp = await getCurrentTimestamp()
+        if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+          await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+        }
         await usdc.approve(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, {from: lender})
         const receipt = await callableLoan.deposit(
           await callableLoan.uncalledCapitalTrancheIndex(),
