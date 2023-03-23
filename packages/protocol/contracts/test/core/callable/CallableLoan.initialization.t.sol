@@ -29,11 +29,12 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     _stopImpersonation();
 
     _startImpersonation(BORROWER);
+
+    randomJump = bound(randomJump, block.timestamp, block.timestamp + 1000 days);
+    vm.warp(randomJump);
     vm.expectRevert(
       abi.encodeWithSelector(ICallableLoanErrors.CannotDrawdownWhenDrawdownsPaused.selector)
     );
-    randomJump = bound(randomJump, block.timestamp, block.timestamp + 1000 days);
-    vm.warp(randomJump);
     callableLoan.drawdown(drawdownAmount);
   }
 
