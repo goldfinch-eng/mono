@@ -9,7 +9,7 @@ import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 
-contract CallableLoanHandler is Test {
+contract CallableFundingLoanHandler is Test {
   struct TokenInfo {
     uint256 tokenId;
     // Set once, upon deposit
@@ -150,7 +150,7 @@ contract CallableLoanHandler is Test {
     return 0xf23a6e61;
   }
 
-  /// @notice Clear state that doesn't persist across calls
+  /// @notice Clear state that shouldn't persist across calls
   modifier clearCallState() {
     delete poolTokensFromLastCall;
     _;
@@ -158,14 +158,14 @@ contract CallableLoanHandler is Test {
 }
 
 contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, InvariantTest {
-  CallableLoanHandler internal handler;
+  CallableFundingLoanHandler internal handler;
   uint256 private handlerOriginalUsdcBalance;
 
   function setUp() public override {
     super.setUp();
     (CallableLoan loan, ) = defaultCallableLoan();
 
-    handler = new CallableLoanHandler(loan, usdc);
+    handler = new CallableFundingLoanHandler(loan, usdc);
     uid._mintForTest(address(handler), 1, 1, "");
 
     fundAddress(address(handler), loan.limit());
@@ -225,7 +225,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   /// PoolTokenInfo invariants
 
   function invariant_TokenInfoTrancheIsUncalledCapitalTranche() public {
-    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+    CallableFundingLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
       .getPoolTokensFromLastCall();
     if (poolTokensFromLastInteraction.length == 0) {
       // There haven't been any deposits - early return!
@@ -241,7 +241,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   }
 
   function invariant_TokenInfoPoolIsCallableLoan() public {
-    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+    CallableFundingLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
       .getPoolTokensFromLastCall();
     if (poolTokensFromLastInteraction.length == 0) {
       // There haven't been any deposits - early return!
@@ -257,7 +257,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   }
 
   function invariant_TokenInfoPrincipalAmountIsAmountDeposited() public {
-    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+    CallableFundingLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
       .getPoolTokensFromLastCall();
     if (poolTokensFromLastInteraction.length == 0) {
       // There haven't been any deposits - early return!
@@ -274,7 +274,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   }
 
   function invariant_TokenInfoPrincipalRedeemedIsZero() public {
-    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+    CallableFundingLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
       .getPoolTokensFromLastCall();
     if (poolTokensFromLastInteraction.length == 0) {
       // There haven't been any deposits - early return!
@@ -289,7 +289,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
   }
 
   function invariant_TokenInfoInterestRedeemedIsZero() public {
-    CallableLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
+    CallableFundingLoanHandler.TokenInfo[] memory poolTokensFromLastInteraction = handler
       .getPoolTokensFromLastCall();
     if (poolTokensFromLastInteraction.length == 0) {
       // There haven't been any deposits - early return!

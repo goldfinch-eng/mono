@@ -3,65 +3,19 @@
 pragma solidity ^0.8.0;
 
 import {Test} from "forge-std/Test.sol";
+import {CallableLoanActorInfo, CallableLoanActorSet, CallableLoanActorSetLib} from "./CallableLoanActor.t.sol";
 import {InvariantTest} from "forge-std/InvariantTest.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
 
-struct CallableLoanActorInfo {
-  uint256[] tokens;
-}
+contract CallableLoanFundingHandler is Test {
+  using CallableLoanActorSetLib for CallableLoanActorSet;
 
-struct CallableLoanActorSet {
-  address[] actors;
-  mapping(address => bool) saved;
-  mapping(address => CallableLoanActorInfo) actorInfo;
-}
-
-library LibAddressSet {
-  function add(CallableLoanActorSet storage s, address addr) internal {
-    if (!s.saved[addr]) s.actors.push(addr);
-  }
-
-  function contains(CallableLoanActorSet storage s, address addr) internal view returns (bool) {
-    return s.saved[addr];
-  }
-
-  function count(CallableLoanActorSet storage s) internal view returns (uint256) {
-    return s.actors.length;
-  }
-
-  function forEach(
-    CallableLoanActorSet storage s,
-    function(address,CallableLoanActorInfo memory) external func
-  ) internal {
-    for (uint i = 0; i < s.actors.length; ++i) {
-      address actor = s.actors[i];
-      func(actor, s.actorInfo[actor]);
-    }
-  }
-
-  function reduce(
-    CallableLoanActorSet storage s,
-    uint256 acc,
-    function(uint256,address,CallableLoanActorInfo memory) external returns (uint256) reducer
-  ) internal returns (uint256) {
-    for (uint i = 0; i < s.actors.length; ++i) {
-      address actor = s.actors[i];
-      acc = reducer(acc, actor, s.actorInfo[actor]);
-    }
-    return acc;
-  }
-}
-
-using LibAddressSet for CallableLoanActorSet global;
-
-contract CallableLoanHandler is Test {
   CallableLoan public loan;
-  uint256 public sumDeposited;
-  uint256 public sumWithdrawn;
-
+  uint256 private sumDeposited;
+  uint256 private sumWithdrawn;
   IERC20 private usdc;
   ITestUniqueIdentity0612 private uid;
   CallableLoanActorSet private actorSet;
@@ -151,13 +105,13 @@ contract CallableLoanHandler is Test {
 }
 
 contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, InvariantTest {
-  CallableLoanHandler private handler;
+  CallableLoanFundingHandler private handler;
 
   function setUp() public override {
     super.setUp();
 
     (CallableLoan loan, ) = defaultCallableLoan();
-    handler = new CallableLoanHandler(loan, usdc, uid);
+    handler = new CallableLoanFundingHandler(loan, usdc, uid);
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
 
