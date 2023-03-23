@@ -207,7 +207,7 @@ contract CallableLoanFundingSingleUserInvariantTest is CallableLoanBaseTest, Inv
     );
   }
 
-  function invariant_UncalledCapitalInfoPrincipalPaidIsZero() public {
+  function invariant_UncalledCapitalInfoPrincipalPaidIsDepositsLessWithdrawals() public {
     assertEq(
       handler.loan().getUncalledCapitalInfo().principalPaid,
       handler.sumDeposited() - handler.sumWithdrawn()
