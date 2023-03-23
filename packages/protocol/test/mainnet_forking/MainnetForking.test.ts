@@ -1723,8 +1723,6 @@ describe("mainnet forking tests", async function () {
         await fundWithWhales(["USDC", "ETH"], [lender])
         await fundWithWhales(["ETH"], [FAZZ_EOA])
 
-        console.log((await usdc.balanceOf(lender)).toString())
-
         const currentTimestamp = await getCurrentTimestamp()
         if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
           await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
