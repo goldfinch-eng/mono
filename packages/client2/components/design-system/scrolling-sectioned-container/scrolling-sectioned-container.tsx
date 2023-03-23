@@ -40,7 +40,7 @@ export function ScrollingSectionedContainer({
           setScrolledNavIndex(index);
         }
       },
-      { threshold: 0.8 }
+      { threshold: 0.3 }
     );
     for (const sectionNode of sectionNodes.current) {
       intersectionObserver.observe(sectionNode);
