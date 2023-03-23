@@ -1,0 +1,1241 @@
+{
+  "address": "0x89288093dccfe11C235bB3A19C98891e8E4d2b44",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "lineageId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "oldImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "Added",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "Paused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "lineageId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "Removed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleGranted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "Unpaused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "UpgradeDataSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint8[3]",
+          "name": "version",
+          "type": "uint8[3]"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "impl",
+          "type": "address"
+        }
+      ],
+      "name": "VersionAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint8[3]",
+          "name": "version",
+          "type": "uint8[3]"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "impl",
+          "type": "address"
+        }
+      ],
+      "name": "VersionRemoved",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "DEFAULT_ADMIN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "OWNER_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PAUSER_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "__BaseUpgradeablePausable__init",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "__PauserPausable__init",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lineageId",
+          "type": "uint256"
+        }
+      ],
+      "name": "append",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "append",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "createLineage",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentImplementation",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "lineageId",
+          "type": "uint256"
+        }
+      ],
+      "name": "currentImplementation",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentLineageId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8[3]",
+          "name": "version",
+          "type": "uint8[3]"
+        }
+      ],
+      "name": "getByVersion",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleAdmin",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRoleMember",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "grantRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "has",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "hasNext",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8[3]",
+          "name": "version",
+          "type": "uint8[3]"
+        }
+      ],
+      "name": "hasVersion",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isAdmin",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "lineageId",
+          "type": "uint256"
+        }
+      ],
+      "name": "lineageExists",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "lineageIdOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "nextImplementationOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "toRemove",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "previous",
+          "type": "address"
+        }
+      ],
+      "name": "remove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "renounceRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "setUpgradeDataFor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeDataFor",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xd124d9a4f01cb8d5010113b63834c6d40286e9acd4701ce54f96c0b8c7cd80cf",
+  "receipt": {
+    "to": null,
+    "from": "0xE1599F49Bc20dD0F0071a5A9f36cb755124A3dA6",
+    "contractAddress": "0x89288093dccfe11C235bB3A19C98891e8E4d2b44",
+    "transactionIndex": 56,
+    "gasUsed": "2130141",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x18b99dfbcbdcaaca58cff423105f8018f42d15d13b2cd1925074137ad1e365a7",
+    "transactionHash": "0xd124d9a4f01cb8d5010113b63834c6d40286e9acd4701ce54f96c0b8c7cd80cf",
+    "logs": [],
+    "blockNumber": 16891986,
+    "cumulativeGasUsed": "6060790",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "037931358a02360a4927a740cc7df37a",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"lineageId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldImplementation\",\"type\":\"address\"}],\"name\":\"Added\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"lineageId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"Removed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"UpgradeDataSet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint8[3]\",\"name\":\"version\",\"type\":\"uint8[3]\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"impl\",\"type\":\"address\"}],\"name\":\"VersionAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint8[3]\",\"name\":\"version\",\"type\":\"uint8[3]\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"impl\",\"type\":\"address\"}],\"name\":\"VersionRemoved\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"OWNER_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"PAUSER_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"__BaseUpgradeablePausable__init\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"__PauserPausable__init\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"lineageId\",\"type\":\"uint256\"}],\"name\":\"append\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"append\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"createLineage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"currentImplementation\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lineageId\",\"type\":\"uint256\"}],\"name\":\"currentImplementation\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"currentLineageId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8[3]\",\"name\":\"version\",\"type\":\"uint8[3]\"}],\"name\":\"getByVersion\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"has\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"hasNext\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8[3]\",\"name\":\"version\",\"type\":\"uint8[3]\"}],\"name\":\"hasVersion\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isAdmin\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lineageId\",\"type\":\"uint256\"}],\"name\":\"lineageExists\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"lineageIdOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"nextImplementationOf\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"toRemove\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"previous\",\"type\":\"address\"}],\"name\":\"remove\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"setUpgradeDataFor\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"upgradeDataFor\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"append(address)\":{\"details\":\"reverts if the sender is not an ownerreverts if the contract is pausedreverts if `implementation` is not a contract\",\"params\":{\"implementation\":\"implementation to append\"}},\"append(address,uint256)\":{\"details\":\"reverts if the contract is pausedreverts if the sender is not an ownerreverts if `implementation` is not a contract\",\"params\":{\"implementation\":\"implementation to append\",\"lineageId\":\"id of lineage to append to\"}},\"createLineage(address)\":{\"details\":\"reverts if `implementation` is not a contract\",\"params\":{\"implementation\":\"implementation that will be the first implementation in the lineage\"},\"returns\":{\"_0\":\"newly created lineage's id\"}},\"getByVersion(uint8[3])\":{\"params\":{\"version\":\"`[major, minor, patch]` version tag\"},\"returns\":{\"_0\":\"implementation associated with the given version tag\"}},\"getRoleAdmin(bytes32)\":{\"details\":\"Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}.\"},\"getRoleMember(bytes32,uint256)\":{\"details\":\"Returns one of the accounts that have `role`. `index` must be a value between 0 and {getRoleMemberCount}, non-inclusive. Role bearers are not sorted in any particular way, and their ordering may change at any point. WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure you perform all queries on the same block. See the following https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post] for more information.\"},\"getRoleMemberCount(bytes32)\":{\"details\":\"Returns the number of accounts that have `role`. Can be used together with {getRoleMember} to enumerate all bearers of a role.\"},\"grantRole(bytes32,address)\":{\"details\":\"Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role.\"},\"has(address)\":{\"params\":{\"implementation\":\"Implementation to check existence of\"},\"returns\":{\"_0\":\"`true` if the implementation has already been added\"}},\"hasNext(address)\":{\"params\":{\"implementation\":\"implementation to check\"},\"returns\":{\"_0\":\"The implementation following the given implementation\"}},\"hasRole(bytes32,address)\":{\"details\":\"Returns `true` if `account` has been granted `role`.\"},\"hasVersion(uint8[3])\":{\"params\":{\"version\":\"`[major, minor, patch]` version tag\"},\"returns\":{\"_0\":\"true if the version is registered\"}},\"initialize(address,address)\":{\"details\":\"reverts if `_owner` is the null addressreverts if `implementation` is not a contract\",\"params\":{\"_owner\":\"owner of the repository\",\"implementation\":\"initial implementation in the repository\"}},\"nextImplementationOf(address)\":{\"details\":\"reverts when contract is paused\",\"params\":{\"implementation\":\"implementation to get the upgraded implementation for\"},\"returns\":{\"_0\":\"Next Implementation\"}},\"pause()\":{\"details\":\"Pauses all functions guarded by Pause See {Pausable-_pause}. Requirements: - the caller must have the PAUSER_ROLE.\"},\"paused()\":{\"details\":\"Returns true if the contract is paused, and false otherwise.\"},\"remove(address,address)\":{\"details\":\"If you have a chain of `A -> B -> C` and I call `remove(B, C)` it will result in `A -> C`reverts if `previos` is not the ancestor of `toRemove`we need to provide the previous implementation here to be able to successfully \\\"stitch\\\"       the chain back together. Because this is an admin action, we can source what the previous       version is from events.\",\"params\":{\"previous\":\"Implementation that currently has `toRemove` as its successor\",\"toRemove\":\"Implementation to remove\"}},\"renounceRole(bytes32,address)\":{\"details\":\"Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`.\"},\"revokeRole(bytes32,address)\":{\"details\":\"Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role.\"},\"setUpgradeDataFor(address,bytes)\":{\"details\":\"reverts when caller is not an adminreverts when the contract is pausedreverts if the given implementation isn't registered\"},\"unpause()\":{\"details\":\"Unpauses the contract See {Pausable-_unpause}. Requirements: - the caller must have the Pauser role\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"append(address)\":{\"notice\":\"add a new implementation and set it as the current implementation\"},\"append(address,uint256)\":{\"notice\":\"Append an implementation to a specified lineage\"},\"createLineage(address)\":{\"notice\":\"Create a new lineage of implementations. This creates a new \\\"root\\\" of a new lineage\"},\"currentImplementation()\":{\"notice\":\"return current implementaton of the current lineage\"},\"currentImplementation(uint256)\":{\"notice\":\"Return the current implementation of a lineage with the given `lineageId`\"},\"currentLineageId()\":{\"notice\":\"Returns the id of the most recently created lineage\"},\"getByVersion(uint8[3])\":{\"notice\":\"get an implementation by a version tag\"},\"has(address)\":{\"notice\":\"Returns `true` if an implementation has already been added\"},\"hasNext(address)\":{\"notice\":\"Returns `true` if an implementation has a next implementation set\"},\"hasVersion(uint8[3])\":{\"notice\":\"check if a version exists\"},\"initialize(address,address)\":{\"notice\":\"initialize the repository's state\"},\"lineageExists(uint256)\":{\"notice\":\"Returns `true` if a given lineageId exists\"},\"lineageIdOf(address)\":{\"notice\":\"Returns the id of the lineage a given implementation belongs to\"},\"nextImplementationOf(address)\":{\"notice\":\"Get the next implementation for a given implementation or           `address(0)` if it doesn't exist\"},\"remove(address,address)\":{\"notice\":\"Remove an implementation from the chain and \\\"stitch\\\" together its neighbors\"},\"setUpgradeDataFor(address,bytes)\":{\"notice\":\"set data that will be delegate called when a proxy upgrades to the given `implementation`\"},\"upgradeDataFor(address)\":{\"notice\":\"returns data that will be delegatedCalled when the given implementation           is upgraded to\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/protocol/core/callable/CallableLoanImplementationRepository.sol\":\"CallableLoanImplementationRepository\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":100},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol\":{\"content\":\"pragma solidity ^0.6.0;\\nimport \\\"../Initializable.sol\\\";\\n\\n/*\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with GSN meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\ncontract ContextUpgradeSafe is Initializable {\\n    // Empty internal constructor, to prevent people from mistakenly deploying\\n    // an instance of this contract, which should be used via inheritance.\\n\\n    function __Context_init() internal initializer {\\n        __Context_init_unchained();\\n    }\\n\\n    function __Context_init_unchained() internal initializer {\\n\\n\\n    }\\n\\n\\n    function _msgSender() internal view virtual returns (address payable) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes memory) {\\n        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691\\n        return msg.data;\\n    }\\n\\n    uint256[50] private __gap;\\n}\\n\",\"keccak256\":\"0xe81686511d62f18b2d9c693c2c94c0a789c690de63aa90e15451ebf65c5bfd3e\"},\"@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol\":{\"content\":\"pragma solidity >=0.4.24 <0.7.0;\\n\\n\\n/**\\n * @title Initializable\\n *\\n * @dev Helper contract to support initializer functions. To use it, replace\\n * the constructor with a function that has the `initializer` modifier.\\n * WARNING: Unlike constructors, initializer functions must be manually\\n * invoked. This applies both to deploying an Initializable contract, as well\\n * as extending an Initializable contract via inheritance.\\n * WARNING: When used with inheritance, manual care must be taken to not invoke\\n * a parent initializer twice, or ensure that all initializers are idempotent,\\n * because this is not dealt with automatically as with constructors.\\n */\\ncontract Initializable {\\n\\n  /**\\n   * @dev Indicates that the contract has been initialized.\\n   */\\n  bool private initialized;\\n\\n  /**\\n   * @dev Indicates that the contract is in the process of being initialized.\\n   */\\n  bool private initializing;\\n\\n  /**\\n   * @dev Modifier to use in the initializer function of a contract.\\n   */\\n  modifier initializer() {\\n    require(initializing || isConstructor() || !initialized, \\\"Contract instance has already been initialized\\\");\\n\\n    bool isTopLevelCall = !initializing;\\n    if (isTopLevelCall) {\\n      initializing = true;\\n      initialized = true;\\n    }\\n\\n    _;\\n\\n    if (isTopLevelCall) {\\n      initializing = false;\\n    }\\n  }\\n\\n  /// @dev Returns true if and only if the function is running in the constructor\\n  function isConstructor() private view returns (bool) {\\n    // extcodesize checks the size of the code stored in an address, and\\n    // address returns the current address. Since the code is still not\\n    // deployed when running a constructor, any checks on its code size will\\n    // yield zero, making it an effective way to detect if a contract is\\n    // under construction or not.\\n    address self = address(this);\\n    uint256 cs;\\n    assembly { cs := extcodesize(self) }\\n    return cs == 0;\\n  }\\n\\n  // Reserved storage space to allow for layout changes in the future.\\n  uint256[50] private ______gap;\\n}\\n\",\"keccak256\":\"0x9bfec92e36234ecc99b5d37230acb6cd1f99560233753162204104a4897e8721\"},\"@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\nimport \\\"../utils/EnumerableSet.sol\\\";\\nimport \\\"../utils/Address.sol\\\";\\nimport \\\"../GSN/Context.sol\\\";\\nimport \\\"../Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module that allows children to implement role-based access\\n * control mechanisms.\\n *\\n * Roles are referred to by their `bytes32` identifier. These should be exposed\\n * in the external API and be unique. The best way to achieve this is by\\n * using `public constant` hash digests:\\n *\\n * ```\\n * bytes32 public constant MY_ROLE = keccak256(\\\"MY_ROLE\\\");\\n * ```\\n *\\n * Roles can be used to represent a set of permissions. To restrict access to a\\n * function call, use {hasRole}:\\n *\\n * ```\\n * function foo() public {\\n *     require(hasRole(MY_ROLE, _msgSender()));\\n *     ...\\n * }\\n * ```\\n *\\n * Roles can be granted and revoked dynamically via the {grantRole} and\\n * {revokeRole} functions. Each role has an associated admin role, and only\\n * accounts that have a role's admin role can call {grantRole} and {revokeRole}.\\n *\\n * By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means\\n * that only accounts with this role will be able to grant or revoke other\\n * roles. More complex role relationships can be created by using\\n * {_setRoleAdmin}.\\n */\\nabstract contract AccessControlUpgradeSafe is Initializable, ContextUpgradeSafe {\\n    function __AccessControl_init() internal initializer {\\n        __Context_init_unchained();\\n        __AccessControl_init_unchained();\\n    }\\n\\n    function __AccessControl_init_unchained() internal initializer {\\n\\n\\n    }\\n\\n    using EnumerableSet for EnumerableSet.AddressSet;\\n    using Address for address;\\n\\n    struct RoleData {\\n        EnumerableSet.AddressSet members;\\n        bytes32 adminRole;\\n    }\\n\\n    mapping (bytes32 => RoleData) private _roles;\\n\\n    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;\\n\\n    /**\\n     * @dev Emitted when `account` is granted `role`.\\n     *\\n     * `sender` is the account that originated the contract call, an admin role\\n     * bearer except when using {_setupRole}.\\n     */\\n    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);\\n\\n    /**\\n     * @dev Emitted when `account` is revoked `role`.\\n     *\\n     * `sender` is the account that originated the contract call:\\n     *   - if using `revokeRole`, it is the admin role bearer\\n     *   - if using `renounceRole`, it is the role bearer (i.e. `account`)\\n     */\\n    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);\\n\\n    /**\\n     * @dev Returns `true` if `account` has been granted `role`.\\n     */\\n    function hasRole(bytes32 role, address account) public view returns (bool) {\\n        return _roles[role].members.contains(account);\\n    }\\n\\n    /**\\n     * @dev Returns the number of accounts that have `role`. Can be used\\n     * together with {getRoleMember} to enumerate all bearers of a role.\\n     */\\n    function getRoleMemberCount(bytes32 role) public view returns (uint256) {\\n        return _roles[role].members.length();\\n    }\\n\\n    /**\\n     * @dev Returns one of the accounts that have `role`. `index` must be a\\n     * value between 0 and {getRoleMemberCount}, non-inclusive.\\n     *\\n     * Role bearers are not sorted in any particular way, and their ordering may\\n     * change at any point.\\n     *\\n     * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure\\n     * you perform all queries on the same block. See the following\\n     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]\\n     * for more information.\\n     */\\n    function getRoleMember(bytes32 role, uint256 index) public view returns (address) {\\n        return _roles[role].members.at(index);\\n    }\\n\\n    /**\\n     * @dev Returns the admin role that controls `role`. See {grantRole} and\\n     * {revokeRole}.\\n     *\\n     * To change a role's admin, use {_setRoleAdmin}.\\n     */\\n    function getRoleAdmin(bytes32 role) public view returns (bytes32) {\\n        return _roles[role].adminRole;\\n    }\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * If `account` had not been already granted `role`, emits a {RoleGranted}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function grantRole(bytes32 role, address account) public virtual {\\n        require(hasRole(_roles[role].adminRole, _msgSender()), \\\"AccessControl: sender must be an admin to grant\\\");\\n\\n        _grantRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Revokes `role` from `account`.\\n     *\\n     * If `account` had been granted `role`, emits a {RoleRevoked} event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function revokeRole(bytes32 role, address account) public virtual {\\n        require(hasRole(_roles[role].adminRole, _msgSender()), \\\"AccessControl: sender must be an admin to revoke\\\");\\n\\n        _revokeRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Revokes `role` from the calling account.\\n     *\\n     * Roles are often managed via {grantRole} and {revokeRole}: this function's\\n     * purpose is to provide a mechanism for accounts to lose their privileges\\n     * if they are compromised (such as when a trusted device is misplaced).\\n     *\\n     * If the calling account had been granted `role`, emits a {RoleRevoked}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must be `account`.\\n     */\\n    function renounceRole(bytes32 role, address account) public virtual {\\n        require(account == _msgSender(), \\\"AccessControl: can only renounce roles for self\\\");\\n\\n        _revokeRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * If `account` had not been already granted `role`, emits a {RoleGranted}\\n     * event. Note that unlike {grantRole}, this function doesn't perform any\\n     * checks on the calling account.\\n     *\\n     * [WARNING]\\n     * ====\\n     * This function should only be called from the constructor when setting\\n     * up the initial roles for the system.\\n     *\\n     * Using this function in any other way is effectively circumventing the admin\\n     * system imposed by {AccessControl}.\\n     * ====\\n     */\\n    function _setupRole(bytes32 role, address account) internal virtual {\\n        _grantRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Sets `adminRole` as ``role``'s admin role.\\n     */\\n    function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {\\n        _roles[role].adminRole = adminRole;\\n    }\\n\\n    function _grantRole(bytes32 role, address account) private {\\n        if (_roles[role].members.add(account)) {\\n            emit RoleGranted(role, account, _msgSender());\\n        }\\n    }\\n\\n    function _revokeRole(bytes32 role, address account) private {\\n        if (_roles[role].members.remove(account)) {\\n            emit RoleRevoked(role, account, _msgSender());\\n        }\\n    }\\n\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0x3954a5ee18b9297616912390eac7b0fe698e6ffea5a50dc3ccb0980cae210e86\"},\"@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations with added overflow\\n * checks.\\n *\\n * Arithmetic operations in Solidity wrap on overflow. This can easily result\\n * in bugs, because programmers usually assume that an overflow raises an\\n * error, which is the standard behavior in high level programming languages.\\n * `SafeMath` restores this intuition by reverting the transaction when an\\n * operation overflows.\\n *\\n * Using this library instead of the unchecked operations eliminates an entire\\n * class of bugs, so it's recommended to use it always.\\n */\\nlibrary SafeMath {\\n    /**\\n     * @dev Returns the addition of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `+` operator.\\n     *\\n     * Requirements:\\n     * - Addition cannot overflow.\\n     */\\n    function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n        uint256 c = a + b;\\n        require(c >= a, \\\"SafeMath: addition overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return sub(a, b, \\\"SafeMath: subtraction overflow\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b <= a, errorMessage);\\n        uint256 c = a - b;\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `*` operator.\\n     *\\n     * Requirements:\\n     * - Multiplication cannot overflow.\\n     */\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n        // benefit is lost if 'b' is also tested.\\n        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n        if (a == 0) {\\n            return 0;\\n        }\\n\\n        uint256 c = a * b;\\n        require(c / a == b, \\\"SafeMath: multiplication overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers. Reverts on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return div(a, b, \\\"SafeMath: division by zero\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        // Solidity only automatically asserts when dividing by 0\\n        require(b > 0, errorMessage);\\n        uint256 c = a / b;\\n        // assert(a == b * c + a % b); // There is no case in which this doesn't hold\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * Reverts when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return mod(a, b, \\\"SafeMath: modulo by zero\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * Reverts with custom message when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b != 0, errorMessage);\\n        return a % b;\\n    }\\n}\\n\",\"keccak256\":\"0x04d34b3cd5677bea25f8dfceb6dec0eaa071d4d4b789a43f13fe0c415ba4c296\"},\"@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol\":{\"content\":\"pragma solidity ^0.6.2;\\n\\n/**\\n * @dev Collection of functions related to the address type\\n */\\nlibrary Address {\\n    /**\\n     * @dev Returns true if `account` is a contract.\\n     *\\n     * [IMPORTANT]\\n     * ====\\n     * It is unsafe to assume that an address for which this function returns\\n     * false is an externally-owned account (EOA) and not a contract.\\n     *\\n     * Among others, `isContract` will return false for the following\\n     * types of addresses:\\n     *\\n     *  - an externally-owned account\\n     *  - a contract in construction\\n     *  - an address where a contract will be created\\n     *  - an address where a contract lived, but was destroyed\\n     * ====\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        // According to EIP-1052, 0x0 is the value returned for not-yet created accounts\\n        // and 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470 is returned\\n        // for accounts without code, i.e. `keccak256('')`\\n        bytes32 codehash;\\n        bytes32 accountHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;\\n        // solhint-disable-next-line no-inline-assembly\\n        assembly { codehash := extcodehash(account) }\\n        return (codehash != accountHash && codehash != 0x0);\\n    }\\n\\n    /**\\n     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to\\n     * `recipient`, forwarding all available gas and reverting on errors.\\n     *\\n     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost\\n     * of certain opcodes, possibly making contracts go over the 2300 gas limit\\n     * imposed by `transfer`, making them unable to receive funds via\\n     * `transfer`. {sendValue} removes this limitation.\\n     *\\n     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].\\n     *\\n     * IMPORTANT: because control is transferred to `recipient`, care must be\\n     * taken to not create reentrancy vulnerabilities. Consider using\\n     * {ReentrancyGuard} or the\\n     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].\\n     */\\n    function sendValue(address payable recipient, uint256 amount) internal {\\n        require(address(this).balance >= amount, \\\"Address: insufficient balance\\\");\\n\\n        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value\\n        (bool success, ) = recipient.call{ value: amount }(\\\"\\\");\\n        require(success, \\\"Address: unable to send value, recipient may have reverted\\\");\\n    }\\n}\\n\",\"keccak256\":\"0x5f7da58ee3d9faa9b8999a93d49c8ff978f1afc88ae9bcfc6f9cbb44da011c2b\"},\"@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @dev Library for managing\\n * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive\\n * types.\\n *\\n * Sets have the following properties:\\n *\\n * - Elements are added, removed, and checked for existence in constant time\\n * (O(1)).\\n * - Elements are enumerated in O(n). No guarantees are made on the ordering.\\n *\\n * ```\\n * contract Example {\\n *     // Add the library methods\\n *     using EnumerableSet for EnumerableSet.AddressSet;\\n *\\n *     // Declare a set state variable\\n *     EnumerableSet.AddressSet private mySet;\\n * }\\n * ```\\n *\\n * As of v3.0.0, only sets of type `address` (`AddressSet`) and `uint256`\\n * (`UintSet`) are supported.\\n */\\nlibrary EnumerableSet {\\n    // To implement this library for multiple types with as little code\\n    // repetition as possible, we write it in terms of a generic Set type with\\n    // bytes32 values.\\n    // The Set implementation uses private functions, and user-facing\\n    // implementations (such as AddressSet) are just wrappers around the\\n    // underlying Set.\\n    // This means that we can only create new EnumerableSets for types that fit\\n    // in bytes32.\\n\\n    struct Set {\\n        // Storage of set values\\n        bytes32[] _values;\\n\\n        // Position of the value in the `values` array, plus 1 because index 0\\n        // means a value is not in the set.\\n        mapping (bytes32 => uint256) _indexes;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function _add(Set storage set, bytes32 value) private returns (bool) {\\n        if (!_contains(set, value)) {\\n            set._values.push(value);\\n            // The value is stored at length-1, but we add 1 to all indexes\\n            // and use 0 as a sentinel value\\n            set._indexes[value] = set._values.length;\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function _remove(Set storage set, bytes32 value) private returns (bool) {\\n        // We read and store the value's index to prevent multiple reads from the same storage slot\\n        uint256 valueIndex = set._indexes[value];\\n\\n        if (valueIndex != 0) { // Equivalent to contains(set, value)\\n            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in\\n            // the array, and then remove the last element (sometimes called as 'swap and pop').\\n            // This modifies the order of the array, as noted in {at}.\\n\\n            uint256 toDeleteIndex = valueIndex - 1;\\n            uint256 lastIndex = set._values.length - 1;\\n\\n            // When the value to delete is the last one, the swap operation is unnecessary. However, since this occurs\\n            // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.\\n\\n            bytes32 lastvalue = set._values[lastIndex];\\n\\n            // Move the last value to the index where the value to delete is\\n            set._values[toDeleteIndex] = lastvalue;\\n            // Update the index for the moved value\\n            set._indexes[lastvalue] = toDeleteIndex + 1; // All indexes are 1-based\\n\\n            // Delete the slot where the moved value was stored\\n            set._values.pop();\\n\\n            // Delete the index for the deleted slot\\n            delete set._indexes[value];\\n\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function _contains(Set storage set, bytes32 value) private view returns (bool) {\\n        return set._indexes[value] != 0;\\n    }\\n\\n    /**\\n     * @dev Returns the number of values on the set. O(1).\\n     */\\n    function _length(Set storage set) private view returns (uint256) {\\n        return set._values.length;\\n    }\\n\\n   /**\\n    * @dev Returns the value stored at position `index` in the set. O(1).\\n    *\\n    * Note that there are no guarantees on the ordering of values inside the\\n    * array, and it may change when more values are added or removed.\\n    *\\n    * Requirements:\\n    *\\n    * - `index` must be strictly less than {length}.\\n    */\\n    function _at(Set storage set, uint256 index) private view returns (bytes32) {\\n        require(set._values.length > index, \\\"EnumerableSet: index out of bounds\\\");\\n        return set._values[index];\\n    }\\n\\n    // AddressSet\\n\\n    struct AddressSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(AddressSet storage set, address value) internal returns (bool) {\\n        return _add(set._inner, bytes32(uint256(value)));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(AddressSet storage set, address value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(uint256(value)));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(AddressSet storage set, address value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(uint256(value)));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(AddressSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n   /**\\n    * @dev Returns the value stored at position `index` in the set. O(1).\\n    *\\n    * Note that there are no guarantees on the ordering of values inside the\\n    * array, and it may change when more values are added or removed.\\n    *\\n    * Requirements:\\n    *\\n    * - `index` must be strictly less than {length}.\\n    */\\n    function at(AddressSet storage set, uint256 index) internal view returns (address) {\\n        return address(uint256(_at(set._inner, index)));\\n    }\\n\\n\\n    // UintSet\\n\\n    struct UintSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _add(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(UintSet storage set, uint256 value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values on the set. O(1).\\n     */\\n    function length(UintSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n   /**\\n    * @dev Returns the value stored at position `index` in the set. O(1).\\n    *\\n    * Note that there are no guarantees on the ordering of values inside the\\n    * array, and it may change when more values are added or removed.\\n    *\\n    * Requirements:\\n    *\\n    * - `index` must be strictly less than {length}.\\n    */\\n    function at(UintSet storage set, uint256 index) internal view returns (uint256) {\\n        return uint256(_at(set._inner, index));\\n    }\\n}\\n\",\"keccak256\":\"0x7f6401708b61f575b497aa7c8118ca9d70348643c83c26e70d9b643edf1a95c1\"},\"@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\nimport \\\"../GSN/Context.sol\\\";\\nimport \\\"../Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module which allows children to implement an emergency stop\\n * mechanism that can be triggered by an authorized account.\\n *\\n * This module is used through inheritance. It will make available the\\n * modifiers `whenNotPaused` and `whenPaused`, which can be applied to\\n * the functions of your contract. Note that they will not be pausable by\\n * simply including this module, only once the modifiers are put in place.\\n */\\ncontract PausableUpgradeSafe is Initializable, ContextUpgradeSafe {\\n    /**\\n     * @dev Emitted when the pause is triggered by `account`.\\n     */\\n    event Paused(address account);\\n\\n    /**\\n     * @dev Emitted when the pause is lifted by `account`.\\n     */\\n    event Unpaused(address account);\\n\\n    bool private _paused;\\n\\n    /**\\n     * @dev Initializes the contract in unpaused state.\\n     */\\n\\n    function __Pausable_init() internal initializer {\\n        __Context_init_unchained();\\n        __Pausable_init_unchained();\\n    }\\n\\n    function __Pausable_init_unchained() internal initializer {\\n\\n\\n        _paused = false;\\n\\n    }\\n\\n\\n    /**\\n     * @dev Returns true if the contract is paused, and false otherwise.\\n     */\\n    function paused() public view returns (bool) {\\n        return _paused;\\n    }\\n\\n    /**\\n     * @dev Modifier to make a function callable only when the contract is not paused.\\n     */\\n    modifier whenNotPaused() {\\n        require(!_paused, \\\"Pausable: paused\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Modifier to make a function callable only when the contract is paused.\\n     */\\n    modifier whenPaused() {\\n        require(_paused, \\\"Pausable: not paused\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Triggers stopped state.\\n     */\\n    function _pause() internal virtual whenNotPaused {\\n        _paused = true;\\n        emit Paused(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Returns to normal state.\\n     */\\n    function _unpause() internal virtual whenPaused {\\n        _paused = false;\\n        emit Unpaused(_msgSender());\\n    }\\n\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0x2ad5473fe88d9ab30c6cd495ab8895daae8c4a48cf8231282a2d339387b35006\"},\"@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol\":{\"content\":\"pragma solidity ^0.6.0;\\nimport \\\"../Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module that helps prevent reentrant calls to a function.\\n *\\n * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier\\n * available, which can be applied to functions to make sure there are no nested\\n * (reentrant) calls to them.\\n *\\n * Note that because there is a single `nonReentrant` guard, functions marked as\\n * `nonReentrant` may not call one another. This can be worked around by making\\n * those functions `private`, and then adding `external` `nonReentrant` entry\\n * points to them.\\n *\\n * TIP: If you would like to learn more about reentrancy and alternative ways\\n * to protect against it, check out our blog post\\n * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].\\n */\\ncontract ReentrancyGuardUpgradeSafe is Initializable {\\n    bool private _notEntered;\\n\\n\\n    function __ReentrancyGuard_init() internal initializer {\\n        __ReentrancyGuard_init_unchained();\\n    }\\n\\n    function __ReentrancyGuard_init_unchained() internal initializer {\\n\\n\\n        // Storing an initial non-zero value makes deployment a bit more\\n        // expensive, but in exchange the refund on every call to nonReentrant\\n        // will be lower in amount. Since refunds are capped to a percetange of\\n        // the total transaction's gas, it is best to keep them low in cases\\n        // like this one, to increase the likelihood of the full refund coming\\n        // into effect.\\n        _notEntered = true;\\n\\n    }\\n\\n\\n    /**\\n     * @dev Prevents a contract from calling itself, directly or indirectly.\\n     * Calling a `nonReentrant` function from another `nonReentrant`\\n     * function is not supported. It is possible to prevent this from happening\\n     * by making the `nonReentrant` function external, and make it call a\\n     * `private` function that does the actual work.\\n     */\\n    modifier nonReentrant() {\\n        // On the first call to nonReentrant, _notEntered will be true\\n        require(_notEntered, \\\"ReentrancyGuard: reentrant call\\\");\\n\\n        // Any calls to nonReentrant after this point will fail\\n        _notEntered = false;\\n\\n        _;\\n\\n        // By storing the original value once again, a refund is triggered (see\\n        // https://eips.ethereum.org/EIPS/eip-2200)\\n        _notEntered = true;\\n    }\\n\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0x75a600e5ed3443ecf3b7fb636064b404b358317fd6cd91e70e3ca5cf2370e882\"},\"@openzeppelin/contracts/utils/Address.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.2 <0.8.0;\\n\\n/**\\n * @dev Collection of functions related to the address type\\n */\\nlibrary Address {\\n    /**\\n     * @dev Returns true if `account` is a contract.\\n     *\\n     * [IMPORTANT]\\n     * ====\\n     * It is unsafe to assume that an address for which this function returns\\n     * false is an externally-owned account (EOA) and not a contract.\\n     *\\n     * Among others, `isContract` will return false for the following\\n     * types of addresses:\\n     *\\n     *  - an externally-owned account\\n     *  - a contract in construction\\n     *  - an address where a contract will be created\\n     *  - an address where a contract lived, but was destroyed\\n     * ====\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        // This method relies on extcodesize, which returns 0 for contracts in\\n        // construction, since the code is only stored at the end of the\\n        // constructor execution.\\n\\n        uint256 size;\\n        // solhint-disable-next-line no-inline-assembly\\n        assembly { size := extcodesize(account) }\\n        return size > 0;\\n    }\\n\\n    /**\\n     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to\\n     * `recipient`, forwarding all available gas and reverting on errors.\\n     *\\n     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost\\n     * of certain opcodes, possibly making contracts go over the 2300 gas limit\\n     * imposed by `transfer`, making them unable to receive funds via\\n     * `transfer`. {sendValue} removes this limitation.\\n     *\\n     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].\\n     *\\n     * IMPORTANT: because control is transferred to `recipient`, care must be\\n     * taken to not create reentrancy vulnerabilities. Consider using\\n     * {ReentrancyGuard} or the\\n     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].\\n     */\\n    function sendValue(address payable recipient, uint256 amount) internal {\\n        require(address(this).balance >= amount, \\\"Address: insufficient balance\\\");\\n\\n        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value\\n        (bool success, ) = recipient.call{ value: amount }(\\\"\\\");\\n        require(success, \\\"Address: unable to send value, recipient may have reverted\\\");\\n    }\\n\\n    /**\\n     * @dev Performs a Solidity function call using a low level `call`. A\\n     * plain`call` is an unsafe replacement for a function call: use this\\n     * function instead.\\n     *\\n     * If `target` reverts with a revert reason, it is bubbled up by this\\n     * function (like regular Solidity function calls).\\n     *\\n     * Returns the raw returned data. To convert to the expected return value,\\n     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].\\n     *\\n     * Requirements:\\n     *\\n     * - `target` must be a contract.\\n     * - calling `target` with `data` must not revert.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(address target, bytes memory data) internal returns (bytes memory) {\\n      return functionCall(target, data, \\\"Address: low-level call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with\\n     * `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, 0, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but also transferring `value` wei to `target`.\\n     *\\n     * Requirements:\\n     *\\n     * - the calling contract must have an ETH balance of at least `value`.\\n     * - the called Solidity function must be `payable`.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, value, \\\"Address: low-level call with value failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but\\n     * with `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {\\n        require(address(this).balance >= value, \\\"Address: insufficient balance for call\\\");\\n        require(isContract(target), \\\"Address: call to non-contract\\\");\\n\\n        // solhint-disable-next-line avoid-low-level-calls\\n        (bool success, bytes memory returndata) = target.call{ value: value }(data);\\n        return _verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {\\n        return functionStaticCall(target, data, \\\"Address: low-level static call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {\\n        require(isContract(target), \\\"Address: static call to non-contract\\\");\\n\\n        // solhint-disable-next-line avoid-low-level-calls\\n        (bool success, bytes memory returndata) = target.staticcall(data);\\n        return _verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but performing a delegate call.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {\\n        return functionDelegateCall(target, data, \\\"Address: low-level delegate call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],\\n     * but performing a delegate call.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {\\n        require(isContract(target), \\\"Address: delegate call to non-contract\\\");\\n\\n        // solhint-disable-next-line avoid-low-level-calls\\n        (bool success, bytes memory returndata) = target.delegatecall(data);\\n        return _verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {\\n        if (success) {\\n            return returndata;\\n        } else {\\n            // Look for revert reason and bubble it up if present\\n            if (returndata.length > 0) {\\n                // The easiest way to bubble the revert reason is using memory via assembly\\n\\n                // solhint-disable-next-line no-inline-assembly\\n                assembly {\\n                    let returndata_size := mload(returndata)\\n                    revert(add(32, returndata), returndata_size)\\n                }\\n            } else {\\n                revert(errorMessage);\\n            }\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x28911e614500ae7c607a432a709d35da25f3bc5ddc8bd12b278b66358070c0ea\",\"license\":\"MIT\"},\"contracts/interfaces/IImplementationRepository.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.12;\\npragma experimental ABIEncoderV2;\\n\\n/// @title User Controlled Upgrades (UCU) Proxy Repository\\n/// A repository maintaing a collection of \\\"lineages\\\" of implementation contracts\\n///\\n/// Lineages are a sequence of implementations each lineage can be thought of as\\n/// a \\\"major\\\" revision of implementations. Implementations between lineages are\\n/// considered incompatible.\\ninterface IImplementationRepository {\\n  /// @notice returns data that will be delegatedCalled when the given implementation\\n  ///           is upgraded to\\n  function upgradeDataFor(address key) external returns (bytes memory);\\n\\n  /// @notice Returns the id of the lineage a given implementation belongs to\\n  function lineageIdOf(address key) external returns (uint256);\\n\\n  /// @notice Returns the id of the most recently created lineage\\n  function currentLineageId() external view returns (uint256);\\n\\n  // //////// External ////////////////////////////////////////////////////////////\\n\\n  /// @notice set data that will be delegate called when a proxy upgrades to the given `implementation`\\n  /// @dev reverts when caller is not an admin\\n  /// @dev reverts when the contract is paused\\n  /// @dev reverts if the given implementation isn't registered\\n  function setUpgradeDataFor(address implementation, bytes calldata data) external;\\n\\n  /// @notice Create a new lineage of implementations.\\n  ///\\n  /// This creates a new \\\"root\\\" of a new lineage\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation that will be the first implementation in the lineage\\n  /// @return newly created lineage's id\\n  function createLineage(address implementation) external returns (uint256);\\n\\n  /// @notice add a new implementation and set it as the current implementation\\n  /// @dev reverts if the sender is not an owner\\n  /// @dev reverts if the contract is paused\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation to append\\n  function append(address implementation) external;\\n\\n  /// @notice Append an implementation to a specified lineage\\n  /// @dev reverts if the contract is paused\\n  /// @dev reverts if the sender is not an owner\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation to append\\n  /// @param lineageId id of lineage to append to\\n  function append(address implementation, uint256 lineageId) external;\\n\\n  /// @notice Remove an implementation from the chain and \\\"stitch\\\" together its neighbors\\n  /// @dev If you have a chain of `A -> B -> C` and I call `remove(B, C)` it will result in `A -> C`\\n  /// @dev reverts if `previos` is not the ancestor of `toRemove`\\n  /// @dev we need to provide the previous implementation here to be able to successfully \\\"stitch\\\"\\n  ///       the chain back together. Because this is an admin action, we can source what the previous\\n  ///       version is from events.\\n  /// @param toRemove Implementation to remove\\n  /// @param previous Implementation that currently has `toRemove` as its successor\\n  function remove(address toRemove, address previous) external;\\n\\n  // //////// External view ////////////////////////////////////////////////////////////\\n\\n  /// @notice Returns `true` if an implementation has a next implementation set\\n  /// @param implementation implementation to check\\n  /// @return The implementation following the given implementation\\n  function hasNext(address implementation) external view returns (bool);\\n\\n  /// @notice Returns `true` if an implementation has already been added\\n  /// @param implementation Implementation to check existence of\\n  /// @return `true` if the implementation has already been added\\n  function has(address implementation) external view returns (bool);\\n\\n  /// @notice Get the next implementation for a given implementation or\\n  ///           `address(0)` if it doesn't exist\\n  /// @dev reverts when contract is paused\\n  /// @param implementation implementation to get the upgraded implementation for\\n  /// @return Next Implementation\\n  function nextImplementationOf(address implementation) external view returns (address);\\n\\n  /// @notice Returns `true` if a given lineageId exists\\n  function lineageExists(uint256 lineageId) external view returns (bool);\\n\\n  /// @notice Return the current implementation of a lineage with the given `lineageId`\\n  function currentImplementation(uint256 lineageId) external view returns (address);\\n\\n  /// @notice return current implementaton of the current lineage\\n  function currentImplementation() external view returns (address);\\n\\n  // //////// Events //////////////////////////////////////////////////////////////\\n  event Added(\\n    uint256 indexed lineageId,\\n    address indexed newImplementation,\\n    address indexed oldImplementation\\n  );\\n  event Removed(uint256 indexed lineageId, address indexed implementation);\\n  event UpgradeDataSet(address indexed implementation, bytes data);\\n}\\n\",\"keccak256\":\"0xc4a7761be1d7b7a62596809495467465c77997232ccc80e08a9340ec055a040c\",\"license\":\"MIT\"},\"contracts/interfaces/IVersioned.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.12;\\npragma experimental ABIEncoderV2;\\n\\n/// @title interface for implementers that have an arbitrary associated tag\\ninterface IVersioned {\\n  /// @notice Returns the version triplet `[major, minor, patch]`\\n  function getVersion() external pure returns (uint8[3] memory);\\n}\\n\",\"keccak256\":\"0xcfad0eb9092682c0634635007f727cdcb9b95046094ea6342612a96b4a26eded\",\"license\":\"MIT\"},\"contracts/interfaces/IVersionedImplementationRepository.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"./IImplementationRepository.sol\\\";\\n\\ninterface IVersionedImplementationRepository is IImplementationRepository {\\n  function getByVersion(uint8[3] calldata version) external view returns (address);\\n\\n  function hasVersion(uint8[3] calldata version) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xca2357c084f2bfdb8d1d7910100512632fc341fd7c43a63300e35be900958603\",\"license\":\"MIT\"},\"contracts/library/SafeMath.sol\":{\"content\":\"pragma solidity >=0.6.12;\\n\\n// NOTE: this file exists only to remove the extremely long error messages in safe math.\\n\\nimport {SafeMath as OzSafeMath} from \\\"@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol\\\";\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations with added overflow\\n * checks.\\n *\\n * Arithmetic operations in Solidity wrap on overflow. This can easily result\\n * in bugs, because programmers usually assume that an overflow raises an\\n * error, which is the standard behavior in high level programming languages.\\n * `SafeMath` restores this intuition by reverting the transaction when an\\n * operation overflows.\\n *\\n * Using this library instead of the unchecked operations eliminates an entire\\n * class of bugs, so it's recommended to use it always.\\n */\\nlibrary SafeMath {\\n  /**\\n   * @dev Returns the addition of two unsigned integers, reverting on\\n   * overflow.\\n   *\\n   * Counterpart to Solidity's `+` operator.\\n   *\\n   * Requirements:\\n   * - Addition cannot overflow.\\n   */\\n  function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n    uint256 c = a + b;\\n    require(c >= a);\\n    return c;\\n  }\\n\\n  /**\\n   * @dev Returns the subtraction of two unsigned integers, reverting on\\n   * overflow (when the result is negative).\\n   *\\n   * Counterpart to Solidity's `-` operator.\\n   *\\n   * Requirements:\\n   * - Subtraction cannot overflow.\\n   */\\n  function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n    return OzSafeMath.sub(a, b, \\\"\\\");\\n  }\\n\\n  /**\\n   * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n   * overflow (when the result is negative).\\n   *\\n   * Counterpart to Solidity's `-` operator.\\n   *\\n   * Requirements:\\n   * - Subtraction cannot overflow.\\n   */\\n  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n    return OzSafeMath.sub(a, b, errorMessage);\\n  }\\n\\n  /// @notice Do a - b. If that would result in overflow then return 0\\n  function saturatingSub(uint256 a, uint256 b) internal pure returns (uint256) {\\n    return b > a ? 0 : a - b;\\n  }\\n\\n  function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n    // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n    // benefit is lost if 'b' is also tested.\\n    // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n    if (a == 0) {\\n      return 0;\\n    }\\n\\n    uint256 c = a * b;\\n    require(c / a == b);\\n\\n    return c;\\n  }\\n\\n  /**\\n   * @dev Returns the integer division of two unsigned integers. Reverts on\\n   * division by zero. The result is rounded towards zero.\\n   *\\n   * Counterpart to Solidity's `/` operator. Note: this function uses a\\n   * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n   * uses an invalid opcode to revert (consuming all remaining gas).\\n   *\\n   * Requirements:\\n   * - The divisor cannot be zero.\\n   */\\n  function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n    return OzSafeMath.div(a, b, \\\"\\\");\\n  }\\n\\n  /**\\n   * @dev Returns the integer division of two unsigned integers. Reverts with custom message on\\n   * division by zero. The result is rounded towards zero.\\n   *\\n   * Counterpart to Solidity's `/` operator. Note: this function uses a\\n   * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n   * uses an invalid opcode to revert (consuming all remaining gas).\\n   *\\n   * Requirements:\\n   * - The divisor cannot be zero.\\n   */\\n  function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n    return OzSafeMath.div(a, b, errorMessage);\\n  }\\n\\n  /**\\n   * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n   * Reverts when dividing by zero.\\n   *\\n   * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n   * opcode (which leaves remaining gas untouched) while Solidity uses an\\n   * invalid opcode to revert (consuming all remaining gas).\\n   *\\n   * Requirements:\\n   * - The divisor cannot be zero.\\n   */\\n  function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n    return OzSafeMath.mod(a, b, \\\"\\\");\\n  }\\n\\n  function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n    return OzSafeMath.mod(a, b, errorMessage);\\n  }\\n}\\n\",\"keccak256\":\"0x492f16ba6645f576d55d73cb648a4f7268bf84dae52768826d7e37693ffa7148\"},\"contracts/protocol/core/BaseUpgradeablePausable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport {AccessControlUpgradeSafe} from \\\"@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol\\\";\\nimport {ReentrancyGuardUpgradeSafe} from \\\"@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol\\\";\\nimport {Initializable} from \\\"@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol\\\";\\nimport {SafeMath} from \\\"../../library/SafeMath.sol\\\";\\nimport {PauserPausable} from \\\"./PauserPausable.sol\\\";\\n\\n/**\\n * @title BaseUpgradeablePausable contract\\n * @notice This is our Base contract that most other contracts inherit from. It includes many standard\\n *  useful abilities like upgradeability, pausability, access control, and re-entrancy guards.\\n * @author Goldfinch\\n */\\n\\ncontract BaseUpgradeablePausable is\\n  Initializable,\\n  AccessControlUpgradeSafe,\\n  PauserPausable,\\n  ReentrancyGuardUpgradeSafe\\n{\\n  bytes32 public constant OWNER_ROLE = keccak256(\\\"OWNER_ROLE\\\");\\n  using SafeMath for uint256;\\n  // Pre-reserving a few slots in the base contract in case we need to add things in the future.\\n  // This does not actually take up gas cost or storage cost, but it does reserve the storage slots.\\n  // See OpenZeppelin's use of this pattern here:\\n  // https://github.com/OpenZeppelin/openzeppelin-contracts-ethereum-package/blob/master/contracts/GSN/Context.sol#L37\\n  uint256[50] private __gap1;\\n  uint256[50] private __gap2;\\n  uint256[50] private __gap3;\\n  uint256[50] private __gap4;\\n\\n  // solhint-disable-next-line func-name-mixedcase\\n  function __BaseUpgradeablePausable__init(address owner) public initializer {\\n    require(owner != address(0), \\\"Owner cannot be the zero address\\\");\\n    __AccessControl_init_unchained();\\n    __Pausable_init_unchained();\\n    __ReentrancyGuard_init_unchained();\\n\\n    _setupRole(OWNER_ROLE, owner);\\n    _setupRole(PAUSER_ROLE, owner);\\n\\n    _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);\\n    _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);\\n  }\\n\\n  function isAdmin() public view returns (bool) {\\n    return hasRole(OWNER_ROLE, _msgSender());\\n  }\\n\\n  modifier onlyAdmin() {\\n    require(isAdmin(), \\\"Must have admin role to perform this action\\\");\\n    _;\\n  }\\n}\\n\",\"keccak256\":\"0x6d54b1a0f1e2a6d1e6934f1a596192727ea6ba6c6ecaccf0e43c8be11508df9e\",\"license\":\"MIT\"},\"contracts/protocol/core/PauserPausable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol\\\";\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol\\\";\\n\\n/**\\n * @title PauserPausable\\n * @notice Inheriting from OpenZeppelin's Pausable contract, this does small\\n *  augmentations to make it work with a PAUSER_ROLE, leveraging the AccessControl contract.\\n *  It is meant to be inherited.\\n * @author Goldfinch\\n */\\n\\ncontract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {\\n  bytes32 public constant PAUSER_ROLE = keccak256(\\\"PAUSER_ROLE\\\");\\n\\n  // solhint-disable-next-line func-name-mixedcase\\n  function __PauserPausable__init() public initializer {\\n    __Pausable_init_unchained();\\n  }\\n\\n  /**\\n   * @dev Pauses all functions guarded by Pause\\n   *\\n   * See {Pausable-_pause}.\\n   *\\n   * Requirements:\\n   *\\n   * - the caller must have the PAUSER_ROLE.\\n   */\\n\\n  function pause() public onlyPauserRole {\\n    _pause();\\n  }\\n\\n  /**\\n   * @dev Unpauses the contract\\n   *\\n   * See {Pausable-_unpause}.\\n   *\\n   * Requirements:\\n   *\\n   * - the caller must have the Pauser role\\n   */\\n  function unpause() public onlyPauserRole {\\n    _unpause();\\n  }\\n\\n  modifier onlyPauserRole() {\\n    /// @dev NA: not authorized\\n    require(hasRole(PAUSER_ROLE, _msgSender()), \\\"NA\\\");\\n    _;\\n  }\\n}\\n\",\"keccak256\":\"0x218eb32fc1649d98c0ac6f80689fc3e5fdcfbca36cf94431b9901788fbf3d266\",\"license\":\"MIT\"},\"contracts/protocol/core/callable/CallableLoanImplementationRepository.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\n\\n// solhint-disable-next-line max-line-length\\nimport {VersionedImplementationRepository} from \\\"../proxy/VersionedImplementationRepository.sol\\\";\\n\\ncontract CallableLoanImplementationRepository is VersionedImplementationRepository {}\\n\",\"keccak256\":\"0xdede7ebf910217a0254f453811a9c2a25153db1c79ca3dfc235ff6c228a4b607\",\"license\":\"MIT\"},\"contracts/protocol/core/proxy/ImplementationRepository.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport {BaseUpgradeablePausable} from \\\"../BaseUpgradeablePausable.sol\\\";\\nimport {Address} from \\\"@openzeppelin/contracts/utils/Address.sol\\\";\\nimport {IImplementationRepository} from \\\"../../../interfaces/IImplementationRepository.sol\\\";\\n\\n/// @title User Controlled Upgrades (UCU) Proxy Repository\\n/// A repository maintaing a collection of \\\"lineages\\\" of implementation contracts\\n///\\n/// Lineages are a sequence of implementations each lineage can be thought of as\\n/// a \\\"major\\\" revision of implementations. Implementations between lineages are\\n/// considered incompatible.\\ncontract ImplementationRepository is BaseUpgradeablePausable, IImplementationRepository {\\n  address internal constant INVALID_IMPL = address(0);\\n  uint256 internal constant INVALID_LINEAGE_ID = 0;\\n\\n  /// @notice returns data that will be delegatedCalled when the given implementation\\n  ///           is upgraded to\\n  mapping(address => bytes) public override upgradeDataFor;\\n\\n  /// @dev mapping from one implementation to the succeeding implementation\\n  mapping(address => address) internal _nextImplementationOf;\\n\\n  /// @notice Returns the id of the lineage a given implementation belongs to\\n  mapping(address => uint256) public override lineageIdOf;\\n\\n  /// @dev internal because we expose this through the `currentImplementation(uint256)` api\\n  mapping(uint256 => address) internal _currentOfLineage;\\n\\n  /// @notice Returns the id of the most recently created lineage\\n  uint256 public override currentLineageId;\\n\\n  // //////// External ////////////////////////////////////////////////////////////\\n\\n  /// @notice initialize the repository's state\\n  /// @dev reverts if `_owner` is the null address\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param _owner owner of the repository\\n  /// @param implementation initial implementation in the repository\\n  function initialize(address _owner, address implementation) external initializer {\\n    __BaseUpgradeablePausable__init(_owner);\\n    _createLineage(implementation);\\n    require(currentLineageId != INVALID_LINEAGE_ID);\\n  }\\n\\n  /// @notice set data that will be delegate called when a proxy upgrades to the given `implementation`\\n  /// @dev reverts when caller is not an admin\\n  /// @dev reverts when the contract is paused\\n  /// @dev reverts if the given implementation isn't registered\\n  function setUpgradeDataFor(\\n    address implementation,\\n    bytes calldata data\\n  ) external override onlyAdmin whenNotPaused {\\n    _setUpgradeDataFor(implementation, data);\\n  }\\n\\n  /// @notice Create a new lineage of implementations.\\n  ///\\n  /// This creates a new \\\"root\\\" of a new lineage\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation that will be the first implementation in the lineage\\n  /// @return newly created lineage's id\\n  function createLineage(\\n    address implementation\\n  ) external override onlyAdmin whenNotPaused returns (uint256) {\\n    return _createLineage(implementation);\\n  }\\n\\n  /// @notice add a new implementation and set it as the current implementation\\n  /// @dev reverts if the sender is not an owner\\n  /// @dev reverts if the contract is paused\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation to append\\n  function append(address implementation) external override onlyAdmin whenNotPaused {\\n    _append(implementation, currentLineageId);\\n  }\\n\\n  /// @notice Append an implementation to a specified lineage\\n  /// @dev reverts if the contract is paused\\n  /// @dev reverts if the sender is not an owner\\n  /// @dev reverts if `implementation` is not a contract\\n  /// @param implementation implementation to append\\n  /// @param lineageId id of lineage to append to\\n  function append(\\n    address implementation,\\n    uint256 lineageId\\n  ) external override onlyAdmin whenNotPaused {\\n    _append(implementation, lineageId);\\n  }\\n\\n  /// @notice Remove an implementation from the chain and \\\"stitch\\\" together its neighbors\\n  /// @dev If you have a chain of `A -> B -> C` and I call `remove(B, C)` it will result in `A -> C`\\n  /// @dev reverts if `previos` is not the ancestor of `toRemove`\\n  /// @dev we need to provide the previous implementation here to be able to successfully \\\"stitch\\\"\\n  ///       the chain back together. Because this is an admin action, we can source what the previous\\n  ///       version is from events.\\n  /// @param toRemove Implementation to remove\\n  /// @param previous Implementation that currently has `toRemove` as its successor\\n  function remove(address toRemove, address previous) external override onlyAdmin whenNotPaused {\\n    _remove(toRemove, previous);\\n  }\\n\\n  // //////// External view ////////////////////////////////////////////////////////////\\n\\n  /// @notice Returns `true` if an implementation has a next implementation set\\n  /// @param implementation implementation to check\\n  /// @return The implementation following the given implementation\\n  function hasNext(address implementation) external view override returns (bool) {\\n    return _nextImplementationOf[implementation] != INVALID_IMPL;\\n  }\\n\\n  /// @notice Returns `true` if an implementation has already been added\\n  /// @param implementation Implementation to check existence of\\n  /// @return `true` if the implementation has already been added\\n  function has(address implementation) external view override returns (bool) {\\n    return _has(implementation);\\n  }\\n\\n  /// @notice Get the next implementation for a given implementation or\\n  ///           `address(0)` if it doesn't exist\\n  /// @dev reverts when contract is paused\\n  /// @param implementation implementation to get the upgraded implementation for\\n  /// @return Next Implementation\\n  function nextImplementationOf(\\n    address implementation\\n  ) external view override whenNotPaused returns (address) {\\n    return _nextImplementationOf[implementation];\\n  }\\n\\n  /// @notice Returns `true` if a given lineageId exists\\n  function lineageExists(uint256 lineageId) external view override returns (bool) {\\n    return _lineageExists(lineageId);\\n  }\\n\\n  /// @notice Return the current implementation of a lineage with the given `lineageId`\\n  function currentImplementation(\\n    uint256 lineageId\\n  ) external view override whenNotPaused returns (address) {\\n    return _currentImplementation(lineageId);\\n  }\\n\\n  /// @notice return current implementaton of the current lineage\\n  function currentImplementation() external view override whenNotPaused returns (address) {\\n    return _currentImplementation(currentLineageId);\\n  }\\n\\n  // //////// Internal ////////////////////////////////////////////////////////////\\n\\n  function _setUpgradeDataFor(address implementation, bytes memory data) internal {\\n    require(_has(implementation), \\\"unknown impl\\\");\\n    upgradeDataFor[implementation] = data;\\n    emit UpgradeDataSet(implementation, data);\\n  }\\n\\n  function _createLineage(address implementation) internal virtual returns (uint256) {\\n    require(Address.isContract(implementation), \\\"not a contract\\\");\\n    // NOTE: impractical to overflow\\n    currentLineageId += 1;\\n\\n    _currentOfLineage[currentLineageId] = implementation;\\n    lineageIdOf[implementation] = currentLineageId;\\n\\n    emit Added(currentLineageId, implementation, address(0));\\n    return currentLineageId;\\n  }\\n\\n  function _currentImplementation(uint256 lineageId) internal view returns (address) {\\n    return _currentOfLineage[lineageId];\\n  }\\n\\n  /// @notice Returns `true` if an implementation has already been added\\n  /// @param implementation implementation to check for\\n  /// @return `true` if the implementation has already been added\\n  function _has(address implementation) internal view virtual returns (bool) {\\n    return lineageIdOf[implementation] != INVALID_LINEAGE_ID;\\n  }\\n\\n  /// @notice Set an implementation to the current implementation\\n  /// @param implementation implementation to set as current implementation\\n  /// @param lineageId id of lineage to append to\\n  function _append(address implementation, uint256 lineageId) internal virtual {\\n    require(Address.isContract(implementation), \\\"not a contract\\\");\\n    require(!_has(implementation), \\\"exists\\\");\\n    require(_lineageExists(lineageId), \\\"invalid lineageId\\\");\\n    require(_currentOfLineage[lineageId] != INVALID_IMPL, \\\"empty lineage\\\");\\n\\n    address oldImplementation = _currentOfLineage[lineageId];\\n    _currentOfLineage[lineageId] = implementation;\\n    lineageIdOf[implementation] = lineageId;\\n    _nextImplementationOf[oldImplementation] = implementation;\\n\\n    emit Added(lineageId, implementation, oldImplementation);\\n  }\\n\\n  function _remove(address toRemove, address previous) internal virtual {\\n    require(toRemove != INVALID_IMPL && previous != INVALID_IMPL, \\\"ZERO\\\");\\n    require(_nextImplementationOf[previous] == toRemove, \\\"Not prev\\\");\\n\\n    uint256 lineageId = lineageIdOf[toRemove];\\n\\n    // need to reset the head pointer to the previous version if we remove the head\\n    if (toRemove == _currentOfLineage[lineageId]) {\\n      _currentOfLineage[lineageId] = previous;\\n    }\\n\\n    _setUpgradeDataFor(toRemove, \\\"\\\"); // reset upgrade data\\n    _nextImplementationOf[previous] = _nextImplementationOf[toRemove];\\n    _nextImplementationOf[toRemove] = INVALID_IMPL;\\n    lineageIdOf[toRemove] = INVALID_LINEAGE_ID;\\n    emit Removed(lineageId, toRemove);\\n  }\\n\\n  function _lineageExists(uint256 lineageId) internal view returns (bool) {\\n    return lineageId != INVALID_LINEAGE_ID && lineageId <= currentLineageId;\\n  }\\n\\n  // //////// Events //////////////////////////////////////////////////////////////\\n  event Added(\\n    uint256 indexed lineageId,\\n    address indexed newImplementation,\\n    address indexed oldImplementation\\n  );\\n  event Removed(uint256 indexed lineageId, address indexed implementation);\\n  event UpgradeDataSet(address indexed implementation, bytes data);\\n}\\n\",\"keccak256\":\"0x78162688d5bb9a6abf01b1108b6cb1c113c7d396f51f2d2bfe49348eb4358cde\",\"license\":\"MIT\"},\"contracts/protocol/core/proxy/VersionedImplementationRepository.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\nimport {IVersioned} from \\\"../../../interfaces/IVersioned.sol\\\";\\nimport {IVersionedImplementationRepository} from \\\"../../../interfaces/IVersionedImplementationRepository.sol\\\";\\n\\nimport {ImplementationRepository as Repo} from \\\"./ImplementationRepository.sol\\\";\\n\\ncontract VersionedImplementationRepository is Repo, IVersionedImplementationRepository {\\n  /// @dev abi encoded version -> implementation address\\n  /// @dev we use bytes here so only a single storage slot is used\\n  mapping(bytes => address) internal _byVersion;\\n\\n  // // EXTERNAL //////////////////////////////////////////////////////////////////\\n\\n  /// @notice get an implementation by a version tag\\n  /// @param version `[major, minor, patch]` version tag\\n  /// @return implementation associated with the given version tag\\n  function getByVersion(uint8[3] calldata version) external view override returns (address) {\\n    return _byVersion[abi.encodePacked(version)];\\n  }\\n\\n  /// @notice check if a version exists\\n  /// @param version `[major, minor, patch]` version tag\\n  /// @return true if the version is registered\\n  function hasVersion(uint8[3] calldata version) external view override returns (bool) {\\n    return _hasVersion(version);\\n  }\\n\\n  // // INTERNAL //////////////////////////////////////////////////////////////////\\n\\n  function _append(address implementation, uint256 lineageId) internal override {\\n    uint8[3] memory version = IVersioned(implementation).getVersion();\\n    _insertVersion(version, implementation);\\n    return super._append(implementation, lineageId);\\n  }\\n\\n  function _createLineage(address implementation) internal override returns (uint256) {\\n    uint8[3] memory version = IVersioned(implementation).getVersion();\\n    _insertVersion(version, implementation);\\n    uint256 lineageId = super._createLineage(implementation);\\n    return lineageId;\\n  }\\n\\n  function _remove(address toRemove, address previous) internal override {\\n    uint8[3] memory version = IVersioned(toRemove).getVersion();\\n    _removeVersion(version);\\n    return super._remove(toRemove, previous);\\n  }\\n\\n  function _insertVersion(uint8[3] memory version, address impl) internal {\\n    require(!_hasVersion(version), \\\"exists\\\");\\n    _byVersion[abi.encodePacked(version)] = impl;\\n    emit VersionAdded(version, impl);\\n  }\\n\\n  function _removeVersion(uint8[3] memory version) internal {\\n    address toRemove = _byVersion[abi.encode(version)];\\n    _byVersion[abi.encodePacked(version)] = INVALID_IMPL;\\n    emit VersionRemoved(version, toRemove);\\n  }\\n\\n  function _hasVersion(uint8[3] memory version) internal view returns (bool) {\\n    return _byVersion[abi.encodePacked(version)] != INVALID_IMPL;\\n  }\\n\\n  event VersionAdded(uint8[3] indexed version, address indexed impl);\\n  event VersionRemoved(uint8[3] indexed version, address indexed impl);\\n}\\n\",\"keccak256\":\"0x5f4ba89cf1ed1575ed8ce5f9494b0853432585b74b0fb69e94aa3df7651345d2\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50612592806100206000396000f3fe608060405234801561001057600080fd5b50600436106101bb5760003560e01c8063800751b2116100fa578063ac04f5a71161009d578063ac04f5a7146105b8578063b6db75a0146105de578063ca15c873146105e6578063d547741f14610603578063d8bd5c291461062f578063e58378bb14610637578063e63ab1e91461063f578063f57f688014610647578063fd81bf9a14610663576101bb565b8063800751b21461046e5780638456cb591461047657806386c700e21461047e5780638e12f761146104aa5780639010d07c1461054557806391d14854146105685780639fb9d3d314610594578063a217fddf146105b0576101bb565b8063526d81f611610162578063526d81f6146103055780635b730dbb1461030d5780635c975abb146103335780636063d19c1461033b5780636067570e146103585780636a3def6c146103d857806378e33e4e1461041a5780637f7c149114610440576101bb565b8063097616a3146101c05780630e6a6ef5146101e857806321887c3d14610222578063248a9ca3146102485780632f2ff15d1461027757806336568abe146102a35780633f4ba83a146102cf578063485cc955146102d7575b600080fd5b6101e6600480360360208110156101d657600080fd5b50356001600160a01b0316610680565b005b61020e600480360360208110156101fe57600080fd5b50356001600160a01b0316610804565b604080519115158252519081900360200190f35b61020e6004803603602081101561023857600080fd5b50356001600160a01b0316610825565b6102656004803603602081101561025e57600080fd5b5035610836565b60408051918252519081900360200190f35b6101e66004803603604081101561028d57600080fd5b50803590602001356001600160a01b031661084b565b6101e6600480360360408110156102b957600080fd5b50803590602001356001600160a01b03166108b3565b6101e6610914565b6101e6600480360360408110156102ed57600080fd5b506001600160a01b038135811691602001351661096e565b6101e6610a32565b6102656004803603602081101561032357600080fd5b50356001600160a01b0316610adc565b61020e610aef565b61020e6004803603602081101561035157600080fd5b5035610af8565b6101e66004803603604081101561036e57600080fd5b6001600160a01b03823516919081019060408101602082013564010000000081111561039957600080fd5b8201836020820111156103ab57600080fd5b803590602001918460018302840111640100000000831117156103cd57600080fd5b509092509050610b03565b6103fe600480360360208110156103ee57600080fd5b50356001600160a01b0316610bd1565b604080516001600160a01b039092168252519081900360200190f35b6102656004803603602081101561043057600080fd5b50356001600160a01b0316610c3f565b6101e66004803603604081101561045657600080fd5b506001600160a01b0381358116916020013516610cd8565b610265610d70565b6101e6610d77565b6101e66004803603604081101561049457600080fd5b506001600160a01b038135169060200135610dcf565b6104d0600480360360208110156104c057600080fd5b50356001600160a01b0316610e67565b6040805160208082528351818301528351919283929083019185019080838360005b8381101561050a5781810151838201526020016104f2565b50505050905090810190601f1680156105375780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6103fe6004803603604081101561055b57600080fd5b5080359060200135610f03565b61020e6004803603604081101561057e57600080fd5b50803590602001356001600160a01b0316610f22565b6103fe600480360360608110156105aa57600080fd5b50610f3a565b610265610fd6565b6101e6600480360360208110156105ce57600080fd5b50356001600160a01b0316610fdb565b61020e611076565b610265600480360360208110156105fc57600080fd5b5035611097565b6101e66004803603604081101561061957600080fd5b50803590602001356001600160a01b03166110ae565b6103fe611107565b610265611161565b610265611173565b61020e6004803603606081101561065d57600080fd5b50611185565b6103fe6004803603602081101561067957600080fd5b50356111b9565b600054610100900460ff16806106995750610699611210565b806106a7575060005460ff16155b6106e25760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff1615801561070d576000805460ff1961ff0019909116610100171660011790555b6001600160a01b038216610768576040805162461bcd60e51b815260206004820181905260248201527f4f776e65722063616e6e6f7420626520746865207a65726f2061646472657373604482015290519081900360640190fd5b610770611216565b6107786112b6565b610780611361565b610798600080516020612465833981519152836108a9565b6107b06000805160206124b5833981519152836108a9565b6107d66000805160206124b583398151915260008051602061246583398151915261140f565b6107ee6000805160206124658339815191528061140f565b8015610800576000805461ff00191690555b5050565b6001600160a01b0390811660009081526101c4602052604090205416151590565b600061083082611424565b92915050565b60009081526065602052604090206002015490565b60008281526065602052604090206002015461086e90610869611442565b610f22565b6108a95760405162461bcd60e51b815260040180806020018281038252602f815260200180612436602f913960400191505060405180910390fd5b6108008282611446565b6108bb611442565b6001600160a01b0316816001600160a01b03161461090a5760405162461bcd60e51b815260040180806020018281038252602f81526020018061252e602f913960400191505060405180910390fd5b61080082826114af565b61092e6000805160206124b5833981519152610869611442565b610964576040805162461bcd60e51b81526020600482015260026024820152614e4160f01b604482015290519081900360640190fd5b61096c611518565b565b600054610100900460ff16806109875750610987611210565b80610995575060005460ff16155b6109d05760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff161580156109fb576000805460ff1961ff0019909116610100171660011790555b610a0483610680565b610a0d826115b6565b506101c754610a1b57600080fd5b8015610a2d576000805461ff00191690555b505050565b600054610100900460ff1680610a4b5750610a4b611210565b80610a59575060005460ff16155b610a945760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015610abf576000805460ff1961ff0019909116610100171660011790555b610ac76112b6565b8015610ad9576000805461ff00191690555b50565b6101c56020526000908152604090205481565b60975460ff1690565b600061083082611652565b610b0b611076565b610b465760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610b91576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610a2d8383838080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061166892505050565b60975460009060ff1615610c1f576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b506001600160a01b0390811660009081526101c460205260409020541690565b6000610c49611076565b610c845760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610ccf576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610830826115b6565b610ce0611076565b610d1b5760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610d66576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6108008282611783565b6101c75481565b610d916000805160206124b5833981519152610869611442565b610dc7576040805162461bcd60e51b81526020600482015260026024820152614e4160f01b604482015290519081900360640190fd5b61096c611813565b610dd7611076565b610e125760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610e5d576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6108008282611894565b6101c36020908152600091825260409182902080548351601f600260001961010060018616150201909316929092049182018490048402810184019094528084529091830182828015610efb5780601f10610ed057610100808354040283529160200191610efb565b820191906000526020600020905b815481529060010190602001808311610ede57829003601f168201915b505050505081565b6000828152606560205260408120610f1b9083611925565b9392505050565b6000828152606560205260408120610f1b9083611931565b60006101c8826040516020018082600360200280828437808301925050509150506040516020818303038152906040526040518082805190602001908083835b60208310610f995780518252601f199092019160209182019101610f7a565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301909220546001600160a01b0316949350505050565b600081565b610fe3611076565b61101e5760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615611069576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610ad9816101c754611894565b6000611092600080516020612465833981519152610869611442565b905090565b600081815260656020526040812061083090611946565b6000828152606560205260409020600201546110cc90610869611442565b61090a5760405162461bcd60e51b81526004018080602001828103825260308152602001806124856030913960400191505060405180910390fd5b60975460009060ff1615611155576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6110926101c754611951565b60008051602061246583398151915281565b6000805160206124b583398151915281565b600061083082600380602002604051908101604052809291908260036020028082843760009201919091525061196d915050565b60975460009060ff1615611207576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b61083082611951565b303b1590565b600054610100900460ff168061122f575061122f611210565b8061123d575060005460ff16155b6112785760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015610ac7576000805460ff1961ff0019909116610100171660011790558015610ad9576000805461ff001916905550565b600054610100900460ff16806112cf57506112cf611210565b806112dd575060005460ff16155b6113185760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015611343576000805460ff1961ff0019909116610100171660011790555b6097805460ff191690558015610ad9576000805461ff001916905550565b600054610100900460ff168061137a575061137a611210565b80611388575060005460ff16155b6113c35760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff161580156113ee576000805460ff1961ff0019909116610100171660011790555b60c9805460ff191660011790558015610ad9576000805461ff001916905550565b60009182526065602052604090912060020155565b6001600160a01b031660009081526101c56020526040902054151590565b3390565b600082815260656020526040902061145e9082611a32565b156108005761146b611442565b6001600160a01b0316816001600160a01b0316837f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a45050565b60008281526065602052604090206114c79082611a47565b15610800576114d4611442565b6001600160a01b0316816001600160a01b0316837ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b60405160405180910390a45050565b60975460ff16611566576040805162461bcd60e51b815260206004820152601460248201527314185d5cd8589b194e881b9bdd081c185d5cd95960621b604482015290519081900360640190fd5b6097805460ff191690557f5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa611599611442565b604080516001600160a01b039092168252519081900360200190a1565b60006115c0612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156115f957600080fd5b505afa15801561160d573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250606081101561163257600080fd5b50905061163f8184611a5c565b600061164a84611bc5565b949350505050565b600081158015906108305750506101c754101590565b61167182611424565b6116b1576040805162461bcd60e51b815260206004820152600c60248201526b1d5b9adb9bdddb881a5b5c1b60a21b604482015290519081900360640190fd5b6001600160a01b03821660009081526101c36020908152604090912082516116db92840190612380565b50816001600160a01b03167fcfcd475c604bfbc75932564c95bc031e51de33f73cad003713615047cd8fff2e826040518080602001828103825283818151815260200191508051906020019080838360005b8381101561174557818101518382015260200161172d565b50505050905090810190601f1680156117725780820380516001836020036101000a031916815260200191505b509250505060405180910390a25050565b61178b612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156117c457600080fd5b505afa1580156117d8573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525060608110156117fd57600080fd5b50905061180981611c8e565b610a2d8383611e60565b60975460ff161561185e576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6097805460ff191660011790557f62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258611599611442565b61189c612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156118d557600080fd5b505afa1580156118e9573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250606081101561190e57600080fd5b50905061191b8184611a5c565b610a2d838361200f565b6000610f1b83836121cc565b6000610f1b836001600160a01b038416612230565b600061083082612248565b60009081526101c660205260409020546001600160a01b031690565b6000806001600160a01b03166101c8836040516020018082600360200280838360005b838110156119a8578181015183820152602001611990565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b602083106119f05780518252601f1990920191602091820191016119d1565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301909220546001600160a01b03169290921415949350505050565b6000610f1b836001600160a01b03841661224c565b6000610f1b836001600160a01b038416612296565b611a658261196d565b15611aa0576040805162461bcd60e51b815260206004820152600660248201526565786973747360d01b604482015290519081900360640190fd5b806101c8836040516020018082600360200280838360005b83811015611ad0578181015183820152602001611ab8565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611b185780518252601f199092019160209182019101611af9565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301832080546001600160a01b0319166001600160a01b0395861617905550509082169083908082606080838360005b83811015611b86578181015183820152602001611b6e565b505060405194909201849003842095507f0e9fe021c3c807e908689f11f723b17a4f0d65d0a62a5cda1e39656ddee33c88945060009392505050a35050565b6000611bd08261235c565b611c12576040805162461bcd60e51b815260206004820152600e60248201526d1b9bdd08184818dbdb9d1c9858dd60921b604482015290519081900360640190fd5b6101c7805460010180825560009081526101c66020908152604080832080546001600160a01b0319166001600160a01b03881690811790915593548484526101c5909252808320829055519192917f5570b95960d1ec214184bfc3681f1e8b1b70e90f7e07e53a209e8029cbba5d5b908490a450506101c75490565b60006101c8826040516020018082600360200280838360005b83811015611cbf578181015183820152602001611ca7565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611d075780518252601f199092019160209182019101611ce8565b51815160209384036101000a60001901801990921691161790529201948552506040519384900381018420546001600160a01b031694506000936101c893508692500180826060808383895b83811015611d6b578181015183820152602001611d53565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611db35780518252601f199092019160209182019101611d94565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301832080546001600160a01b0319166001600160a01b0395861617905550509082169083908082606080838360005b83811015611e21578181015183820152602001611e09565b505060405194909201849003842095507f18e2b5e04736289291853fdba61749fad2d986bbbc779a658029be409d6ac5d8945060009392505050a35050565b6001600160a01b03821615801590611e8057506001600160a01b03811615155b611eba576040805162461bcd60e51b815260206004808301919091526024820152635a45524f60e01b604482015290519081900360640190fd5b6001600160a01b0381811660009081526101c46020526040902054811690831614611f17576040805162461bcd60e51b81526020600482015260086024820152672737ba10383932bb60c11b604482015290519081900360640190fd5b6001600160a01b0380831660008181526101c560209081526040808320548084526101c6909252909120549092161415611f745760008181526101c66020526040902080546001600160a01b0319166001600160a01b0384161790555b611f8d8360405180602001604052806000815250611668565b6001600160a01b0383811660008181526101c460209081526040808320805488871685528285208054919097166001600160a01b03199182161790965584845280549095169094556101c590528281208190559151909183917f0d141fd7c77072fc48765e24d85a4727dc79f72cbb320ad2ba944e2914a51e6d9190a3505050565b6120188261235c565b61205a576040805162461bcd60e51b815260206004820152600e60248201526d1b9bdd08184818dbdb9d1c9858dd60921b604482015290519081900360640190fd5b61206382611424565b1561209e576040805162461bcd60e51b815260206004820152600660248201526565786973747360d01b604482015290519081900360640190fd5b6120a781611652565b6120ec576040805162461bcd60e51b81526020600482015260116024820152701a5b9d985b1a59081b1a5b995859d95259607a1b604482015290519081900360640190fd5b60008181526101c660205260409020546001600160a01b0316612146576040805162461bcd60e51b815260206004820152600d60248201526c656d707479206c696e6561676560981b604482015290519081900360640190fd5b60008181526101c66020908152604080832080546001600160a01b038781166001600160a01b031980841682179094558087526101c5865284872088905591168086526101c49094528285208054909216811790915590519192839285917f5570b95960d1ec214184bfc3681f1e8b1b70e90f7e07e53a209e8029cbba5d5b91a4505050565b8154600090821061220e5760405162461bcd60e51b81526004018080602001828103825260228152602001806124146022913960400191505060405180910390fd5b82600001828154811061221d57fe5b9060005260206000200154905092915050565b60009081526001919091016020526040902054151590565b5490565b60006122588383612230565b61228e57508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610830565b506000610830565b6000818152600183016020526040812054801561235257835460001980830191908101906000908790839081106122c957fe5b90600052602060002001549050808760000184815481106122e657fe5b60009182526020808320909101929092558281526001898101909252604090209084019055865487908061231657fe5b60019003818190600052602060002001600090559055866001016000878152602001908152602001600020600090556001945050505050610830565b6000915050610830565b3b151590565b60405180606001604052806003906020820280368337509192915050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106123c157805160ff19168380011785556123ee565b828001600101855582156123ee579182015b828111156123ee5782518255916020019190600101906123d3565b506123fa9291506123fe565b5090565b5b808211156123fa57600081556001016123ff56fe456e756d657261626c655365743a20696e646578206f7574206f6620626f756e6473416363657373436f6e74726f6c3a2073656e646572206d75737420626520616e2061646d696e20746f206772616e74b19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e416363657373436f6e74726f6c3a2073656e646572206d75737420626520616e2061646d696e20746f207265766f6b6565d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a436f6e747261637420696e7374616e63652068617320616c7265616479206265656e20696e697469616c697a65644d75737420686176652061646d696e20726f6c6520746f20706572666f726d207468697320616374696f6e416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636520726f6c657320666f722073656c66a26469706673582212204acb4a7f95eba1c9437b07f8a67af7f1849ec4ee36b5153574981bb7d0b3027164736f6c634300060c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101bb5760003560e01c8063800751b2116100fa578063ac04f5a71161009d578063ac04f5a7146105b8578063b6db75a0146105de578063ca15c873146105e6578063d547741f14610603578063d8bd5c291461062f578063e58378bb14610637578063e63ab1e91461063f578063f57f688014610647578063fd81bf9a14610663576101bb565b8063800751b21461046e5780638456cb591461047657806386c700e21461047e5780638e12f761146104aa5780639010d07c1461054557806391d14854146105685780639fb9d3d314610594578063a217fddf146105b0576101bb565b8063526d81f611610162578063526d81f6146103055780635b730dbb1461030d5780635c975abb146103335780636063d19c1461033b5780636067570e146103585780636a3def6c146103d857806378e33e4e1461041a5780637f7c149114610440576101bb565b8063097616a3146101c05780630e6a6ef5146101e857806321887c3d14610222578063248a9ca3146102485780632f2ff15d1461027757806336568abe146102a35780633f4ba83a146102cf578063485cc955146102d7575b600080fd5b6101e6600480360360208110156101d657600080fd5b50356001600160a01b0316610680565b005b61020e600480360360208110156101fe57600080fd5b50356001600160a01b0316610804565b604080519115158252519081900360200190f35b61020e6004803603602081101561023857600080fd5b50356001600160a01b0316610825565b6102656004803603602081101561025e57600080fd5b5035610836565b60408051918252519081900360200190f35b6101e66004803603604081101561028d57600080fd5b50803590602001356001600160a01b031661084b565b6101e6600480360360408110156102b957600080fd5b50803590602001356001600160a01b03166108b3565b6101e6610914565b6101e6600480360360408110156102ed57600080fd5b506001600160a01b038135811691602001351661096e565b6101e6610a32565b6102656004803603602081101561032357600080fd5b50356001600160a01b0316610adc565b61020e610aef565b61020e6004803603602081101561035157600080fd5b5035610af8565b6101e66004803603604081101561036e57600080fd5b6001600160a01b03823516919081019060408101602082013564010000000081111561039957600080fd5b8201836020820111156103ab57600080fd5b803590602001918460018302840111640100000000831117156103cd57600080fd5b509092509050610b03565b6103fe600480360360208110156103ee57600080fd5b50356001600160a01b0316610bd1565b604080516001600160a01b039092168252519081900360200190f35b6102656004803603602081101561043057600080fd5b50356001600160a01b0316610c3f565b6101e66004803603604081101561045657600080fd5b506001600160a01b0381358116916020013516610cd8565b610265610d70565b6101e6610d77565b6101e66004803603604081101561049457600080fd5b506001600160a01b038135169060200135610dcf565b6104d0600480360360208110156104c057600080fd5b50356001600160a01b0316610e67565b6040805160208082528351818301528351919283929083019185019080838360005b8381101561050a5781810151838201526020016104f2565b50505050905090810190601f1680156105375780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6103fe6004803603604081101561055b57600080fd5b5080359060200135610f03565b61020e6004803603604081101561057e57600080fd5b50803590602001356001600160a01b0316610f22565b6103fe600480360360608110156105aa57600080fd5b50610f3a565b610265610fd6565b6101e6600480360360208110156105ce57600080fd5b50356001600160a01b0316610fdb565b61020e611076565b610265600480360360208110156105fc57600080fd5b5035611097565b6101e66004803603604081101561061957600080fd5b50803590602001356001600160a01b03166110ae565b6103fe611107565b610265611161565b610265611173565b61020e6004803603606081101561065d57600080fd5b50611185565b6103fe6004803603602081101561067957600080fd5b50356111b9565b600054610100900460ff16806106995750610699611210565b806106a7575060005460ff16155b6106e25760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff1615801561070d576000805460ff1961ff0019909116610100171660011790555b6001600160a01b038216610768576040805162461bcd60e51b815260206004820181905260248201527f4f776e65722063616e6e6f7420626520746865207a65726f2061646472657373604482015290519081900360640190fd5b610770611216565b6107786112b6565b610780611361565b610798600080516020612465833981519152836108a9565b6107b06000805160206124b5833981519152836108a9565b6107d66000805160206124b583398151915260008051602061246583398151915261140f565b6107ee6000805160206124658339815191528061140f565b8015610800576000805461ff00191690555b5050565b6001600160a01b0390811660009081526101c4602052604090205416151590565b600061083082611424565b92915050565b60009081526065602052604090206002015490565b60008281526065602052604090206002015461086e90610869611442565b610f22565b6108a95760405162461bcd60e51b815260040180806020018281038252602f815260200180612436602f913960400191505060405180910390fd5b6108008282611446565b6108bb611442565b6001600160a01b0316816001600160a01b03161461090a5760405162461bcd60e51b815260040180806020018281038252602f81526020018061252e602f913960400191505060405180910390fd5b61080082826114af565b61092e6000805160206124b5833981519152610869611442565b610964576040805162461bcd60e51b81526020600482015260026024820152614e4160f01b604482015290519081900360640190fd5b61096c611518565b565b600054610100900460ff16806109875750610987611210565b80610995575060005460ff16155b6109d05760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff161580156109fb576000805460ff1961ff0019909116610100171660011790555b610a0483610680565b610a0d826115b6565b506101c754610a1b57600080fd5b8015610a2d576000805461ff00191690555b505050565b600054610100900460ff1680610a4b5750610a4b611210565b80610a59575060005460ff16155b610a945760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015610abf576000805460ff1961ff0019909116610100171660011790555b610ac76112b6565b8015610ad9576000805461ff00191690555b50565b6101c56020526000908152604090205481565b60975460ff1690565b600061083082611652565b610b0b611076565b610b465760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610b91576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610a2d8383838080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061166892505050565b60975460009060ff1615610c1f576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b506001600160a01b0390811660009081526101c460205260409020541690565b6000610c49611076565b610c845760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610ccf576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610830826115b6565b610ce0611076565b610d1b5760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610d66576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6108008282611783565b6101c75481565b610d916000805160206124b5833981519152610869611442565b610dc7576040805162461bcd60e51b81526020600482015260026024820152614e4160f01b604482015290519081900360640190fd5b61096c611813565b610dd7611076565b610e125760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615610e5d576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6108008282611894565b6101c36020908152600091825260409182902080548351601f600260001961010060018616150201909316929092049182018490048402810184019094528084529091830182828015610efb5780601f10610ed057610100808354040283529160200191610efb565b820191906000526020600020905b815481529060010190602001808311610ede57829003601f168201915b505050505081565b6000828152606560205260408120610f1b9083611925565b9392505050565b6000828152606560205260408120610f1b9083611931565b60006101c8826040516020018082600360200280828437808301925050509150506040516020818303038152906040526040518082805190602001908083835b60208310610f995780518252601f199092019160209182019101610f7a565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301909220546001600160a01b0316949350505050565b600081565b610fe3611076565b61101e5760405162461bcd60e51b815260040180806020018281038252602b815260200180612503602b913960400191505060405180910390fd5b60975460ff1615611069576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b610ad9816101c754611894565b6000611092600080516020612465833981519152610869611442565b905090565b600081815260656020526040812061083090611946565b6000828152606560205260409020600201546110cc90610869611442565b61090a5760405162461bcd60e51b81526004018080602001828103825260308152602001806124856030913960400191505060405180910390fd5b60975460009060ff1615611155576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6110926101c754611951565b60008051602061246583398151915281565b6000805160206124b583398151915281565b600061083082600380602002604051908101604052809291908260036020028082843760009201919091525061196d915050565b60975460009060ff1615611207576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b61083082611951565b303b1590565b600054610100900460ff168061122f575061122f611210565b8061123d575060005460ff16155b6112785760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015610ac7576000805460ff1961ff0019909116610100171660011790558015610ad9576000805461ff001916905550565b600054610100900460ff16806112cf57506112cf611210565b806112dd575060005460ff16155b6113185760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff16158015611343576000805460ff1961ff0019909116610100171660011790555b6097805460ff191690558015610ad9576000805461ff001916905550565b600054610100900460ff168061137a575061137a611210565b80611388575060005460ff16155b6113c35760405162461bcd60e51b815260040180806020018281038252602e8152602001806124d5602e913960400191505060405180910390fd5b600054610100900460ff161580156113ee576000805460ff1961ff0019909116610100171660011790555b60c9805460ff191660011790558015610ad9576000805461ff001916905550565b60009182526065602052604090912060020155565b6001600160a01b031660009081526101c56020526040902054151590565b3390565b600082815260656020526040902061145e9082611a32565b156108005761146b611442565b6001600160a01b0316816001600160a01b0316837f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a45050565b60008281526065602052604090206114c79082611a47565b15610800576114d4611442565b6001600160a01b0316816001600160a01b0316837ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b60405160405180910390a45050565b60975460ff16611566576040805162461bcd60e51b815260206004820152601460248201527314185d5cd8589b194e881b9bdd081c185d5cd95960621b604482015290519081900360640190fd5b6097805460ff191690557f5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa611599611442565b604080516001600160a01b039092168252519081900360200190a1565b60006115c0612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156115f957600080fd5b505afa15801561160d573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250606081101561163257600080fd5b50905061163f8184611a5c565b600061164a84611bc5565b949350505050565b600081158015906108305750506101c754101590565b61167182611424565b6116b1576040805162461bcd60e51b815260206004820152600c60248201526b1d5b9adb9bdddb881a5b5c1b60a21b604482015290519081900360640190fd5b6001600160a01b03821660009081526101c36020908152604090912082516116db92840190612380565b50816001600160a01b03167fcfcd475c604bfbc75932564c95bc031e51de33f73cad003713615047cd8fff2e826040518080602001828103825283818151815260200191508051906020019080838360005b8381101561174557818101518382015260200161172d565b50505050905090810190601f1680156117725780820380516001836020036101000a031916815260200191505b509250505060405180910390a25050565b61178b612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156117c457600080fd5b505afa1580156117d8573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525060608110156117fd57600080fd5b50905061180981611c8e565b610a2d8383611e60565b60975460ff161561185e576040805162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015290519081900360640190fd5b6097805460ff191660011790557f62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258611599611442565b61189c612362565b826001600160a01b0316630d8e6e2c6040518163ffffffff1660e01b815260040160606040518083038186803b1580156118d557600080fd5b505afa1580156118e9573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250606081101561190e57600080fd5b50905061191b8184611a5c565b610a2d838361200f565b6000610f1b83836121cc565b6000610f1b836001600160a01b038416612230565b600061083082612248565b60009081526101c660205260409020546001600160a01b031690565b6000806001600160a01b03166101c8836040516020018082600360200280838360005b838110156119a8578181015183820152602001611990565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b602083106119f05780518252601f1990920191602091820191016119d1565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301909220546001600160a01b03169290921415949350505050565b6000610f1b836001600160a01b03841661224c565b6000610f1b836001600160a01b038416612296565b611a658261196d565b15611aa0576040805162461bcd60e51b815260206004820152600660248201526565786973747360d01b604482015290519081900360640190fd5b806101c8836040516020018082600360200280838360005b83811015611ad0578181015183820152602001611ab8565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611b185780518252601f199092019160209182019101611af9565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301832080546001600160a01b0319166001600160a01b0395861617905550509082169083908082606080838360005b83811015611b86578181015183820152602001611b6e565b505060405194909201849003842095507f0e9fe021c3c807e908689f11f723b17a4f0d65d0a62a5cda1e39656ddee33c88945060009392505050a35050565b6000611bd08261235c565b611c12576040805162461bcd60e51b815260206004820152600e60248201526d1b9bdd08184818dbdb9d1c9858dd60921b604482015290519081900360640190fd5b6101c7805460010180825560009081526101c66020908152604080832080546001600160a01b0319166001600160a01b03881690811790915593548484526101c5909252808320829055519192917f5570b95960d1ec214184bfc3681f1e8b1b70e90f7e07e53a209e8029cbba5d5b908490a450506101c75490565b60006101c8826040516020018082600360200280838360005b83811015611cbf578181015183820152602001611ca7565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611d075780518252601f199092019160209182019101611ce8565b51815160209384036101000a60001901801990921691161790529201948552506040519384900381018420546001600160a01b031694506000936101c893508692500180826060808383895b83811015611d6b578181015183820152602001611d53565b505050509050019150506040516020818303038152906040526040518082805190602001908083835b60208310611db35780518252601f199092019160209182019101611d94565b51815160209384036101000a60001901801990921691161790529201948552506040519384900301832080546001600160a01b0319166001600160a01b0395861617905550509082169083908082606080838360005b83811015611e21578181015183820152602001611e09565b505060405194909201849003842095507f18e2b5e04736289291853fdba61749fad2d986bbbc779a658029be409d6ac5d8945060009392505050a35050565b6001600160a01b03821615801590611e8057506001600160a01b03811615155b611eba576040805162461bcd60e51b815260206004808301919091526024820152635a45524f60e01b604482015290519081900360640190fd5b6001600160a01b0381811660009081526101c46020526040902054811690831614611f17576040805162461bcd60e51b81526020600482015260086024820152672737ba10383932bb60c11b604482015290519081900360640190fd5b6001600160a01b0380831660008181526101c560209081526040808320548084526101c6909252909120549092161415611f745760008181526101c66020526040902080546001600160a01b0319166001600160a01b0384161790555b611f8d8360405180602001604052806000815250611668565b6001600160a01b0383811660008181526101c460209081526040808320805488871685528285208054919097166001600160a01b03199182161790965584845280549095169094556101c590528281208190559151909183917f0d141fd7c77072fc48765e24d85a4727dc79f72cbb320ad2ba944e2914a51e6d9190a3505050565b6120188261235c565b61205a576040805162461bcd60e51b815260206004820152600e60248201526d1b9bdd08184818dbdb9d1c9858dd60921b604482015290519081900360640190fd5b61206382611424565b1561209e576040805162461bcd60e51b815260206004820152600660248201526565786973747360d01b604482015290519081900360640190fd5b6120a781611652565b6120ec576040805162461bcd60e51b81526020600482015260116024820152701a5b9d985b1a59081b1a5b995859d95259607a1b604482015290519081900360640190fd5b60008181526101c660205260409020546001600160a01b0316612146576040805162461bcd60e51b815260206004820152600d60248201526c656d707479206c696e6561676560981b604482015290519081900360640190fd5b60008181526101c66020908152604080832080546001600160a01b038781166001600160a01b031980841682179094558087526101c5865284872088905591168086526101c49094528285208054909216811790915590519192839285917f5570b95960d1ec214184bfc3681f1e8b1b70e90f7e07e53a209e8029cbba5d5b91a4505050565b8154600090821061220e5760405162461bcd60e51b81526004018080602001828103825260228152602001806124146022913960400191505060405180910390fd5b82600001828154811061221d57fe5b9060005260206000200154905092915050565b60009081526001919091016020526040902054151590565b5490565b60006122588383612230565b61228e57508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610830565b506000610830565b6000818152600183016020526040812054801561235257835460001980830191908101906000908790839081106122c957fe5b90600052602060002001549050808760000184815481106122e657fe5b60009182526020808320909101929092558281526001898101909252604090209084019055865487908061231657fe5b60019003818190600052602060002001600090559055866001016000878152602001908152602001600020600090556001945050505050610830565b6000915050610830565b3b151590565b60405180606001604052806003906020820280368337509192915050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106123c157805160ff19168380011785556123ee565b828001600101855582156123ee579182015b828111156123ee5782518255916020019190600101906123d3565b506123fa9291506123fe565b5090565b5b808211156123fa57600081556001016123ff56fe456e756d657261626c655365743a20696e646578206f7574206f6620626f756e6473416363657373436f6e74726f6c3a2073656e646572206d75737420626520616e2061646d696e20746f206772616e74b19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e416363657373436f6e74726f6c3a2073656e646572206d75737420626520616e2061646d696e20746f207265766f6b6565d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a436f6e747261637420696e7374616e63652068617320616c7265616479206265656e20696e697469616c697a65644d75737420686176652061646d696e20726f6c6520746f20706572666f726d207468697320616374696f6e416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636520726f6c657320666f722073656c66a26469706673582212204acb4a7f95eba1c9437b07f8a67af7f1849ec4ee36b5153574981bb7d0b3027164736f6c634300060c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "append(address)": {
+        "details": "reverts if the sender is not an ownerreverts if the contract is pausedreverts if `implementation` is not a contract",
+        "params": {
+          "implementation": "implementation to append"
+        }
+      },
+      "append(address,uint256)": {
+        "details": "reverts if the contract is pausedreverts if the sender is not an ownerreverts if `implementation` is not a contract",
+        "params": {
+          "implementation": "implementation to append",
+          "lineageId": "id of lineage to append to"
+        }
+      },
+      "createLineage(address)": {
+        "details": "reverts if `implementation` is not a contract",
+        "params": {
+          "implementation": "implementation that will be the first implementation in the lineage"
+        },
+        "returns": {
+          "_0": "newly created lineage's id"
+        }
+      },
+      "getByVersion(uint8[3])": {
+        "params": {
+          "version": "`[major, minor, patch]` version tag"
+        },
+        "returns": {
+          "_0": "implementation associated with the given version tag"
+        }
+      },
+      "getRoleAdmin(bytes32)": {
+        "details": "Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}."
+      },
+      "getRoleMember(bytes32,uint256)": {
+        "details": "Returns one of the accounts that have `role`. `index` must be a value between 0 and {getRoleMemberCount}, non-inclusive. Role bearers are not sorted in any particular way, and their ordering may change at any point. WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure you perform all queries on the same block. See the following https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post] for more information."
+      },
+      "getRoleMemberCount(bytes32)": {
+        "details": "Returns the number of accounts that have `role`. Can be used together with {getRoleMember} to enumerate all bearers of a role."
+      },
+      "grantRole(bytes32,address)": {
+        "details": "Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role."
+      },
+      "has(address)": {
+        "params": {
+          "implementation": "Implementation to check existence of"
+        },
+        "returns": {
+          "_0": "`true` if the implementation has already been added"
+        }
+      },
+      "hasNext(address)": {
+        "params": {
+          "implementation": "implementation to check"
+        },
+        "returns": {
+          "_0": "The implementation following the given implementation"
+        }
+      },
+      "hasRole(bytes32,address)": {
+        "details": "Returns `true` if `account` has been granted `role`."
+      },
+      "hasVersion(uint8[3])": {
+        "params": {
+          "version": "`[major, minor, patch]` version tag"
+        },
+        "returns": {
+          "_0": "true if the version is registered"
+        }
+      },
+      "initialize(address,address)": {
+        "details": "reverts if `_owner` is the null addressreverts if `implementation` is not a contract",
+        "params": {
+          "_owner": "owner of the repository",
+          "implementation": "initial implementation in the repository"
+        }
+      },
+      "nextImplementationOf(address)": {
+        "details": "reverts when contract is paused",
+        "params": {
+          "implementation": "implementation to get the upgraded implementation for"
+        },
+        "returns": {
+          "_0": "Next Implementation"
+        }
+      },
+      "pause()": {
+        "details": "Pauses all functions guarded by Pause See {Pausable-_pause}. Requirements: - the caller must have the PAUSER_ROLE."
+      },
+      "paused()": {
+        "details": "Returns true if the contract is paused, and false otherwise."
+      },
+      "remove(address,address)": {
+        "details": "If you have a chain of `A -> B -> C` and I call `remove(B, C)` it will result in `A -> C`reverts if `previos` is not the ancestor of `toRemove`we need to provide the previous implementation here to be able to successfully \"stitch\"       the chain back together. Because this is an admin action, we can source what the previous       version is from events.",
+        "params": {
+          "previous": "Implementation that currently has `toRemove` as its successor",
+          "toRemove": "Implementation to remove"
+        }
+      },
+      "renounceRole(bytes32,address)": {
+        "details": "Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`."
+      },
+      "revokeRole(bytes32,address)": {
+        "details": "Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role."
+      },
+      "setUpgradeDataFor(address,bytes)": {
+        "details": "reverts when caller is not an adminreverts when the contract is pausedreverts if the given implementation isn't registered"
+      },
+      "unpause()": {
+        "details": "Unpauses the contract See {Pausable-_unpause}. Requirements: - the caller must have the Pauser role"
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "append(address)": {
+        "notice": "add a new implementation and set it as the current implementation"
+      },
+      "append(address,uint256)": {
+        "notice": "Append an implementation to a specified lineage"
+      },
+      "createLineage(address)": {
+        "notice": "Create a new lineage of implementations. This creates a new \"root\" of a new lineage"
+      },
+      "currentImplementation()": {
+        "notice": "return current implementaton of the current lineage"
+      },
+      "currentImplementation(uint256)": {
+        "notice": "Return the current implementation of a lineage with the given `lineageId`"
+      },
+      "currentLineageId()": {
+        "notice": "Returns the id of the most recently created lineage"
+      },
+      "getByVersion(uint8[3])": {
+        "notice": "get an implementation by a version tag"
+      },
+      "has(address)": {
+        "notice": "Returns `true` if an implementation has already been added"
+      },
+      "hasNext(address)": {
+        "notice": "Returns `true` if an implementation has a next implementation set"
+      },
+      "hasVersion(uint8[3])": {
+        "notice": "check if a version exists"
+      },
+      "initialize(address,address)": {
+        "notice": "initialize the repository's state"
+      },
+      "lineageExists(uint256)": {
+        "notice": "Returns `true` if a given lineageId exists"
+      },
+      "lineageIdOf(address)": {
+        "notice": "Returns the id of the lineage a given implementation belongs to"
+      },
+      "nextImplementationOf(address)": {
+        "notice": "Get the next implementation for a given implementation or           `address(0)` if it doesn't exist"
+      },
+      "remove(address,address)": {
+        "notice": "Remove an implementation from the chain and \"stitch\" together its neighbors"
+      },
+      "setUpgradeDataFor(address,bytes)": {
+        "notice": "set data that will be delegate called when a proxy upgrades to the given `implementation`"
+      },
+      "upgradeDataFor(address)": {
+        "notice": "returns data that will be delegatedCalled when the given implementation           is upgraded to"
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 50,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "initialized",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 53,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "initializing",
+        "offset": 1,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 118,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "______gap",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 43,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "51",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 163,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_roles",
+        "offset": 0,
+        "slot": "101",
+        "type": "t_mapping(t_bytes32,t_struct(RoleData)159_storage)"
+      },
+      {
+        "astId": 408,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "102",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 3137,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_paused",
+        "offset": 0,
+        "slot": "151",
+        "type": "t_bool"
+      },
+      {
+        "astId": 3226,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "152",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 3235,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_notEntered",
+        "offset": 0,
+        "slot": "201",
+        "type": "t_bool"
+      },
+      {
+        "astId": 3276,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "202",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 15728,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap1",
+        "offset": 0,
+        "slot": "251",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 15732,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap2",
+        "offset": 0,
+        "slot": "301",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 15736,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap3",
+        "offset": 0,
+        "slot": "351",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 15740,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "__gap4",
+        "offset": 0,
+        "slot": "401",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 29021,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "upgradeDataFor",
+        "offset": 0,
+        "slot": "451",
+        "type": "t_mapping(t_address,t_bytes_storage)"
+      },
+      {
+        "astId": 29026,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_nextImplementationOf",
+        "offset": 0,
+        "slot": "452",
+        "type": "t_mapping(t_address,t_address)"
+      },
+      {
+        "astId": 29032,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "lineageIdOf",
+        "offset": 0,
+        "slot": "453",
+        "type": "t_mapping(t_address,t_uint256)"
+      },
+      {
+        "astId": 29037,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_currentOfLineage",
+        "offset": 0,
+        "slot": "454",
+        "type": "t_mapping(t_uint256,t_address)"
+      },
+      {
+        "astId": 29041,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "currentLineageId",
+        "offset": 0,
+        "slot": "455",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 29823,
+        "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+        "label": "_byVersion",
+        "offset": 0,
+        "slot": "456",
+        "type": "t_mapping(t_bytes_memory_ptr,t_address)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_bytes32)dyn_storage": {
+        "base": "t_bytes32",
+        "encoding": "dynamic_array",
+        "label": "bytes32[]",
+        "numberOfBytes": "32"
+      },
+      "t_array(t_uint256)49_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[49]",
+        "numberOfBytes": "1568"
+      },
+      "t_array(t_uint256)50_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[50]",
+        "numberOfBytes": "1600"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_bytes_memory_ptr": {
+        "encoding": "bytes",
+        "label": "bytes",
+        "numberOfBytes": "32"
+      },
+      "t_bytes_storage": {
+        "encoding": "bytes",
+        "label": "bytes",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_address,t_address)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_address,t_bytes_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bytes)",
+        "numberOfBytes": "32",
+        "value": "t_bytes_storage"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_bytes32,t_struct(RoleData)159_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)",
+        "numberOfBytes": "32",
+        "value": "t_struct(RoleData)159_storage"
+      },
+      "t_mapping(t_bytes32,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_bytes_memory_ptr,t_address)": {
+        "encoding": "mapping",
+        "key": "t_bytes_memory_ptr",
+        "label": "mapping(bytes => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_uint256,t_address)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_struct(AddressSet)2912_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSet.AddressSet",
+        "members": [
+          {
+            "astId": 2911,
+            "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+            "label": "_inner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(Set)2732_storage"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(RoleData)159_storage": {
+        "encoding": "inplace",
+        "label": "struct AccessControlUpgradeSafe.RoleData",
+        "members": [
+          {
+            "astId": 156,
+            "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+            "label": "members",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(AddressSet)2912_storage"
+          },
+          {
+            "astId": 158,
+            "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+            "label": "adminRole",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_bytes32"
+          }
+        ],
+        "numberOfBytes": "96"
+      },
+      "t_struct(Set)2732_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSet.Set",
+        "members": [
+          {
+            "astId": 2727,
+            "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+            "label": "_values",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_array(t_bytes32)dyn_storage"
+          },
+          {
+            "astId": 2731,
+            "contract": "contracts/protocol/core/callable/CallableLoanImplementationRepository.sol:CallableLoanImplementationRepository",
+            "label": "_indexes",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_bytes32,t_uint256)"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
