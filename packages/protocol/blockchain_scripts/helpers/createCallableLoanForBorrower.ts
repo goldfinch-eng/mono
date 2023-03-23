@@ -18,6 +18,7 @@ export async function createCallableLoanForBorrower({
   hre,
   logger,
   goldfinchFactory,
+  callableLoanProxyOwner,
   borrower,
   depositor,
   erc20,
@@ -35,6 +36,7 @@ export async function createCallableLoanForBorrower({
   hre: HardhatRuntimeEnvironment
   logger: Logger
   goldfinchFactory: GoldfinchFactoryInstance
+  callableLoanProxyOwner: string
   borrower: string
   depositor?: string
   erc20: ERC20Instance
@@ -65,7 +67,8 @@ export async function createCallableLoanForBorrower({
 
   const limit = String(new BN(limitInDollars || 2000000).mul(USDCDecimals))
 
-  const result = await goldfinchFactory.createCallableLoan(
+  const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
+    callableLoanProxyOwner,
     borrower,
     limit,
     interestApr,
