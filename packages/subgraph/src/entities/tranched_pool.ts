@@ -609,6 +609,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
 
   let repaymentFrequency = "MONTHLY"
   // For some reason, early pools don't properly generate a repayment schedule (like block 13.1M), so this check needs to happen
+  // Also necessary when principal gets paid off and the repaymentSchedule becomes empty
   if (repayments.length >= 2) {
     const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
     if (approximateSecondsPerPeriod <= secondsPerDay) {
