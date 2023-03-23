@@ -37,7 +37,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
   uint8 internal constant MAJOR_VERSION = 1;
   uint8 internal constant MINOR_VERSION = 0;
-  uint8 internal constant PATCH_VERSION = 0;
+  uint8 internal constant PATCH_VERSION = 1;
 
   ICreditLine public override creditLine;
   uint256 public override createdAt;
