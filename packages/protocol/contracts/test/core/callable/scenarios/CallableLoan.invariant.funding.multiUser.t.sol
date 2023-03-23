@@ -9,43 +9,53 @@ import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol"
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
 
-struct AddressSet {
-  address[] addresses;
+struct CallableLoanActorInfo {
+  uint256[] tokens;
+}
+
+struct CallableLoanActorSet {
+  address[] actors;
   mapping(address => bool) saved;
-  mapping(address => uint256[]) poolTokensByActor;
+  mapping(address => CallableLoanActorInfo) actorInfo;
 }
 
 library LibAddressSet {
-  function add(AddressSet storage s, address addr) internal {
-    if (!s.saved[addr]) s.addresses.push(addr);
+  function add(CallableLoanActorSet storage s, address addr) internal {
+    if (!s.saved[addr]) s.actors.push(addr);
   }
 
-  function contains(AddressSet storage s, address addr) internal view returns (bool) {
+  function contains(CallableLoanActorSet storage s, address addr) internal view returns (bool) {
     return s.saved[addr];
   }
 
+  function count(CallableLoanActorSet storage s) internal view returns (uint256) {
+    return s.actors.length;
+  }
+
   function forEach(
-    AddressSet storage s,
+    CallableLoanActorSet storage s,
     function(address,uint256[] memory) external func
   ) internal {
-    for (uint i = 0; i < s.addresses.length; ++i) {
-      func(s.addresses[i], s.poolTokensByActor[s.addresses[i]]);
+    for (uint i = 0; i < s.actors.length; ++i) {
+      address actor = s.actors[i];
+      func(actor, s.actorInfo[actor].tokens);
     }
   }
 
   function reduce(
-    AddressSet storage s,
+    CallableLoanActorSet storage s,
     uint256 acc,
     function(uint256,address,uint256[] memory) external returns (uint256) reducer
   ) internal returns (uint256) {
-    for (uint i = 0; i < s.addresses.length; ++i) {
-      acc = reducer(acc, s.addresses[i], s.poolTokensByActor[s.addresses[i]]);
+    for (uint i = 0; i < s.actors.length; ++i) {
+      address actor = s.actors[i];
+      acc = reducer(acc, actor, s.actorInfo[actor].tokens);
     }
     return acc;
   }
 }
 
-using LibAddressSet for AddressSet global;
+using LibAddressSet for CallableLoanActorSet global;
 
 contract CallableLoanHandler is Test {
   CallableLoan public loan;
@@ -54,7 +64,7 @@ contract CallableLoanHandler is Test {
 
   IERC20 private usdc;
   ITestUniqueIdentity0612 private uid;
-  AddressSet private actors;
+  CallableLoanActorSet private actorSet;
   address private currentActor;
 
   constructor(CallableLoan _loan, IERC20 _usdc, ITestUniqueIdentity0612 _uid) {
@@ -82,7 +92,7 @@ contract CallableLoanHandler is Test {
     uint256 tokenId = loan.deposit(loan.uncalledCapitalTrancheIndex(), amount);
 
     sumDeposited += amount;
-    actors.poolTokensByActor[currentActor].push(tokenId);
+    actorSet.actorInfo[currentActor].tokens.push(tokenId);
   }
 
   function withdraw(
@@ -90,18 +100,18 @@ contract CallableLoanHandler is Test {
     uint256 randActorIndex,
     uint256 poolTokenIndex
   ) public createActor {
-    if (actors.addresses.length == 0) return;
+    if (actorSet.count() == 0) return;
 
     // Select a random actor that has already deposited to perform the withdraw
-    randActorIndex = bound(randActorIndex, 0, actors.addresses.length - 1);
-    address actor = actors.addresses[randActorIndex];
+    randActorIndex = bound(randActorIndex, 0, actorSet.count() - 1);
+    address actor = actorSet.actors[randActorIndex];
 
     uint256 poolTokenIndex = bound(
       poolTokenIndex,
       0,
-      actors.poolTokensByActor[actor].length - 1
+      actorSet.actorInfo[actor].tokens.length - 1
     );
-    uint256 tokenId = actors.poolTokensByActor[actor][poolTokenIndex];
+    uint256 tokenId = actorSet.actorInfo[actor].tokens[poolTokenIndex];
 
     (, uint256 principalRedeemable) = loan.availableToWithdraw(tokenId);
     if (principalRedeemable == 0) return;
@@ -118,22 +128,22 @@ contract CallableLoanHandler is Test {
     uint256 acc,
     function(uint256 acc, address actor, uint256[] memory poolTokens) external returns (uint256) func
   ) public returns (uint256) {
-    return actors.reduce(acc, func);
+    return actorSet.reduce(acc, func);
   }
 
   function forEachActor(
     function(address,uint256[] memory) external fn
   ) public {
-    return actors.forEach(fn);
+    return actorSet.forEach(fn);
   }
 
   modifier createActor() {
-    if (!actors.contains(msg.sender)) {
+    if (!actorSet.contains(msg.sender)) {
       uid._mintForTest(msg.sender, 1, 1, "");
       usdc.transfer(msg.sender, loan.limit());
       vm.prank(msg.sender);
       usdc.approve(address(loan), type(uint256).max);
-      actors.add(msg.sender);
+      actorSet.add(msg.sender);
     }
     currentActor = msg.sender;
     _;
