@@ -18,7 +18,7 @@ import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_WARBLER_LABS_MULTISIG,
 } from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {advanceTime, decodeAndGetFirstLog, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {advanceTime, decodeAndGetFirstLog, getCurrentTimestamp, usdcVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {NON_US_UID_TYPES, assertNonNullable} from "@goldfinch-eng/utils"
 import {BorrowerCreated} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {getERC20Address, MAINNET_CHAIN_ID} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
@@ -356,7 +356,10 @@ describe("v3.3.0", async function () {
   })
 
   async function makeDeposit() {
-    await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+    const currentTimestamp = await getCurrentTimestamp()
+    if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+      await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+    }
     const depositAmount = String(usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20)))
     await impersonateAccount(hre, lenderAddress)
     await usdc.approve(callableLoanInstance.address, String(depositAmount), {from: lenderAddress})
