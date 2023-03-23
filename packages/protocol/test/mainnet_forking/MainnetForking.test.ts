@@ -16,6 +16,7 @@ import {
 import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_TRUSTED_SIGNER_ADDRESS,
+  MAINNET_WARBLER_LABS_MULTISIG,
 } from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
@@ -129,6 +130,12 @@ import {
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
+import {
+  FAZZ_DEAL_FUNDABLE_AT,
+  FAZZ_DEAL_LIMIT_IN_DOLLARS,
+  FAZZ_EOA,
+  createFazzExampleLoan,
+} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -289,13 +296,13 @@ describe("mainnet forking tests", async function () {
     await seniorPool.deposit(usdcVal(100_000), {from: owner})
   }
 
-  async function createBorrowerContract() {
-    const result = await goldfinchFactory.createBorrower(bwr)
+  async function createBorrowerContract(borrower = bwr) {
+    const result = await goldfinchFactory.createBorrower(borrower)
     assertNonNullable(result.logs)
     const bwrConAddr = (result.logs[result.logs.length - 1] as unknown as BorrowerCreated).args.borrower
     const bwrCon = await Borrower.at(bwrConAddr)
-    await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
-    await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
+    await erc20Approve(busd, bwrCon.address, MAX_UINT, [borrower])
+    await erc20Approve(usdt, bwrCon.address, MAX_UINT, [borrower])
     return bwrCon
   }
 
@@ -1683,6 +1690,83 @@ describe("mainnet forking tests", async function () {
             }
           }
         }).timeout(TEST_TIMEOUT)
+      })
+    })
+
+    describe("CallableLoans", () => {
+      it("does not earn backer rewards", async () => {
+        const protocolOwner = await getProtocolOwner()
+        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+        assertNonNullable(proxyOwner)
+        assertNonNullable(borrower)
+        assertNonNullable(lender)
+
+        // grant the borrower the ability to create a pool
+
+        await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), FAZZ_EOA, {
+          from: protocolOwner,
+        })
+        // Add Fazz signer for rest of tests
+        await impersonateAccount(hre, FAZZ_EOA)
+        const borrowerContract = await createBorrowerContract(FAZZ_EOA)
+
+        await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+        const callableLoan = await createFazzExampleLoan({
+          hre,
+          goldfinchFactory: goldfinchFactory,
+          callableLoanProxyOwner: MAINNET_WARBLER_LABS_MULTISIG,
+          fazzBorrowerContract: borrowerContract.address,
+          erc20: usdc,
+        })
+
+        await fundWithWhales(["USDC", "ETH"], [lender])
+        await fundWithWhales(["ETH"], [FAZZ_EOA])
+
+        console.log((await usdc.balanceOf(lender)).toString())
+
+        const currentTimestamp = await getCurrentTimestamp()
+        if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+          await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+        }
+        await usdc.approve(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, {from: lender})
+        const receipt = await callableLoan.deposit(
+          await callableLoan.uncalledCapitalTrancheIndex(),
+          FAZZ_DEAL_LIMIT_IN_DOLLARS,
+          {
+            from: lender,
+          }
+        )
+        const depositMadeEvent = getOnlyLog<DepositMade>(
+          decodeLogs(receipt.receipt.rawLogs, callableLoan, "DepositMade")
+        )
+        const tokenId = depositMadeEvent.args.tokenId
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
+        await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_EOA, {from: FAZZ_EOA})
+        const termEndTime = await callableLoan.termEndTime()
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        await advanceAndMineBlock({toSecond: termEndTime})
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        // TODO: Revert comments once we upgrade to allow payments
+        // const interestOwed = await callableLoan.interestOwedAt(termEndTime.add(new BN("100")))
+        // const principalOwed = await callableLoan.principalOwed()
+        // const payment = interestOwed.add(principalOwed)
+
+        // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_EOA})
+
+        // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_EOA})
+        // expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        // expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
       })
     })
 
