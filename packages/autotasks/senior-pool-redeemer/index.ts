@@ -56,7 +56,7 @@ export const handler = baseHandler("senior-pool-redeemer", async (event: Relayer
         console.log(` 🧐 checking tokenId = ${tokenId}, address = ${poolAddress}`)
         const tranchedPool = new ethers.Contract(poolAddress, TranchedPoolDeploy.abi, provider) as TranchedPool
         try {
-          const availableToWithdraw = await tranchedPool.availableToWithdraw(tokenId)
+          const [interestRedeemable, principalRedeemable] = await tranchedPool.availableToWithdraw(tokenId)
           const tranche = await tranchedPool.getTranche(trancheId)
           const lockedUntil = tranche.lockedUntil
           const trancheHasntBeenLocked = lockedUntil.isZero()
@@ -66,7 +66,7 @@ export const handler = baseHandler("senior-pool-redeemer", async (event: Relayer
             return undefined
           }
 
-          if (!availableToWithdraw.interestRedeemable.eq("0") || !availableToWithdraw.principalRedeemable.eq("0")) {
+          if (!interestRedeemable.eq("0") || !principalRedeemable.eq("0")) {
             console.log(` 🪙  adding tokenId = ${tokenId} from pool ${poolAddress} to redeem list`)
             return tokenId.toString()
           }
