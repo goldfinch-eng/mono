@@ -42,8 +42,8 @@ contract CallableLoanFundingHandler is Test {
     amount = bound(amount, 1, maxDepositAmount);
 
     vm.startPrank(currentActor);
-
     uint256 tokenId = loan.deposit(loan.uncalledCapitalTrancheIndex(), amount);
+    vm.stopPrank();
 
     sumDeposited += amount;
     actorSet.actorInfo[currentActor].tokens.push(tokenId);
@@ -73,8 +73,9 @@ contract CallableLoanFundingHandler is Test {
     amount = bound(amount, 1, principalRedeemable);
 
     vm.startPrank(currentActor);
-
     loan.withdraw(tokenId, amount);
+    vm.stopPrank();
+
     sumWithdrawn += amount;
   }
 
