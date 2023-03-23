@@ -201,7 +201,6 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   callableLoan.repaymentSchedule = []
-  callableLoan.numRepayments = 0
 }
 
 // TODO this function exists for tranched pools too. Try to consolidate them?

@@ -12,10 +12,6 @@ export const REPAYMENT_TERMS_STATS_FIELDS = gql`
     termInSeconds
     termStartTime
     termEndTime
-    repaymentSchedule(first: 1) {
-      id
-      estimatedPaymentDate
-    }
     numRepayments
     repaymentFrequency
   }
@@ -62,10 +58,7 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       <Stat
         label="Est. repayment start date"
         tooltip="The estimated date by which the first interest payment is to be made by the borrower."
-        value={formatDate(
-          loan.repaymentSchedule[0].estimatedPaymentDate * 1000,
-          "MMM d, y"
-        )}
+        value={formatDate(termStartTime * 1000, "MMM d, y")}
       />
       <Stat
         label={

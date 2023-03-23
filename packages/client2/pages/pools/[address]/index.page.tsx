@@ -21,7 +21,11 @@ import {
   SingleDealQueryVariables,
   SingleDealDocument,
 } from "@/lib/graphql/generated";
-import { getLoanFundingStatus, LoanFundingStatus } from "@/lib/pools";
+import {
+  getLoanFundingStatus,
+  getLoanRepaymentStatus,
+  LoanFundingStatus,
+} from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AmountStats } from "./amount-stats";
@@ -291,6 +295,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                         <RepaymentTermsStats loan={tranchedPool} />
                         <RepaymentTermsSchedule
                           loan={tranchedPool}
+                          repaymentStatus={getLoanRepaymentStatus(tranchedPool)}
                           currentBlockTimestamp={data.currentBlock.timestamp}
                         />
                       </>

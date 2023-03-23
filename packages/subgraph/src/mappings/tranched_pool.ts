@@ -168,7 +168,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
     deleteTranchedPoolRepaymentSchedule(tranchedPool)
     const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
     tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
-    tranchedPool.numRepayments = schedulingResult.repaymentIds.length
   }
   tranchedPool.save()
 

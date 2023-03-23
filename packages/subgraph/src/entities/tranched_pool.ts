@@ -641,5 +641,4 @@ export function deleteTranchedPoolRepaymentSchedule(tranchedPool: TranchedPool):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   tranchedPool.repaymentSchedule = []
-  tranchedPool.numRepayments = 0
 }
