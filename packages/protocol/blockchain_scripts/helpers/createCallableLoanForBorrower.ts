@@ -26,7 +26,7 @@ export const FAZZ_DEAL_CALLABLE_LOAN_SCHEDULE_CONFIG = {
   numPeriodsPerInterestPeriod: 1,
   gracePrincipalPeriods: 0,
 }
-export const FAZZ_DEAL_FUNDABLE_AT = String(new BN(1679587200)) // Tue Mar 28 2023 09:00:00 GMT-0700 (Pacific Daylight Time)
+export const FAZZ_DEAL_FUNDABLE_AT = String(new BN(Date.parse("28 Mar 2023 09:00:00 PDT") / 1000))
 export const FAZZ_DEAL_INTEREST_APR = String(interestAprAsBN("14.50"))
 export const FAZZ_DEAL_LATE_FEE_APR = String(interestAprAsBN("2.00"))
 
@@ -38,20 +38,20 @@ export const FAZZ_DEAL_UNCALLED_CAPITAL_TRANCHE =
 
 export async function createFazzExampleLoan({
   hre,
-  logger,
   goldfinchFactory,
   erc20,
   fazzBorrowerContract,
-  txSender = MAINNET_GOVERNANCE_MULTISIG,
   callableLoanProxyOwner = MAINNET_WARBLER_LABS_MULTISIG,
+  logger = console.log,
+  txSender = MAINNET_GOVERNANCE_MULTISIG,
 }: {
   hre: HardhatRuntimeEnvironment
-  logger?: Logger
   goldfinchFactory: GoldfinchFactoryInstance
   erc20: ERC20Instance
   fazzBorrowerContract: string
+  callableLoanProxyOwner?: string
   txSender?: string
-  callableLoanProxyOwner: string
+  logger?: Logger
 }): Promise<CallableLoanInstance> {
   return createCallableLoanForBorrower({
     hre,
@@ -72,7 +72,6 @@ export async function createFazzExampleLoan({
 
 export async function createCallableLoanForBorrower({
   hre,
-  logger,
   goldfinchFactory,
   callableLoanProxyOwner,
   borrower,
@@ -86,12 +85,13 @@ export async function createCallableLoanForBorrower({
   numPeriodsPerInterestPeriod,
   numPeriodsPerPrincipalPeriod,
   txSender,
+  logger = console.log,
   interestApr = FAZZ_DEAL_INTEREST_APR,
   lateFeeApr = String(interestAprAsBN("2.00")),
   fundableAt = String(new BN(0)), // 0 means immediately
 }: {
   hre: HardhatRuntimeEnvironment
-  logger?: Logger
+
   goldfinchFactory: GoldfinchFactoryInstance
   callableLoanProxyOwner: string
   borrower: string
@@ -105,11 +105,11 @@ export async function createCallableLoanForBorrower({
   numPeriodsPerInterestPeriod: number
   numPeriodsPerPrincipalPeriod: number
   txSender: string
+  logger?: Logger
   interestApr?: string
   lateFeeApr?: string
   fundableAt?: string
 }): Promise<CallableLoanInstance> {
-  const log = logger || console.log
   const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
   await monthlyScheduleRepo.createSchedule(
     numPeriods,
@@ -143,7 +143,7 @@ export async function createCallableLoanForBorrower({
   assertNonNullable(loanAddress)
   const loan = await getTruffleContractAtAddress<CallableLoanInstance>("CallableLoan", loanAddress)
   assertNonNullable(loan)
-  log(`Created a Callable Loan ${loanAddress} for the borrower ${borrower}`)
+  logger(`Created a Callable Loan ${loanAddress} for the borrower ${borrower}`)
 
   if (depositor) {
     const depositAmount = String(new BN(limit).div(new BN(20)))
@@ -153,7 +153,7 @@ export async function createCallableLoanForBorrower({
       from: depositor,
     })
 
-    log(`Deposited ${depositAmount} into ${loan.address} via ${depositor}`)
+    logger(`Deposited ${depositAmount} into ${loan.address} via ${depositor}`)
   }
   return loan
 }
