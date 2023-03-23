@@ -92,14 +92,19 @@ contract CallableLoanFundingHandler is Test {
     return actorSet.forEach(fn);
   }
 
-  modifier createActor() {
-    if (!actorSet.contains(msg.sender)) {
-      uid._mintForTest(msg.sender, 1, 1, "");
-      usdc.transfer(msg.sender, loan.limit());
-      vm.prank(msg.sender);
-      usdc.approve(address(loan), type(uint256).max);
-      actorSet.add(msg.sender);
-    }
+  function setUpActor(address actor) private {
+    uid._mintForTest(msg.sender, 1, 1, "");
+    usdc.transfer(msg.sender, loan.limit());
+    vm.prank(msg.sender);
+    usdc.approve(address(loan), type(uint256).max);
+    actorSet.add(msg.sender);
+  }
+
+  modifier createActor {
+    // If this is the first time we're seeing this actor then apply set up to it
+    if (!actorSet.contains(msg.sender))
+      setUpActor(msg.sender);
+
     currentActor = msg.sender;
     _;
   }
