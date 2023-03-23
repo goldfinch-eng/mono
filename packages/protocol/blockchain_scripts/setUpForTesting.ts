@@ -60,7 +60,7 @@ import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
 import {ERC20Instance, GoldfinchFactoryInstance, MonthlyScheduleRepoInstance} from "../typechain/truffle"
-import {createCallableLoanForBorrower} from "./helpers/createCallableLoanForBorrower"
+import {createCallableLoanForBorrower, createFazzExampleLoan} from "./helpers/createCallableLoanForBorrower"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -224,9 +224,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       erc20: erc20Instance,
       allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
       numPeriods: 24,
+      numLockPeriods: 2,
       gracePrincipalPeriods: 0,
       numPeriodsPerInterestPeriod: 1,
       numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
     })
     // TODO: Pool metadata will be incorrect for now
     await writePoolMetadata({pool: openCallableLoan, borrower: "CALLABLE OPEN"})
@@ -235,26 +237,22 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
     await txn.wait()
 
-    await openCallableLoan.deposit(FAZZ_UNCALLED_CAPITAL_TRANCHE, String(depositAmount), {
+    await openCallableLoan.deposit(7, String(depositAmount), {
       from: await signer.getAddress(),
     })
     await openCallableLoan.unpauseDrawdowns({from: protocol_owner})
     /*** CALLABLE LOAN OPEN END ***/
 
     /*** CALLABLE LOAN - FAZZ EXAMPLE START ***/
-    const fazzExampleCallableLoan = await createCallableLoanForBorrower({
+    const fazzExampleCallableLoan = await createFazzExampleLoan({
       hre,
       logger,
       goldfinchFactory: truffleGoldfinchFactory,
       callableLoanProxyOwner: protocol_owner,
-      borrower: protocolBorrowerCon,
       erc20: erc20Instance,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
-      fundableAt: String(new BN(1679587200)), // Tue Mar 28 2023 09:00:00 GMT-0700 (Pacific Daylight Time)
-      numPeriods: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
-      gracePrincipalPeriods: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods,
-      numPeriodsPerInterestPeriod: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
-      numPeriodsPerPrincipalPeriod: FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriod,
+      fazzBorrowerContract: protocolBorrowerCon,
+      callableLoanProxyOwner: protocol_owner,
+      txSender: protocol_owner,
     })
     // TODO: Pool metadata will be incorrect for now
     await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "FAZZ EXAMPLE"})
@@ -271,9 +269,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       erc20: erc20Instance,
       allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
       numPeriods: 24,
+      numLockPeriods: 2,
       gracePrincipalPeriods: 0,
       numPeriodsPerInterestPeriod: 1,
       numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
     })
     await writePoolMetadata({pool: closedCallableLoan, borrower: "CALLABLE CLOSED"})
     await impersonateAccount(hre, borrower)
@@ -281,7 +281,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     depositAmount = new BN(10000).mul(USDCDecimals)
     txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
     await txn.wait()
-    await closedCallableLoan.deposit(FAZZ_UNCALLED_CAPITAL_TRANCHE, String(depositAmount), {
+    await closedCallableLoan.deposit(7, String(depositAmount), {
       from: await signer.getAddress(),
     })
     await closedCallableLoan.unpauseDrawdowns({from: protocol_owner})
@@ -900,14 +900,3 @@ async function createPoolForBorrower({
   }
   return pool
 }
-
-const FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG = {
-  numPeriods: 24,
-  numPeriodsPerPrincipalPeriod: 3,
-  numPeriodsPerInterestPeriod: 1,
-  gracePrincipalPeriods: 0,
-}
-const FAZZ_UNCALLED_CAPITAL_TRANCHE =
-  FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods / FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriod -
-  FAZZ_CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods -
-  1
