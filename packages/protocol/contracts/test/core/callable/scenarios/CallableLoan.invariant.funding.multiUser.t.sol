@@ -34,22 +34,22 @@ library LibAddressSet {
 
   function forEach(
     CallableLoanActorSet storage s,
-    function(address,uint256[] memory) external func
+    function(address,CallableLoanActorInfo memory) external func
   ) internal {
     for (uint i = 0; i < s.actors.length; ++i) {
       address actor = s.actors[i];
-      func(actor, s.actorInfo[actor].tokens);
+      func(actor, s.actorInfo[actor]);
     }
   }
 
   function reduce(
     CallableLoanActorSet storage s,
     uint256 acc,
-    function(uint256,address,uint256[] memory) external returns (uint256) reducer
+    function(uint256,address,CallableLoanActorInfo memory) external returns (uint256) reducer
   ) internal returns (uint256) {
     for (uint i = 0; i < s.actors.length; ++i) {
       address actor = s.actors[i];
-      acc = reducer(acc, actor, s.actorInfo[actor].tokens);
+      acc = reducer(acc, actor, s.actorInfo[actor]);
     }
     return acc;
   }
@@ -126,13 +126,13 @@ contract CallableLoanHandler is Test {
 
   function reduceActors(
     uint256 acc,
-    function(uint256 acc, address actor, uint256[] memory poolTokens) external returns (uint256) func
+    function(uint256 acc, address actor, CallableLoanActorInfo memory info) external returns (uint256) func
   ) public returns (uint256) {
     return actorSet.reduce(acc, func);
   }
 
   function forEachActor(
-    function(address,uint256[] memory) external fn
+    function(address actor, CallableLoanActorInfo memory info) external fn
   ) public {
     return actorSet.forEach(fn);
   }
@@ -189,22 +189,22 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     handler.forEachActor(this.assertPoolTokenInfoTrancheIsUncalledCapitalTranche);
   }
 
-  function assertPoolTokenInfoPrincipalAndInterestRedeemedIsZero(address actor, uint256[] memory actorPoolTokens) external {
-    for (uint i = 0; i < actorPoolTokens.length; ++i)  {
-      assertZero(poolTokens.getTokenInfo(actorPoolTokens[i]).principalRedeemed);
-      assertZero(poolTokens.getTokenInfo(actorPoolTokens[i]).interestRedeemed);
+  function assertPoolTokenInfoPrincipalAndInterestRedeemedIsZero(address actor, CallableLoanActorInfo memory info) external {
+    for (uint i = 0; i < info.tokens.length; ++i)  {
+      assertZero(poolTokens.getTokenInfo(info.tokens[i]).principalRedeemed);
+      assertZero(poolTokens.getTokenInfo(info.tokens[i]).interestRedeemed);
     }
   }
 
-  function assertPoolTokenInfoPoolIsCallableLoan(address actor, uint256[] memory actorPoolTokens) external {
-    for (uint i = 0; i < actorPoolTokens.length; ++i)  {
-      assertEq(poolTokens.getTokenInfo(actorPoolTokens[i]).pool, address(handler.loan()));
+  function assertPoolTokenInfoPoolIsCallableLoan(address actor, CallableLoanActorInfo memory info) external {
+    for (uint i = 0; i < info.tokens.length; ++i)  {
+      assertEq(poolTokens.getTokenInfo(info.tokens[i]).pool, address(handler.loan()));
     }
   }
 
-  function assertPoolTokenInfoTrancheIsUncalledCapitalTranche(address actor, uint256[] memory actorPoolTokens) external {
-    for (uint i = 0; i < actorPoolTokens.length; ++i)  {
-      assertEq(poolTokens.getTokenInfo(actorPoolTokens[i]).tranche, handler.loan().uncalledCapitalTrancheIndex());
+  function assertPoolTokenInfoTrancheIsUncalledCapitalTranche(address actor, CallableLoanActorInfo memory info) external {
+    for (uint i = 0; i < info.tokens.length; ++i)  {
+      assertEq(poolTokens.getTokenInfo(info.tokens[i]).tranche, handler.loan().uncalledCapitalTrancheIndex());
     }
   }
 
@@ -250,10 +250,10 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
   function principalWithdrawableReducer(
     uint256 principalWithdrawableAcc,
     address actor,
-    uint256[] memory actorPoolTokens
+    CallableLoanActorInfo memory info
   ) external view returns (uint256) {
-    for (uint i = 0; i < actorPoolTokens.length; ++i) {
-      (, uint256 principalRedeemable) = handler.loan().availableToWithdraw(actorPoolTokens[i]);
+    for (uint i = 0; i < info.tokens.length; ++i) {
+      (, uint256 principalRedeemable) = handler.loan().availableToWithdraw(info.tokens[i]);
       principalWithdrawableAcc += principalRedeemable;
     }
     return principalWithdrawableAcc;
@@ -262,10 +262,10 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
   function poolTokenPrincipalAmountReducer(
     uint256 principalAmountAcc,
     address actor,
-    uint256[] memory actorPoolTokens
+    CallableLoanActorInfo memory info
   ) external view returns (uint256) {
-    for (uint i = 0; i < actorPoolTokens.length; ++i) {
-      principalAmountAcc += poolTokens.getTokenInfo(actorPoolTokens[i]).principalAmount;
+    for (uint i = 0; i < info.tokens.length; ++i) {
+      principalAmountAcc += poolTokens.getTokenInfo(info.tokens[i]).principalAmount;
     }
     return principalAmountAcc; 
   }
