@@ -10,20 +10,50 @@ extend type SeniorPool {
   epochEndsAt: Int!
 }
 
+enum LoanDelinquency {
+  CURRENT
+  GRACE_PERIOD
+  LATE
+}
+
 extend type Loan {
   name: String!
   borrowerName: String!
   borrowerLogo: String
-  isLate: Boolean!
-  isInDefault: Boolean!
+  isAfterTermEndTime: Boolean!
+  delinquency: LoanDelinquency!
 }
 
 extend type TranchedPool {
   name: String!
   borrowerName: String!
   borrowerLogo: String
-  isLate: Boolean!
-  isInDefault: Boolean!
+  delinquency: LoanDelinquency!
+  isAfterTermEndTime: Boolean!
+  interestOwed: BigInt!
+  collectedPaymentBalance: BigInt!
+}
+
+enum LoanPhase {
+  Prefunding
+  Funding
+  DrawdownPeriod
+  InProgress
+}
+
+extend type CallableLoan {
+  name: String!
+  borrowerName: String!
+  borrowerLogo: String
+  isAfterTermEndTime: Boolean!
+  periodInterestDueAmount: BigInt!
+  periodPrincipalDueAmount: BigInt!
+  termTotalDueAmount: BigInt!
+  nextDueTime: BigInt!
+  delinquency: LoanDelinquency!
+  inLockupPeriod: Boolean!
+  nextPrincipalDueTime: Int!
+  loanPhase: LoanPhase!
 }
 
 extend type CreditLine {
@@ -163,4 +193,8 @@ extend type SeniorPoolWithdrawalRequest {
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """
   previewFiduRequested: BigInt!
+}
+
+extend type PoolToken {
+  principalRedeemable: BigInt!
 }

@@ -13,6 +13,7 @@ import {
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
+import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
@@ -20,10 +21,9 @@ import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
+  loan: LoanBorrowerAccountingFieldsFragment;
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
-  borrowerContractAddress: string;
-  tranchedPoolAddress: string;
   creditLineStatus?: CreditLineStatus;
   onClose: () => void;
 }
@@ -36,10 +36,9 @@ enum PaymentOption {
 }
 
 export function PaymentForm({
+  loan,
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
-  borrowerContractAddress,
-  tranchedPoolAddress,
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
@@ -72,9 +71,10 @@ export function PaymentForm({
 
     const borrowerContract = await getContract({
       name: "Borrower",
-      address: borrowerContractAddress,
+      address: loan.borrowerContract.id,
       provider,
     });
+
     const usdcContract = await getContract({ name: "USDC", provider });
 
     await approveErc20IfRequired({
@@ -84,7 +84,7 @@ export function PaymentForm({
       amount: usdc.amount,
     });
     await toastTransaction({
-      transaction: borrowerContract.pay(tranchedPoolAddress, usdc.amount),
+      transaction: borrowerContract.pay(loan.id, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });
@@ -161,6 +161,9 @@ export function PaymentForm({
               <div>
                 {creditLineStatus === CreditLineStatus.PaymentLate
                   ? "Pay amount due: "
+                  : loan.__typename === "CallableLoan" &&
+                    loan.periodPrincipalDueAmount.gt(0)
+                  ? "Pre-pay accrued interest and called capital: "
                   : "Pre-pay accrued interest: "}
                 <span className="font-semibold">
                   {`${formatCrypto({

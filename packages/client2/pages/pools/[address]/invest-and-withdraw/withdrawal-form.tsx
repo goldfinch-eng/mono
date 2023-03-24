@@ -10,7 +10,10 @@ import {
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
-import { WithdrawalPanelPoolTokenFieldsFragment } from "@/lib/graphql/generated";
+import {
+  WithdrawalPanelLoanFieldsFragment,
+  WithdrawalPanelPoolTokenFieldsFragment,
+} from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -22,8 +25,16 @@ export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
+gql`
+  fragment WithdrawalPanelLoanFields on Loan {
+    id
+    __typename
+    address
+  }
+`;
+
 interface WithdrawalPanelProps {
-  tranchedPoolAddress: string;
+  loan: WithdrawalPanelLoanFieldsFragment;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
 }
 
@@ -31,10 +42,7 @@ interface FormFields {
   amount: string;
 }
 
-export function WithdrawalPanel({
-  tranchedPoolAddress,
-  poolTokens,
-}: WithdrawalPanelProps) {
+export function WithdrawalPanel({ loan, poolTokens }: WithdrawalPanelProps) {
   const totalWithdrawable = sum("principalAmount", poolTokens);
 
   const rhfMethods = useForm<FormFields>();
@@ -49,16 +57,21 @@ export function WithdrawalPanel({
     const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       provider,
-      address: tranchedPoolAddress,
+      address: loan.address,
+    });
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      address: loan.address,
     });
 
     const usdcToWithdraw = utils.parseUnits(data.amount, USDC_DECIMALS);
     let transaction;
     if (usdcToWithdraw.lte(poolTokens[0].principalAmount)) {
-      transaction = tranchedPoolContract.withdraw(
-        BigNumber.from(poolTokens[0].id),
-        usdcToWithdraw
-      );
+      transaction =
+        loan.__typename === "TranchedPool"
+          ? tranchedPoolContract.withdraw(poolTokens[0].id, usdcToWithdraw)
+          : callableLoanContract.withdraw(poolTokens[0].id, usdcToWithdraw);
     } else {
       let remainingAmount = usdcToWithdraw;
       const tokenIds: BigNumber[] = [];
@@ -78,12 +91,15 @@ export function WithdrawalPanel({
         amounts.push(amountFromThisToken);
         remainingAmount = remainingAmount.sub(amountFromThisToken);
       }
-      transaction = tranchedPoolContract.withdrawMultiple(tokenIds, amounts);
+      transaction =
+        loan.__typename === "TranchedPool"
+          ? tranchedPoolContract.withdrawMultiple(tokenIds, amounts)
+          : callableLoanContract.withdrawMultiple(tokenIds, amounts);
     }
     await toastTransaction({
       transaction,
-      pendingPrompt: `Withdrawal submitted for pool ${tranchedPoolAddress}.`,
-      successPrompt: `Withdrawal from pool ${tranchedPoolAddress} succeeded.`,
+      pendingPrompt: `Withdrawal submitted for pool ${loan.id}.`,
+      successPrompt: `Withdrawal from pool ${loan.id} succeeded.`,
     });
     await apolloClient.refetchQueries({
       include: "active",

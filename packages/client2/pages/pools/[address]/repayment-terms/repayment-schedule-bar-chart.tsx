@@ -18,19 +18,21 @@ import {
 import { AxisInterval } from "recharts/types/util/types";
 
 import { cryptoToFloat, formatFiat } from "@/lib/format";
-import { RepaymentSchedule } from "@/lib/pools";
+import { RepaymentTableLoanFieldsFragment } from "@/lib/graphql/generated";
 
 const Y_AXIS_ROUNDING_INTERVAL = 100000;
 const tickFormatter = new Intl.NumberFormat("en-US");
 
 interface RepaymentScheduleBarChartProps {
   className?: string;
-  repaymentSchedule: RepaymentSchedule;
+  repaymentSchedule: RepaymentTableLoanFieldsFragment["loanRepaymentSchedule"];
 }
 
 const RepaymentScheduleBarChartLegend: ContentType = ({ payload }) => (
   <div className="flex justify-between">
-    <div className="text-sm font-normal text-sand-600">Repayment schedule</div>
+    <div className="text-sm font-normal text-sand-600">
+      Upcoming repayment schedule
+    </div>
     <div className="flex">
       {payload?.map(({ value, color }) => (
         <div key={value} className="ml-4 flex items-center">
@@ -92,7 +94,7 @@ export function RepaymentScheduleBarChart({
   repaymentSchedule,
 }: RepaymentScheduleBarChartProps) {
   const repaymentScheduleFloat = repaymentSchedule.map((data) => ({
-    ...data,
+    paymentPeriod: data.paymentPeriod + 1,
     interest: cryptoToFloat({ amount: data.interest, token: "USDC" }),
     principal: cryptoToFloat({ amount: data.principal, token: "USDC" }),
   }));

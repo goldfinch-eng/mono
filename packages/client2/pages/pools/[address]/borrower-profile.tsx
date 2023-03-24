@@ -127,19 +127,13 @@ export function BorrowerProfile({
       </div>
       {numOtherPools > 0 ? (
         <StatGrid bgColor="mustard-50" numColumns={3}>
-          <Stat
-            label="Other deals"
-            tooltip="[TODO] content"
-            value={numOtherPools}
-          />
+          <Stat label="Other deals" value={numOtherPools} />
           <Stat
             label="Total loss rate"
-            tooltip="[TODO] content"
             value={formatPercent(borrowerDefaultRate)}
           />
           <Stat
             label="Total loan principal"
-            tooltip="[TODO] content"
             value={formatCrypto({ token: "USDC", amount: totalLoanPrincipal })}
           />
           <div className="col-span-full overflow-auto bg-mustard-50">
@@ -162,11 +156,8 @@ export function BorrowerProfile({
               </thead>
               <tbody className="divide-y divide-sand-200">
                 {otherPools.map((pool) => (
-                  <tr
-                    key={pool.id}
-                    className="relative text-right hover:bg-white"
-                  >
-                    <td className="w-1/4 max-w-0 truncate text-left">
+                  <tr key={pool.id} className="text-right hover:bg-white">
+                    <td className="relative w-1/4 max-w-0 truncate text-left">
                       <NextLink passHref href={`/pools/${pool.id}`}>
                         <a className="before:absolute before:inset-0">
                           {pool.name}
@@ -210,9 +201,9 @@ function RepaymentStatusChip({
     <span
       className={clsx(
         "rounded-full border px-2 py-1 text-xs",
-        repaymentStatus === LoanRepaymentStatus.Default
+        repaymentStatus === LoanRepaymentStatus.Late
           ? "border-clay-200 bg-clay-100 text-clay-700"
-          : repaymentStatus === LoanRepaymentStatus.Late
+          : repaymentStatus === LoanRepaymentStatus.GracePeriod
           ? "border-mustard-200 bg-mustard-100 text-mustard-700"
           : repaymentStatus === LoanRepaymentStatus.Repaid
           ? "border-mint-300 bg-mint-200 text-mint-800"

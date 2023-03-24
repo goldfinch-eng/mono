@@ -115,6 +115,9 @@ export function Home() {
             <ButtonLink to="/borrow" colorScheme="sky">
               Borrow
             </ButtonLink>
+            <ButtonLink to="/callable-loans" colorScheme="transparent-mustard">
+              Callable Loans
+            </ButtonLink>
           </div>
         </Section>
       </div>

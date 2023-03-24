@@ -18,7 +18,7 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
     loan {
       id
       name @client
-      isLate @client
+      delinquency @client
       isPaused
     }
     mintedAt
@@ -52,7 +52,7 @@ export function BackerCard({
 
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
-    !token.loan.isLate &&
+    token.loan.delinquency === "CURRENT" &&
     !token.loan.isPaused;
 
   const handleClaim = async () => {
@@ -140,7 +140,7 @@ export function BackerCard({
         </>
       }
       warning={
-        token.loan.isLate
+        !(token.loan.delinquency === "CURRENT")
           ? "Claiming is disabled because a repayment is due"
           : token.loan.isPaused
           ? "Claiming is disabled because this pool is paused"

@@ -17,12 +17,13 @@ import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 
 gql`
   query TranchedPoolTransactionTable(
-    $tranchedPoolId: String!
+    $loanId: ID!
+    $loanAddress: String!
     $first: Int!
     $skip: Int!
   ) {
     transactions(
-      where: { loan: $tranchedPoolId }
+      where: { loan: $loanAddress }
       orderBy: timestamp
       orderDirection: desc
       first: $first
@@ -41,23 +42,24 @@ gql`
       receivedAmount
       receivedToken
       timestamp
-      loan {
-        id
-        borrowerName @client
-        borrowerLogo @client
-      }
+    }
+    loan(id: $loanId) {
+      id
+      borrowerName @client
+      borrowerLogo @client
     }
   }
 `;
 
 interface TransactionTableProps {
-  tranchedPoolId: string;
+  loanAddress: string;
 }
 
 const subtractiveIconTransactionCategories = [
   "TRANCHED_POOL_WITHDRAWAL",
   "TRANCHED_POOL_DRAWDOWN",
   "SENIOR_POOL_REDEMPTION",
+  "CALL_REQUEST_SUBMITTED",
 ];
 
 const sentTokenCategories = [
@@ -65,10 +67,15 @@ const sentTokenCategories = [
   "TRANCHED_POOL_REPAYMENT",
 ];
 
-export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
+export function TransactionTable({ loanAddress }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
     useTranchedPoolTransactionTableQuery({
-      variables: { tranchedPoolId, first: 10, skip: 0 },
+      variables: {
+        loanId: loanAddress,
+        loanAddress,
+        first: 10,
+        skip: 0,
+      },
     });
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -76,14 +83,13 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   );
 
   const rows = filteredTxs.map((transaction) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const loan = transaction.loan!;
+    const loan = data?.loan;
 
     const user =
       transaction.category === "TRANCHED_POOL_DRAWDOWN" ||
       transaction.category === "TRANCHED_POOL_REPAYMENT" ? (
         <div className="flex items-center gap-2">
-          {loan.borrowerLogo ? (
+          {loan?.borrowerLogo ? (
             <Image
               src={loan.borrowerLogo}
               alt=""
@@ -97,7 +103,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
               className="shrink-0 rounded-full bg-sand-200"
             />
           )}
-          <span>{loan.borrowerName}</span>
+          <span>{loan?.borrowerName}</span>
         </div>
       ) : transaction.category === "SENIOR_POOL_REDEMPTION" ? (
         <div className="flex items-center gap-2">

@@ -14,24 +14,30 @@ import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   ClaimPanelPoolTokenFieldsFragment,
-  ClaimPanelTranchedPoolFieldsFragment,
+  ClaimPanelLoanFieldsFragment,
   ClaimPanelVaultedPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
+import { CallPanel } from "./call/call-panel";
+
 export const CLAIM_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment ClaimPanelPoolTokenFields on PoolToken {
     id
     principalAmount
-    principalRedeemable
+    principalRedeemable @client
     principalRedeemed
     interestRedeemable
     rewardsClaimable
     rewardsClaimed
     stakingRewardsClaimable
     stakingRewardsClaimed
+    loan {
+      id
+    }
+    ...CallPanelPoolTokenFields
   }
 `;
 
@@ -45,10 +51,14 @@ export const CLAIM_PANEL_VAULTED_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
-export const CLAIM_PANEL_TRANCHED_POOL_FIELDS = gql`
-  fragment ClaimPanelTranchedPoolFields on TranchedPool {
+export const CLAIM_PANEL_LOAN_FIELDS = gql`
+  fragment ClaimPanelLoanFields on Loan {
+    __typename
     id
-    isLate @client
+    delinquency @client
+    ... on CallableLoan {
+      ...CallPanelCallableLoanFields
+    }
   }
 `;
 
@@ -56,7 +66,7 @@ interface ClaimPanelProps {
   poolTokens: ClaimPanelPoolTokenFieldsFragment[];
   vaultedPoolTokens: ClaimPanelVaultedPoolTokenFieldsFragment[];
   fiatPerGfi: number;
-  tranchedPool: ClaimPanelTranchedPoolFieldsFragment;
+  loan: ClaimPanelLoanFieldsFragment;
 }
 
 /**
@@ -67,10 +77,8 @@ export function ClaimPanel({
   poolTokens,
   vaultedPoolTokens,
   fiatPerGfi,
-  tranchedPool,
+  loan,
 }: ClaimPanelProps) {
-  const canClaimGfi = !tranchedPool.isLate;
-
   const combinedTokens = poolTokens.concat(
     vaultedPoolTokens.map((vpt) => vpt.poolToken)
   );
@@ -101,6 +109,8 @@ export function ClaimPanel({
     ),
   } as const;
   const claimableGfiAsUsdc = gfiToUsdc(claimableGfi, fiatPerGfi);
+  const canClaimGfi =
+    loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
   const { provider } = useWallet();
@@ -116,12 +126,13 @@ export function ClaimPanel({
       pt.principalRedeemable.add(pt.interestRedeemable).gt(0)
     );
     if (withrawablePoolTokens.length > 0) {
-      const tranchedPoolContract = await getContract({
-        name: "TranchedPool",
-        address: tranchedPool.id,
+      const loanContract = await getContract({
+        name:
+          loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
+        address: loan.id,
         provider,
       });
-      const usdcTransaction = tranchedPoolContract.withdrawMultiple(
+      const usdcTransaction = loanContract.withdrawMultiple(
         withrawablePoolTokens.map((pt) => pt.id),
         withrawablePoolTokens.map((pt) =>
           pt.principalRedeemable.add(pt.interestRedeemable)
@@ -188,11 +199,11 @@ export function ClaimPanel({
         </div>
       </div>
       <div className="mb-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-1 flex items-center justify-between gap-2">
           <div>Available to claim</div>
           <InfoIconTooltip content="The combined dollar value of claimable principal, interest, and GFI rewards on this position." />
         </div>
-        <div className="font-serif text-3xl">
+        <div className="text-3xl">
           {formatCrypto({
             token: "USDC",
             amount: claimableUsdc.amount.add(claimableGfiAsUsdc.amount),
@@ -269,6 +280,13 @@ export function ClaimPanel({
           You cannot claim GFI rewards from this pool because it is late on
           repayment.
         </Alert>
+      ) : null}
+      {loan.__typename === "CallableLoan" ? (
+        <CallPanel
+          className="mt-8"
+          callableLoan={loan}
+          poolTokens={poolTokens}
+        />
       ) : null}
     </div>
   );

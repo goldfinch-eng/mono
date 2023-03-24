@@ -118,13 +118,13 @@ function Status({
   return (
     <span
       className={
-        poolRepaymentStatus === LoanRepaymentStatus.Late
+        poolRepaymentStatus === LoanRepaymentStatus.GracePeriod
           ? "text-mustard-450"
           : poolRepaymentStatus === LoanRepaymentStatus.Current
           ? "text-mint-450"
           : poolRepaymentStatus === LoanRepaymentStatus.Repaid
           ? "text-mint-600"
-          : poolRepaymentStatus === LoanRepaymentStatus.Default
+          : poolRepaymentStatus === LoanRepaymentStatus.Late
           ? "text-clay-500"
           : undefined
       }

@@ -1,27 +1,32 @@
 import { gql } from "@apollo/client";
 import { formatDistanceStrict } from "date-fns";
+import { FixedNumber } from "ethers";
 import Image from "next/future/image";
 
-import { InfoLine, Link } from "@/components/design-system";
+import {
+  InfoLine,
+  Link,
+  Shimmer,
+  ShimmerLines,
+} from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import { formatPercent } from "@/lib/format";
 import {
   LoanSummaryDealFieldsFragment,
-  LoanSummaryTranchedPoolFieldsFragment,
+  LoanSummaryFieldsFragment,
   LoanSummaryBorrowerFieldsFragment,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
-const secondsPerDay = 86400;
-
-export const LOAN_SUMMARY_TRANCHED_POOL_FIELDS = gql`
-  fragment LoanSummaryTranchedPoolFields on Loan {
+export const LOAN_SUMMARY_FIELDS = gql`
+  fragment LoanSummaryFields on Loan {
+    __typename
     id
     address
     usdcApy
     interestRate
     rawGfiApy
-    termInDays
+    termInSeconds
   }
 `;
 
@@ -46,7 +51,7 @@ export const LOAN_SUMMARY_DEAL_FIELDS = gql`
 
 interface LoanSummaryProps {
   className?: string;
-  loan: LoanSummaryTranchedPoolFieldsFragment;
+  loan: LoanSummaryFieldsFragment;
   deal: LoanSummaryDealFieldsFragment;
   borrower: LoanSummaryBorrowerFieldsFragment;
   fiatPerGfi: number;
@@ -95,34 +100,62 @@ export function LoanSummary({
           <div className="mb-2 text-sm">Fixed USDC APY</div>
           <div className="font-serif text-3xl font-semibold text-sand-800">
             {formatPercent(
-              deal.dealType === "multitranche"
-                ? loan.usdcApy
-                : loan.interestRate
+              loan.__typename === "TranchedPool" &&
+                deal.dealType === "unitranche"
+                ? loan.interestRate.mulUnsafe(FixedNumber.from("0.9")) // It would be nicer if the subgraph understood the USDC APY for a unitranche deal
+                : loan.usdcApy
             )}
           </div>
         </div>
-        <div className="text-right">
-          <div className="mb-2 text-sm">Variable GFI APY</div>
-          <div className="font-serif text-3xl font-semibold text-sand-800">
-            {formatPercent(computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi))}
+        {!loan.rawGfiApy.isZero() ? (
+          <div className="text-right">
+            <div className="mb-2 text-sm">Variable GFI APY</div>
+            <div className="font-serif text-3xl font-semibold text-sand-800">
+              {formatPercent(
+                computeApyFromGfiInFiat(loan.rawGfiApy, fiatPerGfi)
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
       <div className="-mb-3">
         <InfoLine
           label="Loan term"
           tooltip="Length of the loan term up until the principal is due."
-          value={formatDistanceStrict(
-            0,
-            loan.termInDays * secondsPerDay * 1000,
-            { unit: "month", roundingMethod: "ceil" }
-          )}
+          value={formatDistanceStrict(0, loan.termInSeconds * 1000, {
+            unit: "month",
+          })}
         />
         <InfoLine
           label="Liquidity"
           tooltip="When you can withdraw and reclaim your invested capital."
-          value="End of loan term"
+          value={
+            loan.__typename === "CallableLoan"
+              ? "Quarterly callable"
+              : "End of loan term"
+          }
         />
+      </div>
+    </div>
+  );
+}
+
+export function LoanSummaryPlaceholder() {
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative h-5 w-5 overflow-hidden rounded-full bg-sand-200"></div>
+          <span className="text-sm">
+            <Shimmer style={{ width: "15ch" }} />
+          </span>
+        </div>
+      </div>
+      <div className="mb-8">
+        <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
+          <Shimmer style={{ width: "25ch" }} />
+        </h1>
+        <ShimmerLines lines={3} />
       </div>
     </div>
   );

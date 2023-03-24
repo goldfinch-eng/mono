@@ -32,7 +32,7 @@ gql`
       estimatedApyFromGfiRaw
       sharePrice
     }
-    openPools: tranchedPools(
+    openPools: loans(
       orderBy: createdAt
       orderDirection: desc
       where: { termStartTime: 0 }
@@ -41,10 +41,10 @@ gql`
       id
       usdcApy
       rawGfiApy
-      termInDays
+      termInSeconds
       ...FundingStatusLoanFields
     }
-    closedPools: tranchedPools(
+    closedPools: loans(
       orderBy: createdAt
       orderDirection: desc
       where: { termStartTime_not: 0 }
@@ -69,6 +69,9 @@ gql`
     }
     viewer @client {
       fiduBalance
+    }
+    currentBlock @client {
+      timestamp
     }
   }
 `;
@@ -110,17 +113,19 @@ export default function EarnPage({
 
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
-  const openTranchedPools =
+  const openLoans =
     data?.openPools.filter(
       (tranchedPool) =>
         (!!dealMetadata[tranchedPool.id] &&
-          getLoanFundingStatus(tranchedPool) === LoanFundingStatus.Open) ||
-        getLoanFundingStatus(tranchedPool) === LoanFundingStatus.ComingSoon
+          getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp) ===
+            LoanFundingStatus.Open) ||
+        getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp) ===
+          LoanFundingStatus.ComingSoon
     ) ?? [];
-  const closedTranchedPools = data?.closedPools ?? [];
+  const closedLoans = data?.closedPools ?? [];
 
   // +1 for Senior Pool
-  const openDealsCount = openTranchedPools ? openTranchedPools.length + 1 : 0;
+  const openDealsCount = openLoans ? openLoans.length + 1 : 0;
 
   const loading = !seniorPool || !fiatPerGfi || !protocol;
 
@@ -129,7 +134,7 @@ export default function EarnPage({
       {error ? (
         <HelperText isError className="mb-12">
           There was a problem fetching data on pools. Shown data may be
-          outdated.
+          outdated. {error.message}
         </HelperText>
       ) : null}
       {loading ? (
@@ -184,46 +189,48 @@ export default function EarnPage({
               liquidity="2 week withdraw requests"
               href="/pools/senior"
             />
-            {openTranchedPools?.map((tranchedPool) => {
-              const dealDetails = dealMetadata[tranchedPool.id];
+            {openLoans?.map((loan) => {
+              const dealDetails = dealMetadata[loan.id];
 
-              const tranchedPoolApyFromGfi = computeApyFromGfiInFiat(
-                tranchedPool.rawGfiApy,
+              const loanApyFromGfi = computeApyFromGfiInFiat(
+                loan.rawGfiApy,
                 fiatPerGfi
-              );
-
-              const termLengthInMonths = Math.floor(
-                tranchedPool.termInDays / 30
               );
 
               return (
                 <OpenDealCard
-                  key={tranchedPool.id}
+                  key={loan.id}
                   icon={dealDetails.borrower.logo?.url}
                   title={dealDetails.name}
                   subtitle={dealDetails.category}
-                  usdcApy={tranchedPool.usdcApy}
-                  gfiApy={tranchedPoolApyFromGfi}
+                  usdcApy={loan.usdcApy}
+                  gfiApy={loanApyFromGfi}
                   gfiApyTooltip={
-                    <div className="mb-4">
-                      The Pool&rsquo;s total current estimated APY, including
-                      the current USDC APY and est. GFI rewards APY. The GFI
-                      rewards APY is volatile and changes based on several
-                      variables including the price of GFI, the total capital
-                      deployed on Goldfinch, and Senior Pool&rsquo;s
-                      utilization. Learn more in the{" "}
-                      <Link
-                        href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
-                        openInNewTab
-                      >
-                        Goldfinch Documentation
-                      </Link>
-                      .
+                    <div>
+                      <div className="mb-4">
+                        The Pool&rsquo;s total current estimated APY, including
+                        the current USDC APY and est. GFI rewards APY. The GFI
+                        rewards APY is volatile and changes based on several
+                        variables including the price of GFI, the total capital
+                        deployed on Goldfinch, and Senior Pool&rsquo;s
+                        utilization. Learn more in the{" "}
+                        <Link
+                          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/backer-incentives"
+                          openInNewTab
+                        >
+                          Goldfinch Documentation
+                        </Link>
+                        .
+                      </div>
                     </div>
                   }
-                  termLengthInMonths={termLengthInMonths}
-                  liquidity="End of loan term"
-                  href={`/pools/${tranchedPool.id}`}
+                  termLengthInMs={loan.termInSeconds * 1000}
+                  liquidity={
+                    loan.__typename === "TranchedPool"
+                      ? "End of loan term"
+                      : "Quarterly callable"
+                  }
+                  href={`/pools/${loan.id}`}
                 />
               );
             })}
@@ -233,20 +240,22 @@ export default function EarnPage({
             protocol.numLoans - data.openPools.length
           } Closed Deals`}</EarnPageHeading>
           <div className="space-y-2">
-            {closedTranchedPools.map((tranchedPool) => {
-              const deal = dealMetadata[tranchedPool.id];
-              const repaymentStatus = getLoanRepaymentStatus(tranchedPool);
+            {closedLoans.map((loan) => {
+              const deal = dealMetadata[loan.id];
+              const repaymentStatus = getLoanRepaymentStatus(loan);
               return (
-                <ClosedDealCard
-                  key={tranchedPool.id}
-                  borrowerName={deal.borrower.name}
-                  icon={deal.borrower.logo?.url}
-                  dealName={deal.name}
-                  loanAmount={tranchedPool.principalAmount}
-                  termEndTime={tranchedPool.termEndTime}
-                  repaymentStatus={repaymentStatus}
-                  href={`/pools/${tranchedPool.id}`}
-                />
+                deal && (
+                  <ClosedDealCard
+                    key={loan.id}
+                    borrowerName={deal.borrower.name}
+                    icon={deal.borrower.logo?.url}
+                    dealName={deal.name}
+                    loanAmount={loan.principalAmount}
+                    termEndTime={loan.termEndTime}
+                    repaymentStatus={repaymentStatus}
+                    href={`/pools/${loan.id}`}
+                  />
+                )
               );
             })}
           </div>

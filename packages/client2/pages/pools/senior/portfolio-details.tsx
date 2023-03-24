@@ -36,8 +36,7 @@ gql`
       balance
       termEndTime
       actualSeniorPoolInvestment
-      isLate @client
-      isInDefault @client
+      delinquency @client
     }
   }
 `;

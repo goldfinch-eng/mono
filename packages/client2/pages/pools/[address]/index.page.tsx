@@ -21,7 +21,11 @@ import {
   SingleDealQueryVariables,
   SingleDealDocument,
 } from "@/lib/graphql/generated";
-import { getLoanFundingStatus, LoanFundingStatus } from "@/lib/pools";
+import {
+  getLoanFundingStatus,
+  getLoanRepaymentStatus,
+  LoanFundingStatus,
+} from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AmountStats } from "./amount-stats";
@@ -32,7 +36,7 @@ import { CreditMemoAnalysisCard } from "./credit-memo-analysis-card";
 import { DealHighlights } from "./deal-highlights";
 import { FundingStats } from "./funding-stats";
 import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
-import { LoanSummary } from "./loan-summary";
+import { LoanSummary, LoanSummaryPlaceholder } from "./loan-summary";
 import {
   RepaymentTermsSchedule,
   RepaymentTermsSchedulePlaceholder,
@@ -58,13 +62,13 @@ gql`
       usdcApy
       rawGfiApy
       fundableAt
-      ...LoanSummaryTranchedPoolFields
+      ...LoanSummaryFields
       ...FundingStatusLoanFields
       ...SupplyPanelLoanFields
-      ...ClaimPanelTranchedPoolFields
-      ...RepaymentScheduleFields
+      ...ClaimPanelLoanFields
       ...RepaymentTermsStatsFields
       ...AmountStatsFields
+      ...RepaymentTableLoanFields
     }
     borrowerAllPools: tranchedPools(
       where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
@@ -163,7 +167,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       userId: account?.toLowerCase() ?? "",
       borrowerAllPools: otherPoolsFromThisBorrower,
     },
-    returnPartialData: true,
   });
 
   const tranchedPool = data?.loan;
@@ -174,21 +177,21 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
   if (error) {
     return (
       <div className="text-2xl">
-        Unable to load the specified tranched pool.
+        Unable to load the specified loan. {error.message}
       </div>
     );
   }
 
   const fundingStatus = tranchedPool
-    ? getLoanFundingStatus(tranchedPool)
+    ? getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp)
     : null;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =
-    tranchedPool?.allowedUidTypes.includes("US_ACCREDITED_INDIVIDUAL") ||
-    tranchedPool?.allowedUidTypes.includes("US_ENTITY");
+    tranchedPool?.allowedUidTypes?.includes("US_ACCREDITED_INDIVIDUAL") ||
+    tranchedPool?.allowedUidTypes?.includes("US_ENTITY");
   const noUid =
     !user?.isNonUsEntity &&
     !user?.isNonUsIndividual &&
@@ -245,7 +248,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 content: !tranchedPool ? (
                   <div className="h-60 rounded-xl border border-sand-200" />
                 ) : fundingStatus === LoanFundingStatus.Open ? (
-                  <FundingStats loan={tranchedPool} deal={dealDetails} />
+                  <FundingStats
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    currentBlockTimestamp={data.currentBlock.timestamp}
+                  />
                 ) : (
                   <AmountStats loan={tranchedPool} />
                 ),
@@ -286,7 +293,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     {tranchedPool ? (
                       <>
                         <RepaymentTermsStats loan={tranchedPool} />
-                        <RepaymentTermsSchedule loan={tranchedPool} />
+                        <RepaymentTermsSchedule
+                          loan={tranchedPool}
+                          repaymentStatus={getLoanRepaymentStatus(tranchedPool)}
+                          currentBlockTimestamp={data.currentBlock.timestamp}
+                        />
                       </>
                     ) : (
                       <>
@@ -331,7 +342,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
           <div className="px-4">
             <h2 className="mb-6 font-semibold">Recent activity</h2>
             {tranchedPool ? (
-              <TransactionTable tranchedPoolId={tranchedPool.id} />
+              <TransactionTable loanAddress={tranchedPool.id} />
             ) : null}
           </div>
         </div>
@@ -383,13 +394,15 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                       poolTokens={user.poolTokens}
                       vaultedPoolTokens={user.vaultedPoolTokens}
                       fiatPerGfi={fiatPerGfi}
-                      tranchedPool={tranchedPool}
+                      loan={tranchedPool}
                     />
                   ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
                     <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
                   ) : null}
                 </>
-              ) : null}
+              ) : (
+                <LoanSummaryPlaceholder />
+              )}
             </div>
           </AdaptiveStickyContainer>
         </div>

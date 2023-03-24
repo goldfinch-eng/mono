@@ -24,15 +24,10 @@ import { AxisInterval } from "recharts/types/util/types";
 import { Icon, Link } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import { SeniorPoolRepaymentFieldsFragment } from "@/lib/graphql/generated";
-import {
-  generateRepaymentSchedule,
-  REPAYMENT_SCHEDULE_FIELDS,
-} from "@/lib/pools";
 
 const tickFormatter = new Intl.NumberFormat("en-US");
 
 export const SENIOR_POOL_REPAYMENTS_FIELDS = gql`
-  ${REPAYMENT_SCHEDULE_FIELDS}
   fragment SeniorPoolRepaymentFields on SeniorPool {
     repayingPools: tranchedPools(
       orderBy: nextDueTime
@@ -42,7 +37,13 @@ export const SENIOR_POOL_REPAYMENTS_FIELDS = gql`
       id
       name @client
       borrowerLogo @client
-      ...RepaymentScheduleFields
+      repaymentSchedule(orderBy: paymentPeriod, first: 1000) {
+        id
+        paymentPeriod
+        estimatedPaymentDate
+        interest
+        principal
+      }
     }
   }
 `;
@@ -81,8 +82,10 @@ export function SeniorPoolRepaymentSection({
     );
     const allIncomingRepayments = repayingPools
       .flatMap((pool) =>
-        generateRepaymentSchedule(pool).map((r) => ({
-          ...r,
+        pool.repaymentSchedule.map((r) => ({
+          interest: r.interest,
+          principal: r.principal,
+          estimatedPaymentDate: r.estimatedPaymentDate * 1000,
           name: pool.name,
           borrowerLogo: pool.borrowerLogo,
           href: `/pools/${pool.id}`,
@@ -231,8 +234,8 @@ export function SeniorPoolRepaymentSection({
                 },
                 index
               ) => (
-                <tr key={index} className="relative">
-                  <td className="w-1/2 max-w-0 !pr-0 text-left">
+                <tr key={index}>
+                  <td className="relative w-1/2 max-w-0 !pr-0 text-left">
                     <div className="flex items-center gap-1.5">
                       <div className="relative h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full border border-sand-200 bg-sand-200">
                         {borrowerLogo ? (

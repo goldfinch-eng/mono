@@ -7,47 +7,36 @@ import { Button, Heading, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
+  BorrowPageCmsDocument,
   BorrowPageCmsQuery,
   useBorrowPageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
-import {
-  CreditLineCard,
-  TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS,
-} from "./credit-line-card";
+import { CreditLineCard } from "./credit-line-card";
 import {
   CreditLineStatus,
-  CREDIT_LINE_ACCOUNTING_FIELDS,
   getCreditLineAccountingAnalyisValues,
 } from "./helpers";
 
 gql`
-  ${CREDIT_LINE_ACCOUNTING_FIELDS}
-  query BorrowPage($userId: ID!) {
-    user(id: $userId) {
-      borrowerContracts(orderBy: createdAt, orderDirection: desc) {
-        id
-        tranchedPools(orderBy: createdAt, orderDirection: desc) {
-          id
-          creditLine {
-            id
-            interestAprDecimal
-            ...CreditLineAccountingFields
-          }
-        }
-      }
+  query BorrowPage($userId: String!) {
+    loans(
+      where: { borrowerContract_: { user: $userId } }
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      ...LoanBorrowerAccountingFields
     }
   }
 `;
 
-const borrowCmsQuery = gql`
-  ${TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS}
+gql`
   query BorrowPageCMS @api(name: cms) {
     Deals(limit: 100, where: { hidden: { not_equals: true } }) {
       docs {
-        ...TranchedPoolBorrowCardFields
+        ...LoanBorrowCardFields
       }
     }
   }
@@ -88,13 +77,7 @@ export default function BorrowPage({
     skip: !account,
   });
 
-  const borrowerContracts = data?.user?.borrowerContracts;
-
-  // Get the most recently created borrower contract - older borrower contracts have no associated pools
-  const tranchedPools =
-    borrowerContracts && borrowerContracts.length > 0
-      ? borrowerContracts[0].tranchedPools
-      : [];
+  const loans = data?.loans ?? [];
 
   return (
     <div>
@@ -123,7 +106,7 @@ export default function BorrowPage({
         <div className="text-2xl">Unable to load credit lines</div>
       ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
-      ) : !tranchedPools || tranchedPools.length === 0 ? (
+      ) : !loans || loans.length === 0 ? (
         <div className="w-fit rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">
           <div className="text-xl">
             You do not have any credit lines. To borrow funds from the pool, you
@@ -147,18 +130,16 @@ export default function BorrowPage({
               Due Date
             </div>
           </div>
-          {tranchedPools.map((tranchedPool) => {
-            const { creditLine } = tranchedPool;
-
+          {loans.map((loan) => {
             const {
               creditLineLimit,
               remainingPeriodDueAmount,
               creditLineStatus,
-            } = getCreditLineAccountingAnalyisValues(creditLine);
+            } = getCreditLineAccountingAnalyisValues(loan);
 
             const dueDateLabel = getDueDateLabel({
               creditLineStatus,
-              nextDueTime: creditLine.nextDueTime,
+              nextDueTime: loan.nextDueTime,
             });
 
             const nextPayment = formatCrypto({
@@ -167,15 +148,15 @@ export default function BorrowPage({
             });
 
             return (
-              <div key={creditLine.id}>
+              <div key={loan.id}>
                 <CreditLineCard
                   className="mb-4"
-                  href={`/borrow/${tranchedPool.id}`}
-                  dealMetaData={dealMetadata[tranchedPool.id]}
+                  href={`/borrow/${loan.id}`}
+                  dealMetaData={dealMetadata[loan.id]}
                   description={`${formatCrypto({
                     amount: creditLineLimit,
                     token: "USDC",
-                  })} at ${formatPercent(creditLine.interestAprDecimal)}`}
+                  })} at ${formatPercent(loan.interestRate)}`}
                   status={creditLineStatus}
                   nextPayment={nextPayment}
                   dueDateLabel={dueDateLabel}
@@ -191,7 +172,7 @@ export default function BorrowPage({
 
 export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<BorrowPageCmsQuery>({
-    query: borrowCmsQuery,
+    query: BorrowPageCmsDocument,
     fetchPolicy: "network-only",
   });
 

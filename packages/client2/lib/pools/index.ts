@@ -17,9 +17,8 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
-  RepaymentScheduleFieldsFragment,
+  RepaymentFrequency,
 } from "@/lib/graphql/generated";
-import { calculateInterestOwed } from "@/pages/borrow/helpers";
 import type { Erc20, Erc721 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
@@ -29,8 +28,8 @@ const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
 export enum LoanRepaymentStatus {
   NotDrawnDown,
   Current,
+  GracePeriod,
   Late,
-  Default,
   Repaid,
 }
 
@@ -42,8 +41,7 @@ export const REPAYMENT_STATUS_LOAN_FIELDS = gql`
     id
     balance
     termEndTime
-    isLate @client
-    isInDefault @client
+    delinquency @client
   }
 `;
 
@@ -54,10 +52,10 @@ export function getLoanRepaymentStatus(
     return LoanRepaymentStatus.Repaid;
   } else if (loan.balance.isZero()) {
     return LoanRepaymentStatus.NotDrawnDown;
-  } else if (loan.isInDefault) {
-    return LoanRepaymentStatus.Default;
-  } else if (loan.isLate) {
+  } else if (loan.delinquency === "LATE") {
     return LoanRepaymentStatus.Late;
+  } else if (loan.delinquency === "GRACE_PERIOD") {
+    return LoanRepaymentStatus.GracePeriod;
   } else {
     return LoanRepaymentStatus.Current;
   }
@@ -65,8 +63,8 @@ export function getLoanRepaymentStatus(
 
 const repaymentStatusLabels: Record<LoanRepaymentStatus, string> = {
   [LoanRepaymentStatus.Current]: "On Time",
-  [LoanRepaymentStatus.Late]: "Grace Period",
-  [LoanRepaymentStatus.Default]: "Default",
+  [LoanRepaymentStatus.GracePeriod]: "Grace Period",
+  [LoanRepaymentStatus.Late]: "Late",
   [LoanRepaymentStatus.Repaid]: "Fully Repaid",
   [LoanRepaymentStatus.NotDrawnDown]: "Not Drawn Down",
 };
@@ -95,12 +93,18 @@ export const FUNDING_STATUS_LOAN_FIELDS = gql`
   }
 `;
 
-export function getLoanFundingStatus(loan: FundingStatusLoanFieldsFragment) {
+export function getLoanFundingStatus(
+  loan: FundingStatusLoanFieldsFragment,
+  currentBlockTimestamp: number
+) {
   if (loan.id === CAURIS_POOL_ID) {
     return LoanFundingStatus.Cancelled;
   } else if (!loan.balance.isZero() || !loan.termEndTime.isZero()) {
     return LoanFundingStatus.Closed;
-  } else if (loan.termEndTime.isZero() && Date.now() / 1000 < loan.fundableAt) {
+  } else if (
+    loan.termEndTime.isZero() &&
+    currentBlockTimestamp < loan.fundableAt
+  ) {
     return LoanFundingStatus.ComingSoon;
   } else if (loan.remainingCapacity.isZero()) {
     return LoanFundingStatus.Full;
@@ -438,6 +442,11 @@ const transactionPresentation: Record<
     shortLabel: "Unvaulted Capital",
     icon: "ArrowDown",
   },
+  CALL_REQUEST_SUBMITTED: {
+    label: "Call Request Submitted",
+    shortLabel: "Capital Called",
+    icon: "ArrowDown",
+  },
 };
 
 export function getTransactionLabel(transaction: {
@@ -561,86 +570,18 @@ export type RepaymentSchedule = {
   interest: BigNumber;
 }[];
 
-export const REPAYMENT_SCHEDULE_FIELDS = gql`
-  fragment RepaymentScheduleFields on Loan {
-    fundableAt
-    termStartTime
-    termEndTime
-    paymentPeriodInDays
-    termInDays
-    interestRateBigInt
-    principalAmount
-    fundingLimit
-  }
-`;
+const repaymentFrequencyLabels: Record<RepaymentFrequency, string> = {
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Biweekly",
+  MONTHLY: "Monthly",
+  QUARTERLY: "Quarterly",
+  HALFLY: "Halfly",
+  ANNUALLY: "Annually",
+};
 
-export function generateRepaymentSchedule(
-  loan: RepaymentScheduleFieldsFragment
-): RepaymentSchedule {
-  const repaymentSchedule: RepaymentSchedule = [];
-  const secondsPerDay = 24 * 60 * 60;
-
-  const termStartTime = !loan.termStartTime.isZero()
-    ? loan.termStartTime.toNumber()
-    : loan.fundableAt + secondsPerDay * 14;
-  const termEndTime = !loan.termEndTime.isZero()
-    ? loan.termEndTime.toNumber()
-    : termStartTime + loan.termInDays * secondsPerDay;
-
-  const principal = !loan.principalAmount.isZero()
-    ? loan.principalAmount
-    : loan.fundingLimit;
-
-  // Number of seconds in 'paymentPeriodInDays'
-  const paymentPeriodInSeconds =
-    loan.paymentPeriodInDays.toNumber() * 24 * 60 * 60;
-
-  // Keep track of period start & end and payment period number
-  let periodStartTimestamp = termStartTime;
-  let paymentPeriod = 1;
-
-  for (
-    let periodEndTimestamp = termStartTime + paymentPeriodInSeconds;
-    periodEndTimestamp <= termEndTime;
-    periodEndTimestamp += paymentPeriodInSeconds
-  ) {
-    const expectedInterest = calculateInterestOwed({
-      isLate: false,
-      interestOwed: BigNumber.from(0),
-      interestApr: loan.interestRateBigInt,
-      nextDueTime: BigNumber.from(periodEndTimestamp),
-      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: principal,
-    });
-    repaymentSchedule.push({
-      paymentPeriod: paymentPeriod,
-      estimatedPaymentDate: periodEndTimestamp * 1000,
-      principal: BigNumber.from(0),
-      interest: expectedInterest,
-    });
-
-    paymentPeriod++;
-    periodStartTimestamp = periodEndTimestamp;
-  }
-
-  // Catch the remainder of time when there's not a perfect diff of 'paymentPeriodInDays' on the last period
-  // i.e startTime Dec 6th 2024, endTime Dec 16th 2024 and paymentPeriodInDays is 30 days
-  if (periodStartTimestamp <= termEndTime) {
-    const expectedInterest = calculateInterestOwed({
-      isLate: false,
-      interestOwed: BigNumber.from(0),
-      interestApr: loan.interestRateBigInt,
-      nextDueTime: BigNumber.from(termEndTime),
-      interestAccruedAsOf: BigNumber.from(periodStartTimestamp),
-      balance: principal,
-    });
-    repaymentSchedule.push({
-      paymentPeriod: paymentPeriod,
-      estimatedPaymentDate: termEndTime * 1000,
-      principal: principal,
-      interest: expectedInterest,
-    });
-  }
-
-  return repaymentSchedule;
+export function getRepaymentFrequencyLabel(
+  repaymentFrequency: RepaymentFrequency
+): string {
+  return repaymentFrequencyLabels[repaymentFrequency];
 }

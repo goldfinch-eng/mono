@@ -6,6 +6,7 @@ import {
   SupplyPanelDealFieldsFragment,
   SupplyPanelLoanFieldsFragment,
   SupplyPanelUserFieldsFragment,
+  WithdrawalPanelLoanFieldsFragment,
   WithdrawalPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
@@ -21,7 +22,8 @@ export {
 export { WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS } from "./withdrawal-form";
 
 interface Props {
-  tranchedPool: SupplyPanelLoanFieldsFragment;
+  tranchedPool: SupplyPanelLoanFieldsFragment &
+    WithdrawalPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   deal: SupplyPanelDealFieldsFragment;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
@@ -82,21 +84,14 @@ export function InvestAndWithdrawTabs({
               {shownPanel === "invest" ? "Invest" : "Withdraw"}
             </button>
             {shownPanel === "invest" ? (
-              <SupplyPanel
-                tranchedPool={tranchedPool}
-                user={user}
-                deal={deal}
-              />
+              <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
             ) : shownPanel === "withdraw" ? (
-              <WithdrawalPanel
-                tranchedPoolAddress={tranchedPool.id}
-                poolTokens={poolTokens}
-              />
+              <WithdrawalPanel loan={tranchedPool} poolTokens={poolTokens} />
             ) : null}
           </div>
         )
       ) : (
-        <SupplyPanel tranchedPool={tranchedPool} user={user} deal={deal} />
+        <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
       )}
     </div>
   );

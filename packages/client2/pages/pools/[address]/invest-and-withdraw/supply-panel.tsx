@@ -34,13 +34,16 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_LOAN_FIELDS = gql`
   fragment SupplyPanelLoanFields on Loan {
+    __typename
     id
+    address
     usdcApy
     rawGfiApy
     ... on TranchedPool {
       juniorDeposited
       estimatedLeverageRatio
     }
+    totalDeposited
     allowedUidTypes
     fundingLimit
   }
@@ -67,7 +70,7 @@ export const SUPPLY_PANEL_DEAL_FIELDS = gql`
 `;
 
 interface SupplyPanelProps {
-  tranchedPool: SupplyPanelLoanFieldsFragment;
+  loan: SupplyPanelLoanFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   deal: SupplyPanelDealFieldsFragment;
 }
@@ -78,17 +81,7 @@ interface SupplyForm {
   email: string;
 }
 
-export function SupplyPanel({
-  tranchedPool: {
-    id: tranchedPoolAddress,
-    juniorDeposited,
-    estimatedLeverageRatio,
-    allowedUidTypes,
-    fundingLimit,
-  },
-  user,
-  deal,
-}: SupplyPanelProps) {
+export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
 
@@ -101,30 +94,36 @@ export function SupplyPanel({
     user?.isNonUsIndividual;
 
   const canUserParticipate = user
-    ? canUserParticipateInPool(allowedUidTypes, user)
+    ? canUserParticipateInPool(loan.allowedUidTypes, user)
     : false;
 
   const rhfMethods = useForm<SupplyForm>();
   const { control, register } = rhfMethods;
 
-  const remainingJuniorCapacity =
-    deal.dealType === "unitranche" || !estimatedLeverageRatio
-      ? fundingLimit.sub(juniorDeposited)
-      : fundingLimit
-          .sub(
-            juniorDeposited.mul(
-              utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1)
+  const remainingCapacity =
+    loan.__typename === "TranchedPool"
+      ? deal.dealType === "multitranche" && loan.estimatedLeverageRatio
+        ? loan.fundingLimit
+            .sub(
+              loan.juniorDeposited.mul(
+                utils
+                  .parseUnits(loan.estimatedLeverageRatio.toString(), 0)
+                  .add(1)
+              )
             )
-          )
-          .div(utils.parseUnits(estimatedLeverageRatio.toString(), 0).add(1));
+            .div(
+              utils.parseUnits(loan.estimatedLeverageRatio.toString(), 0).add(1)
+            )
+        : loan.fundingLimit.sub(loan.juniorDeposited)
+      : loan.fundingLimit.sub(loan.totalDeposited);
 
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
       return;
     }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
-    if (valueAsUsdc.gt(remainingJuniorCapacity)) {
-      return "Amount exceeds remaining junior capacity";
+    if (valueAsUsdc.gt(remainingCapacity)) {
+      return "Amount exceeds remaining capacity";
     }
     if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
       return "Must deposit more than $0.01";
@@ -142,12 +141,7 @@ export function SupplyPanel({
       throw new Error("Wallet not connected properly");
     }
 
-    await signAgreement(
-      account,
-      data.backerName,
-      data.email,
-      tranchedPoolAddress
-    );
+    await signAgreement(account, data.backerName, data.email, loan.address);
 
     // Ensures the user doesn't leave any dust behind when they choose to supply max
     let value = utils.parseUnits(data.supply, USDC_DECIMALS);
@@ -161,21 +155,30 @@ export function SupplyPanel({
     const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       provider,
-      address: tranchedPoolAddress,
+      address: loan.address,
     });
-    if (!tranchedPoolContract) {
-      throw new Error("Wallet not connected properly");
-    }
+    const callableLoanContract = await getContract({
+      name: "CallableLoan",
+      provider,
+      address: loan.address,
+    });
     if (await isSmartContract(account, provider)) {
       await approveErc20IfRequired({
         account,
-        spender: tranchedPoolAddress,
+        spender: loan.address,
         amount: value,
         erc20Contract: usdcContract,
       });
+      const transaction =
+        loan.__typename === "TranchedPool"
+          ? tranchedPoolContract.deposit(TRANCHES.Junior, value)
+          : callableLoanContract.deposit(
+              await callableLoanContract.uncalledCapitalTrancheIndex(),
+              value
+            );
       submittedTransaction = await toastTransaction({
-        transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
-        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+        transaction,
+        pendingPrompt: `Deposit submitted for pool ${loan.address}.`,
       });
     } else {
       const now = (await provider.getBlock("latest")).timestamp;
@@ -184,28 +187,38 @@ export function SupplyPanel({
         erc20TokenContract: usdcContract,
         provider,
         owner: account,
-        spender: tranchedPoolAddress,
+        spender: loan.address,
         value,
         deadline,
       });
 
-      const transaction = tranchedPoolContract.depositWithPermit(
-        TRANCHES.Junior,
-        value,
-        deadline,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const transaction =
+        loan.__typename === "TranchedPool"
+          ? tranchedPoolContract.depositWithPermit(
+              TRANCHES.Junior,
+              value,
+              deadline,
+              signature.v,
+              signature.r,
+              signature.s
+            )
+          : callableLoanContract.depositWithPermit(
+              await callableLoanContract.uncalledCapitalTrancheIndex(),
+              value,
+              deadline,
+              signature.v,
+              signature.r,
+              signature.s
+            );
       submittedTransaction = await toastTransaction({
         transaction,
-        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+        pendingPrompt: `Deposit submitted for pool ${loan.address}.`,
       });
     }
 
     dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
       transactionHash: submittedTransaction.transactionHash,
-      tranchedPoolAddress,
+      tranchedPoolAddress: loan.address,
       usdAmount: parseFloat(data.supply),
     });
 
@@ -284,9 +297,9 @@ export function SupplyPanel({
             colorScheme="light"
             textSize="xl"
             maxValue={
-              availableBalance.lt(remainingJuniorCapacity)
+              availableBalance.lt(remainingCapacity)
                 ? availableBalance
-                : remainingJuniorCapacity
+                : remainingCapacity
             }
             className="mb-4"
             labelClassName="!text-sm !mb-3"

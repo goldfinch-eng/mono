@@ -1,5 +1,10 @@
 import { gql } from "@apollo/client";
-import { format as formatDate, formatDistanceToNow } from "date-fns";
+import {
+  format as formatDate,
+  fromUnixTime,
+  formatDistance,
+  isAfter,
+} from "date-fns";
 import { FixedNumber, utils } from "ethers";
 
 import { InfoIconTooltip, Stat, StatGrid } from "@/components/design-system";
@@ -18,6 +23,7 @@ export const FUNDING_STATS_LOAN_FIELDS = gql`
       juniorDeposited
       estimatedLeverageRatio
     }
+    totalDeposited
     fundableAt
     fundingLimit
   }
@@ -32,30 +38,35 @@ export const FUNDING_STATS_DEAL_FIELDS = gql`
 interface FundingStatsProps {
   loan: FundingStatsLoanFieldsFragment;
   deal: FundingStatsDealFieldsFragment;
+  currentBlockTimestamp: number;
 }
 
-export function FundingStats({ loan, deal }: FundingStatsProps) {
-  const { juniorDeposited, estimatedLeverageRatio, fundableAt } = loan;
-  const isMultitranche =
-    deal.dealType === "multitranche" && loan.__typename === "TranchedPool";
+export function FundingStats({
+  loan,
+  deal,
+  currentBlockTimestamp,
+}: FundingStatsProps) {
+  const now = fromUnixTime(currentBlockTimestamp);
   const fundedAmount =
-    isMultitranche && estimatedLeverageRatio
-      ? juniorDeposited.add(
-          utils.parseUnits(
-            FixedNumber.from(juniorDeposited)
-              .mulUnsafe(estimatedLeverageRatio)
-              .toString(),
-            0
+    loan.__typename === "TranchedPool"
+      ? deal.dealType === "multitranche" && loan.estimatedLeverageRatio
+        ? loan.juniorDeposited.add(
+            utils.parseUnits(
+              FixedNumber.from(loan.juniorDeposited)
+                .mulUnsafe(loan.estimatedLeverageRatio)
+                .toString(),
+              0
+            )
           )
-        )
-      : juniorDeposited;
+        : loan.juniorDeposited
+      : loan.totalDeposited;
   const maxFundingAmount = loan.fundingLimit;
 
   const fillRatio = FixedNumber.from(fundedAmount).divUnsafe(
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(fundableAt * 1000 + twoWeeksMs);
+  const estimatedCloseDate = new Date(loan.fundableAt * 1000 + twoWeeksMs);
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>
@@ -63,7 +74,8 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
         <div className="mb-5 flex justify-between gap-8">
           <div>
             <div className="mb-3 flex gap-2 text-sm">
-              Capital supplied <InfoIconTooltip content="TODO content" />
+              Capital supplied{" "}
+              <InfoIconTooltip content="The amount of capital currently supplied for this deal." />
             </div>
             <div className="text-lg font-medium">
               {formatCrypto({ token: "USDC", amount: fundedAmount })}
@@ -71,7 +83,8 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           </div>
           <div>
             <div className="mb-3 flex gap-2 text-sm">
-              Maximum deal size <InfoIconTooltip content="TODO content" />
+              Maximum deal size{" "}
+              <InfoIconTooltip content="The maximum amount of capital that can be supplied for this deal." />
             </div>
             <div className="text-lg font-medium">
               {formatCrypto({ token: "USDC", amount: maxFundingAmount })}
@@ -89,19 +102,17 @@ export function FundingStats({ loan, deal }: FundingStatsProps) {
           />
         </div>
       </div>
-      <Stat
-        label="Percent filled"
-        tooltip="TODO content"
-        value={formatPercent(fillRatio)}
-      />
+      <Stat label="Percent filled" value={formatPercent(fillRatio)} />
       <Stat
         label="Est. time left to invest"
-        tooltip="TODO content"
-        value={formatDistanceToNow(estimatedCloseDate)}
+        value={
+          isAfter(now, estimatedCloseDate)
+            ? "-"
+            : formatDistance(now, estimatedCloseDate)
+        }
       />
       <Stat
         label="Est. deal close date"
-        tooltip="TODO content"
         value={formatDate(estimatedCloseDate, "MMM dd, yyyy")}
       />
     </StatGrid>
