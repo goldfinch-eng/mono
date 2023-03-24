@@ -1,8 +1,16 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useState } from "react";
 
-import { Button, Icon, InfoIconTooltip } from "@/components/design-system";
+import {
+  Button,
+  Icon,
+  InfoIconTooltip,
+  TabButton,
+  TabContent,
+  TabGroup,
+  TabList,
+  TabPanels,
+} from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   InvestAndWithdrawSeniorPoolFieldsFragment,
@@ -57,9 +65,6 @@ export function InvestAndWithdrawTabs({
   vaultedStakedPositions,
   existingWithdrawalRequest,
 }: InvestAndWithdrawTabsProps) {
-  const [shownPanel, setShownPanel] = useState<"invest" | "withdraw" | null>(
-    null
-  );
   const { account } = useWallet();
   const isUserVerified =
     user?.isGoListed ||
@@ -95,7 +100,7 @@ export function InvestAndWithdrawTabs({
             <InfoIconTooltip content="The USD value of your current position in the Senior Pool." />
           </div>
           <div className="flex items-end justify-between gap-3">
-            <div className="font-serif text-3xl font-semibold text-sand-800">
+            <div className="text-3xl text-sand-800">
               {formatCrypto({
                 token: "USDC",
                 amount: totalSharesUsdc,
@@ -113,74 +118,56 @@ export function InvestAndWithdrawTabs({
           </div>
         </div>
       ) : null}
-      {shownPanel === null ? (
-        <div className="flex flex-col items-stretch gap-3">
-          {!account ? (
-            <Button size="xl" colorScheme="mustard" onClick={openWalletModal}>
-              Connect wallet
-            </Button>
-          ) : !isUserVerified ? (
-            <Button
-              size="xl"
-              colorScheme="mustard"
-              onClick={openVerificationModal}
-            >
-              Verify my identity
-            </Button>
-          ) : (
-            <>
-              <Button
-                size="xl"
-                colorScheme="mustard"
-                disabled={!canUserParticipate}
-                onClick={() => setShownPanel("invest")}
-              >
-                Invest
-              </Button>
-              <Button
-                size="xl"
-                colorScheme="transparent-mustard"
-                disabled={!canUserParticipate}
-                onClick={() => setShownPanel("withdraw")}
-              >
-                Withdraw
-              </Button>
-              {!canUserParticipate ? (
-                <div className="flex items-center justify-center gap-3 text-sm">
-                  <Icon size="md" name="Exclamation" />
-                  <div>
-                    Sorry, you are not eligible to participate in the senior
-                    pool because you do not have a suitable UID.
-                  </div>
-                </div>
-              ) : null}
-            </>
-          )}
+      {!account ? (
+        <Button
+          className="block w-full"
+          size="xl"
+          colorScheme="mustard"
+          onClick={openWalletModal}
+        >
+          Connect wallet
+        </Button>
+      ) : !isUserVerified ? (
+        <Button
+          className="block w-full"
+          size="xl"
+          colorScheme="mustard"
+          onClick={openVerificationModal}
+        >
+          Verify my identity
+        </Button>
+      ) : !canUserParticipate ? (
+        <div className="flex items-center justify-center gap-3 text-sm">
+          <Icon size="md" name="Exclamation" />
+          <div>
+            Sorry, you are not eligible to participate in the senior pool
+            because you do not have a suitable UID.
+          </div>
         </div>
       ) : (
-        <div>
-          <button
-            className="mb-6 flex items-center gap-2 text-2xl"
-            onClick={() => setShownPanel(null)}
-          >
-            <Icon name="ArrowLeft" />
-            {shownPanel === "invest" ? "Invest" : "Withdraw"}
-          </button>
-          {shownPanel === "invest" ? (
-            <SeniorPoolSupplyPanel
-              seniorPool={seniorPool}
-              fiatPerGfi={fiatPerGfi}
-            />
-          ) : (
-            <SeniorPoolWithdrawalPanel
-              seniorPool={seniorPool}
-              fiduBalance={fiduBalance}
-              stakedPositions={stakedPositions}
-              vaultedStakedPositions={vaultedStakedPositions}
-              existingWithdrawalRequest={existingWithdrawalRequest}
-            />
-          )}
-        </div>
+        <TabGroup>
+          <TabList>
+            <TabButton>Invest</TabButton>
+            <TabButton>Withdraw</TabButton>
+          </TabList>
+          <TabPanels>
+            <TabContent>
+              <SeniorPoolSupplyPanel
+                seniorPool={seniorPool}
+                fiatPerGfi={fiatPerGfi}
+              />
+            </TabContent>
+            <TabContent>
+              <SeniorPoolWithdrawalPanel
+                seniorPool={seniorPool}
+                fiduBalance={fiduBalance}
+                stakedPositions={stakedPositions}
+                vaultedStakedPositions={vaultedStakedPositions}
+                existingWithdrawalRequest={existingWithdrawalRequest}
+              />
+            </TabContent>
+          </TabPanels>
+        </TabGroup>
       )}
     </div>
   );

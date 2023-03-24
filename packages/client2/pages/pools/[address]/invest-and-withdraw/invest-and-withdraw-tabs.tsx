@@ -1,6 +1,10 @@
-import { useState } from "react";
-
-import { Button, Icon } from "@/components/design-system";
+import {
+  TabButton,
+  TabContent,
+  TabGroup,
+  TabList,
+  TabPanels,
+} from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupplyPanelDealFieldsFragment,
@@ -38,9 +42,6 @@ export function InvestAndWithdrawTabs({
   const totalUserCapitalInvested = sum("principalAmount", poolTokens);
   const didUserInvest =
     totalUserCapitalInvested !== null && !totalUserCapitalInvested.isZero();
-  const [shownPanel, setShownPanel] = useState<"invest" | "withdraw" | null>(
-    null
-  );
   return (
     <div>
       {didUserInvest ? (
@@ -48,7 +49,7 @@ export function InvestAndWithdrawTabs({
           <div className="mb-3 flex justify-between gap-5 text-sm">
             Total capital invested
           </div>
-          <div className="font-serif text-5xl font-semibold">
+          <div className="text-3xl text-sand-800">
             {formatCrypto({
               token: "USDC",
               amount: sum("principalAmount", poolTokens),
@@ -56,43 +57,20 @@ export function InvestAndWithdrawTabs({
           </div>
         </div>
       ) : null}
-      {didUserInvest ? (
-        shownPanel === null ? (
-          <div className="flex flex-col items-stretch gap-3">
-            <Button
-              size="xl"
-              colorScheme="mustard"
-              onClick={() => setShownPanel("invest")}
-            >
-              Invest
-            </Button>
-            <Button
-              size="xl"
-              colorScheme="transparent-mustard"
-              onClick={() => setShownPanel("withdraw")}
-            >
-              Withdraw
-            </Button>
-          </div>
-        ) : (
-          <div>
-            <button
-              className="mb-6 flex items-center gap-2 text-2xl"
-              onClick={() => setShownPanel(null)}
-            >
-              <Icon name="ArrowLeft" />
-              {shownPanel === "invest" ? "Invest" : "Withdraw"}
-            </button>
-            {shownPanel === "invest" ? (
-              <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
-            ) : shownPanel === "withdraw" ? (
-              <WithdrawalPanel loan={tranchedPool} poolTokens={poolTokens} />
-            ) : null}
-          </div>
-        )
-      ) : (
-        <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
-      )}
+      <TabGroup>
+        <TabList>
+          <TabButton>Invest</TabButton>
+          <TabButton disabled={!didUserInvest}>Withdraw</TabButton>
+        </TabList>
+        <TabPanels>
+          <TabContent>
+            <SupplyPanel loan={tranchedPool} user={user} deal={deal} />
+          </TabContent>
+          <TabContent>
+            <WithdrawalPanel loan={tranchedPool} poolTokens={poolTokens} />
+          </TabContent>
+        </TabPanels>
+      </TabGroup>
     </div>
   );
 }

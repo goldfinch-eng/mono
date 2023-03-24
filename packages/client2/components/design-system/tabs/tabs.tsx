@@ -7,15 +7,20 @@ interface TabProps {
   children: ReactNode;
 }
 
-export function TabButton({ children }: TabProps) {
+export function TabButton({
+  children,
+  disabled = false,
+}: TabProps & { disabled?: boolean }) {
   return (
     <Tab as={Fragment}>
       {({ selected }) => (
         <button
           className={clsx(
             "-mb-px border-b-2 p-2.5 text-sand-900",
-            selected ? "border-mustard-500 font-medium" : "border-transparent"
+            selected ? "border-mustard-500 font-medium" : "border-transparent",
+            disabled ? "opacity-50" : null
           )}
+          disabled={disabled}
         >
           {children}
         </button>
