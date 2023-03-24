@@ -10,7 +10,7 @@ const percentageFormatter = new Intl.NumberFormat("en-US", {
 
 export function formatPercent(n: number | FixedNumber) {
   const nAsFloat = n instanceof FixedNumber ? n.toUnsafeFloat() : n;
-  if (n > 0 && n < 0.01) {
+  if (n > 0 && n < 0.0001) {
     return "<0.01%";
   }
   return percentageFormatter.format(nAsFloat);
