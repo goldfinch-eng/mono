@@ -17,6 +17,7 @@ import {MAINNET_GOVERNANCE_MULTISIG, MAINNET_WARBLER_LABS_MULTISIG} from "../mai
 
 // Fazz is the company which owns the borrower address for the first callable loan deal
 export const FAZZ_EOA = "0x38665165d1ef46f706b8873e0985521de04947a4"
+export const FAZZ_BORROWER_CONTRACT_ADDRESS = "0xeb25Aa1a94a980238dFAb4B12Fe96B694F2dba55"
 export const FAZZ_DEAL_LIMIT_IN_DOLLARS = 2_000_000
 export const FAZZ_DEAL_ALLOWED_UID_TYPES = [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED]
 export const FAZZ_DEAL_CALLABLE_LOAN_SCHEDULE_CONFIG = {
@@ -125,7 +126,6 @@ export async function createCallableLoanForBorrower({
   )
 
   const limit = String(new BN(limitInDollars || 2000000).mul(USDCDecimals))
-
   const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
     callableLoanProxyOwner,
     borrower,

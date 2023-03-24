@@ -82,6 +82,7 @@ describe("v3.3.0", async function () {
     defaultLenderAddress = (await allSigners[1]?.getAddress()) as string
     lenders = allSigners.slice(2, 5).map((signer) => signer.address) as typeof lenders
 
+    await fundWithWhales(["USDC"], [FAZZ_EOA])
     await fundWithWhales(["GFI", "USDC", "ETH"], [defaultLenderAddress, MAINNET_WARBLER_LABS_MULTISIG, ...lenders])
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), FAZZ_EOA)
     borrowerContract = await createBorrowerContract(FAZZ_EOA)

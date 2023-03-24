@@ -66,6 +66,7 @@ import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/u
 import {
   BackerRewardsInstance,
   BorrowerInstance,
+  BorrowerInstance,
   CallableLoanImplementationRepositoryInstance,
   CallableLoanInstance,
   CommunityRewardsInstance,
@@ -121,7 +122,6 @@ import {
   Borrower as EthersBorrower,
   GoldfinchFactory,
   ERC20,
-  CallableLoanImplementationRepository,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
@@ -131,6 +131,7 @@ import {
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
 import {
+  FAZZ_BORROWER_CONTRACT_ADDRESS,
   FAZZ_DEAL_FUNDABLE_AT,
   FAZZ_DEAL_LIMIT_IN_DOLLARS,
   FAZZ_EOA,
@@ -1702,14 +1703,11 @@ describe("mainnet forking tests", async function () {
         assertNonNullable(borrower)
         assertNonNullable(lender)
 
-        // grant the borrower the ability to create a pool
-
-        await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), FAZZ_EOA, {
-          from: protocolOwner,
-        })
         // Add Fazz signer for rest of tests
         await impersonateAccount(hre, FAZZ_EOA)
-        const borrowerContract = await createBorrowerContract(FAZZ_EOA)
+        const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
+          at: FAZZ_BORROWER_CONTRACT_ADDRESS,
+        })
 
         await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
         const callableLoan = await createFazzExampleLoan({
