@@ -61,6 +61,7 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
             ? "Est. term start date"
             : "Term start date"
         }
+        tooltip="This marks the loan's start date."
         value={formatDate(termStartTime * 1000, "MMM d, y")}
       />
       <Stat
