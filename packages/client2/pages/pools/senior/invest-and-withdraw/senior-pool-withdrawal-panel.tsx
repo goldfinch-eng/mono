@@ -120,7 +120,7 @@ export function SeniorPoolWithdrawalPanel({
             <InfoIconTooltip content="FIDU that has been distributed from a Withdrawal Request, and is now ready to withdraw to your wallet." />
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-3xl font-medium">
+            <div className="text-3xl">
               {formatCrypto({
                 amount:
                   existingWithdrawalRequest?.previewUsdcWithdrawable ??
