@@ -41,8 +41,14 @@ import {getAddressFromConfig} from "../utils"
 import {handleCreditLineBalanceChanged} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
-  initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  const tranchedPool = initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+  const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+  tranchedPool.numRepayments = schedulingResult.repaymentIds.length
+  tranchedPool.termInSeconds = schedulingResult.termInSeconds // This is actually relevant for Alma 1
+  tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
+  tranchedPool.save()
 }
 
 export function handleDepositMade(event: DepositMade): void {
@@ -168,7 +174,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
     deleteTranchedPoolRepaymentSchedule(tranchedPool)
     const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
     tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
-    tranchedPool.numRepayments = schedulingResult.repaymentIds.length
   }
   tranchedPool.save()
 

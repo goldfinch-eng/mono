@@ -103,7 +103,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
     deleteCallableLoanRepaymentSchedule(callableLoan)
     const schedulingResult = generateRepaymentScheduleForCallableLoan(callableLoan)
     callableLoan.repaymentSchedule = schedulingResult.repaymentIds
-    callableLoan.numRepayments = schedulingResult.repaymentIds.length
   }
   callableLoan.save()
 

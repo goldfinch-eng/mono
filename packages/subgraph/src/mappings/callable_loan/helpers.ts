@@ -163,22 +163,26 @@ export function generateRepaymentScheduleForCallableLoan(callableLoan: CallableL
     }
   }
 
-  const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
-  let repaymentFrequency = ""
-  if (approximateSecondsPerPeriod <= secondsPerDay) {
-    repaymentFrequency = "DAILY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
-    repaymentFrequency = "WEEKLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
-    repaymentFrequency = "BIWEEKLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
-    repaymentFrequency = "MONTHLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
-    repaymentFrequency = "QUARTERLY"
-  } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
-    repaymentFrequency = "HALFLY"
-  } else {
-    repaymentFrequency = "ANNUALLY"
+  let repaymentFrequency = "MONTHLY" // Assume monthly just because it's safe
+  // Note that repayments.length only falls below 2 if the loan is close to being fully paid off. The mapping code only sets repaymentFrequency on drawdown, so thankfully this is inconsequential
+  // Just need to guard against an out-of-bounds error
+  if (repayments.length >= 2) {
+    const approximateSecondsPerPeriod = repayments[1].estimatedPaymentDate - repayments[0].estimatedPaymentDate
+    if (approximateSecondsPerPeriod <= secondsPerDay) {
+      repaymentFrequency = "DAILY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 7) {
+      repaymentFrequency = "WEEKLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 14) {
+      repaymentFrequency = "BIWEEKLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31) {
+      repaymentFrequency = "MONTHLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 3) {
+      repaymentFrequency = "QUARTERLY"
+    } else if (approximateSecondsPerPeriod <= secondsPerDay * 31 * 6) {
+      repaymentFrequency = "HALFLY"
+    } else {
+      repaymentFrequency = "ANNUALLY"
+    }
   }
 
   return new SchedulingResult(
@@ -197,7 +201,6 @@ export function deleteCallableLoanRepaymentSchedule(callableLoan: CallableLoan):
     store.remove("ScheduledRepayment", repaymentIds[i])
   }
   callableLoan.repaymentSchedule = []
-  callableLoan.numRepayments = 0
 }
 
 // TODO this function exists for tranched pools too. Try to consolidate them?

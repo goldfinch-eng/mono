@@ -568,6 +568,9 @@ type CallableLoan implements Loan @entity {
   repaymentFrequency: RepaymentFrequency!
 
   repaymentSchedule: [ScheduledRepayment!]!
+  """
+  Please note that numRepayments never updates, even if the underlying repaymentSchedule is changed. It always reflects the initial number of expected repayments.
+  """
   numRepayments: Int!
   principalAmountRepaid: BigInt!
   interestAmountRepaid: BigInt!
