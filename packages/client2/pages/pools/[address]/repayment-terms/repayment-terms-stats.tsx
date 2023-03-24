@@ -56,8 +56,11 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
         value={loan.__typename === "CallableLoan" ? "Callable" : "Bullet"}
       />
       <Stat
-        label="Est. repayment start date"
-        tooltip="The estimated date by which the first interest payment is to be made by the borrower."
+        label={
+          loan.termStartTime.isZero()
+            ? "Est. term start date"
+            : "Term start date"
+        }
         value={formatDate(termStartTime * 1000, "MMM d, y")}
       />
       <Stat
