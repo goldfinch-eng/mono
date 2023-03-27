@@ -6,7 +6,7 @@ import {
   GrantRevoked,
   Transfer,
 } from "../../generated/CommunityRewards/CommunityRewards"
-import {BigInt} from "@graphprotocol/graph-ts"
+import {Address, BigInt} from "@graphprotocol/graph-ts"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {getOrInitUser} from "../entities/user"
 
@@ -44,10 +44,14 @@ export function handleRewardPaid(event: RewardPaid): void {
 }
 
 export function handleTransfer(event: Transfer): void {
-  const communityRewardsToken = CommunityRewardsToken.load(event.params.tokenId.toString())
-  if (!communityRewardsToken) {
+  // Don't handle freshly minted tokens, because handleGranted will do that
+  if (event.params.from.equals(Address.zero())) {
     return
   }
+  const communityRewardsToken = assert(
+    CommunityRewardsToken.load(event.params.tokenId.toString()),
+    `Community Rewards Token ${event.params.tokenId.toString()} does not exist in store`
+  )
   const user = getOrInitUser(event.params.to)
   communityRewardsToken.user = user.id
   communityRewardsToken.save()
