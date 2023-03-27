@@ -98,10 +98,10 @@ export async function mint(
   const transferEvent = getOnlyLog<TransferSingle>(
     decodeLogs(receipt.receipt.rawLogs, uniqueIdentity, "TransferSingle")
   )
-  expect(transferEvent.args.operator).to.equal(overrideFrom)
-  expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
-  expect(transferEvent.args.to).to.equal(overrideFrom as string)
-  expect(transferEvent.args.id).to.bignumber.equal(tokenId)
+  expect(transferEvent.args.operator).to.equal(overrideFrom, "Operator should be the sender")
+  expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero, "From should be the zero address")
+  expect(transferEvent.args.to).to.equal(overrideFrom as string, "To should be the sender")
+  expect(transferEvent.args.id).to.bignumber.equal(tokenId, "tokenId should be provided tokendId")
   expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
 }
 

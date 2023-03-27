@@ -7,8 +7,6 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {IProtocolHelper} from "./IProtocolHelper.sol";
 
-import {TestERC20} from "../TestERC20.sol";
-
 import {TestConstants} from "./TestConstants.t.sol";
 
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
@@ -18,26 +16,29 @@ import {StakingRewards} from "../../rewards/StakingRewards.sol";
 import {IStakingRewards} from "../../interfaces/IStakingRewards.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
+import "forge-std/Test.sol";
 
 import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
 import {IFidu} from "../../interfaces/IFidu.sol";
 import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 
-contract ProtocolHelper is IProtocolHelper {
+contract ProtocolHelper is IProtocolHelper, Test {
   GoldfinchConfig internal _gfConfig;
   GoldfinchFactory internal _gfFactory;
   Fidu internal _fidu;
   GFI internal _gfi;
   StakingRewards internal _stakingRewards;
-  TestERC20 internal _usdc;
+  IERC20 internal _usdc;
 
   constructor(Vm vm, address gfOwner, address treasury) public {
     vm.assume(gfOwner != address(0));
     vm.assume(treasury != address(0));
     vm.startPrank(gfOwner);
 
-    _usdc = new TestERC20(type(uint256).max, uint8(TestConstants.USDC_DECIMALS));
+    _usdc = IERC20(
+      deployCode("TestERC20.sol", abi.encode(type(uint256).max, uint8(TestConstants.USDC_DECIMALS)))
+    );
 
     _gfConfig = new GoldfinchConfig();
     _gfConfig.initialize(gfOwner);

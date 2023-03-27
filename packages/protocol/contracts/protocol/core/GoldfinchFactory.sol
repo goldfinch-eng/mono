@@ -9,6 +9,7 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ICallableLoan} from "../../interfaces/ICallableLoan.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {IPeriodMapper} from "../../interfaces/IPeriodMapper.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
@@ -31,6 +32,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
+  event CallableLoanCreated(ICallableLoan indexed loan, address indexed borrower);
   event CreditLineCreated(ICreditLine indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
@@ -69,7 +71,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   /**
    * @notice Allows anyone to create a new TranchedPool for a single borrower
    * Requirements:
-   *  You are the admin
+   *  You are the admin or a borrower
    */
   function createPool(
     address _borrower,
@@ -101,6 +103,96 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     );
     emit PoolCreated(pool, _borrower);
     config.getPoolTokens().onPoolCreated(address(pool));
+  }
+
+  /**
+   * @notice Allows anyone to create a new CallableLoan for a single borrower
+   * Requirements:
+   *  You are the admin or a borrower
+   */
+  function createCallableLoan(
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _numLockupPeriods,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external onlyAdminOrBorrower returns (ICallableLoan loan) {
+    return
+      _createCallableLoanWithProxyOwner(
+        _borrower,
+        _borrower,
+        _limit,
+        _interestApr,
+        _numLockupPeriods,
+        _schedule,
+        _lateFeeApr,
+        _fundableAt,
+        _allowedUIDTypes
+      );
+  }
+
+  /**
+   * @notice Create a callable loan where the proxy owner is different than the borrower
+   */
+  function createCallableLoanWithProxyOwner(
+    address _proxyOwner,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _numLockupPeriods,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external onlyAdminOrBorrower returns (ICallableLoan loan) {
+    return
+      _createCallableLoanWithProxyOwner(
+        _proxyOwner,
+        _borrower,
+        _limit,
+        _interestApr,
+        _numLockupPeriods,
+        _schedule,
+        _lateFeeApr,
+        _fundableAt,
+        _allowedUIDTypes
+      );
+  }
+
+  function _createCallableLoanWithProxyOwner(
+    address _proxyOwner,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _numLockupPeriods,
+    ISchedule _schedule,
+    uint256 _lateFeeApr,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) internal returns (ICallableLoan loan) {
+    // need to enclose in a scope to avoid overflowing stack
+    {
+      ImplementationRepository repo = config.getCallableLoanImplementationRepository();
+      UcuProxy callableLoanProxy = new UcuProxy(repo, _proxyOwner, repo.currentLineageId());
+      loan = ICallableLoan(address(callableLoanProxy));
+    }
+
+    loan.initialize({
+      _config: config,
+      _borrower: _borrower,
+      _limit: _limit,
+      _interestApr: _interestApr,
+      _numLockupPeriods: _numLockupPeriods,
+      _schedule: _schedule,
+      _lateFeeApr: _lateFeeApr,
+      _fundableAt: _fundableAt,
+      _allowedUIDTypes: _allowedUIDTypes
+    });
+    emit CallableLoanCreated(loan, _borrower);
+    config.getPoolTokens().onPoolCreated(address(loan));
   }
 
   // Stolen from:

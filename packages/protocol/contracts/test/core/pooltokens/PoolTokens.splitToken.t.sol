@@ -81,7 +81,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testRevertsForNonOwnerNonApprovedOperator(address caller) public impersonating(caller) {
-    vm.assume(caller != address(this));
+    vm.assume(fuzzHelper.isAllowed(caller));
     vm.expectRevert(bytes("NA"));
     poolTokens.splitToken(tokenId, usdcVal(5) / 2);
   }

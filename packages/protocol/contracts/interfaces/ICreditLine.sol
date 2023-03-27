@@ -3,7 +3,8 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ITranchedPool} from "./ITranchedPool.sol";
+import {ILoan} from "./ILoan.sol";
+
 import {ICreditLine} from "./ICreditLine.sol";
 import {ISchedule} from "./ISchedule.sol";
 
@@ -87,19 +88,8 @@ interface ICreditLine {
   /// @notice Time of first drawdown
   function termStartTime() external view returns (uint256);
 
-  /// @notice Initialize a brand new credit line
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external;
-
   /// @notice Process a bulk payment, allocating the payment amount based on the payment waterfall
-  function pay(uint paymentAmount) external returns (ITranchedPool.PaymentAllocation memory);
+  function pay(uint paymentAmount) external returns (ILoan.PaymentAllocation memory);
 
   /**
    * Process a payment according to the waterfall described in `Accountant.allocatePayment`
@@ -110,7 +100,7 @@ interface ICreditLine {
   function pay(
     uint256 principalPayment,
     uint256 interestPayment
-  ) external returns (ITranchedPool.PaymentAllocation memory);
+  ) external returns (ILoan.PaymentAllocation memory);
 
   /// @notice Drawdown on the line
   /// @param amount amount to drawdown. Cannot exceed the line's limit

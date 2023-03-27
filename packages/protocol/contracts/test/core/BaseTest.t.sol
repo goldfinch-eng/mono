@@ -130,6 +130,13 @@ abstract contract BaseTest is Test {
     require(success, "Failed to grant role");
   }
 
+  /**
+   * @dev Wraps bound in uint128 cast. Better to be declarative than rely on implicit conversions.
+   */
+  function boundUint128(uint128 x, uint128 min, uint128 max) internal view returns (uint128) {
+    return uint128(bound(uint256(x), uint256(min), uint256(max)));
+  }
+
   function assertZero(uint256 x) internal {
     assertEq(x, 0);
   }

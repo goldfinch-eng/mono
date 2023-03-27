@@ -4,6 +4,14 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface ISchedule {
+  function periodsPerPrincipalPeriod() external view returns (uint256);
+
+  function periodsInTerm() external view returns (uint256);
+
+  function periodsPerInterestPeriod() external view returns (uint256);
+
+  function gracePrincipalPeriods() external view returns (uint256);
+
   /**
    * @notice Returns the period that timestamp resides in
    */
@@ -72,4 +80,25 @@ interface ISchedule {
    * @notice Returns the timestamp that the term began
    */
   function termStartTime(uint256 startTime) external view returns (uint256);
+
+  /**
+   * @notice Returns the next time principal will come due, or the termEndTime if there are no more due times
+   */
+  function nextPrincipalDueTimeAt(
+    uint256 startTime,
+    uint256 timestamp
+  ) external view returns (uint256);
+
+  /**
+   * @notice Returns the next time interest will come due, or the termEndTime if there are no more due times
+   */
+  function nextInterestDueTimeAt(
+    uint256 startTime,
+    uint256 timestamp
+  ) external view returns (uint256);
+
+  /**
+   * @notice Returns the end time of the given period.
+   */
+  function periodEndTime(uint256 startTime, uint256 period) external view returns (uint256);
 }

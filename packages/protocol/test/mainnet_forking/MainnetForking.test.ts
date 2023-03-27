@@ -11,10 +11,12 @@ import {
   getProtocolOwner,
   getTruffleContract,
   getEthersContract,
+  ContractDeployer,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_TRUSTED_SIGNER_ADDRESS,
+  MAINNET_WARBLER_LABS_MULTISIG,
 } from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
@@ -64,6 +66,9 @@ import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/u
 import {
   BackerRewardsInstance,
   BorrowerInstance,
+  BorrowerInstance,
+  CallableLoanImplementationRepositoryInstance,
+  CallableLoanInstance,
   CommunityRewardsInstance,
   CreditLineInstance,
   FiduInstance,
@@ -81,6 +86,7 @@ import {
   StakingRewardsInstance,
   TranchedPoolContract,
   TranchedPoolInstance,
+  UcuProxyInstance,
   UniqueIdentityInstance,
   WithdrawalRequestTokenInstance,
   ZapperInstance,
@@ -123,6 +129,14 @@ import {
   BorrowerCreated,
   PoolCreated,
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
+import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
+import {
+  FAZZ_BORROWER_CONTRACT_ADDRESS,
+  FAZZ_DEAL_FUNDABLE_AT,
+  FAZZ_DEAL_LIMIT_IN_DOLLARS,
+  FAZZ_EOA,
+  createFazzExampleLoan,
+} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -283,13 +297,13 @@ describe("mainnet forking tests", async function () {
     await seniorPool.deposit(usdcVal(100_000), {from: owner})
   }
 
-  async function createBorrowerContract() {
-    const result = await goldfinchFactory.createBorrower(bwr)
+  async function createBorrowerContract(borrower = bwr) {
+    const result = await goldfinchFactory.createBorrower(borrower)
     assertNonNullable(result.logs)
     const bwrConAddr = (result.logs[result.logs.length - 1] as unknown as BorrowerCreated).args.borrower
     const bwrCon = await Borrower.at(bwrConAddr)
-    await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
-    await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
+    await erc20Approve(busd, bwrCon.address, MAX_UINT, [borrower])
+    await erc20Approve(usdt, bwrCon.address, MAX_UINT, [borrower])
     return bwrCon
   }
 
@@ -1677,6 +1691,148 @@ describe("mainnet forking tests", async function () {
             }
           }
         }).timeout(TEST_TIMEOUT)
+      })
+    })
+
+    describe("CallableLoans", () => {
+      it("does not earn backer rewards", async () => {
+        const protocolOwner = await getProtocolOwner()
+        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+        assertNonNullable(proxyOwner)
+        assertNonNullable(borrower)
+        assertNonNullable(lender)
+
+        // Add Fazz signer for rest of tests
+        await impersonateAccount(hre, FAZZ_EOA)
+        const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
+          at: FAZZ_BORROWER_CONTRACT_ADDRESS,
+        })
+
+        await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+        const callableLoan = await createFazzExampleLoan({
+          hre,
+          goldfinchFactory: goldfinchFactory,
+          callableLoanProxyOwner: MAINNET_WARBLER_LABS_MULTISIG,
+          fazzBorrowerContract: borrowerContract.address,
+          erc20: usdc,
+        })
+
+        await fundWithWhales(["USDC", "ETH"], [lender])
+        await fundWithWhales(["ETH"], [FAZZ_EOA])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+          await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+        }
+        await usdc.approve(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, {from: lender})
+        const receipt = await callableLoan.deposit(
+          await callableLoan.uncalledCapitalTrancheIndex(),
+          FAZZ_DEAL_LIMIT_IN_DOLLARS,
+          {
+            from: lender,
+          }
+        )
+        const depositMadeEvent = getOnlyLog<DepositMade>(
+          decodeLogs(receipt.receipt.rawLogs, callableLoan, "DepositMade")
+        )
+        const tokenId = depositMadeEvent.args.tokenId
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
+        await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_EOA, {from: FAZZ_EOA})
+        const termEndTime = await callableLoan.termEndTime()
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        await advanceAndMineBlock({toSecond: termEndTime})
+
+        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+        // TODO: Revert comments once we upgrade to allow payments
+        // const interestOwed = await callableLoan.interestOwedAt(termEndTime.add(new BN("100")))
+        // const principalOwed = await callableLoan.principalOwed()
+        // const payment = interestOwed.add(principalOwed)
+
+        // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_EOA})
+
+        // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_EOA})
+        // expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+        // expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+      })
+    })
+
+    describe("Callable Loans upgradeability tests", () => {
+      // goldfinchFactory.createC
+      describe("createCallableLoanWithProxyOwner", async () => {
+        it("creates a proxy whose owner is different than the borrower", async () => {
+          const protocolOwner = await getProtocolOwner()
+          const [proxyOwner, borrower] = await hre.getUnnamedAccounts()
+
+          // we want to make sure that these addresses arent the same
+          expect(proxyOwner).to.not.equal(borrower)
+
+          assertNonNullable(proxyOwner)
+          assertNonNullable(borrower)
+
+          const schedule = await getMonthlySchedule(goldfinchConfig, 24, 1, 3, 0)
+
+          // grant the borrower the ability to create a pool
+          await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
+          const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
+            proxyOwner, // proxy owner
+            borrower, // borrower
+            usdcVal(1_000_000), // limit
+            bigVal(0.8), // interestApr
+            2, // numLockupPeriods
+            schedule, // schedule
+            0,
+            0,
+            [0],
+            {
+              from: borrower,
+            }
+          )
+          const lastEvent = result.logs[result.logs.length - 1]
+          const callableLoanAddress = (lastEvent?.args as {loan: string})?.loan
+          const callableLoan = await getTruffleContract<CallableLoanInstance>("CallableLoan", {at: callableLoanAddress})
+          const callableLoanAsProxy = await getTruffleContract<UcuProxyInstance>("UcuProxy", {at: callableLoanAddress})
+
+          // Proxy owner and borrower should be different
+          expect(await callableLoanAsProxy.owner()).to.eq(proxyOwner)
+          expect(await callableLoan.borrower()).to.eq(borrower)
+
+          const deployer = new ContractDeployer(console.log, hre)
+
+          // We need a contract that has `.version` method, in order to be able to push it to the
+          // CallableLoanImplementationRepository. TranchedPool complies to this interface so we'll
+          // use it for this purpose
+          const tranchedPoolImplAddr = await deployTranchedPool(deployer)
+          const callableLoanImplRepo = await getTruffleContract<CallableLoanImplementationRepositoryInstance>(
+            "CallableLoanImplementationRepository"
+          )
+
+          // Typechain is not picking up on the presence of the append method.
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          await callableLoanImplRepo.append(tranchedPoolImplAddr)
+
+          const callableLoanProxyAsTranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
+            at: callableLoanAddress,
+          })
+
+          // Callable loans doesn't have this function, so we expect this to revert
+          await expect(callableLoanProxyAsTranchedPool.SENIOR_ROLE()).to.be.rejected
+          // The borrower shouldn't be able to upgrade the proxy
+          await expect(callableLoanAsProxy.upgradeImplementation({from: borrower})).to.be.rejected
+          await callableLoanAsProxy.upgradeImplementation({from: proxyOwner})
+          // Now that the proxy is upgraded, this call should succeed
+          await callableLoanProxyAsTranchedPool.SENIOR_ROLE()
+        })
       })
     })
 

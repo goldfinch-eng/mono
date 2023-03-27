@@ -55,6 +55,53 @@ contract GoldfinchConfigSetAddressTest is GoldfinchConfigBaseTest {
     gfConfig.setAddress(index, newAddress);
   }
 
+  function testSetMonthlyScheduleRepoRevertsForNonAdmin(
+    address notAdmin,
+    address newMonthlyScheduleRepo
+  ) public {
+    vm.assume(!gfConfig.hasRole(TestConstants.OWNER_ROLE, notAdmin));
+    _startImpersonation(notAdmin);
+    vm.expectRevert("Must have admin role to perform this action");
+    gfConfig.setMonthlyScheduleRepo(newMonthlyScheduleRepo);
+  }
+
+  function testMonthlyScheduleRepoCanBeSetMultipleTimes(
+    address monthlyScheduleRepo1,
+    address monthlyScheduleRepo2
+  ) public impersonating(GF_OWNER) {
+    vm.assume(monthlyScheduleRepo1 != address(0) && monthlyScheduleRepo2 != address(0));
+    assertEq(gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo)), address(0));
+
+    gfConfig.setMonthlyScheduleRepo(monthlyScheduleRepo1);
+    assertEq(
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo)),
+      monthlyScheduleRepo1
+    );
+
+    gfConfig.setMonthlyScheduleRepo(monthlyScheduleRepo2);
+    assertEq(
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo)),
+      monthlyScheduleRepo2
+    );
+  }
+
+  function testSetMonthlyScheduleRepoEmitsAnEvent(
+    address monthlyScheduleRepo
+  ) public impersonating(GF_OWNER) {
+    vm.assume(
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.MonthlyScheduleRepo)) !=
+        monthlyScheduleRepo
+    );
+    vm.expectEmit(false, false, false, true);
+    emit AddressUpdated(
+      GF_OWNER,
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(0),
+      monthlyScheduleRepo
+    );
+    gfConfig.setMonthlyScheduleRepo(monthlyScheduleRepo);
+  }
+
   function testSetTreasuryReserveRevertsForNonAdmin(
     address notAdmin,
     address newTreasuryReserve

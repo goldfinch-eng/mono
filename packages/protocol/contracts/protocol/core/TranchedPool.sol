@@ -7,10 +7,11 @@ import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {IVersioned} from "../../interfaces/IVersioned.sol";
@@ -36,7 +37,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
   uint8 internal constant MAJOR_VERSION = 1;
   uint8 internal constant MINOR_VERSION = 0;
-  uint8 internal constant PATCH_VERSION = 0;
+  uint8 internal constant PATCH_VERSION = 1;
 
   ICreditLine public override creditLine;
   uint256 public override createdAt;
@@ -107,7 +108,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   // solhint-disable-next-line no-empty-blocks
   function assess() external override whenNotPaused {}
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev TL: tranche locked
   /// @dev IA: invalid amount
   /// @dev NA: not authorized. Must have correct UID or be go listed
@@ -148,7 +149,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     return deposit(tranche, amount);
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   function withdraw(
     uint256 tokenId,
     uint256 amount
@@ -159,7 +160,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev LEN: argument length mismatch
   function withdrawMultiple(
     uint256[] calldata tokenIds,
@@ -172,7 +173,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     }
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   function withdrawMax(
     uint256 tokenId
   )
@@ -193,7 +194,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev DP: drawdowns paused
   /// @dev IF: insufficient funds
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
@@ -270,7 +271,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     _lockPool();
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   function setFundableAt(uint256 newFundableAt) external override onlyLocker {
     fundableAt = newFundableAt;
   }
@@ -287,7 +288,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     emit SliceCreated(address(this), numSlices.sub(1));
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev IT: invalid timestamp
   /// @dev LI: loan inactive
   function getAmountsOwed(
@@ -308,7 +309,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     );
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
   /// @dev ZA: zero amount
   function pay(
     uint256 amount
@@ -420,7 +421,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     return total;
   }
 
-  /// @inheritdoc ITranchedPool
+  /// @inheritdoc ILoan
+  function getLoanType() external view override returns (LoanType) {
+    return LoanType.TranchedPool;
+  }
+
+  /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     ITranchedPool.TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
@@ -557,7 +563,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 _lateFeeApr
   ) internal {
     creditLine = ICreditLine(config.getGoldfinchFactory().createCreditLine());
-    creditLine.initialize(
+    ITranchedCreditLineInitializable(address(creditLine)).initialize(
       address(config),
       address(this), // Set self as the owner
       _borrower,

@@ -3,13 +3,14 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
 contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   event DepositMade(
@@ -97,10 +98,10 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     uint256 poolToken = pool.deposit(2, usdcVal(100));
 
     // Junior tranche info has principal deposited
-    ITranchedPool.TrancheInfo memory junior = pool.getTranche(2);
+    TranchedPool.TrancheInfo memory junior = pool.getTranche(2);
     assertEq(junior.principalDeposited, usdcVal(100));
     // Senior tranche info unchanged
-    ITranchedPool.TrancheInfo memory senior = pool.getTranche(1);
+    TranchedPool.TrancheInfo memory senior = pool.getTranche(1);
     assertZero(senior.principalDeposited);
 
     // Token info is correct
@@ -130,8 +131,8 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     pool.deposit(2, amount1);
     pool.deposit(2, amount2);
 
-    ITranchedPool.TrancheInfo memory junior = pool.getTranche(2);
-    ITranchedPool.TrancheInfo memory senior = pool.getTranche(1);
+    TranchedPool.TrancheInfo memory junior = pool.getTranche(2);
+    TranchedPool.TrancheInfo memory senior = pool.getTranche(1);
 
     assertEq(junior.principalDeposited, amount1 + amount2, "junior tranche has deposits");
     assertZero(senior.principalDeposited, "senior tranche has 0");
@@ -193,10 +194,10 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     uint256 seniorPoolTokenId = seniorDepositAndInvest(pool, usdcVal(4000));
 
     // Junior tranche info has principal deposited
-    ITranchedPool.TrancheInfo memory junior = pool.getTranche(2);
+    TranchedPool.TrancheInfo memory junior = pool.getTranche(2);
     assertEq(junior.principalDeposited, usdcVal(1000));
     // Senior tranche info has principal deposited
-    ITranchedPool.TrancheInfo memory senior = pool.getTranche(1);
+    TranchedPool.TrancheInfo memory senior = pool.getTranche(1);
     assertEq(senior.principalDeposited, usdcVal(4000));
 
     // Token info is correct
@@ -244,7 +245,7 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     uint256 deadline = block.timestamp + 1;
     // Get signature for permit
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
-      usdc,
+      IERC20WithName(address(usdc)),
       user,
       address(pool),
       usdcVal(100),
@@ -262,8 +263,8 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     uint256 poolTokenId = pool.depositWithPermit(2, usdcVal(100), deadline, v, r, s);
     _stopImpersonation();
 
-    ITranchedPool.TrancheInfo memory junior = pool.getTranche(2);
-    ITranchedPool.TrancheInfo memory senior = pool.getTranche(1);
+    TranchedPool.TrancheInfo memory junior = pool.getTranche(2);
+    TranchedPool.TrancheInfo memory senior = pool.getTranche(1);
 
     assertEq(junior.principalDeposited, usdcVal(100));
     assertZero(senior.principalDeposited);

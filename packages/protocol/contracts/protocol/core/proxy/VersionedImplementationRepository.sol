@@ -3,9 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import {IVersioned} from "../../../interfaces/IVersioned.sol";
+import {IVersionedImplementationRepository} from "../../../interfaces/IVersionedImplementationRepository.sol";
+
 import {ImplementationRepository as Repo} from "./ImplementationRepository.sol";
 
-contract VersionedImplementationRepository is Repo {
+contract VersionedImplementationRepository is Repo, IVersionedImplementationRepository {
   /// @dev abi encoded version -> implementation address
   /// @dev we use bytes here so only a single storage slot is used
   mapping(bytes => address) internal _byVersion;
@@ -15,14 +17,14 @@ contract VersionedImplementationRepository is Repo {
   /// @notice get an implementation by a version tag
   /// @param version `[major, minor, patch]` version tag
   /// @return implementation associated with the given version tag
-  function getByVersion(uint8[3] calldata version) external view returns (address) {
+  function getByVersion(uint8[3] calldata version) external view override returns (address) {
     return _byVersion[abi.encodePacked(version)];
   }
 
   /// @notice check if a version exists
   /// @param version `[major, minor, patch]` version tag
   /// @return true if the version is registered
-  function hasVersion(uint8[3] calldata version) external view returns (bool) {
+  function hasVersion(uint8[3] calldata version) external view override returns (bool) {
     return _hasVersion(version);
   }
 

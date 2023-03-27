@@ -86,6 +86,15 @@ library ConfigHelper {
       );
   }
 
+  function getCallableLoanImplementationRepository(
+    GoldfinchConfig config
+  ) internal view returns (ImplementationRepository) {
+    return
+      ImplementationRepository(
+        config.getAddress(uint256(ConfigOptions.Addresses.CallableLoanImplementationRepository))
+      );
+  }
+
   function getWithdrawalRequestToken(
     GoldfinchConfig config
   ) internal view returns (IWithdrawalRequestToken) {

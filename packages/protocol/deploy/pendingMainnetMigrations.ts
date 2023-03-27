@@ -7,8 +7,9 @@ import {HardhatRuntimeEnvironment} from "hardhat/types"
  * on mainnet before the hard mainnet fork block num.
  */
 async function main(hre: HardhatRuntimeEnvironment) {
-  console.log("Running pending mainnet migrations...")
-  console.log("Ran pending mainnet migrations...")
+  console.log("No pending mainnet migrations...")
+  // console.log("Running pending mainnet migrations...")
+  // console.log("Ran pending mainnet migrations...")
 }
 
 module.exports = main

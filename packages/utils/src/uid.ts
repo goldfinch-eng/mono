@@ -14,6 +14,9 @@ export const US_UID_TYPES = [
   US_ENTITY_ID_TYPE_3,
 ]
 export const NON_US_UID_TYPES = [NON_US_INDIVIDUAL_ID_TYPE_0, NON_US_ENTITY_ID_TYPE_4]
+export const US_UID_TYPES_SANS_NON_ACCREDITED = US_UID_TYPES.filter(
+  (uidType) => uidType !== US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
+)
 
 /** Expiry time for presigned messages should be 30 minutes from the time the message is signed */
 export const UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME = 1800
