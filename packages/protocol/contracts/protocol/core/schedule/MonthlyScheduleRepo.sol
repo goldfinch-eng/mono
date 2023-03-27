@@ -3,6 +3,9 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {IMonthlyScheduleRepo} from "../../../interfaces/IMonthlyScheduleRepo.sol";
+import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
+
 import {MonthlyPeriodMapper} from "./MonthlyPeriodMapper.sol";
 import {Schedule} from "./Schedule.sol";
 
@@ -12,8 +15,8 @@ import {Schedule} from "./Schedule.sol";
  * with monthly periods because that's the most common type of schedule used on the
  * Goldfinch protocol.
  */
-contract MonthlyScheduleRepo {
-  MonthlyPeriodMapper public periodMapper;
+contract MonthlyScheduleRepo is IMonthlyScheduleRepo {
+  IPeriodMapper public immutable override periodMapper;
 
   mapping(bytes32 => address) private schedules;
 
@@ -29,7 +32,7 @@ contract MonthlyScheduleRepo {
     uint256 periodsPerPrincipalPeriod,
     uint256 periodsPerInterestPeriod,
     uint256 gracePrincipalPeriods
-  ) external view returns (ISchedule) {
+  ) external view override returns (ISchedule) {
     bytes32 scheduleId = getScheduleId(
       periodsInTerm,
       periodsPerPrincipalPeriod,
@@ -48,7 +51,7 @@ contract MonthlyScheduleRepo {
     uint256 periodsPerPrincipalPeriod,
     uint256 periodsPerInterestPeriod,
     uint256 gracePrincipalPeriods
-  ) external returns (ISchedule) {
+  ) external override returns (ISchedule) {
     bytes32 scheduleId = getScheduleId(
       periodsInTerm,
       periodsPerPrincipalPeriod,

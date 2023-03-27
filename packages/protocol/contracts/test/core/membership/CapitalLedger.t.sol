@@ -19,6 +19,7 @@ import {Test, stdError, StdCheats} from "forge-std/Test.sol";
 import {CakeHelper} from "../../cake/helpers/CakeHelper.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../../interfaces/ILoan.sol";
 import {IGo} from "../../../interfaces/IGo.sol";
 import {BaseTest} from "../../core/BaseTest.t.sol";
 
@@ -337,8 +338,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -391,8 +390,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -429,8 +426,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -463,8 +458,6 @@ contract CapitalLedgerTest is BaseTest {
     // Give assets to CapitalLedger as if they were returned for pool tokens
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
-
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
 
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
@@ -896,7 +889,7 @@ contract CapitalLedgerTest is BaseTest {
     allowedTypes[1] = 1;
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
-      abi.encodeWithSelector(ITranchedPool.getAllowedUIDTypes.selector),
+      abi.encodeWithSelector(ILoan.getAllowedUIDTypes.selector),
       abi.encode(allowedTypes)
     );
 

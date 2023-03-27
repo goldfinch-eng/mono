@@ -4,6 +4,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {ILoan} from "../../interfaces/ILoan.sol";
+
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
@@ -198,7 +200,7 @@ library Accountant {
     uint paymentRemaining = remainingPrincipalPayment.add(remainingInterestPayment);
 
     return
-      ITranchedPool.PaymentAllocation({
+      ILoan.PaymentAllocation({
         owedInterestPayment: owedInterestPayment,
         accruedInterestPayment: accruedInterestPayment,
         principalPayment: owedPrincipalPayment,

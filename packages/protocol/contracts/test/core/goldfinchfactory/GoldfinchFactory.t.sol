@@ -143,6 +143,29 @@ contract GoldfinchFactoryTest is BaseTest {
     gfFactory.grantRole(TestConstants.BORROWER_ROLE, newBorrower);
   }
 
+  function testOnlyBorrowerOrAdminCanCallCreateCallableLoanWithProxyOwner(
+    address notBorrower,
+    uint256[] calldata _allowedUIDTypes
+  ) public {
+    assertFalse(gfFactory.hasRole(TestConstants.BORROWER_ROLE, notBorrower));
+    assertFalse(gfFactory.hasRole(TestConstants.OWNER_ROLE, notBorrower));
+
+    ISchedule schedule = defaultSchedule();
+
+    vm.expectRevert("Must have admin or borrower role to perform this action");
+    gfFactory.createCallableLoanWithProxyOwner({
+      _proxyOwner: address(0xDEADBEEF),
+      _borrower: notBorrower,
+      _limit: 100_000e6,
+      _interestApr: 0.18e18,
+      _numLockupPeriods: 2,
+      _schedule: schedule,
+      _lateFeeApr: 0,
+      _fundableAt: 0,
+      _allowedUIDTypes: _allowedUIDTypes
+    });
+  }
+
   /**
    * @notice Create a standard 1 yr bullet loan with a monthly period mapper
    */

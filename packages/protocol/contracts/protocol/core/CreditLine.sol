@@ -11,7 +11,9 @@ import {ConfigHelper} from "./ConfigHelper.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {Accountant} from "./Accountant.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 
@@ -25,7 +27,7 @@ import {ISchedule} from "../../interfaces/ISchedule.sol";
  * @author Warbler Labs Engineering
  */
 
-contract CreditLine is BaseUpgradeablePausable, ICreditLine {
+contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable, ICreditLine {
   using ConfigHelper for GoldfinchConfig;
   using PaymentScheduleLib for PaymentSchedule;
 
@@ -70,7 +72,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   External functions
   =============================================================================*/
 
-  /// @inheritdoc ICreditLine
+  /// @inheritdoc ITranchedCreditLineInitializable
   function initialize(
     address _config,
     address owner,
@@ -116,7 +118,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function pay(
     uint256 principalPayment,
     uint256 interestPayment
-  ) public override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
+  ) public override onlyAdmin returns (ILoan.PaymentAllocation memory) {
     // The balance might change here.. Checkpoint amounts owed!
     _checkpoint();
 
@@ -230,7 +232,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     require(timestamp >= _checkpointedAsOf, "IT");
     // After loan maturity there is no concept of additional interest. All interest accrued
-    // automatically beocmes interest owed.
+    // automatically becomes interest owed.
     if (timestamp > termEndTime()) {
       return totalInterestAccruedAt(timestamp);
     }

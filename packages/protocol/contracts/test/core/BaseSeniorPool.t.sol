@@ -14,10 +14,10 @@ import {DepositWithPermitHelpers} from "../helpers/DepositWithPermitHelpers.t.so
 import {Fidu} from "../../protocol/core/Fidu.sol";
 import {FixedLeverageRatioStrategy} from "../../protocol/core/FixedLeverageRatioStrategy.sol";
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
-import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {Go} from "../../protocol/core/Go.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";
+import {IERC20WithName} from "../../interfaces/IERC20WithName.sol";
 import {ITestUniqueIdentity0612} from "../../test/ITestUniqueIdentity0612.t.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
@@ -152,8 +152,8 @@ contract SeniorPoolBaseTest is BaseTest {
 
     // Exclude known addresses from fuzzed inputs. This prevents flakey errors like
     // "Error sent ERC1155 to non-receiver"
-    fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(0));
+    fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
@@ -301,7 +301,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 deadline = type(uint256).max;
     // Get signature for permit
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
-      usdc,
+      IERC20WithName(address(usdc)),
       user,
       address(sp),
       amount,

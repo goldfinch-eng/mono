@@ -36,7 +36,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -64,7 +64,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: invalidChainId,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -95,7 +95,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: sigRecipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -121,7 +121,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: invalidUidAddress,
+      uidContract: invalidUidAddress,
       signerPrivateKey: signerKey
     });
 
@@ -148,7 +148,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -177,7 +177,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -201,7 +201,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -231,7 +231,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -258,7 +258,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -285,7 +285,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -312,7 +312,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -339,7 +339,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -366,7 +366,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -384,7 +384,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -407,7 +407,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -439,7 +439,7 @@ contract UniqueIdentityMintTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: recipient,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 

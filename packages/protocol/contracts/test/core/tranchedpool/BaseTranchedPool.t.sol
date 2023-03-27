@@ -156,7 +156,7 @@ contract TranchedPoolBaseTest is BaseTest {
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
 
     // Other config numbers
-    gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 0.1%
+    gfConfig.setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 10); // 10%
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds),
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
@@ -384,7 +384,7 @@ contract TranchedPoolBaseTest is BaseTest {
     uint256 end,
     uint256 balance,
     uint256 apr
-  ) internal returns (uint256) {
+  ) internal pure returns (uint256) {
     uint256 secondsElapsed = end - start;
     uint256 totalInterestPerYear = (balance * apr) / (1e18);
     uint256 interest = (totalInterestPerYear * secondsElapsed) / (365 days);
@@ -392,7 +392,7 @@ contract TranchedPoolBaseTest is BaseTest {
   }
 
   // TODO - remove this function because it doesn't make sense with a monthly schedule
-  function periodInSeconds(TranchedPool pool) internal returns (uint256) {
+  function periodInSeconds(TranchedPool pool) internal pure returns (uint256) {
     // return pool.creditLine().nextDueTime().sub(pool.creditLine().previousDueTime());
     return 28 days;
   }

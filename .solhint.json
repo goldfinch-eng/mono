@@ -47,7 +47,9 @@
         "**/GoldfinchFactory.sol:GoldfinchFactory": {
           "createCreditLine": [],
           "createBorrower": [],
-          "createPool": [],
+          "createPool": ["onlyAdminOrBorrower"],
+          "createCallableLoan": ["onlyAdminOrBorrower"],
+          "createCallableLoanWithProxyOwner": ["onlyAdminOrBorrower"],
           "validPool": [],
           "createMigratedPool": []
         },
@@ -78,6 +80,9 @@
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []
         },
+        "**/BaseUpgradeablePausable08x.sol:BaseUpgradeablePausable": {
+          "__BaseUpgradeablePausable__init": []
+        },
         "**/Fidu.sol:Fidu": {
           "__initialize__": [],
           "mintTo": [],
@@ -98,6 +103,20 @@
           "upgradeToCurrentImplementation": ["onlyOwner"],
           "transferOwnership": ["onlyOwner"]
         },
+        "**/CallableLoan.sol:CallableLoan": {
+          "submitCall": ["whenNotPaused", "nonReentrant"],
+          "deposit": ["whenNotPaused",  "nonReentrant"],
+          "depositWithPermit": ["whenNotPaused",  "nonReentrant"],
+          "withdraw": ["whenNotPaused",  "nonReentrant"],
+          "withdrawMax": ["whenNotPaused",  "nonReentrant"],
+          "withdrawMultiple": ["whenNotPaused", "nonReentrant"],
+          "pay": ["whenNotPaused", "nonReentrant"],
+          "drawdown": ["onlyLocker", "whenNotPaused", "nonReentrant"],
+          "setAllowedUIDTypes": ["onlyLocker"],
+          "setFundableAt": ["onlyLocker"],
+          "setMaxLimit": [],
+          "setLimit": []
+        },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],
           "deposit": ["whenNotPaused"],
@@ -115,8 +134,13 @@
         },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
-          "pause": [],
-          "unpause": []
+          "pause": ["onlyPauserRole"],
+          "unpause": ["onlyPauserRole"]
+        },
+        "**/PauserPausable08x.sol:PauserPausable": {
+          "__PauserPausable__init": [],
+          "pause": ["onlyPauserRole"],
+          "unpause": ["onlyPauserRole"]
         },
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
@@ -201,6 +225,7 @@
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
           "onTranchedPoolDrawdown": ["onlyPool", "nonReentrant"],
+          "onCallableLoanDrawdown": ["onlyPool", "nonReentrant"],
           "forceIntializeStakingRewardsPoolInfo": ["onlyAdmin"],
           "setBackerAndStakingRewardsTokenInfoOnSplit": ["onlyPoolTokens"],
           "clearTokenInfo": ["onlyPoolTokens"],

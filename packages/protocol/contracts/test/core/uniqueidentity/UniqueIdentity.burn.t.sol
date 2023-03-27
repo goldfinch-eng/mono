@@ -30,7 +30,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -55,7 +55,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: notUidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -77,7 +77,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -102,7 +102,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: invalidChainId,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -121,7 +121,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -147,7 +147,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     vm.warp(burnTime);
@@ -174,7 +174,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: invalidUidAddress,
+      uidContract: invalidUidAddress,
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -196,7 +196,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(uidHolder);
@@ -230,7 +230,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     _startImpersonation(anySender);
@@ -245,7 +245,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: address(0),
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -264,7 +264,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: notUidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
 
@@ -290,7 +290,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     uid.burn(uidHolder, uidType, block.timestamp + 1 days, sig);
@@ -310,7 +310,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 0,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     vm.expectRevert("ERC1155: burn amount exceeds balance");
@@ -345,7 +345,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     uid.burn(uidHolder, uidType, block.timestamp + 1 days, sig);
@@ -375,7 +375,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     vm.expectRevert("Balance after burn must be 0");
@@ -403,7 +403,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     uid.burn(uidHolder, uidType, block.timestamp + 1 days, sig);
@@ -428,7 +428,7 @@ contract UniqueIdentityBurnTest is UniqueIdentityBaseTest {
       chainId: block.chainid,
       nonce: 1,
       recipient: uidHolder,
-      uidAddress: address(uid),
+      uidContract: address(uid),
       signerPrivateKey: signerKey
     });
     vm.expectRevert("ERC1155Pausable: token transfer while paused");

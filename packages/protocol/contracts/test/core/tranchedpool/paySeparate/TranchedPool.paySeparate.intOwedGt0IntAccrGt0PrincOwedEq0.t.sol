@@ -45,8 +45,10 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
+    // We want interestAccr > 0, so filter out timestamps that map exactly to a due time
+    vm.assume(cl.interestAccrued() > 0);
+
     assertTrue(cl.interestOwed() > 1);
-    assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
@@ -68,8 +70,10 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
+    // We want interestAccr > 0, so filter out timestamps that map exactly to a due time
+    vm.assume(cl.interestAccrued() > 0);
+
     assertTrue(cl.interestOwed() > 1);
-    assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
@@ -83,8 +87,10 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
+    // We want interestAccr > 0, so filter out timestamps that map exactly to a due time
+    vm.assume(cl.interestAccrued() > 0);
+
     assertTrue(cl.interestOwed() > 0);
-    assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
     uint256 intOwed = cl.interestOwed();
@@ -108,8 +114,10 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
+    // We want interestAccr > 0, so filter out timestamps that map exactly to a due time
+    vm.assume(cl.interestAccrued() > 0);
+
     assertTrue(cl.interestOwed() > 0);
-    assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
     vm.assume(cl.interestAccrued() > 0);
@@ -128,8 +136,10 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedEq0 is TranchedPool
     timestamp = bound(timestamp, cl.nextDueTime() + 1 days, cl.termEndTime() - 1);
     vm.warp(timestamp);
 
+    // We want interestAccr > 0, so filter out timestamps that map exactly to a due time
+    vm.assume(cl.interestAccrued() > 0);
+
     assertTrue(cl.interestOwed() > 0);
-    assertTrue(cl.interestAccrued() > 0);
     assertZero(cl.principalOwed());
 
     uint256 intOwed = cl.interestOwed();

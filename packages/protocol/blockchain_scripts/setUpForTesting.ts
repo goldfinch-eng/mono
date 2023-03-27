@@ -1,4 +1,4 @@
-import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/utils"
+import {NON_US_UID_TYPES, US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED} from "@goldfinch-eng/utils"
 import {JsonRpcSigner} from "@ethersproject/providers"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
@@ -17,6 +17,7 @@ import {
   FIDU_DECIMALS,
   getEthersContract,
   getProtocolOwner,
+  getTruffleContract,
   getUSDCAddress,
   interestAprAsBN,
   isMainnetForking,
@@ -30,7 +31,14 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {
+  advanceTime,
+  getCurrentTimestamp,
+  getTruffleContractAtAddress,
+  GFI_DECIMALS,
+  toEthers,
+  usdcVal,
+} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -51,7 +59,8 @@ import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
-import {ScheduleInstance} from "../typechain/truffle"
+import {ERC20Instance, GoldfinchFactoryInstance, MonthlyScheduleRepoInstance} from "../typechain/truffle"
+import {createCallableLoanForBorrower, createFazzExampleLoan} from "./helpers/createCallableLoanForBorrower"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -195,6 +204,89 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const protocolBorrowerCon = lastEventArgs[0]
     logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
+    let signer = ethers.provider.getSigner(borrower)
+    let depositAmount = new BN(10000).mul(USDCDecimals)
+
+    let txn
+
+    const truffleGoldfinchFactory = await getTruffleContractAtAddress<GoldfinchFactoryInstance>(
+      "GoldfinchFactory",
+      goldfinchFactory.address
+    )
+    const erc20Instance = await getTruffleContractAtAddress<ERC20Instance>("ERC20", erc20.address)
+    /*** CALLABLE LOAN OPEN START ***/
+    const openCallableLoan = await createCallableLoanForBorrower({
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
+      borrower: protocolBorrowerCon,
+      erc20: erc20Instance,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
+      numPeriods: 24,
+      numLockPeriods: 2,
+      gracePrincipalPeriods: 0,
+      numPeriodsPerInterestPeriod: 1,
+      numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
+    })
+    // TODO: Pool metadata will be incorrect for now
+    await writePoolMetadata({pool: openCallableLoan, borrower: "CALLABLE OPEN"})
+    await impersonateAccount(hre, borrower)
+    depositAmount = new BN(5000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
+    await txn.wait()
+
+    await openCallableLoan.deposit(7, String(depositAmount), {
+      from: await signer.getAddress(),
+    })
+    await openCallableLoan.unpauseDrawdowns({from: protocol_owner})
+    /*** CALLABLE LOAN OPEN END ***/
+
+    /*** CALLABLE LOAN - FAZZ EXAMPLE START ***/
+    const fazzExampleCallableLoan = await createFazzExampleLoan({
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
+      erc20: erc20Instance,
+      fazzBorrowerContract: protocolBorrowerCon,
+      txSender: protocol_owner,
+    })
+    // TODO: Pool metadata will be incorrect for now
+    await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "FAZZ EXAMPLE"})
+
+    /*** CALLABLE LOAN FAZZ EXAMPLE END ***/
+
+    /*** CALLABLE LOAN CLOSED START ***/
+    const closedCallableLoan = await createCallableLoanForBorrower({
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
+      borrower: protocolBorrowerCon,
+      erc20: erc20Instance,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
+      numPeriods: 24,
+      numLockPeriods: 2,
+      gracePrincipalPeriods: 0,
+      numPeriodsPerInterestPeriod: 1,
+      numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
+    })
+    await writePoolMetadata({pool: closedCallableLoan, borrower: "CALLABLE CLOSED"})
+    await impersonateAccount(hre, borrower)
+    signer = ethers.provider.getSigner(borrower)
+    depositAmount = new BN(10000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
+    await txn.wait()
+    await closedCallableLoan.deposit(7, String(depositAmount), {
+      from: await signer.getAddress(),
+    })
+    await closedCallableLoan.unpauseDrawdowns({from: protocol_owner})
+    await closedCallableLoan.drawdown(String(depositAmount))
+    /*** CALLABLE LOAN CLOSED END ***/
+
     /*** UNITRANCHE OPEN START ***/
     const unitranche = await createPoolForBorrower({
       getOrNull,
@@ -206,9 +298,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     })
     await writePoolMetadata({pool: unitranche, borrower: "UNITRANCHE OPEN"})
     await impersonateAccount(hre, borrower)
-    let signer = ethers.provider.getSigner(borrower)
-    let depositAmount = new BN(5000).mul(USDCDecimals)
-    let txn = await erc20.connect(signer).approve(unitranche.address, String(depositAmount))
+    depositAmount = new BN(5000).mul(USDCDecimals)
+    txn = await erc20.connect(signer).approve(unitranche.address, String(depositAmount))
     await txn.wait()
     txn = await unitranche.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
     await txn.wait()
@@ -584,7 +675,7 @@ async function writePoolMetadata({
   borrower,
   backerLimit = "1.00",
 }: {
-  pool: TranchedPool
+  pool: {address: string}
   borrower: string
   backerLimit?: string
 }) {
@@ -771,26 +862,20 @@ async function createPoolForBorrower({
   allowedUIDTypes: Array<number>
   limitInDollars?: number
 }): Promise<TranchedPool> {
-  const schedule = await getDeploymentFor<ScheduleInstance>("Schedule")
+  const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
+  await monthlyScheduleRepo.createSchedule(24, 1, 1, 1)
+  const schedule = await monthlyScheduleRepo.getSchedule(24, 1, 1, 1)
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const lateFeeApr = String(new BN(0))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
+
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createPool(
-        borrower,
-        juniorFeePercent,
-        limit,
-        interestApr,
-        schedule.address,
-        lateFeeApr,
-        fundableAt,
-        allowedUIDTypes
-      )
+      .createPool(borrower, juniorFeePercent, limit, interestApr, schedule, lateFeeApr, fundableAt, allowedUIDTypes)
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const poolAddress = lastEventArgs[0]

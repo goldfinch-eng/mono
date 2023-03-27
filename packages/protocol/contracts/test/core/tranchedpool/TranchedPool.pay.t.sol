@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../../interfaces/ILoan.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 
@@ -86,7 +87,7 @@ contract TranchedPoolPayTest is TranchedPoolBaseTest {
 
     fundAddress(address(this), amount);
     usdc.approve(address(pool), amount);
-    ITranchedPool.PaymentAllocation memory pa = pool.pay(amount);
+    ILoan.PaymentAllocation memory pa = pool.pay(amount);
 
     assertEq(cl.interestAccrued(), interestAccruedBefore - pa.accruedInterestPayment);
     assertEq(cl.interestOwed(), interestOwedBefore - pa.owedInterestPayment);
