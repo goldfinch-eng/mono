@@ -31,10 +31,10 @@ import {
   FAZZ_DEAL_FUNDABLE_AT,
   FAZZ_DEAL_LIMIT_IN_DOLLARS,
   FAZZ_DEAL_UNCALLED_CAPITAL_TRANCHE,
+  FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
   FAZZ_MAINNET_CALLABLE_LOAN,
   FAZZ_MAINNET_EOA,
 } from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
-import {Logger} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import hre from "hardhat"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdentity"
@@ -61,7 +61,6 @@ describe("v3.3.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let usdc: ERC20Instance
-  let logger: Logger
   let gfFactory: GoldfinchFactoryInstance
   let membershipOrchestrator: MembershipOrchestratorInstance
   let poolTokens: PoolTokensInstance
@@ -77,10 +76,6 @@ describe("v3.3.0", async function () {
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({usdc, gfFactory, uniqueIdentity, membershipOrchestrator, poolTokens, gfi} = await setupTest())
-    const {
-      deployments: {log},
-    } = hre
-    logger = log
     allSigners = await hre.ethers.getSigners()
     signer = (await allSigners[0]?.getAddress()) as string
     defaultLenderAddress = (await allSigners[1]?.getAddress()) as string
@@ -89,7 +84,10 @@ describe("v3.3.0", async function () {
     await fundWithWhales(["USDC"], [FAZZ_MAINNET_EOA])
     await fundWithWhales(["GFI", "USDC", "ETH"], [defaultLenderAddress, MAINNET_WARBLER_LABS_MULTISIG, ...lenders])
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), FAZZ_MAINNET_EOA)
-    borrowerContract = await createBorrowerContract(FAZZ_MAINNET_EOA)
+    borrowerContract = await getTruffleContractAtAddress<BorrowerInstance>(
+      "Borrower",
+      FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS
+    )
     await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
     await uniqueIdentity.grantRole(SIGNER_ROLE, signer, {from: MAINNET_WARBLER_LABS_MULTISIG})
     await mintUidIfNotMinted(hre, new BN(NON_US_UID_TYPES[0] as number), uniqueIdentity, defaultLenderAddress, signer)

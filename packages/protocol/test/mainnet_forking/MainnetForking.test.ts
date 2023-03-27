@@ -66,7 +66,6 @@ import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/u
 import {
   BackerRewardsInstance,
   BorrowerInstance,
-  BorrowerInstance,
   CallableLoanImplementationRepositoryInstance,
   CallableLoanInstance,
   CommunityRewardsInstance,
