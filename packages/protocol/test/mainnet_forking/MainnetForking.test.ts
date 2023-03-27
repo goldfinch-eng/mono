@@ -131,12 +131,13 @@ import {
 } from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
 import {
-  FAZZ_BORROWER_CONTRACT_ADDRESS,
+  FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
   FAZZ_DEAL_FUNDABLE_AT,
   FAZZ_DEAL_LIMIT_IN_DOLLARS,
-  FAZZ_EOA,
+  FAZZ_MAINNET_EOA,
   createFazzExampleLoan,
 } from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
+import {EXISTING_POOL_TO_TOKEN} from "../util/tranchedPool"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -1136,16 +1137,6 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("BackerRewards", () => {
-    const poolToToken = {
-      "0x538473c3a69da2b305cf11a40cf2f3904de8db5f": "909", // Cauris #4
-      "0x89d7c618a4eef3065da8ad684859a547548e6169": "719", // Addem
-      "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": "653", // Alma #7
-      "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": "640", // Lend East
-      "0xd09a57127bc40d680be7cb061c2a6629fe71abef": "588", // Cauris #2
-      "0x00c27fc71b159a346e179b4a1608a0865e8a7470": "564", // Stratos
-      "0x418749e294cabce5a714efccc22a8aade6f9db57": "471", // Alma 6
-    }
-
     it("does not allocate any backer staking rewards", async () => {
       // Move forward in time so that some interest is due
       await advanceAndMineBlock({days: 65})
@@ -1154,7 +1145,7 @@ describe("mainnet forking tests", async function () {
       const me = circleEoa
       await impersonateAccount(hre, me)
 
-      for (const [poolAddress, poolTokenId] of Object.entries(poolToToken)) {
+      for (const [poolAddress, poolTokenId] of Object.entries(EXISTING_POOL_TO_TOKEN)) {
         const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: poolAddress})
         const creditLineAddress = await pool.creditLine()
         const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {at: creditLineAddress})
@@ -1704,9 +1695,9 @@ describe("mainnet forking tests", async function () {
         assertNonNullable(lender)
 
         // Add Fazz signer for rest of tests
-        await impersonateAccount(hre, FAZZ_EOA)
+        await impersonateAccount(hre, FAZZ_MAINNET_EOA)
         const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
-          at: FAZZ_BORROWER_CONTRACT_ADDRESS,
+          at: FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
         })
 
         await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
@@ -1719,7 +1710,7 @@ describe("mainnet forking tests", async function () {
         })
 
         await fundWithWhales(["USDC", "ETH"], [lender])
-        await fundWithWhales(["ETH"], [FAZZ_EOA])
+        await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
 
         const currentTimestamp = await getCurrentTimestamp()
         if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
@@ -1742,7 +1733,9 @@ describe("mainnet forking tests", async function () {
         expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
 
         await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
-        await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_EOA, {from: FAZZ_EOA})
+        await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
         const termEndTime = await callableLoan.termEndTime()
 
         expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
@@ -1758,9 +1751,9 @@ describe("mainnet forking tests", async function () {
         // const principalOwed = await callableLoan.principalOwed()
         // const payment = interestOwed.add(principalOwed)
 
-        // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_EOA})
+        // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_MAINNET_EOA})
 
-        // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_EOA})
+        // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_MAINNET_EOA})
         // expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
         // expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
       })
