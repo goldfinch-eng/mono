@@ -44,7 +44,10 @@ export function handleRewardPaid(event: RewardPaid): void {
 }
 
 export function handleTransfer(event: Transfer): void {
-  const communityRewardsToken = assert(CommunityRewardsToken.load(event.params.tokenId.toString()))
+  const communityRewardsToken = CommunityRewardsToken.load(event.params.tokenId.toString())
+  if (!communityRewardsToken) {
+    return
+  }
   const user = getOrInitUser(event.params.to)
   communityRewardsToken.user = user.id
   communityRewardsToken.save()
