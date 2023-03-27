@@ -228,7 +228,7 @@ export default function EarnPage({
                   liquidity={
                     loan.__typename === "TranchedPool"
                       ? "End of loan term"
-                      : "Quarterly callable"
+                      : "Callable loan"
                   }
                   href={`/pools/${loan.id}`}
                 />
