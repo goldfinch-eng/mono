@@ -334,17 +334,20 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
             By clicking &ldquo;Submit&rdquo; below, I agree that I have read and
             agree to the{" "}
             {deal.agreement ? (
-              <Link href={deal.agreement} target="_blank" rel="noreferrer">
+              <Link href={deal.agreement} openInNewTab>
                 Facility Agreement
               </Link>
             ) : (
               "Facility Agreement"
             )}{" "}
-            for this deal as well as the Goldfinch Terms and Conditions. I agree
-            that the Facility Agreement shall constitute the controlling
-            agreement with respect to the lending relationship between the
-            Borrower and me. In the event there is any discrepancy or
-            inconsistency between the Facility Agreement and any of the
+            for this deal as well as the Goldfinch{" "}
+            <Link href="/terms" openInNewTab>
+              Terms and Conditions
+            </Link>
+            . I agree that the Facility Agreement shall constitute the
+            controlling agreement with respect to the lending relationship
+            between the Borrower and me. In the event there is any discrepancy
+            or inconsistency between the Facility Agreement and any of the
             agreements related to this deal or Goldfinch, the terms contained in
             the Facility Agreement shall prevail.
           </div>
