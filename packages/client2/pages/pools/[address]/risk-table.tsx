@@ -73,7 +73,10 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
           : deal.dealType === "unitranche"
           ? "Unitranche"
           : null,
-      value: "On-chain capital for this deal comes from multiple sources",
+      value:
+        deal.dealType === "multitranche"
+          ? "On-chain capital for this pool is being raised into a multiple tranches"
+          : "On-chain capital for this pool is being raised into a single tranche",
     },
     ...(loan.__typename === "TranchedPool" &&
     loan.estimatedLeverageRatio &&
@@ -118,8 +121,8 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               deal.onChainCapitalPriority === "junior" ? "Junior" : "Senior",
             value:
               deal.onChainCapitalPriority === "junior"
-                ? "First-loss capital"
-                : "If the borrower has received other off-chain funding for this pool, on-chain capital will be prioritized first",
+                ? "The repayment of other on-chain loans are prioritized ahead of the repayment of the capital invested in this pool"
+                : "The capital invested in this pool will be repaid ahead of any other on-chain debt raised by the company",
           },
         ]
       : []),
@@ -131,8 +134,8 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               deal.offChainCapitalPriority === "junior" ? "Junior" : "Senior",
             value:
               deal.offChainCapitalPriority === "junior"
-                ? "The borrower will receive other on-chain funding that is senior to the capital provided in this pool"
-                : "If the borrower has received other on-chain funding for this pool, this capital will be prioritized first",
+                ? "The repayment of other off-chain loans are prioritized ahead of the repayment of the capital invested in this pool"
+                : "The capital invested in this pool will be repaid ahead of any other off-chain debt raised by the company",
           },
         ]
       : []),
