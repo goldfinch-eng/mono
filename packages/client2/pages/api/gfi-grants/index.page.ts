@@ -2,12 +2,16 @@ import fs from "fs";
 import path from "path";
 
 import { withSentry } from "@sentry/nextjs";
+import { GraphQLClient, gql } from "graphql-request";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import { SUBGRAPH_API_URL } from "@/constants";
 import { GrantManifest, GrantWithSource } from "@/lib/gfi-rewards";
 import {
   IndirectGrantSource,
   DirectGrantSource,
+  KnownTokensQueryVariables,
+  KnownTokensQueryResult,
 } from "@/lib/graphql/generated";
 
 type ExpectedQuery = {
@@ -84,8 +88,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const matchingGrants = findMatchingGrants(account);
-    res.status(200).json({ account, matchingGrants });
+    const matchingGrantsFromJson = findMatchingGrants(account); // Set A
+    const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
+    const knownTokensResult = await gqlClient.request<
+      KnownTokensQueryResult,
+      KnownTokensQueryVariables
+    >(knownTokens, { account: account.toLowerCase() });
+    console.log({ knownTokensResult });
+
+    res.status(200).json({ account, matchingGrants: matchingGrantsFromJson });
   } catch (e) {
     res
       .status(500)
