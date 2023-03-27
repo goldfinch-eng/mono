@@ -197,13 +197,16 @@ function ReviewStep({
         claimed.
       </Alert>
       <div className="text-xs text-sand-400">
-        Legalese goes here. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
-        ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-        reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-        pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa
-        qui officia deserunt mollit anim id est laborum.
+        Per the terms of the Facility Agreement, you acknowledge that you are
+        submitting a request to call some portion or all of the outstanding
+        principal and outstanding interest due from the Borrower. You further
+        acknowledge that by clicking “Submit,” the Borrower will be informed of
+        your intent to withdraw some portion or all of the outstanding principal
+        and outstanding interest due (“Call Notice”). You may not cancel the
+        Call Notice. The Expected Repayment Date is an estimate and is
+        contingent on (a) the Call Period defined in the Facility Agreement, and
+        (b) the Borrower supplying USDC to the appropriate Goldfinch smart
+        contract.
       </div>
     </FormStep>
   );
