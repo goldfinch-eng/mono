@@ -331,18 +331,22 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
             labelClassName="!text-sm !mb-3"
           />
           <div className="mb-3 text-xs">
-            By entering my name and clicking &ldquo;Invest&rdquo; below, I
-            hereby agree and acknowledge that (i) I am electronically signing
-            and becoming a party to the{" "}
+            By clicking &ldquo;Submit&rdquo; below, I agree that I have read and
+            agree to the{" "}
             {deal.agreement ? (
               <Link href={deal.agreement} target="_blank" rel="noreferrer">
-                Loan Agreement
+                Facility Agreement
               </Link>
             ) : (
-              "Loan Agreement"
+              "Facility Agreement"
             )}{" "}
-            for this pool, and (ii) my name and transaction information may be
-            shared with the borrower.
+            for this deal as well as the Goldfinch Terms and Conditions. I agree
+            that the Facility Agreement shall constitute the controlling
+            agreement with respect to the lending relationship between the
+            Borrower and me. In the event there is any discrepancy or
+            inconsistency between the Facility Agreement and any of the
+            agreements related to this deal or Goldfinch, the terms contained in
+            the Facility Agreement shall prevail.
           </div>
           <Button
             className="block w-full"
