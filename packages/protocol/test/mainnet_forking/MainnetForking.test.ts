@@ -83,7 +83,6 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
-  TranchedPoolContract,
   TranchedPoolInstance,
   UcuProxyInstance,
   UniqueIdentityInstance,
@@ -113,28 +112,22 @@ import {
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
-  BackerRewards,
   CreditLine,
-  StakingRewards,
   TranchedPool,
   UniqueIdentity,
   Borrower as EthersBorrower,
   GoldfinchFactory,
   ERC20,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {ContractReceipt, Signer, Wallet} from "ethers"
-import BigNumber from "bignumber.js"
-import {
-  BorrowerCreated,
-  PoolCreated,
-} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
+import {Signer, Wallet} from "ethers"
+import {BorrowerCreated} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/GoldfinchFactory"
 import {deployTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy/deployTranchedPool"
 import {
   FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
   FAZZ_DEAL_FUNDABLE_AT,
   FAZZ_DEAL_LIMIT_IN_DOLLARS,
   FAZZ_MAINNET_EOA,
-  createFazzExampleLoan,
+  FAZZ_MAINNET_CALLABLE_LOAN,
 } from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 import {EXISTING_POOL_TO_TOKEN} from "../util/tranchedPool"
 
@@ -1686,7 +1679,6 @@ describe("mainnet forking tests", async function () {
 
     describe("CallableLoans", () => {
       it("does not earn backer rewards", async () => {
-        const protocolOwner = await getProtocolOwner()
         const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
 
         assertNonNullable(proxyOwner)
@@ -1700,13 +1692,10 @@ describe("mainnet forking tests", async function () {
         })
 
         await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
-        const callableLoan = await createFazzExampleLoan({
-          hre,
-          goldfinchFactory: goldfinchFactory,
-          callableLoanProxyOwner: MAINNET_WARBLER_LABS_MULTISIG,
-          fazzBorrowerContract: borrowerContract.address,
-          erc20: usdc,
-        })
+        const callableLoan = await getTruffleContractAtAddress<CallableLoanInstance>(
+          "CallableLoan",
+          FAZZ_MAINNET_CALLABLE_LOAN
+        )
 
         await fundWithWhales(["USDC", "ETH"], [lender])
         await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
