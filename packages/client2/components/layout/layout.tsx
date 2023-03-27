@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
         <div id={bannerId} />
         <div id={subnavId} />
         <div className="px-5">
-          <div className="mx-auto min-h-full max-w-7xl py-14">{children}</div>
+          <div className="mx-auto min-h-full max-w-7xl py-7">{children}</div>
         </div>
       </div>
       <Footer />

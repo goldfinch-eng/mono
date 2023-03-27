@@ -3,15 +3,14 @@ import { ParsedUrlQuery } from "querystring";
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { GetStaticPaths, GetStaticProps } from "next";
-import NextLink from "next/link";
 
 import { AdaptiveStickyContainer } from "@/components/adaptive-sticky-container";
 import {
-  Button,
   Banner,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
+import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -348,18 +347,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </div>
 
         <div className="flex flex-col" style={{ gridArea: "widgets" }}>
-          <NextLink href="/earn" passHref>
-            <Button
-              as="a"
-              variant="rounded"
-              size="sm"
-              colorScheme="sand"
-              iconLeft="ArrowLeft"
-              className="mb-10 self-start"
-            >
-              Back to Open Deals
-            </Button>
-          </NextLink>
+          <BacktoOpenDealsButton />
 
           <AdaptiveStickyContainer>
             <div

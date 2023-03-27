@@ -1,16 +1,15 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
-import NextLink from "next/link";
 
 import { AdaptiveStickyContainer } from "@/components/adaptive-sticky-container";
 import {
   Banner,
   HelperText,
-  Button,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
+import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   useSeniorPoolPageQuery,
@@ -147,18 +146,7 @@ export default function SeniorPoolPage({
 
       <div className="pool-layout">
         <div className="flex flex-col" style={{ gridArea: "widgets" }}>
-          <NextLink href="/earn" passHref>
-            <Button
-              as="a"
-              variant="rounded"
-              size="sm"
-              colorScheme="sand"
-              iconLeft="ArrowLeft"
-              className="mb-10 self-start"
-            >
-              Back to Open Deals
-            </Button>
-          </NextLink>
+          <BacktoOpenDealsButton />
           <AdaptiveStickyContainer>
             <div className="divide-y divide-mustard-200 rounded-3xl bg-mustard-100 [&>*]:p-5 [&>*]:lg:p-10">
               <SeniorPoolLoanSummary
