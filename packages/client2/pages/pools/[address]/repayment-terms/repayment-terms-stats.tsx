@@ -59,7 +59,7 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
       />
       <Stat
         label="Repayment structure"
-        tooltip="This refers to the schedule of repayments that the borrower is expected to make to the lender. An amortizing loan is one in which the borrower makes regular payments of principal and interest over the life of the loan, resulting in a zero balance at the end of the term. A bullet loan is one in which the borrower makes interest-only payments for a period of time, followed by a balloon payment of the remaining principal at the end of the term."
+        tooltip="Repayment Structure refers to the way principal is repaid for a loan. “Amortizing” means principal is paid back consistently over time. “Bullet” means principal is paid back all at once at the end. And “Callable” means the investor has the right to ‘call back’ some or all of their capital at regular intervals (eg. every 3 months)."
         value={loan.__typename === "CallableLoan" ? "Callable" : "Bullet"}
       />
       <Stat
