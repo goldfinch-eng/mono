@@ -11,8 +11,7 @@ import {
   IndirectGrantSource,
   DirectGrantSource,
   KnownTokensQueryVariables,
-  KnownTokensQueryResult,
-  CommunityRewardsToken,
+  KnownTokensQuery,
 } from "@/lib/graphql/generated";
 
 type ExpectedQuery = {
@@ -107,22 +106,17 @@ function findMatchingGrantsByIndexAndSource(
   source: DirectGrantSource | IndirectGrantSource
 ): GrantWithSource[] {
   // locate the json file
-  const filename = sourceToFile[source];
+  const file = sourceToFile[source];
+  const grantManifest = readGrantFile(file);
 
-  let allMatchingGrants: GrantWithSource[] = [];
-  for (const { file, grantManifest } of fileData) {
-    const matchingGrants = grantManifest.grants.filter(
-      (grant) => grant.account.toLowerCase() === account.toLowerCase()
-    );
-    allMatchingGrants = allMatchingGrants.concat(
-      matchingGrants.map((g) => ({
-        source: fileToSource[file as keyof typeof fileToSource],
-        ...g,
-      }))
-    );
-  }
+  const matchingGrants = grantManifest.grants.filter(
+    (grant) => grant.index === index
+  );
 
-  return allMatchingGrants;
+  return matchingGrants.map((g) => ({
+    source,
+    ...g,
+  }));
 }
 
 const knownTokens = gql`
@@ -149,14 +143,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const matchingGrantsFromJson = findMatchingGrantsByAccount(account); // Set A
     const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
     const knownTokensResult = await gqlClient.request<
-      KnownTokensQueryResult,
+      KnownTokensQuery,
       KnownTokensQueryVariables
     >(knownTokens, { account: account.toLowerCase() });
-    console.log({ knownTokensResult });
-    const index = knownTokensResult.index;
-    const source = knownTokensResult.source;
+    const matchingGrantsFromOwnedTokens =
+      knownTokensResult.communityRewardsTokens.flatMap((token) =>
+        findMatchingGrantsByIndexAndSource(token.index, token.source)
+      );
 
-    res.status(200).json({ account, matchingGrants: matchingGrantsFromJson });
+    res.status(200).json({
+      account,
+      matchingGrants: matchingGrantsFromJson.concat(
+        matchingGrantsFromOwnedTokens
+      ),
+    });
   } catch (e) {
     res
       .status(500)
