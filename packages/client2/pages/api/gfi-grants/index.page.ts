@@ -12,6 +12,7 @@ import {
   DirectGrantSource,
   KnownTokensQueryVariables,
   KnownTokensQueryResult,
+  CommunityRewardsToken,
 } from "@/lib/graphql/generated";
 
 type ExpectedQuery = {
@@ -67,19 +68,47 @@ const merkleDirectDistributorFiles: (keyof typeof fileToSource)[] =
         "./backerMerkleDirectDistributorInfo.dev.json",
       ];
 
+function readGrantFile(file: string) {
+  const pathname = path.resolve(`${process.cwd()}/gfi-grants`, file);
+  const grantManifest: GrantManifest = JSON.parse(
+    fs.readFileSync(pathname, "utf-8")
+  );
+  return grantManifest;
+}
+
 const filesToSearch = merkleDistributorFiles.concat(
   merkleDirectDistributorFiles
 );
 
 const fileData = filesToSearch.map((file) => {
-  const pathname = path.resolve(`${process.cwd()}/gfi-grants`, file);
-  const grantManifest: GrantManifest = JSON.parse(
-    fs.readFileSync(pathname, "utf-8")
-  );
+  const grantManifest = readGrantFile(file);
   return { file, grantManifest };
 });
 
-function findMatchingGrants(account: string): GrantWithSource[] {
+function findMatchingGrantsByAccount(account: string): GrantWithSource[] {
+  let allMatchingGrants: GrantWithSource[] = [];
+  for (const { file, grantManifest } of fileData) {
+    const matchingGrants = grantManifest.grants.filter(
+      (grant) => grant.account.toLowerCase() === account.toLowerCase()
+    );
+    allMatchingGrants = allMatchingGrants.concat(
+      matchingGrants.map((g) => ({
+        source: fileToSource[file as keyof typeof fileToSource],
+        ...g,
+      }))
+    );
+  }
+
+  return allMatchingGrants;
+}
+
+function findMatchingGrantsByIndexAndSource(
+  index: number,
+  source: DirectGrantSource | IndirectGrantSource
+): GrantWithSource[] {
+  // locate the json file
+  const filename = sourceToFile[source];
+
   let allMatchingGrants: GrantWithSource[] = [];
   for (const { file, grantManifest } of fileData) {
     const matchingGrants = grantManifest.grants.filter(
@@ -117,13 +146,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const matchingGrantsFromJson = findMatchingGrants(account); // Set A
+    const matchingGrantsFromJson = findMatchingGrantsByAccount(account); // Set A
     const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
     const knownTokensResult = await gqlClient.request<
       KnownTokensQueryResult,
       KnownTokensQueryVariables
     >(knownTokens, { account: account.toLowerCase() });
     console.log({ knownTokensResult });
+    const index = knownTokensResult.index;
+    const source = knownTokensResult.source;
 
     res.status(200).json({ account, matchingGrants: matchingGrantsFromJson });
   } catch (e) {
