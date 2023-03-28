@@ -31,6 +31,23 @@ const fileToSource: Record<string, IndirectGrantSource | DirectGrantSource> = {
     "BACKER_MERKLE_DIRECT_DISTRIBUTOR",
 };
 
+const isHardhat = process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost";
+
+const sourceToFile: Record<IndirectGrantSource | DirectGrantSource, string> = {
+  MERKLE_DISTRIBUTOR: isHardhat
+    ? "./merkleDistributorInfo.dev.json"
+    : "./merkleDistributorInfo.json",
+  BACKER_MERKLE_DISTRIBUTOR: isHardhat
+    ? "./backerMerkleDistributorInfo.dev.json"
+    : "./backerMerkleDistributorInfo.json",
+  MERKLE_DIRECT_DISTRIBUTOR: isHardhat
+    ? "./merkleDirectDistributorInfo.dev.json"
+    : "./merkleDirectDistributorInfo.json",
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR: isHardhat
+    ? "./backerMerkleDirectDistributorInfo.dev.json"
+    : "./backerMerkleDirectDistributorInfo.json",
+};
+
 const merkleDistributorFiles: (keyof typeof fileToSource)[] =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
     ? ["./merkleDistributorInfo.json", "./backerMerkleDistributorInfo.json"]
@@ -78,6 +95,18 @@ function findMatchingGrants(account: string): GrantWithSource[] {
 
   return allMatchingGrants;
 }
+
+const knownTokens = gql`
+  query KnownTokens($account: String!) {
+    communityRewardsTokens(where: { user: $account }) {
+      user {
+        id
+      }
+      index
+      source
+    }
+  }
+`;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const account = (req.query as ExpectedQuery).account;
