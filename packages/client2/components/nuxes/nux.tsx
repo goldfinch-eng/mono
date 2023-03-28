@@ -38,15 +38,12 @@ export const Nux = forwardRef<NuxRef, NuxProps>(function Nux(
     localStorage.setItem(nuxKey, "viewed");
   };
 
-  const { pathname } = useRouter();
+  const { asPath } = useRouter();
   useEffect(() => {
-    if (
-      localStorage.getItem(nuxKey) !== "viewed" &&
-      shouldShowOnPage(pathname)
-    ) {
+    if (localStorage.getItem(nuxKey) !== "viewed" && shouldShowOnPage(asPath)) {
       setIsNuxOpen(true);
     }
-  }, [nuxKey, pathname, shouldShowOnPage]);
+  }, [nuxKey, asPath, shouldShowOnPage]);
 
   useImperativeHandle(ref, () => ({ closeNux }));
 
