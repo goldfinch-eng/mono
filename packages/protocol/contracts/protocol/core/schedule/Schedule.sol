@@ -29,7 +29,7 @@ import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math
  *                     +---+-----------------------+-----------------------+
  *  principal periods  |///|=======================|           0           |
  *                     |///+-----------+-----------+-----------+-----------+ E
- *  interest periods   |///|     0     |     1     |     2     |     4     | N
+ *  interest periods   |///|     0     |     1     |     2     |     3     | N
  *                     +---+---+---+---+---+---+---+---+---+---+---+---+---+ D
  *  periods            |FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|JAN|FEB|
  *                     |   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11|
