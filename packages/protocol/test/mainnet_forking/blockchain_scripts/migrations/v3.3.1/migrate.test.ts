@@ -137,8 +137,6 @@ describe("v3.3.1", async function () {
         }
 
         const backerRewardsGfiBalance = await gfi.balanceOf(backerRewards.address)
-        console.log(backerRewardsGfiBalance.toString())
-        console.log(rewardsWithdrawable.toString())
         expect(rewardsWithdrawable).to.bignumber.lte(backerRewardsGfiBalance)
       }).timeout(1_000 * 60 * 10) // 10 minutes
 
@@ -168,8 +166,6 @@ describe("v3.3.1", async function () {
         }
 
         const backerRewardsGfiBalance = await gfi.balanceOf(backerRewards.address)
-        console.log(backerRewardsGfiBalance.toString())
-        console.log(rewardsWithdrawable.toString())
         expect(rewardsWithdrawable).to.bignumber.lte(backerRewardsGfiBalance)
       }).timeout(1_000 * 60 * 10) // 10 minutes
     })
