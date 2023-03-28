@@ -131,7 +131,7 @@ export function LoanSummary({
           tooltip="When you can withdraw and reclaim your invested capital."
           value={
             loan.__typename === "CallableLoan"
-              ? "Quarterly callable"
+              ? "Callable loan"
               : "End of loan term"
           }
         />
@@ -153,7 +153,7 @@ export function LoanSummaryPlaceholder() {
       </div>
       <div className="mb-8">
         <h1 className="mb-1 font-serif text-3xl font-semibold text-sand-800">
-          <Shimmer style={{ width: "25ch" }} />
+          <Shimmer className="w-full" />
         </h1>
         <ShimmerLines lines={3} />
       </div>

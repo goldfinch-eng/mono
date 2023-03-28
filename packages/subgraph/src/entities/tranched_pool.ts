@@ -570,7 +570,7 @@ export function generateRepaymentScheduleForTranchedPool(tranchedPool: TranchedP
     const endTime = creditLineContract.termEndTime()
     const periodsInTerm = termInDays.div(paymentPeriodInDays)
     const interestPerSecond = tranchedPool.interestRateBigInt.div(secondsPerYear_BigInt)
-    const loanPrincipal = isBeforeClose ? tranchedPool.fundingLimit : tranchedPool.principalAmount
+    const loanPrincipal = isBeforeClose ? tranchedPool.fundingLimit : creditLineContract.balance()
 
     for (let period = 0; period < periodsInTerm.toI32(); period++) {
       const estimatedPaymentDate = startTime.plus(BigInt.fromI32(period + 1).times(paymentPeriodInSeconds))

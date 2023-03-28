@@ -1,4 +1,22 @@
 {
+  "0x032f7299621c3b68e5d7aceabd567b65e2284da7": {
+    "name": "SME Loans in Southeast Asia",
+    "category": "Asia loans",
+    "icon": "%PUBLIC_URL%/icons/fazz.png",
+    "dataroom": "",
+    "agreement": "",
+    "launchTime": 1679936219,
+    "poolDescription": "Proceeds from this pool will be used by Fazz to provide short-duration loans to businesses in Indonesia and Singapore. Fazz is a Southeast Asian payment and SME lending provider whose book mainly consists of loans with tenors less than 90 days.",
+    "poolHighlights": [
+      "This pool provides investors with an option to call some or all of their capital back every three months with 60 days' notice. Borrowers eligible for callable loans have short-term assets that can be liquidated in the call period to meet investor calls",
+      "Exposure to SMEs in one of the fastest-growing regions in the world",
+      "Real-world, legally enforceable loan agreement",
+      "Monthly reporting and direct-to-borrower communications"
+    ],
+    "borrowerName": "Fazz",
+    "borrowerDescription": "Fazz offers seamless payment, savings, and credit solutions, providing businesses of all sizes an equal opportunity to build, run, and grow in Southeast Asia. The company caters to the warung and MSME customer segments in Indonesia under the brand Fazz Agen, and small to medium-sized businesses in Singapore and Indonesia under the brand Fazz Business. The company also owns StraitsX, the leading stablecoin issuer in Singapore and Indonesia",
+    "allowedUIDTypes": [0, 1, 3, 4]
+  },
   "0x538473c3a69da2b305cf11a40cf2f3904de8db5f": {
     "name": "Cauris Fund #4: Africa Innovation Pool",
     "category": "Africa multi-sector loans",

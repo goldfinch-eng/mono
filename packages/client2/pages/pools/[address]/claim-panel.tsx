@@ -109,8 +109,8 @@ export function ClaimPanel({
     ),
   } as const;
   const claimableGfiAsUsdc = gfiToUsdc(claimableGfi, fiatPerGfi);
-  const canClaimGfi =
-    loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero();
+  const hasUnreachableGfi =
+    loan.delinquency !== "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
   const { provider } = useWallet();
@@ -143,7 +143,7 @@ export function ClaimPanel({
         pendingPrompt: "Claiming USDC from your pool token",
       });
 
-      if (canClaimGfi) {
+      if (loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero()) {
         const backerRewardsContract = await getContract({
           name: "BackerRewards",
           provider,
@@ -164,7 +164,7 @@ export function ClaimPanel({
         .add(pt.poolToken.interestRedeemable)
         .gt(0)
     );
-    if (withrawableVaultedPoolTokens.length > 0 && canClaimGfi) {
+    if (withrawableVaultedPoolTokens.length > 0) {
       const membershipOrchestrator = await getContract({
         name: "MembershipOrchestrator",
         provider,
@@ -184,8 +184,8 @@ export function ClaimPanel({
 
   const claimDisabled =
     (claimableUsdc.amount.isZero() && claimableGfi.amount.isZero()) ||
-    (claimableUsdc.amount.isZero() && !canClaimGfi) ||
-    (vaultedPoolTokens.length > 0 && !canClaimGfi);
+    (claimableUsdc.amount.isZero() && hasUnreachableGfi) ||
+    (vaultedPoolTokens.length > 0 && hasUnreachableGfi);
 
   return (
     <div>
@@ -262,7 +262,7 @@ export function ClaimPanel({
           Claim
         </Button>
       </Form>
-      {vaultedPoolTokens.length > 0 && !canClaimGfi ? (
+      {vaultedPoolTokens.length > 0 && hasUnreachableGfi ? (
         <Alert type="warning" className="mt-4">
           <div>
             <div>
@@ -275,7 +275,7 @@ export function ClaimPanel({
             </Link>
           </div>
         </Alert>
-      ) : !canClaimGfi ? (
+      ) : hasUnreachableGfi ? (
         <Alert type="warning" className="mt-4">
           You cannot claim GFI rewards from this pool because it is late on
           repayment.

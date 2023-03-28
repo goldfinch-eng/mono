@@ -88,7 +88,7 @@ export function BorrowerProfile({
             colorScheme="mint"
             className="flex items-center gap-2"
           >
-            Experienced borrower
+            {otherPools.length > 0 ? "Experienced borrower" : "Vetted borrower"}
           </Chip>
         </div>
         <RichText className="text-sm" content={borrower.bio} />
