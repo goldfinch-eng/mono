@@ -4,7 +4,7 @@ import {getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain
 
 import {ERC20Instance, StakingRewardsInstance, BackerRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 
-import * as migrate322 from "../../../../../blockchain_scripts/migrations/v3.2.2/migrate3_2_2"
+import * as migrate331 from "../../../../../blockchain_scripts/migrations/v3.3.1/migrate3_3_1"
 import BN from "bn.js"
 
 const setupTest = deployments.createFixture(async () => {
@@ -25,7 +25,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe("v3.1.2", async function () {
+describe.only("v3.3.1", async function () {
   let stakingRewards: StakingRewardsInstance
   let backerRewards: BackerRewardsInstance
   let gfi: ERC20Instance
@@ -65,7 +65,7 @@ describe("v3.1.2", async function () {
 
   describe("after migration", async () => {
     const setup = deployments.createFixture(async () => {
-      return await migrate322.main()
+      return await migrate331.main()
     })
 
     let totalRewards: BN
@@ -82,30 +82,8 @@ describe("v3.1.2", async function () {
 
         expect(gfiBalance).to.bignumber.lt(stakingRewardsGfiBalanceBefore)
         expect(gfiBalance).to.bignumber.eq(
-          stakingRewardsGfiBalanceBefore.sub(migrate322.rewardsToRemoveFromStakingRewards)
+          stakingRewardsGfiBalanceBefore.sub(migrate331.rewardsToRemoveFromStakingRewards)
         )
-      })
-
-      it("targetCapacity is the same", async () => {
-        expect(await stakingRewards.targetCapacity()).to.be.bignumber.eq(stakingRewardsTargetCapacityBefore)
-      })
-
-      it("minRate is the same", async () => {
-        expect(await stakingRewards.minRate()).to.be.bignumber.eq(stakingRewardsMinRateBefore)
-      })
-
-      it("maxRate is 40% of previous value", async () => {
-        expect(await stakingRewards.maxRate()).to.bignumber.eq(
-          stakingRewardsMaxRateBefore.mul(new BN(2)).div(new BN(5))
-        )
-      })
-
-      it("minRateAtPercent is the same", async () => {
-        expect(await stakingRewards.minRateAtPercent()).to.be.bignumber.eq(stakingRewardsMinRateAtPercentBefore)
-      })
-
-      it("maxRateAtPercent is the same", async () => {
-        expect(await stakingRewards.maxRateAtPercent()).to.be.bignumber.eq(stakingRewardsMaxRateAtPercentBefore)
       })
     })
 
@@ -122,12 +100,12 @@ describe("v3.1.2", async function () {
         const gfiBalance = await gfi.balanceOf(backerRewards.address)
         expect(gfiBalance).to.bignumber.gt(backerRewardsGfiBalanceBefore)
         expect(gfiBalance).to.bignumber.eq(
-          backerRewardsGfiBalanceBefore.add(migrate322.rewardsToRemoveFromStakingRewards)
+          backerRewardsGfiBalanceBefore.add(migrate331.rewardsToRemoveFromStakingRewards)
         )
       })
 
       it("maxInterestDollarsElligible is correct", async () => {
-        expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(migrate322.maxInterestDollarsEllibile)
+        expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(migrate331.maxInterestDollarsEllibile)
       })
 
       it("totalRewards parameter is correct", async () => {

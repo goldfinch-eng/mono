@@ -15,8 +15,8 @@ export const rewardsMargin = bigVal(30_000) // 1 month of rewards
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
   const deployEffects = await getDeployEffects({
-    title: "v3.2.2 Upgrade",
-    description: "",
+    title: "v3.3.2 Upgrade",
+    description: "https://github.com/warbler-labs/mono/pull/1522/files",
   })
 
   const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
@@ -25,9 +25,10 @@ export async function main() {
 
   // wanted effects
   // 1. call setRewardsParams
-  // 1. Add sweepRewards function from stakingRewards contract
-  // 1. call sweepRewards for 1.2m GFI
-  // 1. transfer 1.2m GFI to the backer rewards contract
+  // 2. Add sweepRewards function from stakingRewards contract
+  // 3. call sweepRewards for 1.2m GFI
+  // 4. transfer 1.2m GFI to the backer rewards contract
+  // 5. update total rewards and max interest dollars eligible params
 
   const {gf_deployer} = await deployer.getNamedAccounts()
   assertNonNullable(gf_deployer)
@@ -37,7 +38,7 @@ export async function main() {
 
   // This is fetched by running the script below. This was originally invoking that function, but doing it
   // during testing was way too slow.
-  const backerRewardsAvailable = new BigNumber("327463519692643365305096")
+  const backerRewardsAvailable = new BigNumber("305612779706584027805181")
   const newBackerRewardsAvailable = backerRewardsAvailable
     .plus(rewardsToRemoveFromStakingRewards.toString())
     .minus(rewardsMargin.toString())
@@ -51,16 +52,11 @@ export async function main() {
     maxInterest: new BigNumber(maxInterestDollarsEllibile.div(new BN("1000000000000")).toString()),
   })
 
+  console.log(``)
+
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
   await deployEffects.add({
     deferred: [
-      await stakingRewards.populateTransaction.setRewardsParameters(
-        await stakingRewards.targetCapacity(),
-        await stakingRewards.minRate(),
-        (await stakingRewards.maxRate()).div(2), // 50%
-        await stakingRewards.minRateAtPercent(),
-        await stakingRewards.maxRateAtPercent()
-      ),
       await stakingRewards.populateTransaction.removeRewards(rewardsToRemoveFromStakingRewards.toString()),
       await gfi.populateTransaction.transfer(backerRewards.address, rewardsToRemoveFromStakingRewards.toString()),
       await backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEllibile.toString()),
@@ -70,7 +66,7 @@ export async function main() {
 
   await deployEffects.executeDeferred()
 
-  console.log("Finished deploy 3.2.2")
+  console.log("Finished deploy 3.3.1")
   return {
     newTotalRewardsParam: ethers.BigNumber.from(newTotalRewardsParam.toFixed(0)),
   }
