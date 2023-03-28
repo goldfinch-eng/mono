@@ -9,7 +9,6 @@ import {
   ScrollingSectionedContainer,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
-import { SeniorPoolCancellationFeeNux } from "@/components/nuxes/senior-pool-cancellation-fee-nux";
 import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -244,7 +243,6 @@ export default function SeniorPoolPage({
             <TransactionTable />
           </div>
         </div>
-        <SeniorPoolCancellationFeeNux />
       </div>
     </>
   );
