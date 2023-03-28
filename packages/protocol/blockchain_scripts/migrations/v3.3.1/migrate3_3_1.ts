@@ -4,7 +4,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 // import { BigNumber } from "ethers/lib/ethers"
 import hre, {ethers} from "hardhat"
 import _ from "lodash"
-import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader, getEthersContract, populateTxAndLog} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 import {BigNumber} from "bignumber.js"
 
@@ -15,7 +15,7 @@ export const rewardsMargin = bigVal(30_000) // 1 month of rewards
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
   const deployEffects = await getDeployEffects({
-    title: "v3.3.2 Upgrade",
+    title: "v3.3.1 Upgrade",
     description: "https://github.com/warbler-labs/mono/pull/1522/files",
   })
 
@@ -52,15 +52,25 @@ export async function main() {
     maxInterest: new BigNumber(maxInterestDollarsEllibile.div(new BN("1000000000000")).toString()),
   })
 
-  console.log(``)
-
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
   await deployEffects.add({
     deferred: [
-      await stakingRewards.populateTransaction.removeRewards(rewardsToRemoveFromStakingRewards.toString()),
-      await gfi.populateTransaction.transfer(backerRewards.address, rewardsToRemoveFromStakingRewards.toString()),
-      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEllibile.toString()),
-      await backerRewards.populateTransaction.setTotalRewards(newTotalRewardsParam.toFixed(0)),
+      await populateTxAndLog(
+        stakingRewards.populateTransaction.removeRewards(rewardsToRemoveFromStakingRewards.toString()),
+        `Populated tx to remove ${rewardsToRemoveFromStakingRewards.toString()} rewards from StakingRewards`
+      ),
+      await populateTxAndLog(
+        gfi.populateTransaction.transfer(backerRewards.address, rewardsToRemoveFromStakingRewards.toString()),
+        `Populated tx to transfer ${rewardsToRemoveFromStakingRewards.toString()} to BackerRewards`
+      ),
+      await populateTxAndLog(
+        backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEllibile.toString()),
+        `Populated tx to set BackerRewards.maxInterestDollarsEligibleTo ${maxInterestDollarsEllibile.toString()}`
+      ),
+      await populateTxAndLog(
+        backerRewards.populateTransaction.setTotalRewards(newTotalRewardsParam.toFixed(0)),
+        `Populated tx to set BackerRewards.totalRewards to ${newTotalRewardsParam.toFixed(0)}`
+      ),
     ],
   })
 

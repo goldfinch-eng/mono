@@ -1,34 +1,28 @@
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import {deployments} from "hardhat"
-import {getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
+import hre, {deployments, ethers, getChainId} from "hardhat"
+import {
+  getProtocolOwner,
+  getTruffleContract,
+  getUSDCAddress,
+  MAINNET_CHAIN_ID,
+} from "packages/protocol/blockchain_scripts/deployHelpers"
 
-import {ERC20Instance, StakingRewardsInstance, BackerRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {
+  ERC20Instance,
+  StakingRewardsInstance,
+  BackerRewardsInstance,
+  PoolTokensInstance,
+} from "@goldfinch-eng/protocol/typechain/truffle"
 
 import * as migrate331 from "../../../../../blockchain_scripts/migrations/v3.3.1/migrate3_3_1"
 import BN from "bn.js"
+import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
-const setupTest = deployments.createFixture(async () => {
-  await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
-
-  await fundWithWhales(["USDC"], [await getProtocolOwner()])
-  await fundWithWhales(["GFI"], [await getProtocolOwner()])
-
-  // return {
-  //   membershipOrchestrator: await getTruffleContract<any>("MembershipOrchestrator"),
-  //   usdc: await getTruffleContract<any>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)}),
-  // }
-
-  return {
-    stakingRewards: await getTruffleContract<StakingRewardsInstance>("StakingRewards"),
-    gfi: await getTruffleContract<ERC20Instance>("GFI"),
-    backerRewards: await getTruffleContract<BackerRewardsInstance>("BackerRewards"),
-  }
-})
-
-describe.only("v3.3.1", async function () {
+describe("v3.3.1", async function () {
   let stakingRewards: StakingRewardsInstance
   let backerRewards: BackerRewardsInstance
   let gfi: ERC20Instance
+  let poolTokens: PoolTokensInstance
 
   // GFI balances before
   let stakingRewardsGfiBalanceBefore: BN
@@ -37,18 +31,14 @@ describe.only("v3.3.1", async function () {
 
   let backerRewardsTotalRewardsBefore: BN
 
-  // StakingRewards rewards params
-  let stakingRewardsTargetCapacityBefore: BN
-  let stakingRewardsMinRateBefore: BN
-  let stakingRewardsMaxRateBefore: BN
-  let stakingRewardsMinRateAtPercentBefore: BN
-  let stakingRewardsMaxRateAtPercentBefore: BN
+  const setupTest = deployments.createFixture(async () => {
+    await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 
-  beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({stakingRewards, backerRewards, gfi} = await setupTest())
-
+    await fundWithWhales(["USDC"], [await getProtocolOwner()])
     const protocolOwner = await getProtocolOwner()
+    const gfi = await getTruffleContract<ERC20Instance>("GFI")
+    const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
+    const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
 
     backerRewardsGfiBalanceBefore = await gfi.balanceOf(backerRewards.address)
     stakingRewardsGfiBalanceBefore = await gfi.balanceOf(stakingRewards.address)
@@ -56,24 +46,30 @@ describe.only("v3.3.1", async function () {
 
     backerRewardsTotalRewardsBefore = await backerRewards.totalRewards()
 
-    stakingRewardsTargetCapacityBefore = await stakingRewards.targetCapacity()
-    stakingRewardsMinRateBefore = await stakingRewards.minRate()
-    stakingRewardsMaxRateBefore = await stakingRewards.maxRate()
-    stakingRewardsMinRateAtPercentBefore = await stakingRewards.minRateAtPercent()
-    stakingRewardsMaxRateAtPercentBefore = await stakingRewards.maxRateAtPercent()
+    return {
+      stakingRewards,
+      usdc: await getTruffleContract<ERC20Instance>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)}),
+      gfi,
+      backerRewards,
+      poolTokens: await getTruffleContract<PoolTokensInstance>("PoolTokens"),
+    }
+  })
+
+  beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({stakingRewards, backerRewards, gfi, poolTokens} = await setupTest())
   })
 
   describe("after migration", async () => {
     const setup = deployments.createFixture(async () => {
-      return await migrate331.main()
+      const {newTotalRewardsParam} = await migrate331.main()
+      totalRewards = new BN(newTotalRewardsParam.toString())
     })
 
     let totalRewards: BN
 
     beforeEach(async () => {
-      const {newTotalRewardsParam} = await setup()
-      totalRewards = new BN(newTotalRewardsParam.toString())
-      console.log(totalRewards.toString())
+      await setup()
     })
 
     describe("StakingRewards", () => {
@@ -114,6 +110,68 @@ describe.only("v3.3.1", async function () {
         expect(newTotalRewards).to.bignumber.gt(backerRewardsTotalRewardsBefore)
         expect(newTotalRewards).to.bignumber.eq(totalRewards)
       })
+
+      // This test takes a very long time to run because it needs to query the balance
+      // of every single pool token in existence.
+      it("allocates all rewards after max interest has been received", async () => {
+        const alma6Address = "0x418749e294cabce5a714efccc22a8aade6f9db57"
+
+        const maxInterestDollarsEligible = await backerRewards.maxInterestDollarsEligible()
+        const interestReceived = await backerRewards.totalInterestReceived()
+        const remainingInterest = maxInterestDollarsEligible.sub(interestReceived)
+
+        const maxTokenId = await poolTokens._tokenIdTracker()
+
+        await impersonateAccount(hre, alma6Address)
+        await ethers.provider.send("hardhat_setBalance", [alma6Address, ethers.utils.parseEther("10.0").toHexString()])
+        // This simulates an interest payment more than all of the remaining interest eligibile for rewards.
+        // If we incorrectly set the total rewards available parameter then the rewardsWithdrawable would be
+        // greater than the GFI balance of the contract
+        await backerRewards.allocateRewards(remainingInterest, {from: alma6Address})
+
+        let rewardsWithdrawable = new BN(0)
+        for (let i = 1; i < maxTokenId.toNumber(); i++) {
+          const stakingRewards = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(i)
+          const interestRewards = await backerRewards.poolTokenClaimableRewards(i)
+          rewardsWithdrawable = rewardsWithdrawable.add(stakingRewards).add(interestRewards)
+        }
+
+        const backerRewardsGfiBalance = await gfi.balanceOf(backerRewards.address)
+        console.log(backerRewardsGfiBalance.toString())
+        console.log(rewardsWithdrawable.toString())
+        expect(rewardsWithdrawable).to.bignumber.lte(backerRewardsGfiBalance)
+      }).timeout(1_000 * 60 * 10) // 10 minutes
+
+      // This test takes a very long time to run because it needs to query the balance
+      // of every single pool token in existence.
+      it("allocates all rewards after twice max interest has been received", async () => {
+        const alma6Address = "0x418749e294cabce5a714efccc22a8aade6f9db57"
+
+        const maxInterestDollarsEligible = await backerRewards.maxInterestDollarsEligible()
+        const interestReceived = await backerRewards.totalInterestReceived()
+        const remainingInterest = maxInterestDollarsEligible.sub(interestReceived)
+
+        const maxTokenId = await poolTokens._tokenIdTracker()
+
+        await impersonateAccount(hre, alma6Address)
+        await ethers.provider.send("hardhat_setBalance", [alma6Address, ethers.utils.parseEther("10.0").toHexString()])
+        // This simulates an interest payment more than all of the remaining interest eligibile for rewards.
+        // If we incorrectly set the total rewards available parameter then the rewards withdrawable would be
+        // greater than the GFI balance of the contract
+        await backerRewards.allocateRewards(remainingInterest.mul(new BN("2")), {from: alma6Address})
+
+        let rewardsWithdrawable = new BN(0)
+        for (let i = 1; i < maxTokenId.toNumber(); i++) {
+          const stakingRewards = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(i)
+          const interestRewards = await backerRewards.poolTokenClaimableRewards(i)
+          rewardsWithdrawable = rewardsWithdrawable.add(stakingRewards).add(interestRewards)
+        }
+
+        const backerRewardsGfiBalance = await gfi.balanceOf(backerRewards.address)
+        console.log(backerRewardsGfiBalance.toString())
+        console.log(rewardsWithdrawable.toString())
+        expect(rewardsWithdrawable).to.bignumber.lte(backerRewardsGfiBalance)
+      }).timeout(1_000 * 60 * 10) // 10 minutes
     })
   })
 })
