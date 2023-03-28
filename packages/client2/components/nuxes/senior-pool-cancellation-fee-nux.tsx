@@ -8,6 +8,8 @@ export function SeniorPoolCancellationFeeNux() {
         <a
           className="underline"
           href="https://gov.goldfinch.finance/t/gip-44-temporarily-set-the-withdraw-cancellation-request-fee-to-0/1673"
+          target="_blank"
+          rel="noreferrer"
         >
           GIP-44
         </a>
