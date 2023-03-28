@@ -3,7 +3,11 @@ import { Nux } from "./nux";
 
 export function SeniorPoolCancellationFeeNux() {
   return (
-    <Nux prefix="cancellationfee" version={1}>
+    <Nux
+      prefix="cancellationfee"
+      version={1}
+      shouldShowOnPage={(pathname) => pathname === "/pools/senior"}
+    >
       <div className="mb5 text-center">
         In accordance with{" "}
         <Link
