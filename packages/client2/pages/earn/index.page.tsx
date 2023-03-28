@@ -160,35 +160,6 @@ export default function EarnPage({
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
           </EarnPageHeading>
           <div className="mb-15 grid gap-5 xs:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <OpenDealCard
-              icon={seniorPool.icon}
-              title={seniorPool.name}
-              subtitle={seniorPool.category}
-              usdcApy={seniorPool.estimatedApy}
-              gfiApy={computeApyFromGfiInFiat(
-                seniorPool.estimatedApyFromGfiRaw,
-                fiatPerGfi
-              )}
-              gfiApyTooltip={
-                <div className="mb-4">
-                  The Senior Pool&rsquo;s total current estimated APY, including
-                  the current USDC APY and est. GFI rewards APY. The GFI rewards
-                  APY is volatile and changes based on several variables
-                  including the price of GFI, the total capital deployed on
-                  Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
-                  the{" "}
-                  <Link
-                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
-                    openInNewTab
-                  >
-                    Goldfinch Documentation
-                  </Link>
-                  .
-                </div>
-              }
-              liquidity="2 week withdraw requests"
-              href="/pools/senior"
-            />
             {openLoans?.map((loan) => {
               const dealDetails = dealMetadata[loan.id];
 
@@ -234,6 +205,36 @@ export default function EarnPage({
                 />
               );
             })}
+
+            <OpenDealCard
+              icon={seniorPool.icon}
+              title={seniorPool.name}
+              subtitle={seniorPool.category}
+              usdcApy={seniorPool.estimatedApy}
+              gfiApy={computeApyFromGfiInFiat(
+                seniorPool.estimatedApyFromGfiRaw,
+                fiatPerGfi
+              )}
+              gfiApyTooltip={
+                <div className="mb-4">
+                  The Senior Pool&rsquo;s total current estimated APY, including
+                  the current USDC APY and est. GFI rewards APY. The GFI rewards
+                  APY is volatile and changes based on several variables
+                  including the price of GFI, the total capital deployed on
+                  Goldfinch, and Senior Pool&rsquo;s utilization. Learn more in
+                  the{" "}
+                  <Link
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/investor-incentives/senior-pool-liquidity-mining"
+                    openInNewTab
+                  >
+                    Goldfinch Documentation
+                  </Link>
+                  .
+                </div>
+              }
+              liquidity="2 week withdraw requests"
+              href="/pools/senior"
+            />
           </div>
 
           <EarnPageHeading>{`${

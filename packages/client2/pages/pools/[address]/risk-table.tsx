@@ -206,7 +206,7 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
               <div>
                 Additional due diligence information can be viewed in the{" "}
                 <Link href={deal.dataroom} openInNewTab>
-                  data room
+                  dataroom
                 </Link>{" "}
                 or by contacting the borrower{" "}
                 {deal.dueDiligenceContact ? (

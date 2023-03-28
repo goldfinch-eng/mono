@@ -78,17 +78,9 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
 
 export const revalidateDeal: CollectionAfterChangeHook<Deal> = async ({
   doc,
-  previousDoc,
-  operation,
 }) => {
   revalidate(`/pools/${doc.id}`);
-  if (
-    operation === "create" ||
-    (operation === "update" &&
-      (doc.name !== previousDoc.name || doc.category !== previousDoc.category))
-  ) {
-    revalidate("/earn");
-  }
+  revalidate("/earn");
 };
 
 export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({

@@ -176,6 +176,8 @@ export function AddonNavLink({
         variant="rounded"
         iconRight="ArrowTopRight"
         size="sm"
+        target="_blank"
+        rel="noopener"
       >
         {children}
       </Button>

@@ -40,22 +40,6 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
         })}
       />
       <Stat
-        label="Payment frequency"
-        tooltip="The frequency of interest payments."
-        className="capitalize"
-        value={getRepaymentFrequencyLabel(loan.repaymentFrequency)}
-      />
-      <Stat
-        label="Total payments"
-        tooltip="The expected total number of principal and interest payments."
-        value={loan.numRepayments}
-      />
-      <Stat
-        label="Repayment structure"
-        tooltip="This refers to the schedule of repayments that the borrower is expected to make to the lender. An amortizing loan is one in which the borrower makes regular payments of principal and interest over the life of the loan, resulting in a zero balance at the end of the term. A bullet loan is one in which the borrower makes interest-only payments for a period of time, followed by a balloon payment of the remaining principal at the end of the term."
-        value={loan.__typename === "CallableLoan" ? "Callable" : "Bullet"}
-      />
-      <Stat
         label={
           loan.termStartTime.isZero()
             ? "Est. term start date"
@@ -73,6 +57,22 @@ export function RepaymentTermsStats({ loan }: RepaymentTermsStatsProps) {
         tooltip="The estimated date that the Pool’s payment term will end, and by which the Borrower is scheduled to have repaid their total loan amount in full, according to the Pool’s deal terms."
         value={formatDate(termEndTime * 1000, "MMM d, y")}
       />
+      <Stat
+        label="Repayment structure"
+        tooltip="Repayment Structure refers to the way principal is repaid for a loan. “Amortizing” means principal is paid back consistently over time. “Bullet” means principal is paid back all at once at the end. And “Callable” means the investor has the right to ‘call back’ some or all of their capital at regular intervals (eg. every 3 months)."
+        value={loan.__typename === "CallableLoan" ? "Callable" : "Bullet"}
+      />
+      <Stat
+        label="Payment frequency"
+        tooltip="The frequency of interest payments."
+        className="capitalize"
+        value={getRepaymentFrequencyLabel(loan.repaymentFrequency)}
+      />
+      <Stat
+        label="Total payments"
+        tooltip="The expected total number of principal and interest payments."
+        value={loan.numRepayments}
+      />
     </StatGrid>
   );
 }
@@ -81,11 +81,11 @@ export function RepaymentTermsStatsPlaceholder() {
   return (
     <StatGrid bgColor="mustard-50">
       <Stat label="Loan term" />
+      <Stat label="Term start date" />
+      <Stat label="Est. loan maturity date" />
+      <Stat label="Repayment structure" />
       <Stat label="Payment frequency" />
       <Stat label="Total payments" />
-      <Stat label="Repayment structure" />
-      <Stat label="Est. repayment start date" />
-      <Stat label="Est. loan maturity date" />
     </StatGrid>
   );
 }

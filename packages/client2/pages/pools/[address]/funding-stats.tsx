@@ -14,7 +14,7 @@ import {
   FundingStatsDealFieldsFragment,
 } from "@/lib/graphql/generated";
 
-const twoWeeksMs = 1.21e9;
+const threeWeeksMs = 1000 * 60 * 60 * 24 * 7 * 3;
 
 export const FUNDING_STATS_LOAN_FIELDS = gql`
   fragment FundingStatsLoanFields on Loan {
@@ -66,7 +66,7 @@ export function FundingStats({
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(loan.fundableAt * 1000 + twoWeeksMs);
+  const estimatedCloseDate = new Date(loan.fundableAt * 1000 + threeWeeksMs);
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>
