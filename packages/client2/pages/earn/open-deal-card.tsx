@@ -52,8 +52,8 @@ export function OpenDealCard({
               src={icon}
               alt={`${title} icon`}
               fill
-              sizes="48px"
-              className="object-contain"
+              sizes="96px"
+              className="object-cover"
             />
           ) : null}
         </div>
