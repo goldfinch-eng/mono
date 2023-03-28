@@ -120,11 +120,37 @@ function findMatchingGrantsByIndexAndSource(
 }
 
 const knownTokens = gql`
-  query KnownTokens($account: String!) {
-    communityRewardsTokens(where: { user: $account }) {
+  query KnownTokens(
+    $account: String!
+    $merkleDistributorIndices: [Int!]!
+    $backerMerkleDistributorIndices: [Int!]!
+  ) {
+    ownedTokens: communityRewardsTokens(where: { user: $account }) {
       user {
         id
       }
+      index
+      source
+    }
+    relinquishedTokens: communityRewardsTokens(
+      where: {
+        and: [
+          { user_not: $account }
+          {
+            or: [
+              {
+                index_in: $merkleDistributorIndices
+                source: MERKLE_DISTRIBUTOR
+              }
+              {
+                index_in: $backerMerkleDistributorIndices
+                source: BACKER_MERKLE_DISTRIBUTOR
+              }
+            ]
+          }
+        ]
+      }
+    ) {
       index
       source
     }
@@ -140,16 +166,34 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const matchingGrantsFromJson = findMatchingGrantsByAccount(account); // Set A
+    const matchingGrantsFromJson = findMatchingGrantsByAccount(account);
+    const merkleDistributorIndices = Array.from(
+      new Set(
+        matchingGrantsFromJson
+          .filter((g) => g.source === "MERKLE_DISTRIBUTOR")
+          .map((g) => g.index)
+      )
+    );
+    const backerMerkleDistributorIndices = Array.from(
+      new Set(
+        matchingGrantsFromJson
+          .filter((g) => g.source === "MERKLE_DISTRIBUTOR")
+          .map((g) => g.index)
+      )
+    );
     const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
     const knownTokensResult = await gqlClient.request<
       KnownTokensQuery,
       KnownTokensQueryVariables
-    >(knownTokens, { account: account.toLowerCase() });
-    const matchingGrantsFromOwnedTokens =
-      knownTokensResult.communityRewardsTokens.flatMap((token) =>
-        findMatchingGrantsByIndexAndSource(token.index, token.source)
-      );
+    >(knownTokens, {
+      account: account.toLowerCase(),
+      merkleDistributorIndices,
+      backerMerkleDistributorIndices,
+    });
+    console.log(JSON.stringify(knownTokensResult, undefined, 2));
+    const matchingGrantsFromOwnedTokens = knownTokensResult.ownedTokens.flatMap(
+      (token) => findMatchingGrantsByIndexAndSource(token.index, token.source)
+    );
 
     res.status(200).json({
       account,
