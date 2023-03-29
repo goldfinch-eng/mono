@@ -1,4 +1,5 @@
 import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {INVALID_POOLS} from "../../../../utils/src/pools"
 
 import {
   SeniorPoolWithdrawalDisbursement,
@@ -84,6 +85,9 @@ function handleInvestmentMadeInTranchedPool(
   investedAmount: BigInt,
   timestamp: BigInt
 ): void {
+  if (INVALID_POOLS.has(tranchedPoolAddress.toHexString())) {
+    return
+  }
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   const tranchedPoolAddressString = tranchedPoolAddress.toHexString()
@@ -131,6 +135,9 @@ export function handleInvestmentMadeInSenior(event: InvestmentMadeInSenior): voi
 }
 
 export function handlePrincipalCollected(event: PrincipalCollected): void {
+  if (INVALID_POOLS.has(event.params.payer.toHexString())) {
+    return
+  }
   const seniorPool = getOrInitSeniorPool()
   const seniorPoolContract = SeniorPoolContract.bind(event.address)
 
@@ -141,6 +148,13 @@ export function handlePrincipalCollected(event: PrincipalCollected): void {
   updateEstimatedApyFromGfiRaw(seniorPool)
   updateEstimatedSeniorPoolApy(seniorPool)
 
+  const tranchedPool = getOrInitTranchedPool(event.params.payer, event.block.timestamp)
+  if (tranchedPool.actualSeniorPoolInvestment !== null) {
+    const currentActualSeniorPoolInvestment = tranchedPool.actualSeniorPoolInvestment as BigInt
+    tranchedPool.actualSeniorPoolInvestment = currentActualSeniorPoolInvestment.minus(event.params.amount)
+  }
+
+  tranchedPool.save()
   seniorPool.save()
 }
 

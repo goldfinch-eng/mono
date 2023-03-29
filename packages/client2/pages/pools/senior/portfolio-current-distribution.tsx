@@ -71,7 +71,7 @@ interface PoolTableData {
   href?: string;
   icon?: string | null;
   portfolioShare: number;
-  capitalOwed: BigNumber;
+  principalOwed: BigNumber;
   termEndTime?: BigNumber;
   poolRepaymentStatus?: LoanRepaymentStatus;
 }
@@ -125,7 +125,7 @@ const getTableDataByDeal = (
       href: `/pools/${pool.id}`,
       icon: dealDetails.borrower.logo?.url,
       portfolioShare,
-      capitalOwed: actualSeniorPoolInvestment,
+      principalOwed: actualSeniorPoolInvestment,
       termEndTime: pool.termEndTime,
       poolRepaymentStatus,
     });
@@ -157,7 +157,7 @@ const getTableDataByBorrower = (
             actualSeniorPoolInvestment,
             totalSeniorPoolFundsCurrentlyInvested
           ),
-          capitalOwed: actualSeniorPoolInvestment,
+          principalOwed: actualSeniorPoolInvestment,
         };
       } else {
         const currentPoolTableData = tableDataByBorrowerId[borrowerId];
@@ -165,11 +165,11 @@ const getTableDataByBorrower = (
         tableDataByBorrowerId[borrowerId] = {
           ...currentPoolTableData,
           portfolioShare: computePercentage(
-            actualSeniorPoolInvestment.add(currentPoolTableData.capitalOwed),
+            actualSeniorPoolInvestment.add(currentPoolTableData.principalOwed),
             totalSeniorPoolFundsCurrentlyInvested
           ),
-          capitalOwed: actualSeniorPoolInvestment.add(
-            currentPoolTableData.capitalOwed
+          principalOwed: actualSeniorPoolInvestment.add(
+            currentPoolTableData.principalOwed
           ),
         };
       }
@@ -177,7 +177,7 @@ const getTableDataByBorrower = (
   }
 
   return Object.values(tableDataByBorrowerId).sort(
-    (a, b) => b.capitalOwed.toNumber() - a.capitalOwed.toNumber()
+    (a, b) => b.principalOwed.toNumber() - a.principalOwed.toNumber()
   );
 };
 
@@ -233,7 +233,7 @@ export function PortfolioCurrentDistribution({
               Portfolio share
             </th>
             <th scope="col" className="w-[17.5%] text-right">
-              Capital owed
+              Principal owed
             </th>
             {distributionGroupByOption.value ===
               DistributionGroupByValue.BY_DEAL && (
@@ -256,7 +256,7 @@ export function PortfolioCurrentDistribution({
               href,
               icon,
               portfolioShare,
-              capitalOwed,
+              principalOwed,
               termEndTime,
               poolRepaymentStatus,
             }) => {
@@ -292,7 +292,7 @@ export function PortfolioCurrentDistribution({
                   </td>
                   <td className="text-right">
                     {formatCrypto({
-                      amount: capitalOwed,
+                      amount: principalOwed,
                       token: "USDC",
                     })}
                   </td>
