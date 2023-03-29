@@ -2263,6 +2263,14 @@ describe("StakingRewards", function () {
         await setup()
       })
 
+      it("checkpoints when called", async () => {
+        await stakingRewards.removeRewards("1000")
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        const currentTime = await getCurrentTimestamp()
+        expect(lastUpdateTime).to.eq(currentTime)
+      })
+
       it("reverts if removing more rewards than are loaded", async () => {
         const rewardsToRemove = "100000000000000000001"
         expect(new BN(rewardsToRemove)).to.bignumber.greaterThan(new BN(rewardsToLoad))
