@@ -79,14 +79,14 @@ const filesToSearch = merkleDistributorFiles.concat(
   merkleDirectDistributorFiles
 );
 
-const fileData = filesToSearch.map((file) => {
+const allFileData = filesToSearch.map((file) => {
   const grantManifest = readGrantFile(file);
   return { file, grantManifest };
 });
 
 function findMatchingGrantsByAccount(account: string): GrantWithSource[] {
   let allMatchingGrants: GrantWithSource[] = [];
-  for (const { file, grantManifest } of fileData) {
+  for (const { file, grantManifest } of allFileData) {
     const matchingGrants = grantManifest.grants.filter(
       (grant) => grant.account.toLowerCase() === account.toLowerCase()
     );
@@ -166,7 +166,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    let matchingGrantsFromJson = findMatchingGrantsByAccount(account);
+    const matchingGrantsFromJson = findMatchingGrantsByAccount(account);
     const merkleDistributorIndices = Array.from(
       new Set(
         matchingGrantsFromJson
@@ -198,12 +198,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     // add owned tokens
-    matchingGrantsFromJson = matchingGrantsFromJson.concat(
+    let matchingGrants = matchingGrantsFromJson.concat(
       matchingGrantsFromOwnedTokens
     );
 
     // remove relinquished tokens from matching grants
-    matchingGrantsFromJson = matchingGrantsFromJson.filter((grant) =>
+    matchingGrants = matchingGrants.filter((grant) =>
       knownTokensResult.relinquishedTokens.every(
         (token) => token.source !== grant.source && token.index !== grant.index
       )
@@ -211,7 +211,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     res.status(200).json({
       account,
-      matchingGrants: matchingGrantsFromJson,
+      matchingGrants,
     });
   } catch (e) {
     res
