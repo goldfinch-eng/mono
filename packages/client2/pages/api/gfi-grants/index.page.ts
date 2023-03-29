@@ -166,7 +166,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const matchingGrantsFromJson = findMatchingGrantsByAccount(account);
+    let matchingGrantsFromJson = findMatchingGrantsByAccount(account);
     const merkleDistributorIndices = Array.from(
       new Set(
         matchingGrantsFromJson
@@ -177,7 +177,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const backerMerkleDistributorIndices = Array.from(
       new Set(
         matchingGrantsFromJson
-          .filter((g) => g.source === "MERKLE_DISTRIBUTOR")
+          .filter((g) => g.source === "BACKER_MERKLE_DISTRIBUTOR")
           .map((g) => g.index)
       )
     );
@@ -190,16 +190,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       merkleDistributorIndices,
       backerMerkleDistributorIndices,
     });
-    console.log(JSON.stringify(knownTokensResult, undefined, 2));
     const matchingGrantsFromOwnedTokens = knownTokensResult.ownedTokens.flatMap(
-      (token) => findMatchingGrantsByIndexAndSource(token.index, token.source)
+      (token: {
+        index: number;
+        source: DirectGrantSource | IndirectGrantSource;
+      }) => findMatchingGrantsByIndexAndSource(token.index, token.source)
+    );
+
+    // add owned tokens
+    matchingGrantsFromJson = matchingGrantsFromJson.concat(
+      matchingGrantsFromOwnedTokens
+    );
+
+    // remove relinquished tokens from matching grants
+    matchingGrantsFromJson = matchingGrantsFromJson.filter((grant) =>
+      knownTokensResult.relinquishedTokens.every(
+        (token) => token.source !== grant.source && token.index !== grant.index
+      )
     );
 
     res.status(200).json({
       account,
-      matchingGrants: matchingGrantsFromJson.concat(
-        matchingGrantsFromOwnedTokens
-      ),
+      matchingGrants: matchingGrantsFromJson,
     });
   } catch (e) {
     res
