@@ -338,12 +338,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             }
           />
 
-          <div className="px-4">
-            <h2 className="mb-6 font-semibold">Recent activity</h2>
-            {tranchedPool ? (
-              <TransactionTable loanAddress={tranchedPool.id} />
-            ) : null}
-          </div>
+          <h2 className="mb-6 font-semibold">Recent activity</h2>
+          {tranchedPool ? (
+            <TransactionTable loanAddress={tranchedPool.id} />
+          ) : null}
         </div>
 
         <div className="flex flex-col" style={{ gridArea: "widgets" }}>
