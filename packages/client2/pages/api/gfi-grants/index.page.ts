@@ -204,10 +204,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     // remove relinquished tokens from matching grants
-    matchingGrants = matchingGrants.filter((grant) =>
-      knownTokensResult.relinquishedTokens.every(
-        (token) => token.source !== grant.source && token.index !== grant.index
-      )
+    matchingGrants = matchingGrants.filter(
+      (grant) =>
+        !knownTokensResult.relinquishedTokens.some(
+          (token) =>
+            token.source === grant.source && token.index === grant.index
+        )
     );
 
     res.status(200).json({
