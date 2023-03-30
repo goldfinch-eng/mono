@@ -198,9 +198,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }) => findMatchingGrantsByIndexAndSource(token.index, token.source)
     );
 
-    // add owned tokens
+    // add owned tokens (but only the ones that aren't already included in matchingGrantsFromJson)
     let matchingGrants = matchingGrantsFromJson.concat(
-      matchingGrantsFromOwnedTokens
+      matchingGrantsFromOwnedTokens.filter(
+        (gfot) =>
+          !matchingGrantsFromJson.some(
+            (gfj) => gfj.source === gfot.source && gfj.index === gfot.index
+          )
+      )
     );
 
     // remove relinquished tokens from matching grants
