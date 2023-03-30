@@ -55,7 +55,8 @@
     "react-use-wizard": "^2.2.0",
     "recharts": "^2.5.0",
     "styled-components": "^5.3.5",
-    "validator": "^13.9.0"
+    "validator": "^13.9.0",
+    "wagmi": "^0.12.8"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",
