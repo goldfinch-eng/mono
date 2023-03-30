@@ -59,6 +59,9 @@ export default {
           }
         : undefined,
     },
+    ngrok: {
+      url: "https://chain.warbler.ngrok.io",
+    },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
       // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
