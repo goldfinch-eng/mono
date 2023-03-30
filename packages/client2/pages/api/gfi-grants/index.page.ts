@@ -118,7 +118,7 @@ function findMatchingGrantsByIndexAndSource(
     ...g,
   }));
 }
-
+const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
 const knownTokens = gql`
   query KnownTokens(
     $account: String!
@@ -181,7 +181,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           .map((g) => g.index)
       )
     );
-    const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
+
     const knownTokensResult = await gqlClient.request<
       KnownTokensQuery,
       KnownTokensQueryVariables
