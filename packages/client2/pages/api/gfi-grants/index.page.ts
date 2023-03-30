@@ -106,8 +106,9 @@ function findMatchingGrantsByIndexAndSource(
   source: DirectGrantSource | IndirectGrantSource
 ): GrantWithSource[] {
   // locate the json file
-  const file = sourceToFile[source];
-  const grantManifest = readGrantFile(file);
+  const grantManifest = allFileData.filter(
+    ({ file }) => file == sourceToFile[source]
+  )[0].grantManifest;
 
   const matchingGrants = grantManifest.grants.filter(
     (grant) => grant.index === index
