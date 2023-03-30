@@ -23,6 +23,30 @@ export const TRANCHES = {
   Junior: 2,
 };
 
+export const SUBGRAPH_API_URL =
+  typeof process.env.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_GRAPHQL_URL
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:8000/subgraphs/name/goldfinch-subgraph"
+    : "";
+if (SUBGRAPH_API_URL === "") {
+  throw new Error("Could not determine GraphQL API URL");
+}
+
+export const CMS_API_URL =
+  typeof process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "http://cms.goldfinch.finance/api/graphql"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:3010/api/graphql"
+    : "";
+if (CMS_API_URL === "") {
+  throw new Error("Could not determine CMS API URL");
+}
+
 export const API_BASE_URL = process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   ? process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   : networkName === "mainnet"

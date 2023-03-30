@@ -365,6 +365,8 @@ dataSources:
           handler: handleRewardPaid
         - event: GrantRevoked(indexed uint256,uint256)
           handler: handleGrantRevoked
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
       file: ./src/mappings/community_rewards.ts
 
   - kind: ethereum/contract

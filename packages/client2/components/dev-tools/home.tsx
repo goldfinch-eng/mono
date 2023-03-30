@@ -118,6 +118,9 @@ export function Home() {
             <ButtonLink to="/callable-loans" colorScheme="transparent-mustard">
               Callable Loans
             </ButtonLink>
+            <ButtonLink to="/community-rewards" colorScheme="mint">
+              Community Rewards
+            </ButtonLink>
           </div>
         </Section>
       </div>
