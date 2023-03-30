@@ -70,7 +70,7 @@ export function ScrollingSectionedContainer({
       <div
         ref={navRef}
         className={clsx(
-          "sticky top-0 z-20 flex items-center justify-between gap-2 overflow-x-auto bg-mustard-50 p-2 transition-shadow [&::-webkit-scrollbar]:hidden"
+          "sticky top-0 z-20 -mx-2 flex items-center justify-between gap-2 overflow-x-auto bg-mustard-50 py-2 transition-shadow [&::-webkit-scrollbar]:hidden"
         )}
         style={{
           boxShadow: !isTopScrolled
@@ -98,7 +98,7 @@ export function ScrollingSectionedContainer({
           </AddonNavLink>
         ))}
       </div>
-      <div className="mt-8 space-y-15 px-4">
+      <div className="mt-8 space-y-15">
         {sections.map(({ navTitle, title, subtitle, content }, index) => (
           <div
             key={navTitle}
