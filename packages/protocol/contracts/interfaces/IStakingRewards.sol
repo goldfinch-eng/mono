@@ -63,6 +63,7 @@ interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
   /* ========== EVENTS ========== */
 
   event RewardAdded(uint256 reward);
+  event RewardRemoved(uint256 reward);
   event Staked(
     address indexed user,
     uint256 indexed tokenId,
