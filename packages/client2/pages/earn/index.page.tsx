@@ -1,7 +1,9 @@
 import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
+import { ReactElement } from "react";
 
 import { Button, HelperText, Link } from "@/components/design-system";
+import { MustardBackgroundLayout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -10,6 +12,7 @@ import {
   getLoanRepaymentStatus,
   LoanFundingStatus,
 } from "@/lib/pools";
+import { NextPageWithLayout } from "@/pages/_app.page";
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
@@ -96,9 +99,9 @@ const earnCmsQuery = gql`
   }
 `;
 
-export default function EarnPage({
-  dealMetadata,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+const EarnPage: NextPageWithLayout<
+  InferGetStaticPropsType<typeof getStaticProps>
+> = ({ dealMetadata }) => {
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
     variables: { numClosedPools: 3 },
     notifyOnNetworkStatusChange: true,
@@ -277,7 +280,13 @@ export default function EarnPage({
       )}
     </div>
   );
-}
+};
+
+EarnPage.getLayout = function getLayout(page: ReactElement) {
+  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
+};
+
+export default EarnPage;
 
 export const getStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({

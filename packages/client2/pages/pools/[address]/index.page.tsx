@@ -9,7 +9,7 @@ import {
   Banner,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal } from "@/components/layout";
+import { BannerPortal, MustardBackgroundLayout } from "@/components/layout";
 import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
@@ -26,6 +26,7 @@ import {
   LoanFundingStatus,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { NextPageWithLayout } from "@/pages/_app.page";
 
 import { AmountStats } from "./amount-stats";
 import { BorrowerProfile } from "./borrower-profile";
@@ -150,7 +151,9 @@ interface PoolPageProps {
   dealDetails: NonNullable<SingleDealQuery["Deal"]>;
 }
 
-export default function PoolPage({ dealDetails }: PoolPageProps) {
+const PoolPage: NextPageWithLayout<PoolPageProps> = ({
+  dealDetails,
+}: PoolPageProps) => {
   const { account } = useWallet();
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -395,7 +398,13 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       </div>
     </>
   );
-}
+};
+
+PoolPage.getLayout = function getLayout(page) {
+  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
+};
+
+export default PoolPage;
 
 interface StaticParams extends ParsedUrlQuery {
   address: string;

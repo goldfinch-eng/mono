@@ -1,13 +1,15 @@
 import "react-toastify/dist/ReactToastify.min.css";
 import "../styles/globals.css";
 import { ApolloProvider } from "@apollo/client";
+import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import Script from "next/script";
+import { ReactElement, ReactNode } from "react";
 import { ToastContainer } from "react-toastify";
 
 import { DevTools } from "@/components/dev-tools";
-import { Layout } from "@/components/layout";
+import { WhiteBackgroundLayout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
@@ -15,7 +17,19 @@ import { WalletProvider } from "@/lib/wallet";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+  // Use the layout defined at the page level, if available
+  const getLayout =
+    Component.getLayout ??
+    ((page) => <WhiteBackgroundLayout>{page}</WhiteBackgroundLayout>);
   return (
     <>
       {process.env.NEXT_PUBLIC_GA_TRACKING_ID ? (
@@ -44,9 +58,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             {/* remove this if we decide we want Google to index the app pages (unlikely) */}
             <meta name="robots" content="noindex" />
           </Head>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          {getLayout(<Component {...pageProps} />)}
 
           <AppWideModals />
 

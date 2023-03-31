@@ -8,7 +8,7 @@ import {
   HelperText,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal } from "@/components/layout";
+import { BannerPortal, MustardBackgroundLayout } from "@/components/layout";
 import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -17,6 +17,7 @@ import {
   SeniorPoolPageCmsDocument,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
+import { NextPageWithLayout } from "@/pages/_app.page";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 import { RiskMitigation } from "@/pages/pools/senior/risk-mitigation";
 
@@ -87,9 +88,9 @@ gql`
   }
 `;
 
-export default function SeniorPoolPage({
-  dealMetadata,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+const SeniorPoolPage: NextPageWithLayout<
+  InferGetStaticPropsType<typeof getStaticProps>
+> = ({ dealMetadata }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { account } = useWallet();
   const { data, error } = useSeniorPoolPageQuery({
     variables: {
@@ -244,7 +245,13 @@ export default function SeniorPoolPage({
       </div>
     </>
   );
-}
+};
+
+SeniorPoolPage.getLayout = function getLayout(page) {
+  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
+};
+
+export default SeniorPoolPage;
 
 export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<SeniorPoolPageCmsQuery>({
