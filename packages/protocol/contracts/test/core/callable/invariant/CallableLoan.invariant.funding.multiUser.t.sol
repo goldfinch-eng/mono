@@ -16,6 +16,7 @@ contract CallableLoanFundingHandler is Test {
   CallableLoan public loan;
   uint256 private sumDeposited;
   uint256 private sumWithdrawn;
+  uint256 public numDeposits;
   IERC20 private usdc;
   ITestUniqueIdentity0612 private uid;
   CallableLoanActorSet private actorSet;
@@ -47,6 +48,7 @@ contract CallableLoanFundingHandler is Test {
     vm.stopPrank();
 
     sumDeposited += amount;
+    numDeposits += 1;
     actorSet.actorInfo[currentActor].tokens.push(tokenId);
   }
 
@@ -179,6 +181,11 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     }
   }
 
+  // Mostly to debug issues where pool tokens do not match deposits due to test setup issues.
+  function assertPoolTokenCountMatchesDeposits() public {
+    assertEq(handler.numDeposits(), handler.reduceActors(0, this.numPoolTokensReducer));
+  }
+
   // PoolTokens PoolInfo invariants
 
   function invariant_PoolTokensPoolInfoTotalMintedIsSumOfPrincipalWithdrawable() public {
@@ -239,5 +246,13 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
       principalAmountAcc += poolTokens.getTokenInfo(info.tokens[i]).principalAmount;
     }
     return principalAmountAcc; 
+  }
+
+  function numPoolTokensReducer(
+    uint256 numPoolTokensAcc,
+    address actor,
+    CallableLoanActorInfo memory info
+  ) external view returns (uint256) {
+    return numPoolTokensAcc + info.tokens.length;
   }
 }
