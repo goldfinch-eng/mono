@@ -130,6 +130,7 @@ import {
   FAZZ_MAINNET_CALLABLE_LOAN,
 } from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 import {EXISTING_POOL_TO_TOKEN} from "../util/tranchedPool"
+import {makeDeposit} from "../util/fazzCallableLoan"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -1748,7 +1749,6 @@ describe("mainnet forking tests", async function () {
     })
 
     describe("Callable Loans upgradeability tests", () => {
-      // goldfinchFactory.createC
       describe("createCallableLoanWithProxyOwner", async () => {
         it("creates a proxy whose owner is different than the borrower", async () => {
           const protocolOwner = await getProtocolOwner()
@@ -1814,6 +1814,79 @@ describe("mainnet forking tests", async function () {
           // Now that the proxy is upgraded, this call should succeed
           await callableLoanProxyAsTranchedPool.SENIOR_ROLE()
         })
+      })
+    })
+
+    describe("Fazz callable loan after unpausing drawdowns", () => {
+      let callableLoan: CallableLoanInstance
+      let borrowerContract: BorrowerInstance
+      this.beforeEach(async () => {
+        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+        assertNonNullable(proxyOwner)
+        assertNonNullable(borrower)
+        assertNonNullable(lender)
+
+        // Add Fazz signer for rest of tests
+        await impersonateAccount(hre, FAZZ_MAINNET_EOA)
+        borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
+          at: FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
+        })
+
+        await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+        callableLoan = await getTruffleContractAtAddress<CallableLoanInstance>(
+          "CallableLoan",
+          FAZZ_MAINNET_CALLABLE_LOAN
+        )
+
+        await fundWithWhales(["USDC", "ETH"], [lender])
+        await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+          await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+        }
+        await makeDeposit({
+          hre,
+          callableLoan,
+          usdc,
+          lender,
+          depositAmount: new BN(FAZZ_DEAL_LIMIT_IN_DOLLARS),
+        })
+
+        await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
+      })
+
+      it("allows multiple drawdowns", async () => {
+        const previousBorrowerBalance = await usdc.balanceOf(FAZZ_MAINNET_EOA)
+        const previousLoanBalance = await usdc.balanceOf(callableLoan.address)
+
+        expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance) // .add(usdcVal(100)))
+        expect(await usdc.balanceOf(callableLoan.address)).to.equal(previousLoanBalance) // .sub(usdcVal(100)))
+
+        await expect(callableLoan.unpauseDrawdowns({from: FAZZ_MAINNET_EOA})).to.be.rejected
+        await expect(callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG}))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(100), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+
+        expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100)))
+        expect(await usdc.balanceOf(callableLoan.address)).to.equal(previousLoanBalance.sub(usdcVal(100)))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(200), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+
+        expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(300)))
+        expect(await usdc.balanceOf(callableLoan.address)).to.equal(previousLoanBalance.sub(usdcVal(300)))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(99700), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+
+        expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100_000)))
+        expect(await usdc.balanceOf(callableLoan.address)).to.equal(previousLoanBalance.sub(usdcVal(100_000)))
       })
     })
 
