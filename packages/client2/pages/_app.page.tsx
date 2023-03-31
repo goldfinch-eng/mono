@@ -17,6 +17,7 @@ import { WalletProvider } from "@/lib/wallet";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
 
+// Per-page layouts in Next.js are documented here: https://nextjs.org/docs/basic-features/layouts
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
 };
