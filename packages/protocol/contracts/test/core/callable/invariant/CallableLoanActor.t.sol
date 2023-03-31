@@ -17,7 +17,10 @@ struct CallableLoanActorSet {
 ///   hold for every actor and across all actors, respectively
 library CallableLoanActorSetLib {
   function add(CallableLoanActorSet storage s, address actor) internal {
-    if (!s.saved[actor]) s.actors.push(actor);
+    if (!s.saved[actor]) {
+      s.actors.push(actor);
+      s.saved[actor] = true;
+    }
   }
 
   function contains(CallableLoanActorSet storage s, address actor) internal view returns (bool) {
@@ -31,7 +34,7 @@ library CallableLoanActorSetLib {
   /// @notice Execute fn for every actor in the set. The actor's info is also supplied to fn
   function forEach(
     CallableLoanActorSet storage s,
-    function(address,CallableLoanActorInfo memory) external fn
+    function(address, CallableLoanActorInfo memory) external fn
   ) internal {
     for (uint i = 0; i < s.actors.length; ++i) {
       address actor = s.actors[i];
@@ -43,7 +46,7 @@ library CallableLoanActorSetLib {
   function reduce(
     CallableLoanActorSet storage s,
     uint256 acc,
-    function(uint256,address,CallableLoanActorInfo memory) external returns (uint256) reducer
+    function(uint256, address, CallableLoanActorInfo memory) external returns (uint256) reducer
   ) internal returns (uint256) {
     for (uint i = 0; i < s.actors.length; ++i) {
       address actor = s.actors[i];
