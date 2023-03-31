@@ -8,9 +8,9 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-export function MustardBackgroundLayout({ children }: LayoutProps) {
+export function WhiteBackgroundLayout({ children }: LayoutProps) {
   return (
-    <div className="flex min-h-full flex-col bg-mustard-50">
+    <div className="flex min-h-full flex-col bg-white">
       <Nav />
       <div className="relative flex-grow">
         <div id={BANNER_ID} />
