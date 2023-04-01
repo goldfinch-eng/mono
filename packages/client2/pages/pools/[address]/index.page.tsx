@@ -26,6 +26,7 @@ import {
   LoanFundingStatus,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { NextPageWithLayout } from "@/pages/_app.page";
 
 import { AmountStats } from "./amount-stats";
 import { BorrowerProfile } from "./borrower-profile";
@@ -150,7 +151,9 @@ interface PoolPageProps {
   dealDetails: NonNullable<SingleDealQuery["Deal"]>;
 }
 
-export default function PoolPage({ dealDetails }: PoolPageProps) {
+const PoolPage: NextPageWithLayout<PoolPageProps> = ({
+  dealDetails,
+}: PoolPageProps) => {
   const { account } = useWallet();
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -395,7 +398,11 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       </div>
     </>
   );
-}
+};
+
+PoolPage.layout = "mustard-background";
+
+export default PoolPage;
 
 interface StaticParams extends ParsedUrlQuery {
   address: string;

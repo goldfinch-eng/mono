@@ -10,6 +10,7 @@ import {
   getLoanRepaymentStatus,
   LoanFundingStatus,
 } from "@/lib/pools";
+import { NextPageWithLayout } from "@/pages/_app.page";
 import {
   GoldfinchPoolsMetrics,
   GoldfinchPoolsMetricsPlaceholder,
@@ -96,9 +97,9 @@ const earnCmsQuery = gql`
   }
 `;
 
-export default function EarnPage({
-  dealMetadata,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+const EarnPage: NextPageWithLayout<
+  InferGetStaticPropsType<typeof getStaticProps>
+> = ({ dealMetadata }) => {
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
     variables: { numClosedPools: 3 },
     notifyOnNetworkStatusChange: true,
@@ -277,7 +278,11 @@ export default function EarnPage({
       )}
     </div>
   );
-}
+};
+
+EarnPage.layout = "mustard-background";
+
+export default EarnPage;
 
 export const getStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({
