@@ -25,7 +25,10 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
-export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+export default function GoldfinchApp({
+  Component,
+  pageProps,
+}: AppPropsWithLayout) {
   // Use the layout defined at the page level, if available
   const layout = Component.layout ?? "white-background";
   return (
