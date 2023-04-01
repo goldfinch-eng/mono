@@ -5,6 +5,7 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
+import { WagmiConfig } from "wagmi";
 
 import { DevTools } from "@/components/dev-tools";
 import { Layout } from "@/components/layout";
@@ -12,6 +13,7 @@ import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
 import { WalletProvider } from "@/lib/wallet";
+import { wagmiClient } from "@/lib/wallet/wagmi";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
 
@@ -36,7 +38,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </>
       ) : null}
 
-      <WalletProvider>
+      {/* <WalletProvider> */}
+      <WagmiConfig client={wagmiClient}>
         <ApolloProvider client={apolloClient}>
           <ToastContainer position="top-center" theme="colored" />
           <Head>
@@ -48,16 +51,17 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             <Component {...pageProps} />
           </Layout>
 
-          <AppWideModals />
+          {/* <AppWideModals /> */}
 
-          {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
+          {/* {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
           process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (
             <DevTools />
-          ) : null}
+          ) : null} */}
           <AllNuxes />
-          <AppLevelSideEffects />
+          {/* <AppLevelSideEffects /> */}
         </ApolloProvider>
-      </WalletProvider>
+      </WagmiConfig>
+      {/* </WalletProvider> */}
     </>
   );
 }

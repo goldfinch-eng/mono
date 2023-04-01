@@ -17,7 +17,7 @@ const { chains, provider, webSocketProvider } = configureChains(
   ]
 );
 
-const metaMaskConnector = new MetaMaskConnector({
+export const metaMaskConnector = new MetaMaskConnector({
   chains: chains.filter((c) => c.id === DESIRED_CHAIN_ID),
 });
 

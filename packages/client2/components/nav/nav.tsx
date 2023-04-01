@@ -93,7 +93,7 @@ export function Nav() {
         </div>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
-          <WalletButton />
+          {/* <WalletButton /> */}
           <SecondaryMenu />
         </div>
       </div>
