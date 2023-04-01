@@ -28,20 +28,22 @@ Of n tranches, Tranche #0 to Tranche #n-1 are call request period tranches. The 
 
 ### A diagram
 
-In the diagram below, imagine a loan where the first drawdown occurs in March.
-The Schedule's stub period is the rest of March, and the first principal period is from the drawdown to the end of June.
+In the diagram below, imagine a loan where the first drawdown occurs in February.
+The Schedule's stub period is the rest of February, and the first principal period is from the drawdown to the end of May.
 
+                          +- Stub Period
+                          v
                         +---+-----------------------+---------------------------+
-    principal periods   |///|==>     0      |     1     |     2     |     3     |
-                        |///+---------------+-----------+-----------+-----------+ E
-    Tranche index       |///|==>     0      |     1     |     2     |    ***    | N
-                        +---+---+---+---+---+---+---+---+---+---+---+---+---+---+ D
-    Call request period |///|==>     0      |     1     |     2     |\\\\\\\\\\\|
+    principal periods   |///|     0     |     1     |     2     |     3     |
+                        |---+-----------+-----------+-----------+-----------+ E
+    Tranche index       |///|     0     |     1     |     2     |    ***    | N
+                        +---+---+---+---+---+---+---+---+---+---+---+---+---+ D
+    Call request period |///|     0     |     1     |     2     |\\\\\\\\\\\|
     periods             +---+---+---+---+---+---+---+---+---+---+---+---+---+---+
     PaymentSchedule     |FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|JAN|FEB|MAR|
-    Periods             | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12| 13|
+    Periods             |///| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12|
                         +---+---+---+---+---+---+---+---+---+---+---+---+---+
-    absolute             ...| 25| 26| 27| 28| 29| 30| 31| 32| 33| 34| 35| 36|
+    absolute             ...| 25| 26| 27| 28| 29| 30| 31| 32| 33| 34| 35| 36| 37
     periods             +---+---+---+---+---+---+---+---+---+---+---+---+---+
 
 \*\*\* Tranche index 3 exists, but it refers to uncalled capital.
