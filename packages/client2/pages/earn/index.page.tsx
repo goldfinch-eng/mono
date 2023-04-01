@@ -1,9 +1,7 @@
 import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
-import { ReactElement } from "react";
 
 import { Button, HelperText, Link } from "@/components/design-system";
-import { MustardBackgroundLayout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -282,9 +280,7 @@ const EarnPage: NextPageWithLayout<
   );
 };
 
-EarnPage.getLayout = function getLayout(page: ReactElement) {
-  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
-};
+EarnPage.layout = "mustard-background";
 
 export default EarnPage;
 

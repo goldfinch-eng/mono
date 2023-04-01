@@ -8,7 +8,7 @@ import {
   HelperText,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal, MustardBackgroundLayout } from "@/components/layout";
+import { BannerPortal } from "@/components/layout";
 import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -247,9 +247,7 @@ const SeniorPoolPage: NextPageWithLayout<
   );
 };
 
-SeniorPoolPage.getLayout = function getLayout(page) {
-  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
-};
+SeniorPoolPage.layout = "mustard-background";
 
 export default SeniorPoolPage;
 

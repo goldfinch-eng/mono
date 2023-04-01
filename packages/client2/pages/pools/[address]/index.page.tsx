@@ -9,7 +9,7 @@ import {
   Banner,
   ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal, MustardBackgroundLayout } from "@/components/layout";
+import { BannerPortal } from "@/components/layout";
 import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
@@ -400,9 +400,7 @@ const PoolPage: NextPageWithLayout<PoolPageProps> = ({
   );
 };
 
-PoolPage.getLayout = function getLayout(page) {
-  return <MustardBackgroundLayout>{page}</MustardBackgroundLayout>;
-};
+PoolPage.layout = "mustard-background";
 
 export default PoolPage;
 

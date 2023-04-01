@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { ReactNode } from "react";
 
 import { Footer } from "../footer";
@@ -6,11 +7,12 @@ import { BANNER_ID, SUBNAV_ID } from "./portals";
 
 interface LayoutProps {
   children: ReactNode;
+  className?: string;
 }
 
-export function WhiteBackgroundLayout({ children }: LayoutProps) {
+export function DefaultLayout({ children, className }: LayoutProps) {
   return (
-    <div className="flex min-h-full flex-col bg-white">
+    <div className={clsx("flex min-h-full flex-col", className)}>
       <Nav />
       <div className="relative flex-grow">
         <div id={BANNER_ID} />
