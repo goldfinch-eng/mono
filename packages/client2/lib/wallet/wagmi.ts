@@ -28,6 +28,7 @@ const metaMaskConnector = new MetaMaskConnector({
 // Initially tried the non-legacy wc connector, but neither Impersonator nor MetaMask mobile would work with it.
 // I swapped to legacy and they both resumed working. This is worrisome because legacy wc is being sunset on June 28th 2023,
 // but if client wallet applications don't adopt it then we can't do much about it.
+// Thankfully Impersonator is working on it (https://github.com/apoorvlathey/impersonator/issues/9#issuecomment-1458465970)
 const walletConnectLegacyConnector = new WalletConnectLegacyConnector({
   chains: allowedChains,
   options: { qrcode: true },
