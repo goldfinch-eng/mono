@@ -64,7 +64,7 @@ export default function GoldfinchApp({
           </Head>
           {getLayout(layout)(<Component {...pageProps} />)}
 
-          {/* <AppWideModals /> */}
+          <AppWideModals />
 
           {/* {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
           process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (

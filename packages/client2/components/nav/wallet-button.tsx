@@ -1,48 +1,51 @@
 import { useEffect, useState } from "react";
+import {
+  useAccount,
+  useEnsAvatar,
+  useEnsName,
+  useNetwork,
+  useSwitchNetwork,
+} from "wagmi";
 
 import { Button, Popover } from "@/components/design-system";
 import { DESIRED_CHAIN_ID } from "@/constants";
 import { openWalletModal } from "@/lib/state/actions";
-import { abbreviateAddress, useWallet } from "@/lib/wallet";
+import { abbreviateAddress } from "@/lib/wallet";
 
 import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, error, connector, provider, ENSName } = useWallet();
-  const [ENSAvatar, setENSAvatar] = useState<string | null>(null);
+  // Since autoConnect to on, useAccount returns an address immediately on first render in the client. This causes a conflict between client and server on first render (the hydration step)
+  // In order to resolve this conflict, we only render this component on the client
+  const [isRenderingOnClient, setIsRenderingOnClient] = useState(false);
   useEffect(() => {
-    if (!provider || !account) {
-      return;
-    }
-    const asyncEffect = async () => {
-      try {
-        const avatar = await provider.getAvatar(account);
-        setENSAvatar(avatar);
-      } catch (e) {
-        // do nothing. an error would occur if the current network doesn't support ENS (this is true on localhost)
-      }
-    };
-    asyncEffect();
-  }, [provider, account]);
+    setIsRenderingOnClient(true);
+  }, []);
+  const { address } = useAccount();
+  const network = useNetwork();
+  const skipENS = network.chain?.id === 31337;
+  // ENS doesn't exist on Hardhat so we purposefully withhold `address` here to make this skip, otherwise you get an annoying but non-blocking error
+  const { data: ENSName } = useEnsName({
+    address: skipENS ? undefined : address,
+  });
+  const { data: ENSAvatar } = useEnsAvatar({
+    address: skipENS ? undefined : address,
+  });
+  const isWrongNetwork = network.chain?.unsupported;
+  const { switchNetwork } = useSwitchNetwork();
 
-  return error ? (
+  return !isRenderingOnClient ? null : isWrongNetwork ? (
     <Button
       variant="rounded"
-      className="h-10 text-clay-500"
+      className="h-10 !text-clay-500"
       iconRight="Exclamation"
       colorScheme="sand"
-      onClick={
-        error.name === "ChainIdNotAllowedError"
-          ? () => connector.activate(DESIRED_CHAIN_ID)
-          : openWalletModal
-      }
+      onClick={() => switchNetwork?.(DESIRED_CHAIN_ID)}
     >
-      {error.name === "ChainIdNotAllowedError"
-        ? "Wrong network"
-        : "Wallet error"}
+      Wrong network
     </Button>
-  ) : account ? (
+  ) : address ? (
     <Popover
       placement="bottom-end"
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
@@ -53,7 +56,7 @@ export function WalletButton() {
         colorScheme="sand"
       >
         <span className="hidden md:block">
-          {ENSName ? ENSName : abbreviateAddress(account)}
+          {ENSName ? ENSName : abbreviateAddress(address)}
         </span>
         {ENSAvatar ? (
           // Not using next/image because we can't know the origin of this image ahead of time
@@ -65,7 +68,7 @@ export function WalletButton() {
             className="h-6 w-6 rounded-full object-cover"
           />
         ) : (
-          <Identicon account={account} scale={3} />
+          <Identicon account={address} scale={3} />
         )}
       </Button>
     </Popover>

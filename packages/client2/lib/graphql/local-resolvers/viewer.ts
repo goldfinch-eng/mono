@@ -1,8 +1,9 @@
 import { Resolvers } from "@apollo/client";
+import { getAccount } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract, getContract2 } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
@@ -18,29 +19,24 @@ import {
 async function erc20Balance(
   token: SupportedCrypto
 ): Promise<CryptoAmount | null> {
-  try {
-    const provider = await getProvider();
-    const account = await provider.getSigner().getAddress();
-
-    const contract = await getContract({
-      name:
-        token === "GFI"
-          ? "GFI"
-          : token === "USDC"
-          ? "USDC"
-          : token === "FIDU"
-          ? "Fidu"
-          : token === "CURVE_LP"
-          ? "CurveLP"
-          : assertUnreachable(token),
-      provider,
-    });
-    const balance = await contract.balanceOf(account);
-    return { token, amount: balance };
-  } catch (e) {
-    // This will execute if getAddress() above throws (which happens when a user wallet isn't connected)
+  const account = getAccount();
+  if (!account.address) {
     return null;
   }
+  const contract = await getContract2({
+    name:
+      token === "GFI"
+        ? "GFI"
+        : token === "USDC"
+        ? "USDC"
+        : token === "FIDU"
+        ? "Fidu"
+        : token === "CURVE_LP"
+        ? "CurveLP"
+        : assertUnreachable(token),
+  });
+  const balance = await contract.balanceOf(account.address);
+  return { token, amount: balance };
 }
 
 export const viewerResolvers: Resolvers[string] = {

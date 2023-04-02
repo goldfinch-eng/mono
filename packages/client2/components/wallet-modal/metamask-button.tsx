@@ -1,22 +1,32 @@
+import { useConnect } from "wagmi";
+
 import { Spinner } from "@/components/design-system";
 import { DESIRED_CHAIN_ID } from "@/constants";
-import { metaMask, metaMaskHooks } from "@/lib/wallet/connectors/metamask";
+import { metaMaskConnector } from "@/lib/wallet/wagmi";
 
 import MetaMaskLogo from "./metamask-logo.svg";
 import { ProviderButton } from "./provider-button";
 
 export function MetaMaskButton() {
-  const isActive = metaMaskHooks.useIsActive();
-  const isActivating = metaMaskHooks.useIsActivating();
-  const error = metaMaskHooks.useError();
+  const {
+    connect,
+    data,
+    error,
+    isError,
+    isSuccess,
+    isLoading,
+    pendingConnector,
+  } = useConnect();
+  const isActive = data?.connector?.id === "metaMask" && isSuccess;
+  const isActivating = pendingConnector?.id === "metaMask" && isLoading;
+  const errorMessage =
+    pendingConnector?.id === "metaMask" && isError ? error?.message : undefined;
   const handleConnectMetaMask = () => {
-    metaMask.activate(DESIRED_CHAIN_ID);
+    connect({ connector: metaMaskConnector, chainId: DESIRED_CHAIN_ID });
   };
+
   return (
-    <ProviderButton
-      onClick={handleConnectMetaMask}
-      errorMessage={error?.message}
-    >
+    <ProviderButton onClick={handleConnectMetaMask} errorMessage={errorMessage}>
       {`MetaMask${isActive ? " (Connected)" : ""}`}
       {isActivating ? (
         <Spinner className="!h-10 !w-10 text-[#f6851b]" />

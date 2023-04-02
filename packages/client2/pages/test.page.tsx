@@ -6,15 +6,15 @@ import { metaMaskConnector } from "@/lib/wallet/wagmi";
 
 export default function TestPage() {
   const account = useAccount();
-  console.log({
-    account: {
-      address: account.address,
-      isConnecting: account.isConnecting,
-      isConnected: account.isConnected,
-      isReconnecting: account.isReconnecting,
-      isDisconnected: account.isDisconnected,
-    },
-  });
+  // console.log({
+  //   account: {
+  //     address: account.address,
+  //     isConnecting: account.isConnecting,
+  //     isConnected: account.isConnected,
+  //     isReconnecting: account.isReconnecting,
+  //     isDisconnected: account.isDisconnected,
+  //   },
+  // });
   const connect = useConnect();
   const disconnect = useDisconnect();
   const network = useNetwork();
