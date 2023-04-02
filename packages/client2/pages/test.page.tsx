@@ -1,8 +1,4 @@
-import { useAccount, useConnect, useDisconnect, useNetwork } from "wagmi";
-
-import { Button } from "@/components/design-system";
-import { DESIRED_CHAIN_ID } from "@/constants";
-import { metaMaskConnector } from "@/lib/wallet/wagmi";
+import { useAccount, useConnect, useNetwork } from "wagmi";
 
 export default function TestPage() {
   const account = useAccount();
@@ -16,7 +12,6 @@ export default function TestPage() {
   //   },
   // });
   const connect = useConnect();
-  const disconnect = useDisconnect();
   const network = useNetwork();
   // console.log({ connect });
 
@@ -52,17 +47,6 @@ export default function TestPage() {
           <pre>{JSON.stringify(network, null, 2)}</pre>
         </div>
       </div>
-      <Button
-        onClick={() =>
-          connect.connect({
-            chainId: DESIRED_CHAIN_ID,
-            connector: metaMaskConnector,
-          })
-        }
-      >
-        Connect MetaMask
-      </Button>
-      <Button onClick={() => disconnect.disconnect()}>Disconnect</Button>
     </div>
   );
 }
