@@ -1,6 +1,7 @@
 import "react-toastify/dist/ReactToastify.min.css";
 import "../styles/globals.css";
 import { ApolloProvider } from "@apollo/client";
+import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import Script from "next/script";
@@ -8,7 +9,7 @@ import { ToastContainer } from "react-toastify";
 import { WagmiConfig } from "wagmi";
 
 import { DevTools } from "@/components/dev-tools";
-import { Layout } from "@/components/layout";
+import { getLayout, Layout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
@@ -17,7 +18,21 @@ import { wagmiClient } from "@/lib/wallet/wagmi";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+// Per-page layouts in Next.js are documented here: https://nextjs.org/docs/basic-features/layouts
+export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
+  layout?: Layout;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+export default function GoldfinchApp({
+  Component,
+  pageProps,
+}: AppPropsWithLayout) {
+  // Use the layout defined at the page level, if available
+  const layout = Component.layout ?? "white-background";
   return (
     <>
       {process.env.NEXT_PUBLIC_GA_TRACKING_ID ? (
@@ -47,9 +62,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             {/* remove this if we decide we want Google to index the app pages (unlikely) */}
             <meta name="robots" content="noindex" />
           </Head>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          {getLayout(layout)(<Component {...pageProps} />)}
 
           {/* <AppWideModals /> */}
 

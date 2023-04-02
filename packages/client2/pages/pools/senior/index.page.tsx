@@ -17,6 +17,7 @@ import {
   SeniorPoolPageCmsDocument,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
+import { NextPageWithLayout } from "@/pages/_app.page";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 import { RiskMitigation } from "@/pages/pools/senior/risk-mitigation";
 
@@ -87,9 +88,9 @@ gql`
   }
 `;
 
-export default function SeniorPoolPage({
-  dealMetadata,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+const SeniorPoolPage: NextPageWithLayout<
+  InferGetStaticPropsType<typeof getStaticProps>
+> = ({ dealMetadata }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { account } = useWallet();
   const { data, error } = useSeniorPoolPageQuery({
     variables: {
@@ -244,7 +245,11 @@ export default function SeniorPoolPage({
       </div>
     </>
   );
-}
+};
+
+SeniorPoolPage.layout = "mustard-background";
+
+export default SeniorPoolPage;
 
 export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<SeniorPoolPageCmsQuery>({
