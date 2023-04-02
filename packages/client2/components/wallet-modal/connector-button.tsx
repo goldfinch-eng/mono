@@ -13,6 +13,10 @@ const connectorIdToStyles = {
     ConnectorIcon: WalletConnectLogo,
     spinnerColor: "#3f99fc",
   },
+  walletConnectLegacy: {
+    ConnectorIcon: WalletConnectLogo,
+    spinnerColor: "#3f99fc",
+  },
   coinbaseWallet: {
     ConnectorIcon: CoinbaseWalletLogo,
     spinnerColor: "#0052ff",

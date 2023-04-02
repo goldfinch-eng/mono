@@ -2,7 +2,7 @@ import { configureChains, mainnet, createClient } from "wagmi";
 import { hardhat } from "wagmi/chains";
 import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
 import { MetaMaskConnector } from "wagmi/connectors/metaMask";
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
@@ -25,9 +25,12 @@ const metaMaskConnector = new MetaMaskConnector({
   chains: allowedChains,
 });
 
-const walletConnectConnector = new WalletConnectConnector({
+// Initially tried the non-legacy wc connector, but neither Impersonator nor MetaMask mobile would work with it.
+// I swapped to legacy and they both resumed working. This is worrisome because legacy wc is being sunset on June 28th 2023,
+// but if client wallet applications don't adopt it then we can't do much about it.
+const walletConnectLegacyConnector = new WalletConnectLegacyConnector({
   chains: allowedChains,
-  options: { projectId: "04d6d7fe9c39eb2ecdbff1b38342012a" }, // ! This project ID was provisioned by Andre and lives on a personal account for WalletConnect. Should replace this with something owned by a Warbler admin
+  options: { qrcode: true },
 });
 
 const coinbaseWalletConnector = new CoinbaseWalletConnector({
@@ -45,7 +48,7 @@ export const wagmiClient = createClient({
   webSocketProvider,
   connectors: [
     metaMaskConnector,
-    walletConnectConnector,
+    walletConnectLegacyConnector,
     coinbaseWalletConnector,
   ],
 });

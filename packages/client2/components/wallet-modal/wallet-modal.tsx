@@ -33,7 +33,11 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           <ConnectorButton
             key={connector.id}
             connectorId={connector.id}
-            connectorName={connector.name}
+            connectorName={
+              connector.id === "walletConnectLegacy"
+                ? "WalletConnect"
+                : connector.name
+            }
             onClick={() => connect({ connector, chainId: DESIRED_CHAIN_ID })}
             isLoading={isLoading && pendingConnector?.id === connector.id}
             errorMessage={
