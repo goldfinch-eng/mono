@@ -8,6 +8,7 @@ import { MetaMask } from "@web3-react/metamask";
 import { Network } from "@web3-react/network";
 import { WalletConnect } from "@web3-react/walletconnect";
 import { ReactNode } from "react";
+import { useAccount, useProvider, useSigner } from "wagmi";
 
 import {
   coinbaseWallet,
@@ -37,6 +38,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
 export function useWallet() {
   return useWeb3React();
+}
+
+export function useWallet2() {
+  const account = useAccount();
+  const provider = useProvider();
+  const { data: signer } = useSigner();
+  return {
+    account: account.address,
+    provider,
+    signer,
+  };
 }
 
 export async function connectEagerly() {

@@ -11,7 +11,7 @@ import {
 } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { ApolloClientError, handleApolloClientError } from "@/lib/utils";
 import {
@@ -19,7 +19,7 @@ import {
   getUIDLabelFromType,
   UIDType,
 } from "@/lib/verify";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -31,14 +31,14 @@ export function MintStep() {
   useModalTitle("Mint your UID");
 
   const { signature, uidVersion } = useVerificationFlowContext();
-  const { account, provider } = useWallet();
+  const { account, provider, signer: walletSigner } = useWallet2();
   const apolloClient = useApolloClient();
 
   const { goToStep } = useWizard();
 
   const rhfMethods = useForm();
   const handleMint = async () => {
-    if (!account || !signature || !provider) {
+    if (!account || !signature || !provider || !walletSigner) {
       throw new Error("Unable to verify eligibility to mint.");
     }
     const signer = await fetchUniqueIdentitySigner(
@@ -47,9 +47,9 @@ export function MintStep() {
       signature.signatureBlockNum
     );
 
-    const uidContract = await getContract({
+    const uidContract = await getContract2({
       name: "UniqueIdentity",
-      provider,
+      signer: walletSigner,
     });
 
     const gasPrice = await provider.getGasPrice();

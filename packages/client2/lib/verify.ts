@@ -1,4 +1,5 @@
-import type { Web3Provider } from "@ethersproject/providers";
+import { Provider } from "@wagmi/core";
+import { Signer } from "ethers";
 
 import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 
@@ -20,9 +21,8 @@ function getMessageToSign(blockNumber: number): string {
   return `Sign in to Goldfinch: ${blockNumber}`;
 }
 
-export async function getSignatureForKyc(provider: Web3Provider) {
+export async function getSignatureForKyc(provider: Provider, signer: Signer) {
   try {
-    const signer = provider.getSigner();
     const blockNumber = await provider.getBlockNumber();
     const currentBlock = await provider.getBlock(blockNumber);
     const currentBlockTimestamp = currentBlock.timestamp;
