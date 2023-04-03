@@ -1,7 +1,5 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount } from "@wagmi/core";
-
-import { getProvider } from "@/lib/wallet";
+import { getAccount, getProvider } from "@wagmi/core";
 
 import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
 
@@ -85,7 +83,7 @@ export const rootQueryResolvers: Resolvers[string] = {
     }
   },
   async currentBlock(): Promise<BlockInfo | null> {
-    const provider = await getProvider();
+    const provider = getProvider();
     const currentBlock = await provider.getBlock("latest");
     return {
       __typename: "BlockInfo",
