@@ -1,4 +1,4 @@
-import { useAccount, useConnect, useNetwork } from "wagmi";
+import { useAccount, useBalance, useConnect, useNetwork } from "wagmi";
 
 export default function TestPage() {
   const account = useAccount();
@@ -14,10 +14,19 @@ export default function TestPage() {
   const connect = useConnect();
   const network = useNetwork();
   // console.log({ connect });
+  const { data: balanceData, error: balanceError } = useBalance({
+    address: account.address,
+  });
 
   return (
     <div>
       <div>Hello {account.address}</div>
+      <div>
+        Your balance: {balanceData?.formatted} {balanceData?.symbol}
+      </div>
+      {balanceError ? (
+        <div className="text-clay-500">{balanceError?.message}</div>
+      ) : null}
       <div>
         Network: {network.chain?.name}{" "}
         {network.chain?.unsupported ? (

@@ -6,27 +6,26 @@ import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLega
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-import { DESIRED_CHAIN_ID } from "@/constants";
-
 if (!process.env.NEXT_PUBLIC_ALCHEMY_API_KEY) {
   throw new Error("NEXT_PUBLIC_ALCHEMY_API_KEY env var is not defined");
 }
-const { chains, provider, webSocketProvider } = configureChains(
-  [mainnet, hardhat],
-  [
-    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
-    publicProvider(),
-  ]
-);
-
-const allowedChains = chains.filter((c) => c.id === DESIRED_CHAIN_ID);
+const { chains, provider, webSocketProvider } =
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? configureChains([hardhat], [publicProvider()])
+    : configureChains(
+        [mainnet],
+        [
+          alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
+          publicProvider(),
+        ]
+      );
 
 const metaMaskConnector = new MetaMaskConnector({
-  chains: allowedChains,
+  chains,
 });
 
 // const walletConnectConnector = new WalletConnectConnector({
-//   chains: allowedChains,
+//   chains,
 //   options: { projectId: "04d6d7fe9c39eb2ecdbff1b38342012a" }, // ! This project ID was provisioned by Andre and lives on a personal account for WalletConnect. Should replace this with something owned by a Warbler admin
 // });
 
@@ -35,12 +34,12 @@ const metaMaskConnector = new MetaMaskConnector({
 // but if client wallet applications don't adopt it then we can't do much about it.
 // Thankfully Impersonator is working on it (https://github.com/apoorvlathey/impersonator/issues/9#issuecomment-1458465970)
 const walletConnectLegacyConnector = new WalletConnectLegacyConnector({
-  chains: allowedChains,
+  chains,
   options: { qrcode: true },
 });
 
 const coinbaseWalletConnector = new CoinbaseWalletConnector({
-  chains: allowedChains,
+  chains,
   options: {
     appName: "Goldfinch",
     appLogoUrl:
@@ -50,7 +49,9 @@ const coinbaseWalletConnector = new CoinbaseWalletConnector({
 
 export const wagmiClient = createClient({
   autoConnect: true,
+  // @ts-expect-error TS complains here because of the way we call configureChains() with different chains conditionally. In practice it's fine.
   provider,
+  // @ts-expect-error same as above
   webSocketProvider,
   connectors: [
     metaMaskConnector,
