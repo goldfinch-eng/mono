@@ -66,10 +66,10 @@ export default function GoldfinchApp({
 
           <AppWideModals />
 
-          {/* {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
+          {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
           process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (
             <DevTools />
-          ) : null} */}
+          ) : null}
           <AllNuxes />
           {/* <AppLevelSideEffects /> */}
         </ApolloProvider>
