@@ -3,12 +3,12 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { StakedPositionType } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 interface StakeCardFormProps {
   max: CryptoAmount<"FIDU" | "CURVE_LP">;
@@ -25,23 +25,23 @@ export function StakeForm({
   positionType,
   onComplete,
 }: StakeCardFormProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
 
   const rhfMethods = useForm<StakeFormFields>();
   const { control } = rhfMethods;
 
   const onSubmit = async (data: StakeFormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract({
+    const stakingRewardsContract = await getContract2({
       name: "StakingRewards",
-      provider,
+      signer,
     });
-    const fiduContract = await getContract({ name: "Fidu", provider });
-    const curveLpTokenContract = await getContract({
+    const fiduContract = await getContract2({ name: "Fidu", signer });
+    const curveLpTokenContract = await getContract2({
       name: "CurveLP",
-      provider,
+      signer,
     });
 
     const value = utils.parseUnits(

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import {
   StakedPositionType,
   UnstakeFormPositionFieldsFragment,
@@ -12,7 +12,7 @@ import {
 import { getOptimalPositionsToUnstake, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export const UNSTAKE_FORM_POSITION_FIELDS = gql`
   fragment UnstakeFormPositionFields on SeniorPoolStakedPosition {
@@ -44,7 +44,7 @@ export function UnstakeForm({
     token: positionType === "CurveLP" ? "CURVE_LP" : "FIDU",
     amount: sum("amount", positions),
   };
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
 
   const rhfMethods = useForm<UnstakeFormFields>();
   const { control } = rhfMethods;
@@ -56,12 +56,12 @@ export function UnstakeForm({
   }
 
   const onSubmit = async (data: UnstakeFormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract({
+    const stakingRewardsContract = await getContract2({
       name: "StakingRewards",
-      provider,
+      signer,
     });
 
     const value = utils.parseUnits(

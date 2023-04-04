@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { MigrateFormPositionFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/lib/pools";
 import { sharesToUsdc, usdcToShares } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export const MIGRATE_FORM_POSITION_FIELDS = gql`
   fragment MigrateFormPositionFields on SeniorPoolStakedPosition {
@@ -48,21 +48,21 @@ export function MigrateForm({
     token: "FIDU",
     amount: sum("amount", positions),
   } as const;
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
 
   const rhfMethods = useForm<StakeMigrateForm>();
   const { control, setValue, getValues } = rhfMethods;
 
   const onSubmit = async (data: StakeMigrateForm) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract({
+    const stakingRewardsContract = await getContract2({
       name: "StakingRewards",
-      provider,
+      signer,
     });
-    const zapperContract = await getContract({ name: "Zapper", provider });
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const zapperContract = await getContract2({ name: "Zapper", signer });
+    const usdcContract = await getContract2({ name: "USDC", signer });
 
     const fiduValue = utils.parseUnits(data.fiduAmount, FIDU_DECIMALS);
     const usdcValue = utils.parseUnits(data.usdcAmount, USDC_DECIMALS);

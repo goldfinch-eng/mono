@@ -10,11 +10,11 @@ import {
   Paragraph,
 } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS, USDC_MANTISSA } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatPercent } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 interface LpCurveFormProps {
   balance: CryptoAmount<"FIDU" | "USDC">;
@@ -28,21 +28,21 @@ interface CurveForm {
 }
 
 export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
 
   const rhfMethods = useForm<CurveForm>();
   const { control, watch, register, setError, clearErrors } = rhfMethods;
 
   const onSubmit = async (data: CurveForm) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract({
+    const stakingRewardsContract = await getContract2({
       name: "StakingRewards",
-      provider,
+      signer,
     });
-    const fiduContract = await getContract({ name: "Fidu", provider });
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const fiduContract = await getContract2({ name: "Fidu", signer });
+    const usdcContract = await getContract2({ name: "USDC", signer });
 
     const value = utils.parseUnits(
       data.amount,
@@ -109,17 +109,11 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
     // ! This calculation doesn't match the price impact shown on https://curve.fi/factory-crypto/23/deposit. Not sure how to replicate their calculation
     // https://linear.app/goldfinch/issue/GFI-982/slippage-aka-price-impact-values-calculated-by-our-client-do-not-match
     const checkSlippage = async (amount: string) => {
-      if (!provider || !amount) {
+      if (!amount) {
         return;
       }
-      const curvePoolContract = await getContract({
-        name: "CurvePool",
-        provider,
-      });
-      const seniorPoolContract = await getContract({
-        name: "SeniorPool",
-        provider,
-      });
+      const curvePoolContract = await getContract2({ name: "CurvePool" });
+      const seniorPoolContract = await getContract2({ name: "SeniorPool" });
 
       const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
       const value = utils.parseUnits(
@@ -171,7 +165,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
       }
     };
     checkSlippage(amount);
-  }, [provider, amount, type, setError, clearErrors]);
+  }, [amount, type, setError, clearErrors]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
