@@ -13,7 +13,6 @@ import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract2 } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
-import { ApolloClientError, handleApolloClientError } from "@/lib/utils";
 import {
   fetchUniqueIdentitySigner,
   getUIDLabelFromType,
@@ -54,32 +53,28 @@ export function MintStep() {
 
     const gasPrice = await provider.getGasPrice();
 
-    try {
-      const transaction = uidContract.mint(
-        signer.idVersion,
-        signer.expiresAt,
-        signer.signature,
-        {
-          value: UNIQUE_IDENTITY_MINT_PRICE,
-          gasPrice: gasPrice,
-        }
-      );
+    const transaction = uidContract.mint(
+      signer.idVersion,
+      signer.expiresAt,
+      signer.signature,
+      {
+        value: UNIQUE_IDENTITY_MINT_PRICE,
+        gasPrice: gasPrice,
+      }
+    );
 
-      const submittedTransaction = await toastTransaction({
-        transaction,
-        pendingPrompt: "UID mint submitted.",
-        successPrompt: "UID mint succeeded.",
-      });
+    const submittedTransaction = await toastTransaction({
+      transaction,
+      pendingPrompt: "UID mint submitted.",
+      successPrompt: "UID mint succeeded.",
+    });
 
-      await apolloClient.refetchQueries({ include: "active" });
-      dataLayerPushEvent("UID_MINTED", {
-        transactionHash: submittedTransaction.transactionHash,
-        uidType: getUIDLabelFromType(signer.idVersion),
-      });
-      goToStep(VerificationFlowSteps.MintFinished);
-    } catch (e) {
-      handleApolloClientError(e as ApolloClientError);
-    }
+    await apolloClient.refetchQueries({ include: "active" });
+    dataLayerPushEvent("UID_MINTED", {
+      transactionHash: submittedTransaction.transactionHash,
+      uidType: getUIDLabelFromType(signer.idVersion),
+    });
+    goToStep(VerificationFlowSteps.MintFinished);
   };
 
   return (
