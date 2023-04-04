@@ -1,9 +1,9 @@
 {
-  "installCommand": "yarn workspaces focus @goldfinch-eng/client2",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./ && git diff --quiet HEAD^ HEAD ../../yarn.lock",
   "functions": {
     "pages/api/gfi-grants/index.page.ts": {
       "includeFiles": "gfi-grants/*.json"
     }
-  }
+  },
+  "buildCommand": "yarn workspaces foreach -Rpt run build"
 }
