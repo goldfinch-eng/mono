@@ -42,7 +42,6 @@ import {
   getOnlyLog,
   getFirstLog,
   toEthers,
-  mineInSameBlock,
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
@@ -130,6 +129,7 @@ import {
   FAZZ_MAINNET_CALLABLE_LOAN,
 } from "@goldfinch-eng/protocol/blockchain_scripts/helpers/createCallableLoanForBorrower"
 import {EXISTING_POOL_TO_TOKEN} from "../util/tranchedPool"
+import {makeDeposit} from "../util/fazzCallableLoan"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -1461,6 +1461,228 @@ describe("mainnet forking tests", async function () {
     })
   })
 
+  describe("CallableLoans", () => {
+    it("does not earn backer rewards", async () => {
+      const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+      assertNonNullable(proxyOwner)
+      assertNonNullable(borrower)
+      assertNonNullable(lender)
+
+      // Add Fazz signer for rest of tests
+      await impersonateAccount(hre, FAZZ_MAINNET_EOA)
+      const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
+        at: FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
+      })
+
+      await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+      const callableLoan = await getTruffleContractAtAddress<CallableLoanInstance>(
+        "CallableLoan",
+        FAZZ_MAINNET_CALLABLE_LOAN
+      )
+
+      await fundWithWhales(["USDC", "ETH"], [lender])
+      await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
+
+      const currentTimestamp = await getCurrentTimestamp()
+      if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
+        await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
+      }
+      await usdc.approve(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, {from: lender})
+      const receipt = await callableLoan.deposit(
+        await callableLoan.uncalledCapitalTrancheIndex(),
+        FAZZ_DEAL_LIMIT_IN_DOLLARS,
+        {
+          from: lender,
+        }
+      )
+      const depositMadeEvent = getOnlyLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, callableLoan, "DepositMade"))
+      const tokenId = depositMadeEvent.args.tokenId
+
+      expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+      expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+      await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
+      await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_MAINNET_EOA, {
+        from: FAZZ_MAINNET_EOA,
+      })
+      const termEndTime = await callableLoan.termEndTime()
+
+      expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+      expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+      await advanceAndMineBlock({toSecond: termEndTime})
+
+      expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+      expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+
+      // TODO: Revert comments once we upgrade to allow payments
+      // const interestOwed = await callableLoan.interestOwedAt(termEndTime.add(new BN("100")))
+      // const principalOwed = await callableLoan.principalOwed()
+      // const payment = interestOwed.add(principalOwed)
+
+      // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_MAINNET_EOA})
+
+      // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_MAINNET_EOA})
+      // expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
+      // expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
+    })
+
+    describe("Callable Loans upgradeability tests", () => {
+      describe("createCallableLoanWithProxyOwner", async () => {
+        it("creates a proxy whose owner is different than the borrower", async () => {
+          const protocolOwner = await getProtocolOwner()
+          const [proxyOwner, borrower] = await hre.getUnnamedAccounts()
+
+          // we want to make sure that these addresses arent the same
+          expect(proxyOwner).to.not.equal(borrower)
+
+          assertNonNullable(proxyOwner)
+          assertNonNullable(borrower)
+
+          const schedule = await getMonthlySchedule(goldfinchConfig, 24, 1, 3, 0)
+
+          // grant the borrower the ability to create a pool
+          await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
+          const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
+            proxyOwner, // proxy owner
+            borrower, // borrower
+            usdcVal(1_000_000), // limit
+            bigVal(0.8), // interestApr
+            2, // numLockupPeriods
+            schedule, // schedule
+            0,
+            0,
+            [0],
+            {
+              from: borrower,
+            }
+          )
+          const lastEvent = result.logs[result.logs.length - 1]
+          const callableLoanAddress = (lastEvent?.args as {loan: string})?.loan
+          const callableLoan = await getTruffleContract<CallableLoanInstance>("CallableLoan", {
+            at: callableLoanAddress,
+          })
+          const callableLoanAsProxy = await getTruffleContract<UcuProxyInstance>("UcuProxy", {
+            at: callableLoanAddress,
+          })
+
+          // Proxy owner and borrower should be different
+          expect(await callableLoanAsProxy.owner()).to.eq(proxyOwner)
+          expect(await callableLoan.borrower()).to.eq(borrower)
+
+          const deployer = new ContractDeployer(console.log, hre)
+
+          // We need a contract that has `.version` method, in order to be able to push it to the
+          // CallableLoanImplementationRepository. TranchedPool complies to this interface so we'll
+          // use it for this purpose
+          const tranchedPoolImplAddr = await deployTranchedPool(deployer)
+          const callableLoanImplRepo = await getTruffleContract<CallableLoanImplementationRepositoryInstance>(
+            "CallableLoanImplementationRepository"
+          )
+
+          // Typechain is not picking up on the presence of the append method.
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          await callableLoanImplRepo.append(tranchedPoolImplAddr)
+
+          const callableLoanProxyAsTranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
+            at: callableLoanAddress,
+          })
+
+          // Callable loans doesn't have this function, so we expect this to revert
+          await expect(callableLoanProxyAsTranchedPool.SENIOR_ROLE()).to.be.rejected
+          // The borrower shouldn't be able to upgrade the proxy
+          await expect(callableLoanAsProxy.upgradeImplementation({from: borrower})).to.be.rejected
+          await callableLoanAsProxy.upgradeImplementation({from: proxyOwner})
+          // Now that the proxy is upgraded, this call should succeed
+          await callableLoanProxyAsTranchedPool.SENIOR_ROLE()
+        })
+      })
+    })
+
+    describe("Fazz callable loan after unpausing drawdowns", () => {
+      let callableLoan: CallableLoanInstance
+      let borrowerContract: BorrowerInstance
+      this.beforeEach(async () => {
+        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
+
+        assertNonNullable(proxyOwner)
+        assertNonNullable(borrower)
+        assertNonNullable(lender)
+
+        // Add Fazz signer for rest of tests
+        await impersonateAccount(hre, FAZZ_MAINNET_EOA)
+        borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
+          at: FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
+        })
+
+        await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
+        callableLoan = await getTruffleContractAtAddress<CallableLoanInstance>(
+          "CallableLoan",
+          FAZZ_MAINNET_CALLABLE_LOAN
+        )
+
+        await fundWithWhales(["USDC", "ETH"], [lender])
+        await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
+
+        await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
+      })
+
+      it("allows multiple drawdowns but not more than is available", async () => {
+        const previousBorrowerBalance = await usdc.balanceOf(FAZZ_MAINNET_EOA)
+        const previousLoanBalance = await usdc.balanceOf(callableLoan.address)
+
+        const expectCallableLoanState = async (amountDrawndown: BN) => {
+          // 1 = LoanPhase.Funding 2 = LoanPhase.DrawdownPeriod
+          const expectedLoanPhase = amountDrawndown.gt(new BN(0)) ? 2 : 1
+          expect(await callableLoan.loanPhase()).to.equal(expectedLoanPhase)
+          expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(amountDrawndown))
+          expect(await usdc.balanceOf(callableLoan.address)).to.equal(previousLoanBalance.sub(amountDrawndown))
+        }
+        await expectCallableLoanState(new BN(0))
+
+        await expect(callableLoan.unpauseDrawdowns({from: FAZZ_MAINNET_EOA})).to.be.rejected
+        await expect(callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG}))
+        await expectCallableLoanState(new BN(0))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(100), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+        await expectCallableLoanState(usdcVal(100))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(200), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+        await expectCallableLoanState(usdcVal(300))
+
+        await borrowerContract.drawdown(callableLoan.address, usdcVal(99700), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+        await expectCallableLoanState(usdcVal(100_000))
+
+        await expect(
+          borrowerContract.drawdown(
+            callableLoan.address,
+            (await usdc.balanceOf(callableLoan.address)).add(new BN(1)),
+            FAZZ_MAINNET_EOA,
+            {
+              from: FAZZ_MAINNET_EOA,
+            }
+          )
+        ).to.be.rejectedWith(/DrawdownAmountExceedsDeposits/)
+        await expectCallableLoanState(usdcVal(100_000))
+
+        await expect(
+          borrowerContract.drawdown(callableLoan.address, MAX_UINT, FAZZ_MAINNET_EOA, {
+            from: FAZZ_MAINNET_EOA,
+          })
+        ).to.be.rejectedWith(/DrawdownAmountExceedsDeposits/)
+        await expectCallableLoanState(usdcVal(100_000))
+      })
+    })
+  })
+
   describe("CommunityRewards", () => {
     describe("claimableRewards", () => {
       // no vesting to merkle direct distributor balance
@@ -1674,146 +1896,6 @@ describe("mainnet forking tests", async function () {
             }
           }
         }).timeout(TEST_TIMEOUT)
-      })
-    })
-
-    describe("CallableLoans", () => {
-      it("does not earn backer rewards", async () => {
-        const [proxyOwner, borrower, lender] = await hre.getUnnamedAccounts()
-
-        assertNonNullable(proxyOwner)
-        assertNonNullable(borrower)
-        assertNonNullable(lender)
-
-        // Add Fazz signer for rest of tests
-        await impersonateAccount(hre, FAZZ_MAINNET_EOA)
-        const borrowerContract = await getTruffleContract<BorrowerInstance>("Borrower", {
-          at: FAZZ_MAINNET_BORROWER_CONTRACT_ADDRESS,
-        })
-
-        await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
-        const callableLoan = await getTruffleContractAtAddress<CallableLoanInstance>(
-          "CallableLoan",
-          FAZZ_MAINNET_CALLABLE_LOAN
-        )
-
-        await fundWithWhales(["USDC", "ETH"], [lender])
-        await fundWithWhales(["ETH"], [FAZZ_MAINNET_EOA])
-
-        const currentTimestamp = await getCurrentTimestamp()
-        if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {
-          await advanceTime({toSecond: new BN(FAZZ_DEAL_FUNDABLE_AT).add(new BN(1))})
-        }
-        await usdc.approve(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, {from: lender})
-        const receipt = await callableLoan.deposit(
-          await callableLoan.uncalledCapitalTrancheIndex(),
-          FAZZ_DEAL_LIMIT_IN_DOLLARS,
-          {
-            from: lender,
-          }
-        )
-        const depositMadeEvent = getOnlyLog<DepositMade>(
-          decodeLogs(receipt.receipt.rawLogs, callableLoan, "DepositMade")
-        )
-        const tokenId = depositMadeEvent.args.tokenId
-
-        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
-        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
-
-        await callableLoan.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG})
-        await borrowerContract.drawdown(callableLoan.address, FAZZ_DEAL_LIMIT_IN_DOLLARS, FAZZ_MAINNET_EOA, {
-          from: FAZZ_MAINNET_EOA,
-        })
-        const termEndTime = await callableLoan.termEndTime()
-
-        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
-        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
-
-        await advanceAndMineBlock({toSecond: termEndTime})
-
-        expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
-        expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
-
-        // TODO: Revert comments once we upgrade to allow payments
-        // const interestOwed = await callableLoan.interestOwedAt(termEndTime.add(new BN("100")))
-        // const principalOwed = await callableLoan.principalOwed()
-        // const payment = interestOwed.add(principalOwed)
-
-        // await usdc.approve(borrowerContract.address, payment, {from: FAZZ_MAINNET_EOA})
-
-        // await borrowerContract.methods["pay(address,uint256)"](callableLoan.address, payment, {from: FAZZ_MAINNET_EOA})
-        // expect(await backerRewards.poolTokenClaimableRewards(tokenId)).to.bignumber.eq("0")
-        // expect(await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId)).to.bignumber.eq("0")
-      })
-    })
-
-    describe("Callable Loans upgradeability tests", () => {
-      // goldfinchFactory.createC
-      describe("createCallableLoanWithProxyOwner", async () => {
-        it("creates a proxy whose owner is different than the borrower", async () => {
-          const protocolOwner = await getProtocolOwner()
-          const [proxyOwner, borrower] = await hre.getUnnamedAccounts()
-
-          // we want to make sure that these addresses arent the same
-          expect(proxyOwner).to.not.equal(borrower)
-
-          assertNonNullable(proxyOwner)
-          assertNonNullable(borrower)
-
-          const schedule = await getMonthlySchedule(goldfinchConfig, 24, 1, 3, 0)
-
-          // grant the borrower the ability to create a pool
-          await goldfinchFactory.grantRole(await goldfinchFactory.BORROWER_ROLE(), borrower, {from: protocolOwner})
-          const result = await goldfinchFactory.createCallableLoanWithProxyOwner(
-            proxyOwner, // proxy owner
-            borrower, // borrower
-            usdcVal(1_000_000), // limit
-            bigVal(0.8), // interestApr
-            2, // numLockupPeriods
-            schedule, // schedule
-            0,
-            0,
-            [0],
-            {
-              from: borrower,
-            }
-          )
-          const lastEvent = result.logs[result.logs.length - 1]
-          const callableLoanAddress = (lastEvent?.args as {loan: string})?.loan
-          const callableLoan = await getTruffleContract<CallableLoanInstance>("CallableLoan", {at: callableLoanAddress})
-          const callableLoanAsProxy = await getTruffleContract<UcuProxyInstance>("UcuProxy", {at: callableLoanAddress})
-
-          // Proxy owner and borrower should be different
-          expect(await callableLoanAsProxy.owner()).to.eq(proxyOwner)
-          expect(await callableLoan.borrower()).to.eq(borrower)
-
-          const deployer = new ContractDeployer(console.log, hre)
-
-          // We need a contract that has `.version` method, in order to be able to push it to the
-          // CallableLoanImplementationRepository. TranchedPool complies to this interface so we'll
-          // use it for this purpose
-          const tranchedPoolImplAddr = await deployTranchedPool(deployer)
-          const callableLoanImplRepo = await getTruffleContract<CallableLoanImplementationRepositoryInstance>(
-            "CallableLoanImplementationRepository"
-          )
-
-          // Typechain is not picking up on the presence of the append method.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          await callableLoanImplRepo.append(tranchedPoolImplAddr)
-
-          const callableLoanProxyAsTranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
-            at: callableLoanAddress,
-          })
-
-          // Callable loans doesn't have this function, so we expect this to revert
-          await expect(callableLoanProxyAsTranchedPool.SENIOR_ROLE()).to.be.rejected
-          // The borrower shouldn't be able to upgrade the proxy
-          await expect(callableLoanAsProxy.upgradeImplementation({from: borrower})).to.be.rejected
-          await callableLoanAsProxy.upgradeImplementation({from: proxyOwner})
-          // Now that the proxy is upgraded, this call should succeed
-          await callableLoanProxyAsTranchedPool.SENIOR_ROLE()
-        })
       })
     })
 

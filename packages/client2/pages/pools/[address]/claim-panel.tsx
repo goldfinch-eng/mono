@@ -1,4 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
+import { format as formatDate, fromUnixTime } from "date-fns";
 import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -56,8 +57,10 @@ export const CLAIM_PANEL_LOAN_FIELDS = gql`
     __typename
     id
     delinquency @client
+    termStartTime
     ... on CallableLoan {
       ...CallPanelCallableLoanFields
+      loanPhase @client
     }
   }
 `;
@@ -185,7 +188,8 @@ export function ClaimPanel({
   const claimDisabled =
     (claimableUsdc.amount.isZero() && claimableGfi.amount.isZero()) ||
     (claimableUsdc.amount.isZero() && hasUnreachableGfi) ||
-    (vaultedPoolTokens.length > 0 && hasUnreachableGfi);
+    (vaultedPoolTokens.length > 0 && hasUnreachableGfi) ||
+    (loan.__typename === "CallableLoan" && loan.loanPhase === "DrawdownPeriod");
 
   return (
     <div>
@@ -279,6 +283,17 @@ export function ClaimPanel({
         <Alert type="warning" className="mt-4">
           You cannot claim GFI rewards from this pool because it is late on
           repayment.
+        </Alert>
+      ) : loan.__typename === "CallableLoan" &&
+        loan.loanPhase === "DrawdownPeriod" ? (
+        <Alert type="warning" className="mt-4">
+          You cannot claim during the drawdown period of a loan. Claiming will
+          become available on{" "}
+          {formatDate(
+            fromUnixTime(loan.termStartTime.toNumber() + 432000), // The 432000 is just drawdownPeriodInSeconds from GoldfinchConfig. Could put this in the subgraph later
+            "MMM d, yyyy"
+          )}
+          .
         </Alert>
       ) : null}
       {loan.__typename === "CallableLoan" ? (
