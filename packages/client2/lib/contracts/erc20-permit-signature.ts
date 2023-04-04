@@ -1,4 +1,4 @@
-import { Web3Provider } from "@ethersproject/providers";
+import { signTypedData } from "@wagmi/core";
 import { BigNumber, utils } from "ethers";
 
 import type { Erc20 } from "@/types/ethers-contracts";
@@ -9,9 +9,9 @@ interface Args {
    */
   erc20TokenContract: Erc20;
   /**
-   * Web3Provider, for example what's obtained from useWallet()
+   * Chain ID for the for currently connected chain
    */
-  provider: Web3Provider;
+  chainId: number;
   /**
    * The address of the wallet owner (AKA the account)
    */
@@ -32,7 +32,7 @@ interface Args {
 
 export async function generateErc20PermitSignature({
   erc20TokenContract,
-  provider,
+  chainId,
   owner,
   spender,
   value,
@@ -42,19 +42,12 @@ export async function generateErc20PermitSignature({
     erc20TokenContract.name(),
     erc20TokenContract.nonces(owner),
   ]);
-  const chainId = provider.network.chainId;
   const domain = {
     name,
     version: chainId === 1 && name === "USD Coin" ? "2" : "1", // we don't have the `version()` function on our fake USDC contract in dev, hence the conditional here
     chainId,
-    verifyingContract: erc20TokenContract.address,
+    verifyingContract: erc20TokenContract.address as `0x${string}`,
   };
-  const EIP712_DOMAIN_TYPE = [
-    { name: "name", type: "string" },
-    { name: "version", type: "string" },
-    { name: "chainId", type: "uint256" },
-    { name: "verifyingContract", type: "address" },
-  ];
 
   const message = {
     owner,
@@ -71,18 +64,12 @@ export async function generateErc20PermitSignature({
     { name: "deadline", type: "uint256" },
   ];
 
-  const dataForSigning = JSON.stringify({
-    types: {
-      EIP712Domain: EIP712_DOMAIN_TYPE,
-      Permit: EIP2612_TYPE,
-    },
+  // Referenced some code to figure out how to set up this signature for ERC20 permits: https://www.quicknode.com/guides/ethereum-development/transactions/how-to-use-erc20-permit-approval/
+  const signature = await signTypedData({
     domain,
-    primaryType: "Permit",
-    message,
-  });
+    types: { Permit: EIP2612_TYPE },
+    value: message,
+  }).then(utils.splitSignature);
 
-  const signature = await provider
-    .send("eth_signTypedData_v4", [owner, dataForSigning])
-    .then(utils.splitSignature);
   return signature;
 }

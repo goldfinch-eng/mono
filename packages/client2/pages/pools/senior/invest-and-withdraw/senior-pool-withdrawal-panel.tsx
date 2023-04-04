@@ -10,7 +10,7 @@ import {
   Icon,
   InfoIconTooltip,
 } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
@@ -19,7 +19,7 @@ import {
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import {
   WithdrawalCancelModal,
@@ -73,7 +73,7 @@ export function SeniorPoolWithdrawalPanel({
   vaultedStakedPositions = [],
   existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const {
     sharePrice: seniorPoolSharePrice,
     epochEndsAt,
@@ -94,14 +94,14 @@ export function SeniorPoolWithdrawalPanel({
   const apolloClient = useApolloClient();
 
   const withdrawUsdcWithToken = async () => {
-    if (!provider) {
+    if (!signer) {
       throw new Error("Bad wallet connection");
     } else if (!existingWithdrawalRequest) {
       throw new Error("No withdrawal request");
     }
-    const seniorPoolContract = await getContract({
+    const seniorPoolContract = await getContract2({
       name: "SeniorPool",
-      provider,
+      signer,
     });
     await toastTransaction({
       transaction: seniorPoolContract.claimWithdrawalRequest(

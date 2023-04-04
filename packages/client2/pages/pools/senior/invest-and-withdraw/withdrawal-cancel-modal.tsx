@@ -10,11 +10,11 @@ import {
   Button,
   InfoIconTooltip,
 } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { WithdrawalCancelModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export const WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalCancelModalWithdrawalFields on SeniorPoolWithdrawalRequest {
@@ -44,15 +44,15 @@ export function WithdrawalCancelModal({
       .split(".")[0]
   );
 
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const apolloClient = useApolloClient();
   const onSubmit = async () => {
-    if (!provider) {
+    if (!signer) {
       throw new Error("Wallet connection error");
     }
-    const seniorPoolContract = await getContract({
+    const seniorPoolContract = await getContract2({
       name: "SeniorPool",
-      provider,
+      signer,
     });
     await toastTransaction({
       transaction: seniorPoolContract.cancelWithdrawalRequest(

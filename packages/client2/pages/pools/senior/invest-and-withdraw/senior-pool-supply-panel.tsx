@@ -13,12 +13,12 @@ import {
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
-import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract2 } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { isSmartContract, useWallet } from "@/lib/wallet";
+import { isSmartContract, useWallet2 } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -49,15 +49,16 @@ export function SeniorPoolSupplyPanel({
     defaultValues: { isStaking: true },
   });
   const { control, register } = rhfMethods;
-  const { account, provider } = useWallet();
+  const { account, provider, signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const onSubmit = async (data: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
 
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const chainId = await signer.getChainId();
+    const usdcContract = await getContract2({ name: "USDC", signer });
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     let submittedTransaction;
@@ -65,9 +66,9 @@ export function SeniorPoolSupplyPanel({
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
     if (await isSmartContract(account, provider)) {
       if (data.isStaking) {
-        const stakingRewardsContract = await getContract({
+        const stakingRewardsContract = await getContract2({
           name: "StakingRewards",
-          provider,
+          signer,
         });
         await approveErc20IfRequired({
           account,
@@ -80,9 +81,9 @@ export function SeniorPoolSupplyPanel({
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
       } else {
-        const seniorPoolContract = await getContract({
+        const seniorPoolContract = await getContract2({
           name: "SeniorPool",
-          provider,
+          signer,
         });
         await approveErc20IfRequired({
           account,
@@ -100,13 +101,13 @@ export function SeniorPoolSupplyPanel({
       const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
 
       if (data.isStaking) {
-        const stakingRewardsContract = await getContract({
+        const stakingRewardsContract = await getContract2({
           name: "StakingRewards",
-          provider,
+          signer,
         });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
-          provider,
+          chainId,
           owner: account,
           spender: stakingRewardsContract.address,
           value,
@@ -124,13 +125,13 @@ export function SeniorPoolSupplyPanel({
           pendingPrompt: `Deposit and stake submitted for senior pool.`,
         });
       } else {
-        const seniorPoolContract = await getContract({
+        const seniorPoolContract = await getContract2({
           name: "SeniorPool",
-          provider,
+          signer,
         });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
-          provider,
+          chainId,
           owner: account,
           spender: seniorPoolContract.address,
           value,
@@ -164,10 +165,10 @@ export function SeniorPoolSupplyPanel({
   };
 
   const validateMaximumAmount = async (value: string) => {
-    if (!account || !provider) {
+    if (!account) {
       return;
     }
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const usdcContract = await getContract2({ name: "USDC" });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
     if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
@@ -181,10 +182,10 @@ export function SeniorPoolSupplyPanel({
 
   const [availableBalance, setAvailableBalance] = useState<string | null>(null);
   useEffect(() => {
-    if (!account || !provider) {
+    if (!account) {
       return;
     }
-    getContract({ name: "USDC", provider })
+    getContract2({ name: "USDC" })
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) =>
         setAvailableBalance(
@@ -194,7 +195,7 @@ export function SeniorPoolSupplyPanel({
           )
         )
       );
-  }, [account, provider]);
+  }, [account]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -211,15 +212,12 @@ export function SeniorPoolSupplyPanel({
           }
           className="mb-4"
           maxValue={async () => {
-            if (!account || !provider) {
+            if (!account) {
               throw new Error(
                 "Wallet not connected when trying to compute max"
               );
             }
-            const usdcContract = await getContract({
-              name: "USDC",
-              provider,
-            });
+            const usdcContract = await getContract2({ name: "USDC" });
             const userUsdcBalance = await usdcContract.balanceOf(account);
             return userUsdcBalance;
           }}

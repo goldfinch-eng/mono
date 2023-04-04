@@ -12,7 +12,7 @@ import {
   ModalStepper,
   useStepperContext,
 } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import {
   formatCrypto,
   formatPercent,
@@ -21,7 +21,7 @@ import {
 import { WithdrawalRequestModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export const WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalRequestModalWithdrawalFields on SeniorPoolWithdrawalRequest {
@@ -229,22 +229,22 @@ function ConfirmStep({
       ? existingWithdrawalRequest.previewFiduRequested.add(fiduInputted.amount)
       : fiduInputted.amount,
   } as const;
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
   const apolloClient = useApolloClient();
   const onSubmit = async (data: FormData) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       throw new Error("Wallet is not connected");
     }
 
     const fiduInputted = stringToCryptoAmount(data.fidu, "FIDU");
 
-    const seniorPoolContract = await getContract({
+    const seniorPoolContract = await getContract2({
       name: "SeniorPool",
-      provider,
+      signer,
     });
-    const fiduContract = await getContract({
+    const fiduContract = await getContract2({
       name: "Fidu",
-      provider,
+      signer,
     });
 
     await approveErc20IfRequired({
