@@ -26,7 +26,7 @@ import {
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum, gfiToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import {
   ExpandableHoldings,
@@ -155,7 +155,7 @@ const seniorPoolColorClass = "bg-mint-300";
 const curveColorClass = "bg-tidepool-600";
 
 export default function DashboardPage() {
-  const { account } = useWallet();
+  const { account } = useWallet2();
   const { data, loading, error } = useDashboardPageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
   });
