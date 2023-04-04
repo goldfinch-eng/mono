@@ -1,10 +1,10 @@
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form, Input } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export function CallableTools() {
   return (
@@ -20,22 +20,22 @@ function PayForm() {
     callableLoanAddress: string;
     payAmount: string;
   }>();
-  const { provider, account } = useWallet();
+  const { account, signer } = useWallet2();
   const onSubmit = async (data: {
     callableLoanAddress: string;
     payAmount: string;
   }) => {
-    if (!provider || !account) {
+    if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
     const usdc = stringToCryptoAmount(data.payAmount, "USDC");
     const [callableLoanContract, usdcContract] = await Promise.all([
-      getContract({
+      getContract2({
         name: "CallableLoan",
         address: data.callableLoanAddress,
-        provider,
+        signer,
       }),
-      getContract({ name: "USDC", provider }),
+      getContract2({ name: "USDC", signer }),
     ]);
     await approveErc20IfRequired({
       account,

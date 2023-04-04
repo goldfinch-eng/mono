@@ -1,11 +1,11 @@
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { advanceTimeNDays, AsyncButton } from "./helpers";
 
@@ -27,18 +27,18 @@ export function Membership() {
 }
 
 function SplitterForm() {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
   const rhfMethods = useForm<{ amount: string }>({
     defaultValues: { amount: "10000" },
   });
   const onSubmit = async ({ amount }: { amount: string }) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       throw new Error("Wallet not connected");
     }
-    const usdcContract = await getContract({ name: "USDC", provider });
-    const erc20SplitterContract = await getContract({
+    const usdcContract = await getContract2({ name: "USDC", signer });
+    const erc20SplitterContract = await getContract2({
       name: "ERC20Splitter",
-      provider,
+      signer,
     });
     const usdcToSend = stringToCryptoAmount(amount, "USDC");
 
