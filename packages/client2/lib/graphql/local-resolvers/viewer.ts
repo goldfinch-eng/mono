@@ -3,7 +3,7 @@ import { getAccount, getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
@@ -22,7 +22,7 @@ async function erc20Balance(
   if (!account.address) {
     return null;
   }
-  const contract = await getContract2({
+  const contract = await getContract({
     name:
       token === "GFI"
         ? "GFI"
@@ -116,7 +116,7 @@ export const viewerResolvers: Resolvers[string] = {
         return null;
       }
 
-      const membershipContract = await getContract2({
+      const membershipContract = await getContract({
         name: "MembershipOrchestrator",
       });
       const availableRewards = await membershipContract.claimableRewards(
@@ -138,10 +138,10 @@ export const viewerResolvers: Resolvers[string] = {
         return null;
       }
 
-      const membershipContract = await getContract2({
+      const membershipContract = await getContract({
         name: "MembershipOrchestrator",
       });
-      const membershipVaultContract = await getContract2({
+      const membershipVaultContract = await getContract({
         name: "MembershipVault",
       });
 

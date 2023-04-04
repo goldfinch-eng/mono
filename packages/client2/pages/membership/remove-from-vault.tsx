@@ -13,7 +13,7 @@ import {
   AssetPicker,
   AssetInputBox,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
   VaultedGfiFieldsFragment,
@@ -365,7 +365,7 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
     if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const membershipContract = await getContract2({
+    const membershipContract = await getContract({
       name: "MembershipOrchestrator",
       signer,
     });

@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form, InfoIconTooltip } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -30,7 +30,7 @@ export function RewardClaimer({
     if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const membershipContract = await getContract2({
+    const membershipContract = await getContract({
       name: "MembershipOrchestrator",
       signer,
     });

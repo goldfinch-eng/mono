@@ -10,7 +10,7 @@ import {
   Paragraph,
 } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS, USDC_MANTISSA } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatPercent } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -37,12 +37,12 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
     if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
       signer,
     });
-    const fiduContract = await getContract2({ name: "Fidu", signer });
-    const usdcContract = await getContract2({ name: "USDC", signer });
+    const fiduContract = await getContract({ name: "Fidu", signer });
+    const usdcContract = await getContract({ name: "USDC", signer });
 
     const value = utils.parseUnits(
       data.amount,
@@ -112,8 +112,8 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
       if (!amount) {
         return;
       }
-      const curvePoolContract = await getContract2({ name: "CurvePool" });
-      const seniorPoolContract = await getContract2({ name: "SeniorPool" });
+      const curvePoolContract = await getContract({ name: "CurvePool" });
+      const seniorPoolContract = await getContract({ name: "SeniorPool" });
 
       const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
       const value = utils.parseUnits(

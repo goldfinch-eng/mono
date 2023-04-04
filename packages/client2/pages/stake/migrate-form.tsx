@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { MigrateFormPositionFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -57,12 +57,12 @@ export function MigrateForm({
     if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
       signer,
     });
-    const zapperContract = await getContract2({ name: "Zapper", signer });
-    const usdcContract = await getContract2({ name: "USDC", signer });
+    const zapperContract = await getContract({ name: "Zapper", signer });
+    const usdcContract = await getContract({ name: "USDC", signer });
 
     const fiduValue = utils.parseUnits(data.fiduAmount, FIDU_DECIMALS);
     const usdcValue = utils.parseUnits(data.usdcAmount, USDC_DECIMALS);

@@ -11,7 +11,7 @@ import {
   Link,
   MiniTable,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   ClaimPanelPoolTokenFieldsFragment,
@@ -129,7 +129,7 @@ export function ClaimPanel({
       pt.principalRedeemable.add(pt.interestRedeemable).gt(0)
     );
     if (withrawablePoolTokens.length > 0) {
-      const loanContract = await getContract2({
+      const loanContract = await getContract({
         name:
           loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
         address: loan.id,
@@ -147,7 +147,7 @@ export function ClaimPanel({
       });
 
       if (loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero()) {
-        const backerRewardsContract = await getContract2({
+        const backerRewardsContract = await getContract({
           name: "BackerRewards",
           signer,
         });
@@ -168,7 +168,7 @@ export function ClaimPanel({
         .gt(0)
     );
     if (withrawableVaultedPoolTokens.length > 0) {
-      const membershipOrchestrator = await getContract2({
+      const membershipOrchestrator = await getContract({
         name: "MembershipOrchestrator",
         signer,
       });

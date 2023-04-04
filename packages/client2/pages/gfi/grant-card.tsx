@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
@@ -230,23 +230,23 @@ function GrantButton({
       return;
     }
 
-    const communityRewardsContract = await getContract2({
+    const communityRewardsContract = await getContract({
       name: "CommunityRewards",
       signer,
     });
-    const merkleDistributorContract = await getContract2({
+    const merkleDistributorContract = await getContract({
       name: "MerkleDistributor",
       signer,
     });
-    const backerMerkleDistributorContract = await getContract2({
+    const backerMerkleDistributorContract = await getContract({
       name: "BackerMerkleDistributor",
       signer,
     });
-    const merkleDirectDistributorContract = await getContract2({
+    const merkleDirectDistributorContract = await getContract({
       name: "MerkleDirectDistributor",
       signer,
     });
-    const backerMerkleDirectDistributorContract = await getContract2({
+    const backerMerkleDirectDistributorContract = await getContract({
       name: "BackerMerkleDirectDistributor",
       signer,
     });

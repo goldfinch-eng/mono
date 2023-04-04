@@ -1,7 +1,7 @@
 import { Resolvers } from "@apollo/client";
 import { BigNumber } from "ethers";
 
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 
 import { SeniorPoolWithdrawalRequest } from "../generated";
 
@@ -10,7 +10,7 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
     withdrawalRequest: SeniorPoolWithdrawalRequest
   ): Promise<BigNumber> {
     const tokenId = withdrawalRequest.tokenId;
-    const seniorPoolContract = await getContract2({ name: "SeniorPool" });
+    const seniorPoolContract = await getContract({ name: "SeniorPool" });
     const preview = await seniorPoolContract.withdrawalRequest(tokenId);
     return preview.usdcWithdrawable;
   },
@@ -18,7 +18,7 @@ export const seniorPoolWithdrawalRequestResolvers: Resolvers[string] = {
     withdrawalRequest: SeniorPoolWithdrawalRequest
   ): Promise<BigNumber> {
     const tokenId = withdrawalRequest.tokenId;
-    const seniorPoolContract = await getContract2({ name: "SeniorPool" });
+    const seniorPoolContract = await getContract({ name: "SeniorPool" });
     const preview = await seniorPoolContract.withdrawalRequest(tokenId);
     return preview.fiduRequested;
   },

@@ -10,7 +10,7 @@ import {
   Icon,
   InfoIconTooltip,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
@@ -99,7 +99,7 @@ export function SeniorPoolWithdrawalPanel({
     } else if (!existingWithdrawalRequest) {
       throw new Error("No withdrawal request");
     }
-    const seniorPoolContract = await getContract2({
+    const seniorPoolContract = await getContract({
       name: "SeniorPool",
       signer,
     });

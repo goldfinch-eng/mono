@@ -4,7 +4,7 @@ import { addDays, endOfDay, fromUnixTime, getUnixTime } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { roundUpUsdcPenny } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
 import { LoanPhase } from "@/pages/borrow/helpers";
@@ -24,7 +24,7 @@ const getEndOfNextDayTimestamp = (currentTimestamp: number): number => {
 
 const getLoanPeriodDueAmount = async (callableLoanId: string) => {
   const provider = getProvider();
-  const callableLoanContract = await getContract2({
+  const callableLoanContract = await getContract({
     name: "CallableLoan",
     address: callableLoanId,
   });
@@ -85,7 +85,7 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 };
 
 const getLoanTermDueAmount = async (callableLoanId: string) => {
-  const callableLoanContract = await getContract2({
+  const callableLoanContract = await getContract({
     name: "CallableLoan",
     address: callableLoanId,
   });
@@ -156,15 +156,15 @@ export const callableLoanResolvers: Resolvers[string] = {
   async delinquency(callableLoan: CallableLoan): Promise<LoanDelinquency> {
     const secondsPerDay = 60 * 60 * 24;
     const provider = getProvider();
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "TranchedPool",
       address: callableLoan.id,
     });
-    const goldfinchConfigContract = await getContract2({
+    const goldfinchConfigContract = await getContract({
       name: "GoldfinchConfig",
       address: await callableLoanContract.config(),
     });
-    const creditLineContract = await getContract2({
+    const creditLineContract = await getContract({
       name: "CreditLine",
       address: await callableLoanContract.creditLine(),
     });
@@ -191,7 +191,7 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
   },
   async inLockupPeriod(callableLoan: CallableLoan): Promise<boolean> {
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoan.id,
     });
@@ -203,7 +203,7 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
   },
   async nextPrincipalDueTime(callableLoan: CallableLoan): Promise<number> {
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoan.id,
     });
@@ -218,7 +218,7 @@ export const callableLoanResolvers: Resolvers[string] = {
   },
   async isAfterTermEndTime(callableLoan: CallableLoan): Promise<boolean> {
     const provider = getProvider();
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoan.id,
     });
@@ -246,7 +246,7 @@ export const callableLoanResolvers: Resolvers[string] = {
     return getLoanTermDueAmount(callableLoan.id);
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoan.id,
     });
@@ -261,7 +261,7 @@ export const callableLoanResolvers: Resolvers[string] = {
     return callableLoanContract.nextDueTime();
   },
   async loanPhase(callableLoan: CallableLoan): Promise<LoanPhase> {
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoan.id,
     });

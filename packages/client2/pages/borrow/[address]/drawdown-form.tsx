@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
@@ -36,7 +36,7 @@ export function DrawdownForm({
     }
 
     const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
-    const borrowerContract = await getContract2({
+    const borrowerContract = await getContract({
       name: "Borrower",
       address: loan.borrowerContract.id,
       signer,

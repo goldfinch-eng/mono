@@ -2,7 +2,7 @@ import { Resolvers } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { CURVE_LP_MANTISSA, USDC_MANTISSA } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { positionTypeToValue, sharesToUsdc } from "@/lib/pools";
 
 const oneYearSeconds = BigNumber.from(60 * 60 * 24 * 365);
@@ -12,15 +12,15 @@ async function getUsdPerLpToken() {
   // Using this helpful article to calculate the fiat value of Curve LP tokens: https://medium.com/coinmonks/the-joys-of-valuing-curve-lp-tokens-4e4a148eaeb9
   // This calculation also assumes that 1 USDC = 1 USD
 
-  const curvePoolContract = await getContract2({ name: "CurvePool" });
-  const curveLpTokenContract = await getContract2({ name: "CurveLP" });
+  const curvePoolContract = await getContract({ name: "CurvePool" });
+  const curveLpTokenContract = await getContract({ name: "CurveLP" });
   const curveLpTokenTotalSupply = await curveLpTokenContract.totalSupply();
   const fixedCurveLpTokenTotalSupply = FixedNumber.from(
     curveLpTokenTotalSupply
   ).divUnsafe(FixedNumber.from(CURVE_LP_MANTISSA));
-  const fiduContract = await getContract2({ name: "Fidu" });
-  const usdcContract = await getContract2({ name: "USDC" });
-  const seniorPoolContract = await getContract2({ name: "SeniorPool" });
+  const fiduContract = await getContract({ name: "Fidu" });
+  const usdcContract = await getContract({ name: "USDC" });
+  const seniorPoolContract = await getContract({ name: "SeniorPool" });
   const sharePrice = await seniorPoolContract.sharePrice();
 
   const curvePoolFiduBalance = await fiduContract.balanceOf(
@@ -41,7 +41,7 @@ async function getUsdPerLpToken() {
 
 export const curvePoolResolvers: Resolvers[string] = {
   async estimatedCurveStakingApyRaw(): Promise<FixedNumber> {
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
     });
 

@@ -2,7 +2,7 @@ import { Resolvers } from "@apollo/client";
 import { getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { assertUnreachable } from "@/lib/utils";
 
 import { DirectGfiGrant, IndirectGfiGrant } from "../generated";
@@ -10,7 +10,7 @@ import { DirectGfiGrant, IndirectGfiGrant } from "../generated";
 export const indirectGfiGrantResolvers: Resolvers[string] = {
   async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
     const provider = getProvider();
-    const communityRewardsContract = await getContract2({
+    const communityRewardsContract = await getContract({
       name: "CommunityRewards",
     });
     const vested = await communityRewardsContract.totalVestedAt(
@@ -35,14 +35,14 @@ export const directGfiGrantResolvers: Resolvers[string] = {
   async isAccepted(gfiDirectGrant: DirectGfiGrant): Promise<boolean> {
     switch (gfiDirectGrant.directSource) {
       case "MERKLE_DIRECT_DISTRIBUTOR":
-        const merkleDirectDistributorContract = await getContract2({
+        const merkleDirectDistributorContract = await getContract({
           name: "MerkleDirectDistributor",
         });
         return await merkleDirectDistributorContract.isGrantAccepted(
           gfiDirectGrant.index
         );
       case "BACKER_MERKLE_DIRECT_DISTRIBUTOR":
-        const backerMerkleDirectDistributorContract = await getContract2({
+        const backerMerkleDirectDistributorContract = await getContract({
           name: "BackerMerkleDirectDistributor",
         });
         return backerMerkleDirectDistributorContract.isGrantAccepted(

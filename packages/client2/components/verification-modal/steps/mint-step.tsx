@@ -11,7 +11,7 @@ import {
 } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import {
   fetchUniqueIdentitySigner,
@@ -46,7 +46,7 @@ export function MintStep() {
       signature.signatureBlockNum
     );
 
-    const uidContract = await getContract2({
+    const uidContract = await getContract({
       name: "UniqueIdentity",
       signer: walletSigner,
     });

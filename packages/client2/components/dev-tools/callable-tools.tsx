@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form, Input } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
@@ -30,12 +30,12 @@ function PayForm() {
     }
     const usdc = stringToCryptoAmount(data.payAmount, "USDC");
     const [callableLoanContract, usdcContract] = await Promise.all([
-      getContract2({
+      getContract({
         name: "CallableLoan",
         address: data.callableLoanAddress,
         signer,
       }),
-      getContract2({ name: "USDC", signer }),
+      getContract({ name: "USDC", signer }),
     ]);
     await approveErc20IfRequired({
       account,

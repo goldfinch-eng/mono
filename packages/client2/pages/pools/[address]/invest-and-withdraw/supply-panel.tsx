@@ -15,7 +15,7 @@ import {
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
-import { generateErc20PermitSignature, getContract2 } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   SupplyPanelLoanFieldsFragment,
@@ -148,13 +148,13 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
 
     let submittedTransaction;
 
-    const usdcContract = await getContract2({ name: "USDC", signer });
-    const tranchedPoolContract = await getContract2({
+    const usdcContract = await getContract({ name: "USDC", signer });
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       signer,
       address: loan.address,
     });
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       signer,
       address: loan.address,
@@ -233,7 +233,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
     if (!account) {
       return;
     }
-    getContract2({ name: "USDC" })
+    getContract({ name: "USDC" })
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) => setAvailableBalance(balance));
   }, [account]);

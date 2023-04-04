@@ -12,7 +12,7 @@ import {
   ModalStepper,
   useStepperContext,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import {
   formatCrypto,
   formatPercent,
@@ -238,11 +238,11 @@ function ConfirmStep({
 
     const fiduInputted = stringToCryptoAmount(data.fidu, "FIDU");
 
-    const seniorPoolContract = await getContract2({
+    const seniorPoolContract = await getContract({
       name: "SeniorPool",
       signer,
     });
-    const fiduContract = await getContract2({
+    const fiduContract = await getContract({
       name: "Fidu",
       signer,
     });

@@ -3,7 +3,7 @@ import { getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 
 import { LoanDelinquency, TranchedPool } from "../generated";
 import {
@@ -51,7 +51,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return collectedPaymentBalance(creditLineAddress);
     }
-    const tranchedPoolContract = await getContract2({
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       address: tranchedPool.id,
     });
@@ -61,15 +61,15 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   async delinquency(tranchedPool: TranchedPool): Promise<LoanDelinquency> {
     const secondsPerDay = 60 * 60 * 24;
     const provider = getProvider();
-    const tranchedPoolContract = await getContract2({
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       address: tranchedPool.id,
     });
-    const goldfinchConfigContract = await getContract2({
+    const goldfinchConfigContract = await getContract({
       name: "GoldfinchConfig",
       address: await tranchedPoolContract.config(),
     });
-    const creditLineContract = await getContract2({
+    const creditLineContract = await getContract({
       name: "CreditLine",
       address: await tranchedPoolContract.creditLine(),
     });
@@ -131,7 +131,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return isAfterTermEndTime(creditLineAddress);
     }
-    const tranchedPoolContract = await getContract2({
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       address: tranchedPool.id,
     });
@@ -144,7 +144,7 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return interestOwed(creditLineAddress);
     }
-    const tranchedPoolContract = await getContract2({
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       address: tranchedPool.id,
     });

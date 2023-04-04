@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { StakingCardPositionFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
@@ -67,7 +67,7 @@ export function StakingCard({
       return;
     }
     if (vaulted) {
-      const membershipOrchestratorContract = await getContract2({
+      const membershipOrchestratorContract = await getContract({
         name: "MembershipOrchestrator",
         signer,
       });
@@ -76,7 +76,7 @@ export function StakingCard({
       ]);
       await toastTransaction({ transaction });
     } else {
-      const stakingRewardsContract = await getContract2({
+      const stakingRewardsContract = await getContract({
         name: "StakingRewards",
         signer,
       });

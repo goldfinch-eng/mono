@@ -1,7 +1,7 @@
 import { Resolvers } from "@apollo/client";
 import { getProvider } from "@wagmi/core";
 
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 
 import { SeniorPoolStakedPosition } from "../generated";
 
@@ -9,7 +9,7 @@ export const stakedPositionResolvers: Resolvers[string] = {
   async rewardEarnRate(
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["rewardEarnRate"]> {
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
     });
     return stakingRewardsContract.positionCurrentEarnRate(position.id);
@@ -21,7 +21,7 @@ export const stakedPositionResolvers: Resolvers[string] = {
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["claimable"]> {
     const provider = getProvider();
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
     });
 
@@ -48,7 +48,7 @@ export const stakedPositionResolvers: Resolvers[string] = {
   async granted(
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["granted"]> {
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
     });
     const positionDetails = await stakingRewardsContract.positions(position.id);
@@ -65,7 +65,7 @@ export const stakedPositionResolvers: Resolvers[string] = {
   async endTime(
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["endTime"]> {
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
     });
     return (await stakingRewardsContract.positions(position.id)).rewards

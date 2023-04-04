@@ -11,7 +11,7 @@ import {
   RadioButton,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
@@ -69,13 +69,13 @@ export function PaymentForm({
     }
     const usdc = stringToCryptoAmount(usdcAmount, "USDC");
 
-    const borrowerContract = await getContract2({
+    const borrowerContract = await getContract({
       name: "Borrower",
       address: loan.borrowerContract.id,
       signer,
     });
 
-    const usdcContract = await getContract2({ name: "USDC", signer });
+    const usdcContract = await getContract({ name: "USDC", signer });
 
     await approveErc20IfRequired({
       account,

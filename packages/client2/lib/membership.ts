@@ -1,7 +1,7 @@
 import { Provider } from "@wagmi/core";
 import { BigNumber, BigNumberish } from "ethers";
 
-import { getContract2 } from "./contracts";
+import { getContract } from "./contracts";
 
 export const MEMBERSHIP_EPOCH_MS = 604800000;
 
@@ -30,7 +30,7 @@ export async function calculateNewMonthlyMembershipReward(
   newMonthlyReward: CryptoAmount<"FIDU">;
   diff: CryptoAmount<"FIDU">;
 }> {
-  const membershipOrchestratorContract = await getContract2({
+  const membershipOrchestratorContract = await getContract({
     name: "MembershipOrchestrator",
   });
   const [, oldMembershipScore] =
@@ -75,7 +75,7 @@ export async function estimateForfeiture(
   newGfi: BigNumberish,
   newCapital: BigNumberish
 ) {
-  const membershipOrchestratorContract = await getContract2({
+  const membershipOrchestratorContract = await getContract({
     name: "MembershipOrchestrator",
   });
   const { timestamp } = await provider.getBlock("latest");

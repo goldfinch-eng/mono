@@ -10,7 +10,7 @@ import {
   Button,
   InfoIconTooltip,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { WithdrawalCancelModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
@@ -50,7 +50,7 @@ export function WithdrawalCancelModal({
     if (!signer) {
       throw new Error("Wallet connection error");
     }
-    const seniorPoolContract = await getContract2({
+    const seniorPoolContract = await getContract({
       name: "SeniorPool",
       signer,
     });

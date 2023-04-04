@@ -2,13 +2,13 @@ import { Resolvers } from "@apollo/client";
 import { getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { CreditLine } from "@/lib/graphql/generated";
 
 export async function interestOwed(
   creditLineAddress: string
 ): Promise<BigNumber> {
-  const creditLineContract = await getContract2({
+  const creditLineContract = await getContract({
     name: "CreditLine",
     address: creditLineAddress,
   });
@@ -20,7 +20,7 @@ export async function isAfterTermEndTime(
   creditLineAddress: string
 ): Promise<boolean> {
   const provider = getProvider();
-  const creditLineContract = await getContract2({
+  const creditLineContract = await getContract({
     name: "CreditLine",
     address: creditLineAddress,
   });
@@ -36,7 +36,7 @@ export async function isAfterTermEndTime(
 export async function collectedPaymentBalance(
   creditLineAddress: string
 ): Promise<BigNumber> {
-  const usdcContract = await getContract2({ name: "USDC" });
+  const usdcContract = await getContract({ name: "USDC" });
   const collectedPaymentBalance = await usdcContract.balanceOf(
     creditLineAddress
   );

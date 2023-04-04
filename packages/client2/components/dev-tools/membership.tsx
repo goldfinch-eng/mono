@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { toastTransaction } from "@/lib/toast";
@@ -35,8 +35,8 @@ function SplitterForm() {
     if (!account || !signer) {
       throw new Error("Wallet not connected");
     }
-    const usdcContract = await getContract2({ name: "USDC", signer });
-    const erc20SplitterContract = await getContract2({
+    const usdcContract = await getContract({ name: "USDC", signer });
+    const erc20SplitterContract = await getContract({
       name: "ERC20Splitter",
       signer,
     });

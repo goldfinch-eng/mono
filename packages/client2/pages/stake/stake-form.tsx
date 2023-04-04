@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { StakedPositionType } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -34,12 +34,12 @@ export function StakeForm({
     if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
       signer,
     });
-    const fiduContract = await getContract2({ name: "Fidu", signer });
-    const curveLpTokenContract = await getContract2({
+    const fiduContract = await getContract({ name: "Fidu", signer });
+    const curveLpTokenContract = await getContract({
       name: "CurveLP",
       signer,
     });

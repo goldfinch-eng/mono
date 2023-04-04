@@ -9,7 +9,7 @@ import {
   Form,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import {
   WithdrawalPanelLoanFieldsFragment,
   WithdrawalPanelPoolTokenFieldsFragment,
@@ -54,12 +54,12 @@ export function WithdrawalPanel({ loan, poolTokens }: WithdrawalPanelProps) {
     if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const tranchedPoolContract = await getContract2({
+    const tranchedPoolContract = await getContract({
       name: "TranchedPool",
       signer,
       address: loan.address,
     });
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       signer,
       address: loan.address,

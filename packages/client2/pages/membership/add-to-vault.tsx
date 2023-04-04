@@ -16,7 +16,7 @@ import {
   AssetBoxPlaceholder,
   AssetInputBox,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { MembershipPageQuery } from "@/lib/graphql/generated";
 import {
@@ -374,16 +374,16 @@ function ReviewStep({
     if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
-    const membershipContract = await getContract2({
+    const membershipContract = await getContract({
       name: "MembershipOrchestrator",
       signer,
     });
-    const gfiContract = await getContract2({ name: "GFI", signer });
-    const stakingRewardsContract = await getContract2({
+    const gfiContract = await getContract({ name: "GFI", signer });
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
       signer,
     });
-    const poolTokensContract = await getContract2({
+    const poolTokensContract = await getContract({
       name: "PoolTokens",
       signer,
     });

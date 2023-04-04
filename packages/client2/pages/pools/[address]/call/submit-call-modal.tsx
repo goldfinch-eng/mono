@@ -10,7 +10,7 @@ import {
   ModalStepper,
   useStepperContext,
 } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { SubmitCallModalPoolTokenFieldsFragment } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
@@ -92,7 +92,7 @@ function CallAmountStep({
     if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoanAddress,
       signer,
@@ -147,7 +147,7 @@ function ReviewStep({
     if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const callableLoanContract = await getContract2({
+    const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoanAddress,
       signer,

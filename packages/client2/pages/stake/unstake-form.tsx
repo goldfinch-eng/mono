@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button, Link } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import {
   StakedPositionType,
   UnstakeFormPositionFieldsFragment,
@@ -59,7 +59,7 @@ export function UnstakeForm({
     if (!account || !signer) {
       return;
     }
-    const stakingRewardsContract = await getContract2({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
       signer,
     });

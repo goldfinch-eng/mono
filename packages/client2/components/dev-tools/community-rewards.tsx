@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { Button, Form, Input } from "@/components/design-system";
-import { getContract2 } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -25,7 +25,7 @@ function SendTokenForm() {
     if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
-    const communityRewardsContract = await getContract2({
+    const communityRewardsContract = await getContract({
       name: "CommunityRewards",
       signer,
     });
