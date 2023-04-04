@@ -12,7 +12,7 @@ import {
   useBorrowPageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { CreditLineCard } from "./credit-line-card";
 import {
@@ -69,7 +69,7 @@ const getDueDateLabel = ({
 export default function BorrowPage({
   dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet2();
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",
@@ -93,7 +93,7 @@ export default function BorrowPage({
         Credit Lines
       </Heading>
 
-      {!account && !isActivating ? (
+      {!account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit lines
           <div className="mt-3">
@@ -104,7 +104,7 @@ export default function BorrowPage({
         </div>
       ) : error ? (
         <div className="text-2xl">Unable to load credit lines</div>
-      ) : loading || isActivating ? (
+      ) : loading ? (
         <div className="text-xl">Loading...</div>
       ) : !loans || loans.length === 0 ? (
         <div className="w-fit rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">

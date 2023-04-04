@@ -11,13 +11,13 @@ import {
   RadioButton,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
@@ -42,7 +42,7 @@ export function PaymentForm({
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const showPayMinimumDueOption =
@@ -64,18 +64,18 @@ export function PaymentForm({
   const { control, register, setValue, watch } = rhfMethods;
 
   const onSubmit = async ({ usdcAmount }: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
     const usdc = stringToCryptoAmount(usdcAmount, "USDC");
 
-    const borrowerContract = await getContract({
+    const borrowerContract = await getContract2({
       name: "Borrower",
       address: loan.borrowerContract.id,
-      provider,
+      signer,
     });
 
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const usdcContract = await getContract2({ name: "USDC", signer });
 
     await approveErc20IfRequired({
       account,

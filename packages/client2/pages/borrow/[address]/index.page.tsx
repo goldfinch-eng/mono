@@ -23,7 +23,7 @@ import {
 } from "@/lib/graphql/generated";
 import { getRepaymentFrequencyLabel } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
 import {
   calculateCreditLineMaxDrawdownAmount,
@@ -87,7 +87,7 @@ const NextPaymentLabel = ({
 export default function PoolCreditLinePage({
   dealDetails,
 }: PoolCreditLinePageProps) {
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet2();
 
   const { data, error, loading } = usePoolCreditLinePageQuery({
     variables: {
@@ -211,7 +211,7 @@ export default function PoolCreditLinePage({
         Credit Line
       </Heading>
 
-      {!account && !isActivating ? (
+      {!account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit line
           <div className="mt-3">
@@ -220,7 +220,7 @@ export default function PoolCreditLinePage({
             </Button>
           </div>
         </div>
-      ) : loading || isActivating ? (
+      ) : loading ? (
         <div className="text-xl">Loading...</div>
       ) : error || !loan ? (
         <div className="text-2xl">Unable to load credit line</div>

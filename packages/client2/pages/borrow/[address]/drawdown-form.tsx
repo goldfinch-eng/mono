@@ -3,11 +3,11 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, DollarInput, Form } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface DrawdownProps {
@@ -23,7 +23,7 @@ export function DrawdownForm({
   creditLineStatus,
   onClose,
 }: DrawdownProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };
@@ -31,15 +31,15 @@ export function DrawdownForm({
   const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
 
     const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
-    const borrowerContract = await getContract({
+    const borrowerContract = await getContract2({
       name: "Borrower",
       address: loan.borrowerContract.id,
-      provider,
+      signer,
     });
     await toastTransaction({
       transaction: borrowerContract.drawdown(loan.id, usdc.amount, account),
