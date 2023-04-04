@@ -186,8 +186,7 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
     }
   }
 
-  // UncalledCapitalInfo invariants
-
+  // Tranche invariants
   function invariant_UncalledCapitalInfoPrincipalDepositedIsSumOfPrincipalWithdrawable() public {
     uint256 totalPrincipalDeposited = handler.reduceActors(0, this.principalDepositedReducer);
     assertEq(handler.loan().getUncalledCapitalInfo().principalDeposited, totalPrincipalDeposited);
@@ -206,6 +205,15 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
 
   function invariant_UncalledCapitalInfoInterestPaidIsZero() public {
     assertZero(handler.loan().getUncalledCapitalInfo().interestPaid);
+  }
+
+  function invariant_AllCalledTranchesAreZeroedOut() public {
+    for (uint256 i = 0; i < 3; ++i) {
+      assertZero(handler.loan().getCallRequestPeriod(i).principalDeposited);
+      assertZero(handler.loan().getCallRequestPeriod(i).principalPaid);
+      assertZero(handler.loan().getCallRequestPeriod(i).principalReserved);
+      assertZero(handler.loan().getCallRequestPeriod(i).interestPaid);
+    }
   }
 
   function principalWithdrawableReducer(
