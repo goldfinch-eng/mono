@@ -1,12 +1,12 @@
 import { Resolvers } from "@apollo/client";
+import { getProvider } from "@wagmi/core";
 import { addDays, endOfDay, fromUnixTime, getUnixTime } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { roundUpUsdcPenny } from "@/lib/format";
 import { assertUnreachable } from "@/lib/utils";
-import { getProvider } from "@/lib/wallet";
 import { LoanPhase } from "@/pages/borrow/helpers";
 
 import { CallableLoan, LoanDelinquency } from "../generated";
@@ -23,11 +23,9 @@ const getEndOfNextDayTimestamp = (currentTimestamp: number): number => {
 };
 
 const getLoanPeriodDueAmount = async (callableLoanId: string) => {
-  const provider = await getProvider();
-  const callableLoanContract = await getContract({
+  const provider = getProvider();
+  const callableLoanContract = await getContract2({
     name: "CallableLoan",
-    provider,
-    useSigner: false,
     address: callableLoanId,
   });
 
@@ -87,11 +85,8 @@ const getLoanPeriodDueAmount = async (callableLoanId: string) => {
 };
 
 const getLoanTermDueAmount = async (callableLoanId: string) => {
-  const provider = await getProvider();
-  const callableLoanContract = await getContract({
+  const callableLoanContract = await getContract2({
     name: "CallableLoan",
-    provider: provider,
-    useSigner: false,
     address: callableLoanId,
   });
 
@@ -160,24 +155,18 @@ export const callableLoanResolvers: Resolvers[string] = {
   },
   async delinquency(callableLoan: CallableLoan): Promise<LoanDelinquency> {
     const secondsPerDay = 60 * 60 * 24;
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const provider = getProvider();
+    const callableLoanContract = await getContract2({
       name: "TranchedPool",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
-    const goldfinchConfigContract = await getContract({
+    const goldfinchConfigContract = await getContract2({
       name: "GoldfinchConfig",
       address: await callableLoanContract.config(),
-      provider,
-      useSigner: false,
     });
-    const creditLineContract = await getContract({
+    const creditLineContract = await getContract2({
       name: "CreditLine",
       address: await callableLoanContract.creditLine(),
-      provider,
-      useSigner: false,
     });
     const [currentBlock, gracePeriodInDays, lastFullPaymentTime, isLate] =
       await Promise.all([
@@ -202,11 +191,8 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
   },
   async inLockupPeriod(callableLoan: CallableLoan): Promise<boolean> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
     try {
@@ -217,11 +203,8 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
   },
   async nextPrincipalDueTime(callableLoan: CallableLoan): Promise<number> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
     try {
@@ -234,11 +217,9 @@ export const callableLoanResolvers: Resolvers[string] = {
     }
   },
   async isAfterTermEndTime(callableLoan: CallableLoan): Promise<boolean> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const provider = getProvider();
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
 
@@ -265,11 +246,8 @@ export const callableLoanResolvers: Resolvers[string] = {
     return getLoanTermDueAmount(callableLoan.id);
   },
   async nextDueTime(callableLoan: CallableLoan): Promise<BigNumber> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
     const isLate = await callableLoanContract.isLate();
@@ -283,11 +261,8 @@ export const callableLoanResolvers: Resolvers[string] = {
     return callableLoanContract.nextDueTime();
   },
   async loanPhase(callableLoan: CallableLoan): Promise<LoanPhase> {
-    const provider = await getProvider();
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
-      useSigner: false,
       address: callableLoan.id,
     });
 
