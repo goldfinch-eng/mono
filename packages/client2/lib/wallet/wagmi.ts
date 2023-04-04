@@ -6,18 +6,19 @@ import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLega
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-if (!process.env.NEXT_PUBLIC_ALCHEMY_API_KEY) {
-  throw new Error("NEXT_PUBLIC_ALCHEMY_API_KEY env var is not defined");
+if (!process.env.NEXT_PUBLIC_MAINNET_RPC_URL) {
+  throw new Error("Mainnet RPC URL is not defined");
+}
+const alchemyApiKey = process.env.NEXT_PUBLIC_MAINNET_RPC_URL.split("/").at(-1);
+if (!alchemyApiKey) {
+  throw new Error("No Alchemy API key available");
 }
 const { chains, provider, webSocketProvider } =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? configureChains([hardhat], [publicProvider()])
     : configureChains(
         [mainnet],
-        [
-          alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
-          publicProvider(),
-        ]
+        [alchemyProvider({ apiKey: alchemyApiKey }), publicProvider()]
       );
 
 const metaMaskConnector = new MetaMaskConnector({
