@@ -1,7 +1,7 @@
-import type { JsonRpcProvider } from "@ethersproject/providers";
+import { Provider } from "@wagmi/core";
 import { BigNumber, BigNumberish } from "ethers";
 
-import { getContract } from "./contracts";
+import { getContract2 } from "./contracts";
 
 export const MEMBERSHIP_EPOCH_MS = 604800000;
 
@@ -23,7 +23,6 @@ export function epochFinalizedDate(
 
 export async function calculateNewMonthlyMembershipReward(
   account: string,
-  provider: JsonRpcProvider,
   newGfi: BigNumberish,
   newCapital: BigNumberish,
   previousEpochRewardTotal = BigNumber.from("12500000000000000000000")
@@ -31,9 +30,8 @@ export async function calculateNewMonthlyMembershipReward(
   newMonthlyReward: CryptoAmount<"FIDU">;
   diff: CryptoAmount<"FIDU">;
 }> {
-  const membershipOrchestratorContract = await getContract({
+  const membershipOrchestratorContract = await getContract2({
     name: "MembershipOrchestrator",
-    provider,
   });
   const [, oldMembershipScore] =
     await membershipOrchestratorContract.memberScoreOf(account);
@@ -73,13 +71,12 @@ export async function calculateNewMonthlyMembershipReward(
 
 export async function estimateForfeiture(
   account: string,
-  provider: JsonRpcProvider,
+  provider: Provider,
   newGfi: BigNumberish,
   newCapital: BigNumberish
 ) {
-  const membershipOrchestratorContract = await getContract({
+  const membershipOrchestratorContract = await getContract2({
     name: "MembershipOrchestrator",
-    provider,
   });
   const { timestamp } = await provider.getBlock("latest");
   const epoch = getEpochNumber(timestamp * 1000);

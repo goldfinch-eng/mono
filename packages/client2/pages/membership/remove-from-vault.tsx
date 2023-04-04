@@ -13,7 +13,7 @@ import {
   AssetPicker,
   AssetInputBox,
 } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import {
   VaultedGfiFieldsFragment,
@@ -26,7 +26,7 @@ import {
 } from "@/lib/membership";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { SectionHeading, Summary } from "./add-to-vault";
 import {
@@ -152,7 +152,7 @@ function SelectionStep({
     ),
   };
 
-  const { account, provider } = useWallet();
+  const { account, provider } = useWallet2();
 
   const [rewardProjection, setRewardProjection] = useState<{
     newMonthlyReward: CryptoAmount<"FIDU">;
@@ -186,7 +186,6 @@ function SelectionStep({
       setRewardProjection(undefined);
       const projection = await calculateNewMonthlyMembershipReward(
         account,
-        provider,
         gfiToUnvaultAmount,
         capitalToBeRemovedAmount,
         previousEpochRewardTotal
@@ -233,7 +232,6 @@ function SelectionStep({
         rewardProjection ??
         (await calculateNewMonthlyMembershipReward(
           account,
-          provider,
           gfiToUnvault.amount.mul("-1"),
           capitalToBeRemoved.amount.mul("-1")
         ));
@@ -360,16 +358,16 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
     ),
   } as const;
 
-  const { account, provider } = useWallet();
+  const { signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const onSubmit = async () => {
-    if (!account || !provider) {
+    if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const membershipContract = await getContract({
+    const membershipContract = await getContract2({
       name: "MembershipOrchestrator",
-      provider,
+      signer,
     });
 
     const gfiPositions: VaultedGfiFieldsFragment[] = [];

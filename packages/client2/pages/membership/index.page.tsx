@@ -14,7 +14,7 @@ import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
 import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
 import {
@@ -174,12 +174,12 @@ function averagePriorRewards(priorRewards?: BigNumber[]) {
 
 export default function MembershipPage() {
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet2();
   const { data, loading, error } = useMembershipPageQuery({
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
     skip: !account,
   });
-  const showLoadingState = isActivating || loading || !data;
+  const showLoadingState = loading || !data;
   const userHasVaultPosition =
     data &&
     (data.vaultedGfis.length > 0 ||
@@ -250,7 +250,7 @@ export default function MembershipPage() {
 
       {error ? (
         <div className="text-clay-500">Error: {error.message}</div>
-      ) : !account && !isActivating ? (
+      ) : !account ? (
         <div>You must connect your wallet to view your membership vault</div>
       ) : (
         <>

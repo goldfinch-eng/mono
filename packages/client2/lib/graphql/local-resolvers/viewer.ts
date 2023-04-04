@@ -1,13 +1,12 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount } from "@wagmi/core";
+import { getAccount, getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { getContract, getContract2 } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
-import { getProvider } from "@/lib/wallet";
 
 import {
   Viewer,
@@ -112,12 +111,13 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async claimableMembershipRewards(): Promise<CryptoAmount | null> {
     try {
-      const provider = await getProvider();
-      const account = await provider.getSigner().getAddress();
+      const { address: account } = getAccount();
+      if (!account) {
+        return null;
+      }
 
-      const membershipContract = await getContract({
+      const membershipContract = await getContract2({
         name: "MembershipOrchestrator",
-        provider,
       });
       const availableRewards = await membershipContract.claimableRewards(
         account
@@ -133,15 +133,16 @@ export const viewerResolvers: Resolvers[string] = {
   async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
     try {
       const provider = await getProvider();
-      const account = await provider.getSigner().getAddress();
+      const { address: account } = getAccount();
+      if (!account) {
+        return null;
+      }
 
-      const membershipContract = await getContract({
+      const membershipContract = await getContract2({
         name: "MembershipOrchestrator",
-        provider,
       });
-      const membershipVaultContract = await getContract({
+      const membershipVaultContract = await getContract2({
         name: "MembershipVault",
-        provider,
       });
 
       const currentBlock = await provider.getBlock("latest");

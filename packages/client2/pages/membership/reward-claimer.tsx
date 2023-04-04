@@ -4,11 +4,11 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form, InfoIconTooltip } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 interface RewardClaimerProps {
   sharePrice: BigNumber;
@@ -21,18 +21,18 @@ export function RewardClaimer({
   className,
   claimable,
 }: RewardClaimerProps) {
-  const { account, provider } = useWallet();
+  const { signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
 
   const onSubmit = async () => {
-    if (!provider || !account) {
+    if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const membershipContract = await getContract({
+    const membershipContract = await getContract2({
       name: "MembershipOrchestrator",
-      provider,
+      signer,
     });
     const transaction = membershipContract.collectRewards();
     await toastTransaction({ transaction });
