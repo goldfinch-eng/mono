@@ -9,14 +9,14 @@ import {
   Form,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import {
   WithdrawalPanelLoanFieldsFragment,
   WithdrawalPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalPanelPoolTokenFields on PoolToken {
@@ -48,20 +48,20 @@ export function WithdrawalPanel({ loan, poolTokens }: WithdrawalPanelProps) {
   const rhfMethods = useForm<FormFields>();
   const { control } = rhfMethods;
   const apolloClient = useApolloClient();
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
 
   const onSubmit = async (data: FormFields) => {
-    if (!provider) {
+    if (!signer) {
       throw new Error("Wallet not connected properly");
     }
-    const tranchedPoolContract = await getContract({
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
+      signer,
       address: loan.address,
     });
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
+      signer,
       address: loan.address,
     });
 

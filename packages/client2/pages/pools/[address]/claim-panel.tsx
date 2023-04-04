@@ -11,7 +11,7 @@ import {
   Link,
   MiniTable,
 } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   ClaimPanelPoolTokenFieldsFragment,
@@ -20,7 +20,7 @@ import {
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { CallPanel } from "./call/call-panel";
 
@@ -116,11 +116,11 @@ export function ClaimPanel({
     loan.delinquency !== "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const claim = async () => {
-    if (!provider) {
+    if (!signer) {
       throw new Error("Wallet not properly connected");
     }
 
@@ -129,11 +129,11 @@ export function ClaimPanel({
       pt.principalRedeemable.add(pt.interestRedeemable).gt(0)
     );
     if (withrawablePoolTokens.length > 0) {
-      const loanContract = await getContract({
+      const loanContract = await getContract2({
         name:
           loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
         address: loan.id,
-        provider,
+        signer,
       });
       const usdcTransaction = loanContract.withdrawMultiple(
         withrawablePoolTokens.map((pt) => pt.id),
@@ -147,9 +147,9 @@ export function ClaimPanel({
       });
 
       if (loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero()) {
-        const backerRewardsContract = await getContract({
+        const backerRewardsContract = await getContract2({
           name: "BackerRewards",
-          provider,
+          signer,
         });
         const gfiTransaction = backerRewardsContract.withdrawMultiple(
           poolTokens.map((pt) => pt.id)
@@ -168,9 +168,9 @@ export function ClaimPanel({
         .gt(0)
     );
     if (withrawableVaultedPoolTokens.length > 0) {
-      const membershipOrchestrator = await getContract({
+      const membershipOrchestrator = await getContract2({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestrator.harvest(
         withrawableVaultedPoolTokens.map((vpt) => vpt.id)

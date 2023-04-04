@@ -15,7 +15,7 @@ import {
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
-import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   SupplyPanelLoanFieldsFragment,
@@ -30,7 +30,7 @@ import {
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { isSmartContract, useWallet } from "@/lib/wallet";
+import { isSmartContract, useWallet2 } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_LOAN_FIELDS = gql`
   fragment SupplyPanelLoanFields on Loan {
@@ -83,7 +83,7 @@ interface SupplyForm {
 
 export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-  const { account, provider } = useWallet();
+  const { account, provider, signer } = useWallet2();
 
   const isUserVerified =
     user?.isGoListed ||
@@ -118,9 +118,6 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       : loan.fundingLimit.sub(loan.totalDeposited);
 
   const validateMaximumAmount = async (value: string) => {
-    if (!account) {
-      return;
-    }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.gt(remainingCapacity)) {
       return "Amount exceeds remaining capacity";
@@ -137,7 +134,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (!provider || !account) {
+    if (!account || !signer) {
       throw new Error("Wallet not connected properly");
     }
 
@@ -151,15 +148,15 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
 
     let submittedTransaction;
 
-    const usdcContract = await getContract({ name: "USDC", provider });
-    const tranchedPoolContract = await getContract({
+    const usdcContract = await getContract2({ name: "USDC", signer });
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
+      signer,
       address: loan.address,
     });
-    const callableLoanContract = await getContract({
+    const callableLoanContract = await getContract2({
       name: "CallableLoan",
-      provider,
+      signer,
       address: loan.address,
     });
     if (await isSmartContract(account, provider)) {
@@ -182,10 +179,11 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       });
     } else {
       const now = (await provider.getBlock("latest")).timestamp;
+      const chainId = await signer.getChainId();
       const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
       const signature = await generateErc20PermitSignature({
         erc20TokenContract: usdcContract,
-        provider,
+        chainId,
         owner: account,
         spender: loan.address,
         value,
@@ -232,13 +230,13 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
 
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
-    if (!account || !provider) {
+    if (!account) {
       return;
     }
-    getContract({ name: "USDC", provider })
+    getContract2({ name: "USDC" })
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) => setAvailableBalance(balance));
-  }, [account, provider, user]);
+  }, [account]);
 
   return (
     <div>
