@@ -1,9 +1,9 @@
 import { Resolvers } from "@apollo/client";
+import { getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { BORROWER_METADATA, POOL_METADATA } from "@/constants";
-import { getContract } from "@/lib/contracts";
-import { getProvider } from "@/lib/wallet";
+import { getContract2 } from "@/lib/contracts";
 
 import { LoanDelinquency, TranchedPool } from "../generated";
 import {
@@ -51,11 +51,8 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return collectedPaymentBalance(creditLineAddress);
     }
-    const provider = await getProvider();
-    const tranchedPoolContract = await getContract({
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
-      useSigner: false,
       address: tranchedPool.id,
     });
     creditLineAddress = await tranchedPoolContract.creditLine();
@@ -63,24 +60,18 @@ export const tranchedPoolResolvers: Resolvers[string] = {
   },
   async delinquency(tranchedPool: TranchedPool): Promise<LoanDelinquency> {
     const secondsPerDay = 60 * 60 * 24;
-    const provider = await getProvider();
-    const tranchedPoolContract = await getContract({
+    const provider = getProvider();
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
-      useSigner: false,
       address: tranchedPool.id,
     });
-    const goldfinchConfigContract = await getContract({
+    const goldfinchConfigContract = await getContract2({
       name: "GoldfinchConfig",
       address: await tranchedPoolContract.config(),
-      provider,
-      useSigner: false,
     });
-    const creditLineContract = await getContract({
+    const creditLineContract = await getContract2({
       name: "CreditLine",
       address: await tranchedPoolContract.creditLine(),
-      provider,
-      useSigner: false,
     });
     const [currentBlock, gracePeriodInDays, lastFullPaymentTime] =
       await Promise.all([
@@ -140,11 +131,8 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return isAfterTermEndTime(creditLineAddress);
     }
-    const provider = await getProvider();
-    const tranchedPoolContract = await getContract({
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
-      useSigner: false,
       address: tranchedPool.id,
     });
     creditLineAddress = await tranchedPoolContract.creditLine();
@@ -156,11 +144,8 @@ export const tranchedPoolResolvers: Resolvers[string] = {
     if (creditLineAddress) {
       return interestOwed(creditLineAddress);
     }
-    const provider = await getProvider();
-    const tranchedPoolContract = await getContract({
+    const tranchedPoolContract = await getContract2({
       name: "TranchedPool",
-      provider,
-      useSigner: false,
       address: tranchedPool.id,
     });
     creditLineAddress = await tranchedPoolContract.creditLine();

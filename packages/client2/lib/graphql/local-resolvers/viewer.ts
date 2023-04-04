@@ -132,7 +132,7 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
     try {
-      const provider = await getProvider();
+      const provider = getProvider();
       const { address: account } = getAccount();
       if (!account) {
         return null;
