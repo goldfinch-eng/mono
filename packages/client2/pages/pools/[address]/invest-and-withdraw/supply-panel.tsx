@@ -30,7 +30,7 @@ import {
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { isSmartContract, useWallet2 } from "@/lib/wallet";
+import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_LOAN_FIELDS = gql`
   fragment SupplyPanelLoanFields on Loan {
@@ -83,7 +83,7 @@ interface SupplyForm {
 
 export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-  const { account, provider, signer } = useWallet2();
+  const { account, provider, signer } = useWallet();
 
   const isUserVerified =
     user?.isGoListed ||

@@ -11,7 +11,7 @@ import {
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { useStakePageQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, sum } from "@/lib/pools";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { ExpandableCard } from "./expandable-card";
 import curveIcon from "./icons/curve.png";
@@ -76,7 +76,7 @@ gql`
 `;
 
 export default function StakePage() {
-  const { account } = useWallet2();
+  const { account } = useWallet();
 
   const { data, error, loading } = useStakePageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },

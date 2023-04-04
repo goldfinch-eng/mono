@@ -25,7 +25,7 @@ import {
   getLoanRepaymentStatus,
   LoanFundingStatus,
 } from "@/lib/pools";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 import { AmountStats } from "./amount-stats";
@@ -154,7 +154,7 @@ interface PoolPageProps {
 const PoolPage: NextPageWithLayout<PoolPageProps> = ({
   dealDetails,
 }: PoolPageProps) => {
-  const { account } = useWallet2();
+  const { account } = useWallet();
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const borrower = dealDetails.borrower!;

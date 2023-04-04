@@ -8,7 +8,7 @@ import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { BackerCardTokenFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -40,7 +40,7 @@ export function BackerCard({
   vaultedCapitalPositionId,
 }: BackerCardProps) {
   const vaulted = !!vaultedCapitalPositionId;
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)

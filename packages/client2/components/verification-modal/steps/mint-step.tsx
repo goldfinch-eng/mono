@@ -18,7 +18,7 @@ import {
   getUIDLabelFromType,
   UIDType,
 } from "@/lib/verify";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -30,7 +30,7 @@ export function MintStep() {
   useModalTitle("Mint your UID");
 
   const { signature, uidVersion } = useVerificationFlowContext();
-  const { account, provider, signer: walletSigner } = useWallet2();
+  const { account, provider, signer: walletSigner } = useWallet();
   const apolloClient = useApolloClient();
 
   const { goToStep } = useWizard();

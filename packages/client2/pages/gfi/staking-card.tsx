@@ -9,7 +9,7 @@ import { formatCrypto } from "@/lib/format";
 import { StakingCardPositionFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import {
   displayClaimedStatus,
@@ -58,7 +58,7 @@ export function StakingCard({
     "MMM d, y"
   );
 
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();

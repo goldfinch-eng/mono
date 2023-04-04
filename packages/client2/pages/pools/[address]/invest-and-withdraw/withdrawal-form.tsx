@@ -16,7 +16,7 @@ import {
 } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalPanelPoolTokenFields on PoolToken {
@@ -48,7 +48,7 @@ export function WithdrawalPanel({ loan, poolTokens }: WithdrawalPanelProps) {
   const rhfMethods = useForm<FormFields>();
   const { control } = rhfMethods;
   const apolloClient = useApolloClient();
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
 
   const onSubmit = async (data: FormFields) => {
     if (!signer) {

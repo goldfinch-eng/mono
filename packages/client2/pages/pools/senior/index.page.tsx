@@ -16,7 +16,7 @@ import {
   SeniorPoolPageCmsQuery,
   SeniorPoolPageCmsDocument,
 } from "@/lib/graphql/generated";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 import { PortfolioDetails } from "@/pages/pools/senior/portfolio-details";
 import { RiskMitigation } from "@/pages/pools/senior/risk-mitigation";
@@ -91,7 +91,7 @@ gql`
 const SeniorPoolPage: NextPageWithLayout<
   InferGetStaticPropsType<typeof getStaticProps>
 > = ({ dealMetadata }: InferGetStaticPropsType<typeof getStaticProps>) => {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const { data, error } = useSeniorPoolPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",

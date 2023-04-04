@@ -14,7 +14,7 @@ import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { WithdrawalCancelModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_CANCEL_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalCancelModalWithdrawalFields on SeniorPoolWithdrawalRequest {
@@ -44,7 +44,7 @@ export function WithdrawalCancelModal({
       .split(".")[0]
   );
 
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
   const onSubmit = async () => {
     if (!signer) {

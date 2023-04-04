@@ -12,7 +12,7 @@ import {
 import { getOptimalPositionsToUnstake, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export const UNSTAKE_FORM_POSITION_FIELDS = gql`
   fragment UnstakeFormPositionFields on SeniorPoolStakedPosition {
@@ -44,7 +44,7 @@ export function UnstakeForm({
     token: positionType === "CurveLP" ? "CURVE_LP" : "FIDU",
     amount: sum("amount", positions),
   };
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<UnstakeFormFields>();
   const { control } = rhfMethods;

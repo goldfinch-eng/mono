@@ -5,7 +5,7 @@ import { useWizard } from "react-use-wizard";
 import { Button } from "@/components/design-system";
 import { PERSONA_CONFIG } from "@/constants";
 import { postKYCDetails } from "@/lib/verify";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -13,7 +13,7 @@ import personaLogo from "./persona-logo.png";
 import { StepTemplate } from "./step-template";
 
 export function PersonaStep() {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const [isPersonaLoading, setIsPersonaLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { goToStep } = useWizard();

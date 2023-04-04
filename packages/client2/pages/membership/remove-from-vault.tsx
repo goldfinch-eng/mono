@@ -26,7 +26,7 @@ import {
 } from "@/lib/membership";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { SectionHeading, Summary } from "./add-to-vault";
 import {
@@ -152,7 +152,7 @@ function SelectionStep({
     ),
   };
 
-  const { account, provider } = useWallet2();
+  const { account, provider } = useWallet();
 
   const [rewardProjection, setRewardProjection] = useState<{
     newMonthlyReward: CryptoAmount<"FIDU">;
@@ -358,7 +358,7 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
     ),
   } as const;
 
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async () => {

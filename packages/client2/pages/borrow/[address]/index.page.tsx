@@ -23,7 +23,7 @@ import {
 } from "@/lib/graphql/generated";
 import { getRepaymentFrequencyLabel } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 import { CallableLoanCallsPanel } from "@/pages/borrow/[address]/callable-loan-calls-panel";
 import {
   calculateCreditLineMaxDrawdownAmount,
@@ -87,7 +87,7 @@ const NextPaymentLabel = ({
 export default function PoolCreditLinePage({
   dealDetails,
 }: PoolCreditLinePageProps) {
-  const { account } = useWallet2();
+  const { account } = useWallet();
 
   const { data, error, loading } = usePoolCreditLinePageQuery({
     variables: {

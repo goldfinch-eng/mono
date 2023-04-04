@@ -31,7 +31,7 @@ import {
   sum,
 } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { BalancedIsBest, BuyGfiCta, LpInSeniorPoolCta } from "./ctas";
 import {
@@ -164,7 +164,7 @@ function SelectionStep({
     [stakedPositionsToVault, poolTokensToVault, sharePrice]
   );
 
-  const { account, provider } = useWallet2();
+  const { account, provider } = useWallet();
   const [rewardProjection, setRewardProjection] = useState<{
     newMonthlyReward: CryptoAmount;
     diff: CryptoAmount;
@@ -367,7 +367,7 @@ function ReviewStep({
     [stakedPositionsToVault, poolTokensToVault, sharePrice]
   );
 
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async () => {

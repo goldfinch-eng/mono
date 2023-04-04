@@ -7,7 +7,7 @@ import { getContract2 } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface DrawdownProps {
@@ -23,7 +23,7 @@ export function DrawdownForm({
   creditLineStatus,
   onClose,
 }: DrawdownProps) {
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };

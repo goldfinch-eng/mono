@@ -14,7 +14,7 @@ import { getContract2 } from "@/lib/contracts";
 import { formatPercent } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 interface LpCurveFormProps {
   balance: CryptoAmount<"FIDU" | "USDC">;
@@ -28,7 +28,7 @@ interface CurveForm {
 }
 
 export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<CurveForm>();
   const { control, watch, register, setError, clearErrors } = rhfMethods;

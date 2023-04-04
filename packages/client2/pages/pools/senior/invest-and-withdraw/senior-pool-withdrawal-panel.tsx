@@ -19,7 +19,7 @@ import {
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import {
   WithdrawalCancelModal,
@@ -73,7 +73,7 @@ export function SeniorPoolWithdrawalPanel({
   vaultedStakedPositions = [],
   existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const {
     sharePrice: seniorPoolSharePrice,
     epochEndsAt,

@@ -12,7 +12,7 @@ import {
   useBorrowPageQuery,
 } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { CreditLineCard } from "./credit-line-card";
 import {
@@ -69,7 +69,7 @@ const getDueDateLabel = ({
 export default function BorrowPage({
   dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",

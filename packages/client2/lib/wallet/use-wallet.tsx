@@ -1,6 +1,6 @@
 import { useAccount, useProvider, useSigner } from "wagmi";
 
-export function useWallet2() {
+export function useWallet() {
   const account = useAccount();
   const provider = useProvider();
   const { data: signer } = useSigner();

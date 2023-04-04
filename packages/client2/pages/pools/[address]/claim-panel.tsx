@@ -20,7 +20,7 @@ import {
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { CallPanel } from "./call/call-panel";
 
@@ -116,7 +116,7 @@ export function ClaimPanel({
     loan.delinquency !== "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const claim = async () => {

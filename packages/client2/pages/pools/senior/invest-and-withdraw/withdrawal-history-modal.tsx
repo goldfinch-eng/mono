@@ -12,7 +12,7 @@ import {
 } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { useWithdrawalHistory2LazyQuery } from "@/lib/graphql/generated";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 interface WithdrawalHistoryModal {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export function WithdrawalHistoryModal({
   isOpen,
   onClose,
 }: WithdrawalHistoryModal) {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const [executeQuery, { data, loading, error }] =
     useWithdrawalHistory2LazyQuery();
   useEffect(() => {

@@ -20,7 +20,7 @@ import {
 } from "@/lib/graphql/generated";
 import { canUserParticipateInSeniorPool, sharesToUsdc } from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import {
   SeniorPoolSupplyPanel,
@@ -65,7 +65,7 @@ export function InvestAndWithdrawTabs({
   vaultedStakedPositions,
   existingWithdrawalRequest,
 }: InvestAndWithdrawTabsProps) {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const isUserVerified =
     user?.isGoListed ||
     user?.isUsEntity ||

@@ -14,7 +14,7 @@ import {
 } from "@/lib/pools";
 import { sharesToUsdc, usdcToShares } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export const MIGRATE_FORM_POSITION_FIELDS = gql`
   fragment MigrateFormPositionFields on SeniorPoolStakedPosition {
@@ -48,7 +48,7 @@ export function MigrateForm({
     token: "FIDU",
     amount: sum("amount", positions),
   } as const;
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<StakeMigrateForm>();
   const { control, setValue, getValues } = rhfMethods;

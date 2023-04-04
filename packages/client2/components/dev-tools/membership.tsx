@@ -5,7 +5,7 @@ import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { advanceTimeNDays, AsyncButton } from "./helpers";
 
@@ -27,7 +27,7 @@ export function Membership() {
 }
 
 function SplitterForm() {
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const rhfMethods = useForm<{ amount: string }>({
     defaultValues: { amount: "10000" },
   });

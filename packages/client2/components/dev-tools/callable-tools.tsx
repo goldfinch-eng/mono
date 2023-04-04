@@ -4,7 +4,7 @@ import { Button, DollarInput, Form, Input } from "@/components/design-system";
 import { getContract2 } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
 import { approveErc20IfRequired } from "@/lib/pools";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export function CallableTools() {
   return (
@@ -20,7 +20,7 @@ function PayForm() {
     callableLoanAddress: string;
     payAmount: string;
   }>();
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const onSubmit = async (data: {
     callableLoanAddress: string;
     payAmount: string;

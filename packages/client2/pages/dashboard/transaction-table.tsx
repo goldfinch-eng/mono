@@ -10,7 +10,7 @@ import {
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { FormatWithIcon } from "./format-with-icon";
 
@@ -62,7 +62,7 @@ interface TransactionTableProps {
 }
 
 export function TransactionTable({ isPreview = false }: TransactionTableProps) {
-  const { account } = useWallet2();
+  const { account } = useWallet();
 
   const { data, error, fetchMore, loading } = useCurrentUserTransactionsQuery({
     variables: {

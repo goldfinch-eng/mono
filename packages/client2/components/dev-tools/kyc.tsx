@@ -3,12 +3,12 @@ import { useForm } from "react-hook-form";
 
 import { Input, Select, Button, Form } from "@/components/design-system";
 import { getSignatureForKyc, fetchKycStatus } from "@/lib/verify";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { AsyncButton, devserverRequest } from "./helpers";
 
 export function Kyc() {
-  const { account, provider, signer } = useWallet2();
+  const { account, provider, signer } = useWallet();
   const [shownData, setShownData] = useState({});
   const fetchCurrentKycStatus = async () => {
     if (!account || !provider || !signer) {

@@ -8,7 +8,7 @@ import { StakedPositionType } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 interface StakeCardFormProps {
   max: CryptoAmount<"FIDU" | "CURVE_LP">;
@@ -25,7 +25,7 @@ export function StakeForm({
   positionType,
   onComplete,
 }: StakeCardFormProps) {
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<StakeFormFields>();
   const { control } = rhfMethods;

@@ -17,7 +17,7 @@ import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
@@ -42,7 +42,7 @@ export function PaymentForm({
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const showPayMinimumDueOption =

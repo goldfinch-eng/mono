@@ -18,7 +18,7 @@ import { formatCrypto, formatPercent } from "@/lib/format";
 import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { isSmartContract, useWallet2 } from "@/lib/wallet";
+import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -49,7 +49,7 @@ export function SeniorPoolSupplyPanel({
     defaultValues: { isStaking: true },
   });
   const { control, register } = rhfMethods;
-  const { account, provider, signer } = useWallet2();
+  const { account, provider, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async (data: FormFields) => {

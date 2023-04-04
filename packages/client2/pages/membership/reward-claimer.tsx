@@ -8,7 +8,7 @@ import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 interface RewardClaimerProps {
   sharePrice: BigNumber;
@@ -21,7 +21,7 @@ export function RewardClaimer({
   className,
   claimable,
 }: RewardClaimerProps) {
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();

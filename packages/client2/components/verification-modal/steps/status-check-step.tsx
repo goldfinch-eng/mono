@@ -8,7 +8,7 @@ import {
   StatusCheckStepQueryVariables,
 } from "@/lib/graphql/generated";
 import { fetchKycStatus, getSignatureForKyc } from "@/lib/verify";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -30,7 +30,7 @@ export function StatusCheckStep() {
   const { goToStep } = useWizard();
   const apolloClient = useApolloClient();
   const { setSignature, setUidVersion } = useVerificationFlowContext();
-  const { account, provider, signer } = useWallet2();
+  const { account, provider, signer } = useWallet();
   const [error, setError] = useState<string>();
 
   useEffect(() => {

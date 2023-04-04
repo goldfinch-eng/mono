@@ -14,7 +14,7 @@ import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract2 } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
 import { fetchUniqueIdentitySigner, getUIDLabelFromType } from "@/lib/verify";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -29,7 +29,7 @@ export function MintToAddressStep() {
   useModalTitle("Enter smart contract wallet address");
 
   const { signature } = useVerificationFlowContext();
-  const { account, provider, signer: walletSigner } = useWallet2();
+  const { account, provider, signer: walletSigner } = useWallet();
   const apolloClient = useApolloClient();
   const { previousStep, goToStep } = useWizard();
 

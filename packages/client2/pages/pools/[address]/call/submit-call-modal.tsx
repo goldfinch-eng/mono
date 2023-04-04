@@ -15,7 +15,7 @@ import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { SubmitCallModalPoolTokenFieldsFragment } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 interface SubmitCallModalProps {
   isOpen: boolean;
@@ -75,7 +75,7 @@ function CallAmountStep({
   callableLoanAddress,
   maxCallable,
 }: CallAmountStepProps) {
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   type FormData = { usdcToCall: string };
   const rhfMethods = useForm<FormData>();
   const validateAmount = async (value: string) => {
@@ -131,7 +131,7 @@ function ReviewStep({
   callableLoanAddress,
   callablePoolTokens,
 }: ReviewStepProps) {
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
   const { data } = useStepperContext();
   const { usdcToCall, expectedRepaymentDate } = data as StepperDataType;

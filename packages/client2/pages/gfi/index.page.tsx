@@ -9,7 +9,7 @@ import {
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
 import { useGfiPageQuery } from "@/lib/graphql/generated";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { BackerCard, BACKER_CARD_TOKEN_FIELDS } from "./backer-card";
 import {
@@ -70,7 +70,7 @@ gql`
 `;
 
 export default function GfiPage() {
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",

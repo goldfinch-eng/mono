@@ -14,7 +14,7 @@ import { SEO } from "@/components/seo";
 import { formatCrypto } from "@/lib/format";
 import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
 import {
@@ -174,7 +174,7 @@ function averagePriorRewards(priorRewards?: BigNumber[]) {
 
 export default function MembershipPage() {
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
-  const { account } = useWallet2();
+  const { account } = useWallet();
   const { data, loading, error } = useMembershipPageQuery({
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
     skip: !account,

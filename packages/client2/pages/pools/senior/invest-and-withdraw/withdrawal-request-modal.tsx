@@ -21,7 +21,7 @@ import {
 import { WithdrawalRequestModalWithdrawalFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, sharesToUsdc } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_REQUEST_MODAL_WITHDRAWAL_FIELDS = gql`
   fragment WithdrawalRequestModalWithdrawalFields on SeniorPoolWithdrawalRequest {
@@ -229,7 +229,7 @@ function ConfirmStep({
       ? existingWithdrawalRequest.previewFiduRequested.add(fiduInputted.amount)
       : fiduInputted.amount,
   } as const;
-  const { account, signer } = useWallet2();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
   const onSubmit = async (data: FormData) => {
     if (!account || !signer) {

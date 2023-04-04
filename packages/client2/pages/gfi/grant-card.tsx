@@ -15,7 +15,7 @@ import {
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -211,7 +211,7 @@ function GrantButton({
   claimable: BigNumber;
   locked: BigNumber;
 }) {
-  const { signer } = useWallet2();
+  const { signer } = useWallet();
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 

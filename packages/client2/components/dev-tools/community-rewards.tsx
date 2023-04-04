@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { Button, Form, Input } from "@/components/design-system";
 import { getContract2 } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet2 } from "@/lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export function CommunityRewards() {
   return (
@@ -20,7 +20,7 @@ function SendTokenForm() {
     to: string;
   };
   const rhfMethods = useForm<FormFields>();
-  const { signer, account } = useWallet2();
+  const { signer, account } = useWallet();
   const handleSubmit = async ({ tokenId, to }: FormFields) => {
     if (!signer || !account) {
       throw new Error("Wallet not connected properly");
