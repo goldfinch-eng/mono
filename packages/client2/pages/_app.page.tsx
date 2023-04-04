@@ -13,7 +13,6 @@ import { getLayout, Layout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
-import { WalletProvider } from "@/lib/wallet";
 import { wagmiClient } from "@/lib/wallet/wagmi";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
@@ -53,7 +52,6 @@ export default function GoldfinchApp({
         </>
       ) : null}
 
-      {/* <WalletProvider> */}
       <WagmiConfig client={wagmiClient}>
         <ApolloProvider client={apolloClient}>
           <ToastContainer position="top-center" theme="colored" />
@@ -71,10 +69,9 @@ export default function GoldfinchApp({
             <DevTools />
           ) : null}
           <AllNuxes />
-          {/* <AppLevelSideEffects /> */}
+          <AppLevelSideEffects />
         </ApolloProvider>
       </WagmiConfig>
-      {/* </WalletProvider> */}
     </>
   );
 }
