@@ -9,7 +9,7 @@ import {
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
 import { useGfiPageQuery } from "@/lib/graphql/generated";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { BackerCard, BACKER_CARD_TOKEN_FIELDS } from "./backer-card";
 import {
@@ -70,14 +70,14 @@ gql`
 `;
 
 export default function GfiPage() {
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet2();
   const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
     skip: !account,
   });
-  const showLoadingState = isActivating || loading || !data;
+  const showLoadingState = loading || !data;
 
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
@@ -118,7 +118,7 @@ export default function GfiPage() {
       </Heading>
       {error ? (
         <div className="text-clay-500">{error.message}</div>
-      ) : !account && !isActivating ? (
+      ) : !account ? (
         <div>You must connect your wallet to view GFI rewards</div>
       ) : (
         <div>

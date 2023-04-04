@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -211,7 +211,7 @@ function GrantButton({
   claimable: BigNumber;
   locked: BigNumber;
 }) {
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 
@@ -226,29 +226,29 @@ function GrantButton({
     : "Claim GFI";
 
   const handleAction = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
 
-    const communityRewardsContract = await getContract({
+    const communityRewardsContract = await getContract2({
       name: "CommunityRewards",
-      provider,
+      signer,
     });
-    const merkleDistributorContract = await getContract({
+    const merkleDistributorContract = await getContract2({
       name: "MerkleDistributor",
-      provider,
+      signer,
     });
-    const backerMerkleDistributorContract = await getContract({
+    const backerMerkleDistributorContract = await getContract2({
       name: "BackerMerkleDistributor",
-      provider,
+      signer,
     });
-    const merkleDirectDistributorContract = await getContract({
+    const merkleDirectDistributorContract = await getContract2({
       name: "MerkleDirectDistributor",
-      provider,
+      signer,
     });
-    const backerMerkleDirectDistributorContract = await getContract({
+    const backerMerkleDirectDistributorContract = await getContract2({
       name: "BackerMerkleDirectDistributor",
-      provider,
+      signer,
     });
 
     if (grant.__typename === "IndirectGfiGrant") {

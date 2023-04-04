@@ -4,11 +4,11 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { BackerCardTokenFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -40,7 +40,7 @@ export function BackerCard({
   vaultedCapitalPositionId,
 }: BackerCardProps) {
   const vaulted = !!vaultedCapitalPositionId;
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
@@ -56,22 +56,22 @@ export function BackerCard({
     !token.loan.isPaused;
 
   const handleClaim = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
     if (vaulted) {
-      const membershipOrchestratorContract = await getContract({
+      const membershipOrchestratorContract = await getContract2({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
       ]);
       await toastTransaction({ transaction });
     } else {
-      const backerRewardsContract = await getContract({
+      const backerRewardsContract = await getContract2({
         name: "BackerRewards",
-        provider,
+        signer,
       });
       const transaction = backerRewardsContract.withdraw(token.id);
       await toastTransaction({ transaction });

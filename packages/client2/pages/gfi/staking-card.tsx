@@ -4,12 +4,12 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { getContract } from "@/lib/contracts";
+import { getContract2 } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { StakingCardPositionFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
-import { useWallet } from "@/lib/wallet";
+import { useWallet2 } from "@/lib/wallet";
 
 import {
   displayClaimedStatus,
@@ -58,27 +58,27 @@ export function StakingCard({
     "MMM d, y"
   );
 
-  const { provider } = useWallet();
+  const { signer } = useWallet2();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
   const handleClaim = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
     if (vaulted) {
-      const membershipOrchestratorContract = await getContract({
+      const membershipOrchestratorContract = await getContract2({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
       ]);
       await toastTransaction({ transaction });
     } else {
-      const stakingRewardsContract = await getContract({
+      const stakingRewardsContract = await getContract2({
         name: "StakingRewards",
-        provider,
+        signer,
       });
       const transaction = stakingRewardsContract.getReward(position.id);
       await toastTransaction({ transaction });
