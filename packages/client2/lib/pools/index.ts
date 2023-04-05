@@ -162,11 +162,7 @@ export function usdcToShares(
 export const USER_ELIGIBILITY_FIELDS = gql`
   fragment UserEligibilityFields on User {
     id
-    isUsEntity
-    isNonUsEntity
-    isUsAccreditedIndividual
-    isUsNonAccreditedIndividual
-    isNonUsIndividual
+    uidType
     isGoListed
   }
 `;
@@ -175,31 +171,10 @@ export function canUserParticipateInPool(
   poolAllowedUids: UidType[],
   user: UserEligibilityFieldsFragment
 ): boolean {
-  if (user.isGoListed) {
-    return true;
-  }
-  if (user.isNonUsIndividual && poolAllowedUids.includes("NON_US_INDIVIDUAL")) {
-    return true;
-  }
-  if (
-    user.isUsAccreditedIndividual &&
-    poolAllowedUids.includes("US_ACCREDITED_INDIVIDUAL")
-  ) {
-    return true;
-  }
-  if (
-    user.isUsNonAccreditedIndividual &&
-    poolAllowedUids.includes("US_NON_ACCREDITED_INDIVIDUAL")
-  ) {
-    return true;
-  }
-  if (user.isUsEntity && poolAllowedUids.includes("US_ENTITY")) {
-    return true;
-  }
-  if (user.isNonUsEntity && poolAllowedUids.includes("NON_US_ENTITY")) {
-    return true;
-  }
-  return false;
+  return (
+    user.isGoListed ||
+    (!!user.uidType && poolAllowedUids.includes(user.uidType))
+  );
 }
 
 export function canUserParticipateInSeniorPool(
