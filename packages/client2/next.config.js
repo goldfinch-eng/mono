@@ -115,7 +115,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   // Note that this function can have more arguments. See https://nextjs.org/docs/api-reference/next.config.js/custom-webpack-config
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // Allows SVGs to be imported as plain URLs if written as follows: import svg from './assets/file.svg?url'
     // See https://react-svgr.com/docs/webpack/#use-svgr-and-asset-svg-in-the-same-project
     config.module.rules.push({
@@ -145,6 +145,16 @@ const nextConfig = {
       issuer: /\.[jt]sx?$/,
       type: "asset/source",
     });
+
+    // Has to be added because the WalletConnect legacy client package causes build failures otherwise
+    //* This can be removed when we move to WalletConnect v2 (which will happen when Impersonator and MetaMask mobile support it)
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
 
     return config;
   },
