@@ -1,4 +1,4 @@
-import { signTypedData } from "@wagmi/core";
+import { signTypedData, Address } from "@wagmi/core";
 import { BigNumber, utils } from "ethers";
 
 import type { Erc20 } from "@/types/ethers-contracts";
@@ -46,7 +46,7 @@ export async function generateErc20PermitSignature({
     name,
     version: chainId === 1 && name === "USD Coin" ? "2" : "1", // we don't have the `version()` function on our fake USDC contract in dev, hence the conditional here
     chainId,
-    verifyingContract: erc20TokenContract.address as `0x${string}`,
+    verifyingContract: erc20TokenContract.address as Address,
   };
 
   const message = {
