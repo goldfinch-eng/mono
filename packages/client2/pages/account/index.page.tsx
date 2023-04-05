@@ -5,6 +5,7 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
+import { CallToAction } from "@/components/design-system/call-to-action";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 const AccountsPage: NextPageWithLayout = () => {
@@ -28,7 +29,15 @@ const AccountsPage: NextPageWithLayout = () => {
         <div className="px-5">
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
-              <TabContent>Content 1</TabContent>
+              <TabContent>
+                {
+                  <CallToAction
+                    iconLeft="Globe"
+                    title="Setup your UID to start"
+                    buttonRight={}
+                  />
+                }
+              </TabContent>
             </TabPanels>
           </div>
         </div>
