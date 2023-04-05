@@ -11,7 +11,7 @@ type CallToActionButtonProps = {
 
 export interface CallToActionProps {
   /**
-   * Button component to optionally pass in
+   * Button component props to optionally pass in
    */
   buttonRight?: CallToActionButtonProps;
   /**
