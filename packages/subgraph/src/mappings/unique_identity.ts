@@ -9,7 +9,7 @@ export function handleTransferSingle(event: TransferSingle): void {
   const isBurning = event.params.to.equals(Address.zero())
 
   if (isMinting) {
-    const receivingUser = getOrInitUser(event.params.from)
+    const receivingUser = getOrInitUser(event.params.to)
     if (uidType.equals(BigInt.fromI32(0))) {
       receivingUser.uidType = "NON_US_INDIVIDUAL"
     } else if (uidType.equals(BigInt.fromI32(1))) {
