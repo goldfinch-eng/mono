@@ -14,11 +14,7 @@ gql`
   query UserUidForAnalytics($account: ID!) {
     user(id: $account) {
       id
-      isUsEntity
-      isNonUsEntity
-      isUsAccreditedIndividual
-      isUsNonAccreditedIndividual
-      isNonUsIndividual
+      uidType
     }
   }
 `;
@@ -47,10 +43,10 @@ export function AppLevelSideEffects() {
 
   useEffect(() => {
     if (data?.user) {
-      const uidLabel = getUIDLabelFromGql(data.user);
-      if (!uidLabel) {
+      if (!data.user.uidType) {
         return;
       }
+      const uidLabel = getUIDLabelFromGql(data.user.uidType);
       dataLayerPushEvent("UID_LOADED", { uidType: uidLabel });
     }
   }, [data]);

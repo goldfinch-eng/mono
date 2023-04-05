@@ -52,11 +52,7 @@ export const SUPPLY_PANEL_LOAN_FIELDS = gql`
 export const SUPPLY_PANEL_USER_FIELDS = gql`
   fragment SupplyPanelUserFields on User {
     id
-    isUsEntity
-    isNonUsEntity
-    isUsAccreditedIndividual
-    isUsNonAccreditedIndividual
-    isNonUsIndividual
+    uidType
     isGoListed
   }
 `;
@@ -85,13 +81,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
 
-  const isUserVerified =
-    user?.isGoListed ||
-    user?.isUsEntity ||
-    user?.isNonUsEntity ||
-    user?.isUsAccreditedIndividual ||
-    user?.isUsNonAccreditedIndividual ||
-    user?.isNonUsIndividual;
+  const isUserVerified = user?.isGoListed || !!user?.uidType;
 
   const canUserParticipate = user
     ? canUserParticipateInPool(loan.allowedUidTypes, user)

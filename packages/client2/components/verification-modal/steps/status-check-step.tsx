@@ -17,11 +17,7 @@ const statusCheckStepQuery = gql`
   query StatusCheckStep($account: ID!) {
     user(id: $account) {
       id
-      isUsEntity
-      isNonUsEntity
-      isUsAccreditedIndividual
-      isUsNonAccreditedIndividual
-      isNonUsIndividual
+      uidType
     }
   }
 `;
@@ -49,14 +45,7 @@ export function StatusCheckStep() {
         if (error) {
           throw error;
         }
-        if (
-          data.user &&
-          (data.user.isUsEntity ||
-            data.user.isNonUsEntity ||
-            data.user.isUsAccreditedIndividual ||
-            data.user.isUsNonAccreditedIndividual ||
-            data.user.isNonUsIndividual)
-        ) {
+        if (data.user && !!data.user.uidType) {
           goToStep(VerificationFlowSteps.AlreadyMinted);
           return;
         }
