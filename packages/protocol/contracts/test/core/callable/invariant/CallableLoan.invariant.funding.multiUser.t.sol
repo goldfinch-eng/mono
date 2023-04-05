@@ -110,8 +110,7 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     assertZero(poolTokens.getPoolInfo(address(handler.loan())).totalPrincipalRedeemed);
   }
 
-  // UncalledCapitalInfo invariants
-
+  // Tranche invariants
   function invariant_UncalledCapitalInfoPrincipalDepositedIsSumOfPrincipalWithdrawable() public {
     uint256 totalPrincipalWithdrawable = handler.reduceActors(0, this.principalWithdrawableReducer);
     assertEq(
@@ -131,6 +130,15 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
 
   function invariant_UncalledCapitalInfoInterestPaidIsZero() public {
     assertZero(handler.loan().getUncalledCapitalInfo().interestPaid);
+  }
+
+  function invariant_AllCalledTranchesAreZeroedOut() public {
+    for (uint256 i = 0; i < 3; ++i) {
+      assertZero(handler.loan().getCallRequestPeriod(i).principalDeposited);
+      assertZero(handler.loan().getCallRequestPeriod(i).principalPaid);
+      assertZero(handler.loan().getCallRequestPeriod(i).principalReserved);
+      assertZero(handler.loan().getCallRequestPeriod(i).interestPaid);
+    }
   }
 
   // USDC Balances
