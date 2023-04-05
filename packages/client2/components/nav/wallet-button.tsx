@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   useAccount,
   useEnsAvatar,
@@ -9,6 +8,7 @@ import {
 
 import { Button, Popover } from "@/components/design-system";
 import { DESIRED_CHAIN_ID } from "@/constants";
+import { useIsMounted } from "@/hooks";
 import { openWalletModal } from "@/lib/state/actions";
 import { abbreviateAddress } from "@/lib/wallet";
 
@@ -16,12 +16,7 @@ import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  // Since autoConnect to on, useAccount returns an address immediately on first render in the client. This causes a conflict between client and server on first render (the hydration step)
-  // In order to resolve this conflict, we only render this component on the client
-  const [isRenderingOnClient, setIsRenderingOnClient] = useState(false);
-  useEffect(() => {
-    setIsRenderingOnClient(true);
-  }, []);
+  const isMounted = useIsMounted();
   const { address } = useAccount();
   const network = useNetwork();
   const skipENS = network.chain?.id === 31337;
@@ -35,7 +30,7 @@ export function WalletButton() {
   const isWrongNetwork = network.chain?.unsupported;
   const { switchNetwork } = useSwitchNetwork();
 
-  return !isRenderingOnClient ? null : isWrongNetwork ? (
+  return !isMounted ? null : isWrongNetwork ? (
     <Button
       variant="rounded"
       className="h-10 !text-clay-500"

@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import { useMemo } from "react";
 
 import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
@@ -111,12 +112,14 @@ export default function GfiPage() {
       (grantsWithTokens?.length ?? 0) >
     0;
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
         GFI
       </Heading>
-      {error ? (
+      {!isMounted ? null : error ? (
         <div className="text-clay-500">{error.message}</div>
       ) : !account ? (
         <div>You must connect your wallet to view GFI rewards</div>

@@ -11,6 +11,7 @@ import {
   AssetBoxPlaceholder,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto } from "@/lib/format";
 import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
@@ -229,6 +230,8 @@ export default function MembershipPage() {
       (data?.viewer.gfiBalance?.amount.isZero() ||
         vaultableCapitalAssets.length === 0));
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <SEO title="Membership" />
@@ -248,7 +251,7 @@ export default function MembershipPage() {
         onClose={() => setIsExplainerOpen(false)}
       />
 
-      {error ? (
+      {!isMounted ? null : error ? (
         <div className="text-clay-500">Error: {error.message}</div>
       ) : !account ? (
         <div>You must connect your wallet to view your membership vault</div>

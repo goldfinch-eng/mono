@@ -11,6 +11,7 @@ import {
   Heading,
   Icon,
 } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -197,6 +198,8 @@ export default function PoolCreditLinePage({
     }
   }, [loan, setShownForm]);
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <Heading level={1} className="mb-12 break-words">
@@ -211,7 +214,7 @@ export default function PoolCreditLinePage({
         Credit Line
       </Heading>
 
-      {!account ? (
+      {!isMounted ? null : !account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit line
           <div className="mt-3">

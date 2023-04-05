@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 
 import { Button, Heading, Icon } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -79,6 +80,8 @@ export default function BorrowPage({
 
   const loans = data?.loans ?? [];
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <Heading level={1} className="mb-12">
@@ -93,7 +96,7 @@ export default function BorrowPage({
         Credit Lines
       </Heading>
 
-      {!account ? (
+      {!isMounted ? null : !account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit lines
           <div className="mt-3">

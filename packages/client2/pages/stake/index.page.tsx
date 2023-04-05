@@ -8,6 +8,7 @@ import {
   InfoIconTooltip,
   Shimmer,
 } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { useStakePageQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, sum } from "@/lib/pools";
@@ -138,13 +139,15 @@ export default function StakePage() {
     </div>
   );
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
         Stake
       </Heading>
 
-      {!account && !loading ? (
+      {!isMounted ? null : !account ? (
         <div className="mb-12 text-lg font-medium text-clay-500">
           You must connect your wallet to view your available tokens.
         </div>
