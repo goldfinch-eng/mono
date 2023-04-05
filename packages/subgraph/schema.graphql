@@ -51,11 +51,7 @@ type User @entity {
   vaultedPoolTokens: [VaultedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
-  isNonUsIndividual: Boolean!
-  isUsAccreditedIndividual: Boolean!
-  isUsNonAccreditedIndividual: Boolean!
-  isUsEntity: Boolean!
-  isNonUsEntity: Boolean!
+  uidType: UidType
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")

@@ -21,6 +21,7 @@ import DotsHorizontal from "./svg/dots-horizontal.svg";
 import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
+import Globe from "./svg/globe.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
@@ -52,6 +53,7 @@ export const iconManifest = {
   Exclamation,
   ExclamationCircleSolid,
   Gfi,
+  Globe,
   InfoCircle,
   LightningBolt,
   Link,

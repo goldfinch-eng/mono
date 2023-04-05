@@ -78,7 +78,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     address poolAddress,
     uint256 amount,
     address addressToSendTo
-  ) external onlyAdmin {
+  ) external override onlyAdmin {
     ILoan(poolAddress).drawdown(amount);
 
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {

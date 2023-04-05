@@ -7,19 +7,25 @@ import {CallableLoanActorInfo, CallableLoanActorSet, CallableLoanActorSetLib} fr
 import {InvariantTest} from "forge-std/InvariantTest.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
-import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
+import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
 import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
+import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
+import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
+import {IBorrower} from "../../../../interfaces/IBorrower.sol";
+import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoanFundingHandler} from "./CallableLoanFundingHandler.t.sol";
+import {CallableLoanRandoHandler} from "./CallableLoanRandoHandler.t.sol";
 
-contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, InvariantTest {
+contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanFundingHandler private handler;
+  CallableLoanRandoHandler private randoHandler;
   CallableLoan loan;
 
-  function setUp() public virtual override {
+  function setUp() public override {
     super.setUp();
 
-    (loan, ) = defaultCallableLoan();
+    (loan, ) = callableLoanBuilder.build(address(BORROWER));
     handler = new CallableLoanFundingHandler(
       loan,
       usdc,
@@ -28,27 +34,29 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
       BORROWER,
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
+    randoHandler = new CallableLoanRandoHandler(loan);
+
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
+    fundAddress(address(randoHandler), loan.limit() * 1e18);
 
-    bytes4[] memory selectors = new bytes4[](3);
+    bytes4[] memory selectors = new bytes4[](4);
     selectors[0] = handler.deposit.selector;
     selectors[1] = handler.withdraw.selector;
     selectors[2] = handler.warpBeforeInProgress.selector;
+    selectors[3] = handler.drawdown.selector;
+
+    bytes4[] memory randomSelectors = new bytes4[](3);
+    randomSelectors[0] = randoHandler.drawdown.selector;
+    randomSelectors[1] = randoHandler.submitCall.selector;
+    randomSelectors[2] = randoHandler.pay.selector;
+
+    targetArtifact("UcuProxy");
     targetSelector(FuzzSelector(address(handler), selectors));
+    targetSelector(FuzzSelector(address(randoHandler), randomSelectors));
   }
 
   // PoolTokens TokenInfo invariants
-
-  function invariant_totalPrincipalWithdrawableIsTotalPoolTokenPrincipalAmounts() public {
-    uint256 totalPrincipalWithdrawable = handler.reduceActors(0, this.principalWithdrawableReducer);
-    uint256 totalPoolTokenInfoPrincipalAmounts = handler.reduceActors(
-      0,
-      this.poolTokenPrincipalAmountReducer
-    );
-    assertEq(totalPrincipalWithdrawable, totalPoolTokenInfoPrincipalAmounts);
-  }
-
   function invariant_PoolTokenPrincipalAndInterestRedeemedIsZero() public {
     handler.forEachActor(this.assertPoolTokenInfoPrincipalAndInterestRedeemedIsZero);
   }
@@ -92,14 +100,53 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     }
   }
 
-  // Mostly to debug issues where pool tokens do not match deposits due to test setup issues.
-  function assertPoolTokenCountMatchesDeposits() public {
-    assertEq(handler.numDeposits(), handler.reduceActors(0, this.numPoolTokensReducer));
+  function assertPoolTokenInfoHasntChangedSinceDrawdown(
+    address actor,
+    CallableLoanActorInfo memory info
+  ) external {
+    // Only make these assertions when we are in the drawdown period
+    if (!handler.hasDrawndown()) {
+      return;
+    }
+    for (uint i = 0; i < info.tokens.length; ++i) {
+      tokenInfoUnchangedSinceTimeOfDrawdown(info.tokens[i]);
+    }
+  }
+
+  function tokenInfoUnchangedSinceTimeOfDrawdown(uint256 tokenId) private view returns (bool) {
+    IPoolTokens.TokenInfo memory a;
+    {
+      a = poolTokens.getTokenInfo(tokenId);
+    }
+
+    IPoolTokens.TokenInfo memory b;
+    {
+      (
+        address pool,
+        uint256 tranche,
+        uint256 principalAmount,
+        uint256 principalRedeemed,
+        uint256 interestRedeemed
+      ) = handler.poolTokensAtTimeOfFirstDrawdown(tokenId);
+      b = IPoolTokens.TokenInfo(
+        pool,
+        tranche,
+        principalAmount,
+        principalRedeemed,
+        interestRedeemed
+      );
+    }
+    return
+      a.pool == b.pool &&
+      a.tranche == b.tranche &&
+      a.principalAmount == b.principalAmount &&
+      a.principalRedeemed == b.principalRedeemed &&
+      a.interestRedeemed == b.interestRedeemed;
   }
 
   // PoolTokens PoolInfo invariants
 
-  function invariant_PoolTokensPoolInfoTotalMintedIsSumOfPrincipalWithdrawable() public {
+  function invariant_PoolTokensPoolInfoTotalMintedIsSumOfPrincipalAmounts() public {
     assertEq(
       poolTokens.getPoolInfo(address(handler.loan())).totalMinted,
       handler.reduceActors(0, this.poolTokenPrincipalAmountReducer)
@@ -110,18 +157,46 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     assertZero(poolTokens.getPoolInfo(address(handler.loan())).totalPrincipalRedeemed);
   }
 
-  // Tranche invariants
-  function invariant_UncalledCapitalInfoPrincipalDepositedIsSumOfPrincipalWithdrawable() public {
-    uint256 totalPrincipalWithdrawable = handler.reduceActors(0, this.principalWithdrawableReducer);
-    assertEq(
-      handler.loan().getUncalledCapitalInfo().principalDeposited,
-      totalPrincipalWithdrawable
-    );
+  // LoanPhase transition invariant
+  function invariant_loanPhaseIsDrawdownPeriodAfterDrawdown() public {
+    assertEq(handler.loan().loanPhase() == LoanPhase.DrawdownPeriod, handler.hasDrawndown());
   }
 
-  function invariant_UncalledCapitalInfoPrincipalPaidIsSumOfPrincipalWithdrawable() public {
-    uint256 totalPrincipalWithdrawable = handler.reduceActors(0, this.principalWithdrawableReducer);
-    assertEq(handler.loan().getUncalledCapitalInfo().principalPaid, totalPrincipalWithdrawable);
+  // USDC balances
+  function invariant_callableLoanBalanceAfterDrawdown() public {
+    if (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+      console.log(
+        "callableLoanBalanceBeforeFirstDrawdown:",
+        handler.callableLoanBalanceBeforeFirstDrawdown()
+      );
+      console.log("handler.sumDrawndown:", handler.sumDrawndown());
+      assertEq(
+        usdc.balanceOf(address(loan)),
+        handler.callableLoanBalanceBeforeFirstDrawdown() - handler.sumDrawndown()
+      );
+    }
+  }
+
+  function invariant_borrowerBalanceAfterDrawdown() public {
+    if (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+      assertEq(
+        usdc.balanceOf(BORROWER),
+        handler.borrowerBalanceBeforeFirstDrawdown() + handler.sumDrawndown()
+      );
+    }
+  }
+
+  // Tranche invariants
+  function invariant_UncalledCapitalInfoPrincipalDepositedIsSumOfPrincipalWithdrawable() public {
+    uint256 totalPrincipalDeposited = handler.reduceActors(0, this.principalDepositedReducer);
+    assertEq(handler.loan().getUncalledCapitalInfo().principalDeposited, totalPrincipalDeposited);
+  }
+
+  function invariant_UncalledCapitalInfoPrincipalPaidIsPrincipalDepositedLessDrawdowns() public {
+    assertEq(
+      handler.loan().getUncalledCapitalInfo().principalPaid,
+      handler.loan().getUncalledCapitalInfo().principalDeposited - handler.sumDrawndown()
+    );
   }
 
   function invariant_UncalledCapitalInfoPrincipalReservedIsZero() public {
@@ -141,16 +216,6 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     }
   }
 
-  // USDC Balances
-  function invariant_USDCBalances() public {
-    assertEq(usdc.balanceOf(address(loan)), handler.sumDeposited() - handler.sumWithdrawn());
-    assertZero(usdc.balanceOf(BORROWER));
-  }
-
-  function invariant_LoanPhase() public {
-    assertTrue(loan.loanPhase() == LoanPhase.Funding);
-  }
-
   function principalWithdrawableReducer(
     uint256 principalWithdrawableAcc,
     address actor,
@@ -163,6 +228,17 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     return principalWithdrawableAcc;
   }
 
+  function principalDepositedReducer(
+    uint256 principalDepositedAcc,
+    address actor,
+    CallableLoanActorInfo memory info
+  ) external view returns (uint256) {
+    for (uint i = 0; i < info.tokens.length; ++i) {
+      principalDepositedAcc += poolTokens.getTokenInfo(info.tokens[i]).principalAmount;
+    }
+    return principalDepositedAcc;
+  }
+
   function poolTokenPrincipalAmountReducer(
     uint256 principalAmountAcc,
     address actor,
@@ -172,13 +248,5 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
       principalAmountAcc += poolTokens.getTokenInfo(info.tokens[i]).principalAmount;
     }
     return principalAmountAcc;
-  }
-
-  function numPoolTokensReducer(
-    uint256 numPoolTokensAcc,
-    address actor,
-    CallableLoanActorInfo memory info
-  ) external view returns (uint256) {
-    return numPoolTokensAcc + info.tokens.length;
   }
 }

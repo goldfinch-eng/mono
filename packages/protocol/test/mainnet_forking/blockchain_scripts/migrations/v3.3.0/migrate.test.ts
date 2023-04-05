@@ -1,7 +1,12 @@
 import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {deployments} from "hardhat"
-import {SIGNER_ROLE, getProtocolOwner, getTruffleContract} from "packages/protocol/blockchain_scripts/deployHelpers"
+import {
+  LOCKER_ROLE,
+  SIGNER_ROLE,
+  getProtocolOwner,
+  getTruffleContract,
+} from "packages/protocol/blockchain_scripts/deployHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {
   BorrowerInstance,
@@ -377,6 +382,9 @@ describe("v3.3.0", async function () {
   })
 
   describe("Borrower", async () => {
+    it("has the locker role", async () => {
+      expect(await callableLoanInstance.hasRole(LOCKER_ROLE, borrowerContract.address)).to.be.true
+    })
     it("throws an error when attempting to lockJuniorCapital", async () => {
       await expect(
         borrowerContract.lockJuniorCapital(callableLoanInstance.address, {from: FAZZ_MAINNET_EOA})
@@ -415,6 +423,20 @@ describe("v3.3.0", async function () {
 
       expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100)))
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100)))
+
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(200), FAZZ_MAINNET_EOA, {
+        from: FAZZ_MAINNET_EOA,
+      })
+
+      expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(300)))
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(300)))
+
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(99700), FAZZ_MAINNET_EOA, {
+        from: FAZZ_MAINNET_EOA,
+      })
+
+      expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100_000)))
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100_000)))
     })
 
     it("can (not) successfully pay on behalf of the borrower using the pay function", async () => {
@@ -528,9 +550,19 @@ describe("v3.3.0", async function () {
             }
           )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
+        await expect(callableLoanInstance.drawdown(usdcVal(100), {from: randoUser})).to.eventually.be.rejectedWith(
+          `RequiresLockerRole("${randoUser}")`
+        )
+        await expect(callableLoanInstance.setAllowedUIDTypes([1], {from: randoUser})).to.eventually.be.rejectedWith(
+          `RequiresLockerRole("${randoUser}")`
+        )
+        await expect(callableLoanInstance.setFundableAt(0, {from: randoUser})).to.eventually.be.rejectedWith(
+          `RequiresLockerRole("${randoUser}")`
+        )
       }
     })
   })
+
   async function makeDeposit({lender = defaultLenderAddress, depositAmount}: {lender?: string; depositAmount: BN}) {
     const currentTimestamp = await getCurrentTimestamp()
     if (currentTimestamp < new BN(FAZZ_DEAL_FUNDABLE_AT)) {

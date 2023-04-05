@@ -15,6 +15,7 @@ import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
 import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
+import { getUIDLabelFromGql } from "@/lib/verify";
 
 gql`
   query CurrentUserWalletInfo($userAccount: ID!) {
@@ -31,11 +32,7 @@ gql`
     }
     user(id: $userAccount) {
       id
-      isUsEntity
-      isNonUsEntity
-      isUsAccreditedIndividual
-      isUsNonAccreditedIndividual
-      isNonUsIndividual
+      uidType
       isGoListed
 
       transactions(orderBy: timestamp, orderDirection: desc, first: 5) {
@@ -70,12 +67,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         })
       : null;
   const user = data?.user;
-  const hasUid =
-    user?.isUsNonAccreditedIndividual ||
-    user?.isNonUsIndividual ||
-    user?.isUsEntity ||
-    user?.isNonUsEntity ||
-    user?.isUsAccreditedIndividual;
+  const hasUid = !!user?.uidType;
   const shouldShowVerificationPrompt = !hasUid && !user?.isGoListed;
 
   const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
@@ -151,22 +143,14 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-sm">
-                {user.isUsNonAccreditedIndividual
-                  ? "U.S. Non-accredited Individual"
-                  : user.isNonUsIndividual
-                  ? "Non-U.S. Individual"
-                  : user.isUsEntity
-                  ? "U.S. Entity"
-                  : user.isNonUsEntity
-                  ? "Non-U.S. Entity"
-                  : user.isUsAccreditedIndividual
-                  ? "U.S. Accredited Individual"
+                {user.uidType
+                  ? getUIDLabelFromGql(user.uidType)
                   : user.isGoListed
                   ? "Go-listed"
                   : null}
               </div>
               <div className="text-xs text-sand-500">
-                {user.isUsNonAccreditedIndividual
+                {user.uidType === "US_NON_ACCREDITED_INDIVIDUAL"
                   ? "Limited eligibility"
                   : "Full eligibility"}
               </div>
@@ -174,7 +158,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
             <InfoIconTooltip
               size="sm"
               content={
-                user.isUsNonAccreditedIndividual
+                user.uidType === "US_NON_ACCREDITED_INDIVIDUAL"
                   ? "Limited eligibility means that you will not be able to participate in loans on Goldfinch, but you may participate in governance."
                   : "You may participate in all aspects of the Goldfinch protocol."
               }
