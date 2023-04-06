@@ -56,12 +56,12 @@ export function CallToAction({
       className={clsx(
         "max-w-screen rounded-md p-6",
         colorScheme === "primary"
-          ? "bg-gradient-to-r from-sky-600 to-sky-400"
+          ? "bg-gradient-to-r from-sky-500 to-sky-200"
           : "bg-twilight-50" /* will add more conditional statements for color scheme soon */
       )}
     >
       <div className="flex flex-col">
-        <div className="row flex justify-between">
+        <div className="row flex justify-between sm:flex-col">
           <div
             className={clsx(
               colorScheme === "primary" ? "text-white" : "text-sand-800",
