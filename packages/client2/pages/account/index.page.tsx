@@ -6,7 +6,7 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
-import { CallToActionBannerButtonProps } from "@/components/design-system/call-to-action";
+import { CallToActionBannerButtonProps } from "@/components/design-system/call-to-action-banner";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 const CallToActionBannerAccountPageButtonProps: CallToActionBannerButtonProps =

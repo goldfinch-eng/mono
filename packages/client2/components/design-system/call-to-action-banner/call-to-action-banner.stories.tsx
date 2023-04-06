@@ -2,7 +2,6 @@ import { ComponentStory, ComponentMeta } from "@storybook/react";
 
 import { CallToActionBanner, CallToActionBannerProps } from "./index";
 
-// eslint-disable-next-line storybook/story-exports
 export default {
   title: "Components/CallToActionBanner",
   component: CallToActionBanner,

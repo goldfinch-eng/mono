@@ -32,7 +32,7 @@ export interface CallToActionBannerProps {
   /**
    * Color schemes representing the buttons that are being added to the component. By default it's primary.
    */
-  colorScheme?: "primary" | "flat" | "special";
+  colorScheme?: "blue-gradient" | "mustard" | "mustard";
   /**
    * Heading that appears at the top of the component
    */
