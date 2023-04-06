@@ -1,24 +1,17 @@
 import { gql } from "@apollo/client";
 import * as Sentry from "@sentry/nextjs";
-import { CoinbaseWallet } from "@web3-react/coinbase-wallet";
-import { MetaMask } from "@web3-react/metamask";
-import { WalletConnect } from "@web3-react/walletconnect";
 import { useEffect } from "react";
+import { useAccount } from "wagmi";
 
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { useUserUidForAnalyticsQuery } from "@/lib/graphql/generated";
 import { getUIDLabelFromGql } from "@/lib/verify";
-import { useWallet, connectEagerly } from "@/lib/wallet";
 
 gql`
   query UserUidForAnalytics($account: ID!) {
     user(id: $account) {
       id
-      isUsEntity
-      isNonUsEntity
-      isUsAccreditedIndividual
-      isUsNonAccreditedIndividual
-      isNonUsIndividual
+      uidType
     }
   }
 `;
@@ -28,11 +21,7 @@ gql`
  * Kind of cheesy, but ultimately harmless and it does work.
  */
 export function AppLevelSideEffects() {
-  useEffect(() => {
-    connectEagerly();
-  }, []);
-
-  const { account, connector } = useWallet();
+  const { address: account, connector } = useAccount();
   useEffect(() => {
     if (account) {
       Sentry.setUser({ id: account });
@@ -47,10 +36,10 @@ export function AppLevelSideEffects() {
 
   useEffect(() => {
     if (data?.user) {
-      const uidLabel = getUIDLabelFromGql(data.user);
-      if (!uidLabel) {
+      if (!data.user.uidType) {
         return;
       }
+      const uidLabel = getUIDLabelFromGql(data.user.uidType);
       dataLayerPushEvent("UID_LOADED", { uidType: uidLabel });
     }
   }, [data]);
@@ -58,11 +47,14 @@ export function AppLevelSideEffects() {
   useEffect(() => {
     if (!connector) {
       return;
-    } else if (connector instanceof MetaMask) {
+    } else if (connector.id === "metaMask") {
       Sentry.setTag("connector", "MetaMask");
-    } else if (connector instanceof WalletConnect) {
+    } else if (
+      connector.id === "walletConnect" ||
+      connector.id === "walletConnectLegacy"
+    ) {
       Sentry.setTag("connector", "WalletConnect");
-    } else if (connector instanceof CoinbaseWallet) {
+    } else if (connector.id === "coinbaseWallet") {
       Sentry.setTag("connector", "CoinbaseWallet");
     }
   }, [connector]);

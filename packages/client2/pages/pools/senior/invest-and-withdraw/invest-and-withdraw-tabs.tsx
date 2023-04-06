@@ -66,13 +66,7 @@ export function InvestAndWithdrawTabs({
   existingWithdrawalRequest,
 }: InvestAndWithdrawTabsProps) {
   const { account } = useWallet();
-  const isUserVerified =
-    user?.isGoListed ||
-    user?.isUsEntity ||
-    user?.isNonUsEntity ||
-    user?.isUsAccreditedIndividual ||
-    user?.isUsNonAccreditedIndividual ||
-    user?.isNonUsIndividual;
+  const isUserVerified = user?.isGoListed || !!user?.uidType;
   const canUserParticipate = !user
     ? false
     : canUserParticipateInSeniorPool(user);

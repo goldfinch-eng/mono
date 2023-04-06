@@ -11,6 +11,7 @@ import {
   AssetBoxPlaceholder,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto } from "@/lib/format";
 import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
@@ -174,12 +175,12 @@ function averagePriorRewards(priorRewards?: BigNumber[]) {
 
 export default function MembershipPage() {
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet();
   const { data, loading, error } = useMembershipPageQuery({
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
     skip: !account,
   });
-  const showLoadingState = isActivating || loading || !data;
+  const showLoadingState = loading || !data;
   const userHasVaultPosition =
     data &&
     (data.vaultedGfis.length > 0 ||
@@ -229,6 +230,8 @@ export default function MembershipPage() {
       (data?.viewer.gfiBalance?.amount.isZero() ||
         vaultableCapitalAssets.length === 0));
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <SEO title="Membership" />
@@ -248,9 +251,9 @@ export default function MembershipPage() {
         onClose={() => setIsExplainerOpen(false)}
       />
 
-      {error ? (
+      {!isMounted ? null : error ? (
         <div className="text-clay-500">Error: {error.message}</div>
-      ) : !account && !isActivating ? (
+      ) : !account ? (
         <div>You must connect your wallet to view your membership vault</div>
       ) : (
         <>
