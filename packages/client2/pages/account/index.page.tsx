@@ -47,7 +47,7 @@ const AccountsPage: NextPageWithLayout = () => {
             <TabPanels>
               <TabContent>
                 <CallToActionBanner
-                  buttonRight={CallToActionBannerAccountPageButtonProps}
+                  renderButton={CallToActionBannerAccountPageButtonProps}
                   iconLeft="Globe"
                   title="Setup your UID to start" /* will make title conditional soon */
                   description={CallToActionBannerDescription}

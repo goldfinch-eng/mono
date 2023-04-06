@@ -1,5 +1,6 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
+import { Button } from "../button";
 import { CallToActionBanner, CallToActionBannerProps } from "./index";
 
 export default {
@@ -10,15 +11,18 @@ export default {
 export const CallToActionBannerStory: ComponentStory<
   typeof CallToActionBanner
 > = (args: CallToActionBannerProps) => {
-  return <CallToActionBanner {...args} />;
+  return (
+    <CallToActionBanner
+      {...args}
+      renderButton={(props) => (
+        <Button {...props} as="a" href="https://example.com">
+          Click me!
+        </Button>
+      )}
+    />
+  );
 };
 
 CallToActionBannerStory.args = {
-  buttonRight: {
-    onClick: () => {
-      alert("Yay!");
-    },
-    name: "Click me!",
-  },
   title: "Have a moment?",
 };

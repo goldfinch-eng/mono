@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import { MouseEventHandler, ReactNode } from "react";
+import { MouseEventHandler, ReactElement, ReactNode } from "react";
 
-import { Button } from "../button";
+import { ButtonProps } from "../button";
 import { Icon, IconNameType } from "../icon";
 
 export type CallToActionBannerButtonProps = {
@@ -20,7 +20,9 @@ export interface CallToActionBannerProps {
   /**
    * Button component props to optionally pass in
    */
-  buttonRight?: CallToActionBannerButtonProps;
+  renderButton?: (
+    props: Pick<ButtonProps, "colorScheme" | "size" | "variant">
+  ) => ReactElement;
   /**
    * Optional children that render below the call to action button
    */
@@ -44,7 +46,7 @@ export interface CallToActionBannerProps {
 }
 
 export function CallToActionBanner({
-  buttonRight,
+  renderButton,
   children,
   colorScheme = "blue-gradient",
   iconLeft,
@@ -76,15 +78,13 @@ export function CallToActionBanner({
               {description}
             </p>
           </div>
-          {buttonRight && (
-            <Button
-              className="m-auto md:h-1/2  md:w-1/2 lg:h-1/2 lg:w-1/5"
-              colorScheme="secondary"
-              onClick={buttonRight.onClick}
-            >
-              {buttonRight.name}
-            </Button>
-          )}
+          {renderButton
+            ? renderButton({
+                size: "md",
+                colorScheme: "secondary",
+                variant: "standard",
+              })
+            : null}
         </div>
         {children}
       </div>
