@@ -60,6 +60,7 @@ export const SUPPLY_PANEL_USER_FIELDS = gql`
 export const SUPPLY_PANEL_DEAL_FIELDS = gql`
   fragment SupplyPanelDealFields on Deal {
     id
+    name
     agreement
     dealType
   }
@@ -205,9 +206,10 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
     }
 
     dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
-      transactionHash: submittedTransaction.transactionHash,
-      tranchedPoolAddress: loan.address,
-      usdAmount: parseFloat(data.supply),
+      currency: "USD",
+      transaction_id: submittedTransaction.transactionHash,
+      value: parseFloat(data.supply),
+      items: [{ item_id: loan.id, item_name: deal.name }],
     });
 
     await apolloClient.refetchQueries({

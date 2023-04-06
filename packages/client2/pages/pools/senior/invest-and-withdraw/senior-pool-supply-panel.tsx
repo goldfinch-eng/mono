@@ -22,6 +22,7 @@ import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
+    address
     estimatedApyFromGfiRaw
   }
 `;
@@ -152,8 +153,10 @@ export function SeniorPoolSupplyPanel({
     }
 
     dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
-      transactionHash: submittedTransaction.transactionHash,
-      usdAmount: parseFloat(data.supply),
+      currency: "USD",
+      transaction_id: submittedTransaction.transactionHash,
+      value: parseFloat(data.supply),
+      items: [{ item_id: seniorPool.address, item_name: "Senior Pool" }],
     });
 
     await apolloClient.refetchQueries({
