@@ -5,7 +5,7 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
-import { CallToAction } from "@/components/design-system/call-to-action";
+import { CallToAction } from "@/components/design-system";
 import { CallToActionButtonProps } from "@/components/design-system/call-to-action";
 import { NextPageWithLayout } from "@/pages/_app.page";
 

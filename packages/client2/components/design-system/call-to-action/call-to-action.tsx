@@ -38,7 +38,7 @@ export interface CallToActionProps {
    */
   title: string;
   /**
-   * Gives a description to this modal
+   * Gives a description to this component
    */
   description?: string;
 }
