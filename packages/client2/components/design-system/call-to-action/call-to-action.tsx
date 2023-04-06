@@ -61,7 +61,7 @@ export function CallToAction({
       )}
     >
       <div className="flex flex-col">
-        <div className="row flex justify-between sm:flex-col">
+        <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div
             className={clsx(
               colorScheme === "primary" ? "text-white" : "text-sand-800",
