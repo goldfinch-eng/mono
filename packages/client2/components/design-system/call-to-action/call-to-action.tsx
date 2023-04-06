@@ -38,7 +38,7 @@ export interface CallToActionProps {
    */
   title: string;
   /**
-   * Gives a description to this component
+   * Gives a description to the body of this component
    */
   description?: string;
 }
