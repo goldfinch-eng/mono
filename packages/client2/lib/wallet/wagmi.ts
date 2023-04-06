@@ -13,7 +13,7 @@ const alchemyApiKey = process.env.NEXT_PUBLIC_MAINNET_RPC_URL.split("/").at(-1);
 if (!alchemyApiKey) {
   throw new Error("No Alchemy API key available");
 }
-const { chains, provider, webSocketProvider } =
+const { chains, provider } =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? configureChains([hardhat], [publicProvider()])
     : configureChains(
@@ -52,8 +52,6 @@ export const wagmiClient = createClient({
   autoConnect: true,
   // @ts-expect-error TS complains here because of the way we call configureChains() with different chains conditionally. In practice it's fine.
   provider,
-  // @ts-expect-error same as above
-  webSocketProvider,
   connectors: [
     metaMaskConnector,
     walletConnectLegacyConnector,
