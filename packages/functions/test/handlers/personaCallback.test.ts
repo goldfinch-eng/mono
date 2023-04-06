@@ -64,6 +64,7 @@ describe("persona callback", async () => {
     config = {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
+      slack: {token: ""},
     }
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
@@ -92,6 +93,7 @@ describe("persona callback", async () => {
       body: {
         data: {
           attributes: {
+            name: "inquiry.failed",
             payload: {
               data: {id: personaCallbackId, type: "inquiry", attributes: attributes},
               included: [

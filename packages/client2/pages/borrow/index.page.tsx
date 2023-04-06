@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 
 import { Button, Heading, Icon } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -69,7 +70,7 @@ const getDueDateLabel = ({
 export default function BorrowPage({
   dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet();
   const { data, error, loading } = useBorrowPageQuery({
     variables: {
       userId: account?.toLowerCase() ?? "",
@@ -78,6 +79,8 @@ export default function BorrowPage({
   });
 
   const loans = data?.loans ?? [];
+
+  const isMounted = useIsMounted();
 
   return (
     <div>
@@ -93,7 +96,7 @@ export default function BorrowPage({
         Credit Lines
       </Heading>
 
-      {!account && !isActivating ? (
+      {!isMounted ? null : !account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit lines
           <div className="mt-3">
@@ -104,7 +107,7 @@ export default function BorrowPage({
         </div>
       ) : error ? (
         <div className="text-2xl">Unable to load credit lines</div>
-      ) : loading || isActivating ? (
+      ) : loading ? (
         <div className="text-xl">Loading...</div>
       ) : !loans || loans.length === 0 ? (
         <div className="w-fit rounded-xl border border-tidepool-200 bg-tidepool-100 p-5">

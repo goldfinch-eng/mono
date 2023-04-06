@@ -20,12 +20,12 @@ function PayForm() {
     callableLoanAddress: string;
     payAmount: string;
   }>();
-  const { provider, account } = useWallet();
+  const { account, signer } = useWallet();
   const onSubmit = async (data: {
     callableLoanAddress: string;
     payAmount: string;
   }) => {
-    if (!provider || !account) {
+    if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
     const usdc = stringToCryptoAmount(data.payAmount, "USDC");
@@ -33,9 +33,9 @@ function PayForm() {
       getContract({
         name: "CallableLoan",
         address: data.callableLoanAddress,
-        provider,
+        signer,
       }),
-      getContract({ name: "USDC", provider }),
+      getContract({ name: "USDC", signer }),
     ]);
     await approveErc20IfRequired({
       account,
