@@ -32,7 +32,7 @@ export interface CallToActionBannerProps {
   /**
    * Color schemes representing the buttons that are being added to the component. By default it's primary.
    */
-  colorScheme?: "blue-gradient" | "mustard" | "mustard";
+  colorScheme?: "blue-gradient" | "green" | "mustard" | "white";
   /**
    * Heading that appears at the top of the component
    */
@@ -46,7 +46,7 @@ export interface CallToActionBannerProps {
 export function CallToActionBanner({
   buttonRight,
   children,
-  colorScheme = "primary",
+  colorScheme = "blue-gradient",
   iconLeft,
   title,
   description,
@@ -55,7 +55,7 @@ export function CallToActionBanner({
     <div
       className={clsx(
         "max-w-screen rounded-md p-6",
-        colorScheme === "primary"
+        colorScheme === "blue-gradient"
           ? "bg-gradient-to-r from-sky-500 to-sky-200"
           : "bg-twilight-50" /* will add more conditional statements for color scheme soon */
       )}
@@ -64,7 +64,7 @@ export function CallToActionBanner({
         <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div
             className={clsx(
-              colorScheme === "primary" ? "text-white" : "text-sand-800",
+              colorScheme === "blue-gradient" ? "text-white" : "text-sand-800",
               "flex flex-col" /* will add more conditional statements for text scheme soon */
             )}
           >
