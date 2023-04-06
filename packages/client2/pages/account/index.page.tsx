@@ -5,22 +5,23 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
-import { CallToAction } from "@/components/design-system";
-import { CallToActionButtonProps } from "@/components/design-system/call-to-action";
+import { CallToActionBanner } from "@/components/design-system";
+import { CallToActionBannerButtonProps } from "@/components/design-system/call-to-action";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
-const callToActionAccountPageButtonProps: CallToActionButtonProps = {
-  onClick: () => {
-    /* to be filled out soon */
-  },
-  /**
-   * Will make the name conditional soon
-   */
-  name: "Begin UID set up",
-};
+const CallToActionBannerAccountPageButtonProps: CallToActionBannerButtonProps =
+  {
+    onClick: () => {
+      /* to be filled out soon */
+    },
+    /**
+     * Will make the name conditional soon
+     */
+    name: "Begin UID set up",
+  };
 
 /* Will make the description conditional soon */
-const callToActionDescription =
+const CallToActionBannerDescription =
   "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in Goldfinch lending protocols. No personal information is stored on-chain.";
 
 const AccountsPage: NextPageWithLayout = () => {
@@ -45,11 +46,11 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                <CallToAction
-                  buttonRight={callToActionAccountPageButtonProps}
+                <CallToActionBanner
+                  buttonRight={CallToActionBannerAccountPageButtonProps}
                   iconLeft="Globe"
                   title="Setup your UID to start" /* will make title conditional soon */
-                  description={callToActionDescription}
+                  description={CallToActionBannerDescription}
                 />
               </TabContent>
             </TabPanels>

@@ -4,7 +4,7 @@ import { MouseEventHandler, ReactNode } from "react";
 import { Button } from "../button";
 import { Icon, IconNameType } from "../icon";
 
-export type CallToActionButtonProps = {
+export type CallToActionBannerButtonProps = {
   /**
    * Onclick function for the call to action button component
    */
@@ -16,11 +16,11 @@ export type CallToActionButtonProps = {
   name: string;
 };
 
-export interface CallToActionProps {
+export interface CallToActionBannerProps {
   /**
    * Button component props to optionally pass in
    */
-  buttonRight?: CallToActionButtonProps;
+  buttonRight?: CallToActionBannerButtonProps;
   /**
    * Optional children that render below the call to action button
    */
@@ -43,14 +43,14 @@ export interface CallToActionProps {
   description?: string;
 }
 
-export function CallToAction({
+export function CallToActionBanner({
   buttonRight,
   children,
   colorScheme = "primary",
   iconLeft,
   title,
   description,
-}: CallToActionProps) {
+}: CallToActionBannerProps) {
   return (
     <div
       className={clsx(
@@ -92,4 +92,4 @@ export function CallToAction({
   );
 }
 
-export default CallToAction;
+export default CallToActionBanner;

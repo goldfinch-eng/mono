@@ -1,20 +1,20 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { CallToAction, CallToActionProps } from "./index";
+import { CallToActionBanner, CallToActionBannerProps } from "./index";
 
 // eslint-disable-next-line storybook/story-exports
 export default {
-  title: "Components/CallToAction",
-  component: CallToAction,
-} as ComponentMeta<typeof CallToAction>;
+  title: "Components/CallToActionBanner",
+  component: CallToActionBanner,
+} as ComponentMeta<typeof CallToActionBanner>;
 
-export const CallToActionStory: ComponentStory<typeof CallToAction> = (
-  args: CallToActionProps
-) => {
-  return <CallToAction {...args} />;
+export const CallToActionBannerStory: ComponentStory<
+  typeof CallToActionBanner
+> = (args: CallToActionBannerProps) => {
+  return <CallToActionBanner {...args} />;
 };
 
-CallToActionStory.args = {
+CallToActionBannerStory.args = {
   buttonRight: {
     onClick: () => {
       alert("Yay!");
