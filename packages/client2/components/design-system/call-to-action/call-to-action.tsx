@@ -3,9 +3,15 @@ import { MouseEventHandler, ReactNode } from "react";
 import { Button } from "../button";
 import { Icon, IconNameType } from "../icon";
 
-type CallToActionButtonProps = {
+export type CallToActionButtonProps = {
+  /**
+   * Onclick function for the call to action button component
+   */
   onClick: MouseEventHandler<HTMLButtonElement> &
     MouseEventHandler<HTMLAnchorElement>;
+  /**
+   * Text appearing on the call to action button component
+   */
   name: string;
 };
 
@@ -18,7 +24,6 @@ export interface CallToActionProps {
    * Optional children that render below the call to action button
    */
   children?: ReactNode;
-  className?: string;
   /**
    * Image appearing to the left of the title
    */
@@ -40,25 +45,35 @@ export interface CallToActionProps {
 export function CallToAction({
   buttonRight,
   children,
-  className,
+  colorScheme = "primary",
   iconLeft,
-  colorScheme,
   title,
   description,
 }: CallToActionProps) {
   return (
-    <div className="max-w-screen rounded bg-twilight-500 p-6 text-white">
-      <div className="row flex justify-between">
-        <div className="row flex">
-          <Icon className="mt-1 mr-1" name={iconLeft} />
-          <h1>{title}</h1>
+    <div className="max-w-screen rounded-md bg-twilight-500 p-6 text-white">
+      <div className="flex flex-col">
+        <div className="row flex justify-between">
+          <div className="flex flex-col">
+            <div className="row mb-2 flex">
+              <Icon className="mt-1 mr-1" name={iconLeft} />
+              <h1>{title}</h1>
+            </div>
+            <p className="float-left text-sm font-thin md:w-5/6 lg:w-2/3">
+              {description}
+            </p>
+          </div>
+          {buttonRight && (
+            <Button
+              className="m-auto md:h-1/2  md:w-1/2 lg:h-1/2 lg:w-1/5"
+              colorScheme="secondary"
+              onClick={buttonRight.onClick}
+            >
+              {buttonRight.name}
+            </Button>
+          )}
         </div>
-        {buttonRight && (
-          <Button
-            name={buttonRight.name}
-            onClick={buttonRight.onClick}
-          ></Button>
-        )}
+        {children}
       </div>
     </div>
   );
