@@ -1,4 +1,5 @@
 import {
+  Button,
   TabButton,
   TabContent,
   TabGroup,
@@ -6,19 +7,7 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
-import { CallToActionBannerButtonProps } from "@/components/design-system/call-to-action-banner";
 import { NextPageWithLayout } from "@/pages/_app.page";
-
-const CallToActionBannerAccountPageButtonProps: CallToActionBannerButtonProps =
-  {
-    onClick: () => {
-      /* to be filled out soon */
-    },
-    /**
-     * Will make the name conditional soon
-     */
-    name: "Begin UID set up",
-  };
 
 /* Will make the description conditional soon */
 const CallToActionBannerDescription =
@@ -47,7 +36,11 @@ const AccountsPage: NextPageWithLayout = () => {
             <TabPanels>
               <TabContent>
                 <CallToActionBanner
-                  renderButton={CallToActionBannerAccountPageButtonProps}
+                  renderButton={(props) => (
+                    <Button {...props}>
+                      Begin UID set up
+                    </Button>
+                  )}
                   iconLeft="Globe"
                   title="Setup your UID to start" /* will make title conditional soon */
                   description={CallToActionBannerDescription}

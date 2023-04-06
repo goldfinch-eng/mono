@@ -1,20 +1,8 @@
 import clsx from "clsx";
-import { MouseEventHandler, ReactElement, ReactNode } from "react";
+import { ReactElement, ReactNode } from "react";
 
 import { ButtonProps } from "../button";
 import { Icon, IconNameType } from "../icon";
-
-export type CallToActionBannerButtonProps = {
-  /**
-   * Onclick function for the call to action button component
-   */
-  onClick: MouseEventHandler<HTMLButtonElement> &
-    MouseEventHandler<HTMLAnchorElement>;
-  /**
-   * Text appearing on the call to action button component
-   */
-  name: string;
-};
 
 export interface CallToActionBannerProps {
   /**
@@ -53,12 +41,13 @@ export function CallToActionBanner({
   title,
   description,
 }: CallToActionBannerProps) {
+  console.log("render button: ", renderButton)
   return (
     <div
       className={clsx(
         "max-w-screen rounded-md p-6",
         colorScheme === "blue-gradient"
-          ? "bg-gradient-to-r from-sky-500 to-sky-200"
+          ? "bg-gradient-to-r from-sky-500 to-sky-300"
           : "bg-twilight-50" /* will add more conditional statements for color scheme soon */
       )}
     >
@@ -78,6 +67,7 @@ export function CallToActionBanner({
               {description}
             </p>
           </div>
+          <div className="m-auto shrink-0">
           {renderButton
             ? renderButton({
                 size: "md",
@@ -85,6 +75,7 @@ export function CallToActionBanner({
                 variant: "standard",
               })
             : null}
+            </div>
         </div>
         {children}
       </div>
