@@ -1,5 +1,4 @@
-import { getProvider } from "@wagmi/core";
-import { Signer } from "ethers";
+import type { JsonRpcProvider } from "@ethersproject/providers";
 
 import { CONTRACT_ADDRESSES } from "@/constants";
 
@@ -114,12 +113,14 @@ type Contract<T extends SupportedContractName> = ReturnType<
 
 export async function getContract<T extends SupportedContractName>({
   name,
+  provider,
   address,
-  signer,
+  useSigner = true,
 }: {
   name: T;
+  provider: JsonRpcProvider;
   address?: string;
-  signer?: Signer;
+  useSigner?: boolean;
 }): Promise<Contract<T>> {
   const _address =
     address ?? CONTRACT_ADDRESSES[name as keyof typeof CONTRACT_ADDRESSES];
@@ -127,7 +128,10 @@ export async function getContract<T extends SupportedContractName>({
     throw new Error(`Unable to find address for contract ${name}`);
   }
   const connectFn = await supportedContracts[name]();
-  const provider = getProvider();
-  if (connectFn) return connectFn(_address, signer ?? provider) as Contract<T>; // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
+  if (connectFn)
+    return connectFn(
+      _address,
+      useSigner ? provider.getSigner() : provider
+    ) as Contract<T>; // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
   throw new Error("Invalid contract name");
 }

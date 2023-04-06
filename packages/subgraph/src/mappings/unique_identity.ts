@@ -1,33 +1,39 @@
-import {Address, BigInt, log} from "@graphprotocol/graph-ts"
+import {BigInt, Bytes} from "@graphprotocol/graph-ts"
 import {TransferSingle} from "../../generated/UniqueIdentity/UniqueIdentity"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {getOrInitUser} from "../entities/user"
 
 export function handleTransferSingle(event: TransferSingle): void {
+  const receivingUser = getOrInitUser(event.params.to)
   const uidType = event.params.id
-  const isMinting = event.params.from.equals(Address.zero())
-  const isBurning = event.params.to.equals(Address.zero())
+  if (uidType.equals(BigInt.fromI32(0))) {
+    receivingUser.isNonUsIndividual = true
+  } else if (uidType.equals(BigInt.fromI32(1))) {
+    receivingUser.isUsAccreditedIndividual = true
+  } else if (uidType.equals(BigInt.fromI32(2))) {
+    receivingUser.isUsNonAccreditedIndividual = true
+  } else if (uidType.equals(BigInt.fromI32(3))) {
+    receivingUser.isUsEntity = true
+  } else if (uidType.equals(BigInt.fromI32(4))) {
+    receivingUser.isNonUsEntity = true
+  }
+  receivingUser.save()
 
-  if (isMinting) {
-    const receivingUser = getOrInitUser(event.params.to)
-    if (uidType.equals(BigInt.fromI32(0))) {
-      receivingUser.uidType = "NON_US_INDIVIDUAL"
-    } else if (uidType.equals(BigInt.fromI32(1))) {
-      receivingUser.uidType = "US_ACCREDITED_INDIVIDUAL"
-    } else if (uidType.equals(BigInt.fromI32(2))) {
-      receivingUser.uidType = "US_NON_ACCREDITED_INDIVIDUAL"
-    } else if (uidType.equals(BigInt.fromI32(3))) {
-      receivingUser.uidType = "US_ENTITY"
-    } else if (uidType.equals(BigInt.fromI32(4))) {
-      receivingUser.uidType = "NON_US_ENTITY"
-    }
-    receivingUser.save()
-  } else if (isBurning) {
+  if (event.params.from.notEqual(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
     const sendingUser = getOrInitUser(event.params.from)
-    sendingUser.uidType = null
+    const uidType = event.params.id
+    if (uidType.equals(BigInt.fromI32(0))) {
+      sendingUser.isNonUsIndividual = false
+    } else if (uidType.equals(BigInt.fromI32(1))) {
+      sendingUser.isUsAccreditedIndividual = false
+    } else if (uidType.equals(BigInt.fromI32(2))) {
+      sendingUser.isUsNonAccreditedIndividual = false
+    } else if (uidType.equals(BigInt.fromI32(3))) {
+      sendingUser.isUsEntity = false
+    } else if (uidType.equals(BigInt.fromI32(4))) {
+      sendingUser.isNonUsEntity = false
+    }
     sendingUser.save()
-  } else {
-    log.error("A non-mint and non-burn transfer happened in UID.", [])
   }
 
   const transaction = createTransactionFromEvent(event, "UID_MINTED", event.params.to)

@@ -13,6 +13,7 @@ import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { getContract } from "@/lib/contracts";
 import { toastTransaction } from "@/lib/toast";
+import { ApolloClientError, handleApolloClientError } from "@/lib/utils";
 import { fetchUniqueIdentitySigner, getUIDLabelFromType } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
@@ -29,7 +30,7 @@ export function MintToAddressStep() {
   useModalTitle("Enter smart contract wallet address");
 
   const { signature } = useVerificationFlowContext();
-  const { account, provider, signer: walletSigner } = useWallet();
+  const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
   const { previousStep, goToStep } = useWizard();
 
@@ -44,7 +45,7 @@ export function MintToAddressStep() {
 
   const onSubmit = async (data: MintToAddressForm) => {
     const mintToAddress = data.address;
-    if (!account || !signature || !provider || !walletSigner) {
+    if (!account || !signature || !provider) {
       throw new Error("Unable to verify eligibility to mint.");
     }
     const signer = await fetchUniqueIdentitySigner(
@@ -56,34 +57,38 @@ export function MintToAddressStep() {
 
     const uidContract = await getContract({
       name: "UniqueIdentity",
-      signer: walletSigner,
+      provider,
     });
 
     const gasPrice = await provider.getGasPrice();
 
-    const transaction = uidContract.mintTo(
-      mintToAddress,
-      signer.idVersion,
-      signer.expiresAt,
-      signer.signature,
-      {
-        value: UNIQUE_IDENTITY_MINT_PRICE,
-        gasPrice: gasPrice,
-      }
-    );
+    try {
+      const transaction = uidContract.mintTo(
+        mintToAddress,
+        signer.idVersion,
+        signer.expiresAt,
+        signer.signature,
+        {
+          value: UNIQUE_IDENTITY_MINT_PRICE,
+          gasPrice: gasPrice,
+        }
+      );
 
-    const submittedTransaction = await toastTransaction({
-      transaction,
-      pendingPrompt: "UID mint submitted.",
-      successPrompt: "UID mint succeeded.",
-    });
+      const submittedTransaction = await toastTransaction({
+        transaction,
+        pendingPrompt: "UID mint submitted.",
+        successPrompt: "UID mint succeeded.",
+      });
 
-    await apolloClient.refetchQueries({ include: "active" });
-    dataLayerPushEvent("UID_MINTED", {
-      transactionHash: submittedTransaction.transactionHash,
-      uidType: getUIDLabelFromType(signer.idVersion),
-    });
-    goToStep(VerificationFlowSteps.MintFinished);
+      await apolloClient.refetchQueries({ include: "active" });
+      dataLayerPushEvent("UID_MINTED", {
+        transactionHash: submittedTransaction.transactionHash,
+        uidType: getUIDLabelFromType(signer.idVersion),
+      });
+      goToStep(VerificationFlowSteps.MintFinished);
+    } catch (e) {
+      handleApolloClientError(e as ApolloClientError);
+    }
   };
 
   return (

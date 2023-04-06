@@ -40,7 +40,7 @@ export function BackerCard({
   vaultedCapitalPositionId,
 }: BackerCardProps) {
   const vaulted = !!vaultedCapitalPositionId;
-  const { signer } = useWallet();
+  const { provider } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
@@ -56,13 +56,13 @@ export function BackerCard({
     !token.loan.isPaused;
 
   const handleClaim = async () => {
-    if (!signer) {
+    if (!provider) {
       return;
     }
     if (vaulted) {
       const membershipOrchestratorContract = await getContract({
         name: "MembershipOrchestrator",
-        signer,
+        provider,
       });
       const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
@@ -71,7 +71,7 @@ export function BackerCard({
     } else {
       const backerRewardsContract = await getContract({
         name: "BackerRewards",
-        signer,
+        provider,
       });
       const transaction = backerRewardsContract.withdraw(token.id);
       await toastTransaction({ transaction });

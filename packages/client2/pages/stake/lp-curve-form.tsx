@@ -28,21 +28,21 @@ interface CurveForm {
 }
 
 export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
-  const { account, signer } = useWallet();
+  const { account, provider } = useWallet();
 
   const rhfMethods = useForm<CurveForm>();
   const { control, watch, register, setError, clearErrors } = rhfMethods;
 
   const onSubmit = async (data: CurveForm) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       return;
     }
     const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      signer,
+      provider,
     });
-    const fiduContract = await getContract({ name: "Fidu", signer });
-    const usdcContract = await getContract({ name: "USDC", signer });
+    const fiduContract = await getContract({ name: "Fidu", provider });
+    const usdcContract = await getContract({ name: "USDC", provider });
 
     const value = utils.parseUnits(
       data.amount,
@@ -109,11 +109,17 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
     // ! This calculation doesn't match the price impact shown on https://curve.fi/factory-crypto/23/deposit. Not sure how to replicate their calculation
     // https://linear.app/goldfinch/issue/GFI-982/slippage-aka-price-impact-values-calculated-by-our-client-do-not-match
     const checkSlippage = async (amount: string) => {
-      if (!amount) {
+      if (!provider || !amount) {
         return;
       }
-      const curvePoolContract = await getContract({ name: "CurvePool" });
-      const seniorPoolContract = await getContract({ name: "SeniorPool" });
+      const curvePoolContract = await getContract({
+        name: "CurvePool",
+        provider,
+      });
+      const seniorPoolContract = await getContract({
+        name: "SeniorPool",
+        provider,
+      });
 
       const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
       const value = utils.parseUnits(
@@ -165,7 +171,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
       }
     };
     checkSlippage(amount);
-  }, [amount, type, setError, clearErrors]);
+  }, [provider, amount, type, setError, clearErrors]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>

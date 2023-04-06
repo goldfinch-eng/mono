@@ -186,6 +186,7 @@ function SelectionStep({
       setRewardProjection(undefined);
       const projection = await calculateNewMonthlyMembershipReward(
         account,
+        provider,
         gfiToUnvaultAmount,
         capitalToBeRemovedAmount,
         previousEpochRewardTotal
@@ -232,6 +233,7 @@ function SelectionStep({
         rewardProjection ??
         (await calculateNewMonthlyMembershipReward(
           account,
+          provider,
           gfiToUnvault.amount.mul("-1"),
           capitalToBeRemoved.amount.mul("-1")
         ));
@@ -358,16 +360,16 @@ function ReviewStep({ vaultedGfi, fiatPerGfi, sharePrice }: ReviewStepProps) {
     ),
   } as const;
 
-  const { signer } = useWallet();
+  const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async () => {
-    if (!signer) {
+    if (!account || !provider) {
       throw new Error("Wallet not connected properly");
     }
     const membershipContract = await getContract({
       name: "MembershipOrchestrator",
-      signer,
+      provider,
     });
 
     const gfiPositions: VaultedGfiFieldsFragment[] = [];

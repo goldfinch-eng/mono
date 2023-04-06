@@ -2,11 +2,17 @@ import { Resolvers } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { getContract } from "@/lib/contracts";
+import { getProvider } from "@/lib/wallet";
 
 import { PoolToken } from "../generated";
 
 async function availableToWithdraw(poolToken: PoolToken) {
-  const poolTokensContract = await getContract({ name: "PoolTokens" });
+  const provider = await getProvider();
+  const poolTokensContract = await getContract({
+    name: "PoolTokens",
+    provider,
+    useSigner: false,
+  });
 
   const poolAddress =
     poolToken.loan?.id ?? // trying to use loan.id and loan.address is an optional optimization that can save the getTokenInfo() RPC call. Not a strict requirement for the query writer
@@ -15,6 +21,8 @@ async function availableToWithdraw(poolToken: PoolToken) {
   const loanContract = await getContract({
     name: "TranchedPool",
     address: poolAddress,
+    provider,
+    useSigner: false,
   });
   const availableToWithdrawResult = await loanContract.availableToWithdraw(
     poolToken.id

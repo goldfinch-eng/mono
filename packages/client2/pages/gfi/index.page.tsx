@@ -2,7 +2,6 @@ import { gql } from "@apollo/client";
 import { useMemo } from "react";
 
 import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
-import { useIsMounted } from "@/hooks";
 import { formatCrypto } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
@@ -71,14 +70,14 @@ gql`
 `;
 
 export default function GfiPage() {
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
   const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
     skip: !account,
   });
-  const showLoadingState = loading || !data;
+  const showLoadingState = isActivating || loading || !data;
 
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
@@ -112,16 +111,14 @@ export default function GfiPage() {
       (grantsWithTokens?.length ?? 0) >
     0;
 
-  const isMounted = useIsMounted();
-
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
         GFI
       </Heading>
-      {!isMounted ? null : error ? (
+      {error ? (
         <div className="text-clay-500">{error.message}</div>
-      ) : !account ? (
+      ) : !account && !isActivating ? (
         <div>You must connect your wallet to view GFI rewards</div>
       ) : (
         <div>

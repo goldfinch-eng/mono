@@ -13,7 +13,6 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CURVE_LP_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { useIsMounted } from "@/hooks";
 import { computePercentage } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
@@ -159,7 +158,6 @@ export default function DashboardPage() {
   const { account } = useWallet();
   const { data, loading, error } = useDashboardPageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
-    skip: !account,
   });
 
   const sharePrice = data?.seniorPools[0].sharePrice;
@@ -321,14 +319,12 @@ export default function DashboardPage() {
     }
   }, [router.asPath, router.isReady]);
 
-  const isMounted = useIsMounted();
-
   return (
     <div>
       <Heading level={1} className="mb-12">
         Dashboard
       </Heading>
-      {!isMounted ? null : !account ? (
+      {!account && !loading ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your dashboard
           <div className="mt-3">

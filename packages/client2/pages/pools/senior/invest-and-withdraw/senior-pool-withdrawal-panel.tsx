@@ -73,7 +73,7 @@ export function SeniorPoolWithdrawalPanel({
   vaultedStakedPositions = [],
   existingWithdrawalRequest,
 }: SeniorPoolWithdrawalPanelProps) {
-  const { signer } = useWallet();
+  const { provider } = useWallet();
   const {
     sharePrice: seniorPoolSharePrice,
     epochEndsAt,
@@ -94,14 +94,14 @@ export function SeniorPoolWithdrawalPanel({
   const apolloClient = useApolloClient();
 
   const withdrawUsdcWithToken = async () => {
-    if (!signer) {
+    if (!provider) {
       throw new Error("Bad wallet connection");
     } else if (!existingWithdrawalRequest) {
       throw new Error("No withdrawal request");
     }
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
-      signer,
+      provider,
     });
     await toastTransaction({
       transaction: seniorPoolContract.claimWithdrawalRequest(

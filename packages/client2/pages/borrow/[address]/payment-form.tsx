@@ -42,7 +42,7 @@ export function PaymentForm({
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
-  const { account, signer } = useWallet();
+  const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
   const showPayMinimumDueOption =
@@ -64,7 +64,7 @@ export function PaymentForm({
   const { control, register, setValue, watch } = rhfMethods;
 
   const onSubmit = async ({ usdcAmount }: FormFields) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       return;
     }
     const usdc = stringToCryptoAmount(usdcAmount, "USDC");
@@ -72,10 +72,10 @@ export function PaymentForm({
     const borrowerContract = await getContract({
       name: "Borrower",
       address: loan.borrowerContract.id,
-      signer,
+      provider,
     });
 
-    const usdcContract = await getContract({ name: "USDC", signer });
+    const usdcContract = await getContract({ name: "USDC", provider });
 
     await approveErc20IfRequired({
       account,

@@ -11,7 +11,6 @@ import {
   Heading,
   Icon,
 } from "@/components/design-system";
-import { useIsMounted } from "@/hooks";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -88,7 +87,7 @@ const NextPaymentLabel = ({
 export default function PoolCreditLinePage({
   dealDetails,
 }: PoolCreditLinePageProps) {
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
 
   const { data, error, loading } = usePoolCreditLinePageQuery({
     variables: {
@@ -198,8 +197,6 @@ export default function PoolCreditLinePage({
     }
   }, [loan, setShownForm]);
 
-  const isMounted = useIsMounted();
-
   return (
     <div>
       <Heading level={1} className="mb-12 break-words">
@@ -214,7 +211,7 @@ export default function PoolCreditLinePage({
         Credit Line
       </Heading>
 
-      {!isMounted ? null : !account ? (
+      {!account && !isActivating ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your credit line
           <div className="mt-3">
@@ -223,7 +220,7 @@ export default function PoolCreditLinePage({
             </Button>
           </div>
         </div>
-      ) : loading ? (
+      ) : loading || isActivating ? (
         <div className="text-xl">Loading...</div>
       ) : error || !loan ? (
         <div className="text-2xl">Unable to load credit line</div>

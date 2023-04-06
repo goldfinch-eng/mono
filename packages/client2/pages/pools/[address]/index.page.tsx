@@ -194,13 +194,17 @@ const PoolPage: NextPageWithLayout<PoolPageProps> = ({
   const poolSupportsUs =
     tranchedPool?.allowedUidTypes?.includes("US_ACCREDITED_INDIVIDUAL") ||
     tranchedPool?.allowedUidTypes?.includes("US_ENTITY");
-  const noUid = !user?.uidType;
+  const noUid =
+    !user?.isNonUsEntity &&
+    !user?.isNonUsIndividual &&
+    !user?.isUsAccreditedIndividual &&
+    !user?.isUsEntity &&
+    !user?.isUsNonAccreditedIndividual;
   const uidIsUs =
-    user?.uidType === "US_ACCREDITED_INDIVIDUAL" ||
-    user?.uidType === "US_ENTITY" ||
-    user?.uidType === "US_NON_ACCREDITED_INDIVIDUAL";
-  const uidIsNonUs =
-    user?.uidType === "NON_US_ENTITY" || user?.uidType === "NON_US_INDIVIDUAL";
+    user?.isUsAccreditedIndividual ||
+    user?.isUsEntity ||
+    user?.isUsNonAccreditedIndividual;
+  const uidIsNonUs = user?.isNonUsEntity || user?.isNonUsIndividual;
   if (poolSupportsUs && noUid) {
     initialBannerContent =
       "This offering is only available to non-U.S. persons or U.S. accredited investors.";

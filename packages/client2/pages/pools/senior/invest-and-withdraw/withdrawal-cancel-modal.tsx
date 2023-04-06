@@ -44,15 +44,15 @@ export function WithdrawalCancelModal({
       .split(".")[0]
   );
 
-  const { signer } = useWallet();
+  const { provider } = useWallet();
   const apolloClient = useApolloClient();
   const onSubmit = async () => {
-    if (!signer) {
+    if (!provider) {
       throw new Error("Wallet connection error");
     }
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
-      signer,
+      provider,
     });
     await toastTransaction({
       transaction: seniorPoolContract.cancelWithdrawalRequest(

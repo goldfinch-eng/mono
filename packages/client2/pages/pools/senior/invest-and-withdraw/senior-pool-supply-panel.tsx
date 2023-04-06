@@ -49,16 +49,15 @@ export function SeniorPoolSupplyPanel({
     defaultValues: { isStaking: true },
   });
   const { control, register } = rhfMethods;
-  const { account, provider, signer } = useWallet();
+  const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async (data: FormFields) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       return;
     }
 
-    const chainId = await signer.getChainId();
-    const usdcContract = await getContract({ name: "USDC", signer });
+    const usdcContract = await getContract({ name: "USDC", provider });
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     let submittedTransaction;
@@ -68,7 +67,7 @@ export function SeniorPoolSupplyPanel({
       if (data.isStaking) {
         const stakingRewardsContract = await getContract({
           name: "StakingRewards",
-          signer,
+          provider,
         });
         await approveErc20IfRequired({
           account,
@@ -83,7 +82,7 @@ export function SeniorPoolSupplyPanel({
       } else {
         const seniorPoolContract = await getContract({
           name: "SeniorPool",
-          signer,
+          provider,
         });
         await approveErc20IfRequired({
           account,
@@ -103,11 +102,11 @@ export function SeniorPoolSupplyPanel({
       if (data.isStaking) {
         const stakingRewardsContract = await getContract({
           name: "StakingRewards",
-          signer,
+          provider,
         });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
-          chainId,
+          provider,
           owner: account,
           spender: stakingRewardsContract.address,
           value,
@@ -127,11 +126,11 @@ export function SeniorPoolSupplyPanel({
       } else {
         const seniorPoolContract = await getContract({
           name: "SeniorPool",
-          signer,
+          provider,
         });
         const signature = await generateErc20PermitSignature({
           erc20TokenContract: usdcContract,
-          chainId,
+          provider,
           owner: account,
           spender: seniorPoolContract.address,
           value,
@@ -165,10 +164,10 @@ export function SeniorPoolSupplyPanel({
   };
 
   const validateMaximumAmount = async (value: string) => {
-    if (!account) {
+    if (!account || !provider) {
       return;
     }
-    const usdcContract = await getContract({ name: "USDC" });
+    const usdcContract = await getContract({ name: "USDC", provider });
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
 
     if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
@@ -182,10 +181,10 @@ export function SeniorPoolSupplyPanel({
 
   const [availableBalance, setAvailableBalance] = useState<string | null>(null);
   useEffect(() => {
-    if (!account) {
+    if (!account || !provider) {
       return;
     }
-    getContract({ name: "USDC" })
+    getContract({ name: "USDC", provider })
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) =>
         setAvailableBalance(
@@ -195,7 +194,7 @@ export function SeniorPoolSupplyPanel({
           )
         )
       );
-  }, [account]);
+  }, [account, provider]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -212,12 +211,15 @@ export function SeniorPoolSupplyPanel({
           }
           className="mb-4"
           maxValue={async () => {
-            if (!account) {
+            if (!account || !provider) {
               throw new Error(
                 "Wallet not connected when trying to compute max"
               );
             }
-            const usdcContract = await getContract({ name: "USDC" });
+            const usdcContract = await getContract({
+              name: "USDC",
+              provider,
+            });
             const userUsdcBalance = await usdcContract.balanceOf(account);
             return userUsdcBalance;
           }}

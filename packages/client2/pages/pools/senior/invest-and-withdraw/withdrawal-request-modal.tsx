@@ -229,10 +229,10 @@ function ConfirmStep({
       ? existingWithdrawalRequest.previewFiduRequested.add(fiduInputted.amount)
       : fiduInputted.amount,
   } as const;
-  const { account, signer } = useWallet();
+  const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
   const onSubmit = async (data: FormData) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       throw new Error("Wallet is not connected");
     }
 
@@ -240,11 +240,11 @@ function ConfirmStep({
 
     const seniorPoolContract = await getContract({
       name: "SeniorPool",
-      signer,
+      provider,
     });
     const fiduContract = await getContract({
       name: "Fidu",
-      signer,
+      provider,
     });
 
     await approveErc20IfRequired({

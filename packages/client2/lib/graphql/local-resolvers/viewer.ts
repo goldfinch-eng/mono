@@ -1,5 +1,4 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount, getProvider } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
@@ -7,6 +6,7 @@ import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
+import { getProvider } from "@/lib/wallet";
 
 import {
   Viewer,
@@ -18,24 +18,29 @@ import {
 async function erc20Balance(
   token: SupportedCrypto
 ): Promise<CryptoAmount | null> {
-  const account = getAccount();
-  if (!account.address) {
+  try {
+    const provider = await getProvider();
+    const account = await provider.getSigner().getAddress();
+
+    const contract = await getContract({
+      name:
+        token === "GFI"
+          ? "GFI"
+          : token === "USDC"
+          ? "USDC"
+          : token === "FIDU"
+          ? "Fidu"
+          : token === "CURVE_LP"
+          ? "CurveLP"
+          : assertUnreachable(token),
+      provider,
+    });
+    const balance = await contract.balanceOf(account);
+    return { token, amount: balance };
+  } catch (e) {
+    // This will execute if getAddress() above throws (which happens when a user wallet isn't connected)
     return null;
   }
-  const contract = await getContract({
-    name:
-      token === "GFI"
-        ? "GFI"
-        : token === "USDC"
-        ? "USDC"
-        : token === "FIDU"
-        ? "Fidu"
-        : token === "CURVE_LP"
-        ? "CurveLP"
-        : assertUnreachable(token),
-  });
-  const balance = await contract.balanceOf(account.address);
-  return { token, amount: balance };
 }
 
 export const viewerResolvers: Resolvers[string] = {
@@ -111,13 +116,12 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async claimableMembershipRewards(): Promise<CryptoAmount | null> {
     try {
-      const { address: account } = getAccount();
-      if (!account) {
-        return null;
-      }
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
 
       const membershipContract = await getContract({
         name: "MembershipOrchestrator",
+        provider,
       });
       const availableRewards = await membershipContract.claimableRewards(
         account
@@ -132,17 +136,16 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
     try {
-      const provider = getProvider();
-      const { address: account } = getAccount();
-      if (!account) {
-        return null;
-      }
+      const provider = await getProvider();
+      const account = await provider.getSigner().getAddress();
 
       const membershipContract = await getContract({
         name: "MembershipOrchestrator",
+        provider,
       });
       const membershipVaultContract = await getContract({
         name: "MembershipVault",
+        provider,
       });
 
       const currentBlock = await provider.getBlock("latest");

@@ -1,9 +1,8 @@
-import { Provider } from "@wagmi/core";
-import { Signer } from "ethers";
+import type { Web3Provider } from "@ethersproject/providers";
 
 import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 
-import { UidType } from "./graphql/generated";
+import { User } from "./graphql/generated";
 
 interface IKYCStatus {
   status: "unknown" | "approved" | "failed";
@@ -21,8 +20,9 @@ function getMessageToSign(blockNumber: number): string {
   return `Sign in to Goldfinch: ${blockNumber}`;
 }
 
-export async function getSignatureForKyc(provider: Provider, signer: Signer) {
+export async function getSignatureForKyc(provider: Web3Provider) {
   try {
+    const signer = provider.getSigner();
     const blockNumber = await provider.getBlockNumber();
     const currentBlock = await provider.getBlock(blockNumber);
     const currentBlockTimestamp = currentBlock.timestamp;
@@ -98,15 +98,36 @@ export function getUIDLabelFromType(type: UIDType) {
   }
 }
 
-const uidTypeToLabel: Record<UidType, string> = {
-  NON_US_INDIVIDUAL: "Non-U.S. Individual",
-  US_ACCREDITED_INDIVIDUAL: "U.S. Accredited Individual",
-  US_NON_ACCREDITED_INDIVIDUAL: "U.S. Non-Accredited Individual",
-  US_ENTITY: "U.S. Entity",
-  NON_US_ENTITY: "Non-U.S. Entity",
-};
-export function getUIDLabelFromGql(type: UidType) {
-  return uidTypeToLabel[type];
+/**
+ * Export the UID title for the user's UID Type
+ * @param type The UID type of the wallet
+ * @returns The label to describe the user's UID type
+ */
+export function getUIDLabelFromGql(
+  user: Pick<
+    User,
+    | "isUsEntity"
+    | "isNonUsEntity"
+    | "isUsAccreditedIndividual"
+    | "isUsNonAccreditedIndividual"
+    | "isNonUsIndividual"
+  >
+): string | undefined {
+  if (user.isUsEntity) {
+    return "U.S. Entity";
+  }
+  if (user.isNonUsEntity) {
+    return "Non-U.S. Entity";
+  }
+  if (user.isUsAccreditedIndividual) {
+    return "U.S. Accredited Individual";
+  }
+  if (user.isUsNonAccreditedIndividual) {
+    return "U.S. Non-Accredited Individual";
+  }
+  if (user.isNonUsIndividual) {
+    return "Non-U.S. Individual";
+  }
 }
 
 export async function fetchUniqueIdentitySigner(

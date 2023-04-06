@@ -6,14 +6,13 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
-import { WagmiConfig } from "wagmi";
 
 import { DevTools } from "@/components/dev-tools";
 import { getLayout, Layout } from "@/components/layout";
 import { AllNuxes } from "@/components/nuxes";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
-import { wagmiClient } from "@/lib/wallet/wagmi";
+import { WalletProvider } from "@/lib/wallet";
 
 import { AppLevelSideEffects } from "./_app-side-effects";
 
@@ -52,7 +51,7 @@ export default function GoldfinchApp({
         </>
       ) : null}
 
-      <WagmiConfig client={wagmiClient}>
+      <WalletProvider>
         <ApolloProvider client={apolloClient}>
           <ToastContainer position="top-center" theme="colored" />
           <Head>
@@ -71,7 +70,7 @@ export default function GoldfinchApp({
           <AllNuxes />
           <AppLevelSideEffects />
         </ApolloProvider>
-      </WagmiConfig>
+      </WalletProvider>
     </>
   );
 }

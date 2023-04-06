@@ -52,7 +52,11 @@ export const SUPPLY_PANEL_LOAN_FIELDS = gql`
 export const SUPPLY_PANEL_USER_FIELDS = gql`
   fragment SupplyPanelUserFields on User {
     id
-    uidType
+    isUsEntity
+    isNonUsEntity
+    isUsAccreditedIndividual
+    isUsNonAccreditedIndividual
+    isNonUsIndividual
     isGoListed
   }
 `;
@@ -79,9 +83,15 @@ interface SupplyForm {
 
 export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-  const { account, provider, signer } = useWallet();
+  const { account, provider } = useWallet();
 
-  const isUserVerified = user?.isGoListed || !!user?.uidType;
+  const isUserVerified =
+    user?.isGoListed ||
+    user?.isUsEntity ||
+    user?.isNonUsEntity ||
+    user?.isUsAccreditedIndividual ||
+    user?.isUsNonAccreditedIndividual ||
+    user?.isNonUsIndividual;
 
   const canUserParticipate = user
     ? canUserParticipateInPool(loan.allowedUidTypes, user)
@@ -108,6 +118,9 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       : loan.fundingLimit.sub(loan.totalDeposited);
 
   const validateMaximumAmount = async (value: string) => {
+    if (!account) {
+      return;
+    }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.gt(remainingCapacity)) {
       return "Amount exceeds remaining capacity";
@@ -124,7 +137,7 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (!account || !signer) {
+    if (!provider || !account) {
       throw new Error("Wallet not connected properly");
     }
 
@@ -138,15 +151,15 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
 
     let submittedTransaction;
 
-    const usdcContract = await getContract({ name: "USDC", signer });
+    const usdcContract = await getContract({ name: "USDC", provider });
     const tranchedPoolContract = await getContract({
       name: "TranchedPool",
-      signer,
+      provider,
       address: loan.address,
     });
     const callableLoanContract = await getContract({
       name: "CallableLoan",
-      signer,
+      provider,
       address: loan.address,
     });
     if (await isSmartContract(account, provider)) {
@@ -169,11 +182,10 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
       });
     } else {
       const now = (await provider.getBlock("latest")).timestamp;
-      const chainId = await signer.getChainId();
       const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
       const signature = await generateErc20PermitSignature({
         erc20TokenContract: usdcContract,
-        chainId,
+        provider,
         owner: account,
         spender: loan.address,
         value,
@@ -220,13 +232,13 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
 
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
-    if (!account) {
+    if (!account || !provider) {
       return;
     }
-    getContract({ name: "USDC" })
+    getContract({ name: "USDC", provider })
       .then((usdcContract) => usdcContract.balanceOf(account))
       .then((balance) => setAvailableBalance(balance));
-  }, [account]);
+  }, [account, provider, user]);
 
   return (
     <div>

@@ -1,9 +1,9 @@
 import { format } from "date-fns";
 import { useState, useCallback, useEffect, ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import { useAccount, useProvider } from "wagmi";
 
 import { Button, Form, Input } from "@/components/design-system";
+import { getFreshProvider, useWallet } from "@/lib/wallet";
 
 import {
   ButtonLink,
@@ -13,15 +13,16 @@ import {
 } from "./helpers";
 
 export function Home() {
-  const account = useAccount();
-  const provider = useProvider();
+  const { account } = useWallet();
 
   const [onChainTimestamp, setOnChainTimestamp] = useState<number>();
   const refreshTimestamp = useCallback(async () => {
+    // have to get a new provider every time this is called because otherwise the result for latestBlock is cached
+    const uncachedProvider = getFreshProvider();
     setOnChainTimestamp(undefined);
-    const latestBlock = await provider.getBlock("latest");
+    const latestBlock = await uncachedProvider.getBlock("latest");
     setOnChainTimestamp(latestBlock.timestamp);
-  }, [provider]);
+  }, []);
   useEffect(() => {
     refreshTimestamp();
   }, [refreshTimestamp]);
@@ -58,46 +59,42 @@ export function Home() {
           <div className="flex flex-wrap gap-4">
             <AsyncButton
               onClick={() =>
-                devserverRequest("setupCurrentUser", {
-                  address: account.address,
-                })
+                devserverRequest("setupCurrentUser", { address: account })
               }
               tooltip="You will gain 10 ETH, 250k USDC, and 250k GFI."
-              disabled={!account.address}
+              disabled={!account}
             >
               Fund and Golist
             </AsyncButton>
             <AsyncButton
               onClick={() =>
                 devserverRequest("setupCurrentUser", {
-                  address: account.address,
+                  address: account,
                   fund: true,
                   golist: false,
                 })
               }
-              disabled={!account.address}
+              disabled={!account}
             >
               Fund only
             </AsyncButton>
             <AsyncButton
               onClick={() =>
                 devserverRequest("setupCurrentUser", {
-                  address: account.address,
+                  address: account,
                   fund: false,
                   golist: true,
                 })
               }
-              disabled={!account.address}
+              disabled={!account}
             >
               Golist only
             </AsyncButton>
             <AsyncButton
               onClick={() =>
-                devserverRequest("setupForTesting", {
-                  address: account.address,
-                })
+                devserverRequest("setupForTesting", { address: account })
               }
-              disabled={!account.address}
+              disabled={!account}
               tooltip="This will cause you to gain USDC, become go-listed, and also become the borrower on some new tranched pools. You will not gain GFI."
             >
               Legacy setupForTesting

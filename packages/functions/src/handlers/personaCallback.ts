@@ -8,7 +8,6 @@ import {getConfig, getDb, getUsers} from "../db"
 import {genRequestHandler} from "../helpers"
 import firestore = admin.firestore
 import {KycProvider} from "../types"
-import {AllEntities, GeneralPersonaEventRequest, isAccount, isInquiryEvent, isVerification} from "./persona/types"
 
 const verifyRequest = (req: Request) => {
   const personaConfig = getConfig(functions).persona
@@ -50,12 +49,13 @@ const verifyRequest = (req: Request) => {
   }
 }
 
-const getCountryCode = (entities: AllEntities[]): string | null => {
-  const account = entities.find(isAccount)
-  const verification = entities
-    .filter(isVerification("verification/government-id"))
-    .find((i) => i.attributes.status === "passed")
-
+const getCountryCode = (eventPayload: {
+  included: [{type: string; attributes: {status: string; countryCode: string}}]
+}): string | null => {
+  const account = eventPayload.included.find((i) => i.type === "account")
+  const verification = eventPayload.included.find(
+    (i) => i.type === "verification/government-id" && i.attributes.status === "passed",
+  )
   // If not countryCode is found, use an explicit null, firestore does not like "undefined"
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
@@ -68,62 +68,49 @@ export const personaCallback = genRequestHandler({
       return res.status(400).send({status: "error", message: "Request could not be verified"})
     }
 
-    const event = req.body as GeneralPersonaEventRequest
+    const eventPayload = req.body.data.attributes.payload.data
 
-    if (isInquiryEvent(event)) {
-      const {data: inquiry, included: relatedEntities} = event.data.attributes.payload
+    const {referenceId: address, status} = eventPayload.attributes
 
-      const {referenceId: address, status} = inquiry.attributes
+    // Having verified the request, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address, address})
 
-      if (!address) {
-        console.error(`Inquiry ${inquiry.id} has no reference id`)
-        return res.status(500).send({status: "error", message: `referenceId is null for ${inquiry.id}`})
-      }
+    const countryCode = getCountryCode(req.body.data.attributes.payload)
+    const db = getDb(admin.firestore())
+    const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
 
-      // Having verified the request, we can set the Sentry user context accordingly.
-      Sentry.setUser({id: address, address})
+    try {
+      await db.runTransaction(async (t: firestore.Transaction) => {
+        const doc = await t.get(userRef)
 
-      const countryCode = getCountryCode(relatedEntities)
-      const db = getDb(admin.firestore())
-      const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+        if (doc.exists) {
+          const existingData = doc.data()
 
-      try {
-        await db.runTransaction(async (t: firestore.Transaction) => {
-          const doc = await t.get(userRef)
-
-          if (doc.exists) {
-            const existingData = doc.data()
-
-            t.update(userRef, {
-              persona: {
-                id: inquiry.id,
-                status: existingData?.persona?.status === "approved" ? "approved" : status,
-              },
-              kycProvider: KycProvider.Persona.valueOf(),
-              countryCode: countryCode || existingData?.countryCode || null,
-              updatedAt: Date.now(),
-            })
-          } else {
-            t.set(userRef, {
-              address: address,
-              persona: {
-                id: inquiry.id,
-                status,
-              },
-              kycProvider: KycProvider.Persona.valueOf(),
-              countryCode,
-              updatedAt: Date.now(),
-            })
-          }
-        })
-      } catch (e) {
-        console.error(e)
-        return res.status(500).send({status: "error", message: (e as Error)?.message})
-      }
-
-      return res.status(200).send({status: "success"})
-    } else {
-      console.error(`Unhandled event received: ${event.data.attributes.name}`)
+          t.update(userRef, {
+            persona: {
+              id: eventPayload.id,
+              status: existingData?.persona?.status === "approved" ? "approved" : status,
+            },
+            kycProvider: KycProvider.Persona.valueOf(),
+            countryCode: countryCode || existingData?.countryCode || null,
+            updatedAt: Date.now(),
+          })
+        } else {
+          t.set(userRef, {
+            address: address,
+            persona: {
+              id: eventPayload.id,
+              status,
+            },
+            kycProvider: KycProvider.Persona.valueOf(),
+            countryCode,
+            updatedAt: Date.now(),
+          })
+        }
+      })
+    } catch (e) {
+      console.error(e)
+      return res.status(500).send({status: "error", message: (e as Error)?.message})
     }
 
     return res.status(200).send({status: "success"})

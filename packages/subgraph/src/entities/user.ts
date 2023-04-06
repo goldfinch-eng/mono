@@ -6,7 +6,11 @@ export function getOrInitUser(address: Address): User {
   let user = User.load(address.toHexString())
   if (!user) {
     user = new User(address.toHexString())
-    user.uidType = null
+    user.isNonUsIndividual = false
+    user.isUsAccreditedIndividual = false
+    user.isUsNonAccreditedIndividual = false
+    user.isUsEntity = false
+    user.isNonUsEntity = false
     user.isGoListed = false
     user.poolTokens = []
     user.save()

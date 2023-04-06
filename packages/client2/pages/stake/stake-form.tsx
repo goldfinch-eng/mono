@@ -25,23 +25,23 @@ export function StakeForm({
   positionType,
   onComplete,
 }: StakeCardFormProps) {
-  const { account, signer } = useWallet();
+  const { account, provider } = useWallet();
 
   const rhfMethods = useForm<StakeFormFields>();
   const { control } = rhfMethods;
 
   const onSubmit = async (data: StakeFormFields) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       return;
     }
     const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      signer,
+      provider,
     });
-    const fiduContract = await getContract({ name: "Fidu", signer });
+    const fiduContract = await getContract({ name: "Fidu", provider });
     const curveLpTokenContract = await getContract({
       name: "CurveLP",
-      signer,
+      provider,
     });
 
     const value = utils.parseUnits(

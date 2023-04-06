@@ -106,13 +106,17 @@ const SeniorPoolPage: NextPageWithLayout<
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
-  const noUid = !user?.uidType;
+  const noUid =
+    !user?.isNonUsEntity &&
+    !user?.isNonUsIndividual &&
+    !user?.isUsAccreditedIndividual &&
+    !user?.isUsEntity &&
+    !user?.isUsNonAccreditedIndividual;
   const uidIsUs =
-    user?.uidType === "US_ACCREDITED_INDIVIDUAL" ||
-    user?.uidType === "US_ENTITY" ||
-    user?.uidType === "US_NON_ACCREDITED_INDIVIDUAL";
-  const uidIsNonUs =
-    user?.uidType === "NON_US_ENTITY" || user?.uidType === "NON_US_INDIVIDUAL";
+    user?.isUsAccreditedIndividual ||
+    user?.isUsEntity ||
+    user?.isUsNonAccreditedIndividual;
+  const uidIsNonUs = user?.isNonUsEntity || user?.isNonUsIndividual;
   if (noUid) {
     initialBannerContent =
       "This offering is only available to non-U.S. persons or U.S. accredited investors.";

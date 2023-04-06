@@ -48,20 +48,20 @@ export function WithdrawalPanel({ loan, poolTokens }: WithdrawalPanelProps) {
   const rhfMethods = useForm<FormFields>();
   const { control } = rhfMethods;
   const apolloClient = useApolloClient();
-  const { signer } = useWallet();
+  const { provider } = useWallet();
 
   const onSubmit = async (data: FormFields) => {
-    if (!signer) {
+    if (!provider) {
       throw new Error("Wallet not connected properly");
     }
     const tranchedPoolContract = await getContract({
       name: "TranchedPool",
-      signer,
+      provider,
       address: loan.address,
     });
     const callableLoanContract = await getContract({
       name: "CallableLoan",
-      signer,
+      provider,
       address: loan.address,
     });
 

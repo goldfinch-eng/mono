@@ -27,18 +27,18 @@ export function Membership() {
 }
 
 function SplitterForm() {
-  const { account, signer } = useWallet();
+  const { account, provider } = useWallet();
   const rhfMethods = useForm<{ amount: string }>({
     defaultValues: { amount: "10000" },
   });
   const onSubmit = async ({ amount }: { amount: string }) => {
-    if (!account || !signer) {
+    if (!account || !provider) {
       throw new Error("Wallet not connected");
     }
-    const usdcContract = await getContract({ name: "USDC", signer });
+    const usdcContract = await getContract({ name: "USDC", provider });
     const erc20SplitterContract = await getContract({
       name: "ERC20Splitter",
-      signer,
+      provider,
     });
     const usdcToSend = stringToCryptoAmount(amount, "USDC");
 

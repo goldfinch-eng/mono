@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.5.10",
+    "@coinbase/wallet-sdk": "^3.2.0",
     "@download/blockies": "^1.0.3",
     "@floating-ui/react": "^0.19.1",
     "@goldfinch-eng/utils": "workspace:*",
@@ -29,6 +30,12 @@
     "@next/mdx": "^12.3.1",
     "@sentry/nextjs": "7.3.0",
     "@types/validator": "^13.7.14",
+    "@walletconnect/ethereum-provider": "^1.7.7",
+    "@web3-react/coinbase-wallet": "8.0.31-beta.0",
+    "@web3-react/core": "8.0.30-beta.0",
+    "@web3-react/metamask": "8.0.24-beta.0",
+    "@web3-react/network": "8.0.23-beta.0",
+    "@web3-react/walletconnect": "8.0.31-beta.0",
     "apollo-link-scalars": "^4.0.1",
     "clsx": "^1.1.1",
     "date-fns": "^2.28.0",
@@ -48,8 +55,7 @@
     "react-use-wizard": "^2.2.0",
     "recharts": "^2.5.0",
     "styled-components": "^5.3.5",
-    "validator": "^13.9.0",
-    "wagmi": "^0.12.8"
+    "validator": "^13.9.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",

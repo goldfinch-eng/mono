@@ -75,7 +75,7 @@ function CallAmountStep({
   callableLoanAddress,
   maxCallable,
 }: CallAmountStepProps) {
-  const { signer } = useWallet();
+  const { provider } = useWallet();
   type FormData = { usdcToCall: string };
   const rhfMethods = useForm<FormData>();
   const validateAmount = async (value: string) => {
@@ -89,13 +89,13 @@ function CallAmountStep({
   };
   const { setData } = useStepperContext();
   const onSubmit = async ({ usdcToCall }: FormData) => {
-    if (!signer) {
+    if (!provider) {
       throw new Error("Wallet not connected properly");
     }
     const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoanAddress,
-      signer,
+      provider,
     });
     const nextPrincipalDueTime =
       await callableLoanContract.nextPrincipalDueTime();
@@ -131,7 +131,7 @@ function ReviewStep({
   callableLoanAddress,
   callablePoolTokens,
 }: ReviewStepProps) {
-  const { signer } = useWallet();
+  const { provider } = useWallet();
   const apolloClient = useApolloClient();
   const { data } = useStepperContext();
   const { usdcToCall, expectedRepaymentDate } = data as StepperDataType;
@@ -144,13 +144,13 @@ function ReviewStep({
   };
 
   const onSubmit = async () => {
-    if (!signer) {
+    if (!provider) {
       throw new Error("Wallet not connected properly");
     }
     const callableLoanContract = await getContract({
       name: "CallableLoan",
       address: callableLoanAddress,
-      signer,
+      provider,
     });
     callablePoolTokens.sort((a, b) =>
       b.principalAmount.sub(a.principalAmount).toNumber()
