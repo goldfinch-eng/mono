@@ -116,11 +116,11 @@ export function ClaimPanel({
     loan.delinquency !== "CURRENT" && !claimableGfi.amount.isZero();
 
   const rhfMethods = useForm();
-  const { provider } = useWallet();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const claim = async () => {
-    if (!provider) {
+    if (!signer) {
       throw new Error("Wallet not properly connected");
     }
 
@@ -133,7 +133,7 @@ export function ClaimPanel({
         name:
           loan.__typename === "TranchedPool" ? "TranchedPool" : "CallableLoan",
         address: loan.id,
-        provider,
+        signer,
       });
       const usdcTransaction = loanContract.withdrawMultiple(
         withrawablePoolTokens.map((pt) => pt.id),
@@ -149,7 +149,7 @@ export function ClaimPanel({
       if (loan.delinquency === "CURRENT" && !claimableGfi.amount.isZero()) {
         const backerRewardsContract = await getContract({
           name: "BackerRewards",
-          provider,
+          signer,
         });
         const gfiTransaction = backerRewardsContract.withdrawMultiple(
           poolTokens.map((pt) => pt.id)
@@ -170,7 +170,7 @@ export function ClaimPanel({
     if (withrawableVaultedPoolTokens.length > 0) {
       const membershipOrchestrator = await getContract({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestrator.harvest(
         withrawableVaultedPoolTokens.map((vpt) => vpt.id)

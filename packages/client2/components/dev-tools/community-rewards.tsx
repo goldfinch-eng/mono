@@ -20,14 +20,14 @@ function SendTokenForm() {
     to: string;
   };
   const rhfMethods = useForm<FormFields>();
-  const { provider, account } = useWallet();
+  const { signer, account } = useWallet();
   const handleSubmit = async ({ tokenId, to }: FormFields) => {
-    if (!provider || !account) {
+    if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
     const communityRewardsContract = await getContract({
       name: "CommunityRewards",
-      provider,
+      signer,
     });
     await toastTransaction({
       transaction: communityRewardsContract.transferFrom(account, to, tokenId),
