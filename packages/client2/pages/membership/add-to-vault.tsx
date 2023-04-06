@@ -173,13 +173,12 @@ function SelectionStep({
   const selectedCapitalTotalAmount = selectedCapitalTotal.amount.toString();
   useEffect(() => {
     const asyncEffect = async () => {
-      if (!account || !provider) {
+      if (!account) {
         return;
       }
       setRewardProjection(undefined);
       const projection = await calculateNewMonthlyMembershipReward(
         account,
-        provider,
         gfiToVaultAmount,
         selectedCapitalTotalAmount,
         previousEpochRewardTotal
@@ -193,7 +192,6 @@ function SelectionStep({
     asyncEffect();
   }, [
     account,
-    provider,
     gfiToVaultAmount,
     selectedCapitalTotalAmount,
     previousEpochRewardTotal,
@@ -212,7 +210,6 @@ function SelectionStep({
         rewardProjection ??
         (await calculateNewMonthlyMembershipReward(
           account,
-          provider,
           gfiToVault.amount,
           selectedCapitalTotal.amount
         ));
@@ -370,25 +367,25 @@ function ReviewStep({
     [stakedPositionsToVault, poolTokensToVault, sharePrice]
   );
 
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const onSubmit = async () => {
-    if (!provider || !account) {
+    if (!signer || !account) {
       throw new Error("Wallet not connected properly");
     }
     const membershipContract = await getContract({
       name: "MembershipOrchestrator",
-      provider,
+      signer,
     });
-    const gfiContract = await getContract({ name: "GFI", provider });
+    const gfiContract = await getContract({ name: "GFI", signer });
     const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      provider,
+      signer,
     });
     const poolTokensContract = await getContract({
       name: "PoolTokens",
-      provider,
+      signer,
     });
 
     if (!gfiToVault.amount.isZero()) {
