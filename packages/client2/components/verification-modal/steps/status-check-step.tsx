@@ -26,14 +26,14 @@ export function StatusCheckStep() {
   const { goToStep } = useWizard();
   const apolloClient = useApolloClient();
   const { setSignature, setUidVersion } = useVerificationFlowContext();
-  const { account, provider } = useWallet();
+  const { account, provider, signer } = useWallet();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!account || !provider) {
-      return;
-    }
     const asyncEffect = async () => {
+      if (!account || !signer) {
+        return;
+      }
       try {
         const { data, error } = await apolloClient.query<
           StatusCheckStepQuery,
@@ -50,7 +50,7 @@ export function StatusCheckStep() {
           return;
         }
 
-        const signature = await getSignatureForKyc(provider);
+        const signature = await getSignatureForKyc(provider, signer);
         setSignature(signature);
         const kycStatus = await fetchKycStatus(
           account,
@@ -75,7 +75,15 @@ export function StatusCheckStep() {
       }
     };
     asyncEffect();
-  }, [account, provider, setSignature, goToStep, apolloClient, setUidVersion]);
+  }, [
+    account,
+    provider,
+    signer,
+    setSignature,
+    goToStep,
+    apolloClient,
+    setUidVersion,
+  ]);
 
   return (
     <div className="flex h-full w-full grow items-center justify-center text-center">
@@ -84,7 +92,7 @@ export function StatusCheckStep() {
         <div>
           {error ? (
             <span className="text-clay-500">{error}</span>
-          ) : !account || !provider ? (
+          ) : !account ? (
             "You must connect your wallet to proceed"
           ) : (
             "Checking your verification status, this requires a signature"

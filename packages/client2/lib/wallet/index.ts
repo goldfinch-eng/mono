@@ -1,4 +1,4 @@
-import { Web3Provider } from "@ethersproject/providers";
+import { Provider } from "@wagmi/core";
 import { utils } from "ethers";
 
 export * from "./get-wallet";
@@ -16,7 +16,7 @@ export function abbreviateAddress(address: string) {
 /**
  * Determines whether or not a given address is a smart contract.
  */
-export async function isSmartContract(address: string, provider: Web3Provider) {
+export async function isSmartContract(address: string, provider: Provider) {
   const bytecode = await provider.getCode(address);
   return utils.hexStripZeros(bytecode) !== "0x";
 }

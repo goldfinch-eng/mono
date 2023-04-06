@@ -1,11 +1,10 @@
 import { useEffect } from "react";
+import { useAccount, useConnect } from "wagmi";
 
 import { Modal, ModalProps, Paragraph, Link } from "@/components/design-system";
-import { useWallet } from "@/lib/wallet";
+import { DESIRED_CHAIN_ID } from "@/constants";
 
-import { CoinbaseWalletButton } from "./coinbase-wallet-button";
-import { MetaMaskButton } from "./metamask-button";
-import { WalletConnectButton } from "./walletconnect-button";
+import { ConnectorButton } from "./connector-button";
 
 interface WalletModalProps {
   isOpen: ModalProps["isOpen"];
@@ -13,12 +12,15 @@ interface WalletModalProps {
 }
 
 export function WalletModal({ isOpen, onClose }: WalletModalProps) {
-  const { isActive } = useWallet();
+  const { address, connector: activeConnector } = useAccount();
+  const { connect, connectors, error, pendingConnector, isLoading } =
+    useConnect();
   useEffect(() => {
-    if (isActive) {
-      onClose();
+    if (address) {
+      setTimeout(() => onClose(), 500); // 500ms delay allows the checkmark to appear and makes the transition look smoother
     }
-  }, [isActive, onClose]);
+  }, [address, onClose]);
+
   return (
     <Modal size="xs" title="Select a wallet" isOpen={isOpen} onClose={onClose}>
       <Paragraph className="mb-8">
@@ -27,9 +29,29 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
         <Link href="/privacy">Privacy Policy</Link>
       </Paragraph>
       <div className="flex flex-col items-stretch space-y-2">
-        <MetaMaskButton />
-        <WalletConnectButton />
-        <CoinbaseWalletButton />
+        {connectors.map((connector) => (
+          <ConnectorButton
+            key={connector.id}
+            connectorId={connector.id}
+            connectorName={
+              connector.id === "walletConnectLegacy"
+                ? "WalletConnect"
+                : connector.name
+            }
+            onClick={() => connect({ connector, chainId: DESIRED_CHAIN_ID })}
+            isLoading={isLoading && pendingConnector?.id === connector.id}
+            errorMessage={
+              error && pendingConnector?.id === connector.id
+                ? error.message
+                : undefined
+            }
+            disabled={!connector.ready}
+            isAlreadyActive={activeConnector?.id === connector.id}
+          />
+        ))}
+        {error && !pendingConnector ? (
+          <div className="mt-1 text-clay-500">{error.message}</div>
+        ) : null}
       </div>
       <div className="mt-8 text-center">
         <Link href="https://metamask.io">I don&apos;t have a wallet</Link>

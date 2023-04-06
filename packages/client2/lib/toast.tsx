@@ -92,14 +92,17 @@ export async function toastTransaction({
     });
     return receipt;
   } catch (error) {
-    const errorMessage =
-      (error as { data: { message: string } })?.data?.message ??
-      (error as Error)?.message;
+    const reason =
+      (error as { reason: string }).reason ?? (error as Error).message;
+    const shortenedReason = reason.match(
+      /reverted with reason string \'(.+)\'/
+    );
+    const errorMessage = shortenedReason ? shortenedReason[1] : reason;
     toast.error(
       errorMessage
         ? `Transaction failed to submit with message: ${errorMessage}`
         : "Transaction failed to submit."
     );
-    throw error;
+    throw new Error(errorMessage);
   }
 }

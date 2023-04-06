@@ -23,7 +23,7 @@ export function DrawdownForm({
   creditLineStatus,
   onClose,
 }: DrawdownProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };
@@ -31,7 +31,7 @@ export function DrawdownForm({
   const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
 
@@ -39,7 +39,7 @@ export function DrawdownForm({
     const borrowerContract = await getContract({
       name: "Borrower",
       address: loan.borrowerContract.id,
-      provider,
+      signer,
     });
     await toastTransaction({
       transaction: borrowerContract.drawdown(loan.id, usdc.amount, account),
