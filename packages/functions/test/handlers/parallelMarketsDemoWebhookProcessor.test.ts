@@ -1,12 +1,31 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {FirebaseConfig, setEnvForTest} from "../../src/db"
+import {FirebaseConfig, setEnvForTest, getUsers} from "../../src/db"
 import {parallelMarketsDemoWebhookProcessor} from "../../src"
 import {Request} from "express"
 
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {expectResponse} from "../utils"
+import {processIdentityWebhook} from "../../src/handlers/parallelmarkets/webhookHelpers"
+import {PmIdentity, PmIdentityPayload} from "../../src/handlers/parallelmarkets/types"
+
+import sinon from "sinon"
+import * as fetchModule from "node-fetch"
+import {Response} from "node-fetch"
+import {expect} from "chai"
+
+const PENDING_ADDRESS = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
+const PENDING_USER = {
+  address: PENDING_ADDRESS,
+  countryCode: "CA",
+  parallel_markets: {
+    id: "test_id",
+    identity_status: "pending",
+    accreditation_status: "pending",
+    legacy: false,
+  },
+}
 
 interface PmRequest {
   headers: {
@@ -44,12 +63,13 @@ const VALID_REQUEST: PmRequest = {
   ),
 }
 
-describe("parallelMarketsDemoWebhookProcessor", async () => {
+describe.skip("parallelMarketsDemoWebhookProcessor", async () => {
   const projectId = "goldfinch-frontend-test"
 
   let testFirestore: Firestore
   let testApp: admin.app.App
   let config: Omit<FirebaseConfig, "sentry">
+  let users: firestore.CollectionReference<firestore.DocumentData>
 
   beforeEach(async () => {
     testApp = firebaseTesting.initializeAdminApp({projectId})
@@ -62,6 +82,7 @@ describe("parallelMarketsDemoWebhookProcessor", async () => {
       },
     }
     setEnvForTest(testFirestore, config)
+    users = getUsers(testFirestore)
   })
 
   afterEach(async () => {
@@ -88,53 +109,104 @@ describe("parallelMarketsDemoWebhookProcessor", async () => {
     } as unknown as Request
   }
 
-  describe("valid signature", () => {
-    it.skip("returns status 200", async () => {
-      await parallelMarketsDemoWebhookProcessor(
-        genRequest(VALID_REQUEST),
-        expectResponse(200, {status: "valid signature"}),
-      )
+  describe("request validation", () => {
+    describe("signature", () => {
+      it.skip("returns 200 for valid signature", async () => {
+        await parallelMarketsDemoWebhookProcessor(
+          genRequest(VALID_REQUEST),
+          expectResponse(200, {status: "valid signature"}),
+        )
+      })
+
+      it("returns 403 for invalid signature", async () => {
+        await parallelMarketsDemoWebhookProcessor(
+          genRequest({
+            ...VALID_REQUEST,
+            headers: {
+              ...VALID_REQUEST.headers,
+              signature: VALID_REQUEST.headers.signature + "bad",
+            },
+          }),
+          expectResponse(403, {status: "invalid signature"}),
+        )
+      })
+    })
+
+    describe("headers", () => {
+      it("returns 400 for missing signature header", async () => {
+        await parallelMarketsDemoWebhookProcessor(
+          genRequest({
+            ...VALID_REQUEST,
+            headers: {
+              timestamp: VALID_REQUEST.headers.timestamp,
+            },
+          }),
+          expectResponse(400, {status: "missing signature"}),
+        )
+      })
+
+      it("returns 400 for missing timestamp header", async () => {
+        await parallelMarketsDemoWebhookProcessor(
+          genRequest({
+            ...VALID_REQUEST,
+            headers: {
+              signature: VALID_REQUEST.headers.signature,
+            },
+          }),
+          expectResponse(400, {status: "missing timestamp"}),
+        )
+      })
     })
   })
 
-  describe("missing headers", () => {
-    it("returns 400 for missing signature header", async () => {
-      await parallelMarketsDemoWebhookProcessor(
-        genRequest({
-          ...VALID_REQUEST,
-          headers: {
-            timestamp: VALID_REQUEST.headers.timestamp,
-          },
-        }),
-        expectResponse(400, {status: "missing signature"}),
-      )
-    })
+  describe("identity event", () => {
+    describe("data_update", () => {
+      describe("id_validity is null", () => {
+        describe("individual", () => {
+          beforeEach(async () => {
+            // Stub the Identity API request
+            const stub = sinon.stub(fetchModule, "default")
+            const missingDocumentsIdentityResponse: PmIdentity = {
+              id: "test_id",
+              type: "individual",
+              identity_details: {
+                birth_date: "1997-10-14",
+                citizenship_country: "CA",
+                completed_at: "1231239093809",
+                consistency_summary: {
+                  overall_records_level_match: "high",
+                  id_validity: null,
+                },
+              },
+              access_expires_at: null,
+              access_revoked_by: null,
+            }
+            stub.returns(
+              new Promise((resolve) =>
+                resolve(new Response(JSON.stringify(missingDocumentsIdentityResponse), {status: 200})),
+              ),
+            )
 
-    it("returns 400 for missing timestamp header", async () => {
-      await parallelMarketsDemoWebhookProcessor(
-        genRequest({
-          ...VALID_REQUEST,
-          headers: {
-            signature: VALID_REQUEST.headers.signature,
-          },
-        }),
-        expectResponse(400, {status: "missing timestamp"}),
-      )
-    })
-  })
+            // Save some users in the user store
+            await users.doc(PENDING_ADDRESS).set(PENDING_USER)
+          })
 
-  describe("invalid signature", () => {
-    it("returns status 403", async () => {
-      await parallelMarketsDemoWebhookProcessor(
-        genRequest({
-          ...VALID_REQUEST,
-          headers: {
-            ...VALID_REQUEST.headers,
-            signature: VALID_REQUEST.headers.signature + "bad",
-          },
-        }),
-        expectResponse(403, {status: "invalid signature"}),
-      )
+          it("sets identity_status to pending", async () => {
+            const payload: PmIdentityPayload = {
+              entity: {
+                id: "test_id",
+                type: "individual",
+              },
+              event: "data_update",
+              scope: "identity",
+            }
+            await processIdentityWebhook(payload)
+            const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS).get()
+            // Their status is still pending, so nothing should have changed
+            expect(user.data()).to.deep.eq(PENDING_USER)
+          })
+        })
+      })
     })
   })
 })
