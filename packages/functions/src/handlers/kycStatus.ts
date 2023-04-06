@@ -48,7 +48,7 @@ export const kycStatus = genRequestHandler({
     }
 
     const address = verificationResult.address
-    const payload = {address: address, status: "unknown", countryCode: null, residency: ""}
+    let payload: any = {address: address, status: "unknown", countryCode: null, residency: ""}
 
     // Respond with approved if address on any approved list
     if (
@@ -66,6 +66,29 @@ export const kycStatus = genRequestHandler({
       payload.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
       payload.countryCode = user.data()?.countryCode
       payload.residency = user.data()?.kyc?.residency
+    }
+
+    // Mock a parallel markets user response. If both query params are present then
+    // any data in the user store is ignored.
+    if (req.query.pmIdentityStatus && req.query.pmAccreditationStatus) {
+      const pmIdentityStatus = req.query.pmIdentityStatus
+      const pmAccreditationStatus = req.query.pmAccreditationStatus
+      let status
+      if (pmIdentityStatus === "approved" && pmAccreditationStatus === "approved") {
+        status = "approved"
+      } else if (pmIdentityStatus === "pending" || pmAccreditationStatus === "pending") {
+        status = "pending"
+      } else {
+        status = "failed"
+      }
+      payload = {
+        address,
+        status,
+        parallel_markets: {
+          identity_status: pmIdentityStatus,
+          accreditation_status: pmIdentityStatus,
+        },
+      }
     }
 
     return res.status(200).send(payload)

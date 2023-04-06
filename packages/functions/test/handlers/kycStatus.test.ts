@@ -95,6 +95,7 @@ describe("kycStatus", async () => {
         "x-goldfinch-signature-block-num": signatureBlockNum,
         "x-goldfinch-signature-plaintext": signatureBlockNum ? genPlaintext(signatureBlockNum) : "",
       },
+      query: {},
     } as unknown as Request
   }
 
@@ -123,6 +124,7 @@ describe("kycStatus", async () => {
           "x-goldfinch-signature-plaintext": "Random plaintext",
           "x-goldfinch-signature-block-num": currentBlockNum,
         },
+        query: {},
       } as unknown as Request
       await kycStatus(req, expectResponse(401, {error: "Unexpected signature"}))
     })
@@ -169,6 +171,7 @@ describe("kycStatus", async () => {
           "x-goldfinch-signature": await testWallet.signMessage(genPlaintext(currentBlockNum)),
           "x-goldfinch-signature-block-num": currentBlockNum,
         },
+        query: {},
       } as unknown as Request
       // Any 200 response implies we passed signature verification
       await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
