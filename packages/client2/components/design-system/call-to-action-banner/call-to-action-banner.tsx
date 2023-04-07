@@ -41,7 +41,6 @@ export function CallToActionBanner({
   title,
   description,
 }: CallToActionBannerProps) {
-  console.log("render button: ", renderButton)
   return (
     <div
       className={clsx(
@@ -68,14 +67,14 @@ export function CallToActionBanner({
             </p>
           </div>
           <div className="m-auto shrink-0">
-          {renderButton
-            ? renderButton({
-                size: "md",
-                colorScheme: "secondary",
-                variant: "standard",
-              })
-            : null}
-            </div>
+            {renderButton
+              ? renderButton({
+                  size: "md",
+                  colorScheme: "secondary",
+                  variant: "standard",
+                })
+              : null}
+          </div>
         </div>
         {children}
       </div>
