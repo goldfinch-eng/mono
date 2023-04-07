@@ -11,7 +11,7 @@ import { NextPageWithLayout } from "@/pages/_app.page";
 
 /* Will make the description conditional soon */
 const CallToActionBannerDescription =
-  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in Goldfinch lending protocols. No personal information is stored on-chain.";
+  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in Goldfinch lending protocol. No personal information is stored on-chain.";
 
 const AccountsPage: NextPageWithLayout = () => {
   return (
@@ -37,9 +37,7 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 <CallToActionBanner
                   renderButton={(props) => (
-                    <Button {...props}>
-                      Begin UID set up
-                    </Button>
+                    <Button {...props}>Begin UID set up</Button>
                   )}
                   iconLeft="Globe"
                   title="Setup your UID to start" /* will make title conditional soon */

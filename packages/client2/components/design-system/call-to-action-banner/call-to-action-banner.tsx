@@ -20,7 +20,7 @@ export interface CallToActionBannerProps {
    */
   iconLeft?: IconNameType;
   /**
-   * Color schemes representing the buttons that are being added to the component. By default it's primary.
+   * Color schemes representing the buttons that are being added to the component. By default it's "blue-gradient".
    */
   colorScheme?: "blue-gradient" | "green" | "mustard" | "white";
   /**
