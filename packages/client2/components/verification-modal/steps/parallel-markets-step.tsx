@@ -19,7 +19,10 @@ const {
   PARALLEL_MARKETS_SCOPE,
 } = PARALLEL_MARKETS;
 
-const state = randomBytes(256).toString();
+const state =
+  randomBytes(
+    256
+  ).toString(); /* generate a random string to prevent against cross-site forgery */
 
 const url = buildURL(`${PARALLEL_MARKETS_API_URL}/oauth/authorize`, {
   client_id: PARALLEL_MARKETS_CLIENT_ID,
@@ -47,6 +50,9 @@ export function ParallelMarketsStep() {
           <Button
             as="a"
             href={url.toString()}
+            onClick={() =>
+              localStorage.setItem("parallel_markets_state", state)
+            }
             target="_blank"
             rel="noopener"
             className="w-full"
