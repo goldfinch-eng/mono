@@ -16,7 +16,7 @@ const CallToActionBannerDescription =
   "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
 
 const AccountsPage: NextPageWithLayout = () => {
-  const { account } = useWallet() 
+  const { account } = useWallet();
   return (
     <div>
       <div className="bg-mustard-100">
@@ -39,11 +39,17 @@ const AccountsPage: NextPageWithLayout = () => {
             <TabPanels>
               <TabContent>
                 <CallToActionBanner
-                  renderButton={(props) => (
-                    !account ?  
-                    <Button {...props} onClick={openWalletModal}>Connect Wallet</Button> : 
-                    <Button {...props} onClick={openVerificationModal}>Begin UID set up</Button>
-                  )}
+                  renderButton={(props) =>
+                    !account ? (
+                      <Button {...props} onClick={openWalletModal}>
+                        Connect Wallet
+                      </Button>
+                    ) : (
+                      <Button {...props} onClick={openVerificationModal}>
+                        Begin UID set up
+                      </Button>
+                    )
+                  }
                   iconLeft="Globe"
                   title="Setup your UID to start" /* will make title conditional soon */
                   description={CallToActionBannerDescription}
