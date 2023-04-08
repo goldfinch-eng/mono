@@ -18,6 +18,23 @@ export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
+export const PARALLEL_MARKETS_CLIENT_ID = "BmnxpOnRrGxhxFkr66rnK";
+export const PARALLEL_MARKETS_REDIRECT_URI = "http%3A%2F%2Flocalhost%3A3001%2Faccount%2F";
+export const PARALLEL_MARKETS_SCOPE = "accreditation_status%20profile%20identity";
+export const PARALLEL_MARKETS_RESPONSE_TYPE = "code"
+
+export const PARALLEL_MARKETS_API_URL = 
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" 
+    ? "https://demo-api.parallelmarkets.com/v1/oauth/authorize?" 
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet" 
+      ? "https://api.parallelmarkets.com/v1/oauth/authorize?" 
+      : "";
+ 
+if (PARALLEL_MARKETS_API_URL === "") {
+  throw new Error("Could not determine Parallel Markets API URL");
+}
+
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,
@@ -27,10 +44,10 @@ export const SUBGRAPH_API_URL =
   typeof process.env.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
     ? process.env.NEXT_PUBLIC_GRAPHQL_URL
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2"
-    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
-    ? "http://localhost:8000/subgraphs/name/goldfinch-subgraph"
-    : "";
+      ? "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2"
+      : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+        ? "http://localhost:8000/subgraphs/name/goldfinch-subgraph"
+        : "";
 if (SUBGRAPH_API_URL === "") {
   throw new Error("Could not determine GraphQL API URL");
 }
@@ -39,10 +56,10 @@ export const CMS_API_URL =
   typeof process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
     ? process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? "http://cms.goldfinch.finance/api/graphql"
-    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
-    ? "http://localhost:3010/api/graphql"
-    : "";
+      ? "http://cms.goldfinch.finance/api/graphql"
+      : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+        ? "http://localhost:3010/api/graphql"
+        : "";
 if (CMS_API_URL === "") {
   throw new Error("Could not determine CMS API URL");
 }
@@ -50,10 +67,10 @@ if (CMS_API_URL === "") {
 export const API_BASE_URL = process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   ? process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   : networkName === "mainnet"
-  ? "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net"
-  : networkName === "murmuration"
-  ? "https://murmuration.goldfinch.finance/_gcloudfunctions"
-  : "http://localhost:5001/goldfinch-frontends-dev/us-central1";
+    ? "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net"
+    : networkName === "murmuration"
+      ? "https://murmuration.goldfinch.finance/_gcloudfunctions"
+      : "http://localhost:5001/goldfinch-frontends-dev/us-central1";
 
 type PersonaConfig = {
   templateId: string;
@@ -62,17 +79,17 @@ type PersonaConfig = {
 
 export const PERSONA_CONFIG: PersonaConfig =
   process.env.NEXT_PUBLIC_PERSONA_TEMPLATE &&
-  process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT
+    process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT
     ? ({
-        templateId: process.env.NEXT_PUBLIC_PERSONA_TEMPLATE,
-        environment: process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT,
-      } as PersonaConfig)
+      templateId: process.env.NEXT_PUBLIC_PERSONA_TEMPLATE,
+      environment: process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT,
+    } as PersonaConfig)
     : networkName === "mainnet"
-    ? {
+      ? {
         templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H",
         environment: "production",
       }
-    : {
+      : {
         templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H",
         environment: "sandbox",
       };
@@ -81,10 +98,10 @@ export const SERVER_URL =
   typeof process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL !== "undefined"
     ? process.env.NEXT_PUBLIC_DEVTOOLS_SERVER_URL
     : networkName === "mainnet"
-    ? ""
-    : networkName === "murmuration"
-    ? "https://murmuration.goldfinch.finance"
-    : "http://localhost:4000";
+      ? ""
+      : networkName === "murmuration"
+        ? "https://murmuration.goldfinch.finance"
+        : "http://localhost:4000";
 
 export const UNIQUE_IDENTITY_SIGNER_URL =
   networkName === "mainnet"

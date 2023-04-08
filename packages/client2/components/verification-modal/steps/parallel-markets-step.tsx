@@ -2,6 +2,7 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
+import { PARALLEL_MARKETS_API_URL, PARALLEL_MARKETS_CLIENT_ID, PARALLEL_MARKETS_REDIRECT_URI, PARALLEL_MARKETS_RESPONSE_TYPE, PARALLEL_MARKETS_SCOPE } from "@/constants";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
@@ -11,7 +12,6 @@ import { StepTemplate } from "./step-template";
 export function ParallelMarketsStep() {
   const { entity, accredited } = useVerificationFlowContext();
   const { goToStep } = useWizard();
-
   return (
     <StepTemplate
       footer={
@@ -26,7 +26,7 @@ export function ParallelMarketsStep() {
           </Button>
           <Button
             as="a"
-            href="https://bridge.parallelmarkets.com/goldfinch"
+            href={`${PARALLEL_MARKETS_API_URL}client_id=${PARALLEL_MARKETS_CLIENT_ID}&redirect_uri=${PARALLEL_MARKETS_REDIRECT_URI}&state=Z9hLvSULzTSdm&scope=${PARALLEL_MARKETS_SCOPE}&response_type=${PARALLEL_MARKETS_RESPONSE_TYPE}`}
             target="_blank"
             rel="noopener"
             className="w-full"
