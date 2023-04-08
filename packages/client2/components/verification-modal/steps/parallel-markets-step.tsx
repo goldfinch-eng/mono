@@ -1,3 +1,5 @@
+import { randomBytes } from "crypto";
+
 import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
@@ -17,11 +19,13 @@ const {
   PARALLEL_MARKETS_SCOPE,
 } = PARALLEL_MARKETS;
 
+const state = randomBytes(256).toString();
+
 const url = buildURL(`${PARALLEL_MARKETS_API_URL}/oauth/authorize`, {
   client_id: PARALLEL_MARKETS_CLIENT_ID,
   redirect_uri: PARALLEL_MARKETS_REDIRECT_URI,
   scope: PARALLEL_MARKETS_SCOPE,
-  state: "Z9hLvSULzTSdm" /* will change this soon to be randomly generated */,
+  state,
   response_type: "code",
 });
 
