@@ -2,18 +2,28 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
-import {
-  PARALLEL_MARKETS_API_URL,
-  PARALLEL_MARKETS_CLIENT_ID,
-  PARALLEL_MARKETS_REDIRECT_URI,
-  PARALLEL_MARKETS_RESPONSE_TYPE,
-  PARALLEL_MARKETS_SCOPE,
-} from "@/constants";
+import { PARALLEL_MARKETS } from "@/constants";
+import { buildURL } from "@/lib/utils";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
 import { StepTemplate } from "./step-template";
+
+const {
+  PARALLEL_MARKETS_API_URL,
+  PARALLEL_MARKETS_CLIENT_ID,
+  PARALLEL_MARKETS_REDIRECT_URI,
+  PARALLEL_MARKETS_SCOPE,
+} = PARALLEL_MARKETS;
+
+const url = buildURL(`${PARALLEL_MARKETS_API_URL}/oauth/authorize`, {
+  client_id: PARALLEL_MARKETS_CLIENT_ID,
+  redirect_uri: PARALLEL_MARKETS_REDIRECT_URI,
+  scope: PARALLEL_MARKETS_SCOPE,
+  state: "Z9hLvSULzTSdm" /* will change this soon to be randomly generated */,
+  response_type: "code",
+});
 
 export function ParallelMarketsStep() {
   const { entity, accredited } = useVerificationFlowContext();
@@ -32,7 +42,7 @@ export function ParallelMarketsStep() {
           </Button>
           <Button
             as="a"
-            href={`${PARALLEL_MARKETS_API_URL}client_id=${PARALLEL_MARKETS_CLIENT_ID}&redirect_uri=${PARALLEL_MARKETS_REDIRECT_URI}&state=Z9hLvSULzTSdm&scope=${PARALLEL_MARKETS_SCOPE}&response_type=${PARALLEL_MARKETS_RESPONSE_TYPE}`}
+            href={url}
             target="_blank"
             rel="noopener"
             className="w-full"
