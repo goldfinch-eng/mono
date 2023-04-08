@@ -19,8 +19,14 @@ export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
 export const PARALLEL_MARKETS_CLIENT_ID = "BmnxpOnRrGxhxFkr66rnK";
+
 export const PARALLEL_MARKETS_REDIRECT_URI =
-  "http%3A%2F%2Flocalhost%3A3001%2Faccount%2F";
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http%3A%2F%2Flocalhost%3A3001%2Faccount%2F"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https%3A%2F%2Fapp.goldfinch.finance%2Faccount%2F"
+    : "";
+
 export const PARALLEL_MARKETS_SCOPE =
   "accreditation_status%20profile%20identity";
 export const PARALLEL_MARKETS_RESPONSE_TYPE = "code";
