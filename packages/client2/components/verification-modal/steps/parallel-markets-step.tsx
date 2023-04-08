@@ -2,7 +2,13 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
-import { PARALLEL_MARKETS_API_URL, PARALLEL_MARKETS_CLIENT_ID, PARALLEL_MARKETS_REDIRECT_URI, PARALLEL_MARKETS_RESPONSE_TYPE, PARALLEL_MARKETS_SCOPE } from "@/constants";
+import {
+  PARALLEL_MARKETS_API_URL,
+  PARALLEL_MARKETS_CLIENT_ID,
+  PARALLEL_MARKETS_REDIRECT_URI,
+  PARALLEL_MARKETS_RESPONSE_TYPE,
+  PARALLEL_MARKETS_SCOPE,
+} from "@/constants";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
