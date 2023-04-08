@@ -42,7 +42,7 @@ export function ParallelMarketsStep() {
           </Button>
           <Button
             as="a"
-            href={url}
+            href={url.toString()}
             target="_blank"
             rel="noopener"
             className="w-full"

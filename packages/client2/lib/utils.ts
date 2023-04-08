@@ -26,7 +26,7 @@ export function buildURL(
   for (const queryParam in queryParams) {
     url.searchParams.append(queryParam, queryParams[queryParam]);
   }
-  return url.toString();
+  return url;
 }
 
 export async function waitForSubgraphBlock(
