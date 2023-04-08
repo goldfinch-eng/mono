@@ -40,13 +40,13 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 <CallToActionBanner
                   renderButton={(props) =>
-                    !account ? (
-                      <Button {...props} onClick={openWalletModal}>
-                        Connect Wallet
-                      </Button>
-                    ) : (
+                    account ? (
                       <Button {...props} onClick={openVerificationModal}>
                         Begin UID set up
+                      </Button>
+                    ) : (
+                      <Button {...props} onClick={openWalletModal}>
+                        Connect Wallet
                       </Button>
                     )
                   }

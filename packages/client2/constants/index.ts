@@ -29,7 +29,7 @@ if (PARALLEL_MARKETS_REDIRECT_URI === "") {
   throw new Error("Could not determine Parallel Markets Redirect URI");
 }
 
-export const PARALLEL_MARKETS_API_URL =
+const PARALLEL_MARKETS_API_URL =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "https://demo-api.parallelmarkets.com/v1"
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
@@ -41,10 +41,10 @@ if (PARALLEL_MARKETS_API_URL === "") {
 }
 
 export const PARALLEL_MARKETS = {
-  PARALLEL_MARKETS_API_URL,
-  PARALLEL_MARKETS_CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
-  PARALLEL_MARKETS_REDIRECT_URI,
-  PARALLEL_MARKETS_SCOPE: "accreditation_status profile identity",
+  API_URL: PARALLEL_MARKETS_API_URL,
+  CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
+  REDIRECT_URI: PARALLEL_MARKETS_REDIRECT_URI,
+  SCOPE: "accreditation_status profile identity",
 };
 
 export const TRANCHES = {

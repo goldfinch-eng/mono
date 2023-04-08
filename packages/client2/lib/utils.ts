@@ -18,17 +18,6 @@ const MIN_BLOCK_CHECK = gql`
   }
 `;
 
-export function buildURL(
-  baseURL: string,
-  queryParams: { [key: string]: string }
-) {
-  const url = new URL(baseURL);
-  for (const queryParam in queryParams) {
-    url.searchParams.append(queryParam, queryParams[queryParam]);
-  }
-  return url;
-}
-
 export async function waitForSubgraphBlock(
   minBlock: number,
   maxPollingAttempts = 30
