@@ -12,7 +12,7 @@ import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
 import { StepTemplate } from "./step-template";
 
-const state = randomBytes(32).toString('hex'); /* creating a random state variable to prevent cross-site forgery */
+const state = randomBytes(32).toString("hex");
 
 const url = buildURL(`${PARALLEL_MARKETS.API_URL}/oauth/authorize`, {
   client_id: PARALLEL_MARKETS.CLIENT_ID,
