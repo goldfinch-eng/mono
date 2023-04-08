@@ -1,3 +1,5 @@
+import { useRouter } from "next/router";
+
 import {
   Button,
   TabButton,
@@ -17,6 +19,20 @@ const CallToActionBannerDescription =
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account } = useWallet();
+  const { query } = useRouter();
+
+  /* Check for cross-site forgery on redirection to account page from parallel markets */
+  if (query.state != undefined) {
+    const parallel_markets_state = localStorage.getItem(
+      "parallel_markets_state"
+    ); /* NOTE: if the key isn't on local storage, then this will throw. */
+    if (parallel_markets_state !== query.state) {
+      throw new Error(
+        "There's a possibility of cross-site forgery attack from the parallel markets site!"
+      );
+    }
+  }
+
   return (
     <div>
       <div className="bg-mustard-100">
