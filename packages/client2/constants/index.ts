@@ -18,6 +18,35 @@ export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
+const PARALLEL_MARKETS_REDIRECT_URI =
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:3001/account/"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://app.goldfinch.finance/account/"
+    : "";
+
+if (PARALLEL_MARKETS_REDIRECT_URI === "") {
+  throw new Error("Could not determine Parallel Markets Redirect URI");
+}
+
+const PARALLEL_MARKETS_API_URL =
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "https://demo-api.parallelmarkets.com/v1"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://api.parallelmarkets.com/v1"
+    : "";
+
+if (PARALLEL_MARKETS_API_URL === "") {
+  throw new Error("Could not determine Parallel Markets API URL");
+}
+
+export const PARALLEL_MARKETS = {
+  API_URL: PARALLEL_MARKETS_API_URL,
+  CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
+  REDIRECT_URI: PARALLEL_MARKETS_REDIRECT_URI,
+  SCOPE: "accreditation_status profile identity",
+};
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,
