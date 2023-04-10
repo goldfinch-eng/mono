@@ -1,10 +1,8 @@
-import { randomBytes } from "crypto";
-
 import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
-import { PARALLEL_MARKETS } from "@/constants";
+import { PARALLEL_MARKETS, PARALLEL_MARKETS_STATE_KEY } from "@/constants";
 import { buildURL } from "@/lib/urls";
 
 import { VerificationFlowSteps } from "../step-manifest";
@@ -12,15 +10,15 @@ import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
 import { StepTemplate } from "./step-template";
 
-const state = randomBytes(32).toString("hex");
-
-const url = buildURL(`${PARALLEL_MARKETS.API_URL}/oauth/authorize`, {
-  client_id: PARALLEL_MARKETS.CLIENT_ID,
-  redirect_uri: PARALLEL_MARKETS.REDIRECT_URI,
-  scope: PARALLEL_MARKETS.SCOPE,
-  state,
-  response_type: "code",
-});
+const parallelMarketsOauthUrl = buildURL(
+  `${PARALLEL_MARKETS.API_URL}/oauth/authorize`,
+  {
+    client_id: PARALLEL_MARKETS.CLIENT_ID,
+    redirect_uri: PARALLEL_MARKETS.REDIRECT_URI,
+    scope: PARALLEL_MARKETS.SCOPE,
+    response_type: "code",
+  }
+);
 
 export function ParallelMarketsStep() {
   const { entity, accredited } = useVerificationFlowContext();
@@ -39,10 +37,14 @@ export function ParallelMarketsStep() {
           </Button>
           <Button
             as="a"
-            href={url.toString()}
-            onClick={() =>
-              localStorage.setItem("parallel_markets_state", state)
-            }
+            href={parallelMarketsOauthUrl.toString()}
+            onClick={(e) => {
+              e.preventDefault();
+              const state = window.crypto.randomUUID();
+              parallelMarketsOauthUrl.searchParams.append("state", state);
+              sessionStorage.setItem(PARALLEL_MARKETS_STATE_KEY, state);
+              window.location.href = parallelMarketsOauthUrl.toString();
+            }}
             target="_blank"
             rel="noopener"
             className="w-full"

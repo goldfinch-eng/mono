@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 import {
   Button,
@@ -9,6 +10,7 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
+import { PARALLEL_MARKETS_STATE_KEY } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
@@ -21,17 +23,19 @@ const AccountsPage: NextPageWithLayout = () => {
   const { account } = useWallet();
   const { query } = useRouter();
 
-  /* Check for cross-site forgery on redirection to account page from parallel markets */
-  if (query.state != undefined) {
-    const parallel_markets_state = localStorage.getItem(
-      "parallel_markets_state"
-    ); /* NOTE: if the key isn't on local storage, then this will throw. */
-    if (parallel_markets_state !== query.state) {
-      throw new Error(
-        "There's a possibility of cross-site forgery attack from the parallel markets site!"
-      );
+  useEffect(() => {
+    /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
+    if (query.state != undefined) {
+      const parallel_markets_state = sessionStorage.getItem(
+        PARALLEL_MARKETS_STATE_KEY
+      ); /* NOTE: if the key isn't on local storage, then this will throw. */
+      if (parallel_markets_state !== query.state) {
+        throw new Error(
+          "There's a possibility of cross-site forgery attack from the parallel markets site!"
+        );
+      }
     }
-  }
+  }, [query.state]);
 
   return (
     <div>
