@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { ReactNode } from "react";
 
 import {
   Button,
