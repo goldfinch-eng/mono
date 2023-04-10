@@ -1,3 +1,6 @@
+import { useRouter } from "next/router";
+import { useEffect } from "react";
+
 import {
   Button,
   TabButton,
@@ -5,8 +8,10 @@ import {
   TabGroup,
   TabList,
   TabPanels,
+  confirmDialog,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
+import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
@@ -15,8 +20,44 @@ import { NextPageWithLayout } from "@/pages/_app.page";
 const CallToActionBannerDescription =
   "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
 
+const confirmDialogBody = (text: string) => (
+  <div>
+    <div className="mb-2 text-xl font-bold">Error</div>
+    <div>{text}</div>
+  </div>
+);
+
 const AccountsPage: NextPageWithLayout = () => {
   const { account } = useWallet();
+  const { query } = useRouter();
+
+  useEffect(() => {
+    /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
+    if (query.state != undefined) {
+      const parallel_markets_state = sessionStorage.getItem(
+        PARALLEL_MARKETS.STATE_KEY
+      );
+      if (query.state !== parallel_markets_state) {
+        confirmDialog(
+          confirmDialogBody(
+            "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
+          ),
+          false /* include buttons */
+        );
+        return;
+      }
+    }
+    if (query.error === "access_denied") {
+      confirmDialog(
+        confirmDialogBody(
+          "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
+        ),
+        false /* include buttons */
+      );
+      return;
+    }
+  }, [query.state, query.error]);
+
   return (
     <div>
       <div className="bg-mustard-100">

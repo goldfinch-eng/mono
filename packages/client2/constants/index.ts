@@ -45,6 +45,7 @@ export const PARALLEL_MARKETS = {
   CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
   REDIRECT_URI: PARALLEL_MARKETS_REDIRECT_URI,
   SCOPE: "accreditation_status profile identity",
+  STATE_KEY: "parallel_markets_state_key",
 };
 
 export const TRANCHES = {
