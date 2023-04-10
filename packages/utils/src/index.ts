@@ -5,6 +5,7 @@ export * from "./verifyGoldfinchSignature"
 export * from "./uniqueIdentityHelpers"
 export * from "./uid"
 export * from "./pools"
+export * from "./casings"
 
 export {default as USAccreditedIndividualsList} from "./uid-json/USAccreditedIndividuals.json"
 export {default as USAccreditedEntitiesList} from "./uid-json/USAccreditedEntities.json"

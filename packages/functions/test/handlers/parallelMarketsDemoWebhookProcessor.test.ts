@@ -8,9 +8,9 @@ import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {expectResponse} from "../utils"
 import {processIdentityWebhook} from "../../src/handlers/parallelmarkets/webhookHelpers"
-import {PmIdentity, PmIdentityPayload} from "../../src/handlers/parallelmarkets/types"
+import {PmIdentity, PmIdentityPayload} from "../../src/handlers/parallelmarkets/PmApiTypes"
 
-import sinon from "sinon"
+import {stub} from "sinon"
 import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
@@ -165,23 +165,26 @@ describe.skip("parallelMarketsDemoWebhookProcessor", async () => {
         describe("individual", () => {
           beforeEach(async () => {
             // Stub the Identity API request
-            const stub = sinon.stub(fetchModule, "default")
+            const fetchStub = stub(fetchModule, "default")
             const missingDocumentsIdentityResponse: PmIdentity = {
               id: "test_id",
               type: "individual",
-              identity_details: {
-                birth_date: "1997-10-14",
-                citizenship_country: "CA",
-                completed_at: "1231239093809",
-                consistency_summary: {
-                  overall_records_level_match: "high",
-                  id_validity: null,
+              identityDetails: {
+                birthDate: "1997-10-14",
+                citizenshipCountry: "CA",
+                completedAt: "1231239093809",
+                consistencySummary: {
+                  overallRecordsLevelMatch: "high",
+                  idValidity: null,
+                },
+                residenceLocation: {
+                  country: "CA",
                 },
               },
-              access_expires_at: null,
-              access_revoked_by: null,
+              accessExpiresAt: null,
+              accessRevokedBy: null,
             }
-            stub.returns(
+            fetchStub.returns(
               new Promise((resolve) =>
                 resolve(new Response(JSON.stringify(missingDocumentsIdentityResponse), {status: 200})),
               ),

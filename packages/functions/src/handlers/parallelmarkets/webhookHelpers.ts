@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import {assertUnreachable} from "@goldfinch-eng/utils"
-import {fetchIdentity} from "./apiHelpers"
+import {ParallelMarkets} from "./PmApi"
 import {
   ConsistencyLevel,
   IdentityDocumentValidity,
@@ -9,7 +9,7 @@ import {
   PmEntity,
   PmIdentityPayload,
   PmIndividualIdentity,
-} from "./types"
+} from "./PmApiTypes"
 import {getUsers} from "../../db"
 import * as admin from "firebase-admin"
 import {FieldPath} from "@google-cloud/firestore"
@@ -48,7 +48,7 @@ export const processAccreditationWebhook = async (payload: PmAccreditationPayloa
 
 const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
   console.log(`Processing identity data update for (${id}, ${type})`)
-  const identity = await fetchIdentity(id)
+  const identity = await ParallelMarkets.getIdentity(id)
 
   console.log(`Fetched PM Identity for ${id}`)
   console.log(identity)
@@ -66,11 +66,11 @@ const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
   }
 }
 
-const processIndividualIdentityDataUpdate = async ({id, identity_details}: PmIndividualIdentity) => {
-  const {consistency_summary} = identity_details
-  const {overall_records_level_match, id_validity} = consistency_summary
+const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
+  const {consistencySummary} = identityDetails
+  const {overallRecordsLevelMatch, idValidity} = consistencySummary
 
-  const identityStatus = getIdentityStatus(overall_records_level_match, id_validity)
+  const identityStatus = getIdentityStatus(overallRecordsLevelMatch, idValidity)
 
   const user = await getUserDocByPMId(id)
   if (!user) {
@@ -94,7 +94,7 @@ const processIndividualIdentityDataUpdate = async ({id, identity_details}: PmInd
   )
 }
 
-const processBusinessIdentityDataUpdate = async ({identity_details}: PmBusinessIdentity) => {
+const processBusinessIdentityDataUpdate = async ({identityDetails}: PmBusinessIdentity) => {
   console.log("Processing business identity data update")
 }
 

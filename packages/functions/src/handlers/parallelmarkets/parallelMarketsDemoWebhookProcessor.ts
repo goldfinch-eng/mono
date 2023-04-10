@@ -3,7 +3,7 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../../helpers"
 import {https} from "firebase-functions"
 // import {assertIsString} from "@goldfinch-eng/utils"
-import {PmPayload} from "./types"
+import {PmPayload} from "./PmApiTypes"
 import {processAccreditationWebhook, processIdentityWebhook} from "./webhookHelpers"
 
 // const PARALLEL_TIMESTAMP_HEADER = "Parallel-Timestamp"
