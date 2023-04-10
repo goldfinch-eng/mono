@@ -20,9 +20,9 @@ export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
 const PARALLEL_MARKETS_REDIRECT_URI =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
-    ? "http://localhost:3001/account/"
+    ? "http://localhost:3001/account"
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? "https://app.goldfinch.finance/account/"
+    ? "https://app.goldfinch.finance/account"
     : "";
 
 if (PARALLEL_MARKETS_REDIRECT_URI === "") {
@@ -42,7 +42,7 @@ if (PARALLEL_MARKETS_API_URL === "") {
 
 export const PARALLEL_MARKETS = {
   API_URL: PARALLEL_MARKETS_API_URL,
-  CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
+  CLIENT_ID: "pDhcBjoOa7f_7Ka8R6ejs",
   REDIRECT_URI: PARALLEL_MARKETS_REDIRECT_URI,
   SCOPE: "accreditation_status profile identity",
   STATE_KEY: "parallel_markets_state_key",
