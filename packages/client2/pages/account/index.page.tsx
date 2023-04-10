@@ -8,6 +8,7 @@ import {
   TabGroup,
   TabList,
   TabPanels,
+  confirmDialog,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS_STATE_KEY } from "@/constants";
@@ -28,10 +29,11 @@ const AccountsPage: NextPageWithLayout = () => {
     if (query.state != undefined) {
       const parallel_markets_state = sessionStorage.getItem(
         PARALLEL_MARKETS_STATE_KEY
-      ); /* NOTE: if the key isn't on local storage, then this will throw. */
+      );
       if (parallel_markets_state !== query.state) {
-        throw new Error(
-          "There's a possibility of cross-site forgery attack from the parallel markets site!"
+        confirmDialog(
+          "There's a possibility of cross-site forgery attack from the parallel markets site!",
+          false /* include buttons */
         );
       }
     }
