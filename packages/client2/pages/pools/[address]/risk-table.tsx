@@ -122,7 +122,7 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             value:
               deal.onChainCapitalPriority === "junior"
                 ? "The repayment of other on-chain loans are prioritized ahead of the repayment of the capital invested in this pool"
-                : "The capital invested in this pool will be repaid ahead of any other on-chain debt raised by the company",
+                : "The capital invested in this pool will be repaid pari passu with other senior debt, if any, raised by the company",
           },
         ]
       : []),
@@ -135,7 +135,7 @@ export function RiskTable({ deal, loan }: RiskTableProps) {
             value:
               deal.offChainCapitalPriority === "junior"
                 ? "The repayment of other off-chain loans are prioritized ahead of the repayment of the capital invested in this pool"
-                : "The capital invested in this pool will be repaid ahead of any other off-chain debt raised by the company",
+                : "The capital invested in this pool will be repaid pari passu with other senior debt, if any, raised by the company",
           },
         ]
       : []),
