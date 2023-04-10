@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import { ReactNode } from "react";
 
 import {
   Button,
@@ -11,7 +12,7 @@ import {
   confirmDialog,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
-import { PARALLEL_MARKETS_STATE_KEY } from "@/constants";
+import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
@@ -19,6 +20,13 @@ import { NextPageWithLayout } from "@/pages/_app.page";
 /* Will make the description conditional soon */
 const CallToActionBannerDescription =
   "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
+
+const confirmDialogBody = (text: string) => (
+  <div>
+    <div className="mb-2 text-xl font-bold">Error</div>
+    <div>{text}</div>
+  </div>
+);
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account } = useWallet();
@@ -28,16 +36,28 @@ const AccountsPage: NextPageWithLayout = () => {
     /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
     if (query.state != undefined) {
       const parallel_markets_state = sessionStorage.getItem(
-        PARALLEL_MARKETS_STATE_KEY
+        PARALLEL_MARKETS.STATE_KEY
       );
       if (parallel_markets_state !== query.state) {
         confirmDialog(
-          "There's a possibility of cross-site forgery attack from the parallel markets site!",
+          confirmDialogBody(
+            "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
+          ),
           false /* include buttons */
         );
+        return;
       }
     }
-  }, [query.state]);
+    if (query.error === "access_denied") {
+      confirmDialog(
+        confirmDialogBody(
+          "You have declined to give Goldfinch consent for authorization to Parallel Markets."
+        ),
+        false /* include buttons */
+      );
+      return;
+    }
+  }, [query.state, query.error]);
 
   return (
     <div>

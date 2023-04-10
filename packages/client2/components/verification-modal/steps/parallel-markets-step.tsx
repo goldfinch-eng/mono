@@ -2,7 +2,7 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
-import { PARALLEL_MARKETS, PARALLEL_MARKETS_STATE_KEY } from "@/constants";
+import { PARALLEL_MARKETS } from "@/constants";
 import { buildURL } from "@/lib/urls";
 
 import { VerificationFlowSteps } from "../step-manifest";
@@ -42,7 +42,7 @@ export function ParallelMarketsStep() {
               e.preventDefault();
               const state = window.crypto.randomUUID();
               parallelMarketsOauthUrl.searchParams.append("state", state);
-              sessionStorage.setItem(PARALLEL_MARKETS_STATE_KEY, state);
+              sessionStorage.setItem(PARALLEL_MARKETS.STATE_KEY, state);
               window.location.href = parallelMarketsOauthUrl.toString();
             }}
             target="_blank"

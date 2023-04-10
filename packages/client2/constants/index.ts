@@ -18,8 +18,6 @@ export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
-export const PARALLEL_MARKETS_STATE_KEY = "parallel_markets_state";
-
 const PARALLEL_MARKETS_REDIRECT_URI =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "http://localhost:3001/account/"
@@ -47,6 +45,7 @@ export const PARALLEL_MARKETS = {
   CLIENT_ID: "BmnxpOnRrGxhxFkr66rnK",
   REDIRECT_URI: PARALLEL_MARKETS_REDIRECT_URI,
   SCOPE: "accreditation_status profile identity",
+  STATE_KEY: "parallel_markets_state_key",
 };
 
 export const TRANCHES = {
