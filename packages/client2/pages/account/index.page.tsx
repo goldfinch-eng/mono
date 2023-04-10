@@ -38,7 +38,7 @@ const AccountsPage: NextPageWithLayout = () => {
       const parallel_markets_state = sessionStorage.getItem(
         PARALLEL_MARKETS.STATE_KEY
       );
-      if (parallel_markets_state !== query.state) {
+      if (query.state !== parallel_markets_state) {
         confirmDialog(
           confirmDialogBody(
             "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
