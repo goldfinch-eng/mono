@@ -51,7 +51,7 @@ const AccountsPage: NextPageWithLayout = () => {
     if (query.error === "access_denied") {
       confirmDialog(
         confirmDialogBody(
-          "You have declined to give Goldfinch consent for authorization to Parallel Markets."
+          "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again if you wish to proceed."
         ),
         false /* include buttons */
       );
