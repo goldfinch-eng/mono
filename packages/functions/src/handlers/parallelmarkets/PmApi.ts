@@ -1,16 +1,16 @@
 import fetch from "node-fetch"
 import {camelize} from "@goldfinch-eng/utils"
 import {PmAccreditationResponse, PmIdentity, PmOauthResponse, PmProfileResponse} from "./PmApiTypes"
+import * as functions from "firebase-functions"
+import {getConfig} from "../../config"
 
-const PROFILE_API_BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://api.parallelmarkets.com/v1"
-    : "https://demo-api.parallelmarkets.com/v1"
-
-const PM_API_KEY = process.env.NODE_ENV === "production" ? process.env.PM_PROD_API_KEY : process.env.PM_DEMO_API_KEY
-const PM_CLIENT_ID = ""
-const PM_CLIENT_SECRET = ""
-const PM_REDIRECT_URI = "http://localhost:3001/account"
+const {
+  api_key: apiKey,
+  base_url: baseUrl,
+  client_id: clientId,
+  client_secret: clientSecret,
+  redirect_uri: redirectUri,
+} = getConfig(functions).parallelmarkets
 
 export const ParallelMarkets = {
   getIdentity: async (id: string): Promise<PmIdentity> => {
@@ -26,9 +26,9 @@ export const ParallelMarkets = {
       method: "POST",
       queryParams: {
         code: authCode,
-        client_id: PM_CLIENT_ID,
-        client_secret: PM_CLIENT_SECRET,
-        redirect_uri: PM_REDIRECT_URI,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
         grant_type: "authorization_code",
       },
       useAuth: false,
@@ -72,7 +72,7 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
     ...options,
   }
 
-  const url = new URL(`${PROFILE_API_BASE_URL}${path}`)
+  const url = new URL(`${baseUrl}${path}`)
 
   Object.entries(queryParams || {}).forEach(([key, value]) => url.searchParams.append(key, value as string))
 
@@ -81,7 +81,7 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
     body: body ? JSON.stringify(body) : undefined,
     headers: {
       "Content-Type": "application/json",
-      ...(useAuth ? {Authorization: `Bearer ${overrideToken || PM_API_KEY}`} : {}),
+      ...(useAuth ? {Authorization: `Bearer ${overrideToken || apiKey}`} : {}),
     },
   })
     .then((res) => {

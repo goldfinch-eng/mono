@@ -3,7 +3,7 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import {CaptureConsole} from "@sentry/integrations"
 import {findEnvLocal} from "@goldfinch-eng/utils"
-import {getConfig} from "./db"
+import {getConfig} from "./config"
 import dotenv from "dotenv"
 
 dotenv.config({path: findEnvLocal()})

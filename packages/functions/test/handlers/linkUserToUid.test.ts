@@ -22,11 +22,12 @@ import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
-import {setEnvForTest, getUsers} from "../../src/db"
+import {setTestFirestore, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
 import _ from "lodash"
+import {setTestConfig} from "../../src/config"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
@@ -61,11 +62,6 @@ const USER_DATA = {
     id: "inq_aaaaaaaaaaaaaaaaaaaaaaaa",
     status: "approved",
   },
-}
-
-const config = {
-  kyc: {allowed_origins: "http://localhost:3000"},
-  persona: {allowed_ips: ""},
 }
 
 const uidType = BigNumber.from(1)
@@ -190,7 +186,11 @@ describe("linkUserToUid", () => {
 
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setEnvForTest(testFirestore, config)
+    setTestFirestore(testFirestore)
+    setTestConfig({
+      kyc: {allowed_origins: "http://localhost:3000"},
+      persona: {allowed_ips: ""},
+    })
 
     chainId = await hardhat.getChainId()
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})

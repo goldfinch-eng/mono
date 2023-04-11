@@ -7,7 +7,7 @@ import {fake} from "sinon"
 import {Request} from "firebase-functions"
 
 import crypto from "crypto"
-import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
+import {getUsers, setTestFirestore} from "../../src/db"
 import {personaCallback} from "../../src"
 
 chai.use(chaiSubset)
@@ -17,6 +17,7 @@ import Firestore = firestore.Firestore
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
+import {setTestConfig, FirebaseConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -66,7 +67,8 @@ describe("persona callback", async () => {
       persona: {allowed_ips: ""},
       slack: {token: ""},
     }
-    setEnvForTest(testFirestore, config)
+    setTestFirestore(testFirestore)
+    setTestConfig(config)
     users = getUsers(testFirestore)
   })
 

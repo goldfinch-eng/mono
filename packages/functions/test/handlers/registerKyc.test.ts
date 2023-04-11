@@ -1,6 +1,7 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {FirebaseConfig, setEnvForTest, getUsers} from "../../src/db"
+import {setTestConfig} from "../../src/config"
+import {setTestFirestore, getUsers} from "../../src/db"
 
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
@@ -10,20 +11,19 @@ describe.skip("registerKyc", async () => {
 
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   let users: firestore.CollectionReference<firestore.DocumentData>
 
   beforeEach(async () => {
     testApp = firebaseTesting.initializeAdminApp({projectId})
     testFirestore = testApp.firestore()
-    config = {
+    setTestFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       slack: {token: "slackToken"},
       persona: {
         allowed_ips: "",
       },
-    }
-    setEnvForTest(testFirestore, config)
+    })
     users = getUsers(testFirestore)
   })
 

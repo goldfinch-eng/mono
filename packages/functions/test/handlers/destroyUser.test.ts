@@ -5,7 +5,8 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getDestroyedUsers, getUsers, setEnvForTest} from "../../src/db"
+import {getDestroyedUsers, getUsers, setTestFirestore} from "../../src/db"
+import {setTestConfig} from "../../src/config"
 import {destroyUser} from "../../src"
 
 chai.use(chaiSubset)
@@ -35,7 +36,6 @@ describe("destroyUser", () => {
   const testWallet = new ethers.Wallet(testAccount.privateKey)
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   let users: firestore.CollectionReference<firestore.DocumentData>
   let destroyedUsers: firestore.CollectionReference<firestore.DocumentData>
@@ -71,11 +71,11 @@ describe("destroyUser", () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {
+    setTestFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
+    })
     users = getUsers(testFirestore)
     destroyedUsers = getDestroyedUsers(testFirestore)
   })

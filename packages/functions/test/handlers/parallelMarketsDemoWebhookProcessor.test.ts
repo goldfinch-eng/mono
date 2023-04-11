@@ -1,6 +1,6 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {FirebaseConfig, setEnvForTest, getUsers} from "../../src/db"
+import {setTestFirestore, getUsers} from "../../src/db"
 import {parallelMarketsDemoWebhookProcessor} from "../../src"
 import {Request} from "express"
 
@@ -14,6 +14,7 @@ import {stub} from "sinon"
 import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
+import {setTestConfig} from "../../src/config"
 
 const PENDING_ADDRESS = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
 const PENDING_USER = {
@@ -68,20 +69,19 @@ describe.skip("parallelMarketsDemoWebhookProcessor", async () => {
 
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   let users: firestore.CollectionReference<firestore.DocumentData>
 
   beforeEach(async () => {
     testApp = firebaseTesting.initializeAdminApp({projectId})
     testFirestore = testApp.firestore()
-    config = {
+    setTestFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       slack: {token: "slackToken"},
       persona: {
         allowed_ips: "",
       },
-    }
-    setEnvForTest(testFirestore, config)
+    })
     users = getUsers(testFirestore)
   })
 

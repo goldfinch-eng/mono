@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
+import {getUsers, setTestFirestore} from "../../src/db"
 import {kycStatus} from "../../src"
 
 chai.use(chaiSubset)
@@ -16,6 +16,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
 import {ethers} from "ethers"
+import {setTestConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -32,7 +33,6 @@ describe("kycStatus", async () => {
   const testWallet = new ethers.Wallet(testAccount.privateKey)
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   let users: firestore.CollectionReference<firestore.DocumentData>
 
@@ -67,11 +67,11 @@ describe("kycStatus", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {
+    setTestFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
+    })
     users = getUsers(testFirestore)
   })
 
