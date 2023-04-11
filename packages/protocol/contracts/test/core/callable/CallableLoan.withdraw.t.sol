@@ -51,30 +51,29 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     vm.warp(cl.termEndTime());
 
     uint256 interestOwed = callableLoan.creditLine().interestOwed();
-    // TODO: Revert comments after payment upgrade
-    // pay(callableLoan, cl.interestOwed() + cl.principalOwed());
-    // assertZero(cl.interestOwed(), "Fully paid off interest");
-    // assertZero(cl.principalOwed(), "Fully paid off principal");
+    pay(callableLoan, cl.interestOwed() + cl.principalOwed());
+    assertZero(cl.interestOwed(), "Fully paid off interest");
+    assertZero(cl.principalOwed(), "Fully paid off principal");
 
-    // uint256 protocolFee = interestOwed / 10;
-    // {
-    //   (uint256 interestRedeemable1, uint256 principalRedeemable1) = callableLoan
-    //     .availableToWithdraw(token1);
-    //   (uint256 interestRedeemable2, uint256 principalRedeemable2) = callableLoan
-    //     .availableToWithdraw(token2);
-    //   assertEq(principalRedeemable1, amount1, "Principal redeemable for token 1");
-    //   assertEq(principalRedeemable2, amount2, "Principal redeemable for token 2");
-    //   assertApproxEqAbs(
-    //     interestRedeemable1,
-    //     ((interestOwed - protocolFee) * amount1) / (amount1 + amount2),
-    //     HALF_CENT
-    //   );
-    //   assertApproxEqAbs(
-    //     interestRedeemable2,
-    //     ((interestOwed - protocolFee) * amount2) / (amount1 + amount2),
-    //     HALF_CENT
-    //   );
-    // }
+    uint256 protocolFee = interestOwed / 10;
+    {
+      (uint256 interestRedeemable1, uint256 principalRedeemable1) = callableLoan
+        .availableToWithdraw(token1);
+      (uint256 interestRedeemable2, uint256 principalRedeemable2) = callableLoan
+        .availableToWithdraw(token2);
+      assertEq(principalRedeemable1, amount1, "Principal redeemable for token 1");
+      assertEq(principalRedeemable2, amount2, "Principal redeemable for token 2");
+      assertApproxEqAbs(
+        interestRedeemable1,
+        ((interestOwed - protocolFee) * amount1) / (amount1 + amount2),
+        HALF_CENT
+      );
+      assertApproxEqAbs(
+        interestRedeemable2,
+        ((interestOwed - protocolFee) * amount2) / (amount1 + amount2),
+        HALF_CENT
+      );
+    }
   }
 
   function testWithdrawFailsIfNotGoListedAndWithoutAllowedUid(uint256 amount) public {
@@ -329,55 +328,54 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uint256 interestOwed = cl.interestOwed();
 
-    // TODO: Revert comments after payment upgrade
-    // pay(callableLoan, cl.interestOwed() + cl.principalOwed());
+    pay(callableLoan, cl.interestOwed() + cl.principalOwed());
 
-    // {
-    //   // Users should be able to withdraw their principal and interest redeemable
-    //   // uint256 protocolFee = interestOwed / 10;
-    //   // interestOwed - protcolFee = 9/10 * interestOwed (because protocol fee is 10%)
-    //   // Depending on the fuzzed amounts, the interest calculation here could by overshot by 1.
-    //   // Subtract by 1 to account for that.
-    //   uint256 interest1 = (((interestOwed * 9) / 10) * amount1) / (amount1 + amount2) - 1;
-    //   uint256 interest2 = (((interestOwed * 9) / 10) * amount2) / (amount1 + amount2) - 1;
+    {
+      // Users should be able to withdraw their principal and interest redeemable
+      // uint256 protocolFee = interestOwed / 10;
+      // interestOwed - protcolFee = 9/10 * interestOwed (because protocol fee is 10%)
+      // Depending on the fuzzed amounts, the interest calculation here could by overshot by 1.
+      // Subtract by 1 to account for that.
+      uint256 interest1 = (((interestOwed * 9) / 10) * amount1) / (amount1 + amount2) - 1;
+      uint256 interest2 = (((interestOwed * 9) / 10) * amount2) / (amount1 + amount2) - 1;
 
-    //   uint256 usdcBalanceBefore = usdc.balanceOf(user1);
-    //   withdraw(callableLoan, token1, amount1 + interest1, user1);
-    //   assertEq(usdc.balanceOf(user1), usdcBalanceBefore + amount1 + interest1);
+      uint256 usdcBalanceBefore = usdc.balanceOf(user1);
+      withdraw(callableLoan, token1, amount1 + interest1, user1);
+      assertEq(usdc.balanceOf(user1), usdcBalanceBefore + amount1 + interest1);
 
-    //   usdcBalanceBefore = usdc.balanceOf(user2);
-    //   withdraw(callableLoan, token2, amount2 + interest2, user2);
-    //   assertEq(usdc.balanceOf(user2), usdcBalanceBefore + amount2 + interest2);
+      usdcBalanceBefore = usdc.balanceOf(user2);
+      withdraw(callableLoan, token2, amount2 + interest2, user2);
+      assertEq(usdc.balanceOf(user2), usdcBalanceBefore + amount2 + interest2);
 
-    //   IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
-    //   assertApproxEqAbs(tokenInfo.principalRedeemed, amount1, HALF_CENT);
-    //   assertApproxEqAbs(tokenInfo.interestRedeemed, interest1, HALF_CENT);
+      IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(token1);
+      assertApproxEqAbs(tokenInfo.principalRedeemed, amount1, HALF_CENT);
+      assertApproxEqAbs(tokenInfo.interestRedeemed, interest1, HALF_CENT);
 
-    //   tokenInfo = poolTokens.getTokenInfo(token2);
-    //   assertApproxEqAbs(tokenInfo.principalRedeemed, amount2, HALF_CENT);
-    //   assertApproxEqAbs(tokenInfo.interestRedeemed, interest2, HALF_CENT);
-    // }
+      tokenInfo = poolTokens.getTokenInfo(token2);
+      assertApproxEqAbs(tokenInfo.principalRedeemed, amount2, HALF_CENT);
+      assertApproxEqAbs(tokenInfo.interestRedeemed, interest2, HALF_CENT);
+    }
 
-    // (, uint interestOwedOnToken1) = callableLoan.availableToWithdraw(token1);
-    // // After withdrawing I shouldn't be able to withdraw more
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.WithdrawAmountExceedsWithdrawable.selector,
-    //     HALF_CENT,
-    //     interestOwedOnToken1
-    //   )
-    // );
-    // withdraw(callableLoan, token1, HALF_CENT, user1);
+    (, uint interestOwedOnToken1) = callableLoan.availableToWithdraw(token1);
+    // After withdrawing I shouldn't be able to withdraw more
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.WithdrawAmountExceedsWithdrawable.selector,
+        HALF_CENT,
+        interestOwedOnToken1
+      )
+    );
+    withdraw(callableLoan, token1, HALF_CENT, user1);
 
-    // (, uint interestOwedOnToken2) = callableLoan.availableToWithdraw(token2);
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.WithdrawAmountExceedsWithdrawable.selector,
-    //     HALF_CENT,
-    //     interestOwedOnToken2
-    //   )
-    // );
-    // withdraw(callableLoan, token2, HALF_CENT, user2);
+    (, uint interestOwedOnToken2) = callableLoan.availableToWithdraw(token2);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.WithdrawAmountExceedsWithdrawable.selector,
+        HALF_CENT,
+        interestOwedOnToken2
+      )
+    );
+    withdraw(callableLoan, token2, HALF_CENT, user2);
   }
 
   function testWithdrawEmitsAnEvent(
@@ -396,14 +394,13 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     vm.warp(cl.termEndTime());
     uint256 interestOwed = cl.interestOwed();
-    // TODO: Revert comments after payment upgrade
-    // pay(callableLoan, interestOwed + drawdownAmount);
+    pay(callableLoan, interestOwed + drawdownAmount);
 
-    // uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
-    // // Total amount owed
-    // vm.expectEmit(true, true, true, true);
-    // emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
-    // withdraw(callableLoan, token, withdrawableInterest + depositAmount, user);
+    uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
+    // Total amount owed
+    vm.expectEmit(true, true, true, true);
+    emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
+    withdraw(callableLoan, token, withdrawableInterest + depositAmount, user);
   }
 
   function testWithdrawMultipleRevertsIfAnyTokenNotOwnedByCaller(
@@ -649,29 +646,28 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
     uint256 interestOwed;
 
-    // TODO: Revert comments after payment upgrade
-    // if (nextPrincipalDueTime > block.timestamp) {
-    //   // If we are before the termEndTime
-    //   assertLt(block.timestamp, callableLoan.termEndTime());
-    //   interestOwed = callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime());
-    //   pay(callableLoan, drawdownAmount + interestOwed);
-    //   vm.warp(nextPrincipalDueTime);
-    // } else {
-    //   assertGe(block.timestamp, callableLoan.termEndTime());
-    //   // If we are after the termEndTime
-    //   interestOwed = callableLoan.interestOwed();
-    //   pay(callableLoan, drawdownAmount + interestOwed);
-    // }
+    if (nextPrincipalDueTime > block.timestamp) {
+      // If we are before the termEndTime
+      assertLt(block.timestamp, callableLoan.termEndTime());
+      interestOwed = callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime());
+      pay(callableLoan, drawdownAmount + interestOwed);
+      vm.warp(nextPrincipalDueTime);
+    } else {
+      assertGe(block.timestamp, callableLoan.termEndTime());
+      // If we are after the termEndTime
+      interestOwed = callableLoan.interestOwed();
+      pay(callableLoan, drawdownAmount + interestOwed);
+    }
 
-    // withdrawMax(callableLoan, poolToken, user);
-    // IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(poolToken);
-    // assertEq(poolTokenInfo.principalRedeemed, depositAmount, "principal redeemed");
-    // assertApproxEqAbs(
-    //   poolTokenInfo.interestRedeemed,
-    //   (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100,
-    //   HUNDREDTH_CENT,
-    //   "interest owed"
-    // );
+    withdrawMax(callableLoan, poolToken, user);
+    IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(poolToken);
+    assertEq(poolTokenInfo.principalRedeemed, depositAmount, "principal redeemed");
+    assertApproxEqAbs(
+      poolTokenInfo.interestRedeemed,
+      (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100,
+      HUNDREDTH_CENT,
+      "interest owed"
+    );
   }
 
   function testWithdrawMaxEmitsEvent(
@@ -690,14 +686,13 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     vm.warp(cl.termEndTime());
     uint256 interestOwed = cl.interestOwed();
-    // TODO: Revert comments after payment upgrade
-    // pay(callableLoan, interestOwed + drawdownAmount);
+    pay(callableLoan, interestOwed + drawdownAmount);
 
-    // uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
-    // // Total amount owed
-    // vm.expectEmit(true, true, true, true);
-    // emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
-    // withdrawMax(callableLoan, token, user);
+    uint256 withdrawableInterest = (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100;
+    // Total amount owed
+    vm.expectEmit(true, true, true, true);
+    emit WithdrawalMade(user, 3, token, withdrawableInterest, depositAmount);
+    withdrawMax(callableLoan, token, user);
   }
 
   function testWithdrawMaxLetsYouWithdrawUnusedAmounts(
@@ -730,11 +725,10 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
     uint256 interestOwed = cl.interestOwed();
     // fully pay off the loan
-    // TODO: Revert comments after payment upgrade
-    // pay(callableLoan, interestOwed + cl.principalOwed());
-    // // remaining 20% of principal should be withdrawn
-    // (uint256 interestRedeemed, uint256 principalRedeemed) = withdrawMax(callableLoan, token, user);
-    // assertEq(principalRedeemed, drawdownAmount);
-    // assertEq(interestRedeemed, (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100);
+    pay(callableLoan, interestOwed + cl.principalOwed());
+    // remaining 20% of principal should be withdrawn
+    (uint256 interestRedeemed, uint256 principalRedeemed) = withdrawMax(callableLoan, token, user);
+    assertEq(principalRedeemed, drawdownAmount);
+    assertEq(interestRedeemed, (interestOwed * (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / 100);
   }
 }

@@ -165,25 +165,24 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     }
   }
 
-  // TODO: Revert comments after payment upgrade
-  // function test_availableToCall() public {
-  //   lender.deposit(10e6);
-  //   borrower.drawdown(10e6);
+  function test_availableToCall() public {
+    lender.deposit(10e6);
+    borrower.drawdown(10e6);
 
-  //   /* Fast forward past drawdown period */ {
-  //     while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
-  //       skip(60 * 60 * 24);
-  //     }
-  //     assertTrue(loan.loanPhase() == LoanPhase.InProgress);
-  //   }
+    /* Fast forward past drawdown period */ {
+      while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+        skip(60 * 60 * 24);
+      }
+      assertTrue(loan.loanPhase() == LoanPhase.InProgress);
+    }
 
-  // If this is 10e6, it errors `MustSubmitCallToUncalledTranche`.
-  // It should instead complain that tokenId is 0
-  // lender.submitCall(5e6);
-  // borrower.pay(2e6);
+    // If this is 10e6, it errors `MustSubmitCallToUncalledTranche`.
+    // It should instead complain that tokenId is 0
+    lender.submitCall(5e6);
+    borrower.pay(2e6);
 
-  // assertEq(loan.availableToCall(lender.tokenId()), 5e6);
-  // }
+    assertEq(loan.availableToCall(lender.tokenId()), 5e6);
+  }
 
   function test_availableToWithdraw() public {
     lender.deposit(10e6);
@@ -207,8 +206,7 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
       vm.warp(loan.nextDueTimeAt(block.timestamp));
     }
 
-    // TODO: Revert change after payment upgrade
-    // borrower.pay(creditLine.interestOwed());
+    borrower.pay(creditLine.interestOwed());
 
     // in progress ..
   }
@@ -255,106 +253,104 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
       assertTrue(loan.loanPhase() == LoanPhase.InProgress);
     }
 
-    // TODO: Revert comments after payment upgrade
-    // /* Immediately submit a call */ {
-    //   lender.submitCall(100);
-    // }
+    /* Immediately submit a call */ {
+      lender.submitCall(100);
+    }
 
-    // /* Pay back call + interest */
-    // skip(1);
-    // uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
-    // uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
+    /* Pay back call + interest */
+    skip(1);
+    uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
+    uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
 
-    // assertEq(estimatedInterest, interestOwedAt);
-    // borrower.pay(100 + estimatedInterest);
+    assertEq(estimatedInterest, interestOwedAt);
+    borrower.pay(100 + estimatedInterest);
 
-    // uint256 calledTrancheInterestPaid = ((100 * estimatedInterest) / 1000);
-    // uint256 calledTokenInterestAvailableToWithdraw = ((calledTrancheInterestPaid * 90) / (100));
+    uint256 calledTrancheInterestPaid = ((100 * estimatedInterest) / 1000);
+    uint256 calledTokenInterestAvailableToWithdraw = ((calledTrancheInterestPaid * 90) / (100));
 
-    // (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
-    //   lender.callRequestTokenId()
-    // );
-    // assertEq(interestRedeemable, calledTokenInterestAvailableToWithdraw, "interest redeemable");
-    // assertZero(principalRedeemable, "principal redeemable");
+    (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
+      lender.callRequestTokenId()
+    );
+    assertEq(interestRedeemable, calledTokenInterestAvailableToWithdraw, "interest redeemable");
+    assertZero(principalRedeemable, "principal redeemable");
 
-    // /* Fast forward to just before repayment due date */ {
-    //   vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
-    // }
+    /* Fast forward to just before repayment due date */ {
+      vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
+    }
 
-    // /* Can't yet claim call principal, only interest paid. */ {
-    //   vm.expectRevert();
-    //   lender.withdraw(calledTokenInterestAvailableToWithdraw + 1);
-    // }
+    /* Can't yet claim call principal, only interest paid. */ {
+      vm.expectRevert();
+      lender.withdraw(calledTokenInterestAvailableToWithdraw + 1);
+    }
 
-    // /* Now go to repayment date */ {
-    //   vm.warp(loan.nextDueTimeAt(block.timestamp));
-    // }
+    /* Now go to repayment date */ {
+      vm.warp(loan.nextDueTimeAt(block.timestamp));
+    }
 
-    // (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
-    //   lender.callRequestTokenId()
-    // );
-    // assertEq(interestRedeemable, calledTokenInterestAvailableToWithdraw, "interest redeemable");
-    // assertZero(principalRedeemable, "principal redeemable");
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+      lender.callRequestTokenId()
+    );
+    assertEq(interestRedeemable, calledTokenInterestAvailableToWithdraw, "interest redeemable");
+    assertZero(principalRedeemable, "principal redeemable");
 
-    // /* Cannot claim call */ {
-    //   vm.expectRevert();
-    //   lender.withdraw(interestRedeemable + 1);
-    // }
+    /* Cannot claim call */ {
+      vm.expectRevert();
+      lender.withdraw(interestRedeemable + 1);
+    }
 
-    // vm.warp(loan.nextPrincipalDueTime());
-    // /* Can claim interest and principal */
-    // // Owed interest on called token is:
-    // // Tranche interest paid = (tranche deposit size/total deposit size) * estimatedInterest
-    // // (called deposit size/tranche deposit size) * Tranche interest paid  * (100% - reserve fee percent).
-    // // In this case, the Tranche interest paid is 100/1000 * estimatedInterest
-    // // and 100% - reserve fee percent is 100% - 10% = 90 / 100
-    // {
-    //   lender.withdraw(calledTokenInterestAvailableToWithdraw + 100);
-    // }
+    vm.warp(loan.nextPrincipalDueTime());
+    /* Can claim interest and principal */
+    // Owed interest on called token is:
+    // Tranche interest paid = (tranche deposit size/total deposit size) * estimatedInterest
+    // (called deposit size/tranche deposit size) * Tranche interest paid  * (100% - reserve fee percent).
+    // In this case, the Tranche interest paid is 100/1000 * estimatedInterest
+    // and 100% - reserve fee percent is 100% - 10% = 90 / 100
+    {
+      lender.withdraw(calledTokenInterestAvailableToWithdraw + 100);
+    }
   }
 
   // Submit call, attempt to pay whole interest
   // Assert that interest is fully paid off, no dust remains.
-  // TODO: Revert change after payment upgrade
-  // function test_interestDustIssue() public {
-  //   /* Deposit into loan */ {
-  //     lender.deposit(usdcVal(1000));
-  //     assertTrue(loan.loanPhase() == LoanPhase.Funding);
-  //   }
+  function test_interestDustIssue() public {
+    /* Deposit into loan */ {
+      lender.deposit(usdcVal(1000));
+      assertTrue(loan.loanPhase() == LoanPhase.Funding);
+    }
 
-  //   /* Full drawdown */ {
-  //     skip(1);
+    /* Full drawdown */ {
+      skip(1);
 
-  //     borrower.drawdown(usdcVal(1000));
-  //     assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
-  //   }
+      borrower.drawdown(usdcVal(1000));
+      assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
+    }
 
-  //   /* Fast forward past drawdown period */ {
-  //     while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
-  //       skip(60 * 60 * 24);
-  //     }
-  //     assertTrue(loan.loanPhase() == LoanPhase.InProgress);
-  //   }
+    /* Fast forward past drawdown period */ {
+      while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+        skip(60 * 60 * 24);
+      }
+      assertTrue(loan.loanPhase() == LoanPhase.InProgress);
+    }
 
-  //   /* Immediately submit a call */ {
-  //     lender.submitCall(usdcVal(100));
-  //   }
+    /* Immediately submit a call */ {
+      lender.submitCall(usdcVal(100));
+    }
 
-  //   /* Pay back call + interest */
-  //   skip(1);
-  //   uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
+    /* Pay back call + interest */
+    skip(1);
+    uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
 
-  //   borrower.pay(usdcVal(100) + interestOwedAt);
+    borrower.pay(usdcVal(100) + interestOwedAt);
 
-  //   // Interest should remain 0 until next principal due time
-  //   for (uint256 i = 0; i < 2; i++) {
-  //     /* Fast forward to just before repayment due date */
-  //     vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
-  //     uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
-  //     uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
+    // Interest should remain 0 until next principal due time
+    for (uint256 i = 0; i < 2; i++) {
+      /* Fast forward to just before repayment due date */
+      vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
+      uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
+      uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextPrincipalDueTime());
 
-  //     assertZero(estimatedInterest, "estimated interest after payment");
-  //     assertZero(interestOwedAt, "estimated interest after payment");
-  //   }
-  // }
+      assertZero(estimatedInterest, "estimated interest after payment");
+      assertZero(interestOwedAt, "estimated interest after payment");
+    }
+  }
 }

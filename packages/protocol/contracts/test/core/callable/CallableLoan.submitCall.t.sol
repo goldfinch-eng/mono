@@ -42,11 +42,9 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.termEndTime()
     );
     vm.warp(block.timestamp + secondsElapsedSinceDrawdownPeriod);
-    // TODO: Revert comment after payment + call submission upgrade
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(ICallableLoanErrors.NotAuthorizedToSubmitCall.selector, rando, token)
-    // );
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.NotAuthorizedToSubmitCall.selector, rando, token)
+    );
     submitCall(callableLoan, depositAmount - drawdownAmount, token, rando);
   }
 
@@ -60,8 +58,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(loanLimit);
     vm.warp(block.timestamp + secondsElapsedSinceLoanConstruction);
     // This state is so invalid there are many reasons it could revert.
-    // TODO: Revert after payment + call submission upgrade
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert();
     submitCall(callableLoan, callAmount, tokenId, caller);
   }
 
@@ -79,16 +76,14 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
     uint256 callAmount = bound(callAmount, 1, depositAmount);
     vm.warp(block.timestamp + secondsElapsedSinceDeposit);
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
-    //     token,
-    //     callAmount,
-    //     0
-    //   )
-    // );
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        token,
+        callAmount,
+        0
+      )
+    );
     submitCall(callableLoan, callAmount, token, depositor);
   }
 
@@ -115,22 +110,19 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     vm.warp(block.timestamp + secondsElapsedSinceDrawdown);
 
-    // TODO: Revert after payment + call submission upgrade
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
-
-    // if (depositAmount == drawdownAmount) {
-    //   vm.expectRevert(
-    //     abi.encodeWithSelector(
-    //       ICallableLoanErrors.InvalidLoanPhase.selector,
-    //       LoanPhase.DrawdownPeriod,
-    //       LoanPhase.InProgress
-    //     )
-    //   );
-    // } else {
-    //   vm.expectRevert(
-    //     abi.encodeWithSelector(ICallableLoanErrors.CannotWithdrawInDrawdownPeriod.selector)
-    //   );
-    // }
+    if (depositAmount == drawdownAmount) {
+      vm.expectRevert(
+        abi.encodeWithSelector(
+          ICallableLoanErrors.InvalidLoanPhase.selector,
+          LoanPhase.DrawdownPeriod,
+          LoanPhase.InProgress
+        )
+      );
+    } else {
+      vm.expectRevert(
+        abi.encodeWithSelector(ICallableLoanErrors.CannotWithdrawInDrawdownPeriod.selector)
+      );
+    }
 
     submitCall(callableLoan, callAmount, token, depositor);
   }
@@ -161,9 +153,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.nextPrincipalDueTime() - 1
     );
     vm.warp(secondsElapsedAfterLockup);
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
     submitCall(callableLoan, callAmount, token, user);
 
     // Lockup period of call request period 2
@@ -175,9 +165,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       callableLoan.nextPrincipalDueTime() - 1
     );
     vm.warp(secondsElapsedAfterLockup);
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(ICallableLoanErrors.CannotSubmitCallInLockupPeriod.selector);
     submitCall(callableLoan, callAmount, token, user);
 
     // Lockup period of call request period 3
@@ -186,9 +174,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     // Anything after call request period 3 would submit to uncalled tranche, and should be prohibited.
     vm.warp(block.timestamp + secondsElapsedAfterLastLockup);
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(ICallableLoanErrors.TooLateToSubmitCallRequests.selector);
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(ICallableLoanErrors.TooLateToSubmitCallRequests.selector);
     submitCall(callableLoan, callAmount, token, user);
   }
 
@@ -215,22 +201,18 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     vm.warp(callableLoan.nextDueTime() - 1);
     vm.startPrank(DEPOSITOR);
 
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
-    //     tokenId,
-    //     callAmount,
-    //     depositAmount
-    //   )
-    // );
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        tokenId,
+        callAmount,
+        depositAmount
+      )
+    );
     callableLoan.submitCall(callAmount, tokenId);
 
     // leave 1 atom left in the call request
     uint256 validCallAmount = depositAmount - 1e6;
-    // TODO: Revert after payment + call submission upgrade
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
     (uint256 callRequestTokenId, uint256 remainingTokenId) = callableLoan.submitCall(
       validCallAmount,
       tokenId
@@ -239,27 +221,24 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint remainingAmount = depositAmount - validCallAmount;
     uint invalidCallAmount = remainingAmount + 1;
 
-    // call for
-    // TODO: Revert after payment + call submission upgrade
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(
-    //     ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
-    //     remainingTokenId,
-    //     invalidCallAmount,
-    //     remainingAmount
-    //   )
-    // );
-    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresUpgrade.selector));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        remainingTokenId,
+        invalidCallAmount,
+        remainingAmount
+      )
+    );
     callableLoan.submitCall(invalidCallAmount, remainingTokenId);
   }
 
-  // function testSubmitsCallForCorrectTranche(
-  //   address user,
-  //   uint256 depositAmount,
-  //   uint256 drawdownAmount,
-  //   uint256 callAmount,
-  //   uint256 secondsElapsed
-  // ) public {
-  //   // TODO(PR):
-  // }
+  function testSubmitsCallForCorrectTranche(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 secondsElapsed
+  ) public {
+    // TODO(PR):
+  }
 }
