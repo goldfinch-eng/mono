@@ -200,7 +200,7 @@ const EarnPage: NextPageWithLayout<
                   liquidity={
                     loan.__typename === "TranchedPool"
                       ? "End of loan term"
-                      : "Callable loan"
+                      : "Quarterly"
                   }
                   href={`/pools/${loan.id}`}
                 />
