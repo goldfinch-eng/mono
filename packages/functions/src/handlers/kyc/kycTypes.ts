@@ -1,4 +1,4 @@
-export type KycStatus = "current" | "pending" | "expired" | "rejected"
+export type KycStatus = "unknown" | "approved" | "failed" | "pending" | "expired"
 
 // Possible accreditation statuses for PM users stored in our db
 export type KycAccreditationStatus =

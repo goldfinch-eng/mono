@@ -138,7 +138,7 @@ export function getConfig(functions: typeof FirebaseFunctions): FirebaseConfig {
   if (isFirebaseConfig(result)) {
     return result
   } else {
-    throw new Error(`Firebase config failed type guard. result:${result}`)
+    throw new Error(`Firebase config failed type guard. result:${JSON.stringify(result)}`)
   }
 }
 

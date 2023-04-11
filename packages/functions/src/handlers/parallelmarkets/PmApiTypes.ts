@@ -23,17 +23,17 @@ export type PmAccreditationPayload = {
 
 export type PmPayload = PmIdentityPayload | PmAccreditationPayload
 
-export type ConsistencyLevel = "high" | "medium" | "low" | "none"
-export type IdentityDocumentValidity = "valid" | "valid_maybe_expired" | "expired" | "unreadable"
+export type PmConsistencyLevel = "high" | "medium" | "low" | "none"
+export type PmIdentityDocumentValidity = "valid" | "valid_maybe_expired" | "expired" | "unreadable"
 
 export type PmIndividualConsistencySummary = {
-  overallRecordsMatchLevel: ConsistencyLevel
+  overallRecordsMatchLevel: PmConsistencyLevel
   // If null then they have not submitted documents yet
-  idValidity: IdentityDocumentValidity | null
+  idValidity: PmIdentityDocumentValidity | null
 }
 
 export type PmBusinessConsistencySummary = {
-  overallRecordsMatchLevel: ConsistencyLevel
+  overallRecordsMatchLevel: PmConsistencyLevel
 }
 
 // For full description of fields see https://developer.parallelmarkets.com/docs/server/data-structures#individual-identity-details
@@ -61,16 +61,16 @@ export type PmIndividualIdentity = {
   id: string
   type: "individual"
   identityDetails: PmIndividualIdentityDetails
-  accessExpiresAt: string | null
-  accessRevokedBy: string | null
+  accessExpiresAt?: string
+  accessRevokedBy?: string
 }
 
 export type PmBusinessIdentity = {
   id: string
   type: "business"
   identityDetails: PmBusinessIdentityDetails
-  accessExpiresAt: string | null
-  accessRevokedBy: string | null
+  accessExpiresAt?: string
+  accessRevokedBy?: string
 }
 
 export type PmIdentity = PmIndividualIdentity | PmBusinessIdentity
@@ -158,6 +158,7 @@ export type PmAccreditation<Type, Accreditations> = {
   accreditations: Accreditations[]
 }
 
-export type PmAccreditationResponse =
-  | PmAccreditation<"individual", PmAccreditationIndividual>
-  | PmAccreditation<"business", PmAccreditationBusiness>
+export type PmBusinessAccreditation = PmAccreditation<"business", PmAccreditationBusiness>
+export type PmIndividualAccreditation = PmAccreditation<"individual", PmAccreditationIndividual>
+
+export type PmAccreditationResponse = PmBusinessAccreditation | PmIndividualAccreditation

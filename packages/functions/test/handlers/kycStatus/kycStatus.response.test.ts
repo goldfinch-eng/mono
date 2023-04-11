@@ -1,0 +1,382 @@
+import chai from "chai"
+import chaiSubset from "chai-subset"
+import {BaseProvider} from "@ethersproject/providers"
+import * as firebaseTesting from "@firebase/rules-unit-testing"
+import * as admin from "firebase-admin"
+import {fake} from "sinon"
+
+import {getUsers, setTestFirestore} from "../../../src/db"
+import {kycStatus} from "../../../src"
+
+chai.use(chaiSubset)
+import firestore = admin.firestore
+import Firestore = firestore.Firestore
+import {Request} from "express"
+import {assertNonNullable} from "@goldfinch-eng/utils"
+import {mockGetBlockchain} from "../../../src/helpers"
+import {expectResponse} from "../../utils"
+import {ethers} from "ethers"
+import {setTestConfig} from "../../../src/config"
+
+type FakeBlock = {
+  number: number
+  timestamp: number
+}
+
+const genPlaintext = (blocknum: number | string) => `Sign in to Goldfinch: ${blocknum}`
+
+describe("kycStatus response", async () => {
+  const testAccount = {
+    address: "0xA57415BeCcA125Ee98B04b229A0Af367f4144030",
+    privateKey: "0x20c5c29e29791089b4b60e65966adb104f540a7597ee1e97c6760e95c7b780eb",
+  }
+  const testWallet = new ethers.Wallet(testAccount.privateKey)
+
+  const nonLegacyTestAccount = {
+    address: "0x05A136025F4fe345387fCfBE0f8914eCBe12B3B6",
+    privateKey: "6bb74f952041e68691d7b75bdcf4d4eedae2346d884f001df95f16a1f5d99f70",
+  }
+  const nonLegacyTestWallet = new ethers.Wallet(nonLegacyTestAccount.privateKey)
+
+  let testFirestore: Firestore
+  let testApp: admin.app.App
+  const projectId = "goldfinch-frontend-test"
+  let users: firestore.CollectionReference<firestore.DocumentData>
+
+  const currentBlockNum = 84
+  const yesterdayBlockNum = 80
+  const futureBlockNum = 85
+
+  const currentBlockTimestamp = 1629819124
+  const timestampByBlockNum: {[blockNum: number]: number} = {
+    [currentBlockNum]: currentBlockTimestamp,
+    [yesterdayBlockNum]: currentBlockTimestamp - 60 * 60 * 24 - 1,
+    [futureBlockNum]: currentBlockTimestamp + 1,
+  }
+
+  before(async () => {
+    const mock = fake.returns({
+      getBlock: async (blockTag: string | number): Promise<FakeBlock> => {
+        const blockNum = blockTag === "latest" ? currentBlockNum : typeof blockTag === "number" ? blockTag : undefined
+        assertNonNullable(blockNum)
+        const timestamp = timestampByBlockNum[blockNum]
+        assertNonNullable(timestamp)
+        return {
+          number: blockNum,
+          timestamp,
+        }
+      },
+    } as BaseProvider)
+
+    mockGetBlockchain(mock)
+  })
+
+  beforeEach(() => {
+    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
+    testFirestore = testApp.firestore()
+    setTestFirestore(testFirestore)
+    setTestConfig({
+      kyc: {allowed_origins: "http://localhost:3000"},
+      persona: {allowed_ips: ""},
+    })
+    users = getUsers(testFirestore)
+  })
+
+  after(async () => {
+    mockGetBlockchain(undefined)
+  })
+
+  afterEach(async () => {
+    await firebaseTesting.clearFirestoreData({projectId})
+  })
+
+  const generateKycRequest = (
+    address: string,
+    signature: string,
+    signatureBlockNum: number | string | undefined,
+  ): Request => {
+    return {
+      headers: {
+        "x-goldfinch-address": address,
+        "x-goldfinch-signature": signature,
+        "x-goldfinch-signature-block-num": signatureBlockNum,
+        "x-goldfinch-signature-plaintext": signatureBlockNum ? genPlaintext(signatureBlockNum) : "",
+      },
+      query: {},
+    } as unknown as Request
+  }
+
+  describe("when the user doesn't exist in the db", async () => {
+    describe("when the user exists on the legacy list", async () => {
+      it("returns status legacy", async () => {
+        const sig = await testWallet.signMessage(genPlaintext(currentBlockNum))
+        const req = generateKycRequest(testWallet.address, sig, currentBlockNum)
+        const expectedResponse = {
+          address: testWallet.address,
+          status: "approved",
+          parallelMarkets: {
+            identityStatus: "legacy",
+            accreditationStatus: "legacy",
+          },
+        }
+        await kycStatus(req, expectResponse(200, expectedResponse))
+      })
+    })
+
+    describe("when the user does NOT exist on the legacy list", () => {
+      it("returns status unknown", async () => {
+        const sig = await nonLegacyTestWallet.signMessage(genPlaintext(currentBlockNum))
+        const req = generateKycRequest(nonLegacyTestWallet.address, sig, currentBlockNum)
+        await kycStatus(req, expectResponse(200, {address: nonLegacyTestWallet.address, status: "unknown"}))
+      })
+    })
+  })
+
+  describe("when the user exists in the db", async () => {
+    describe("parallel markets", () => {
+      describe("on the legacy list", () => {
+        it("ignores their legacy status", async () => {
+          const sig = await testWallet.signMessage(genPlaintext(currentBlockNum))
+          const req = generateKycRequest(testWallet.address, sig, currentBlockNum)
+
+          await users.doc(testWallet.address.toLowerCase()).set({
+            address: testWallet.address.toLowerCase(),
+            status: "approved",
+            parallelMarkets: {
+              identityStatus: "approved",
+              accreditationStatus: "approved",
+            },
+          })
+
+          await kycStatus(
+            req,
+            expectResponse(200, {
+              address: testWallet.address,
+              status: "approved",
+              parallelMarkets: {
+                identityStatus: "approved",
+                accreditationStatus: "approved",
+              },
+            }),
+          )
+        })
+      })
+
+      describe("not on the legacy list", () => {
+        let sig
+        let req
+
+        beforeEach(async () => {
+          sig = await nonLegacyTestWallet.signMessage(genPlaintext(currentBlockNum))
+          req = generateKycRequest(nonLegacyTestWallet.address, sig, currentBlockNum)
+        })
+
+        it("has access revocation timestamp in response if revocation timestamps in db", async () => {
+          await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+            address: nonLegacyTestWallet.address.toLowerCase(),
+            parallelMarkets: {
+              identityStatus: "approved",
+              accreditationStatus: "approved",
+              accreditationAccessRevocationAt: 123495584,
+              identityAccessRevocationAt: 34897598479,
+            },
+          })
+
+          const expectedResponse = {
+            address: nonLegacyTestWallet.address,
+            status: "approved",
+            parallelMarkets: {
+              identityStatus: "approved",
+              accreditationStatus: "approved",
+              // Should be be the earlier of the two timestamps
+              accessRevocationBy: 123495584,
+            },
+          }
+
+          await kycStatus(req, expectResponse(200, expectedResponse))
+        })
+
+        it("has top level status pending if identityStatus is pending or accreditationStatus is pending and the other status is approved or pending", async () => {
+          const identityStatuses = ["pending_documents", "pending_verification", "approved"]
+          const accreditationStatuses = ["pending_documents", "pending_verification", "approved"]
+          for (const identityStatus of identityStatuses) {
+            for (const accreditationStatus of accreditationStatuses) {
+              // Skip the non pending case
+              if (identityStatus === "approved" && accreditationStatus === "approved") {
+                continue
+              }
+
+              await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+                address: nonLegacyTestWallet.address.toLowerCase(),
+                parallelMarkets: {
+                  identityStatus,
+                  accreditationStatus,
+                },
+              })
+
+              const expectedResponse = {
+                address: nonLegacyTestWallet.address,
+                status: "pending",
+                parallelMarkets: {
+                  identityStatus,
+                  accreditationStatus,
+                },
+              }
+              await kycStatus(req, expectResponse(200, expectedResponse))
+            }
+          }
+        })
+
+        it("has top level status failed if identityStatus OR accreditation status is failed", async () => {
+          // When identity status is failed
+          for (const accreditationStatus of ["pending_documents", "pending_verification", "approved", "expired"]) {
+            await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+              address: nonLegacyTestWallet.address.toLowerCase(),
+              parallelMarkets: {
+                identityStatus: "failed",
+                accreditationStatus,
+              },
+            })
+            const expectedResponse = {
+              address: nonLegacyTestWallet.address,
+              status: "failed",
+              parallelMarkets: {
+                identityStatus: "failed",
+                accreditationStatus,
+              },
+            }
+            await kycStatus(req, expectResponse(200, expectedResponse))
+          }
+
+          // When accreditation status is failed
+          for (const identityStatus of ["pending_documents", "pending_verification", "approved", "expired"]) {
+            await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+              address: nonLegacyTestWallet.address.toLowerCase(),
+              parallelMarkets: {
+                identityStatus,
+                accreditationStatus: "failed",
+              },
+            })
+            const expectedResponse = {
+              address: nonLegacyTestWallet.address,
+              status: "failed",
+              parallelMarkets: {
+                identityStatus,
+                accreditationStatus: "failed",
+              },
+            }
+            await kycStatus(req, expectResponse(200, expectedResponse))
+          }
+
+          // When they are both failed
+          await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+            address: nonLegacyTestWallet.address.toLowerCase(),
+            parallelMarkets: {
+              identityStatus: "failed",
+              accreditationStatus: "failed",
+            },
+          })
+          const expectedResponse = {
+            address: nonLegacyTestWallet.address,
+            status: "failed",
+            parallelMarkets: {
+              identityStatus: "failed",
+              accreditationStatus: "failed",
+            },
+          }
+          await kycStatus(req, expectResponse(200, expectedResponse))
+        })
+
+        it("has top level status expired if identityStatus OR accreditation status if expired", async () => {
+          // When identity status is expired
+          for (const accreditationStatus of ["pending_documents", "pending_verification", "approved"]) {
+            await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+              address: nonLegacyTestWallet.address.toLowerCase(),
+              parallelMarkets: {
+                identityStatus: "expired",
+                accreditationStatus,
+              },
+            })
+            const expectedResponse = {
+              address: nonLegacyTestWallet.address,
+              status: "expired",
+              parallelMarkets: {
+                identityStatus: "expired",
+                accreditationStatus,
+              },
+            }
+            await kycStatus(req, expectResponse(200, expectedResponse))
+          }
+
+          // When accreditation status is expired
+          for (const identityStatus of ["pending_documents", "pending_verification", "approved"]) {
+            await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+              address: nonLegacyTestWallet.address.toLowerCase(),
+              parallelMarkets: {
+                identityStatus,
+                accreditationStatus: "expired",
+              },
+            })
+            const expectedResponse = {
+              address: nonLegacyTestWallet.address,
+              status: "expired",
+              parallelMarkets: {
+                identityStatus,
+                accreditationStatus: "expired",
+              },
+            }
+            await kycStatus(req, expectResponse(200, expectedResponse))
+          }
+
+          // When they are both expired
+          await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
+            address: nonLegacyTestWallet.address.toLowerCase(),
+            parallelMarkets: {
+              identityStatus: "expired",
+              accreditationStatus: "expired",
+            },
+          })
+          const expectedResponse = {
+            address: nonLegacyTestWallet.address,
+            status: "expired",
+            parallelMarkets: {
+              identityStatus: "expired",
+              accreditationStatus: "expired",
+            },
+          }
+          await kycStatus(req, expectResponse(200, expectedResponse))
+        })
+      })
+    })
+
+    it("returns the status and countrycode based on status in the db", async () => {
+      const sig = await testWallet.signMessage(genPlaintext(currentBlockNum))
+      const req = generateKycRequest(testWallet.address, sig, currentBlockNum)
+
+      await users.doc(testWallet.address.toLowerCase()).set({
+        address: testWallet.address.toLowerCase(),
+        persona: {},
+      })
+      await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
+
+      await users.doc(testWallet.address.toLowerCase()).set({
+        address: testWallet.address.toLowerCase(),
+        persona: {status: "created"},
+      })
+      await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
+
+      await users.doc(testWallet.address.toLowerCase()).set({
+        address: testWallet.address.toLowerCase(),
+        persona: {status: "completed"},
+        countryCode: "US",
+      })
+      await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "approved", countryCode: "US"}))
+
+      await users.doc(testWallet.address.toLowerCase()).set({
+        address: testWallet.address.toLowerCase(),
+        persona: {status: "expired"},
+      })
+      await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
+    })
+  })
+})

@@ -1,20 +1,20 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {setTestFirestore, getUsers} from "../../src/db"
-import {parallelMarketsDemoWebhookProcessor} from "../../src"
+import {setTestFirestore, getUsers} from "../../../src/db"
+import {parallelMarketsDemoWebhookProcessor} from "../../../src"
 import {Request} from "express"
 
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
-import {expectResponse} from "../utils"
-import {processIdentityWebhook} from "../../src/handlers/parallelmarkets/webhookHelpers"
-import {PmIdentity, PmIdentityPayload} from "../../src/handlers/parallelmarkets/PmApiTypes"
+import {expectResponse} from "../../utils"
+import {processIdentityWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
+import {PmIdentity, PmIdentityPayload} from "../../../src/handlers/parallelmarkets/PmApiTypes"
 
 import {stub} from "sinon"
 import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
-import {setTestConfig} from "../../src/config"
+import {setTestConfig} from "../../../src/config"
 
 const PENDING_ADDRESS = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
 const PENDING_USER = {
@@ -64,7 +64,7 @@ const VALID_REQUEST: PmRequest = {
   ),
 }
 
-describe.skip("parallelMarketsDemoWebhookProcessor", async () => {
+describe.skip("parallelMarketsDemoWebhookProcessor validation", async () => {
   const projectId = "goldfinch-frontend-test"
 
   let testFirestore: Firestore

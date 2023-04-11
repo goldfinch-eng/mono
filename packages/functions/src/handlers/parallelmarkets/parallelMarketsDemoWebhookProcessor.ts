@@ -2,9 +2,11 @@
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../../helpers"
 import {https} from "firebase-functions"
+import * as functions from "firebase-functions"
 // import {assertIsString} from "@goldfinch-eng/utils"
 import {PmPayload} from "./PmApiTypes"
 import {processAccreditationWebhook, processIdentityWebhook} from "./webhookHelpers"
+import {getConfig} from "../../config"
 
 // const PARALLEL_TIMESTAMP_HEADER = "Parallel-Timestamp"
 // const PARALLEL_SIGNATURE_HEADER = "Parallel-Signature"
@@ -49,6 +51,14 @@ export const parallelMarketsDemoWebhookProcessor = genRequestHandler({
     // }
 
     const payload = firebaseRequest.body as PmPayload
+
+    console.log("Received payload")
+    console.log(payload)
+
+    // Get the config and log all the variables just to verify that they are there
+    const config = getConfig(functions)
+    console.log("Extracted config")
+    console.log(config)
 
     switch (payload.scope) {
       case "identity":

@@ -2,8 +2,6 @@
 import {assertUnreachable} from "@goldfinch-eng/utils"
 import {ParallelMarkets} from "./PmApi"
 import {
-  ConsistencyLevel,
-  IdentityDocumentValidity,
   PmAccreditationPayload,
   PmBusinessIdentity,
   PmEntity,
@@ -13,6 +11,11 @@ import {
 import {getUsers} from "../../db"
 import * as admin from "firebase-admin"
 import {FieldPath} from "@google-cloud/firestore"
+import {
+  getAccreditationStatus,
+  getBusinessIdentityStatus,
+  getIndividualIdentityStatus,
+} from "../kyc/parallelMarketsConverter"
 
 export const processIdentityWebhook = async (payload: PmIdentityPayload) => {
   const {event, entity} = payload
@@ -61,74 +64,159 @@ const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
       await processBusinessIdentityDataUpdate(identity)
       break
     default:
-      // TODO - how to handle the default case?
       break
   }
 }
 
+const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
+  console.log(`Processing accreditation data update for (${id}, ${type})`)
+  const accreditation = await ParallelMarkets.getAccreditations(id)
+
+  console.log(`Fetched PM Accreditation for ${id}`)
+  console.log(accreditation)
+
+  if (!(accreditation.type === "individual" || accreditation.type === "business")) {
+    // TODO - useful error message
+    return
+  }
+
+  const accreditationStatus = getAccreditationStatus(accreditation)
+  console.log(`Accreditation status is ${accreditationStatus}`)
+
+  const user = await getUserDocByPMId(accreditation.id)
+
+  if (!user) {
+    return
+  }
+
+  console.log(`Found user for PM id ${accreditation.id}`)
+  console.log(user.data())
+
+  const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const dataToMerge = {
+    parallelMarkets: {
+      accreditationStatus,
+    },
+  }
+  console.log("data to merge")
+  console.log(dataToMerge)
+  await userRef.set(dataToMerge, {merge: true})
+}
+
 const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
+  console.log("Processing individual identity data update")
   const {consistencySummary} = identityDetails
   const {overallRecordsMatchLevel, idValidity} = consistencySummary
 
-  const identityStatus = getIdentityStatus(overallRecordsMatchLevel, idValidity)
+  const identityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
+  console.log(`The individual identity status is ${identityStatus}`)
 
   const user = await getUserDocByPMId(id)
+
   if (!user) {
-    console.log(`User not found for PM id ${id}`)
     return
   }
 
   console.log(`Found user for PM id ${id}`)
   console.log(user.data())
-  // Overwrite the parallel_markets.identity_status key
+
+  // Overwrite the parallelMarkets.identity_status key
+  console.log("overwriting user with data")
   const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
-  await userRef.set(
-    {
-      parallel_markets: {
-        identity_status: identityStatus,
-      },
+  const dataToMerge = {
+    parallelMarkets: {
+      identityStatus,
     },
-    {
-      merge: true,
-    },
-  )
+  }
+  await userRef.set(dataToMerge, {merge: true})
 }
 
-const processBusinessIdentityDataUpdate = async ({identityDetails}: PmBusinessIdentity) => {
+const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusinessIdentity) => {
   console.log("Processing business identity data update")
+  const {consistencySummary} = identityDetails
+  const {overallRecordsMatchLevel} = consistencySummary
+
+  const identityStatus = getBusinessIdentityStatus(overallRecordsMatchLevel)
+  console.log(`The business identity status is ${identityStatus}`)
+
+  const user = await getUserDocByPMId(id)
+
+  if (!user) {
+    return
+  }
+
+  console.log(`Found user for PM id ${id}`)
+  console.log(user.data())
+
+  // Overwrite the parallelMarkets.identity_status key
+  const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const dataToMerge = {
+    parallelMarkets: {
+      identityStatus,
+    },
+  }
+  console.log("data to merge")
+  console.log(dataToMerge)
+  await userRef.set(dataToMerge, {merge: true})
 }
 
 const processIdentityRevocationScheduled = async ({id, type}: PmEntity) => {
   console.log(`Processing identity access revocation for (${id}, ${type}`)
-}
 
-const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
-  console.log(`Processing accreditation data update for (${id}, ${type})`)
+  // Call the Profiles API to determine the timestamp when access will be revoked
+  const profile = await ParallelMarkets.getProfile(id)
+  if (profile.accessExpiresAt) {
+    const expiresAtUnixTimestamp = Date.parse(profile.accessExpiresAt) / 1000
+    // Write timestamp to user
+    const user = await getUserDocByPMId(id)
+    if (!user) {
+      return
+    }
+    console.log(`Found user for PM id ${id}`)
+    console.log(user.data())
+
+    const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+    const dataToMerge = {
+      parallelMarkets: {
+        identityAccessRevocationAt: expiresAtUnixTimestamp,
+      },
+    }
+    console.log("Merging data")
+    console.log(dataToMerge)
+    await userRef.set(dataToMerge, {merge: true})
+  }
 }
 
 const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => {
   console.log(`Processing accreditation access revocation for (${id}, ${type})`)
-}
 
-const getIdentityStatus = (overallRecordsLevelMatch: ConsistencyLevel, idValidity: IdentityDocumentValidity | null) => {
-  // TODO - automatically set legacy users to approved
-  if (idValidity === null) {
-    // We're still waiting for them to submit their identity documents
-    return "pending"
-  } else if (idValidity === "expired") {
-    return "documents_expired"
-  } else if (idValidity === "valid" && overallRecordsLevelMatch === "high") {
-    return "approved"
-  } else {
-    // In this case either the id is not valid or the records level match is not strong.
-    // We consider this a failure
-    return "failed"
+  // Call the Profiles API to determine the timestamp when access will be revoked
+  const profile = await ParallelMarkets.getProfile(id)
+  if (profile.accessExpiresAt) {
+    const expiresAtUnixTimestamp = Date.parse(profile.accessExpiresAt) / 1000
+    // Write timestamp to user
+    const user = await getUserDocByPMId(id)
+    if (!user) {
+      return
+    }
+    console.log(`Found user for PM id ${id}`)
+    console.log(user.data())
+
+    const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+    const dataToMerge = {
+      parallelMarkets: {
+        accreditationAccessRevocationAt: expiresAtUnixTimestamp,
+      },
+    }
+    console.log("Merging data")
+    console.log(dataToMerge)
+    await userRef.set(dataToMerge, {merge: true})
   }
 }
 
 const getUserDocByPMId = async (id: string) => {
   const users = getUsers(admin.firestore())
-  const fieldPath = new FieldPath("parallel_markets", "id")
+  const fieldPath = new FieldPath("parallelMarkets", "id")
   const userSnapshot = await users.where(fieldPath, "==", id).get()
   if (userSnapshot.empty) {
     console.log("user not found")
@@ -138,5 +226,6 @@ const getUserDocByPMId = async (id: string) => {
     return undefined
   }
 
+  console.log("found user... returning")
   return userSnapshot.docs.at(0)
 }

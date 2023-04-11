@@ -66,7 +66,8 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
 
     return {
       id,
-      accreditationStatus: getAccreditationStatus(accreditation.accreditations),
+      // We should use the logic in the webhook helper here
+      accreditationStatus: getAccreditationStatus(accreditation),
       identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
       countryCode: countryIsUS ? "US" : incorporationCountry,
     }
@@ -78,7 +79,7 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
 
     return {
       id,
-      accreditationStatus: getAccreditationStatus(accreditation.accreditations),
+      accreditationStatus: getAccreditationStatus(accreditation),
       identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
       countryCode: countryIsUS ? "US" : citizenshipCountry,
     }
