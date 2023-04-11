@@ -174,7 +174,7 @@ describe.skip("parallelMarketsDemoWebhookProcessor", async () => {
                 citizenshipCountry: "CA",
                 completedAt: "1231239093809",
                 consistencySummary: {
-                  overallRecordsLevelMatch: "high",
+                  overallRecordsMatchLevel: "high",
                   idValidity: null,
                 },
                 residenceLocation: {

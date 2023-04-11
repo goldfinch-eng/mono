@@ -4,13 +4,13 @@ import {PmAccreditationResponse, PmIdentity, PmOauthResponse, PmProfileResponse}
 
 const PROFILE_API_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://api.parallelmarkets.com/v1/identity"
-    : "https://demo-api.parallelmarkets.com/v1/identity"
+    ? "https://api.parallelmarkets.com/v1"
+    : "https://demo-api.parallelmarkets.com/v1"
 
 const PM_API_KEY = process.env.NODE_ENV === "production" ? process.env.PM_PROD_API_KEY : process.env.PM_DEMO_API_KEY
 const PM_CLIENT_ID = ""
 const PM_CLIENT_SECRET = ""
-const PM_REDIRECT_URI = ""
+const PM_REDIRECT_URI = "http://localhost:3001/account"
 
 export const ParallelMarkets = {
   getIdentity: async (id: string): Promise<PmIdentity> => {
@@ -18,13 +18,13 @@ export const ParallelMarkets = {
   },
 
   getIdentityForAccessToken: async (accessToken: string): Promise<PmIdentity> => {
-    return query("/identity", {overrideToken: accessToken, useAuth: false})
+    return query("/identity", {overrideToken: accessToken})
   },
 
   tradeCodeForToken: async (authCode: string): Promise<PmOauthResponse> => {
     return query("/oauth/token", {
       method: "POST",
-      body: {
+      queryParams: {
         code: authCode,
         client_id: PM_CLIENT_ID,
         client_secret: PM_CLIENT_SECRET,
@@ -40,7 +40,7 @@ export const ParallelMarkets = {
   },
 
   getProfileForAccessToken: async (accessToken: string): Promise<PmProfileResponse> => {
-    return query("/me", {overrideToken: accessToken, useAuth: false})
+    return query("/me", {overrideToken: accessToken})
   },
 
   getAccreditations: async (id: string): Promise<PmAccreditationResponse> => {
@@ -48,23 +48,49 @@ export const ParallelMarkets = {
   },
 
   getAccreditationsForAccessToken: async (accessToken: string): Promise<PmAccreditationResponse> => {
-    return query("/accreditations", {overrideToken: accessToken, useAuth: false})
+    return query("/accreditations", {overrideToken: accessToken})
   },
 }
 
-const query = async <T>(
-  path: string,
-  options?: {method?: "GET" | "POST"; body?: unknown; useAuth?: boolean; overrideToken?: string},
-): Promise<T> => {
-  const useAuth = options?.useAuth == undefined ? true : false // default to true
+type QueryOptions = Partial<{
+  method: "GET" | "POST"
+  body: any
+  queryParams: Record<string, string>
+  useAuth: boolean
+  overrideToken: string
+}>
 
-  return fetch(`${PROFILE_API_BASE_URL}${path}`, {
-    method: options?.method || "GET",
-    body: options?.body ? JSON.stringify(options.body) : undefined,
+const DEFAULT_OPTIONS: QueryOptions = {
+  method: "GET",
+  queryParams: {},
+  useAuth: true,
+}
+
+const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> => {
+  const {method, body, queryParams, useAuth, overrideToken} = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+  }
+
+  const url = new URL(`${PROFILE_API_BASE_URL}${path}`)
+
+  Object.entries(queryParams || {}).forEach(([key, value]) => url.searchParams.append(key, value as string))
+
+  return fetch(url.toString(), {
+    method: method,
+    body: body ? JSON.stringify(body) : undefined,
     headers: {
-      ...(useAuth ? {Authorization: `Bearer ${options?.overrideToken || PM_API_KEY}`} : {}),
+      "Content-Type": "application/json",
+      ...(useAuth ? {Authorization: `Bearer ${overrideToken || PM_API_KEY}`} : {}),
     },
   })
-    .then((res) => res.json())
+    .then((res) => {
+      if (res.status !== 200) {
+        console.error(`ParalllelMarkets error (${res.status}): ${res.statusText}`)
+        throw new Error(`ParallelMarkets api error (${res.status}): ${res.statusText}`)
+      }
+
+      return res.json()
+    })
     .then(camelize) as T
 }

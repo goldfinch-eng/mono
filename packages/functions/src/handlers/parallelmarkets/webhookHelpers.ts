@@ -68,9 +68,9 @@ const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
 
 const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
   const {consistencySummary} = identityDetails
-  const {overallRecordsLevelMatch, idValidity} = consistencySummary
+  const {overallRecordsMatchLevel, idValidity} = consistencySummary
 
-  const identityStatus = getIdentityStatus(overallRecordsLevelMatch, idValidity)
+  const identityStatus = getIdentityStatus(overallRecordsMatchLevel, idValidity)
 
   const user = await getUserDocByPMId(id)
   if (!user) {

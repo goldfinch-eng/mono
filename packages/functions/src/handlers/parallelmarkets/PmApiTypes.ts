@@ -27,13 +27,13 @@ export type ConsistencyLevel = "high" | "medium" | "low" | "none"
 export type IdentityDocumentValidity = "valid" | "valid_maybe_expired" | "expired" | "unreadable"
 
 export type PmIndividualConsistencySummary = {
-  overallRecordsLevelMatch: ConsistencyLevel
+  overallRecordsMatchLevel: ConsistencyLevel
   // If null then they have not submitted documents yet
   idValidity: IdentityDocumentValidity | null
 }
 
 export type PmBusinessConsistencySummary = {
-  overallRecordsLevelMatch: ConsistencyLevel
+  overallRecordsMatchLevel: ConsistencyLevel
 }
 
 // For full description of fields see https://developer.parallelmarkets.com/docs/server/data-structures#individual-identity-details
