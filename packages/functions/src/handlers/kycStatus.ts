@@ -84,9 +84,9 @@ export const kycStatus = genRequestHandler({
       payload = {
         address,
         status,
-        parallel_markets: {
-          identity_status: pmIdentityStatus,
-          accreditation_status: pmIdentityStatus,
+        parallelMarkets: {
+          identityStatus: pmIdentityStatus,
+          accreditationStatus: pmIdentityStatus,
         },
       }
     }
