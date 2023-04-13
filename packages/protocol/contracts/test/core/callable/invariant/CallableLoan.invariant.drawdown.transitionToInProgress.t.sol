@@ -66,7 +66,7 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
   function invariant_ExpectedPhase() public {
     if (!handler.hasDrawndown()) {
       assertTrue(handler.loan().loanPhase() == LoanPhase.Funding);
-    } else if (loan.termStartTime() + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS > block.timestamp) {
+    } else if (block.timestamp < loan.termStartTime() + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS) {
       assertTrue(handler.loan().loanPhase() == LoanPhase.DrawdownPeriod);
     } else {
       assertTrue(handler.loan().loanPhase() == LoanPhase.InProgress);

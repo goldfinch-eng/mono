@@ -22,9 +22,6 @@ contract CallableLoanLoanReachesMaxLimitScenarioTest is CallableLoanBaseTest {
     uint256 depositAmount3,
     uint256 withdrawalAmount1
   ) public {
-    vm.assume(fuzzHelper.isAllowed(user1));
-    vm.assume(fuzzHelper.isAllowed(user2));
-
     uint256 maxLimit = usdcVal(10_000_000);
     (loan, ) = callableLoanWithLimit(maxLimit);
 
@@ -32,6 +29,9 @@ contract CallableLoanLoanReachesMaxLimitScenarioTest is CallableLoanBaseTest {
     // deposit amount such that they sum to the limit.
     depositAmount1 = bound(depositAmount1, 1, maxLimit - 1);
     uint256 depositAmount2 = maxLimit - depositAmount1;
+
+    vm.assume(fuzzHelper.isAllowed(user1));
+    vm.assume(fuzzHelper.isAllowed(user2));
 
     uid._mintForTest(user1, 1, 1, "");
     uid._mintForTest(user2, 1, 1, "");

@@ -1,6 +1,7 @@
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {Test} from "forge-std/Test.sol";
 
+// Attempt invalid operations from random users
 contract CallableLoanRandoHandler is Test {
   CallableLoan public loan;
 
@@ -10,7 +11,9 @@ contract CallableLoanRandoHandler is Test {
     vm.stopPrank();
   }
 
+  // Attempt an invalid drawdown from a random user
   function drawdown(uint256 amount) public {
+    vm.assume(msg.sender != loan.borrower());
     vm.prank(msg.sender);
     loan.drawdown(amount);
     vm.stopPrank();
