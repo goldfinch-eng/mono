@@ -81,4 +81,54 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     );
     callableLoan.drawdown(failedDrawdownAmount);
   }
+
+  function testSuccessfulDrawdowns(
+    address depositor,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 drawdownAmount2,
+    uint256 warp1Time,
+    uint256 warp2Time,
+    uint256 warp3Time
+  ) public {
+    warp1Time = bound(warp1Time, 0, 1000 days);
+    warp2Time = bound(warp2Time, 0, 1000 days);
+
+    depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
+    drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
+
+    uint256 previousBorrowerBalance = usdc.balanceOf(BORROWER);
+
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(depositor, 1, 1, "");
+
+    vm.warp(block.timestamp + warp1Time);
+    uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
+
+    uint256 previousContractBalance = usdc.balanceOf(address(callableLoan));
+    vm.warp(block.timestamp + warp2Time);
+    _startImpersonation(BORROWER);
+
+    assertTrue(callableLoan.loanPhase() == LoanPhase.Funding);
+    callableLoan.drawdown(drawdownAmount);
+    assertTrue(callableLoan.loanPhase() == LoanPhase.DrawdownPeriod);
+    assertEq(usdc.balanceOf(BORROWER), previousBorrowerBalance + drawdownAmount);
+    assertEq(usdc.balanceOf(address(callableLoan)), previousContractBalance - drawdownAmount);
+
+    warp3Time = bound(
+      warp3Time,
+      0,
+      (cl.termStartTime() - block.timestamp) + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS - 1
+    );
+    drawdownAmount2 = bound(drawdownAmount2, 1, depositAmount - drawdownAmount);
+    vm.warp(block.timestamp + warp3Time);
+    callableLoan.drawdown(drawdownAmount2);
+    assertTrue(callableLoan.loanPhase() == LoanPhase.DrawdownPeriod);
+    assertEq(usdc.balanceOf(BORROWER), previousBorrowerBalance + drawdownAmount + drawdownAmount2);
+    assertEq(
+      usdc.balanceOf(address(callableLoan)),
+      previousContractBalance - drawdownAmount - drawdownAmount2
+    );
+  }
 }
