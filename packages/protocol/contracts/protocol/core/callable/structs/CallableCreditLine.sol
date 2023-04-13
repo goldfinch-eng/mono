@@ -507,7 +507,7 @@ library CallableCreditLineLogic {
   function isLate(CallableCreditLine storage cl, uint256 timestamp) internal view returns (bool) {
     if (
       cl.loanPhase() != LoanPhase.InProgress ||
-      ((cl.totalPrincipalOwedAt(timestamp) + cl.totalInterestOwedAt(timestamp)) == 0)
+      ((cl.principalOwedAt(timestamp) + cl.interestOwedAt(timestamp)) == 0)
     ) {
       return false;
     }
