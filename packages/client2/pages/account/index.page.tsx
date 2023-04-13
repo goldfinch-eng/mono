@@ -1,62 +1,68 @@
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Button,
+  Spinner,
   TabButton,
   TabContent,
   TabGroup,
   TabList,
   TabPanels,
-  confirmDialog,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
+import { getSignatureForKyc, registerKyc } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
-/* Will make the description conditional soon */
-const CallToActionBannerDescription =
-  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
-
-const confirmDialogBody = (text: string) => (
-  <div>
-    <div className="mb-2 text-xl font-bold">Error</div>
-    <div>{text}</div>
-  </div>
-);
-
 const AccountsPage: NextPageWithLayout = () => {
-  const { account } = useWallet();
+  const { account, provider, signer } = useWallet();
   const { query } = useRouter();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error>();
+
   useEffect(() => {
-    /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
-    if (query.state != undefined) {
-      const parallel_markets_state = sessionStorage.getItem(
-        PARALLEL_MARKETS.STATE_KEY
-      );
-      if (query.state !== parallel_markets_state) {
-        confirmDialog(
-          confirmDialogBody(
-            "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
-          ),
-          false /* include buttons */
-        );
-        return;
+    const asyncEffect = async () => {
+      setError(undefined);
+      try {
+        if (query.code) {
+          setIsLoading(true);
+        }
+        /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
+        if (query.state !== undefined) {
+          const parallel_markets_state = sessionStorage.getItem(
+            PARALLEL_MARKETS.STATE_KEY
+          );
+          if (query.state !== parallel_markets_state) {
+            throw new Error(
+              "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
+            );
+          }
+        }
+        if (query.error === "access_denied") {
+          throw new Error(
+            "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
+          );
+        }
+        if (query.code !== undefined && account && provider && signer) {
+          const sig = await getSignatureForKyc(
+            provider,
+            signer,
+            JSON.stringify({ key: query.code, provider: "parallel_markets" })
+          );
+          await registerKyc(account, sig);
+        }
+      } catch (e) {
+        setError(e as Error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    if (query.error === "access_denied") {
-      confirmDialog(
-        confirmDialogBody(
-          "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
-        ),
-        false /* include buttons */
-      );
-      return;
-    }
-  }, [query.state, query.error]);
+    };
+    asyncEffect();
+  }, [query.state, query.error, query.code, account, provider, signer]);
 
   return (
     <div>
@@ -79,22 +85,34 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                <CallToActionBanner
-                  renderButton={(props) =>
-                    account ? (
-                      <Button {...props} onClick={openVerificationModal}>
-                        Begin UID set up
-                      </Button>
-                    ) : (
-                      <Button {...props} onClick={openWalletModal}>
-                        Connect Wallet
-                      </Button>
-                    )
-                  }
-                  iconLeft="Globe"
-                  title="Setup your UID to start" /* will make title conditional soon */
-                  description={CallToActionBannerDescription}
-                />
+                {isLoading ? (
+                  <Spinner size="lg" />
+                ) : (
+                  <CallToActionBanner
+                    renderButton={(props) =>
+                      account ? (
+                        <Button {...props} onClick={openVerificationModal}>
+                          {error ? "Try again" : "Begin UID setup"}
+                        </Button>
+                      ) : (
+                        <Button {...props} onClick={openWalletModal}>
+                          Connect Wallet
+                        </Button>
+                      )
+                    }
+                    iconLeft={error ? "Exclamation" : "Globe"}
+                    title={
+                      error
+                        ? "There was a problem connecting to our verification partner"
+                        : "Setup your UID to start"
+                    } /* will make title conditional soon */
+                    description={
+                      error
+                        ? error.message
+                        : "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+                    }
+                  />
+                )}
               </TabContent>
             </TabPanels>
           </div>
