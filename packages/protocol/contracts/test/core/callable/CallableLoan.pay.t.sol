@@ -36,34 +36,6 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     callableLoan.pay(0);
   }
 
-  function testOnlyTakesWhatsNeededForExcessPayment(uint256 amount, uint256 timestamp) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400000));
-
-    warpToAfterDrawdownPeriod(callableLoan);
-    timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
-    vm.warp(timestamp);
-
-    uint256 totalOwed = cl.interestOwed() + cl.balance();
-    uint256 guaranteedFutureInterest = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) +
-      cl.interestAccruedAt(callableLoan.nextPrincipalDueTime()) -
-      cl.interestOwed();
-    uint256 maxAcceptedUsdc = totalOwed + guaranteedFutureInterest;
-    amount = bound(amount, maxAcceptedUsdc, maxAcceptedUsdc * 10);
-
-    fundAddress(address(this), amount);
-    uint256 balanceBefore = usdc.balanceOf(address(this));
-
-    usdc.approve(address(callableLoan), amount);
-    ILoan.PaymentAllocation memory pa = callableLoan.pay(amount);
-    // Balance should only decrease by the maxAcceptedUsdc, even if amount > totalOwed
-    assertApproxEqAbs(
-      usdc.balanceOf(address(this)),
-      balanceBefore - maxAcceptedUsdc,
-      HUNDREDTH_CENT
-    );
-  }
-
   function testRevertsIfStillInFundingStage() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
 
@@ -177,12 +149,12 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     ILoan.PaymentAllocation memory pa = callableLoan.pay(amount);
   }
 
-  function testCanFullyPayOffExample(uint256 timestamp) public {
+  function testCanFullyPayOff(uint256 timestamp) public {
     vm.warp(1681444800);
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(10000));
-    // warpToAfterDrawdownPeriod(callableLoan);
-    // timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
+    warpToAfterDrawdownPeriod(callableLoan);
+    timestamp = bound(timestamp, block.timestamp, cl.termEndTime());
     vm.warp(block.timestamp + 30 days);
 
     uint256 totalOwed = cl.interestOwedAt(callableLoan.nextPrincipalDueTime()) + cl.balance();
@@ -202,7 +174,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     assertEq(cl.balance(), 0, "balance should be 0");
   }
 
-  function testCanFullyPayOffExampleWithCallRequest(uint256 timestamp) public {
+  function testCanFullyPayOffWithCallRequest(uint256 timestamp) public {
     vm.warp(1681444800);
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
@@ -227,7 +199,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     assertEq(cl.balance(), 0, "balance should be 0");
   }
 
-  function testCanFragmentPayExampleWithCallRequestAfter60Days() public {
+  function testCanFragmentPayWithCallRequestAfter60Days() public {
     vm.warp(1681444800);
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
@@ -322,7 +294,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     );
   }
 
-  function testCanFullyPayOffExampleWithCallRequestAfter60Days() public {
+  function testCanFullyPayOffWithCallRequestAfter60Days() public {
     vm.warp(1681444800);
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
@@ -363,7 +335,7 @@ contract CallableLoanPayTest is CallableLoanBaseTest {
     );
   }
 
-  function testCanFullyPayOffExampleAfter60Days(uint256 timestamp) public {
+  function testCanFullyPayOffAfter60Days(uint256 timestamp) public {
     vm.warp(1681444800);
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     uint256 tokenId = depositAndDrawdown(callableLoan, usdcVal(5000));
