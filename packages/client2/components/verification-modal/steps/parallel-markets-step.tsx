@@ -14,7 +14,6 @@ const parallelMarketsOauthUrl = buildURL(
   `${PARALLEL_MARKETS.API_URL}/oauth/authorize`,
   {
     client_id: PARALLEL_MARKETS.CLIENT_ID,
-    redirect_uri: PARALLEL_MARKETS.REDIRECT_URI,
     scope: PARALLEL_MARKETS.SCOPE,
     response_type: "code",
   }
@@ -42,6 +41,10 @@ export function ParallelMarketsStep() {
               e.preventDefault();
               const state = window.crypto.randomUUID();
               parallelMarketsOauthUrl.searchParams.append("state", state);
+              parallelMarketsOauthUrl.searchParams.append(
+                "redirect_uri",
+                `${window.location.origin}/account`
+              );
               sessionStorage.setItem(PARALLEL_MARKETS.STATE_KEY, state);
               window.location.href = parallelMarketsOauthUrl.toString();
             }}
