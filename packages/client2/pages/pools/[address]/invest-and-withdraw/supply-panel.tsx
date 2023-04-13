@@ -206,10 +206,12 @@ export function SupplyPanel({ loan, user, deal }: SupplyPanelProps) {
     }
 
     dataLayerPushEvent("DEPOSITED_IN_TRANCHED_POOL", {
-      currency: "USD",
-      transaction_id: submittedTransaction.transactionHash,
-      value: parseFloat(data.supply),
-      items: [{ item_id: loan.id, item_name: deal.name }],
+      ecommerce: {
+        currency: "USD",
+        transaction_id: submittedTransaction.transactionHash,
+        value: parseFloat(data.supply),
+        items: [{ item_id: loan.id, item_name: deal.name }],
+      },
     });
 
     await apolloClient.refetchQueries({
