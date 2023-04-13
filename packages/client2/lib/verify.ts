@@ -68,6 +68,15 @@ export async function fetchKycStatus(account: string, signature: KycSignature) {
   return result;
 }
 
+export async function registerKyc(account: string, signature: KycSignature) {
+  const url = `${API_BASE_URL}/registerKyc`;
+  const auth = convertSignatureToAuth(account, signature);
+  const response = await fetch(url, { method: "POST", headers: auth });
+  if (!response.ok) {
+    throw new Error("Failed to register auth code for Parallel Markets");
+  }
+}
+
 export enum UIDType {
   NonUSIndividual = 0,
   USAccreditedIndividual = 1,

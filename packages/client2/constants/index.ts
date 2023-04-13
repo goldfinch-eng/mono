@@ -29,9 +29,16 @@ if (PARALLEL_MARKETS_API_URL === "") {
   throw new Error("Could not determine Parallel Markets API URL");
 }
 
+const PARALLEL_MARKETS_CLIENT_ID = process.env
+  .NEXT_PUBLIC_PARALLEL_MARKETS_CLIENT_ID as string;
+
+if (!PARALLEL_MARKETS_CLIENT_ID) {
+  throw new Error("Parallel Markets Client ID was not provided");
+}
+
 export const PARALLEL_MARKETS = {
   API_URL: PARALLEL_MARKETS_API_URL,
-  CLIENT_ID: "pDhcBjoOa7f_7Ka8R6ejs",
+  CLIENT_ID: PARALLEL_MARKETS_CLIENT_ID,
   SCOPE: "accreditation_status profile identity",
   STATE_KEY: "parallel_markets_state_key",
 };

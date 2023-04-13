@@ -13,6 +13,7 @@ import {
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
+import { getSignatureForKyc, registerKyc } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
@@ -28,35 +29,50 @@ const confirmDialogBody = (text: string) => (
 );
 
 const AccountsPage: NextPageWithLayout = () => {
-  const { account } = useWallet();
+  const { account, provider, signer } = useWallet();
   const { query } = useRouter();
 
   useEffect(() => {
-    /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
-    if (query.state != undefined) {
-      const parallel_markets_state = sessionStorage.getItem(
-        PARALLEL_MARKETS.STATE_KEY
-      );
-      if (query.state !== parallel_markets_state) {
+    const asyncEffect = async () => {
+      /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
+      if (query.state !== undefined) {
+        const parallel_markets_state = sessionStorage.getItem(
+          PARALLEL_MARKETS.STATE_KEY
+        );
+        if (query.state !== parallel_markets_state) {
+          confirmDialog(
+            confirmDialogBody(
+              "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
+            ),
+            false /* include buttons */
+          );
+          return;
+        }
+      }
+      if (query.error === "access_denied") {
         confirmDialog(
           confirmDialogBody(
-            "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
+            "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           ),
           false /* include buttons */
         );
         return;
       }
-    }
-    if (query.error === "access_denied") {
-      confirmDialog(
-        confirmDialogBody(
-          "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
-        ),
-        false /* include buttons */
-      );
-      return;
-    }
-  }, [query.state, query.error]);
+      if (query.code !== undefined && account && provider && signer) {
+        try {
+          const sig = await getSignatureForKyc(
+            provider,
+            signer,
+            JSON.stringify({ key: query.code, provider: "parallel_markets" })
+          );
+          await registerKyc(account, sig);
+        } catch (e) {
+          confirmDialog(confirmDialogBody((e as Error).message), false);
+        }
+      }
+    };
+    asyncEffect();
+  }, [query.state, query.error, query.code, account, provider, signer]);
 
   return (
     <div>
