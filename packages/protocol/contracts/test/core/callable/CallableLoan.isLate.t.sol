@@ -17,7 +17,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     _stopImpersonation();
   }
 
-  function testNotLateIfNoBalance() public {
+  function testNotLateIfNoBalance(uint256 warpedTimestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     assertFalse(cl.isLate());
 
@@ -34,7 +34,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
         cl.interestAccruedAt(callableLoan.nextPrincipalDueTime())
     );
 
-    vm.warp(cl.termEndTime());
+    vm.warp(warpedTimestamp);
 
     assertFalse(cl.isLate());
   }
@@ -82,7 +82,7 @@ contract CallableLoanIsLateTest is CallableLoanBaseTest {
     depositAndDrawdown(callableLoan, limit);
     warpToAfterDrawdownPeriod(callableLoan);
 
-    // Advance to the last payment period and pay back interes
+    // Advance to the last payment period and pay back interest
     for (uint256 i = 0; i < 11; ++i) {
       vm.warp(cl.nextDueTime());
       if (cl.interestOwed() > 0) {

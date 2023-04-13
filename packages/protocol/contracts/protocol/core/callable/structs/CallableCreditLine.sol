@@ -142,7 +142,9 @@ library CallableCreditLineLogic {
       ) {
         cl._lastFullPaymentTime = Math.max(block.timestamp, periodEndTime);
       } else {
-        // If we hit a period where there is still principal or interest owed, we can stop.
+        // We break out of the loop if we hit a period in which:
+        // 1. There is still principal or interest owed
+        // 2. The period is after the next principal due time
         break;
       }
     }
