@@ -1,12 +1,14 @@
 // This type respects the GA4 standard for ecommerce events: https://developers.google.com/analytics/devguides/collection/ga4/reference/events?client_type=gtag#purchase_item
 type EcommerceEventData = {
-  currency: "USD";
-  transaction_id: string;
-  value: number;
-  items: {
-    item_id: string;
-    item_name: string;
-  }[];
+  ecommerce: {
+    currency: "USD";
+    transaction_id: string;
+    value: number;
+    items: {
+      item_id: string;
+      item_name: string;
+    }[];
+  };
 };
 
 type Event = {
