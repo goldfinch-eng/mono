@@ -52,11 +52,7 @@ export function StatusCheckStep() {
 
         const signature = await getSignatureForKyc(provider, signer);
         setSignature(signature);
-        const kycStatus = await fetchKycStatus(
-          account,
-          signature.signature,
-          signature.signatureBlockNum
-        );
+        const kycStatus = await fetchKycStatus(account, signature);
         const goldfinchUtils = await import("@goldfinch-eng/utils");
         const idVersion = goldfinchUtils.getIDType({
           address: account,

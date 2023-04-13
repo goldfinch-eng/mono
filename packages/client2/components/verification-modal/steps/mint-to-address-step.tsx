@@ -49,8 +49,7 @@ export function MintToAddressStep() {
     }
     const signer = await fetchUniqueIdentitySigner(
       account,
-      signature.signature,
-      signature.signatureBlockNum,
+      signature,
       mintToAddress
     );
 

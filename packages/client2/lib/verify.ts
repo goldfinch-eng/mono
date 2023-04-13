@@ -17,51 +17,49 @@ interface IKYCStatus {
  * request their signature before initiating the kyc process.
  * @param blockNumber current block number of the currently selected chain
  */
-function getMessageToSign(blockNumber: number): string {
+export function getMessageToSign(blockNumber: number): string {
   return `Sign in to Goldfinch: ${blockNumber}`;
 }
 
-export async function getSignatureForKyc(provider: Provider, signer: Signer) {
+export interface KycSignature {
+  plaintext: string;
+  signature: string;
+  signatureBlockNum: number;
+}
+export async function getSignatureForKyc(
+  provider: Provider,
+  signer: Signer,
+  plaintext?: string
+) {
   try {
-    const blockNumber = await provider.getBlockNumber();
-    const currentBlock = await provider.getBlock(blockNumber);
-    const currentBlockTimestamp = currentBlock.timestamp;
-    const msg = getMessageToSign(blockNumber);
+    const currentBlock = await provider.getBlock("latest");
+    const blockNumber = currentBlock.number;
+    const msg = plaintext ?? getMessageToSign(blockNumber);
 
     const signature = await signer.signMessage(msg);
 
     return {
+      plaintext: msg,
       signature,
       signatureBlockNum: blockNumber,
-      signatureBlockNumTimestamp: currentBlockTimestamp,
     };
   } catch {
     throw new Error("Failed to get signature from user");
   }
 }
 
-function convertSignatureToAuth(
-  account: string,
-  signature: string,
-  signatureBlockNum: number
-) {
-  // The msg that was signed to produce `signature`
-  const msg = getMessageToSign(signatureBlockNum);
+function convertSignatureToAuth(account: string, signature: KycSignature) {
   return {
     "x-goldfinch-address": account,
-    "x-goldfinch-signature": signature,
-    "x-goldfinch-signature-plaintext": msg,
-    "x-goldfinch-signature-block-num": signatureBlockNum.toString(),
+    "x-goldfinch-signature": signature.signature,
+    "x-goldfinch-signature-plaintext": signature.plaintext,
+    "x-goldfinch-signature-block-num": signature.signatureBlockNum.toString(),
   };
 }
 
-export async function fetchKycStatus(
-  account: string,
-  signature: string,
-  signatureBlockNum: number
-) {
+export async function fetchKycStatus(account: string, signature: KycSignature) {
   const url = `${API_BASE_URL}/kycStatus`;
-  const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
+  const auth = convertSignatureToAuth(account, signature);
   const response = await fetch(url, { headers: auth });
   if (!response.ok) {
     throw new Error("Could not get KYC status");
@@ -111,12 +109,11 @@ export function getUIDLabelFromGql(type: UidType) {
 
 export async function fetchUniqueIdentitySigner(
   account: string,
-  signature: string,
-  signatureBlockNum: number,
+  signature: KycSignature,
   mintToAddress?: string
 ) {
   const url = UNIQUE_IDENTITY_SIGNER_URL;
-  const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
+  const auth = convertSignatureToAuth(account, signature);
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ auth, mintToAddress }),
@@ -142,12 +139,11 @@ export async function fetchUniqueIdentitySigner(
 
 export async function postKYCDetails(
   account: string,
-  signature: string,
-  signatureBlockNum: number,
+  signature: KycSignature,
   residency: string
 ) {
   const url = `${API_BASE_URL}/setUserKYCData`;
-  const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
+  const auth = convertSignatureToAuth(account, signature);
   const response = await fetch(url, {
     headers: { ...auth, "Content-Type": "application/json" },
     method: "POST",

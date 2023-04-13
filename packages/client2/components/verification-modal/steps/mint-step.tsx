@@ -40,11 +40,7 @@ export function MintStep() {
     if (!account || !signature || !provider || !walletSigner) {
       throw new Error("Unable to verify eligibility to mint.");
     }
-    const signer = await fetchUniqueIdentitySigner(
-      account,
-      signature.signature,
-      signature.signatureBlockNum
-    );
+    const signer = await fetchUniqueIdentitySigner(account, signature);
 
     const uidContract = await getContract({
       name: "UniqueIdentity",
