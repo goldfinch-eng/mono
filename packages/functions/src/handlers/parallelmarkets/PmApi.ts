@@ -14,14 +14,19 @@ const {
 
 export const ParallelMarkets = {
   getIdentity: async (id: string): Promise<PmIdentity> => {
+    console.log("reaching this function for identity")
+    console.log({id})
     return query(`/identity/${id}`)
   },
 
   getIdentityForAccessToken: async (accessToken: string): Promise<PmIdentity> => {
+    console.log("reaching this function for access token")
+    console.log({accessToken})
     return query("/identity", {overrideToken: accessToken})
   },
 
   tradeCodeForToken: async (authCode: string): Promise<PmOauthResponse> => {
+    console.log({authCodeBeforeEntering: authCode})
     return query("/oauth/token", {
       method: "POST",
       queryParams: {
