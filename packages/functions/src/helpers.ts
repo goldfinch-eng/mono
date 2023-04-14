@@ -13,6 +13,17 @@ import {assertUnreachable} from "@goldfinch-eng/utils"
 // This is not a secret, so it's ok to hardcode this.
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
+const getEnvironment = (): "prod" | "dev" | "local" => {
+  if (process.env.GCLOUD_PROJECT === "goldfinch-frontends-prod") return "prod"
+  if (process.env.GCLOUD_PROJECT === "goldfinch-frontends-dev" && process.env.FUNCTIONS_EMULATOR === "true")
+    return "local"
+  if (process.env.GCLOUD_PROJECT === "goldfinch-frontends-dev") return "dev"
+
+  throw new Error(`Can't find environment, unknown project: ${process.env.GCLOUD_PROJECT}`)
+}
+
+const isDevEnv = () => getEnvironment() === "dev"
+
 const setCORSHeaders = (req: Request, res: Response) => {
   if (process.env.MURMURATION === "yes") {
     res.set("Access-Control-Allow-Origin", "*")
@@ -64,10 +75,11 @@ const overrideBlockchainIdentifier = (): string | number | undefined => {
  * localhost using mainnet, etc.); the chain we consider the default appropriate one given the
  * request origin; mainnet, if the chain was not otherwise identified.
  * @param {string} origin The request origin.
+ * @param {number} override Force a specific chain id.
  * @return {BaseProvider} The blockchain provider.
  */
-const _getBlockchain = (origin: string): BaseProvider => {
-  let blockchain = overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
+const _getBlockchain = (origin: string, override?: number): BaseProvider => {
+  let blockchain = override || overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
   if (!blockchain) {
     console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
     blockchain = 1
@@ -84,7 +96,7 @@ const _getBlockchain = (origin: string): BaseProvider => {
 /**
  * This function is the API that our server functions should use if they need to get blockchain data.
  */
-export let getBlockchain: (origin: string) => BaseProvider = _getBlockchain
+export let getBlockchain: (origin: string, override?: number) => BaseProvider = _getBlockchain
 
 /**
  * Helper that uses the dependency-injection pattern to enable mocking the blockchain provider.
@@ -205,7 +217,7 @@ const verifySignature = async (
     return {res: res.status(401).send({error: "Invalid address or signature."}), address: undefined}
   }
   const origin = req.headers.origin || ""
-  const blockchain = getBlockchain(origin)
+  const blockchain = getBlockchain(origin, isDevEnv() ? 1 : undefined)
   const currentBlock = await blockchain.getBlock("latest")
   // Don't allow signatures signed for the future.
   if (currentBlock.number < signatureBlockNum) {
