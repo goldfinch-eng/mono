@@ -218,6 +218,7 @@ const verifySignature = async (
   }
   const origin = req.headers.origin || ""
   const blockchain = getBlockchain(origin, isDevEnv() ? 1 : undefined)
+  console.log({origin, blockchain, isDevEnv: isDevEnv()})
   const currentBlock = await blockchain.getBlock("latest")
   // Don't allow signatures signed for the future.
   if (currentBlock.number < signatureBlockNum) {
