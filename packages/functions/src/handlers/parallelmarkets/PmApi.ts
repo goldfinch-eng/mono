@@ -74,8 +74,9 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
 
   const url = new URL(`${baseUrl}${path}`)
 
+  
   Object.entries(queryParams || {}).forEach(([key, value]) => url.searchParams.append(key, value as string))
-
+  
   return fetch(url.toString(), {
     method: method,
     body: body ? JSON.stringify(body) : undefined,
@@ -83,6 +84,7 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
       "Content-Type": "application/json",
       ...(useAuth ? {Authorization: `Bearer ${overrideToken || apiKey}`} : {}),
     },
+    console.log({url, queryParams, body, authorization: `Bearer ${overrideToken || apiKey}`})
   })
     .then((res) => {
       if (res.status !== 200) {
