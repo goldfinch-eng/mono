@@ -86,10 +86,10 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
   })
     .then((res) => {
       if (res.status !== 200) {
+        console.log({url, queryParams, body, authorization: `Bearer ${overrideToken || apiKey}`})
         console.error(`ParalllelMarkets error (${res.status}): ${res.statusText}`)
         throw new Error(`ParallelMarkets api error (${res.status}): ${res.statusText}`)
       }
-      console.log({url, queryParams, body, authorization: `Bearer ${overrideToken || apiKey}`})
       return res.json()
     })
     .then(camelize) as T
