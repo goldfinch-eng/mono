@@ -301,6 +301,8 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
           return res.status(200).send()
         }
       }
+      /* log request payload */
+      console.log({req})
 
       const authType = config.requireAuth
       if (authType === "signature") {
