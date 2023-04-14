@@ -31,11 +31,13 @@ const setCORSHeaders = (req: Request, res: Response) => {
     return
   }
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
+  console.log({allowedOrigins})
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
     res.set("Access-Control-Allow-Headers", "*")
   }
+  console.log({origin})
 }
 
 export const originAllowed = (allowedOrigins: string[], origin: string): boolean => {
