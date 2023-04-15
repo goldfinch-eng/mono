@@ -14,14 +14,19 @@ const {
 
 export const ParallelMarkets = {
   getIdentity: async (id: string): Promise<PmIdentity> => {
+    console.log("reaching this function for identity")
+    console.log({id})
     return query(`/identity/${id}`)
   },
 
   getIdentityForAccessToken: async (accessToken: string): Promise<PmIdentity> => {
+    console.log("reaching this function for access token")
+    console.log({accessToken})
     return query("/identity", {overrideToken: accessToken})
   },
 
   tradeCodeForToken: async (authCode: string): Promise<PmOauthResponse> => {
+    console.log({authCodeBeforeEntering: authCode})
     return query("/oauth/token", {
       method: "POST",
       queryParams: {
@@ -86,10 +91,10 @@ const query = async <T>(path: string, options: QueryOptions = {}): Promise<T> =>
   })
     .then((res) => {
       if (res.status !== 200) {
+        console.log({url, queryParams, body, overrideToken, apiKey, authorization: `Bearer ${overrideToken || apiKey}`})
         console.error(`ParalllelMarkets error (${res.status}): ${res.statusText}`, {url: url.toString()})
         throw new Error(`ParallelMarkets api error (${res.status}): ${res.statusText}`)
       }
-
       return res.json()
     })
     .then(camelize) as T

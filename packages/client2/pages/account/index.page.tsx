@@ -64,6 +64,10 @@ const AccountsPage: NextPageWithLayout = () => {
     asyncEffect();
   }, [query.state, query.error, query.code, account, provider, signer]);
 
+  useEffect(() => {
+    /* Make a request to the kyc endpoint. Will work on this soon! */
+  }, []);
+
   return (
     <div>
       <div className="bg-mustard-100">
