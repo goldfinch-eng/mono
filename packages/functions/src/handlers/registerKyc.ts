@@ -52,8 +52,6 @@ type ParallelMarketsUserData = {id: string; accreditationStatus?: string; identi
 const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsUserData> => {
   const {accessToken} = await ParallelMarkets.tradeCodeForToken(authCode)
 
-  console.log({accessToken})
-
   const [identity, accreditation] = await Promise.all([
     ParallelMarkets.getIdentityForAccessToken(accessToken),
     ParallelMarkets.getAccreditationsForAccessToken(accessToken),

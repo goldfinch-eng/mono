@@ -65,7 +65,7 @@ const AccountsPage: NextPageWithLayout = () => {
   }, [query.state, query.error, query.code, account, provider, signer]);
 
   useEffect(() => {
-    /* handle KYC Status request */
+    /* Make a request to the kyc endpoint. Will work on this soon! */
   }, []);
 
   return (
