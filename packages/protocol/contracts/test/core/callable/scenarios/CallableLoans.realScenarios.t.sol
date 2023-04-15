@@ -18,8 +18,7 @@ import {ITestUSDC} from "../../../ITestUSDC.t.sol";
 import {Test} from "forge-std/Test.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {TestConstants} from "../../TestConstants.t.sol";
-import {console2 as console} from "forge-std/console2.sol";
-
+import {CallableLoanAccountant} from "../../../../protocol/core/callable/CallableLoanAccountant.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 
 /**
@@ -53,7 +52,7 @@ abstract contract CallableActor is Test {
     _;
 
     uint256 balanceAfter = usdc.balanceOf(address(this));
-    assertEq(balanceBefore, balanceAfter + amount, "usdc decrease");
+    assertEq(balanceAfter + amount, balanceBefore, "usdc decrease");
   }
 }
 
@@ -499,6 +498,116 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
         creditLine.interestApr() *
         1000 *
         90) / (100 * TestConstants.INTEREST_DECIMALS * TestConstants.SECONDS_PER_YEAR));
+
+      (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
+        otherLenders[2].tokenId()
+      );
+      assertApproxEqAbs(
+        interestRedeemable,
+        uncalledTokenInterestAvailableToWithdraw,
+        1,
+        "interest redeemable"
+      );
+      assertZero(principalRedeemable, "principal redeemable");
+
+      /* Fast forward to just before repayment due date */ {
+        vm.warp(loan.nextDueTimeAt(block.timestamp) - 1);
+      }
+
+      {
+        vm.expectRevert();
+        otherLenders[2].withdraw(interestRedeemable + 1);
+      }
+
+      /* Now go to repayment date */ {
+        vm.warp(loan.nextDueTimeAt(block.timestamp));
+      }
+
+      (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+        otherLenders[2].tokenId()
+      );
+      assertApproxEqAbs(
+        interestRedeemable,
+        uncalledTokenInterestAvailableToWithdraw,
+        1,
+        "interest redeemable"
+      );
+      assertZero(principalRedeemable, "principal redeemable");
+
+      {
+        vm.expectRevert();
+        otherLenders[2].withdraw(interestRedeemable + 1);
+      }
+
+      vm.warp(loan.nextPrincipalDueTime());
+      /* Can claim interest and principal */
+      // Owed interest on called token is:
+      // Tranche interest paid = (tranche deposit size/total deposit size) * estimatedInterest
+      // (called deposit size/tranche deposit size) * Tranche interest paid  * (100% - reserve fee percent).
+      // In this case, the Tranche interest paid is 100/1000 * estimatedInterest
+      // and 100% - reserve fee percent is 100% - 10% = 90 / 100
+      {
+        otherLenders[2].withdraw(uncalledTokenInterestAvailableToWithdraw + 100);
+      }
+    }
+  }
+
+  function test_callsEveryCallRequestPeriodAndVeryLatePayment() public {
+    /* Deposit into loan */ {
+      lender.deposit(1000);
+      otherLenders[0].deposit(1000);
+      otherLenders[1].deposit(1000);
+      otherLenders[2].deposit(1000);
+      assertTrue(loan.loanPhase() == LoanPhase.Funding);
+    }
+
+    skip(1);
+    uint256 drawdownTime = block.timestamp;
+    /* Full drawdown */ {
+      borrower.drawdown(4000);
+      assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
+    }
+
+    /* Fast forward past drawdown period */ {
+      while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+        skip(60 * 60 * 24);
+      }
+      assertTrue(loan.loanPhase() == LoanPhase.InProgress);
+    }
+
+    lender.submitCall(100);
+    vm.warp(loan.nextPrincipalDueTime());
+    otherLenders[0].submitCall(100);
+    vm.warp(loan.nextPrincipalDueTime());
+    otherLenders[1].submitCall(100);
+    vm.warp(loan.nextPrincipalDueTime());
+
+    /* Pay back remaining uncalled capital + interest */
+    {
+      uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextPrincipalDueTime());
+
+      uint256 elapsedTime = loan.nextPrincipalDueTime() - drawdownTime;
+      assertEq(
+        estimatedInterest,
+        creditLine.interestOwedAt(loan.nextPrincipalDueTime()),
+        "estimated interest"
+      );
+      uint256 pastDueInterest = creditLine.interestOwed();
+      uint256 guaranteedFutureInterest = CallableLoanAccountant.calculateInterest(
+        block.timestamp,
+        loan.nextPrincipalDueTime(),
+        block.timestamp,
+        block.timestamp,
+        3700,
+        creditLine.interestApr(),
+        0
+      );
+      borrower.pay(pastDueInterest + guaranteedFutureInterest + 4000);
+
+      uint256 uncalledTrancheInterestPaid = estimatedInterest;
+
+      uint256 uncalledTokenInterestAvailableToWithdraw = ((pastDueInterest * 1000 * 90) /
+        (100 * 4000)) + (guaranteedFutureInterest * 1000 * 90) / (100 * 3700);
 
       (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
         otherLenders[2].tokenId()
