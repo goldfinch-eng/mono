@@ -14,6 +14,8 @@ import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { getSignatureForKyc, registerKyc } from "@/lib/verify";
+import { fetchKycStatus } from "@/lib/verify";
+import { KycSignature } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
@@ -65,8 +67,27 @@ const AccountsPage: NextPageWithLayout = () => {
   }, [query.state, query.error, query.code, account, provider, signer]);
 
   useEffect(() => {
-    /* Make a request to the kyc endpoint. Will work on this soon! */
-  }, []);
+    const asyncEffect = async () => {
+      try {
+        const signature = sessionStorage.getItem("signature");
+        if (signature == null) {
+          throw new Error(
+            "We don't have your signature . Please re-try the process again."
+          );
+        }
+        /*
+         * Grab the KYCStatus endpoint
+         */
+        const parsedSignature: KycSignature = JSON.parse(signature);
+        if (account) {
+          const kycStatus = await fetchKycStatus(account, parsedSignature);
+        }
+      } catch (e) {
+        setError(e as Error);
+      }
+    };
+    asyncEffect();
+  }, [account]);
 
   return (
     <div>
