@@ -54,10 +54,7 @@ export function StatusCheckStep() {
         setSignature(signature);
         const kycStatus = await fetchKycStatus(account, signature);
         const goldfinchUtils = await import("@goldfinch-eng/utils");
-        const idVersion = goldfinchUtils.getIDType({
-          address: account,
-          kycStatus,
-        });
+        const idVersion = goldfinchUtils.getIDType(kycStatus);
         setUidVersion(idVersion);
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);

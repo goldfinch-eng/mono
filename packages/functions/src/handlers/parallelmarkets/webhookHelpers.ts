@@ -105,7 +105,7 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
 
 const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
   console.log("Processing individual identity data update")
-  const {consistencySummary} = identityDetails
+  const {consistencySummary, citizenshipCountry, residenceLocation} = identityDetails
   const {overallRecordsMatchLevel, idValidity} = consistencySummary
 
   const identityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
@@ -124,6 +124,8 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
   console.log("overwriting user with data")
   const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
   const dataToMerge = {
+    countryCode: citizenshipCountry,
+    residency: residenceLocation.country.toLowerCase(),
     parallelMarkets: {
       identityStatus,
     },
@@ -133,7 +135,7 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
 
 const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusinessIdentity) => {
   console.log("Processing business identity data update")
-  const {consistencySummary} = identityDetails
+  const {consistencySummary, principalLocation} = identityDetails
   const {overallRecordsMatchLevel} = consistencySummary
 
   const identityStatus = getBusinessIdentityStatus(overallRecordsMatchLevel)
@@ -151,6 +153,8 @@ const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusine
   // Overwrite the parallelMarkets.identity_status key
   const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
   const dataToMerge = {
+    countryCode: principalLocation.country,
+    residency: principalLocation.country.toLowerCase(),
     parallelMarkets: {
       identityStatus,
     },

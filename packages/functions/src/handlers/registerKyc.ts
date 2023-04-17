@@ -32,9 +32,14 @@ export const registerKyc = genRequestHandler({
     if (!key) return res.status(400).send({error: "Missing key"})
     if (!provider) return res.status(400).send({status: "Missing provider"})
 
+    // TODO - make parallel_markets camel case. Requires client changes
+    // TODO - can we consolidate /registerKyc and /setUserKycData?
+    //        They do very similar things, just different providers
     if (provider === "parallel_markets") {
       try {
         const data = await getParalleMarketsUser(key)
+        console.log("Saving data to store")
+        console.log(data)
         await saveParallelMarketsUser(address, data)
       } catch (e) {
         console.error(e)
@@ -48,7 +53,14 @@ export const registerKyc = genRequestHandler({
   },
 })
 
-type ParallelMarketsUserData = {id: string; accreditationStatus?: string; identityStatus?: string; countryCode: string}
+type ParallelMarketsUserData = {
+  id: string
+  countryCode: string
+  type: "business" | "individual"
+  accreditationStatus?: string
+  identityStatus?: string
+}
+
 const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsUserData> => {
   const {accessToken} = await ParallelMarkets.tradeCodeForToken(authCode)
 
@@ -69,6 +81,7 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
     return {
       id,
       // We should use the logic in the webhook helper here
+      type: "business",
       accreditationStatus: getAccreditationStatus(accreditation),
       identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
       countryCode: countryIsUS ? "US" : incorporationCountry,
@@ -81,6 +94,7 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
 
     return {
       id,
+      type: "individual",
       accreditationStatus: getAccreditationStatus(accreditation),
       identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
       countryCode: countryIsUS ? "US" : citizenshipCountry,
@@ -92,7 +106,7 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
 
 const saveParallelMarketsUser = async (
   address: string,
-  {id, accreditationStatus, identityStatus, countryCode}: ParallelMarketsUserData,
+  {id, accreditationStatus, identityStatus, countryCode, type}: ParallelMarketsUserData,
 ) => {
   const db = getDb(admin.firestore())
   const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
@@ -101,6 +115,7 @@ const saveParallelMarketsUser = async (
     const doc = await t.get(userRef)
 
     if (doc.exists) {
+      console.log(`User exists for address ${address} - merging`)
       const existingData = doc.data() as KycItem
 
       t.update(userRef, {
@@ -116,10 +131,12 @@ const saveParallelMarketsUser = async (
         updatedAt: Date.now(),
       } as KycItemParallelMarkets)
     } else {
+      console.log(`User doesn't exist for address ${address} - setting`)
       t.set(userRef, {
         address: address,
         parallelMarkets: {
           id,
+          type,
           accreditationStatus: accreditationStatus || null,
           accreditationAccessRevocationAt: null,
           identityStatus: identityStatus || null,

@@ -1,9 +1,10 @@
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
-import {SignatureVerificationSuccessResult} from "../types"
+import {KycProvider, SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
 
+// Called as the first step in the Persona KYC flow
 export const setUserKYCData = genRequestHandler({
   requireAuth: "signature",
   cors: true,
@@ -32,6 +33,7 @@ export const setUserKYCData = genRequestHandler({
       {
         address: address,
         updatedAt: Date.now(),
+        kycProvider: KycProvider.Persona.valueOf(),
         kyc: {
           residency,
         },

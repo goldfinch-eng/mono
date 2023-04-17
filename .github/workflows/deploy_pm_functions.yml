@@ -1,51 +1,51 @@
-# This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
-# NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
-name: Deploy parallelMarketsDemoWebhookProcessor, kycStatus, and registerKyc to Google Cloud functions
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ '**' ]
-jobs:
-  functions:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [ 16.x ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-      - uses: actions/setup-java@v2
-        with:
-          distribution: 'adopt'
-          java-version: '11'
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - name: Cache Firestore emulator
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-firestore-emulator
-        with:
-          path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      - run: yarn workspaces focus @goldfinch-eng/functions
-      - run: yarn workspaces foreach -ptR --from @goldfinch-eng/functions run build
-      - run: yarn workspace @goldfinch-eng/functions ci_test
-      - name: deploy-dev
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn firebase use dev && yarn pre-deploy && yarn firebase deploy --debug --only functions:parallelMarketsDemoWebhookProcessor,functions:kycStatus,functions:registerKyc --project dev"
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: server-functions-dev
-        with:
-          environment: dev
-          sourcemaps: packages/functions/lib/functions
-          ignore_empty: true
+# # This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
+# # NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
+# name: Deploy parallelMarketsDemoWebhookProcessor, kycStatus, and registerKyc to Google Cloud functions
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ '**' ]
+# jobs:
+#   functions:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         node-version: [ 16.x ]
+#     steps:
+#       - uses: actions/checkout@v2
+#         with:
+#           fetch-depth: 2
+#       - uses: actions/setup-java@v2
+#         with:
+#           distribution: 'adopt'
+#           java-version: '11'
+#       - name: Use Node.js ${{ matrix.node-version }}
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: ${{ matrix.node-version }}
+#           cache: yarn
+#       - name: Cache Firestore emulator
+#         uses: actions/cache@v2
+#         env:
+#           cache-name: cache-firestore-emulator
+#         with:
+#           path: ~/.cache/firebase/emulators
+#           key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+#       - run: yarn workspaces focus @goldfinch-eng/functions
+#       - run: yarn workspaces foreach -ptR --from @goldfinch-eng/functions run build
+#       - run: yarn workspace @goldfinch-eng/functions ci_test
+#       - name: deploy-dev
+#         env:
+#           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+#         run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn firebase use dev && yarn pre-deploy && yarn firebase deploy --debug --only functions:parallelMarketsDemoWebhookProcessor,functions:kycStatus,functions:registerKyc --project dev"
+#       - name: Create Sentry release
+#         uses: getsentry/action-release@v1
+#         env:
+#           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#           SENTRY_PROJECT: server-functions-dev
+#         with:
+#           environment: dev
+#           sourcemaps: packages/functions/lib/functions
+#           ignore_empty: true
