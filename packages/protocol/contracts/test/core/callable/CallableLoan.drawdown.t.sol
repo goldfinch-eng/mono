@@ -34,12 +34,12 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     address user,
     uint256 depositAmount,
     uint256 drawdownAmount,
-    uint256 warp1Time,
-    uint256 warp2Time
+    uint256 timeToDeposit,
+    uint256 timeToFirstDrawdown
   ) public {
     vm.assume(user != BORROWER && user != gfConfig.protocolAdminAddress());
-    warp1Time = bound(warp1Time, 0, 1000 days);
-    warp2Time = bound(warp2Time, 0, 1000 days);
+    timeToDeposit = bound(timeToDeposit, 0, 1000 days);
+    timeToFirstDrawdown = bound(timeToFirstDrawdown, 0, 1000 days);
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
 
@@ -47,9 +47,9 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
 
-    vm.warp(block.timestamp + warp1Time);
+    skip(timeToDeposit);
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
-    vm.warp(block.timestamp + warp2Time);
+    skip(timeToFirstDrawdown);
     _startImpersonation(user);
     vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.RequiresLockerRole.selector, user));
     callableLoan.drawdown(drawdownAmount);
@@ -87,12 +87,12 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     uint256 depositAmount,
     uint256 drawdownAmount,
     uint256 drawdownAmount2,
-    uint256 warp1Time,
-    uint256 warp2Time,
-    uint256 warp3Time
+    uint256 timeToDeposit,
+    uint256 timeToFirstDrawdown,
+    uint256 timeToSecondDrawdown
   ) public {
-    warp1Time = bound(warp1Time, 0, 1000 days);
-    warp2Time = bound(warp2Time, 0, 1000 days);
+    timeToDeposit = bound(timeToDeposit, 0, 1000 days);
+    timeToFirstDrawdown = bound(timeToFirstDrawdown, 0, 1000 days);
 
     depositAmount = bound(depositAmount, usdcVal(1), usdcVal(100_000_100));
     drawdownAmount = bound(drawdownAmount, 1, depositAmount - 1);
@@ -103,11 +103,11 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(depositor, 1, 1, "");
 
-    vm.warp(block.timestamp + warp1Time);
+    skip(timeToDeposit);
     uint256 token = deposit(callableLoan, 3, depositAmount, depositor);
 
     uint256 previousContractBalance = usdc.balanceOf(address(callableLoan));
-    vm.warp(block.timestamp + warp2Time);
+    skip(timeToFirstDrawdown);
     _startImpersonation(BORROWER);
 
     assertTrue(callableLoan.loanPhase() == LoanPhase.Funding);
@@ -116,13 +116,13 @@ contract CallableLoanDrawdownTest is CallableLoanBaseTest {
     assertEq(usdc.balanceOf(BORROWER), previousBorrowerBalance + drawdownAmount);
     assertEq(usdc.balanceOf(address(callableLoan)), previousContractBalance - drawdownAmount);
 
-    warp3Time = bound(
-      warp3Time,
+    timeToSecondDrawdown = bound(
+      timeToSecondDrawdown,
       0,
       (cl.termStartTime() - block.timestamp) + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS - 1
     );
     drawdownAmount2 = bound(drawdownAmount2, 1, depositAmount - drawdownAmount);
-    vm.warp(block.timestamp + warp3Time);
+    skip(timeToSecondDrawdown);
     callableLoan.drawdown(drawdownAmount2);
     assertTrue(callableLoan.loanPhase() == LoanPhase.DrawdownPeriod);
     assertEq(usdc.balanceOf(BORROWER), previousBorrowerBalance + drawdownAmount + drawdownAmount2);
