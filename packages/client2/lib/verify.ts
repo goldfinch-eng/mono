@@ -6,8 +6,12 @@ import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 import { UidType } from "./graphql/generated";
 
 interface IKYCStatus {
-  status: "unknown" | "approved" | "failed";
+  status: "unknown" | "approved" | "failed" | "expired" | "pending";
   countryCode: string;
+  accreditationStatus: string;
+  identityStatus: string;
+  kycProvider: string;
+  type: string;
 }
 
 /**
@@ -75,6 +79,7 @@ export async function registerKyc(account: string, signature: KycSignature) {
   if (!response.ok) {
     throw new Error("Failed to register auth code for Parallel Markets");
   }
+  return response;
 }
 
 export enum UIDType {
