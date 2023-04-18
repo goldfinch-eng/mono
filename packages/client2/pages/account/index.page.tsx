@@ -42,16 +42,12 @@ const AccountsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const asyncEffect = async () => {
+      if (query.code) {
+        setIsLoading(true);
+      }
       setError(undefined);
       /* we don't want to keep asking users for their signature once they've already signed */
-      const registeredKYC = localStorage.getItem("registerKYC");
-      if (registeredKYC === "true") {
-        return;
-      }
       try {
-        if (query.code) {
-          setIsLoading(true);
-        }
         /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
         if (query.state !== undefined) {
           const parallel_markets_state = sessionStorage.getItem(
@@ -75,12 +71,14 @@ const AccountsPage: NextPageWithLayout = () => {
             JSON.stringify({ key: query.code, provider: "parallel_markets" })
           );
           const response = await registerKyc(account, sig);
-          localStorage.setItem("registerKYC", response.ok.toString());
+          localStorage.setItem("registerKyc", response.ok.toString());
         }
       } catch (e) {
         setError(e as Error);
       } finally {
-        setIsLoading(false);
+        if (localStorage.getItem("registerKyc") === "true") {
+          setIsLoading(false);
+        }
       }
     };
     asyncEffect();
@@ -88,16 +86,15 @@ const AccountsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const asyncEffect = async () => {
+      if (localStorage.getItem("registerKyc") === "true") {
+        setIsLoading(true);
+      }
       try {
         /* if a user has already signed we can trigger the next async action (fetching updated KYC status) */
-        const registeredKYC = localStorage.getItem("registerKYC");
-        if (registeredKYC === "true") {
-          setIsLoading(true);
-        }
         const signature = sessionStorage.getItem("signature");
         if (signature == null) {
           throw new Error(
-            "We don't have your signature . Please re-try the process again."
+            "We don't have your signature. Please re-try the process again."
           );
         }
         const parsedSignature: KycSignature = JSON.parse(signature);
@@ -116,7 +113,7 @@ const AccountsPage: NextPageWithLayout = () => {
     asyncEffect();
   }, [account, identityStatus, query.code]);
 
-  const showPendingVerificationBanner = status === "pending";
+  const showPendingVerificationBanner = status === "pending" && account;
   const identityVerificationApproved = identityStatus === "approved";
   const accreditationVerificationApproved = accreditationStatus === "approved";
 
@@ -185,7 +182,7 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 {isLoading ? (
                   <Spinner size="lg" />
-                ) : account && showPendingVerificationBanner ? (
+                ) : showPendingVerificationBanner ? (
                   <CallToActionBanner
                     iconLeft={DEFAULT_UID_ICON}
                     title="UID is being verified"
