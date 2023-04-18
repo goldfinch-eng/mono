@@ -1,3 +1,4 @@
+import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
@@ -14,10 +15,23 @@ import {
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
+import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { getSignatureForKyc, registerKyc, fetchKycStatus } from "@/lib/verify";
+import { getSignatureForKyc, registerKyc } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
+
+gql`
+  query AccountPage {
+    viewer @client {
+      kycStatus {
+        status
+        identityStatus
+        accreditationStatus
+      }
+    }
+  }
+`;
 
 const DEFAULT_UID_SET_UP_STRING =
   "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
@@ -26,70 +40,66 @@ const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { query, replace } = useRouter();
-  const [identityStatus, setIdentityStatus] = useState<string>(
-    "pending_verification"
-  );
-  const [accreditationStatus, setAccreditationStatus] = useState<string>(
-    "pending_verification"
-  );
-  const [status, setStatus] = useState<string>("unknown");
+  const { data, error, loading, refetch } = useAccountPageQuery();
+  const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error>();
+  const [isRegisteringKyc, setIsRegisteringKyc] = useState(false);
+  const [registerKycError, setRegisterKycError] = useState<Error>();
 
   useEffect(() => {
-    if (!signer || !account) {
+    if (!router.isReady || !signer || !account) {
       return;
     }
     const asyncEffect = async () => {
-      setIsLoading(true);
-      setError(undefined);
+      console;
+      setIsRegisteringKyc(true);
+      setRegisterKycError(undefined);
       /* we don't want to keep asking users for their signature once they've already signed */
       try {
         /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
-        if (query.state !== undefined) {
+        if (router.query.state !== undefined) {
           const parallel_markets_state = sessionStorage.getItem(
             PARALLEL_MARKETS.STATE_KEY
           );
-          if (query.state !== parallel_markets_state) {
+          if (router.query.state !== parallel_markets_state) {
             throw new Error(
               "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
             );
           }
         }
-        if (query.error === "access_denied") {
+        if (router.query.error === "access_denied") {
           throw new Error(
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (query.code !== undefined && account && provider) {
+        if (router.query.code !== undefined && account && provider) {
           const sig = await getSignatureForKyc(
             provider,
             signer,
-            JSON.stringify({ key: query.code, provider: "parallel_markets" })
+            JSON.stringify({
+              key: router.query.code,
+              provider: "parallel_markets",
+            })
           );
           await registerKyc(account, sig);
-          replace("/account");
+          await refetch();
+          router.replace("/account");
         }
       } catch (e) {
-        setError(e as Error);
+        setRegisterKycError(e as Error);
       } finally {
-        const fetchKycSig = await getSignatureForKyc(provider, signer);
-        const kycStatus = await fetchKycStatus(account, fetchKycSig);
-        setIdentityStatus(kycStatus.identityStatus);
-        setAccreditationStatus(kycStatus.accreditationStatus);
-        setStatus(kycStatus.status);
-        setIsLoading(false);
+        setIsRegisteringKyc(false);
       }
     };
     asyncEffect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, provider, signer]);
+  }, [account, provider, signer, router, router.isReady, refetch]);
 
-  const showPendingVerificationBanner = status === "pending" && account;
-  const identityVerificationApproved = identityStatus === "approved";
-  const accreditationVerificationApproved = accreditationStatus === "approved";
+  const showPendingVerificationBanner =
+    data?.viewer.kycStatus?.status === "pending";
+  const identityVerificationApproved =
+    data?.viewer.kycStatus?.identityStatus === "approved";
+  const accreditationVerificationApproved =
+    data?.viewer.kycStatus?.accreditationStatus === "approved";
 
   const statuses: ReactNode = (
     <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
@@ -142,6 +152,11 @@ const AccountsPage: NextPageWithLayout = () => {
           </h1>
         </div>
       </div>
+      {error ? (
+        <div className="text-xl text-clay-500">
+          Unable to fetch data for your account
+        </div>
+      ) : null}
       <TabGroup>
         <div className="bg-mustard-100">
           <div className="mx-auto max-w-7xl px-5">
@@ -154,7 +169,7 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                {isLoading ? (
+                {isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
                 ) : showPendingVerificationBanner ? (
                   <CallToActionBanner
@@ -170,7 +185,7 @@ const AccountsPage: NextPageWithLayout = () => {
                     renderButton={(props) =>
                       account ? (
                         <Button {...props} onClick={openVerificationModal}>
-                          {error ? "Try again" : "Begin UID setup"}
+                          {registerKycError ? "Try again" : "Begin UID setup"}
                         </Button>
                       ) : (
                         <Button {...props} onClick={openWalletModal}>
@@ -180,22 +195,22 @@ const AccountsPage: NextPageWithLayout = () => {
                     }
                     iconLeft={
                       account
-                        ? error
+                        ? registerKycError
                           ? "Exclamation"
                           : DEFAULT_UID_ICON
                         : DEFAULT_UID_ICON
                     }
                     title={
                       account
-                        ? error
+                        ? registerKycError
                           ? "There was a problem connecting to our verification partner"
                           : DEFAULT_UID_TITLE
                         : DEFAULT_UID_TITLE
                     }
                     description={
                       account
-                        ? error
-                          ? error.message
+                        ? registerKycError
+                          ? registerKycError.message
                           : DEFAULT_UID_SET_UP_STRING
                         : DEFAULT_UID_SET_UP_STRING
                     }
