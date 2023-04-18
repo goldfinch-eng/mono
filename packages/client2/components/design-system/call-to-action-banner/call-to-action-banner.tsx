@@ -55,7 +55,7 @@ export function CallToActionBanner({
           <div
             className={clsx(
               colorScheme === "blue-gradient" ? "text-white" : "text-sand-800",
-              "flex flex-col" /* wil  l add more conditional statements for text scheme soon */
+              "flex flex-col" /* will add more conditional statements for text scheme soon */
             )}
           >
             <div className="row mb-2 flex">

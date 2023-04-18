@@ -18,8 +18,6 @@ import { PARALLEL_MARKETS } from "@/constants";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { getSignatureForKyc, registerKyc } from "@/lib/verify";
-import { fetchKycStatus } from "@/lib/verify";
-import { KycSignature } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
