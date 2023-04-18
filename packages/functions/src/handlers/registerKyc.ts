@@ -7,7 +7,11 @@ import * as admin from "firebase-admin"
 import {ParallelMarkets} from "./parallelmarkets/PmApi"
 import firestore = admin.firestore
 import {KycItemParallelMarkets, KycItem} from "./kyc/kycTypes"
-import {getAccreditationStatus} from "./kyc/parallelMarketsConverter"
+import {
+  getAccreditationStatus,
+  getBusinessIdentityStatus,
+  getIndividualIdentityStatus,
+} from "./kyc/parallelMarketsConverter"
 
 export const registerKyc = genRequestHandler({
   requireAuth: "signature",
@@ -80,7 +84,10 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
     const {incorporationCountry, principalLocation, consistencySummary, expiresAt} = identityDetails
     const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
     const countryIsUS = incorporationCountry === "US" || principalLocation.country == "US"
+
     const {status: accreditationStatus, expiresAt: accreditationExpiresAt} = getAccreditationStatus(accreditation)
+
+    const businessIdentityStatus = getBusinessIdentityStatus(consistencySummary.overallRecordsMatchLevel)
 
     return {
       id,
@@ -88,7 +95,7 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
       type: "business",
       accreditationStatus,
       accreditationExpiresAt,
-      identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
+      identityStatus: businessIdentityStatus,
       identityExpiresAt,
       countryCode: countryIsUS ? "US" : incorporationCountry,
     }
@@ -98,14 +105,18 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
     const {citizenshipCountry, residenceLocation, consistencySummary, expiresAt} = identityDetails
     const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
     const countryIsUS = citizenshipCountry === "US" || residenceLocation.country == "US"
+
     const {status: accreditationStatus, expiresAt: accreditationExpiresAt} = getAccreditationStatus(accreditation)
+
+    const {overallRecordsMatchLevel, idValidity} = consistencySummary
+    const individualIdentityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
 
     return {
       id,
       type: "individual",
       accreditationStatus,
       accreditationExpiresAt,
-      identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
+      identityStatus: individualIdentityStatus,
       identityExpiresAt,
       countryCode: countryIsUS ? "US" : citizenshipCountry,
     }
