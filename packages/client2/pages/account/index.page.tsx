@@ -17,7 +17,6 @@ import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { getSignatureForKyc, registerKyc } from "@/lib/verify";
 import { fetchKycStatus } from "@/lib/verify";
-import { KycSignature } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
@@ -39,10 +38,11 @@ const AccountsPage: NextPageWithLayout = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error>();
+  const { replace } = useRouter();
 
   useEffect(() => {
     const asyncEffect = async () => {
-      if (sessionStorage.getItem("registerKyc") === "true") {
+      if (!account || !signer) {
         return;
       }
       if (query.code) {
@@ -67,55 +67,29 @@ const AccountsPage: NextPageWithLayout = () => {
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (query.code !== undefined && account && provider && signer) {
+        if (query.code !== undefined && provider) {
           const sig = await getSignatureForKyc(
             provider,
             signer,
             JSON.stringify({ key: query.code, provider: "parallel_markets" })
           );
-          const response = await registerKyc(account, sig);
-          sessionStorage.setItem("registerKyc", response.ok.toString());
+          await registerKyc(account, sig);
+          replace("/account");
         }
       } catch (e) {
         setError(e as Error);
       } finally {
         setIsLoading(false);
+        const signature = await getSignatureForKyc(provider, signer);
+        const kycStatus = await fetchKycStatus(account, signature);
+        setIdentityStatus(kycStatus.identityStatus);
+        setAccreditationStatus(kycStatus.accreditationStatus);
+        setStatus(kycStatus.status);
       }
     };
     asyncEffect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.state, query.error, query.code, account, provider, signer]);
-
-  useEffect(() => {
-    const asyncEffect = async () => {
-      try {
-        /* if a user has already signed we can trigger the next async action (fetching updated KYC status) */
-        const signature = sessionStorage.getItem("signature");
-        if (signature == null) {
-          throw new Error(
-            "We don't have your signature. Please re-try the process again."
-          );
-        }
-        if (sessionStorage.getItem("registerKyc") !== "true") {
-          setIsLoading(true);
-        }
-        const parsedSignature: KycSignature = JSON.parse(signature);
-        if (account) {
-          const kycStatus = await fetchKycStatus(account, parsedSignature);
-          setIdentityStatus(kycStatus.identityStatus);
-          setAccreditationStatus(kycStatus.accreditationStatus);
-          setStatus(kycStatus.status);
-          console.log({ kycStatus });
-        }
-      } catch (e) {
-        setError(e as Error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (sessionStorage.getItem("registerKyc") === "true") {
-      asyncEffect();
-    }
-  }, [account, identityStatus, query.code]);
 
   const showPendingVerificationBanner = status === "pending" && account;
   const identityVerificationApproved = identityStatus === "approved";
