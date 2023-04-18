@@ -4,31 +4,31 @@ import {PmAccreditationResponse, PmConsistencyLevel, PmIdentityDocumentValidity}
 export const getAccreditationStatus = (accreditation: PmAccreditationResponse) => {
   console.log(`Evaluating accreditation status for ${accreditation.type} ${accreditation.id}`)
   if (accreditation.indicatedUnaccredited !== null) {
-    return "unaccredited"
+    return {status: "unaccredited", expiresAt: undefined}
   } else if (accreditation.accreditations.length == 0) {
-    return "pending_documents"
+    return {status: "pending_documents", expiresAt: undefined}
   } else {
     // Take the most recent accreditation attempt (sort by created at descending)
     const accreditationAttempts = accreditation.accreditations
     accreditationAttempts.sort((attempt1, attempt2) => {
       return attempt1.createdAt > attempt2.createdAt ? -1 : 1
     })
-    const accreditationAttempt = accreditationAttempts.at(0) || {status: "pending"}
-    const {status} = accreditationAttempt
+    const accreditationAttempt = accreditationAttempts.at(0) || {status: "pending", expiresAt: undefined}
+    const {status, expiresAt} = accreditationAttempt
     switch (status) {
       case "pending":
-        return "pending_verification"
+        return {status: "pending_verification", expiresAt}
       case "submitter_pending":
       case "third_party_pending":
-        return "pending_documents"
+        return {status: "pending_documents", expiresAt}
       case "current":
-        return "approved"
+        return {status: "approved", expiresAt}
       case "expired":
-        return "expired"
+        return {status: "expired", expiresAt}
       case "rejected":
-        return "failed"
+        return {status: "failed", expiresAt}
       default:
-        return "unknown"
+        return {status: "unknown", expiresAt}
     }
   }
 }

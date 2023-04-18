@@ -30,6 +30,7 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
       id: "test_id_individual",
       identityStatus: "pending",
       accreditationStatus: "pending",
+      identityExpiresAt: 1713374693,
       type: "individual",
     },
   }
@@ -42,6 +43,7 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
     parallelMarkets: {
       id: "test_id_business",
       identityStatus: "pending",
+      identityExpiresAt: 1713374693,
       accreditationStatus: "pending",
       type: "business",
     },
@@ -61,6 +63,7 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
         idValidity: "valid",
         overallRecordsMatchLevel: "high",
       },
+      expiresAt: "2024-04-17T17:24:53Z",
     },
   }
 
@@ -77,6 +80,7 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
       consistencySummary: {
         overallRecordsMatchLevel: "high",
       },
+      expiresAt: "2024-04-17T17:24:53Z",
     },
   }
 

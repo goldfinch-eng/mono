@@ -38,8 +38,12 @@ export type KycItem = {
     type: "individual" | "business"
     accreditationStatus: KycAccreditationStatus | null
     identityStatus: KycIdentityStatus | null
+    // Unix timestamp of expiry of identity documents, or null if their identity documents haven't been verified yet
+    identityExpiresAt: number | null
     accreditationAccessRevocationAt: string | null
     identityAccessRevocationAt: string | null
+    // Unix timestamp of expiry of accreditation documents, or null if their accreditations documents haven't been verified yet
+    accreditationExpiresAt: number | null
   }
 }
 

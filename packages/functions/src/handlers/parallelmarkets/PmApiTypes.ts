@@ -40,7 +40,10 @@ export type PmBusinessConsistencySummary = {
 export type PmIndividualIdentityDetails = {
   birthDate: string
   citizenshipCountry: string
+  // This will be in datetime format e.g. "2024-04-17T17:24:53Z"
   completedAt: string
+  // This will be in datetime format
+  expiresAt: string
   consistencySummary: PmIndividualConsistencySummary
   residenceLocation: {
     country: string
@@ -49,7 +52,10 @@ export type PmIndividualIdentityDetails = {
 
 export type PmBusinessIdentityDetails = {
   businessType: string
+  // This will be in datetime format e.g. "2024-04-17T17:24:53Z"
   completedAt: string
+  // This will be in datetime format
+  expiresAt: string
   incorporationCountry: string
   consistencySummary: PmBusinessConsistencySummary
   principalLocation: {

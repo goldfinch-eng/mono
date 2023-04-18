@@ -27,7 +27,9 @@ describe("parallelMarketsDemoWebhookProcessor accreditation data update", async 
     parallelMarkets: {
       id: "test_id_individual",
       identityStatus: "pending",
+      identityExpiresAt: 1712376115,
       accreditationStatus: "pending_verification",
+      accreditationExpiresAt: 1712376115,
     },
   }
 
@@ -38,7 +40,9 @@ describe("parallelMarketsDemoWebhookProcessor accreditation data update", async 
     parallelMarkets: {
       id: "test_id_business",
       identityStatus: "pending",
+      identityExpiresAt: 1712376115,
       accreditationStatus: "pending_verification",
+      accreditationExpiresAt: 1712376115,
     },
   }
 
