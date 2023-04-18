@@ -42,6 +42,9 @@ const AccountsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const asyncEffect = async () => {
+      if (localStorage.getItem("registerKyc") === "true") {
+        return;
+      }
       if (query.code) {
         setIsLoading(true);
       }
@@ -76,9 +79,7 @@ const AccountsPage: NextPageWithLayout = () => {
       } catch (e) {
         setError(e as Error);
       } finally {
-        if (localStorage.getItem("registerKyc") === "true") {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     asyncEffect();
@@ -86,17 +87,18 @@ const AccountsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const asyncEffect = async () => {
-      if (localStorage.getItem("registerKyc") === "true") {
-        setIsLoading(true);
-      }
       try {
         /* if a user has already signed we can trigger the next async action (fetching updated KYC status) */
         const signature = sessionStorage.getItem("signature");
-        if (signature == null) {
+        if (
+          signature == null ||
+          localStorage.getItem("registerKyc") !== "true"
+        ) {
           throw new Error(
             "We don't have your signature. Please re-try the process again."
           );
         }
+        setIsLoading(true);
         const parsedSignature: KycSignature = JSON.parse(signature);
         if (account) {
           const kycStatus = await fetchKycStatus(account, parsedSignature);
