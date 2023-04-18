@@ -42,7 +42,7 @@ const AccountsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const asyncEffect = async () => {
-      if (localStorage.getItem("registerKyc") === "true") {
+      if (sessionStorage.getItem("registerKyc") === "true") {
         return;
       }
       if (query.code) {
@@ -74,7 +74,7 @@ const AccountsPage: NextPageWithLayout = () => {
             JSON.stringify({ key: query.code, provider: "parallel_markets" })
           );
           const response = await registerKyc(account, sig);
-          localStorage.setItem("registerKyc", response.ok.toString());
+          sessionStorage.setItem("registerKyc", response.ok.toString());
         }
       } catch (e) {
         setError(e as Error);
@@ -90,21 +90,21 @@ const AccountsPage: NextPageWithLayout = () => {
       try {
         /* if a user has already signed we can trigger the next async action (fetching updated KYC status) */
         const signature = sessionStorage.getItem("signature");
-        if (
-          signature == null ||
-          localStorage.getItem("registerKyc") !== "true"
-        ) {
+        if (signature == null) {
           throw new Error(
             "We don't have your signature. Please re-try the process again."
           );
         }
-        setIsLoading(true);
+        if (sessionStorage.getItem("registerKyc") !== "true") {
+          setIsLoading(true);
+        }
         const parsedSignature: KycSignature = JSON.parse(signature);
         if (account) {
           const kycStatus = await fetchKycStatus(account, parsedSignature);
           setIdentityStatus(kycStatus.identityStatus);
           setAccreditationStatus(kycStatus.accreditationStatus);
           setStatus(kycStatus.status);
+          console.log({ kycStatus });
         }
       } catch (e) {
         setError(e as Error);
@@ -112,7 +112,9 @@ const AccountsPage: NextPageWithLayout = () => {
         setIsLoading(false);
       }
     };
-    asyncEffect();
+    if (sessionStorage.getItem("registerKyc") === "true") {
+      asyncEffect();
+    }
   }, [account, identityStatus, query.code]);
 
   const showPendingVerificationBanner = status === "pending" && account;
