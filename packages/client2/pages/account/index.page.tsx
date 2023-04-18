@@ -15,9 +15,7 @@ import {
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { getSignatureForKyc, registerKyc } from "@/lib/verify";
-import { fetchKycStatus } from "@/lib/verify";
-import { KycSignature } from "@/lib/verify";
+import { getSignatureForKyc, registerKyc, fetchKycStatus } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
@@ -28,7 +26,7 @@ const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { query } = useRouter();
+  const { query, replace } = useRouter();
   const [identityStatus, setIdentityStatus] = useState<string>(
     "pending_verification"
   );
@@ -41,13 +39,11 @@ const AccountsPage: NextPageWithLayout = () => {
   const [error, setError] = useState<Error>();
 
   useEffect(() => {
+    if (!signer || !account) {
+      return;
+    }
     const asyncEffect = async () => {
-      if (sessionStorage.getItem("registerKyc") === "true") {
-        return;
-      }
-      if (query.code) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       setError(undefined);
       /* we don't want to keep asking users for their signature once they've already signed */
       try {
@@ -67,55 +63,29 @@ const AccountsPage: NextPageWithLayout = () => {
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (query.code !== undefined && account && provider && signer) {
+        if (query.code !== undefined && account && provider) {
           const sig = await getSignatureForKyc(
             provider,
             signer,
             JSON.stringify({ key: query.code, provider: "parallel_markets" })
           );
-          const response = await registerKyc(account, sig);
-          sessionStorage.setItem("registerKyc", response.ok.toString());
+          await registerKyc(account, sig);
+          replace("/account");
         }
       } catch (e) {
         setError(e as Error);
       } finally {
+        const fetchKycSig = await getSignatureForKyc(provider, signer);
+        const kycStatus = await fetchKycStatus(account, fetchKycSig);
+        setIdentityStatus(kycStatus.identityStatus);
+        setAccreditationStatus(kycStatus.accreditationStatus);
+        setStatus(kycStatus.status);
         setIsLoading(false);
       }
     };
     asyncEffect();
-  }, [query.state, query.error, query.code, account, provider, signer]);
-
-  useEffect(() => {
-    const asyncEffect = async () => {
-      try {
-        /* if a user has already signed we can trigger the next async action (fetching updated KYC status) */
-        const signature = sessionStorage.getItem("signature");
-        if (signature == null) {
-          throw new Error(
-            "We don't have your signature. Please re-try the process again."
-          );
-        }
-        if (sessionStorage.getItem("registerKyc") !== "true") {
-          setIsLoading(true);
-        }
-        const parsedSignature: KycSignature = JSON.parse(signature);
-        if (account) {
-          const kycStatus = await fetchKycStatus(account, parsedSignature);
-          setIdentityStatus(kycStatus.identityStatus);
-          setAccreditationStatus(kycStatus.accreditationStatus);
-          setStatus(kycStatus.status);
-          console.log({ kycStatus });
-        }
-      } catch (e) {
-        setError(e as Error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (sessionStorage.getItem("registerKyc") === "true") {
-      asyncEffect();
-    }
-  }, [account, identityStatus, query.code]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, provider, signer]);
 
   const showPendingVerificationBanner = status === "pending" && account;
   const identityVerificationApproved = identityStatus === "approved";

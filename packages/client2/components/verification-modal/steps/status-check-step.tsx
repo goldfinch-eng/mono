@@ -52,9 +52,11 @@ export function StatusCheckStep() {
 
         const signature = await getSignatureForKyc(provider, signer);
         setSignature(signature);
-        /* store the signature in session */
-        sessionStorage.setItem("signature", JSON.stringify(signature));
         const kycStatus = await fetchKycStatus(account, signature);
+        if (kycStatus.status === "unknown") {
+          goToStep(VerificationFlowSteps.Intro);
+          return;
+        }
         const goldfinchUtils = await import("@goldfinch-eng/utils");
         const idVersion = goldfinchUtils.getIDType(kycStatus);
         setUidVersion(idVersion);
