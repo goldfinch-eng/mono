@@ -11,34 +11,25 @@ import {
 import {ethers} from "ethers"
 import {KycAccreditationStatus, KycIdentityStatus, KycStatus} from "./kyc/kycTypes"
 
-// Response shape for a user who was KYC'd through Parallel Markets
-interface KycStatusPmResponse {
-  address: string
-  status: KycStatus
-  parallelMarkets: {
-    identityStatus: KycIdentityStatus
-    accreditationStatus: KycAccreditationStatus
-    accessRevocationBy?: number
-  }
-}
-
-// Response shape for a user who was KYC'd through Persona
-interface KycStatusPersonaResponse {
-  address: string
-  status: KycStatus
-  countryCode: string | null
-  residency: string | null
-}
-
 // Response shape
-type KycStatusResponse = KycStatusPmResponse | KycStatusPersonaResponse
+export type KycStatusResponse = {
+  address: string
+  status: KycStatus
+  identityStatus?: KycIdentityStatus
+  accreditationStatus?: KycAccreditationStatus
+  countryCode: string
+  residency: string
+  kycProvider: "parallelMarkets" | "persona" | "none"
+  type?: "individual" | "business"
+  accessRevocationBy?: number
+}
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
 // Where:
 //  pending: persona verification attempted. Could be in a lot of stages here, persona is the source of truth
 //  approved: Approved on persona, but not yet golisted on chain
 //  failed: Failed on persona
-const userStatusFromPersonaStatus = (personaStatus: string): KycStatus => {
+const topLevelStatusFromPersonaStatus = (personaStatus: string): KycStatus => {
   // If we don't have a status, or previous attempt expired, treat as a brand new address
   if (personaStatus === "" || personaStatus === undefined || personaStatus === "expired") {
     return "unknown"
@@ -60,6 +51,8 @@ const userStatusFromPmStatus = (
 ): KycStatus => {
   if (identityStatus === "approved" && accreditationStatus === "approved") {
     return "approved"
+  } else if (identityStatus === "approved" && accreditationStatus === "unaccredited") {
+    return "approved"
   } else if (identityStatus === "failed" || accreditationStatus === "failed") {
     return "failed"
   } else if (identityStatus === "expired" || accreditationStatus === "expired") {
@@ -72,19 +65,24 @@ const userStatusFromPmStatus = (
 }
 
 // Construct a Persona response body from a user document
-const getPersonaPayload = (data: FirebaseFirestore.DocumentData): KycStatusPersonaResponse => {
+const getPersonaStatusResponse = (data: FirebaseFirestore.DocumentData): KycStatusResponse => {
+  const topLevelStatus = topLevelStatusFromPersonaStatus(data?.persona?.status)
   return {
     address: ethers.utils.getAddress(data?.address),
-    status: userStatusFromPersonaStatus(data?.persona?.status),
-    countryCode: data?.countryCode,
-    residency: data?.kyc?.residency,
+    status: topLevelStatus,
+    countryCode: data?.countryCode || "unknown",
+    residency: data?.kyc?.residency || "unknown",
+    kycProvider: "persona",
+    type: "individual",
+    accreditationStatus: "unaccredited",
+    identityStatus: topLevelStatus as KycIdentityStatus,
   }
 }
 
 // Construct a Parallel Markets response body from a user document
-const getPmPayload = (data: FirebaseFirestore.DocumentData): KycStatusPmResponse => {
+const getPmStatusResponse = (data: FirebaseFirestore.DocumentData): KycStatusResponse => {
   const {parallelMarkets} = data
-  const {identityAccessRevocationAt, accreditationAccessRevocationAt} = parallelMarkets
+  const {identityAccessRevocationAt, accreditationAccessRevocationAt, countryCode, residency} = parallelMarkets
   let accessRevocationBy = undefined
   if (identityAccessRevocationAt && accreditationAccessRevocationAt) {
     accessRevocationBy = Math.min(identityAccessRevocationAt, accreditationAccessRevocationAt)
@@ -93,12 +91,50 @@ const getPmPayload = (data: FirebaseFirestore.DocumentData): KycStatusPmResponse
   return {
     address: ethers.utils.getAddress(data?.address),
     status: userStatusFromPmStatus(data?.parallelMarkets.identityStatus, data?.parallelMarkets.accreditationStatus),
-    parallelMarkets: {
-      identityStatus: data?.parallelMarkets.identityStatus,
-      accreditationStatus: data?.parallelMarkets.accreditationStatus,
-      accessRevocationBy,
-    },
+    kycProvider: "parallelMarkets",
+    countryCode,
+    residency,
+    type: data?.parallelMarkets.type,
+    identityStatus: data?.parallelMarkets.identityStatus,
+    accreditationStatus: data?.parallelMarkets.accreditationStatus,
+    accessRevocationBy,
   }
+}
+
+const getLegacyPayload = (address: string): KycStatusResponse => {
+  const payload: KycStatusResponse = {
+    address,
+    status: "approved",
+    countryCode: "unknown",
+    residency: "unknown",
+    kycProvider: "parallelMarkets",
+    type: "individual",
+    identityStatus: "legacy",
+    accreditationStatus: "legacy",
+  }
+
+  if (isApprovedNonUSEntity(address)) {
+    payload.countryCode = "nonUs"
+    payload.residency = "nonUs"
+    payload.type = "business"
+  } else if (isApprovedUSAccreditedEntity(address)) {
+    payload.countryCode = "US"
+    payload.residency = "us"
+    payload.type = "business"
+  } else if (isApprovedUSAccreditedIndividual(address)) {
+    payload.countryCode = "US"
+    payload.residency = "us"
+    payload.type = "individual"
+  } else if (process.env.NODE_ENV === "test" && address === "0xA57415BeCcA125Ee98B04b229A0Af367f4144030") {
+    // Fake address used for testing
+    payload.countryCode = "US"
+    payload.residency = "us"
+    payload.type = "individual"
+  } else {
+    throw new Error(`${address} is not legacy`)
+  }
+
+  return payload
 }
 
 const isLegacyAccreditedUser = (address: string) => {
@@ -127,42 +163,51 @@ export const kycStatus = genRequestHandler({
     }
 
     const address = verificationResult.address
-    let payload: KycStatusResponse = {address: address, status: "unknown", countryCode: null, residency: ""}
+    let payload: KycStatusResponse = {
+      address: address,
+      status: "unknown",
+      countryCode: "unknown",
+      residency: "unknown",
+      kycProvider: "none",
+    }
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
 
     if (user.exists) {
+      console.log(`Found user in store for address ${address.toLowerCase()}`)
       const data = user.data()
       if (data?.persona) {
-        payload = getPersonaPayload(data)
+        console.log("User is persona user")
+        payload = getPersonaStatusResponse(data)
       } else if (data?.parallelMarkets) {
-        payload = getPmPayload(data)
+        console.log("User is parallelMarkets user")
+        payload = getPmStatusResponse(data)
       }
     } else if (isLegacyAccreditedUser(address)) {
-      // Automatic approval if they're a legacy accredited user
-      return res.status(200).send({
-        ...payload,
-        status: "approved",
-        parallelMarkets: {
-          identityStatus: "legacy",
-          accreditationStatus: "legacy",
-        },
-      })
+      console.log(`Found user in legacy json lists for address ${address.toLowerCase()}`)
+      payload = getLegacyPayload(address)
     }
+
+    console.log("Payload to return is")
+    console.log(payload)
 
     // Mock a parallel markets user response. If both query params are present then
     // any data in the user store is ignored.
+    // TODO - remove after sufficient testing
     if (req.query.pmIdentityStatus && req.query.pmAccreditationStatus) {
+      console.log("Overriding payload based on request query params")
       const pmIdentityStatus = req.query.pmIdentityStatus as KycIdentityStatus
       const pmAccreditationStatus = req.query.pmAccreditationStatus as KycAccreditationStatus
       payload = {
         address,
         status: userStatusFromPmStatus(pmIdentityStatus, pmAccreditationStatus),
-        parallelMarkets: {
-          identityStatus: pmIdentityStatus,
-          accreditationStatus: pmIdentityStatus,
-        },
+        countryCode: "US",
+        residency: "us",
+        kycProvider: "parallelMarkets",
+        type: "individual",
+        identityStatus: pmIdentityStatus,
+        accreditationStatus: pmIdentityStatus,
       }
     }
 

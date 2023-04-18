@@ -38,35 +38,41 @@ export function isApprovedNonUSEntity(address: string): boolean {
   return caseInsensitiveIncludes(NonUSEntitiesList, address)
 }
 
-export interface KYC {
-  status: "unknown" | "approved" | "failed"
-  countryCode: string
-  residency?: "non-us" | "us"
-}
-
-export function getIDType({address, kycStatus}: {address: string; kycStatus?: KYC}): number {
-  let idVersion: number
-
-  if (isApprovedUSAccreditedEntity(address)) {
-    // US accredited entity
-    idVersion = US_ENTITY_ID_TYPE_3
-  } else if (isApprovedNonUSEntity(address)) {
-    // non US entity
-    idVersion = NON_US_ENTITY_ID_TYPE_4
-  } else if (isApprovedUSAccreditedIndividual(address)) {
-    // US accredited individual
-    idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
-  } else if (kycStatus?.countryCode !== US_COUNTRY_CODE && kycStatus?.residency !== "us") {
-    // non US individual
-    idVersion = NON_US_INDIVIDUAL_ID_TYPE_0
-  } else if (kycStatus?.countryCode === US_COUNTRY_CODE || kycStatus?.residency === "us") {
-    // US non accredited individual
-    idVersion = US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
-  } else {
-    throw new Error("Cannot find expected UniqueIdentity idVersion")
+export function getIDType(kycResponse: any): number {
+  const {status, countryCode, residency} = kycResponse
+  if (status !== "approved") {
+    throw new Error("Not eligible for UID")
   }
 
-  return idVersion
+  const isUsBased = countryCode === US_COUNTRY_CODE || residency === "us"
+
+  const {type, accreditationStatus} = kycResponse
+
+  if (type === "individual" && isUsBased && accreditationStatus === "unaccredited") {
+    return US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
+  } else if (
+    type === "individual" &&
+    isUsBased &&
+    (accreditationStatus === "approved" || accreditationStatus === "legacy")
+  ) {
+    return US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
+  } else if (type === "individual" && !isUsBased) {
+    return NON_US_INDIVIDUAL_ID_TYPE_0
+  } else if (type === "business" && isUsBased && accreditationStatus === "unaccredited") {
+    throw new Error("Non-accredited US businesses are not eligible for UID")
+  } else if (
+    type === "business" &&
+    isUsBased &&
+    (accreditationStatus === "approved" || accreditationStatus === "legacy")
+  ) {
+    return US_ENTITY_ID_TYPE_3
+  } else if (type === "business" && !isUsBased) {
+    return NON_US_ENTITY_ID_TYPE_4
+  } else {
+    throw new Error(
+      `userType=${type}, isUsBased=${isUsBased}, accreditationStatus=${accreditationStatus} not eligible for UID`
+    )
+  }
 }
 
 export type Auth = {
@@ -75,5 +81,3 @@ export type Auth = {
   "x-goldfinch-signature-plaintext": any
   "x-goldfinch-signature-block-num": any
 }
-
-export type FetchKYCFunction = ({auth, chainId}: {auth: Auth; chainId: number}) => Promise<KYC>

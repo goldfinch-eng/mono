@@ -6,15 +6,8 @@ import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/
 import {HandlerParams} from "../types"
 import {
   assertNonNullable,
-  isPlainObject,
-  isString,
-  isApprovedUSAccreditedEntity,
-  isApprovedUSAccreditedIndividual,
-  isApprovedNonUSEntity,
   getIDType as defaultGetIDType,
-  KYC,
   Auth,
-  FetchKYCFunction,
   presignedMintMessage,
   presignedMintToMessage,
   verifySignature,
@@ -25,11 +18,11 @@ import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainne
 export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
 export const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
 import baseHandler from "../core/handler"
+import {KycStatusResponse} from "@goldfinch-eng/functions/handlers/kycStatus"
 
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
-const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
+export type FetchKYCFunction = ({auth, chainId}: {auth: Auth; chainId: number}) => Promise<KycStatusResponse>
 
 const API_URLS: {[key: number]: string} = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -41,14 +34,7 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
 
   assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
   const {data} = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
-
-  if (isKYC(data)) {
-    return data
-  } else {
-    throw new Error(
-      `invalid KYC response. Either data is not a plain object, '${data.status}' is unexpected, or '${data.countryCode}' is not a string`
-    )
-  }
+  return data as KycStatusResponse
 }
 
 const linkUserToUidStatus = async ({
@@ -179,45 +165,42 @@ export async function main({
   Sentry.setUser({id: userAddress})
 
   // accredited individuals + entities do not go through persona
-  let kycStatus: KYC | undefined = undefined
+  let kycItem: KycStatusResponse | undefined = undefined
 
-  if (
-    !isApprovedUSAccreditedEntity(userAddress) &&
-    !isApprovedUSAccreditedIndividual(userAddress) &&
-    !isApprovedNonUSEntity(userAddress)
-  ) {
-    try {
-      kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
-    } catch (e) {
-      console.error("fetchKYCStatus failed", e)
-      throw e
-    }
+  try {
+    kycItem = await fetchKYCStatus({auth, chainId: network.chainId})
+  } catch (e) {
+    console.error("fetchKYCStatus failed", e)
+    throw e
+  }
 
-    if (kycStatus.status !== "approved") {
-      throw new Error(`Does not meet mint requirements: status is ${kycStatus.status}`)
-    }
+  if (!kycItem) {
+    throw new Error("Unexpected undefined result from fetchKYCStatus")
+  }
 
-    if (kycStatus.countryCode === "") {
-      throw new Error(`Does not meet mint requirements: countryCode is null`)
-    }
-  } else {
-    // TODO We should verify the x-goldfinch-signature here!
+  const {status, countryCode} = kycItem
+
+  if (status !== "approved") {
+    throw new Error(`Does not meet mint requirements: status is ${kycItem.status}`)
+  }
+
+  if (!countryCode) {
+    throw new Error(`Does not meet mint requirements: missing countryCode`)
   }
 
   const currentBlock = await signer.provider.getBlock("latest")
   const expiresAt = currentBlock.timestamp + UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME
   const nonce = await uniqueIdentity.nonces(userAddress)
-  const idVersion = getIDType({
-    address: userAddress,
-    kycStatus,
-  })
+  const uidType = getIDType(kycItem)
+
+  console.log(`Generating sig for UID type: ${uidType}`)
 
   let presignedMessage
   if (mintToAddress) {
     presignedMessage = presignedMintToMessage(
       userAddress,
       mintToAddress,
-      idVersion,
+      uidType,
       expiresAt,
       uniqueIdentity.address,
       nonce,
@@ -226,7 +209,7 @@ export async function main({
   } else {
     presignedMessage = presignedMintMessage(
       userAddress,
-      idVersion,
+      uidType,
       expiresAt,
       uniqueIdentity.address,
       nonce,
@@ -243,10 +226,10 @@ export async function main({
     chainId: network.chainId,
     expiresAt,
     nonce: nonce.toNumber(),
-    uidType: idVersion,
+    uidType: uidType,
     msgSender: userAddress,
     mintToAddress,
   })
 
-  return {signature, expiresAt, idVersion}
+  return {signature, expiresAt, uidType}
 }

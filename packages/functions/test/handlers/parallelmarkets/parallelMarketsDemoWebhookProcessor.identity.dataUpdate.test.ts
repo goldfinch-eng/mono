@@ -25,10 +25,12 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
   const PENDING_FIRESTORE_INDIVIDUAL_USER = {
     address: PENDING_ADDRESS_INDIVIDUAL,
     countryCode: "CA",
+    residency: "us",
     parallelMarkets: {
       id: "test_id_individual",
       identityStatus: "pending",
       accreditationStatus: "pending",
+      type: "individual",
     },
   }
 
@@ -36,10 +38,12 @@ describe("parallelMarketsDemoWebhookProcessor identity data update", async () =>
   const PENDING_FIRESTORE_BUSINESS_USER = {
     address: PENDING_ADDRESS_BUSINESS,
     countryCode: "US",
+    residency: "us",
     parallelMarkets: {
       id: "test_id_business",
       identityStatus: "pending",
       accreditationStatus: "pending",
+      type: "business",
     },
   }
 

@@ -1,6 +1,6 @@
 # This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
 # NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
-name: Deploy parallelMarketsDemoWebhookProcessor, kycStatus, and registerKyc to Google Cloud functions
+name: Deploy dev functions
 on:
   push:
     branches: [ main ]
@@ -38,7 +38,7 @@ jobs:
       - name: deploy-dev
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn firebase use dev && yarn pre-deploy && yarn firebase deploy --debug --only functions:parallelMarketsDemoWebhookProcessor,functions:kycStatus,functions:registerKyc --project dev"
+        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn firebase use dev && yarn pre-deploy && yarn firebase deploy --debug --project dev"
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
