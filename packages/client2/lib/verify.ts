@@ -5,6 +5,36 @@ import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 
 import { UidType } from "./graphql/generated";
 
+function setCachedSignature(cacheKey: string, sig: KycSignature) {
+  sessionStorage.setItem(cacheKey, JSON.stringify(sig));
+}
+
+async function getCachedSignature(
+  cacheKey: string,
+  provider: Provider,
+  maxFreshness = 3600
+): Promise<KycSignature | null> {
+  try {
+    const cachedSig = JSON.parse(
+      sessionStorage.getItem(cacheKey) as string
+    ) as KycSignature;
+    const currentBlockTime = (await provider.getBlock("latest")).timestamp;
+    const cachedBlockTime = (
+      await provider.getBlock(cachedSig.signatureBlockNum)
+    ).timestamp;
+    if (currentBlockTime - cachedBlockTime > maxFreshness) {
+      return null;
+    }
+    return {
+      plaintext: cachedSig.plaintext,
+      signature: cachedSig.signature,
+      signatureBlockNum: cachedSig.signatureBlockNum,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // TODO - make identityStatus and accreditationStatus more strongly typed... maybe figure out
 // how to share the KycStatusResponse typed defined in the functions package here. But we don't
 // want to make functions a depency of the client. Perhaps there's another place we can define
@@ -44,14 +74,21 @@ export async function getSignatureForKyc(
     const currentBlock = await provider.getBlock("latest");
     const blockNumber = currentBlock.number;
     const msg = plaintext ?? getMessageToSign(blockNumber);
+    const cacheKey = plaintext ?? "get-kyc-status";
+
+    const cachedSig = await getCachedSignature(cacheKey, provider);
+    if (cachedSig) {
+      return cachedSig;
+    }
 
     const signature = await signer.signMessage(msg);
-
-    return {
+    const kycSignature = {
       plaintext: msg,
       signature,
       signatureBlockNum: blockNumber,
     };
+    setCachedSignature(cacheKey, kycSignature);
+    return kycSignature;
   } catch {
     throw new Error("Failed to get signature from user");
   }
@@ -84,7 +121,6 @@ export async function registerKyc(account: string, signature: KycSignature) {
   if (!response.ok) {
     throw new Error("Failed to register auth code for Parallel Markets");
   }
-  return response;
 }
 
 export enum UIDType {
