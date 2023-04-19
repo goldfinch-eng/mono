@@ -47,14 +47,20 @@ export function CallToActionBanner({
         "max-w-screen rounded-md p-6",
         colorScheme === "blue-gradient"
           ? "bg-gradient-to-r from-sky-500 to-sky-300"
-          : "border-1 border-solid border-sand-200 bg-white"
+          : colorScheme === "white"
+          ? "border-1 border-solid border-sand-200 bg-white"
+          : colorScheme === "green"
+          ? "bg-mint-500 shadow-md shadow-mint-500"
+          : null
       )}
     >
       <div className="flex flex-col">
         <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div
             className={clsx(
-              colorScheme === "blue-gradient" ? "text-white" : "text-sand-800",
+              colorScheme === "blue-gradient" || "green"
+                ? "text-white"
+                : "text-sand-800",
               "flex flex-col" /* will add more conditional statements for text scheme soon */
             )}
           >
@@ -65,7 +71,10 @@ export function CallToActionBanner({
             <p
               className={clsx(
                 "float-left text-sm",
-                renderButton ? "font-thin md:w-5/6 lg:w-2/3" : null
+                colorScheme ===
+                  "blue-gradient" /* will change this to be more based on text length */
+                  ? "font-thin md:w-5/6 lg:w-2/3"
+                  : null
               )}
             >
               {description}
