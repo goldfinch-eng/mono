@@ -1,3 +1,4 @@
+import type { KycStatusResponse } from "@goldfinch-eng/utils";
 import { Provider } from "@wagmi/core";
 import { Signer } from "ethers";
 
@@ -33,20 +34,6 @@ async function getCachedSignature(
   } catch {
     return null;
   }
-}
-
-// TODO - make identityStatus and accreditationStatus more strongly typed... maybe figure out
-// how to share the KycStatusResponse typed defined in the functions package here. But we don't
-// want to make functions a depency of the client. Perhaps there's another place we can define
-// the type?
-interface IKYCStatus {
-  status: "unknown" | "approved" | "failed" | "expired" | "pending";
-  countryCode: string;
-  residency: string;
-  accreditationStatus: string;
-  identityStatus: string;
-  kycProvider: "persona" | "parallelMarkets";
-  type: "individual" | "business";
 }
 
 /**
@@ -110,7 +97,7 @@ export async function fetchKycStatus(account: string, signature: KycSignature) {
   if (!response.ok) {
     throw new Error("Could not get KYC status");
   }
-  const result: IKYCStatus = await response.json();
+  const result: KycStatusResponse = await response.json();
   return result;
 }
 

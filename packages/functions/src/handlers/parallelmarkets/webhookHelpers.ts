@@ -80,8 +80,8 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
     return
   }
 
-  const accreditationStatus = getAccreditationStatus(accreditation)
-  console.log(`Accreditation status is ${accreditationStatus}`)
+  const {status: accreditationStatus, expiresAt} = getAccreditationStatus(accreditation)
+  console.log(`accreditationStatus=${accreditationStatus}, expiresAt=${expiresAt || "none"}`)
 
   const user = await getUserDocByPMId(accreditation.id)
 
@@ -93,9 +93,11 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
   console.log(user.data())
 
   const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const accreditationExpiresAt = expiresAt
   const dataToMerge = {
     parallelMarkets: {
       accreditationStatus,
+      ...(!!accreditationExpiresAt && {accreditationExpiresAt}),
     },
   }
   console.log("data to merge")
@@ -105,7 +107,7 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
 
 const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
   console.log("Processing individual identity data update")
-  const {consistencySummary, citizenshipCountry, residenceLocation} = identityDetails
+  const {consistencySummary, citizenshipCountry, residenceLocation, expiresAt} = identityDetails
   const {overallRecordsMatchLevel, idValidity} = consistencySummary
 
   const identityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
@@ -123,11 +125,13 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
   // Overwrite the parallelMarkets.identity_status key
   console.log("overwriting user with data")
   const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
   const dataToMerge = {
     countryCode: citizenshipCountry,
     residency: residenceLocation.country.toLowerCase(),
     parallelMarkets: {
       identityStatus,
+      ...(!!identityExpiresAt && {identityExpiresAt}),
     },
   }
   await userRef.set(dataToMerge, {merge: true})
