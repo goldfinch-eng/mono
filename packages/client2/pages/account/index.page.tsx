@@ -81,9 +81,9 @@ const AccountsPage: NextPageWithLayout = () => {
             })
           );
           await registerKyc(account, sig);
-          await refetch();
           router.replace("/account");
         }
+        await refetch();
       } catch (e) {
         setRegisterKycError(e as Error);
       } finally {
