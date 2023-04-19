@@ -12,13 +12,13 @@ import {
   presignedMintToMessage,
   verifySignature,
   UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME,
+  KycStatusResponse,
 } from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
 export const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
 import baseHandler from "../core/handler"
-import {KycStatusResponse} from "@goldfinch-eng/functions/handlers/kycStatus"
 
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
