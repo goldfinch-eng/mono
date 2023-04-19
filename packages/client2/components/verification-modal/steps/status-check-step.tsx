@@ -1,4 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
+import { getIDType } from "@goldfinch-eng/utils";
 import { useEffect, useState } from "react";
 import { useWizard } from "react-use-wizard";
 
@@ -56,8 +57,7 @@ export function StatusCheckStep() {
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);
         } else if (kycStatus.status === "approved") {
-          const goldfinchUtils = await import("@goldfinch-eng/utils");
-          const idVersion = goldfinchUtils.getIDType(kycStatus);
+          const idVersion = getIDType(kycStatus);
           setUidVersion(idVersion);
           goToStep(VerificationFlowSteps.Mint);
         } else {
