@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { useRouter } from "next/router";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Button,
@@ -94,47 +94,6 @@ const AccountsPage: NextPageWithLayout = () => {
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
 
-  const statuses: ReactNode = (
-    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
-      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
-        <Icon className="mt-1 mr-1 fill-mint-450" name="Checkmark" />
-        Documents Uploaded
-      </div>
-      <div
-        className={clsx(
-          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          identityStatus === "approved" ? "bg-mint-100" : "bg-sand-100"
-        )}
-      >
-        <Icon
-          className={clsx(
-            "mt-1 mr-1",
-            identityStatus === "approved" ? "fill-mint-450" : "fill-sand-300"
-          )}
-          name="Checkmark"
-        />
-        Identity verification
-      </div>
-      <div
-        className={clsx(
-          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          accreditationStatus === "approved" ? "bg-mint-100" : "bg-sand-100"
-        )}
-      >
-        <Icon
-          className={clsx(
-            "mt-1 mr-1",
-            accreditationStatus === "approved"
-              ? "fill-mint-450"
-              : "fill-sand-300"
-          )}
-          name="Checkmark"
-        />
-        Accreditation verification
-      </div>
-    </div>
-  );
-
   return (
     <div>
       <div className="bg-mustard-100">
@@ -169,9 +128,55 @@ const AccountsPage: NextPageWithLayout = () => {
                     title="UID is being verified"
                     description="Almost there. Your UID is still being verified, please come back later."
                     colorScheme="white"
-                    // eslint-disable-next-line react/no-children-prop
-                    children={statuses}
-                  />
+                  >
+                    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
+                      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
+                        <Icon
+                          className="mt-1 mr-1 fill-mint-450"
+                          name="Checkmark"
+                        />
+                        Documents Uploaded
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          identityStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            identityStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Identity verification
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          accreditationStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            accreditationStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Accreditation verification
+                      </div>
+                    </div>
+                  </CallToActionBanner>
                 ) : (
                   <CallToActionBanner
                     renderButton={(props) =>

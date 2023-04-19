@@ -19,6 +19,7 @@ async function getCachedSignature(
     const cachedSig = JSON.parse(
       sessionStorage.getItem(cacheKey) as string
     ) as KycSignature;
+    const { plaintext, signature, signatureBlockNum } = cachedSig;
     const currentBlockTime = (await provider.getBlock("latest")).timestamp;
     const cachedBlockTime = (
       await provider.getBlock(cachedSig.signatureBlockNum)
@@ -27,9 +28,9 @@ async function getCachedSignature(
       return null;
     }
     return {
-      plaintext: cachedSig.plaintext,
-      signature: cachedSig.signature,
-      signatureBlockNum: cachedSig.signatureBlockNum,
+      plaintext,
+      signature,
+      signatureBlockNum,
     };
   } catch {
     return null;
