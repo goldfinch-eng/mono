@@ -7,7 +7,11 @@ import * as admin from "firebase-admin"
 import {ParallelMarkets} from "./parallelmarkets/PmApi"
 import firestore = admin.firestore
 import {KycItemParallelMarkets, KycItem} from "./kyc/kycTypes"
-import {getAccreditationStatus} from "./kyc/parallelMarketsConverter"
+import {
+  getAccreditationStatus,
+  getBusinessIdentityStatus,
+  getIndividualIdentityStatus,
+} from "./kyc/parallelMarketsConverter"
 
 export const registerKyc = genRequestHandler({
   requireAuth: "signature",
@@ -59,6 +63,8 @@ type ParallelMarketsUserData = {
   type: "business" | "individual"
   accreditationStatus?: string
   identityStatus?: string
+  accreditationExpiresAt?: number
+  identityExpiresAt?: number
 }
 
 const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsUserData> => {
@@ -75,28 +81,43 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
   const {type: accreditationType} = accreditation
 
   if (type === "business" && accreditationType === "business") {
-    const {incorporationCountry, principalLocation, consistencySummary} = identityDetails
+    const {incorporationCountry, principalLocation, consistencySummary, expiresAt} = identityDetails
+    const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
     const countryIsUS = incorporationCountry === "US" || principalLocation.country == "US"
+
+    const {status: accreditationStatus, expiresAt: accreditationExpiresAt} = getAccreditationStatus(accreditation)
+
+    const businessIdentityStatus = getBusinessIdentityStatus(consistencySummary.overallRecordsMatchLevel)
 
     return {
       id,
       // We should use the logic in the webhook helper here
       type: "business",
-      accreditationStatus: getAccreditationStatus(accreditation),
-      identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
+      accreditationStatus,
+      accreditationExpiresAt,
+      identityStatus: businessIdentityStatus,
+      identityExpiresAt,
       countryCode: countryIsUS ? "US" : incorporationCountry,
     }
   }
 
   if (type === "individual" && accreditationType === "individual") {
-    const {citizenshipCountry, residenceLocation, consistencySummary} = identityDetails
+    const {citizenshipCountry, residenceLocation, consistencySummary, expiresAt} = identityDetails
+    const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
     const countryIsUS = citizenshipCountry === "US" || residenceLocation.country == "US"
+
+    const {status: accreditationStatus, expiresAt: accreditationExpiresAt} = getAccreditationStatus(accreditation)
+
+    const {overallRecordsMatchLevel, idValidity} = consistencySummary
+    const individualIdentityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
 
     return {
       id,
       type: "individual",
-      accreditationStatus: getAccreditationStatus(accreditation),
-      identityStatus: consistencySummary.overallRecordsMatchLevel === "high" ? "approved" : undefined,
+      accreditationStatus,
+      accreditationExpiresAt,
+      identityStatus: individualIdentityStatus,
+      identityExpiresAt,
       countryCode: countryIsUS ? "US" : citizenshipCountry,
     }
   }
@@ -106,7 +127,15 @@ const getParalleMarketsUser = async (authCode: string): Promise<ParallelMarketsU
 
 const saveParallelMarketsUser = async (
   address: string,
-  {id, accreditationStatus, identityStatus, countryCode, type}: ParallelMarketsUserData,
+  {
+    id,
+    accreditationStatus,
+    identityStatus,
+    accreditationExpiresAt,
+    identityExpiresAt,
+    countryCode,
+    type,
+  }: ParallelMarketsUserData,
 ) => {
   const db = getDb(admin.firestore())
   const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
@@ -124,8 +153,10 @@ const saveParallelMarketsUser = async (
           id,
           accreditationStatus: accreditationStatus || null,
           accreditationAccessRevocationAt: null,
+          accreditationExpiresAt: accreditationExpiresAt || null,
           identityStatus: identityStatus || null,
           identityAccessRevocationAt: null,
+          identityExpiresAt: identityExpiresAt || null,
         },
         countryCode: countryCode || null,
         updatedAt: Date.now(),
@@ -139,8 +170,10 @@ const saveParallelMarketsUser = async (
           type,
           accreditationStatus: accreditationStatus || null,
           accreditationAccessRevocationAt: null,
+          accreditationExpiresAt: accreditationExpiresAt || null,
           identityStatus: identityStatus || null,
           identityAccessRevocationAt: null,
+          identityExpiresAt: identityExpiresAt || null,
         },
         kycProvider: KycProvider.ParallelMarkets.valueOf(),
         countryCode: countryCode || null,

@@ -165,14 +165,14 @@ export const viewerResolvers: Resolvers[string] = {
     }
   },
   async kycStatus(): Promise<KycStatus | null> {
-    const account = getAccount();
+    const { address } = getAccount();
     const provider = getProvider();
     const signer = await fetchSigner();
-    if (!account.address || !signer) {
+    if (!address || !signer) {
       return null;
     }
     const signature = await getSignatureForKyc(provider, signer);
-    const kycStatus = await fetchKycStatus(account.address, signature);
+    const kycStatus = await fetchKycStatus(address, signature);
     return {
       __typename: "KycStatus",
       status: kycStatus.status,

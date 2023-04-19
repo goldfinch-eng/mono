@@ -7,22 +7,12 @@ import {
   isApprovedNonUSEntity,
   isApprovedUSAccreditedEntity,
   isApprovedUSAccreditedIndividual,
+  KycAccreditationStatus,
+  KycIdentityStatus,
+  KycStatus,
+  KycStatusResponse,
 } from "@goldfinch-eng/utils"
 import {ethers} from "ethers"
-import {KycAccreditationStatus, KycIdentityStatus, KycStatus} from "./kyc/kycTypes"
-
-// Response shape
-export type KycStatusResponse = {
-  address: string
-  status: KycStatus
-  identityStatus?: KycIdentityStatus
-  accreditationStatus?: KycAccreditationStatus
-  countryCode: string
-  residency: string
-  kycProvider: "parallelMarkets" | "persona" | "none"
-  type?: "individual" | "business"
-  accessRevocationBy?: number
-}
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
 // Where:

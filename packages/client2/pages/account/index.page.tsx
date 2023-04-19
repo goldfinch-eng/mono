@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { useRouter } from "next/router";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Button,
@@ -91,54 +91,8 @@ const AccountsPage: NextPageWithLayout = () => {
     };
     asyncEffect();
   }, [account, provider, signer, router, router.isReady, refetch]);
-
-  const showPendingVerificationBanner =
-    data?.viewer.kycStatus?.status === "pending";
-  const identityVerificationApproved =
-    data?.viewer.kycStatus?.identityStatus === "approved";
-  const accreditationVerificationApproved =
-    data?.viewer.kycStatus?.accreditationStatus === "approved";
-
-  const statuses: ReactNode = (
-    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
-      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
-        <Icon className="mt-1 mr-1 fill-mint-450" name="Checkmark" />
-        Documents Uploaded
-      </div>
-      <div
-        className={clsx(
-          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          identityVerificationApproved ? "bg-mint-100" : "bg-sand-100"
-        )}
-      >
-        <Icon
-          className={clsx(
-            "mt-1 mr-1",
-            identityVerificationApproved ? "fill-mint-450" : "fill-sand-300"
-          )}
-          name="Checkmark"
-        />
-        Identity verification
-      </div>
-      <div
-        className={clsx(
-          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          accreditationVerificationApproved ? "bg-mint-100" : "bg-sand-100"
-        )}
-      >
-        <Icon
-          className={clsx(
-            "mt-1 mr-1",
-            accreditationVerificationApproved
-              ? "fill-mint-450"
-              : "fill-sand-300"
-          )}
-          name="Checkmark"
-        />
-        Accreditation verification
-      </div>
-    </div>
-  );
+  const { status, identityStatus, accreditationStatus } =
+    data?.viewer.kycStatus ?? {};
 
   return (
     <div>
@@ -147,13 +101,14 @@ const AccountsPage: NextPageWithLayout = () => {
           <h1 className="font-serif text-5xl font-bold text-sand-800">
             Account
           </h1>
+          {error ? (
+            <div className="text-xl text-clay-500">
+              Unable to fetch data for your account. Please re-fresh the page
+              and provide your signature.
+            </div>
+          ) : null}
         </div>
       </div>
-      {error ? (
-        <div className="text-xl text-clay-500">
-          Unable to fetch data for your account
-        </div>
-      ) : null}
       <TabGroup>
         <div className="bg-mustard-100">
           <div className="mx-auto max-w-7xl px-5">
@@ -168,15 +123,61 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 {isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
-                ) : showPendingVerificationBanner ? (
+                ) : account && status === "pending" ? (
                   <CallToActionBanner
                     iconLeft={DEFAULT_UID_ICON}
                     title="UID is being verified"
                     description="Almost there. Your UID is still being verified, please come back later."
                     colorScheme="white"
-                    // eslint-disable-next-line react/no-children-prop
-                    children={statuses}
-                  />
+                  >
+                    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
+                      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
+                        <Icon
+                          className="mt-1 mr-1 fill-mint-450"
+                          name="Checkmark"
+                        />
+                        Documents Uploaded
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          identityStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            identityStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Identity verification
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          accreditationStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            accreditationStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Accreditation verification
+                      </div>
+                    </div>
+                  </CallToActionBanner>
                 ) : (
                   <CallToActionBanner
                     renderButton={(props) =>
@@ -191,24 +192,16 @@ const AccountsPage: NextPageWithLayout = () => {
                       )
                     }
                     iconLeft={
-                      account
-                        ? registerKycError
-                          ? "Exclamation"
-                          : DEFAULT_UID_ICON
-                        : DEFAULT_UID_ICON
+                      registerKycError ? "Exclamation" : DEFAULT_UID_ICON
                     }
                     title={
-                      account
-                        ? registerKycError
-                          ? "There was a problem connecting to our verification partner"
-                          : DEFAULT_UID_TITLE
+                      registerKycError
+                        ? "There was a problem connecting to our verification partner"
                         : DEFAULT_UID_TITLE
                     }
                     description={
-                      account
-                        ? registerKycError
-                          ? registerKycError.message
-                          : DEFAULT_UID_SET_UP_STRING
+                      registerKycError
+                        ? registerKycError.message
                         : DEFAULT_UID_SET_UP_STRING
                     }
                   />

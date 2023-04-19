@@ -9,10 +9,9 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol
 import {ethers, Signer, Wallet} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
-import {assertNonNullable, presignedBurnMessage} from "@goldfinch-eng/utils"
+import {assertNonNullable, KycStatusResponse, presignedBurnMessage} from "@goldfinch-eng/utils"
 
 const {deployments, web3} = hardhat
-import {KycStatusResponse} from "@goldfinch-eng/functions/handlers/kycStatus"
 import {main, FetchKYCFunction} from "../../unique-identity-signer"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"

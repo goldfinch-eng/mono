@@ -8,8 +8,7 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol
 import {ethers, Signer, Wallet} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
-import {KycStatusResponse} from "@goldfinch-eng/functions/handlers/kycStatus"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {assertNonNullable, KycStatusResponse} from "@goldfinch-eng/utils"
 
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../../unique-identity-signer"

@@ -1,6 +1,7 @@
 import USAccreditedIndividualsList from "./uid-json/USAccreditedIndividuals.json"
 import USAccreditedEntitiesList from "./uid-json/USAccreditedEntities.json"
 import NonUSEntitiesList from "./uid-json/NonUSEntities.json"
+import {KycStatusResponse} from "./kycStatusTypes"
 
 const US_COUNTRY_CODE = "US"
 export const NON_US_INDIVIDUAL_ID_TYPE_0 = 0 // non-US individual
@@ -38,7 +39,7 @@ export function isApprovedNonUSEntity(address: string): boolean {
   return caseInsensitiveIncludes(NonUSEntitiesList, address)
 }
 
-export function getIDType(kycResponse: any): number {
+export function getIDType(kycResponse: KycStatusResponse): number {
   const {status, countryCode, residency} = kycResponse
   if (status !== "approved") {
     throw new Error("Not eligible for UID")
