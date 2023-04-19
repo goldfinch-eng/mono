@@ -122,7 +122,7 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 {isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
-                ) : status === "pending" ? (
+                ) : account && status === "pending" ? (
                   <CallToActionBanner
                     iconLeft={DEFAULT_UID_ICON}
                     title="UID is being verified"
