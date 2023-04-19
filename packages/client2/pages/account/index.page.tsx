@@ -53,7 +53,6 @@ const AccountsPage: NextPageWithLayout = () => {
     const asyncEffect = async () => {
       setIsRegisteringKyc(true);
       setRegisterKycError(undefined);
-      /* we don't want to keep asking users for their signature once they've already signed */
       try {
         /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
         if (router.query.state !== undefined) {
@@ -141,7 +140,6 @@ const AccountsPage: NextPageWithLayout = () => {
     </div>
   );
 
-  /* After clicking on openVerificationModal, need to clear the URL */
   return (
     <div>
       <div className="bg-mustard-100">
