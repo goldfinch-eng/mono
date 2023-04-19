@@ -1,5 +1,5 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount, getProvider } from "@wagmi/core";
+import { getAccount, getProvider, fetchSigner } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
@@ -7,12 +7,14 @@ import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
+import { getSignatureForKyc, fetchKycStatus } from "@/lib/verify";
 
 import {
   Viewer,
   SupportedCrypto,
   IndirectGfiGrant,
   DirectGfiGrant,
+  KycStatus,
 } from "../generated";
 
 async function erc20Balance(
@@ -161,5 +163,21 @@ export const viewerResolvers: Resolvers[string] = {
     } catch (e) {
       return null;
     }
+  },
+  async kycStatus(): Promise<KycStatus | null> {
+    const { address } = getAccount();
+    const provider = getProvider();
+    const signer = await fetchSigner();
+    if (!address || !signer) {
+      return null;
+    }
+    const signature = await getSignatureForKyc(provider, signer);
+    const kycStatus = await fetchKycStatus(address, signature);
+    return {
+      __typename: "KycStatus",
+      status: kycStatus.status,
+      identityStatus: kycStatus.identityStatus ?? null,
+      accreditationStatus: kycStatus.accreditationStatus ?? null,
+    };
   },
 };

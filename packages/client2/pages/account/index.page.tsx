@@ -1,8 +1,11 @@
+import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import {
   Button,
+  Icon,
   Spinner,
   TabButton,
   TabContent,
@@ -12,61 +15,84 @@ import {
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
+import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { getSignatureForKyc, registerKyc } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
+gql`
+  query AccountPage {
+    viewer @client {
+      kycStatus {
+        status
+        identityStatus
+        accreditationStatus
+      }
+    }
+  }
+`;
+
+const DEFAULT_UID_SET_UP_STRING =
+  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
+const DEFAULT_UID_TITLE = "Setup your UID to start";
+const DEFAULT_UID_ICON = "Globe";
+
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { query } = useRouter();
+  const { data, error, loading, refetch } = useAccountPageQuery();
+  const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error>();
+  const [isRegisteringKyc, setIsRegisteringKyc] = useState(false);
+  const [registerKycError, setRegisterKycError] = useState<Error>();
 
   useEffect(() => {
+    if (!router.isReady || !signer || !account) {
+      return;
+    }
     const asyncEffect = async () => {
-      setError(undefined);
+      setIsRegisteringKyc(true);
+      setRegisterKycError(undefined);
       try {
-        if (query.code) {
-          setIsLoading(true);
-        }
         /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
-        if (query.state !== undefined) {
+        if (router.query.state !== undefined) {
           const parallel_markets_state = sessionStorage.getItem(
             PARALLEL_MARKETS.STATE_KEY
           );
-          if (query.state !== parallel_markets_state) {
+          if (router.query.state !== parallel_markets_state) {
             throw new Error(
               "Detected a possible cross-site request forgery attack on your Parallel Markets session. Please try authenticating with Parallel Markets through Goldfinch again."
             );
           }
         }
-        if (query.error === "access_denied") {
+        if (router.query.error === "access_denied") {
           throw new Error(
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (query.code !== undefined && account && provider && signer) {
+        if (router.query.code !== undefined && account && provider) {
           const sig = await getSignatureForKyc(
             provider,
             signer,
-            JSON.stringify({ key: query.code, provider: "parallel_markets" })
+            JSON.stringify({
+              key: router.query.code,
+              provider: "parallel_markets",
+            })
           );
           await registerKyc(account, sig);
+          router.replace("/account");
         }
+        await refetch();
       } catch (e) {
-        setError(e as Error);
+        setRegisterKycError(e as Error);
       } finally {
-        setIsLoading(false);
+        setIsRegisteringKyc(false);
       }
     };
     asyncEffect();
-  }, [query.state, query.error, query.code, account, provider, signer]);
-
-  useEffect(() => {
-    /* Make a request to the kyc endpoint. Will work on this soon! */
-  }, []);
+  }, [account, provider, signer, router, router.isReady, refetch]);
+  const { status, identityStatus, accreditationStatus } =
+    data?.viewer.kycStatus ?? {};
 
   return (
     <div>
@@ -75,6 +101,12 @@ const AccountsPage: NextPageWithLayout = () => {
           <h1 className="font-serif text-5xl font-bold text-sand-800">
             Account
           </h1>
+          {error ? (
+            <div className="text-xl text-clay-500">
+              Unable to fetch data for your account. Please re-fresh the page
+              and provide your signature.
+            </div>
+          ) : null}
         </div>
       </div>
       <TabGroup>
@@ -89,14 +121,69 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                {isLoading ? (
+                {isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
+                ) : account && status === "pending" ? (
+                  <CallToActionBanner
+                    iconLeft={DEFAULT_UID_ICON}
+                    title="UID is being verified"
+                    description="Almost there. Your UID is still being verified, please come back later."
+                    colorScheme="white"
+                  >
+                    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
+                      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
+                        <Icon
+                          className="mt-1 mr-1 fill-mint-450"
+                          name="Checkmark"
+                        />
+                        Documents Uploaded
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          identityStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            identityStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Identity verification
+                      </div>
+                      <div
+                        className={clsx(
+                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                          accreditationStatus === "approved"
+                            ? "bg-mint-100"
+                            : "bg-sand-100"
+                        )}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mt-1 mr-1",
+                            accreditationStatus === "approved"
+                              ? "fill-mint-450"
+                              : "fill-sand-300"
+                          )}
+                          name="Checkmark"
+                        />
+                        Accreditation verification
+                      </div>
+                    </div>
+                  </CallToActionBanner>
                 ) : (
                   <CallToActionBanner
                     renderButton={(props) =>
                       account ? (
                         <Button {...props} onClick={openVerificationModal}>
-                          {error ? "Try again" : "Begin UID setup"}
+                          {registerKycError ? "Try again" : "Begin UID setup"}
                         </Button>
                       ) : (
                         <Button {...props} onClick={openWalletModal}>
@@ -104,16 +191,18 @@ const AccountsPage: NextPageWithLayout = () => {
                         </Button>
                       )
                     }
-                    iconLeft={error ? "Exclamation" : "Globe"}
+                    iconLeft={
+                      registerKycError ? "Exclamation" : DEFAULT_UID_ICON
+                    }
                     title={
-                      error
+                      registerKycError
                         ? "There was a problem connecting to our verification partner"
-                        : "Setup your UID to start"
-                    } /* will make title conditional soon */
+                        : DEFAULT_UID_TITLE
+                    }
                     description={
-                      error
-                        ? error.message
-                        : "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+                      registerKycError
+                        ? registerKycError.message
+                        : DEFAULT_UID_SET_UP_STRING
                     }
                   />
                 )}

@@ -47,7 +47,7 @@ export function CallToActionBanner({
         "max-w-screen rounded-md p-6",
         colorScheme === "blue-gradient"
           ? "bg-gradient-to-r from-sky-500 to-sky-300"
-          : "bg-twilight-50" /* will add more conditional statements for color scheme soon */
+          : "border-1 border-solid border-sand-200 bg-white"
       )}
     >
       <div className="flex flex-col">
@@ -62,19 +62,22 @@ export function CallToActionBanner({
               {iconLeft && <Icon className="mt-1 mr-1" name={iconLeft} />}
               <h1>{title}</h1>
             </div>
-            <p className="float-left text-sm font-thin md:w-5/6 lg:w-2/3">
+            <p
+              className={clsx(
+                "float-left text-sm",
+                renderButton ? "font-thin md:w-5/6 lg:w-2/3" : null
+              )}
+            >
               {description}
             </p>
           </div>
-          <div className="m-auto shrink-0">
-            {renderButton
-              ? renderButton({
-                  size: "md",
-                  colorScheme: "secondary",
-                  variant: "standard",
-                })
-              : null}
-          </div>
+          {renderButton
+            ? renderButton({
+                size: "md",
+                colorScheme: "secondary",
+                variant: "standard",
+              })
+            : null}
         </div>
         {children}
       </div>
