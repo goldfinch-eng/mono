@@ -101,13 +101,14 @@ const AccountsPage: NextPageWithLayout = () => {
           <h1 className="font-serif text-5xl font-bold text-sand-800">
             Account
           </h1>
+          {error ? (
+            <div className="text-xl text-clay-500">
+              Unable to fetch data for your account. Please re-fresh the page
+              and provide your signature.
+            </div>
+          ) : null}
         </div>
       </div>
-      {error ? (
-        <div className="text-xl text-clay-500">
-          Unable to fetch data for your account. Please re-fresh the page.
-        </div>
-      ) : null}
       <TabGroup>
         <div className="bg-mustard-100">
           <div className="mx-auto max-w-7xl px-5">
