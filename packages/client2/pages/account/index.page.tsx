@@ -91,13 +91,8 @@ const AccountsPage: NextPageWithLayout = () => {
     };
     asyncEffect();
   }, [account, provider, signer, router, router.isReady, refetch]);
-
-  const showPendingVerificationBanner =
-    data?.viewer.kycStatus?.status === "pending";
-  const identityVerificationApproved =
-    data?.viewer.kycStatus?.identityStatus === "approved";
-  const accreditationVerificationApproved =
-    data?.viewer.kycStatus?.accreditationStatus === "approved";
+  const { status, identityStatus, accreditationStatus } =
+    data?.viewer.kycStatus ?? {};
 
   const statuses: ReactNode = (
     <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
@@ -108,13 +103,13 @@ const AccountsPage: NextPageWithLayout = () => {
       <div
         className={clsx(
           "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          identityVerificationApproved ? "bg-mint-100" : "bg-sand-100"
+          identityStatus === "approved" ? "bg-mint-100" : "bg-sand-100"
         )}
       >
         <Icon
           className={clsx(
             "mt-1 mr-1",
-            identityVerificationApproved ? "fill-mint-450" : "fill-sand-300"
+            identityStatus === "approved" ? "fill-mint-450" : "fill-sand-300"
           )}
           name="Checkmark"
         />
@@ -123,13 +118,13 @@ const AccountsPage: NextPageWithLayout = () => {
       <div
         className={clsx(
           "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-          accreditationVerificationApproved ? "bg-mint-100" : "bg-sand-100"
+          accreditationStatus === "approved" ? "bg-mint-100" : "bg-sand-100"
         )}
       >
         <Icon
           className={clsx(
             "mt-1 mr-1",
-            accreditationVerificationApproved
+            accreditationStatus === "approved"
               ? "fill-mint-450"
               : "fill-sand-300"
           )}
@@ -151,7 +146,7 @@ const AccountsPage: NextPageWithLayout = () => {
       </div>
       {error ? (
         <div className="text-xl text-clay-500">
-          Unable to fetch data for your account
+          Unable to fetch data for your account. Please re-fresh the page.
         </div>
       ) : null}
       <TabGroup>
@@ -168,7 +163,7 @@ const AccountsPage: NextPageWithLayout = () => {
               <TabContent>
                 {isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
-                ) : showPendingVerificationBanner ? (
+                ) : status === "pending" ? (
                   <CallToActionBanner
                     iconLeft={DEFAULT_UID_ICON}
                     title="UID is being verified"
@@ -191,24 +186,16 @@ const AccountsPage: NextPageWithLayout = () => {
                       )
                     }
                     iconLeft={
-                      account
-                        ? registerKycError
-                          ? "Exclamation"
-                          : DEFAULT_UID_ICON
-                        : DEFAULT_UID_ICON
+                      registerKycError ? "Exclamation" : DEFAULT_UID_ICON
                     }
                     title={
-                      account
-                        ? registerKycError
-                          ? "There was a problem connecting to our verification partner"
-                          : DEFAULT_UID_TITLE
+                      registerKycError
+                        ? "There was a problem connecting to our verification partner"
                         : DEFAULT_UID_TITLE
                     }
                     description={
-                      account
-                        ? registerKycError
-                          ? registerKycError.message
-                          : DEFAULT_UID_SET_UP_STRING
+                      registerKycError
+                        ? registerKycError.message
                         : DEFAULT_UID_SET_UP_STRING
                     }
                   />
