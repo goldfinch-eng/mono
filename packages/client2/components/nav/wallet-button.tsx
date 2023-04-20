@@ -53,7 +53,7 @@ export function WalletButton() {
             alt="Your avatar"
             aria-hidden="true"
             src={ENSAvatar}
-            className="h-6 w-6 rounded-full object-cover"
+            className="h-4 w-4 rounded-full object-cover"
           />
         ) : (
           <Identicon account={address} scale={2} />

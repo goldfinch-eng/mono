@@ -1,13 +1,19 @@
 import { gql } from "@apollo/client";
 import NextLink from "next/link";
 
-import { Button, Popover, ShimmerLines } from "@/components/design-system";
+import {
+  Button,
+  InfoIconTooltip,
+  Popover,
+  ShimmerLines,
+} from "@/components/design-system";
 import { useAccountStatusQuery } from "@/lib/graphql/generated";
 import { getUIDLabelFromGql } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 export function AccountButton() {
-  return (
+  const { account } = useWallet();
+  return !account ? null : (
     <Popover placement="bottom-end" content={<AccountStatus />}>
       <Button
         iconLeft="GoldfinchInverted"
@@ -53,11 +59,23 @@ function AccountStatus() {
             {data.user?.uidType ? "UID" : "Set up UID"}
           </div>
           <div className="mb-4 text-sm">
-            {data.user?.uidType
-              ? `Your UID type: ${getUIDLabelFromGql(data.user.uidType)}`
-              : data.user?.isGoListed
-              ? "You are currently go-listed, but setting up a UID is strongly encouraged."
-              : "You need to set up your UID to start investing."}
+            {data.user?.uidType ? (
+              <div className="flex items-center justify-between">
+                {getUIDLabelFromGql(data.user.uidType)}
+                <InfoIconTooltip
+                  size="sm"
+                  content={
+                    data.user.uidType === "US_NON_ACCREDITED_INDIVIDUAL"
+                      ? "Limited eligibility means that you will not be able to participate in loans on Goldfinch, but you may participate in governance."
+                      : "You may participate in all aspects of the Goldfinch protocol."
+                  }
+                />
+              </div>
+            ) : data.user?.isGoListed ? (
+              "You are currently go-listed, but setting up a UID is strongly encouraged."
+            ) : (
+              "You need to set up your UID to start investing."
+            )}
           </div>
           <NextLink href="/account" passHref>
             <Button className="block w-full" as="a" colorScheme="primary">
