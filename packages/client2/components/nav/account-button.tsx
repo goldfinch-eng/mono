@@ -15,7 +15,7 @@ import { useWallet } from "@/lib/wallet";
 export function AccountButton() {
   const { account } = useWallet();
   const isMounted = useIsMounted();
-  return !account || !isMounted ? null : (
+  return isMounted && account ? (
     <Popover placement="bottom-end" content={<AccountStatus />}>
       <Button
         iconLeft="GoldfinchInverted"
@@ -26,7 +26,7 @@ export function AccountButton() {
         <span className="hidden md:inline">Account</span>
       </Button>
     </Popover>
-  );
+  ) : null;
 }
 
 gql`
