@@ -156,7 +156,6 @@ export async function fetchUniqueIdentitySigner(
   mintToAddress?: string
 ) {
   const url = UNIQUE_IDENTITY_SIGNER_URL;
-  console.log({ url });
   const auth = convertSignatureToAuth(account, signature);
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -165,7 +164,6 @@ export async function fetchUniqueIdentitySigner(
   });
   if (!res.ok) {
     const message = (await res.json()).message as string;
-    console.log({ message });
     const actualMessage = message?.match(/\"message\"\:\"(.+)\"/);
     if (actualMessage) {
       throw new Error(actualMessage[1]);

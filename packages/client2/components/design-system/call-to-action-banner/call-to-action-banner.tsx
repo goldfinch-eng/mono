@@ -58,9 +58,7 @@ export function CallToActionBanner({
         <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div
             className={clsx(
-              colorScheme === "blue-gradient"
-                ? "text-white"
-                : colorScheme === "green"
+              colorScheme === "blue-gradient" || colorScheme === "green"
                 ? "text-white"
                 : colorScheme === "white"
                 ? "text-sand-800"
