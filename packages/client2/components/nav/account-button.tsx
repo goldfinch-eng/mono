@@ -7,13 +7,15 @@ import {
   Popover,
   ShimmerLines,
 } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { useAccountStatusQuery } from "@/lib/graphql/generated";
 import { getUIDLabelFromGql } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 export function AccountButton() {
   const { account } = useWallet();
-  return !account ? null : (
+  const isMounted = useIsMounted();
+  return !account || !isMounted ? null : (
     <Popover placement="bottom-end" content={<AccountStatus />}>
       <Button
         iconLeft="GoldfinchInverted"
