@@ -9,7 +9,7 @@ export function SecondaryMenu() {
         icon="DotsHorizontal"
         label="More links"
         variant="rounded"
-        colorScheme="sand"
+        colorScheme="light-mustard"
         className="w-10"
       />
     </Popover>
