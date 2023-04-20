@@ -24,7 +24,9 @@ import {
   MAINNET_WARBLER_LABS_MULTISIG,
 } from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
+  advanceAndMineBlock,
   advanceTime,
+  decodeAndGetFirstLog,
   getCurrentTimestamp,
   getTruffleContractAtAddress,
   usdcVal,
@@ -45,6 +47,7 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdentity"
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
 import {EXISTING_POOL_TO_TOKEN} from "@goldfinch-eng/protocol/test/util/tranchedPool"
+import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/CallableLoan"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
@@ -157,105 +160,110 @@ describe("v3.3.0", async function () {
     })
 
     it("does not allow called tokens in membership", async () => {
-      // TODO - When drawdowns are enabled, uncomment the remainder of this method
-
       const gfiDepositAmount = 10000
       const callAmount = 10000000
 
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: defaultLenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: defaultLenderAddress})
 
-      await expect(
-        borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_MAINNET_EOA, {
-          from: FAZZ_MAINNET_EOA,
-        })
-      ).to.be.rejectedWith(/CannotDrawdownWhenDrawdownsPaused/)
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_MAINNET_EOA, {
+        from: FAZZ_MAINNET_EOA,
+      })
       await advanceTime({days: 30})
-      /*const callResult = */
+      const callResult = await callableLoanInstance.submitCall(new BN(callAmount), originalPoolTokenId, {
+        from: defaultLenderAddress,
+      })
+
+      const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
+        callResult.receipt.rawLogs,
+        callableLoanInstance,
+        "CallRequestSubmitted"
+      )
+
+      // can't submit old pool token anymore
       await expect(
-        callableLoanInstance.submitCall(new BN(callAmount), originalPoolTokenId, {
-          from: defaultLenderAddress,
-        })
-      ).to.be.rejectedWith(/RequiresUpgrade/)
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: originalPoolTokenId,
+              },
+            ],
+          },
+          {from: defaultLenderAddress}
+        )
+      ).to.be.rejectedWith(/nonexistent token/)
 
-      // const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
-      //   callResult.receipt.rawLogs,
-      //   callableLoanInstance,
-      //   "CallRequestSubmitted"
-      // )
+      // can't submit called pool token
+      await poolTokens.approve(membershipOrchestrator.address, callEvent.args.callRequestedTokenId, {
+        from: defaultLenderAddress,
+      })
+      await expect(
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: callEvent.args.callRequestedTokenId,
+              },
+            ],
+          },
+          {from: defaultLenderAddress}
+        )
+        // Hardhat doesn't recognize the custom error
+      ).to.be.rejected
 
-      // // can't submit old pool token anymore
-      // await expect(
-      //   membershipOrchestrator.deposit(
-      //     {
-      //       gfi: String(gfiDepositAmount),
-      //       capitalDeposits: [
-      //         {
-      //           assetAddress: poolTokens.address,
-      //           id: originalPoolTokenId,
-      //         },
-      //       ],
-      //     },
-      //     {from: defaultLenderAddress}
-      //   )
-      // ).to.be.rejectedWith(/nonexistent token/)
+      // can submit new uncalled pool token
+      await poolTokens.approve(membershipOrchestrator.address, callEvent.args.remainingTokenId, {
+        from: defaultLenderAddress,
+      })
+      await expect(
+        membershipOrchestrator.deposit(
+          {
+            gfi: String(gfiDepositAmount),
+            capitalDeposits: [
+              {
+                assetAddress: poolTokens.address,
+                id: callEvent.args.remainingTokenId,
+              },
+            ],
+          },
+          {from: defaultLenderAddress}
+        )
+      ).to.not.be.rejected
 
-      // // can't submit called pool token
-      // await poolTokens.approve(membershipOrchestrator.address, callEvent.args.callRequestedTokenId, {
-      //   from: defaultLenderAddress,
-      // })
-      // await expect(
-      //   membershipOrchestrator.deposit(
-      //     {
-      //       gfi: String(gfiDepositAmount),
-      //       capitalDeposits: [
-      //         {
-      //           assetAddress: poolTokens.address,
-      //           id: callEvent.args.callRequestedTokenId,
-      //         },
-      //       ],
-      //     },
-      //     {from: defaultLenderAddress}
-      //   )
-      // ).to.be.rejectedWith(/InvalidAssetWithId/)
-
-      // // can submit new uncalled pool token
-      // await poolTokens.approve(membershipOrchestrator.address, callEvent.args.remainingTokenId, {
-      //   from: defaultLenderAddress,
-      // })
-      // await expect(
-      //   membershipOrchestrator.deposit(
-      //     {
-      //       gfi: String(gfiDepositAmount),
-      //       capitalDeposits: [
-      //         {
-      //           assetAddress: poolTokens.address,
-      //           id: callEvent.args.remainingTokenId,
-      //         },
-      //       ],
-      //     },
-      //     {from: defaultLenderAddress}
-      //   )
-      // ).to.not.be.rejected
-
-      // const capital = await membershipOrchestrator.totalCapitalHeldBy(defaultLenderAddress)
-      // const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
-      // expect(capital[1]).to.equal(depositAmount.sub(new BN(callAmount)))
+      const capital = await membershipOrchestrator.totalCapitalHeldBy(defaultLenderAddress)
+      const depositAmount = (await callableLoanInstance.limit()).div(new BN(20))
+      expect(capital[1]).to.equal(depositAmount.sub(new BN(callAmount)))
     })
   })
 
   describe("Lender", async () => {
     let originalPoolTokenId: string
+    const depositAmount = usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))
 
     context("with a generic deposit", async () => {
       beforeEach(async () => {
-        await makeDeposit({depositAmount: usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))})
+        await makeDeposit({
+          depositAmount,
+          lender: defaultLenderAddress,
+        })
         originalPoolTokenId = (
           await poolTokens.tokenOfOwnerByIndex(
             defaultLenderAddress,
             (await poolTokens.balanceOf(defaultLenderAddress)).sub(new BN(1))
           )
         ).toString()
+
+        await borrowerContract.drawdown(callableLoanInstance.address, depositAmount.div(new BN(10)), FAZZ_MAINNET_EOA, {
+          from: FAZZ_MAINNET_EOA,
+        })
+
+        // Advance past the drawdown locking period
+        await advanceAndMineBlock({days: 120})
       })
 
       it("can withdraw before drawdown", async () => {
@@ -267,17 +275,10 @@ describe("v3.3.0", async function () {
         expect(await usdc.balanceOf(defaultLenderAddress)).to.equal(previousBalance.add(usdcVal(1000)))
       })
 
-      it("can (not) submit a call request", async () => {
-        // TODO - When drawdowns are enabled:
-        // 1. change `rejectedWith` to `not.be.rejected`
-        // 2. remove the (not) in the title of this function
-        // 3. Add expectation for changes related to submitting a call
-
-        await expect(
-          callableLoanInstance.submitCall(1000, originalPoolTokenId, {
-            from: FAZZ_MAINNET_EOA,
-          })
-        ).to.be.rejectedWith(/RequiresUpgrade/)
+      it("can submit a call request", async () => {
+        await callableLoanInstance.submitCall(1000, originalPoolTokenId, {
+          from: defaultLenderAddress,
+        })
       })
     })
 
@@ -398,24 +399,13 @@ describe("v3.3.0", async function () {
     })
 
     it("can initially not successfully drawdown and transfer funds to the borrower address, but it can after warbler gov unpauses drawdowns", async () => {
-      // TODO - When drawdowns are unpaused:
-      // 1. Remove unpausing drawdowns and drawdown failures
       await makeDeposit({depositAmount: usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))})
 
       const previousBorrowerBalance = await usdc.balanceOf(FAZZ_MAINNET_EOA)
       const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
 
-      await expect(
-        borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), FAZZ_MAINNET_EOA, {
-          from: FAZZ_MAINNET_EOA,
-        })
-      ).to.be.rejectedWith(/CannotDrawdownWhenDrawdownsPaused/)
-
       expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance) // .add(usdcVal(100)))
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance) // .sub(usdcVal(100)))
-
-      await expect(callableLoanInstance.unpauseDrawdowns({from: FAZZ_MAINNET_EOA})).to.be.rejected
-      await expect(callableLoanInstance.unpauseDrawdowns({from: MAINNET_GOVERNANCE_MULTISIG}))
 
       await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100), FAZZ_MAINNET_EOA, {
         from: FAZZ_MAINNET_EOA,
@@ -439,17 +429,11 @@ describe("v3.3.0", async function () {
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100_000)))
     })
 
-    it("can (not) successfully pay on behalf of the borrower using the pay function", async () => {
-      // TODO - When drawdowns are enabled:
-      // 1. uncomment the expectations
-      // 2. change `rejectedWith` to `not.be.rejected`
-      // 3. remove the (not) in the title of this function
+    it("can successfully pay on behalf of the borrower using the pay function", async () => {
       await makeDeposit({depositAmount: usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))})
-      await expect(
-        borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_MAINNET_EOA, {
-          from: FAZZ_MAINNET_EOA,
-        })
-      ).to.be.rejectedWith(/CannotDrawdownWhenDrawdownsPaused/)
+      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_MAINNET_EOA, {
+        from: FAZZ_MAINNET_EOA,
+      })
 
       await advanceTime({days: 90})
 
@@ -459,14 +443,12 @@ describe("v3.3.0", async function () {
       await usdc.approve(borrowerContract.address, usdcVal(100), {from: FAZZ_MAINNET_EOA})
 
       // Assumes a 10% reserve fee and assumes a $100 interest payment.
-      await expect(
-        borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, usdcVal(100), {
-          from: FAZZ_MAINNET_EOA,
-        })
-      ).to.be.rejectedWith(/RequiresUpgrade/)
+      await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, usdcVal(100), {
+        from: FAZZ_MAINNET_EOA,
+      })
 
-      expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance) // .sub(usdcVal(100)))
-      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance) // .add(usdcVal(90)))
+      expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.sub(usdcVal(100)))
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.add(usdcVal(90)))
     })
 
     it("throws an error if anyone but the borrower attempts to call any of the functions", async () => {

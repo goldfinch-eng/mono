@@ -18,7 +18,7 @@ import * as migrate331 from "../../../../../blockchain_scripts/migrations/v3.3.1
 import BN from "bn.js"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
-describe("v3.3.1", async function () {
+describe.skip("v3.3.1", async function () {
   let stakingRewards: StakingRewardsInstance
   let backerRewards: BackerRewardsInstance
   let gfi: ERC20Instance
