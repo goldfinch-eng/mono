@@ -9,8 +9,8 @@ export function SecondaryMenu() {
         icon="DotsHorizontal"
         label="More links"
         variant="rounded"
+        size="sm"
         colorScheme="light-mustard"
-        className="w-10"
       />
     </Popover>
   );

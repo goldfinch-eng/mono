@@ -33,26 +33,19 @@ export function WalletButton() {
   return !isMounted ? null : isWrongNetwork ? (
     <Button
       variant="rounded"
-      className="h-10 !text-clay-500"
+      size="sm"
       iconRight="Exclamation"
       colorScheme="light-mustard"
       onClick={() => switchNetwork?.(DESIRED_CHAIN_ID)}
     >
-      Wrong network
+      <span className="text-clay-500">Wrong Network</span>
     </Button>
   ) : address ? (
     <Popover
       placement="bottom-end"
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
     >
-      <Button
-        className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
-        variant="rounded"
-        colorScheme="light-mustard"
-      >
-        <span className="hidden md:block">
-          {ENSName ? ENSName : abbreviateAddress(address)}
-        </span>
+      <Button variant="rounded" size="sm" colorScheme="light-mustard">
         {ENSAvatar ? (
           // Not using next/image because we can't know the origin of this image ahead of time
           // eslint-disable-next-line @next/next/no-img-element
@@ -63,14 +56,17 @@ export function WalletButton() {
             className="h-6 w-6 rounded-full object-cover"
           />
         ) : (
-          <Identicon account={address} scale={3} />
+          <Identicon account={address} scale={2} />
         )}
+        <span className="hidden md:block">
+          {ENSName ? ENSName : abbreviateAddress(address)}
+        </span>
       </Button>
     </Popover>
   ) : (
     <Button
-      className="h-10"
       variant="rounded"
+      size="sm"
       colorScheme="primary"
       onClick={openWalletModal}
     >

@@ -5,6 +5,7 @@ import { forwardRef, useState } from "react";
 
 import { Link, GoldfinchLogo, Icon, Popover } from "@/components/design-system";
 
+import { AccountButton } from "./account-button";
 import { MobileNav } from "./mobile-nav";
 import { DESKTOP_NAV, NestedNav } from "./nav-items";
 import { SecondaryMenu } from "./secondary-menu";
@@ -93,6 +94,7 @@ export function Nav() {
         </div>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
+          <AccountButton />
           <WalletButton />
           <SecondaryMenu />
         </div>
