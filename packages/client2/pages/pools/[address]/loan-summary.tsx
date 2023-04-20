@@ -131,7 +131,7 @@ export function LoanSummary({
           tooltip="When you can withdraw and reclaim your invested capital."
           value={
             loan.__typename === "CallableLoan"
-              ? "Callable loan"
+              ? "Quarterly"
               : "End of loan term"
           }
         />

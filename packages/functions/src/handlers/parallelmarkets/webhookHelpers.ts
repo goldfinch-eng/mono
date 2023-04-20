@@ -9,7 +9,6 @@ import {
   PmIndividualIdentity,
 } from "./PmApiTypes"
 import {getUsers} from "../../db"
-import * as admin from "firebase-admin"
 import {FieldPath} from "@google-cloud/firestore"
 import {
   getAccreditationStatus,
@@ -92,7 +91,7 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
   console.log(`Found user for PM id ${accreditation.id}`)
   console.log(user.data())
 
-  const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const userRef = getUsers().doc(user.data()?.address)
   const accreditationExpiresAt = expiresAt
   const dataToMerge = {
     parallelMarkets: {
@@ -124,7 +123,7 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
 
   // Overwrite the parallelMarkets.identity_status key
   console.log("overwriting user with data")
-  const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const userRef = getUsers().doc(user.data()?.address)
   const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
   const dataToMerge = {
     countryCode: citizenshipCountry,
@@ -155,7 +154,7 @@ const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusine
   console.log(user.data())
 
   // Overwrite the parallelMarkets.identity_status key
-  const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+  const userRef = getUsers().doc(user.data()?.address)
   const dataToMerge = {
     countryCode: principalLocation.country,
     residency: principalLocation.country.toLowerCase(),
@@ -183,7 +182,7 @@ const processIdentityRevocationScheduled = async ({id, type}: PmEntity) => {
     console.log(`Found user for PM id ${id}`)
     console.log(user.data())
 
-    const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+    const userRef = getUsers().doc(user.data()?.address)
     const dataToMerge = {
       parallelMarkets: {
         identityAccessRevocationAt: expiresAtUnixTimestamp,
@@ -210,7 +209,7 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
     console.log(`Found user for PM id ${id}`)
     console.log(user.data())
 
-    const userRef = getUsers(admin.firestore()).doc(user.data()?.address)
+    const userRef = getUsers().doc(user.data()?.address)
     const dataToMerge = {
       parallelMarkets: {
         accreditationAccessRevocationAt: expiresAtUnixTimestamp,
@@ -223,7 +222,7 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
 }
 
 const getUserDocByPMId = async (id: string) => {
-  const users = getUsers(admin.firestore())
+  const users = getUsers()
   const fieldPath = new FieldPath("parallelMarkets", "id")
   const userSnapshot = await users.where(fieldPath, "==", id).get()
   if (userSnapshot.empty) {

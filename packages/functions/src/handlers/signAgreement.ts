@@ -1,7 +1,6 @@
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getAgreements} from "../db"
 import {genRequestHandler} from "../helpers"
-import * as admin from "firebase-admin"
 import isEmail from "validator/lib/isEmail"
 
 // signAgreement is used to be shared with the borrowers
@@ -31,7 +30,7 @@ export const signAgreement = genRequestHandler({
       return res.status(403).send({error: "Invalid email address"})
     }
 
-    const agreements = getAgreements(admin.firestore())
+    const agreements = getAgreements()
     const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
     const agreement = await agreements.doc(key)
     await agreement.set({

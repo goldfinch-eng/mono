@@ -153,10 +153,12 @@ export function SeniorPoolSupplyPanel({
     }
 
     dataLayerPushEvent("DEPOSITED_IN_SENIOR_POOL", {
-      currency: "USD",
-      transaction_id: submittedTransaction.transactionHash,
-      value: parseFloat(data.supply),
-      items: [{ item_id: seniorPool.address, item_name: "Senior Pool" }],
+      ecommerce: {
+        currency: "USD",
+        transaction_id: submittedTransaction.transactionHash,
+        value: parseFloat(data.supply),
+        items: [{ item_id: seniorPool.address, item_name: "Senior Pool" }],
+      },
     });
 
     await apolloClient.refetchQueries({

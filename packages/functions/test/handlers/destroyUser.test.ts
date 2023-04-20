@@ -76,8 +76,8 @@ describe("destroyUser", () => {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
     })
-    users = getUsers(testFirestore)
-    destroyedUsers = getDestroyedUsers(testFirestore)
+    users = getUsers()
+    destroyedUsers = getDestroyedUsers()
   })
 
   after(() => {

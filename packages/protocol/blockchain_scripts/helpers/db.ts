@@ -19,60 +19,52 @@ let _configForTest: FirebaseConfig = {
 
 /**
  * Get the users collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("users", firestore)
+function getUsers(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("users")
 }
 
 /**
  * Get the destroyed users collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getDestroyedUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("destroyedUsers", firestore)
+function getDestroyedUsers(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("destroyedUsers")
 }
 
 /**
  * Get the agreements collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getAgreements(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("agreements", firestore)
+function getAgreements(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("agreements")
 }
 
 /**
  * Generic function to get any collection given a reference to the name and the firestore (test aware)
  * @param {string} collection The collection name
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-const getCollection = (
-  collection: string,
-  firestore: firestore.Firestore
-): firestore.CollectionReference<firestore.DocumentData> => {
+const getCollection = (collection: string): firestore.CollectionReference<firestore.DocumentData> => {
   let collectionPrefix = ""
 
   if (process.env.NODE_ENV === "test") {
     collectionPrefix = "test_"
   }
   const collectionName = `${collectionPrefix}${collection}`
-  return getDb(firestore).collection(collectionName)
+  return getDb().collection(collectionName)
 }
 
 /**
  * Get the database (test aware)
- * @param {firestore.Firestore} firestore The default db if not test env
  * @return {firestore.Firestore} The databse for the current env
  */
-function getDb(firestore: firestore.Firestore): firestore.Firestore {
+function getDb(): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
     return _firestoreForTest
   } else {
-    return firestore
+    return firestore()
   }
 }
 

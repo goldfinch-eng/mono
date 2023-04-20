@@ -151,8 +151,8 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {
         })
       }
 
-      const db = getDb(admin.firestore())
-      const userRef = getUsers(admin.firestore()).doc(`${msgSender.toLowerCase()}`)
+      const db = getDb()
+      const userRef = getUsers().doc(`${msgSender.toLowerCase()}`)
       const uidTypeId = uidType.toString()
 
       try {

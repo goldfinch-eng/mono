@@ -1,7 +1,6 @@
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../helpers"
 import {getUsers} from "../db"
-import * as admin from "firebase-admin"
 
 export type DocumentExpiryStatusResponse = {
   identityExpiresAt?: number
@@ -18,7 +17,7 @@ export const publicKycStatus = genRequestHandler({
       return res.status(400).send({message: "Missing address from request query parameters"})
     }
 
-    const users = getUsers(admin.firestore())
+    const users = getUsers()
     const user = await users.doc(`${address.toLowerCase()}`).get()
 
     if (!user.exists) {

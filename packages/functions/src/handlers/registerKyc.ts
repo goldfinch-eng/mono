@@ -137,8 +137,8 @@ const saveParallelMarketsUser = async (
     type,
   }: ParallelMarketsUserData,
 ) => {
-  const db = getDb(admin.firestore())
-  const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+  const db = getDb()
+  const userRef = getUsers().doc(`${address.toLowerCase()}`)
 
   await db.runTransaction(async (t: firestore.Transaction) => {
     const doc = await t.get(userRef)

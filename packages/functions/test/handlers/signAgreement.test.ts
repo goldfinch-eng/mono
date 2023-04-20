@@ -68,7 +68,7 @@ describe("signAgreement", async () => {
       persona: {allowed_ips: ""},
       slack: {token: ""},
     })
-    agreements = getAgreements(testFirestore)
+    agreements = getAgreements()
   })
 
   after(async () => {
