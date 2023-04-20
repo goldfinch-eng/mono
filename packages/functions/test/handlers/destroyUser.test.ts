@@ -76,8 +76,8 @@ describe("destroyUser", () => {
       persona: {allowed_ips: ""},
     }
     setEnvForTest(testFirestore, config)
-    users = getUsers(testFirestore)
-    destroyedUsers = getDestroyedUsers(testFirestore)
+    users = getUsers()
+    destroyedUsers = getDestroyedUsers()
   })
 
   after(() => {

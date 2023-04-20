@@ -68,7 +68,7 @@ describe("signAgreement", async () => {
       slack: {token: ""},
     }
     setEnvForTest(testFirestore, config)
-    agreements = getAgreements(testFirestore)
+    agreements = getAgreements()
   })
 
   after(async () => {

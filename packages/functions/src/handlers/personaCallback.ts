@@ -84,8 +84,8 @@ export const personaCallback = genRequestHandler({
       Sentry.setUser({id: address, address})
 
       const countryCode = getCountryCode(relatedEntities)
-      const db = getDb(admin.firestore())
-      const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+      const db = getDb()
+      const userRef = getUsers().doc(`${address.toLowerCase()}`)
 
       try {
         await db.runTransaction(async (t: firestore.Transaction) => {

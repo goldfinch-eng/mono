@@ -73,9 +73,9 @@ export const destroyUser = genRequestHandler({
     // Having verified the request, we can set the Sentry user context accordingly.
     Sentry.setUser({id: addressToDestroy})
 
-    const db = getDb(admin.firestore())
-    const userRef = getUsers(admin.firestore()).doc(`${addressToDestroy.toLowerCase()}`)
-    const destroyedUserRef = getDestroyedUsers(admin.firestore()).doc(`${addressToDestroy.toLowerCase()}`)
+    const db = getDb()
+    const userRef = getUsers().doc(`${addressToDestroy.toLowerCase()}`)
+    const destroyedUserRef = getDestroyedUsers().doc(`${addressToDestroy.toLowerCase()}`)
 
     try {
       // The firestore web SDK uses optimistic locking for rows involved in a transaction so we don't have

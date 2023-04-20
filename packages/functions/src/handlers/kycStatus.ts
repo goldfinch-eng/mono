@@ -2,7 +2,6 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
-import * as admin from "firebase-admin"
 import {
   isApprovedNonUSEntity,
   isApprovedUSAccreditedEntity,
@@ -59,7 +58,7 @@ export const kycStatus = genRequestHandler({
       return res.status(200).send({...payload, status: "approved"})
     }
 
-    const users = getUsers(admin.firestore())
+    const users = getUsers()
     const user = await users.doc(`${address.toLowerCase()}`).get()
 
     if (user.exists) {
