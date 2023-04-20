@@ -34,7 +34,7 @@ export function WalletButton() {
     <Button
       variant="rounded"
       size="sm"
-      iconRight="Exclamation"
+      iconLeft="Exclamation"
       colorScheme="light-mustard"
       onClick={() => switchNetwork?.(DESIRED_CHAIN_ID)}
     >
