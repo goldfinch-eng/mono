@@ -71,7 +71,7 @@ export function Nav() {
         <div className="flex flex-1">
           <NextLink href="/" passHref>
             {/* padding + negative margin keeps the clickable area big, but keeps the actual logo the correct distance from the left edge */}
-            <a className="-ml-3 flex items-center justify-center p-3">
+            <a className="-ml-2 flex items-center justify-center p-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard-300">
                 <GoldfinchLogo className="h-5 w-5" />
               </div>
