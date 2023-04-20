@@ -22,11 +22,13 @@ import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
 import Globe from "./svg/globe.svg";
+import GoldfinchInverted from "./svg/goldfinch-inverted.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
 import LinkedIn from "./svg/linkedin.svg";
 import LockClosed from "./svg/lock-closed.svg";
+import Logout from "./svg/logout.svg";
 import Menu from "./svg/menu.svg";
 import Twitter from "./svg/twitter.svg";
 import Usdc from "./svg/usdc.svg";
@@ -54,11 +56,13 @@ export const iconManifest = {
   ExclamationCircleSolid,
   Gfi,
   Globe,
+  GoldfinchInverted,
   InfoCircle,
   LightningBolt,
   Link,
   LinkedIn,
   LockClosed,
+  Logout,
   Menu,
   Twitter,
   Usdc,
