@@ -3,7 +3,6 @@ import clsx from "clsx";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import { useWizard } from "react-use-wizard";
 import {
   Button,
   Icon,
@@ -15,7 +14,6 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
-import { VerificationFlowSteps } from "@/components/verification-modal";
 import { PARALLEL_MARKETS } from "@/constants";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";

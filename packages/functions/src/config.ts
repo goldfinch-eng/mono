@@ -43,11 +43,11 @@ let _configForTest: FirebaseConfig = {
   },
   parallelmarkets: {
     base_url: "https://demo-api.parallelmarkets.com/v1",
-    api_key: process.env.PM_DEMO_API_KEY || "",
-    client_id: process.env.PM_CLIENT_ID || "",
-    client_secret: process.env.PM_CLIENT_SECRET || "",
+    api_key: "demo-api:c8cedaa3-5aa8-49e5-9518-93e275e1bb79:e3QxclmYGnQCiSOQLEbRsPzwPe8jPCpaz8dajC9xKDc=" || "",
+    client_id: "aCoBWopwhlFzDT5K4ToT9" || "",
+    client_secret: "QaudKIIbLZ0Os7zbQ8u97mCi5L48Huog5Ee0mQiT1M_OQ" || "",
     webhook_key: process.env.PM_WEBHOOK_KEY || "",
-    redirect_uri: process.env.PM_REDIRECT_URI || "",
+    redirect_uri: "http://localhost:3001/account" || "",
     env: "test",
   },
 }
