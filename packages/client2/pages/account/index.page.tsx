@@ -17,12 +17,19 @@ import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { getSignatureForKyc, registerKyc } from "@/lib/verify";
+import {
+  getSignatureForKyc,
+  getUIDLabelFromGql,
+  registerKyc,
+} from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 gql`
-  query AccountPage {
+  query AccountPage($account: ID!) {
+    user(id: $account) {
+      uidType
+    }
     viewer @client {
       kycStatus {
         status
@@ -40,7 +47,9 @@ const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { data, error, loading, refetch } = useAccountPageQuery();
+  const { data, error, loading, refetch } = useAccountPageQuery({
+    variables: { account: account?.toLowerCase() ?? "" },
+  });
   const router = useRouter();
 
   const [isRegisteringKyc, setIsRegisteringKyc] = useState(false);
@@ -94,6 +103,33 @@ const AccountsPage: NextPageWithLayout = () => {
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
 
+  const defaultCallToActionBanner = (
+    <CallToActionBanner
+      renderButton={(props) =>
+        account ? (
+          <Button {...props} onClick={openVerificationModal}>
+            {registerKycError ? "Try again" : "Begin UID setup"}
+          </Button>
+        ) : (
+          <Button {...props} onClick={openWalletModal}>
+            Connect Wallet
+          </Button>
+        )
+      }
+      iconLeft={registerKycError ? "Exclamation" : DEFAULT_UID_ICON}
+      title={
+        registerKycError
+          ? "There was a problem connecting to our verification partner"
+          : DEFAULT_UID_TITLE
+      }
+      description={
+        registerKycError ? registerKycError.message : DEFAULT_UID_SET_UP_STRING
+      }
+    />
+  );
+
+  const { uidType } = data?.user ?? {};
+
   return (
     <div>
       <div className="bg-mustard-100">
@@ -121,90 +157,93 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                {isRegisteringKyc || loading ? (
-                  <Spinner size="lg" />
-                ) : account && status === "pending" ? (
-                  <CallToActionBanner
-                    iconLeft={DEFAULT_UID_ICON}
-                    title="UID is being verified"
-                    description="Almost there. Your UID is still being verified, please come back later."
-                    colorScheme="white"
-                  >
-                    <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
-                      <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
-                        <Icon
-                          className="mt-1 mr-1 fill-mint-450"
-                          name="Checkmark"
-                        />
-                        Documents Uploaded
-                      </div>
-                      <div
-                        className={clsx(
-                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-                          identityStatus === "approved"
-                            ? "bg-mint-100"
-                            : "bg-sand-100"
-                        )}
-                      >
-                        <Icon
-                          className={clsx(
-                            "mt-1 mr-1",
-                            identityStatus === "approved"
-                              ? "fill-mint-450"
-                              : "fill-sand-300"
-                          )}
-                          name="Checkmark"
-                        />
-                        Identity verification
-                      </div>
-                      <div
-                        className={clsx(
-                          "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-                          accreditationStatus === "approved"
-                            ? "bg-mint-100"
-                            : "bg-sand-100"
-                        )}
-                      >
-                        <Icon
-                          className={clsx(
-                            "mt-1 mr-1",
-                            accreditationStatus === "approved"
-                              ? "fill-mint-450"
-                              : "fill-sand-300"
-                          )}
-                          name="Checkmark"
-                        />
-                        Accreditation verification
-                      </div>
+                {uidType ? (
+                  <div className="lg:px-5">
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Information</h2>
+                      <text>{getUIDLabelFromGql(uidType)}</text>
                     </div>
-                  </CallToActionBanner>
-                ) : (
-                  <CallToActionBanner
-                    renderButton={(props) =>
-                      account ? (
+                    <hr className="my-4 fill-sand-300"></hr>
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Main wallet</h2>
+                      <text className="truncate">{account}</text>
+                    </div>
+                  </div>
+                ) : isRegisteringKyc || loading ? (
+                  <Spinner size="lg" />
+                ) : account ? (
+                  status === "pending" ? (
+                    <CallToActionBanner
+                      iconLeft={DEFAULT_UID_ICON}
+                      title="UID is being verified"
+                      description="Almost there. Your UID is still being verified, please come back later."
+                      colorScheme="white"
+                    >
+                      <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
+                        <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
+                          <Icon
+                            className="mt-1 mr-1 fill-mint-450"
+                            name="Checkmark"
+                          />
+                          Documents Uploaded
+                        </div>
+                        <div
+                          className={clsx(
+                            "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                            identityStatus === "approved"
+                              ? "bg-mint-100"
+                              : "bg-sand-100"
+                          )}
+                        >
+                          <Icon
+                            className={clsx(
+                              "mt-1 mr-1",
+                              identityStatus === "approved"
+                                ? "fill-mint-450"
+                                : "fill-sand-300"
+                            )}
+                            name="Checkmark"
+                          />
+                          Identity verification
+                        </div>
+                        <div
+                          className={clsx(
+                            "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
+                            accreditationStatus === "approved"
+                              ? "bg-mint-100"
+                              : "bg-sand-100"
+                          )}
+                        >
+                          <Icon
+                            className={clsx(
+                              "mt-1 mr-1",
+                              accreditationStatus === "approved"
+                                ? "fill-mint-450"
+                                : "fill-sand-300"
+                            )}
+                            name="Checkmark"
+                          />
+                          Accreditation verification
+                        </div>
+                      </div>
+                    </CallToActionBanner>
+                  ) : status === "approved" ? (
+                    <CallToActionBanner
+                      renderButton={(props) => (
                         <Button {...props} onClick={openVerificationModal}>
-                          {registerKycError ? "Try again" : "Begin UID setup"}
+                          Claim UID
                         </Button>
-                      ) : (
-                        <Button {...props} onClick={openWalletModal}>
-                          Connect Wallet
-                        </Button>
-                      )
-                    }
-                    iconLeft={
-                      registerKycError ? "Exclamation" : DEFAULT_UID_ICON
-                    }
-                    title={
-                      registerKycError
-                        ? "There was a problem connecting to our verification partner"
-                        : DEFAULT_UID_TITLE
-                    }
-                    description={
-                      registerKycError
-                        ? registerKycError.message
-                        : DEFAULT_UID_SET_UP_STRING
-                    }
-                  />
+                      )}
+                      colorScheme="green"
+                      iconLeft={DEFAULT_UID_ICON}
+                      title="Claim your UID"
+                      description="Your application is approved! Claim your UID to participate in the protocol."
+                    />
+                  ) : (
+                    defaultCallToActionBanner
+                  )
+                ) : (
+                  defaultCallToActionBanner
                 )}
               </TabContent>
             </TabPanels>

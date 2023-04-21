@@ -50,12 +50,12 @@ export function MintStep() {
     const gasPrice = await provider.getGasPrice();
 
     const transaction = uidContract.mint(
-      signer.idVersion,
+      signer.uidType,
       signer.expiresAt,
       signer.signature,
       {
         value: UNIQUE_IDENTITY_MINT_PRICE,
-        gasPrice: gasPrice,
+        gasPrice,
       }
     );
 
@@ -68,7 +68,7 @@ export function MintStep() {
     await apolloClient.refetchQueries({ include: "active" });
     dataLayerPushEvent("UID_MINTED", {
       transactionHash: submittedTransaction.transactionHash,
-      uidType: getUIDLabelFromType(signer.idVersion),
+      uidType: getUIDLabelFromType(signer.uidType),
     });
     goToStep(VerificationFlowSteps.MintFinished);
   };
