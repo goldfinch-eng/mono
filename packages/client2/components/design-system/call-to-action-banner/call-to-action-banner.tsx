@@ -9,7 +9,7 @@ export interface CallToActionBannerProps {
    * Button component props to optionally pass in
    */
   renderButton?: (
-    props: Pick<ButtonProps, "colorScheme" | "size" | "variant">
+    props: Pick<ButtonProps, "colorScheme" | "size" | "variant" | "className">
   ) => ReactElement;
   /**
    * Optional children that render below the call to action button
@@ -44,49 +44,31 @@ export function CallToActionBanner({
   return (
     <div
       className={clsx(
-        "max-w-screen rounded-md p-6",
+        "rounded-md p-6",
         colorScheme === "blue-gradient"
-          ? "bg-gradient-to-r from-sky-500 to-sky-300"
+          ? "bg-gradient-to-r from-sky-500 to-sky-300 text-white"
           : colorScheme === "white"
-          ? "border-1 border-solid border-sand-200 bg-white"
+          ? "border-1 border-solid border-sand-200 bg-white text-sand-800"
           : colorScheme === "green"
-          ? "bg-mint-500 shadow-md shadow-mint-500"
+          ? "bg-mint-500 text-white shadow-md shadow-mint-500"
           : null
       )}
     >
-      <div className="flex flex-col">
-        <div className="flex flex-col justify-between gap-8 sm:flex-row">
-          <div
-            className={clsx(
-              colorScheme === "blue-gradient" || colorScheme === "green"
-                ? "text-white"
-                : colorScheme === "white"
-                ? "text-sand-800"
-                : null,
-              "flex flex-col" /* will add more conditional statements for text scheme soon */
-            )}
-          >
-            <div className="row mb-2 flex">
-              {iconLeft && <Icon className="mt-1 mr-1" name={iconLeft} />}
-              <h1>{title}</h1>
+      <div>
+        <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-center">
+          <div>
+            <div className="mb-2 flex items-center gap-1">
+              {iconLeft ? <Icon name={iconLeft} /> : null}
+              {title}
             </div>
-            <p
-              className={clsx(
-                "float-left text-sm",
-                colorScheme ===
-                  "blue-gradient" /* will change this to be more based on text length */
-                  ? "font-thin md:w-5/6 lg:w-2/3"
-                  : null
-              )}
-            >
-              {description}
-            </p>
+            <p className="text-sm">{description}</p>
           </div>
           {renderButton
             ? renderButton({
                 size: "md",
                 colorScheme: "secondary",
                 variant: "standard",
+                className: "shrink-0",
               })
             : null}
         </div>
