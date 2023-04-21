@@ -34,7 +34,7 @@ export const registerKyc = genRequestHandler({
     }
 
     if (!key) return res.status(400).send({error: "Missing key"})
-    if (!provider) return res.status(400).send({status: "Missing provider"})
+    if (!provider) return res.status(400).send({error: "Missing provider"})
 
     // TODO - make parallel_markets camel case. Requires client changes
     // TODO - can we consolidate /registerKyc and /setUserKycData?
@@ -53,7 +53,7 @@ export const registerKyc = genRequestHandler({
       return res.status(200).send({status: "success"})
     }
 
-    return res.status(400).send({status: `Invalid provider: ${provider}`})
+    return res.status(400).send({error: `Invalid provider: ${provider}`})
   },
 })
 
@@ -146,6 +146,10 @@ const saveParallelMarketsUser = async (
     if (doc.exists) {
       console.log(`User exists for address ${address} - merging`)
       const existingData = doc.data() as KycItem
+
+      if (existingData.persona && existingData.persona.status === "approved") {
+        throw new Error(`User ${address} has already passed kyc'd through Persona`)
+      }
 
       t.update(userRef, {
         parallelMarkets: {
