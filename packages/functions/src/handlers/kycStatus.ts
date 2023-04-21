@@ -70,8 +70,8 @@ const getPersonaStatusResponse = (data: FirebaseFirestore.DocumentData): KycStat
 
 // Construct a Parallel Markets response body from a user document
 const getPmStatusResponse = (data: FirebaseFirestore.DocumentData): KycStatusResponse => {
-  const {parallelMarkets} = data
-  const {identityAccessRevocationAt, accreditationAccessRevocationAt, countryCode, residency} = parallelMarkets
+  const {countryCode, parallelMarkets} = data
+  const {identityAccessRevocationAt, accreditationAccessRevocationAt, residency} = parallelMarkets
   let accessRevocationBy = undefined
   if (identityAccessRevocationAt && accreditationAccessRevocationAt) {
     accessRevocationBy = Math.min(identityAccessRevocationAt, accreditationAccessRevocationAt)

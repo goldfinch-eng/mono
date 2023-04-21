@@ -175,7 +175,7 @@ export async function fetchUniqueIdentitySigner(
   const parsedBody: {
     signature: string;
     expiresAt: number;
-    idVersion: UIDType;
+    uidType: UIDType;
   } = JSON.parse(response.result);
   return parsedBody;
 }

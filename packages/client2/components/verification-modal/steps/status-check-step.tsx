@@ -56,8 +56,8 @@ export function StatusCheckStep() {
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);
         } else if (kycStatus.status === "approved") {
-          const goldfinchUtils = await import("@goldfinch-eng/utils");
-          const idVersion = goldfinchUtils.getIDType(kycStatus);
+          const { getIDType } = await import("@goldfinch-eng/utils");
+          const idVersion = getIDType(kycStatus);
           setUidVersion(idVersion);
           goToStep(VerificationFlowSteps.Mint);
         } else {
