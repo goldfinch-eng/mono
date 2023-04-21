@@ -23,6 +23,9 @@ import { NextPageWithLayout } from "@/pages/_app.page";
 
 gql`
   query AccountPage {
+    user {
+      uidType
+    }
     viewer @client {
       kycStatus {
         status
