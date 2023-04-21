@@ -1,5 +1,5 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount, getProvider, fetchSigner } from "@wagmi/core";
+import { getAccount, getProvider, fetchSigner, watchSigner } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
@@ -167,9 +167,21 @@ export const viewerResolvers: Resolvers[string] = {
   async kycStatus(): Promise<KycStatus | null> {
     const { address } = getAccount();
     const provider = getProvider();
-    const signer = await fetchSigner();
-    if (!address || !signer) {
+    if (!address || !provider) {
       return null;
+    }
+
+    // Need to make this wait for the signer to come online.
+    // await fetchSigner() can actually return null, even when an account is connected. This may or may not be a bug in Wagmi, but we have to work around it here.
+    const signerAvailablePromise = new Promise<void>((resolve, reject) => {
+      watchSigner({}, (provider) =>
+        provider?._isSigner ? resolve() : reject()
+      );
+    });
+    await signerAvailablePromise;
+    const signer = await fetchSigner();
+    if (!signer) {
+      throw new Error("Signer not available when expected");
     }
     const signature = await getSignatureForKyc(provider, signer);
     const kycStatus = await fetchKycStatus(address, signature);
