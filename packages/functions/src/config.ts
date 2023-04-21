@@ -47,7 +47,7 @@ let _configForTest: FirebaseConfig = {
     client_id: process.env.PM_CLIENT_ID || "",
     client_secret: process.env.PM_CLIENT_SECRET || "",
     webhook_key: process.env.PM_WEBHOOK_KEY || "",
-    redirect_uri: "http://localhost:3001/account" || "",
+    redirect_uri: process.env.PM_REDIRECT_URI || "",
     env: "test",
   },
 }
