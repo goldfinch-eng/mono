@@ -108,12 +108,21 @@ const AccountsPage: NextPageWithLayout = () => {
   /* if there's a UID Type, show the wallet section and account section */
 
   const infoSection = uidType ? (
-    <h2>Information: {getUIDLabelFromGql(uidType)}</h2>
+    <div className="flex flex-col gap-y-2">
+      <h2 className="text-sand-500">Information</h2>
+      <text>{getUIDLabelFromGql(uidType)}</text>
+    </div>
   ) : null;
-  const walletSection = uidType ? <h2>Main wallet: {account}</h2> : null;
+  const walletSection = uidType ? (
+    <div className="flex flex-col gap-y-2">
+      <h2 className="text-sand-500">Main wallet</h2>
+      <text className="truncate">{account}</text>
+    </div>
+  ) : null;
   const uidSection = (
-    <div>
+    <div className="lg:px-5">
       {infoSection}
+      <hr className="my-4 fill-sand-300"></hr>
       {walletSection}
     </div>
   );
