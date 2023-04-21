@@ -22,8 +22,8 @@ import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 gql`
-  query AccountPage {
-    user {
+  query AccountPage($account: ID!) {
+    user(id: $account) {
       uidType
     }
     viewer @client {
@@ -43,7 +43,9 @@ const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { data, error, loading, refetch } = useAccountPageQuery();
+  const { data, error, loading, refetch } = useAccountPageQuery({
+    variables: { account: account?.toLowerCase() ?? "" },
+  });
   const router = useRouter();
 
   const [isRegisteringKyc, setIsRegisteringKyc] = useState(false);
@@ -96,6 +98,10 @@ const AccountsPage: NextPageWithLayout = () => {
   }, [account, provider, signer, router, router.isReady, refetch]);
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
+
+  const { uidType } = data?.user ?? {};
+
+  /* if there's a UID Type, show the wallet section and account section */
 
   const defaultCallToActionBanner = (
     <CallToActionBanner
