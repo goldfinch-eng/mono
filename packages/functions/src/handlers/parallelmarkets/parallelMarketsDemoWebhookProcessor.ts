@@ -55,6 +55,10 @@ export const parallelMarketsDemoWebhookProcessor = genRequestHandler({
     console.log("Received payload")
     console.log(payload)
 
+    if (payload.entity.id === "test") {
+      return response.status(200).send({status: "received test payload"})
+    }
+
     // Get the config and log all the variables just to verify that they are there
     const config = getConfig(functions)
     console.log("Extracted config")
