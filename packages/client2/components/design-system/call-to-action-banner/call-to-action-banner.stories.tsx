@@ -16,7 +16,7 @@ export const CallToActionBannerStory: ComponentStory<
       {...args}
       renderButton={(props) => (
         <Button {...props} as="a" href="https://example.com">
-          Click me!
+          Begin UID Setup
         </Button>
       )}
     />
@@ -24,5 +24,7 @@ export const CallToActionBannerStory: ComponentStory<
 };
 
 CallToActionBannerStory.args = {
-  title: "Have a moment?",
+  title: "Set up your UID to start",
+  description:
+    "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.",
 };
