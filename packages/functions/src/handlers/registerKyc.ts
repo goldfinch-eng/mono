@@ -28,32 +28,25 @@ export const registerKyc = genRequestHandler({
 
     Sentry.setUser({id: address, address})
 
-    const {key, provider} = JSON.parse(plaintext) as {
-      key: string
-      provider: string
-    }
+    const expectedPlaintextPrefixLength = "Share your OAuth code with Goldfinch: ".length
+    const key = plaintext.slice(expectedPlaintextPrefixLength)
 
     if (!key) return res.status(400).send({error: "Missing key"})
-    if (!provider) return res.status(400).send({error: "Missing provider"})
 
     // TODO - make parallel_markets camel case. Requires client changes
     // TODO - can we consolidate /registerKyc and /setUserKycData?
     //        They do very similar things, just different providers
-    if (provider === "parallel_markets") {
-      try {
-        const data = await getParalleMarketsUser(key)
-        console.log("Saving data to store")
-        console.log(data)
-        await saveParallelMarketsUser(address, data)
-      } catch (e) {
-        console.error(e)
-        return res.status(500).send({status: "failed to save parallel markets data"})
-      }
-
-      return res.status(200).send({status: "success"})
+    try {
+      const data = await getParalleMarketsUser(key)
+      console.log("Saving data to store")
+      console.log(data)
+      await saveParallelMarketsUser(address, data)
+    } catch (e) {
+      console.error(e)
+      return res.status(500).send({status: "failed to save parallel markets data"})
     }
 
-    return res.status(400).send({error: `Invalid provider: ${provider}`})
+    return res.status(200).send({status: "success"})
   },
 })
 

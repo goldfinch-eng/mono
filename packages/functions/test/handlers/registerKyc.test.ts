@@ -119,32 +119,6 @@ describe("registerKyc", async () => {
         const request = genRegisterKycRequest(testAccount.address, "test_key", sig, badPlaintext, currentBlockNum)
         await registerKyc(request, expectResponse(400, {error: "Missing key"}))
       })
-
-      it("ensures provider is present", async () => {
-        // Missing the provider!
-        const badPlaintext = JSON.stringify({
-          key: "test_key",
-        })
-        const sig = await testWallet.signMessage(badPlaintext)
-        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, badPlaintext, currentBlockNum)
-        await registerKyc(request, expectResponse(400, {error: "Missing provider"}))
-      })
-
-      it("ensures provider is valid is present", async () => {
-        const badProviderPlaintext = JSON.stringify({
-          key: "test_key",
-          provider: "not_parallel_markets",
-        })
-        const sig = await testWallet.signMessage(badProviderPlaintext)
-        const request = genRegisterKycRequest(
-          testAccount.address,
-          "test_key",
-          sig,
-          badProviderPlaintext,
-          currentBlockNum,
-        )
-        await registerKyc(request, expectResponse(400, {error: "Invalid provider: not_parallel_markets"}))
-      })
     })
 
     describe.skip("creating new user", () => {

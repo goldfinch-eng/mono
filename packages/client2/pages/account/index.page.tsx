@@ -79,13 +79,11 @@ const AccountsPage: NextPageWithLayout = () => {
           );
         }
         if (router.query.code !== undefined && account && provider) {
+          const plaintext = `Share your OAuth code with Goldfinch: ${router.query.code}`
           const sig = await getSignatureForKyc(
             provider,
             signer,
-            JSON.stringify({
-              key: router.query.code,
-              provider: "parallel_markets",
-            })
+            plaintext 
           );
           await registerKyc(account, sig);
           router.replace("/account");
