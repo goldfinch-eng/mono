@@ -17,7 +17,11 @@ import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { getSignatureForKyc, registerKyc } from "@/lib/verify";
+import {
+  getSignatureForKyc,
+  getUIDLabelFromGql,
+  registerKyc,
+} from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
@@ -103,6 +107,17 @@ const AccountsPage: NextPageWithLayout = () => {
 
   /* if there's a UID Type, show the wallet section and account section */
 
+  const infoSection = uidType ? (
+    <h2>Information: {getUIDLabelFromGql(uidType)}</h2>
+  ) : null;
+  const walletSection = uidType ? <h2>Main wallet: {account}</h2> : null;
+  const uidSection = (
+    <div>
+      {infoSection}
+      {walletSection}
+    </div>
+  );
+
   const defaultCallToActionBanner = (
     <CallToActionBanner
       renderButton={(props) =>
@@ -155,7 +170,9 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                {isRegisteringKyc || loading ? (
+                {uidType ? (
+                  uidSection
+                ) : isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
                 ) : account ? (
                   status === "pending" ? (
