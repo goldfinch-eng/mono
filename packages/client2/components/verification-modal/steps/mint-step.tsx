@@ -68,7 +68,7 @@ export function MintStep() {
     await apolloClient.refetchQueries({ include: "active" });
     dataLayerPushEvent("UID_MINTED", {
       transactionHash: submittedTransaction.transactionHash,
-      uidType: getUIDLabelFromType(signer.idVersion),
+      uidType: getUIDLabelFromType(signer.uidType),
     });
     goToStep(VerificationFlowSteps.MintFinished);
   };
