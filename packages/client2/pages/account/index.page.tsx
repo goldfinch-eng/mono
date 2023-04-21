@@ -15,6 +15,7 @@ import {
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
+import { useIsMounted } from "@/hooks";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import {
@@ -40,12 +41,10 @@ gql`
   }
 `;
 
-const DEFAULT_UID_SET_UP_STRING =
-  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
-const DEFAULT_UID_TITLE = "Setup your UID to start";
 const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
+  const isMounted = useIsMounted();
   const { account, provider, signer } = useWallet();
   const { data, error, loading, refetch } = useAccountPageQuery({
     variables: { account: account?.toLowerCase() ?? "" },
@@ -103,31 +102,6 @@ const AccountsPage: NextPageWithLayout = () => {
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
 
-  const defaultCallToActionBanner = (
-    <CallToActionBanner
-      renderButton={(props) =>
-        account ? (
-          <Button {...props} onClick={openVerificationModal}>
-            {registerKycError ? "Try again" : "Begin UID setup"}
-          </Button>
-        ) : (
-          <Button {...props} onClick={openWalletModal}>
-            Connect Wallet
-          </Button>
-        )
-      }
-      iconLeft={registerKycError ? "Exclamation" : DEFAULT_UID_ICON}
-      title={
-        registerKycError
-          ? "There was a problem connecting to our verification partner"
-          : DEFAULT_UID_TITLE
-      }
-      description={
-        registerKycError ? registerKycError.message : DEFAULT_UID_SET_UP_STRING
-      }
-    />
-  );
-
   const { uidType } = data?.user ?? {};
 
   return (
@@ -139,92 +113,63 @@ const AccountsPage: NextPageWithLayout = () => {
           </h1>
           {error ? (
             <div className="text-xl text-clay-500">
-              Unable to fetch data for your account. Please re-fresh the page
-              and provide your signature.
+              Unable to fetch data for your account. Please refresh the page and
+              provide your signature.
             </div>
           ) : null}
         </div>
       </div>
-      <TabGroup>
-        <div className="bg-mustard-100">
-          <div className="mx-auto max-w-7xl px-5">
-            <TabList>
-              <TabButton>UID and Wallets</TabButton>
-            </TabList>
+      {!isMounted ? null : !account ? (
+        <div className="mx-auto mt-5 max-w-7xl px-5">
+          You must connect your wallet to view account information.
+          <div>
+            <Button onClick={openWalletModal}>Connect</Button>
           </div>
         </div>
-        <div className="px-5">
-          <div className="mx-auto max-w-7xl pt-0">
-            <TabPanels>
-              <TabContent>
-                {uidType ? (
-                  <div className="lg:px-5">
-                    <div className="flex flex-col gap-y-2">
-                      <h2 className="text-sand-500">Information</h2>
-                      <text>{getUIDLabelFromGql(uidType)}</text>
+      ) : (
+        <TabGroup>
+          <div className="bg-mustard-100">
+            <div className="mx-auto max-w-7xl px-5">
+              <TabList>
+                <TabButton>UID and Wallets</TabButton>
+              </TabList>
+            </div>
+          </div>
+          <div className="px-5">
+            <div className="mx-auto max-w-7xl pt-0">
+              <TabPanels>
+                <TabContent>
+                  {isRegisteringKyc || loading ? (
+                    <Spinner size="lg" />
+                  ) : uidType ? (
+                    <div className="lg:px-5">
+                      <div className="flex flex-col gap-y-2">
+                        <h2 className="text-sand-500">Information</h2>
+                        <div>{getUIDLabelFromGql(uidType)}</div>
+                      </div>
+                      <hr className="my-4 fill-sand-300"></hr>
+                      <div className="flex flex-col gap-y-2">
+                        <h2 className="text-sand-500">Main wallet</h2>
+                        <div className="break-words">{account}</div>
+                      </div>
                     </div>
-                    <hr className="my-4 fill-sand-300"></hr>
-                    <div className="flex flex-col gap-y-2">
-                      <h2 className="text-sand-500">Main wallet</h2>
-                      <text className="truncate">{account}</text>
-                    </div>
-                  </div>
-                ) : isRegisteringKyc || loading ? (
-                  <Spinner size="lg" />
-                ) : account ? (
-                  status === "pending" ? (
+                  ) : status === "pending" ? (
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
                       description="Almost there. Your UID is still being verified, please come back later."
                       colorScheme="white"
                     >
-                      <div className="full-width mt-8 flex flex-col gap-2 sm:flex-row">
-                        <div className="box-content flex flex-row rounded-md bg-mint-100 p-4 text-sm sm:w-1/3">
-                          <Icon
-                            className="mt-1 mr-1 fill-mint-450"
-                            name="Checkmark"
-                          />
-                          Documents Uploaded
-                        </div>
-                        <div
-                          className={clsx(
-                            "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-                            identityStatus === "approved"
-                              ? "bg-mint-100"
-                              : "bg-sand-100"
-                          )}
-                        >
-                          <Icon
-                            className={clsx(
-                              "mt-1 mr-1",
-                              identityStatus === "approved"
-                                ? "fill-mint-450"
-                                : "fill-sand-300"
-                            )}
-                            name="Checkmark"
-                          />
-                          Identity verification
-                        </div>
-                        <div
-                          className={clsx(
-                            "box-content flex flex-row rounded-md p-4 text-sm sm:w-1/3",
-                            accreditationStatus === "approved"
-                              ? "bg-mint-100"
-                              : "bg-sand-100"
-                          )}
-                        >
-                          <Icon
-                            className={clsx(
-                              "mt-1 mr-1",
-                              accreditationStatus === "approved"
-                                ? "fill-mint-450"
-                                : "fill-sand-300"
-                            )}
-                            name="Checkmark"
-                          />
-                          Accreditation verification
-                        </div>
+                      <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+                        <CheckableStep name="Documents uploaded" checked />
+                        <CheckableStep
+                          name="Identity verification"
+                          checked={identityStatus === "approved"}
+                        />
+                        <CheckableStep
+                          name="Accreditation verification"
+                          checked={accreditationStatus === "approved"}
+                        />
                       </div>
                     </CallToActionBanner>
                   ) : status === "approved" ? (
@@ -240,16 +185,33 @@ const AccountsPage: NextPageWithLayout = () => {
                       description="Your application is approved! Claim your UID to participate in the protocol."
                     />
                   ) : (
-                    defaultCallToActionBanner
-                  )
-                ) : (
-                  defaultCallToActionBanner
-                )}
-              </TabContent>
-            </TabPanels>
+                    <CallToActionBanner
+                      renderButton={(props) => (
+                        <Button {...props} onClick={openVerificationModal}>
+                          {registerKycError ? "Try again" : "Begin UID setup"}
+                        </Button>
+                      )}
+                      iconLeft={
+                        registerKycError ? "Exclamation" : DEFAULT_UID_ICON
+                      }
+                      title={
+                        registerKycError
+                          ? "There was a problem connecting to our verification partner"
+                          : "Setup your UID to start"
+                      }
+                      description={
+                        registerKycError
+                          ? registerKycError.message
+                          : "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+                      }
+                    />
+                  )}
+                </TabContent>
+              </TabPanels>
+            </div>
           </div>
-        </div>
-      </TabGroup>
+        </TabGroup>
+      )}
     </div>
   );
 };
@@ -257,3 +219,20 @@ const AccountsPage: NextPageWithLayout = () => {
 AccountsPage.layout = "naked";
 
 export default AccountsPage;
+
+function CheckableStep({ name, checked }: { name: string; checked: boolean }) {
+  return (
+    <div
+      className={clsx(
+        "flex items-center gap-1 rounded-md bg-mint-100 p-4 text-sm sm:w-1/3",
+        checked ? "bg-mint-100 text-sand-700" : "bg-sand-100 text-sand-400"
+      )}
+    >
+      <Icon
+        name="Checkmark"
+        className={checked ? "fill-mint-450" : "fill-sand-300"}
+      />
+      <div>{name}</div>
+    </div>
+  );
+}
