@@ -103,30 +103,6 @@ const AccountsPage: NextPageWithLayout = () => {
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
 
-  const { uidType } = data?.user ?? {};
-
-  /* if there's a UID Type, show the wallet section and account section */
-
-  const infoSection = uidType ? (
-    <div className="flex flex-col gap-y-2">
-      <h2 className="text-sand-500">Information</h2>
-      <text>{getUIDLabelFromGql(uidType)}</text>
-    </div>
-  ) : null;
-  const walletSection = uidType ? (
-    <div className="flex flex-col gap-y-2">
-      <h2 className="text-sand-500">Main wallet</h2>
-      <text className="truncate">{account}</text>
-    </div>
-  ) : null;
-  const uidSection = (
-    <div className="lg:px-5">
-      {infoSection}
-      <hr className="my-4 fill-sand-300"></hr>
-      {walletSection}
-    </div>
-  );
-
   const defaultCallToActionBanner = (
     <CallToActionBanner
       renderButton={(props) =>
@@ -151,6 +127,8 @@ const AccountsPage: NextPageWithLayout = () => {
       }
     />
   );
+
+  const { uidType } = data?.user ?? {};
 
   return (
     <div>
@@ -180,7 +158,17 @@ const AccountsPage: NextPageWithLayout = () => {
             <TabPanels>
               <TabContent>
                 {uidType ? (
-                  uidSection
+                  <div className="lg:px-5">
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Information</h2>
+                      <text>{getUIDLabelFromGql(uidType)}</text>
+                    </div>
+                    <hr className="my-4 fill-sand-300"></hr>
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Main wallet</h2>
+                      <text className="truncate">{account}</text>
+                    </div>
+                  </div>
                 ) : isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
                 ) : account ? (
