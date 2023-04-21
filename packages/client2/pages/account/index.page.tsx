@@ -17,12 +17,19 @@ import { CallToActionBanner } from "@/components/design-system";
 import { PARALLEL_MARKETS } from "@/constants";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
-import { getSignatureForKyc, registerKyc } from "@/lib/verify";
+import {
+  getSignatureForKyc,
+  getUIDLabelFromGql,
+  registerKyc,
+} from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 
 gql`
-  query AccountPage {
+  query AccountPage($account: ID!) {
+    user(id: $account) {
+      uidType
+    }
     viewer @client {
       kycStatus {
         status
@@ -40,7 +47,9 @@ const DEFAULT_UID_ICON = "Globe";
 
 const AccountsPage: NextPageWithLayout = () => {
   const { account, provider, signer } = useWallet();
-  const { data, error, loading, refetch } = useAccountPageQuery();
+  const { data, error, loading, refetch } = useAccountPageQuery({
+    variables: { account: account?.toLowerCase() ?? "" },
+  });
   const router = useRouter();
 
   const [isRegisteringKyc, setIsRegisteringKyc] = useState(false);
@@ -119,6 +128,8 @@ const AccountsPage: NextPageWithLayout = () => {
     />
   );
 
+  const { uidType } = data?.user ?? {};
+
   return (
     <div>
       <div className="bg-mustard-100">
@@ -146,7 +157,19 @@ const AccountsPage: NextPageWithLayout = () => {
           <div className="mx-auto max-w-7xl pt-0">
             <TabPanels>
               <TabContent>
-                {isRegisteringKyc || loading ? (
+                {uidType ? (
+                  <div className="lg:px-5">
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Information</h2>
+                      <text>{getUIDLabelFromGql(uidType)}</text>
+                    </div>
+                    <hr className="my-4 fill-sand-300"></hr>
+                    <div className="flex flex-col gap-y-2">
+                      <h2 className="text-sand-500">Main wallet</h2>
+                      <text className="truncate">{account}</text>
+                    </div>
+                  </div>
+                ) : isRegisteringKyc || loading ? (
                   <Spinner size="lg" />
                 ) : account ? (
                   status === "pending" ? (
