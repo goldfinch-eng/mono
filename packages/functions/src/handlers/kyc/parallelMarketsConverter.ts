@@ -3,7 +3,7 @@ import {PmAccreditationResponse, PmConsistencyLevel, PmIdentityDocumentValidity}
 // We don't need a separate fn for businesses and individuals because they have the same accreditation statuses
 export const getAccreditationStatus = (accreditation: PmAccreditationResponse) => {
   console.log(`Evaluating accreditation status for ${accreditation.type} ${accreditation.id}`)
-  if (accreditation.indicatedUnaccredited !== null) {
+  if (accreditation.indicatedUnaccredited) {
     return {status: "unaccredited", expiresAt: undefined}
   } else if (accreditation.accreditations.length == 0) {
     return {status: "pending_documents", expiresAt: undefined}

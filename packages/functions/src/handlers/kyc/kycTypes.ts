@@ -5,11 +5,17 @@ import {KycProvider} from "../../types"
 export type KycItem = {
   address: string | null
   countryCode: string | null
+  // residency key for PM users
+  residency: string | null
   updatedAt: number | null
   kycProvider: KycProvider
   persona: {
     id: string | null
     status: string | null
+  }
+  // residency for persona users is stored in kyc - TODO - migrate from kyc.residency to top level residency
+  kyc?: {
+    residency: string
   }
   parallelMarkets: {
     id: string | null

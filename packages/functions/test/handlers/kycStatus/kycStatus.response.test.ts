@@ -1,4 +1,4 @@
-import chai, {expect} from "chai"
+import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
@@ -17,6 +17,8 @@ import {mockGetBlockchain} from "../../../src/helpers"
 import {expectResponse} from "../../utils"
 import {ethers} from "ethers"
 import {setTestConfig} from "../../../src/config"
+import {KycItemParallelMarkets} from "../../../src/handlers/kyc/kycTypes"
+import {KycProvider} from "../../../src/types"
 
 type FakeBlock = {
   number: number
@@ -54,6 +56,24 @@ describe("kycStatus response", async () => {
     [futureBlockNum]: currentBlockTimestamp + 1,
   }
 
+  const APPROVED_PM_USER_BUSINESS: KycItemParallelMarkets = {
+    address: testWallet.address.toLowerCase(),
+    countryCode: "US",
+    residency: "us",
+    kycProvider: KycProvider.ParallelMarkets,
+    updatedAt: 0,
+    parallelMarkets: {
+      id: "test",
+      type: "business",
+      identityStatus: "approved",
+      accreditationStatus: "approved",
+      identityExpiresAt: 1239487239487,
+      accreditationExpiresAt: 9929381028120,
+      identityAccessRevocationAt: null,
+      accreditationAccessRevocationAt: null,
+    },
+  }
+
   before(async () => {
     const mock = fake.returns({
       getBlock: async (blockTag: string | number): Promise<FakeBlock> => {
@@ -79,7 +99,7 @@ describe("kycStatus response", async () => {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
     })
-    users = getUsers(testFirestore)
+    users = getUsers()
   })
 
   after(async () => {
@@ -206,20 +226,11 @@ describe("kycStatus response", async () => {
     describe("parallel markets", () => {
       describe("on the legacy list", () => {
         it("ignores their legacy status", async () => {
+          // Test wallet 0xA57415BeCcA125Ee98B04b229A0Af367f4144030 is on the legacy list
           const sig = await testWallet.signMessage(genPlaintext(currentBlockNum))
           const req = generateKycRequest(testWallet.address, sig, currentBlockNum)
 
-          await users.doc(testWallet.address.toLowerCase()).set({
-            address: testWallet.address.toLowerCase(),
-            status: "approved",
-            countryCode: "US",
-            residency: "us",
-            parallelMarkets: {
-              type: "business",
-              identityStatus: "approved",
-              accreditationStatus: "approved",
-            },
-          })
+          await users.doc(testWallet.address.toLowerCase()).set(APPROVED_PM_USER_BUSINESS)
 
           await kycStatus(
             req,
