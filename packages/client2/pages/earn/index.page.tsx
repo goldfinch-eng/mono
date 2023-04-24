@@ -10,6 +10,7 @@ import {
   getLoanRepaymentStatus,
   LoanFundingStatus,
 } from "@/lib/pools";
+import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 import {
   GoldfinchPoolsMetrics,
@@ -23,7 +24,7 @@ import {
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
 gql`
-  query EarnPage($numClosedPools: Int!) {
+  query EarnPage($numClosedPools: Int!, $account: ID!) {
     seniorPools(first: 1) {
       id
       name @client
@@ -68,6 +69,9 @@ gql`
         symbol
       }
     }
+    user(id: $account) {
+      uidType
+    }
     viewer @client {
       fiduBalance
     }
@@ -100,8 +104,9 @@ const earnCmsQuery = gql`
 const EarnPage: NextPageWithLayout<
   InferGetStaticPropsType<typeof getStaticProps>
 > = ({ dealMetadata }) => {
+  const { account } = useWallet();
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
-    variables: { numClosedPools: 3 },
+    variables: { numClosedPools: 3, account: account?.toLowerCase() ?? "" },
     notifyOnNetworkStatusChange: true,
   });
 
