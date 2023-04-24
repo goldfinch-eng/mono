@@ -1,6 +1,6 @@
 import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
-import { useRouter } from "next/router";
+import NextLink from "next/link";
 
 import {
   Button,
@@ -112,7 +112,6 @@ const EarnPage: NextPageWithLayout<
   InferGetStaticPropsType<typeof getStaticProps>
 > = ({ dealMetadata }) => {
   const { account } = useWallet();
-  const router = useRouter();
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
     variables: { numClosedPools: 3, account: account?.toLowerCase() ?? "" },
     notifyOnNetworkStatusChange: true,
@@ -174,9 +173,11 @@ const EarnPage: NextPageWithLayout<
           {uidType ? null : (
             <CallToActionBanner
               renderButton={(props) => (
-                <Button {...props} onClick={() => router.push("/account")}>
-                  Go to my account
-                </Button>
+                <NextLink href="/account" passHref>
+                  <Button {...props} as="a">
+                    Go to my account
+                  </Button>
+                </NextLink>
               )}
               iconLeft="Globe"
               title="Set up your UID to start"
