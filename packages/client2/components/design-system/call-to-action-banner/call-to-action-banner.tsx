@@ -16,13 +16,17 @@ export interface CallToActionBannerProps {
    */
   children?: ReactNode;
   /**
+   * Optional classname to pass in for handling margin changes, etc.
+   */
+  className?: string;
+  /**
    * Image appearing to the left of the title
    */
   iconLeft?: IconNameType;
   /**
    * Color schemes representing the buttons that are being added to the component. By default it's "blue-gradient".
    */
-  colorScheme?: "blue-gradient" | "green" | "mustard" | "white";
+  colorScheme?: "blue-gradient" | "green" | "mustard" | "white" | "red";
   /**
    * Heading that appears at the top of the component
    */
@@ -35,6 +39,7 @@ export interface CallToActionBannerProps {
 
 export function CallToActionBanner({
   renderButton,
+  className,
   children,
   colorScheme = "blue-gradient",
   iconLeft,
@@ -51,7 +56,8 @@ export function CallToActionBanner({
           ? "border-1 border-solid border-sand-200 bg-white text-sand-800"
           : colorScheme === "green"
           ? "bg-mint-500 text-white shadow-md shadow-mint-500"
-          : null
+          : null,
+        className
       )}
     >
       <div>
