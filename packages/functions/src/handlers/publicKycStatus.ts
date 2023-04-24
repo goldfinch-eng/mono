@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../helpers"
 import {getUsers} from "../db"
@@ -16,6 +17,8 @@ export const publicKycStatus = genRequestHandler({
     if (!address) {
       return res.status(400).send({message: "Missing address from request query parameters"})
     }
+
+    Sentry.setUser({id: address.toLowerCase(), address})
 
     const users = getUsers()
     const user = await users.doc(`${address.toLowerCase()}`).get()
