@@ -46,7 +46,7 @@ const DEFAULT_UID_ICON = "Globe";
 const AccountsPage: NextPageWithLayout = () => {
   const isMounted = useIsMounted();
   const { account, provider, signer } = useWallet();
-  const { data, loading, refetch } = useAccountPageQuery({
+  const { data, error, loading, refetch } = useAccountPageQuery({
     variables: { account: account?.toLowerCase() ?? "" },
     notifyOnNetworkStatusChange: true, // causes `loading` to become true again when refetch is called
   });
@@ -100,7 +100,6 @@ const AccountsPage: NextPageWithLayout = () => {
     data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
-  const error = true;
 
   return (
     <div>
@@ -192,9 +191,7 @@ const AccountsPage: NextPageWithLayout = () => {
                         registerKycError ? "Exclamation" : DEFAULT_UID_ICON
                       }
                       title={
-                        error
-                          ? "Unable to fetch data for your account. Please refresh the page."
-                          : registerKycError
+                        registerKycError
                           ? "There was a problem connecting to our verification partner"
                           : "Setup your UID to start"
                       }
