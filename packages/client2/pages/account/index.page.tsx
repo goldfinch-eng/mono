@@ -118,10 +118,10 @@ const AccountsPage: NextPageWithLayout = () => {
       </div>
       {!isMounted ? null : !account ? (
         <div className="mx-auto mt-5 max-w-7xl px-5">
-          <div className="my-5">
-            You must connect your wallet to view account information.
+          You must connect your wallet to view account information.
+          <div>
+            <Button onClick={openWalletModal}>Connect</Button>
           </div>
-          <Button onClick={openWalletModal}>Connect</Button>
         </div>
       ) : (
         <TabGroup>
