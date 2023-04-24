@@ -79,12 +79,8 @@ const AccountsPage: NextPageWithLayout = () => {
           );
         }
         if (router.query.code !== undefined && account && provider) {
-          const plaintext = `Share your OAuth code with Goldfinch: ${router.query.code}`
-          const sig = await getSignatureForKyc(
-            provider,
-            signer,
-            plaintext 
-          );
+          const plaintext = `Share your OAuth code with Goldfinch: ${router.query.code}`;
+          const sig = await getSignatureForKyc(provider, signer, plaintext);
           await registerKyc(account, sig);
           router.replace("/account");
           await refetch();
@@ -96,7 +92,9 @@ const AccountsPage: NextPageWithLayout = () => {
       }
     };
     asyncEffect();
-  }, [account, provider, signer, router, router.isReady, refetch]);
+    // signer is not identity-stable and can't be included in the dependency array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, provider, !!signer, router, router.isReady, refetch]);
   const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
 
