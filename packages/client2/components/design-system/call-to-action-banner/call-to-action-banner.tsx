@@ -26,7 +26,7 @@ export interface CallToActionBannerProps {
   /**
    * Color schemes representing the buttons that are being added to the component. By default it's "blue-gradient".
    */
-  colorScheme?: "blue-gradient" | "green" | "mustard" | "white" | "red";
+  colorScheme?: "blue-gradient" | "green" | "mustard" | "white";
   /**
    * Heading that appears at the top of the component
    */
