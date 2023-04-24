@@ -132,7 +132,7 @@ describe("pmWebhookReceiver validation", async () => {
             timestamp: VALID_REQUEST.headers.timestamp,
           },
         }),
-        expectResponse(400, {status: "missing signature"}),
+        expectResponse(400, {status: "missing header Parallel-Signature"}),
       )
     })
 
@@ -144,7 +144,25 @@ describe("pmWebhookReceiver validation", async () => {
             signature: VALID_REQUEST.headers.signature,
           },
         }),
-        expectResponse(400, {status: "missing timestamp"}),
+        expectResponse(400, {status: "missing header Parallel-Timestamp"}),
+      )
+    })
+
+    it("returns 501 for unimplemented scope", async () => {
+      config.parallelmarkets.env = "test"
+      await pmWebhookReceiver(
+        genRequest({
+          ...VALID_REQUEST,
+          body: {
+            ...VALID_REQUEST.body,
+            entity: {
+              id: "not_test",
+              type: "business",
+            },
+            scope: "blahblahblah",
+          },
+        }),
+        expectResponse(501, {status: "unexpected scope: blahblahblah"}),
       )
     })
   })
