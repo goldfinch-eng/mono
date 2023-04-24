@@ -20,7 +20,7 @@ import {getConfig} from "../../config"
 //   return Buffer.from(sig).equals(Buffer.from(recoveredSig))
 // }
 
-export const parallelMarketsDemoWebhookProcessor = genRequestHandler({
+export const pmWebhookReceiver = genRequestHandler({
   requireAuth: "none",
   cors: false,
   handler: async (request: Request, response: Response): Promise<Response> => {

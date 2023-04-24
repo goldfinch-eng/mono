@@ -1,7 +1,7 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {setTestFirestore, getUsers} from "../../../src/db"
-import {parallelMarketsDemoWebhookProcessor} from "../../../src"
+import {pmWebhookReceiver} from "../../../src"
 import {Request} from "express"
 
 import firestore = admin.firestore
@@ -64,7 +64,7 @@ const VALID_REQUEST: PmRequest = {
   ),
 }
 
-describe.skip("parallelMarketsDemoWebhookProcessor validation", async () => {
+describe.skip("pmWebhookReceiver validation", async () => {
   const projectId = "goldfinch-frontend-test"
 
   let testFirestore: Firestore
@@ -112,14 +112,11 @@ describe.skip("parallelMarketsDemoWebhookProcessor validation", async () => {
   describe("request validation", () => {
     describe("signature", () => {
       it.skip("returns 200 for valid signature", async () => {
-        await parallelMarketsDemoWebhookProcessor(
-          genRequest(VALID_REQUEST),
-          expectResponse(200, {status: "valid signature"}),
-        )
+        await pmWebhookReceiver(genRequest(VALID_REQUEST), expectResponse(200, {status: "valid signature"}))
       })
 
       it("returns 403 for invalid signature", async () => {
-        await parallelMarketsDemoWebhookProcessor(
+        await pmWebhookReceiver(
           genRequest({
             ...VALID_REQUEST,
             headers: {
@@ -134,7 +131,7 @@ describe.skip("parallelMarketsDemoWebhookProcessor validation", async () => {
 
     describe("headers", () => {
       it("returns 400 for missing signature header", async () => {
-        await parallelMarketsDemoWebhookProcessor(
+        await pmWebhookReceiver(
           genRequest({
             ...VALID_REQUEST,
             headers: {
@@ -146,7 +143,7 @@ describe.skip("parallelMarketsDemoWebhookProcessor validation", async () => {
       })
 
       it("returns 400 for missing timestamp header", async () => {
-        await parallelMarketsDemoWebhookProcessor(
+        await pmWebhookReceiver(
           genRequest({
             ...VALID_REQUEST,
             headers: {

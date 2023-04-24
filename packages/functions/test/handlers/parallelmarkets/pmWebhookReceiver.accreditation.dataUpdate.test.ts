@@ -19,7 +19,7 @@ import {Response} from "node-fetch"
 import {expect} from "chai"
 import {setTestConfig} from "../../../src/config"
 
-describe("parallelMarketsDemoWebhookProcessor accreditation data update", async () => {
+describe("pmWebhookReceiver accreditation data update", async () => {
   const PENDING_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
   const PENDING_FIRESTORE_INDIVIDUAL_USER = {
     address: PENDING_ADDRESS_INDIVIDUAL,
