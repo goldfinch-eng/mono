@@ -170,17 +170,26 @@ const AccountsPage: NextPageWithLayout = () => {
                       </div>
                     </CallToActionBanner>
                   ) : status === "approved" ? (
-                    <CallToActionBanner
-                      renderButton={(props) => (
-                        <Button {...props} onClick={openVerificationModal}>
-                          Claim UID
-                        </Button>
-                      )}
-                      colorScheme="green"
-                      iconLeft={DEFAULT_UID_ICON}
-                      title="Claim your UID"
-                      description="Your application is approved! Claim your UID to participate in the protocol."
-                    />
+                    accreditationStatus === "unaccredited" ? (
+                      <CallToActionBanner
+                        colorScheme="white"
+                        iconLeft="Exclamation"
+                        title="We're sorry"
+                        description="Non-accredited US businesses are not eligible for UID."
+                      />
+                    ) : (
+                      <CallToActionBanner
+                        renderButton={(props) => (
+                          <Button {...props} onClick={openVerificationModal}>
+                            Claim UID
+                          </Button>
+                        )}
+                        colorScheme="green"
+                        iconLeft={DEFAULT_UID_ICON}
+                        title="Claim your UID"
+                        description="Your application is approved! Claim your UID to participate in the protocol."
+                      />
+                    )
                   ) : (
                     <CallToActionBanner
                       renderButton={(props) => (
