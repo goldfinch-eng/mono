@@ -43,6 +43,9 @@ export const PARALLEL_MARKETS = {
   STATE_KEY: "parallel_markets_state_key",
 };
 
+export const SETUP_UID_BANNER_TEXT =
+  "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,
