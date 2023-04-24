@@ -1,32 +1,7 @@
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
-import {setTestFirestore, getUsers} from "../../../src/db"
 import {pmWebhookReceiver} from "../../../src"
 import {Request} from "express"
-
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {expectResponse} from "../../utils"
-import {processIdentityWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
-import {PmIdentity, PmIdentityPayload} from "../../../src/handlers/parallelmarkets/PmApiTypes"
-
-import {stub} from "sinon"
-import * as fetchModule from "node-fetch"
-import {Response} from "node-fetch"
-import {expect} from "chai"
-import {setTestConfig} from "../../../src/config"
-
-const PENDING_ADDRESS = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
-const PENDING_USER = {
-  address: PENDING_ADDRESS,
-  countryCode: "CA",
-  parallel_markets: {
-    id: "test_id",
-    identity_status: "pending",
-    accreditation_status: "pending",
-    legacy: false,
-  },
-}
+import {FirebaseConfig, setTestConfig} from "../../../src/config"
 
 interface PmRequest {
   headers: {
@@ -64,29 +39,26 @@ const VALID_REQUEST: PmRequest = {
   ),
 }
 
-describe.skip("pmWebhookReceiver validation", async () => {
-  const projectId = "goldfinch-frontend-test"
-
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let users: firestore.CollectionReference<firestore.DocumentData>
+describe("pmWebhookReceiver validation", async () => {
+  const config: Omit<FirebaseConfig, "sentry"> = {
+    kyc: {allowed_origins: "http://localhost:3000"},
+    slack: {token: "slackToken"},
+    persona: {
+      allowed_ips: "",
+    },
+    parallelmarkets: {
+      base_url: "",
+      api_key: "",
+      client_id: "",
+      client_secret: "",
+      webhook_key: "",
+      redirect_uri: "",
+      env: "test",
+    },
+  }
 
   beforeEach(async () => {
-    testApp = firebaseTesting.initializeAdminApp({projectId})
-    testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
-    setTestConfig({
-      kyc: {allowed_origins: "http://localhost:3000"},
-      slack: {token: "slackToken"},
-      persona: {
-        allowed_ips: "",
-      },
-    })
-    users = getUsers(testFirestore)
-  })
-
-  afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    setTestConfig(config)
   })
 
   const genRequest = (pmRequest: PmRequest): Request => {
@@ -109,104 +81,71 @@ describe.skip("pmWebhookReceiver validation", async () => {
     } as unknown as Request
   }
 
-  describe("request validation", () => {
-    describe("signature", () => {
-      it.skip("returns 200 for valid signature", async () => {
-        await pmWebhookReceiver(genRequest(VALID_REQUEST), expectResponse(200, {status: "valid signature"}))
-      })
-
-      it("returns 403 for invalid signature", async () => {
-        await pmWebhookReceiver(
-          genRequest({
-            ...VALID_REQUEST,
-            headers: {
-              ...VALID_REQUEST.headers,
-              signature: VALID_REQUEST.headers.signature + "bad",
-            },
-          }),
-          expectResponse(403, {status: "invalid signature"}),
-        )
-      })
+  describe("signature", () => {
+    beforeEach(() => {
+      // Set env to prod so the handler checks the signature. Note the webhook key is a DEMO webhook key.
+      config.parallelmarkets.env = "production"
+      config.parallelmarkets.webhook_key =
+        "cmUHT/h9mlCA0DdbuKNrdm7paopHPzNiIqq3m68OEvXCNskdQgcGndqDop1XYckBBXXwvLG0VIWGHrmZyr6EbQ=="
     })
 
-    describe("headers", () => {
-      it("returns 400 for missing signature header", async () => {
-        await pmWebhookReceiver(
-          genRequest({
-            ...VALID_REQUEST,
-            headers: {
-              timestamp: VALID_REQUEST.headers.timestamp,
-            },
-          }),
-          expectResponse(400, {status: "missing signature"}),
-        )
-      })
+    it("returns 200 for valid signature", async () => {
+      await pmWebhookReceiver(genRequest(VALID_REQUEST), expectResponse(200, {status: "received test payload"}))
+    })
 
-      it("returns 400 for missing timestamp header", async () => {
-        await pmWebhookReceiver(
-          genRequest({
-            ...VALID_REQUEST,
-            headers: {
-              signature: VALID_REQUEST.headers.signature,
-            },
-          }),
-          expectResponse(400, {status: "missing timestamp"}),
-        )
+    it("returns 403 for invalid signature", async () => {
+      await pmWebhookReceiver(
+        genRequest({
+          ...VALID_REQUEST,
+          headers: {
+            ...VALID_REQUEST.headers,
+            signature: VALID_REQUEST.headers.signature + "bad",
+          },
+        }),
+        expectResponse(403, {status: "invalid signature"}),
+      )
+    })
+
+    it("does not check the signature when env is not prod", async () => {
+      config.parallelmarkets.env = "test"
+      const requestWithNoHeaders = genRequest({
+        ...VALID_REQUEST,
+        headers: {},
       })
+      await pmWebhookReceiver(requestWithNoHeaders, expectResponse(200, {status: "received test payload"}))
+
+      config.parallelmarkets.env = "development"
+      await pmWebhookReceiver(requestWithNoHeaders, expectResponse(200, {status: "received test payload"}))
     })
   })
 
-  describe("identity event", () => {
-    describe("data_update", () => {
-      describe("id_validity is null", () => {
-        describe("individual", () => {
-          beforeEach(async () => {
-            // Stub the Identity API request
-            const fetchStub = stub(fetchModule, "default")
-            const missingDocumentsIdentityResponse: PmIdentity = {
-              id: "test_id",
-              type: "individual",
-              identityDetails: {
-                birthDate: "1997-10-14",
-                citizenshipCountry: "CA",
-                completedAt: "1231239093809",
-                consistencySummary: {
-                  overallRecordsMatchLevel: "high",
-                  idValidity: null,
-                },
-                residenceLocation: {
-                  country: "CA",
-                },
-              },
-              accessExpiresAt: null,
-              accessRevokedBy: null,
-            }
-            fetchStub.returns(
-              new Promise((resolve) =>
-                resolve(new Response(JSON.stringify(missingDocumentsIdentityResponse), {status: 200})),
-              ),
-            )
+  describe("headers", () => {
+    beforeEach(() => {
+      config.parallelmarkets.env = "production"
+    })
 
-            // Save some users in the user store
-            await users.doc(PENDING_ADDRESS).set(PENDING_USER)
-          })
+    it("returns 400 for missing signature header", async () => {
+      await pmWebhookReceiver(
+        genRequest({
+          ...VALID_REQUEST,
+          headers: {
+            timestamp: VALID_REQUEST.headers.timestamp,
+          },
+        }),
+        expectResponse(400, {status: "missing signature"}),
+      )
+    })
 
-          it("sets identity_status to pending", async () => {
-            const payload: PmIdentityPayload = {
-              entity: {
-                id: "test_id",
-                type: "individual",
-              },
-              event: "data_update",
-              scope: "identity",
-            }
-            await processIdentityWebhook(payload)
-            const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS).get()
-            // Their status is still pending, so nothing should have changed
-            expect(user.data()).to.deep.eq(PENDING_USER)
-          })
-        })
-      })
+    it("returns 400 for missing timestamp header", async () => {
+      await pmWebhookReceiver(
+        genRequest({
+          ...VALID_REQUEST,
+          headers: {
+            signature: VALID_REQUEST.headers.signature,
+          },
+        }),
+        expectResponse(400, {status: "missing timestamp"}),
+      )
     })
   })
 })
