@@ -1,5 +1,5 @@
 import type { KycStatusResponse } from "@goldfinch-eng/utils";
-import { Provider } from "@wagmi/core";
+import { Provider, getNetwork, getAccount } from "@wagmi/core";
 import { Signer } from "ethers";
 
 import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
@@ -7,7 +7,16 @@ import { API_BASE_URL, UNIQUE_IDENTITY_SIGNER_URL } from "@/constants";
 import { UidType } from "./graphql/generated";
 
 function setCachedSignature(cacheKey: string, sig: KycSignature) {
-  sessionStorage.setItem(cacheKey, JSON.stringify(sig));
+  const { address } = getAccount();
+  const { chain } = getNetwork();
+  sessionStorage.setItem(
+    cacheKey,
+    JSON.stringify({
+      ...sig,
+      address,
+      chainId: chain?.id,
+    } as CachedKycSignature)
+  );
 }
 
 async function getCachedSignature(
@@ -18,13 +27,21 @@ async function getCachedSignature(
   try {
     const cachedSig = JSON.parse(
       sessionStorage.getItem(cacheKey) as string
-    ) as KycSignature;
-    const { plaintext, signature, signatureBlockNum } = cachedSig;
+    ) as CachedKycSignature;
+    const { plaintext, signature, signatureBlockNum, address, chainId } =
+      cachedSig;
+
     const currentBlockTime = (await provider.getBlock("latest")).timestamp;
     const cachedBlockTime = (
       await provider.getBlock(cachedSig.signatureBlockNum)
     ).timestamp;
-    if (currentBlockTime - cachedBlockTime > maxFreshness) {
+    const account = getAccount();
+    const network = getNetwork();
+    if (
+      currentBlockTime - cachedBlockTime > maxFreshness ||
+      account.address !== address ||
+      network.chain?.id !== chainId
+    ) {
       return null;
     }
     return {
@@ -52,6 +69,10 @@ export interface KycSignature {
   plaintext: string;
   signature: string;
   signatureBlockNum: number;
+}
+interface CachedKycSignature extends KycSignature {
+  address: string;
+  chainId: number;
 }
 export async function getSignatureForKyc(
   provider: Provider,
