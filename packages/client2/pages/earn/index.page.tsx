@@ -1,7 +1,13 @@
 import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
+import { useRouter } from "next/router";
 
-import { Button, HelperText, Link } from "@/components/design-system";
+import {
+  Button,
+  CallToActionBanner,
+  HelperText,
+  Link,
+} from "@/components/design-system";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -105,6 +111,7 @@ const EarnPage: NextPageWithLayout<
   InferGetStaticPropsType<typeof getStaticProps>
 > = ({ dealMetadata }) => {
   const { account } = useWallet();
+  const router = useRouter();
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
     variables: { numClosedPools: 3, account: account?.toLowerCase() ?? "" },
     notifyOnNetworkStatusChange: true,
@@ -161,7 +168,24 @@ const EarnPage: NextPageWithLayout<
         </>
       ) : (
         <>
-          <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
+          {account ? (
+            <CallToActionBanner
+              renderButton={(props) => (
+                <Button
+                  {...props}
+                  onClick={() => {
+                    router.push("/account");
+                  }}
+                >
+                  Go to my account
+                </Button>
+              )}
+              iconLeft="Globe"
+              title="Set up your UID to start"
+              description="UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+            />
+          ) : null}
+          <GoldfinchPoolsMetrics protocol={protocol} className="my-20" />
           <EarnPageHeading>
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
           </EarnPageHeading>
