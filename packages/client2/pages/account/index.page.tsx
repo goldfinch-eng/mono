@@ -14,7 +14,7 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CallToActionBanner } from "@/components/design-system";
-import { PARALLEL_MARKETS } from "@/constants";
+import { PARALLEL_MARKETS, SETUP_UID_BANNER_TEXT } from "@/constants";
 import { useIsMounted } from "@/hooks";
 import { useAccountPageQuery } from "@/lib/graphql/generated";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
@@ -198,7 +198,7 @@ const AccountsPage: NextPageWithLayout = () => {
                       description={
                         registerKycError
                           ? registerKycError.message
-                          : "UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+                          : SETUP_UID_BANNER_TEXT
                       }
                     />
                   )}

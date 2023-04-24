@@ -8,6 +8,7 @@ import {
   HelperText,
   Link,
 } from "@/components/design-system";
+import { SETUP_UID_BANNER_TEXT } from "@/constants";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -184,7 +185,7 @@ const EarnPage: NextPageWithLayout<
               )}
               iconLeft="Globe"
               title="Set up your UID to start"
-              description="UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
+              description={SETUP_UID_BANNER_TEXT}
             />
           )}
           <GoldfinchPoolsMetrics protocol={protocol} className="my-20" />
