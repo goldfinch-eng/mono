@@ -174,12 +174,7 @@ const EarnPage: NextPageWithLayout<
           {uidType ? null : (
             <CallToActionBanner
               renderButton={(props) => (
-                <Button
-                  {...props}
-                  onClick={() => {
-                    router.push("/account");
-                  }}
-                >
+                <Button {...props} onClick={() => router.push("/account")}>
                   Go to my account
                 </Button>
               )}
