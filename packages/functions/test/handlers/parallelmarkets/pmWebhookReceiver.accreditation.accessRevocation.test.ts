@@ -5,16 +5,16 @@ import _ from "lodash"
 
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
-import {processIdentityWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
+import {processAccreditationWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
 
 import sinon, {SinonSandbox, SinonStub} from "sinon"
 import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
-import {PmIdentityPayload, PmProfileResponse} from "../../../src/handlers/parallelmarkets/PmApiTypes"
+import {PmAccreditationPayload, PmProfileResponse} from "../../../src/handlers/parallelmarkets/PmApiTypes"
 import {setTestConfig} from "../../../src/config"
 
-describe("parallelMarketsDemoWebhookProcessor identity access revocation", () => {
+describe("pmWebhookReceiver accreditation access revocation", () => {
   const APPROVED_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
   const APPROVED_FIRESTORE_INDIVIDUAL_USER = {
     address: APPROVED_ADDRESS_INDIVIDUAL,
@@ -79,22 +79,22 @@ describe("parallelMarketsDemoWebhookProcessor identity access revocation", () =>
     accessRevokedBy: "subject",
   }
 
-  const WEBHOOK_INDIVIDUAL_PAYLOAD: PmIdentityPayload = {
+  const WEBHOOK_INDIVIDUAL_PAYLOAD: PmAccreditationPayload = {
     entity: {
       id: "test_id_individual",
       type: "individual",
     },
     event: "access_revocation_scheduled",
-    scope: "identity",
+    scope: "accreditation_status",
   }
 
-  const WEBHOOK_BUSINESS_PAYLOAD: PmIdentityPayload = {
+  const WEBHOOK_BUSINESS_PAYLOAD: PmAccreditationPayload = {
     entity: {
       id: "test_id_business",
       type: "business",
     },
     event: "access_revocation_scheduled",
-    scope: "identity",
+    scope: "accreditation_status",
   }
 
   let testFirestore: Firestore
@@ -123,7 +123,7 @@ describe("parallelMarketsDemoWebhookProcessor identity access revocation", () =>
   })
 
   describe("individual", () => {
-    it("sets identity_access_revocation_at to access_revocation timestamp", async () => {
+    it("sets accreditationAccessRevocationAt to access_revocation timestamp", async () => {
       // Stub the Identity API request
       stub.returns(
         new Promise((resolve) =>
@@ -131,14 +131,14 @@ describe("parallelMarketsDemoWebhookProcessor identity access revocation", () =>
         ),
       )
 
-      await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
+      await processAccreditationWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
       const user = await getUsers(admin.firestore()).doc(APPROVED_ADDRESS_INDIVIDUAL).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...APPROVED_FIRESTORE_INDIVIDUAL_USER,
         parallelMarkets: {
           ...APPROVED_FIRESTORE_INDIVIDUAL_USER.parallelMarkets,
-          identityAccessRevocationAt: Date.parse("2021-01-01T12:12:12Z") / 1000,
+          accreditationAccessRevocationAt: Date.parse("2021-01-01T12:12:12Z") / 1000,
         },
       }
       expect(user.data()).to.deep.eq(expectedUser)
@@ -146,7 +146,7 @@ describe("parallelMarketsDemoWebhookProcessor identity access revocation", () =>
   })
 
   describe("business", () => {
-    it("sets identity_access_revocation_at to access_revocation timestamp", async () => {
+    it("sets accreditation_access_revocation_at to access_revocation timestamp", async () => {
       // Stub the Identity API request
       stub.returns(
         new Promise((resolve) =>
@@ -154,14 +154,14 @@ describe("parallelMarketsDemoWebhookProcessor identity access revocation", () =>
         ),
       )
 
-      await processIdentityWebhook(WEBHOOK_BUSINESS_PAYLOAD)
+      await processAccreditationWebhook(WEBHOOK_BUSINESS_PAYLOAD)
       const user = await getUsers(admin.firestore()).doc(APPROVED_ADDRESS_BUSINESS).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...APPROVED_FIRESTORE_BUSINESS_USER,
         parallelMarkets: {
           ...APPROVED_FIRESTORE_BUSINESS_USER.parallelMarkets,
-          identityAccessRevocationAt: Date.parse("2021-01-01T12:12:12Z") / 1000,
+          accreditationAccessRevocationAt: Date.parse("2021-01-01T12:12:12Z") / 1000,
         },
       }
       expect(user.data()).to.deep.eq(expectedUser)

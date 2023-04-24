@@ -20,7 +20,7 @@ import {
 } from "../../../src/handlers/parallelmarkets/PmApiTypes"
 import {setTestConfig} from "../../../src/config"
 
-describe("parallelMarketsDemoWebhookProcessor identity data update", async () => {
+describe("pmWebhookReceiver identity data update", async () => {
   const PENDING_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
   const PENDING_FIRESTORE_INDIVIDUAL_USER = {
     address: PENDING_ADDRESS_INDIVIDUAL,
