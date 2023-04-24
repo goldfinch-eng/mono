@@ -171,18 +171,22 @@ export const viewerResolvers: Resolvers[string] = {
       return null;
     }
 
-    // Need to make this wait for the signer to come online.
-    // await fetchSigner() can actually return null, even when an account is connected. This may or may not be a bug in Wagmi, but we have to work around it here.
-    const signerAvailablePromise = new Promise<void>((resolve, reject) => {
-      watchSigner({}, (provider) =>
-        provider?._isSigner ? resolve() : reject()
-      );
-    });
-    await signerAvailablePromise;
-    const signer = await fetchSigner();
+    let signer = await fetchSigner();
     if (!signer) {
-      throw new Error("Signer not available when expected");
+      // Need to make this wait for the signer to come online.
+      // await fetchSigner() can actually return null, even when an account is connected. This may or may not be a bug in Wagmi, but we have to work around it here.
+      const signerAvailablePromise = new Promise<void>((resolve, reject) => {
+        watchSigner({}, (provider) =>
+          provider?._isSigner ? resolve() : reject()
+        );
+      });
+      await signerAvailablePromise;
+      signer = await fetchSigner();
+      if (!signer) {
+        throw new Error("Signer not available when expected");
+      }
     }
+
     const signature = await getSignatureForKyc(provider, signer);
     const kycStatus = await fetchKycStatus(address, signature);
     return {
