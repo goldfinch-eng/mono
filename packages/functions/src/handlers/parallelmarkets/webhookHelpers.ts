@@ -25,10 +25,20 @@ export const processIdentityWebhook = async (payload: PmIdentityPayload) => {
     case "access_revocation_scheduled":
       await processIdentityRevocationScheduled(entity)
       break
-    default:
-      // There are some other event's for identity but we don't care about them. For a full list see
-      // https://developer.parallelmarkets.com/docs/webhooks/request-format#identity
+    // There are some other event's for identity but we don't care about them. For a full list see
+    // https://developer.parallelmarkets.com/docs/webhooks/request-format#identity
+    case "adverse_media_risk_monitor_match":
+    case "currently_sanctioned_risk_monitor_match":
+    case "disqualified_director_risk_monitor_match":
+    case "financial_regulator_risk_monitor_match":
+    case "insolvent_risk_monitor_match":
+    case "law_enforcement_risk_monitor_match":
+    case "pep_risk_monitor_match":
+      console.log(`Ignoring event ${event}`)
       break
+    // If we're here then we've received an undocumented event
+    default:
+      throw new Error(`Unexpected event ${event}`)
   }
 }
 
@@ -51,9 +61,7 @@ export const processAccreditationWebhook = async (payload: PmAccreditationPayloa
 const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
   console.log(`Processing identity data update for (${id}, ${type})`)
   const identity = await ParallelMarkets.getIdentity(id)
-
   console.log(`Fetched PM Identity for ${id}`)
-  console.log(identity)
 
   switch (identity.type) {
     case "individual":
@@ -70,13 +78,11 @@ const processIdentityDataUpdate = async ({id, type}: PmEntity) => {
 const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
   console.log(`Processing accreditation data update for (${id}, ${type})`)
   const accreditation = await ParallelMarkets.getAccreditations(id)
-
   console.log(`Fetched PM Accreditation for ${id}`)
-  console.log(accreditation)
 
-  if (!(accreditation.type === "individual" || accreditation.type === "business")) {
-    // TODO - useful error message
-    return
+  const {type: accreditationType} = accreditation
+  if (accreditationType !== "individual" && accreditationType !== "business") {
+    throw new Error(`Unexpected accreditation type: ${accreditationType}`)
   }
 
   const {status: accreditationStatus, expiresAt} = getAccreditationStatus(accreditation)
@@ -89,7 +95,6 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
   }
 
   console.log(`Found user for PM id ${accreditation.id}`)
-  console.log(user.data())
 
   const userRef = getUsers().doc(user.data()?.address)
   const accreditationExpiresAt = expiresAt
@@ -105,12 +110,12 @@ const processAccreditationDataUpdate = async ({id, type}: PmEntity) => {
 }
 
 const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndividualIdentity) => {
-  console.log("Processing individual identity data update")
+  console.log(`Processing individual identity data update for ${id}`)
   const {consistencySummary, citizenshipCountry, residenceLocation, expiresAt} = identityDetails
   const {overallRecordsMatchLevel, idValidity} = consistencySummary
 
   const identityStatus = getIndividualIdentityStatus(overallRecordsMatchLevel, idValidity)
-  console.log(`The individual identity status is ${identityStatus}`)
+  console.log(`Computed new individual identity status=${identityStatus}`)
 
   const user = await getUserDocByPMId(id)
 
@@ -118,11 +123,6 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
     return
   }
 
-  console.log(`Found user for PM id ${id}`)
-  console.log(user.data())
-
-  // Overwrite the parallelMarkets.identity_status key
-  console.log("overwriting user with data")
   const userRef = getUsers().doc(user.data()?.address)
   const identityExpiresAt = expiresAt ? Date.parse(expiresAt) / 1000 : undefined
   const dataToMerge = {
@@ -133,25 +133,24 @@ const processIndividualIdentityDataUpdate = async ({id, identityDetails}: PmIndi
       ...(!!identityExpiresAt && {identityExpiresAt}),
     },
   }
+  console.log("Merging data into user document:")
+  console.log(dataToMerge)
   await userRef.set(dataToMerge, {merge: true})
 }
 
 const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusinessIdentity) => {
-  console.log("Processing business identity data update")
+  console.log(`Processing business identity data update for ${id}`)
   const {consistencySummary, principalLocation} = identityDetails
   const {overallRecordsMatchLevel} = consistencySummary
 
   const identityStatus = getBusinessIdentityStatus(overallRecordsMatchLevel)
-  console.log(`The business identity status is ${identityStatus}`)
+  console.log(`Computed new business identity status=${identityStatus}`)
 
   const user = await getUserDocByPMId(id)
 
   if (!user) {
     return
   }
-
-  console.log(`Found user for PM id ${id}`)
-  console.log(user.data())
 
   // Overwrite the parallelMarkets.identity_status key
   const userRef = getUsers().doc(user.data()?.address)
@@ -162,7 +161,7 @@ const processBusinessIdentityDataUpdate = async ({id, identityDetails}: PmBusine
       identityStatus,
     },
   }
-  console.log("data to merge")
+  console.log("Merging data into user document:")
   console.log(dataToMerge)
   await userRef.set(dataToMerge, {merge: true})
 }
@@ -179,8 +178,6 @@ const processIdentityRevocationScheduled = async ({id, type}: PmEntity) => {
     if (!user) {
       return
     }
-    console.log(`Found user for PM id ${id}`)
-    console.log(user.data())
 
     const userRef = getUsers().doc(user.data()?.address)
     const dataToMerge = {
@@ -188,7 +185,7 @@ const processIdentityRevocationScheduled = async ({id, type}: PmEntity) => {
         identityAccessRevocationAt: expiresAtUnixTimestamp,
       },
     }
-    console.log("Merging data")
+    console.log("Merging data into user document:")
     console.log(dataToMerge)
     await userRef.set(dataToMerge, {merge: true})
   }
@@ -206,8 +203,6 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
     if (!user) {
       return
     }
-    console.log(`Found user for PM id ${id}`)
-    console.log(user.data())
 
     const userRef = getUsers().doc(user.data()?.address)
     const dataToMerge = {
@@ -215,7 +210,7 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
         accreditationAccessRevocationAt: expiresAtUnixTimestamp,
       },
     }
-    console.log("Merging data")
+    console.log("Merging data into user document:")
     console.log(dataToMerge)
     await userRef.set(dataToMerge, {merge: true})
   }
@@ -226,13 +221,12 @@ const getUserDocByPMId = async (id: string) => {
   const fieldPath = new FieldPath("parallelMarkets", "id")
   const userSnapshot = await users.where(fieldPath, "==", id).get()
   if (userSnapshot.empty) {
-    console.log("user not found")
+    console.log(`User ${id} not found`)
     return undefined
   } else if (userSnapshot.size > 1) {
-    console.error("Found multiple useres for the same id")
-    return undefined
+    throw new Error(`Found multiple users with id=${id}`)
   }
 
-  console.log("found user... returning")
+  console.log(`User ${id} found`)
   return userSnapshot.docs.at(0)
 }

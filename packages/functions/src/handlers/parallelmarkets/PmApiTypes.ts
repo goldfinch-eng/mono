@@ -1,4 +1,13 @@
-export type PmIdentityEvent = "data_update" | "access_revocation_scheduled"
+export type PmIdentityEvent =
+  | "data_update"
+  | "access_revocation_scheduled"
+  | "adverse_media_risk_monitor_match"
+  | "currently_sanctioned_risk_monitor_match"
+  | "disqualified_director_risk_monitor_match"
+  | "financial_regulator_risk_monitor_match"
+  | "insolvent_risk_monitor_match"
+  | "law_enforcement_risk_monitor_match"
+  | "pep_risk_monitor_match"
 
 export type PmAccreditationEvent = "data_update" | "access_revocation_scheduled"
 

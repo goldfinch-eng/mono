@@ -1,9 +1,9 @@
 import * as crypto from "crypto"
+import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../../helpers"
 import {https} from "firebase-functions"
 import * as functions from "firebase-functions"
-import {assertIsString} from "@goldfinch-eng/utils"
 import {PmPayload} from "./PmApiTypes"
 import {processAccreditationWebhook, processIdentityWebhook} from "./webhookHelpers"
 import {getConfig} from "../../config"
@@ -43,15 +43,14 @@ export const pmWebhookReceiver = genRequestHandler({
       console.log(firebaseRequest.rawBody.toString())
 
       if (!unixTimestamp) {
-        return response.status(400).send({status: "missing timestamp"})
+        return response.status(400).send({status: "missing header Parallel-Timestamp"})
       }
 
       if (!signature) {
-        return response.status(400).send({status: "missing signature"})
+        return response.status(400).send({status: "missing header Parallel-Signature"})
       }
 
       const webhookKey = config.parallelmarkets.webhook_key
-      assertIsString(webhookKey)
 
       const isValidRequest = isAuthenticPmRequest(
         unixTimestamp + firebaseRequest.rawBody.toString(),
@@ -72,13 +71,18 @@ export const pmWebhookReceiver = genRequestHandler({
       return response.status(200).send({status: "received test payload"})
     }
 
-    switch (payload.scope) {
+    Sentry.setUser({id: payload.entity.id, pmId: payload.entity.id})
+
+    const {scope} = payload
+    switch (scope) {
       case "identity":
         await processIdentityWebhook(payload)
         break
       case "accreditation_status":
         await processAccreditationWebhook(payload)
         break
+      default:
+        return response.status(501).send({status: `unexpected scope: ${scope}`})
     }
 
     return response.status(200).send({status: "valid signature"})
