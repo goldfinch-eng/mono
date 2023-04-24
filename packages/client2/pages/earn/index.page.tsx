@@ -142,6 +142,8 @@ const EarnPage: NextPageWithLayout<
 
   const loading = !seniorPool || !fiatPerGfi || !protocol;
 
+  const { uidType } = data?.user ?? {};
+
   return (
     <div>
       {error ? (
@@ -168,7 +170,7 @@ const EarnPage: NextPageWithLayout<
         </>
       ) : (
         <>
-          {account ? (
+          {uidType ? null : (
             <CallToActionBanner
               renderButton={(props) => (
                 <Button
@@ -184,7 +186,7 @@ const EarnPage: NextPageWithLayout<
               title="Set up your UID to start"
               description="UID is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain."
             />
-          ) : null}
+          )}
           <GoldfinchPoolsMetrics protocol={protocol} className="my-20" />
           <EarnPageHeading>
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
