@@ -110,8 +110,7 @@ const AccountsPage: NextPageWithLayout = () => {
           </h1>
           {error ? (
             <div className="text-xl text-clay-500">
-              Unable to fetch data for your account. Please refresh the page and
-              provide your signature.
+              Unable to fetch data for your account.
             </div>
           ) : null}
         </div>
