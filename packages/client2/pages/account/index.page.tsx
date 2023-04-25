@@ -137,6 +137,16 @@ const AccountsPage: NextPageWithLayout = () => {
                       Unable to fetch data for your account. Error:{" "}
                       {error.message}
                     </div>
+                  ) : registerKycError ? (
+                    <CallToActionBanner
+                      colorScheme="red"
+                      title="There was a problem connecting to our verification partner"
+                      iconLeft="Exclamation"
+                      description={registerKycError.message}
+                      renderButton={(props) => (
+                        <Button {...props}>Try again</Button>
+                      )}
+                    />
                   ) : isRegisteringKyc || loading ? (
                     <div className="flex items-center gap-4">
                       <Spinner size="lg" />
@@ -215,22 +225,12 @@ const AccountsPage: NextPageWithLayout = () => {
                     <CallToActionBanner
                       renderButton={(props) => (
                         <Button {...props} onClick={openVerificationModal}>
-                          {registerKycError ? "Try again" : "Begin UID setup"}
+                          Begin UID setup
                         </Button>
                       )}
-                      iconLeft={
-                        registerKycError ? "Exclamation" : DEFAULT_UID_ICON
-                      }
-                      title={
-                        registerKycError
-                          ? "There was a problem connecting to our verification partner"
-                          : "Setup your UID to start"
-                      }
-                      description={
-                        registerKycError
-                          ? registerKycError.message
-                          : SETUP_UID_BANNER_TEXT
-                      }
+                      iconLeft={DEFAULT_UID_ICON}
+                      title="Setup your UID to start"
+                      description={SETUP_UID_BANNER_TEXT}
                     />
                   )}
                 </TabContent>
