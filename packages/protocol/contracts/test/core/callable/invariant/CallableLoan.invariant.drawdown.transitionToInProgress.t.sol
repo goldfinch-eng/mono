@@ -39,7 +39,7 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
 
-    bytes4[] memory selectors = new bytes4[](8);
+    bytes4[] memory selectors = new bytes4[](10);
     selectors[0] = handler.depositTarget.selector;
     selectors[1] = handler.withdrawTarget.selector;
     selectors[2] = handler.warpBeforeInProgressTarget.selector;
@@ -48,8 +48,11 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
     selectors[5] = handler.withdraw.selector;
     selectors[6] = handler.drawdown.selector;
     selectors[7] = handler.skipUpTo7Days.selector;
+    selectors[8] = handler.submitCall.selector;
+    selectors[9] = handler.pay.selector;
 
     targetArtifact("UcuProxy");
+    targetContract(address(handler));
     targetSelector(FuzzSelector(address(handler), selectors));
   }
 

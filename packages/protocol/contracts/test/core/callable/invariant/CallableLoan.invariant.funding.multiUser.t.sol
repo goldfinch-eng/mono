@@ -31,10 +31,21 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
 
-    bytes4[] memory selectors = new bytes4[](3);
+    bytes4[] memory selectors = new bytes4[](10);
     selectors[0] = handler.depositTarget.selector;
     selectors[1] = handler.withdrawTarget.selector;
-    selectors[2] = handler.warpBeforeInProgressTarget.selector;
+    selectors[2] = handler.skipUpTo7Days.selector;
+    selectors[3] = handler.skipUpTo100Days.selector;
+    selectors[4] = handler.payTarget.selector;
+    selectors[5] = handler.submitCallTarget.selector;
+    selectors[6] = handler.deposit.selector;
+    selectors[7] = handler.withdraw.selector;
+    selectors[8] = handler.pay.selector;
+    selectors[9] = handler.submitCall.selector;
+    // Using drawdown will cause transition to DrawdownPeriod
+
+    targetArtifact("UcuProxy");
+    targetContract(address(handler));
     targetSelector(FuzzSelector(address(handler), selectors));
   }
 

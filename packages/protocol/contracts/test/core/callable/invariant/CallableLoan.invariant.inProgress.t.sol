@@ -21,7 +21,6 @@ import {UtilityHandler} from "../../../helpers/UtilityHandler.t.sol";
 
 contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanConstrainedHandler private handler;
-  UtilityHandler private utilityHandler;
   CallableLoan private loan;
   ISchedule private schedule;
 
@@ -40,7 +39,6 @@ contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantT
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
     schedule = loan.schedule();
-    utilityHandler = new UtilityHandler();
 
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
@@ -60,7 +58,7 @@ contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantT
       selectors[i] = handler.payTarget.selector;
     }
     for (uint256 i = 48; i < 60; ++i) {
-      selectors[i] = handler.submitCall.selector;
+      selectors[i] = handler.submitCallTarget.selector;
     }
     for (uint256 i = 60; i < 65; ++i) {
       selectors[i] = handler.deposit.selector;
@@ -74,14 +72,18 @@ contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantT
     for (uint256 i = 75; i < 80; ++i) {
       selectors[i] = handler.pay.selector;
     }
-    for (uint256 i = 80; i < 90; ++i) {
+    for (uint256 i = 80; i < 85; ++i) {
+      selectors[i] = handler.submitCall.selector;
+    }
+    for (uint256 i = 85; i < 92; ++i) {
       selectors[i] = handler.skipUpTo7Days.selector;
     }
-    for (uint256 i = 90; i < 100; ++i) {
+    for (uint256 i = 92; i < 100; ++i) {
       selectors[i] = handler.skipUpTo100Days.selector;
     }
 
     targetArtifact("UcuProxy");
+    targetContract(address(handler));
     targetSelector(FuzzSelector(address(handler), selectors));
 
     depositors = new address[](3);
