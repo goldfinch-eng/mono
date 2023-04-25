@@ -49,6 +49,7 @@ const AccountsPage: NextPageWithLayout = () => {
   const { data, error, loading, refetch } = useAccountPageQuery({
     variables: { account: account?.toLowerCase() ?? "" },
     skip: !account,
+    fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true, // causes `loading` to become true again when refetch is called
   });
   const router = useRouter();
