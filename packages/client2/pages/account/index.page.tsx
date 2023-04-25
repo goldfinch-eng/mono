@@ -1,10 +1,12 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
+import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import {
   Button,
+  ButtonProps,
   Icon,
   Spinner,
   TabButton,
@@ -175,6 +177,7 @@ const AccountsPage: NextPageWithLayout = () => {
                   ) : status === "approved" ? (
                     accreditationStatus === "unaccredited" ? (
                       <CallToActionBanner
+                        renderButton={(props) => EmailUIDButton(props)}
                         colorScheme="red"
                         iconLeft="Exclamation"
                         title="We're sorry"
@@ -195,6 +198,7 @@ const AccountsPage: NextPageWithLayout = () => {
                     )
                   ) : status === "failed" ? (
                     <CallToActionBanner
+                      renderButton={(props) => EmailUIDButton(props)}
                       colorScheme="red"
                       iconLeft="Exclamation"
                       title={
@@ -256,5 +260,17 @@ function CheckableStep({ name, checked }: { name: string; checked: boolean }) {
       />
       <div>{name}</div>
     </div>
+  );
+}
+
+function EmailUIDButton(
+  props: Pick<ButtonProps, "className" | "size" | "variant" | "colorScheme">
+) {
+  return (
+    <NextLink href="mailto:uid@warblerlabs.com" passHref>
+      <Button {...props} as="a">
+        Email us
+      </Button>
+    </NextLink>
   );
 }
