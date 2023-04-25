@@ -189,17 +189,17 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     fundAddress(DEPOSITOR, depositAmount);
 
     uint uncalledTrancheIndex = callableLoan.uncalledCapitalTrancheIndex();
-    vm.startPrank(DEPOSITOR);
+    _startImpersonation(DEPOSITOR);
     usdc.approve(address(callableLoan), depositAmount);
     uint256 tokenId = callableLoan.deposit(uncalledTrancheIndex, depositAmount);
-    vm.stopPrank();
+    _stopImpersonation();
 
-    vm.prank(BORROWER);
+    _startImpersonation(BORROWER);
     callableLoan.drawdown(depositAmount);
 
     // this should be a unlocked period
     vm.warp(callableLoan.nextDueTime() - 1);
-    vm.startPrank(DEPOSITOR);
+    _startImpersonation(DEPOSITOR);
 
     vm.expectRevert(
       abi.encodeWithSelector(

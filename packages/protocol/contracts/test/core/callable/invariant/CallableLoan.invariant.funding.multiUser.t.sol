@@ -10,17 +10,17 @@ import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol"
 import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
-import {CallableLoanFundingHandler} from "./CallableLoanFundingHandler.t.sol";
+import {CallableLoanConstrainedHandler} from "./CallableLoanConstrainedHandler.t.sol";
 
 contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, InvariantTest {
-  CallableLoanFundingHandler private handler;
+  CallableLoanConstrainedHandler private handler;
   CallableLoan loan;
 
   function setUp() public virtual override {
     super.setUp();
 
     (loan, ) = defaultCallableLoan();
-    handler = new CallableLoanFundingHandler(
+    handler = new CallableLoanConstrainedHandler(
       loan,
       usdc,
       uid,
@@ -32,9 +32,9 @@ contract CallableLoanFundingMultiUserInvariantTest is CallableLoanBaseTest, Inva
     fundAddress(address(handler), loan.limit() * 1e18);
 
     bytes4[] memory selectors = new bytes4[](3);
-    selectors[0] = handler.deposit.selector;
-    selectors[1] = handler.withdraw.selector;
-    selectors[2] = handler.warpBeforeInProgress.selector;
+    selectors[0] = handler.depositTarget.selector;
+    selectors[1] = handler.withdrawTarget.selector;
+    selectors[2] = handler.warpBeforeInProgressTarget.selector;
     targetSelector(FuzzSelector(address(handler), selectors));
   }
 

@@ -14,21 +14,19 @@ import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {IBorrower} from "../../../../interfaces/IBorrower.sol";
 import {console2 as console} from "forge-std/console2.sol";
-import {CallableLoanFundingHandler} from "./CallableLoanFundingHandler.t.sol";
-import {CallableLoanRandoHandler} from "./CallableLoanRandoHandler.t.sol";
-import {InvariantSkipTarget} from "../../../helpers/InvariantSkipTarget.t.sol";
+import {CallableLoanConstrainedHandler} from "./CallableLoanConstrainedHandler.t.sol";
+import {UtilityHandler} from "../../../helpers/UtilityHandler.t.sol";
 
 contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, InvariantTest {
-  CallableLoanFundingHandler private handler;
-  CallableLoanRandoHandler private randoHandler;
-  InvariantSkipTarget private invariantSkipTarget;
+  CallableLoanConstrainedHandler private handler;
+  UtilityHandler private utilityHandler;
   CallableLoan loan;
 
   function setUp() public override {
     super.setUp();
 
     (loan, ) = defaultCallableLoan();
-    handler = new CallableLoanFundingHandler(
+    handler = new CallableLoanConstrainedHandler(
       loan,
       usdc,
       uid,
@@ -36,31 +34,23 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
       BORROWER,
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
-    randoHandler = new CallableLoanRandoHandler(loan);
-    invariantSkipTarget = new InvariantSkipTarget();
+    utilityHandler = new UtilityHandler();
 
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
-    fundAddress(address(randoHandler), loan.limit() * 1e18);
 
-    bytes4[] memory selectors = new bytes4[](4);
-    selectors[0] = handler.deposit.selector;
-    selectors[1] = handler.withdraw.selector;
-    selectors[2] = handler.warpBeforeInProgress.selector;
-    selectors[3] = handler.drawdown.selector;
-
-    bytes4[] memory randomSelectors = new bytes4[](3);
-    randomSelectors[0] = randoHandler.drawdown.selector;
-    randomSelectors[1] = randoHandler.submitCall.selector;
-    randomSelectors[2] = randoHandler.pay.selector;
-
-    bytes4[] memory warpSelectors = new bytes4[](1);
-    warpSelectors[0] = InvariantSkipTarget.skipUpToSevenDays.selector;
+    bytes4[] memory selectors = new bytes4[](8);
+    selectors[0] = handler.depositTarget.selector;
+    selectors[1] = handler.withdrawTarget.selector;
+    selectors[2] = handler.warpBeforeInProgressTarget.selector;
+    selectors[3] = handler.drawdownTarget.selector;
+    selectors[4] = handler.deposit.selector;
+    selectors[5] = handler.withdraw.selector;
+    selectors[6] = handler.drawdown.selector;
+    selectors[7] = handler.skipUpTo7Days.selector;
 
     targetArtifact("UcuProxy");
     targetSelector(FuzzSelector(address(handler), selectors));
-    targetSelector(FuzzSelector(address(randoHandler), randomSelectors));
-    targetSelector(FuzzSelector(address(invariantSkipTarget), warpSelectors));
   }
 
   function invariant_ExpectedPhase() public {

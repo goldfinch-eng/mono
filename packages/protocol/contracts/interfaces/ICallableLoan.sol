@@ -20,6 +20,8 @@ import {IGoldfinchConfig} from "./IGoldfinchConfig.sol";
 /// In InProgress, all post-funding & drawdown actions are allowed (not withdraw, deposit, or drawdown).
 /// When a loan is fully paid back, we do not update the loan state, but most of these actions will
 /// be prohibited or ineffectual.
+/// There is no "Closed" or "Finished" state because after accounting variables reflect a balance of 0 - the loan
+/// will still behave the same.
 enum LoanPhase {
   Prefunding,
   Funding,
