@@ -12,6 +12,7 @@ import {
   getBusinessIdentityStatus,
   getIndividualIdentityStatus,
 } from "./kyc/parallelMarketsConverter"
+import {getUserDocByPMId} from "./parallelmarkets/webhookHelpers"
 
 export const registerKyc = genRequestHandler({
   requireAuth: "signature",
@@ -40,6 +41,13 @@ export const registerKyc = genRequestHandler({
       const data = await getParalleMarketsUser(key)
       console.log("Saving data to store")
       console.log(data)
+
+      // Check that this parallel markets id isn't already associated with a different wallet address!
+      const existingUser = await getUserDocByPMId(data.id)
+      if (existingUser && existingUser.data()?.address !== address) {
+        return res.status(400).send({status: "your data is associated with a different wallet!"})
+      }
+
       await saveParallelMarketsUser(address, data)
     } catch (e) {
       console.error(e)

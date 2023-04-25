@@ -216,7 +216,12 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
   }
 }
 
-const getUserDocByPMId = async (id: string) => {
+/**
+ * Search for a user in the users store by their Parallel Markets id
+ * @param {string} id
+ * @return {Object | undefined} the DocumentData object of the user if found, undefined otherwise
+ */
+export const getUserDocByPMId = async (id: string) => {
   const users = getUsers()
   const fieldPath = new FieldPath("parallelMarkets", "id")
   const userSnapshot = await users.where(fieldPath, "==", id).get()

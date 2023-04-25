@@ -346,6 +346,46 @@ describe("registerKyc", async () => {
         })
       })
 
+      it("reverts if they try to link their PM id to a different wallet", async () => {
+        const testAccount2 = {
+          address: "0xE60f3655a1494dA6Bc713cF62EfA473626992B0E",
+          privateKey: "046905a1e57bac2ad2fb13ef495adc06aece169c97e0adf400f64a5bd743e2a8",
+        }
+        const testWallet2 = new ethers.Wallet(testAccount2.privateKey)
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet2.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "high",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "individual",
+            accreditations: [{status: "current", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount2.address, "test_key", sig, plaintext, currentBlockNum)
+        await registerKyc(request, expectResponse(400, {status: "your data is associated with a different wallet!"}))
+      })
+
       it("resets revocations, overwrites fields", async () => {
         const {address} = testWallet
         const oauthCode = "OAUTH_CODE"
