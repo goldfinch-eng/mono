@@ -142,7 +142,7 @@ const AccountsPage: NextPageWithLayout = () => {
                       <Spinner size="lg" />
                       <div className="text-lg">
                         {isRegisteringKyc
-                          ? "Connecting to your Parallel Markets account, this requires a signature"
+                          ? "Connecting to our verification partner, this requires a signature"
                           : "Fetching your account data, this requires a signature"}
                       </div>
                     </div>
