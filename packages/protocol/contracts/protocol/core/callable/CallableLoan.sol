@@ -58,8 +58,8 @@ contract CallableLoan is
   uint256 public constant SPLIT_TOKEN_DUST_THRESHOLD = 5e3;
 
   uint8 internal constant MAJOR_VERSION = 1;
-  uint8 internal constant MINOR_VERSION = 0;
-  uint8 internal constant PATCH_VERSION = 1;
+  uint8 internal constant MINOR_VERSION = 1;
+  uint8 internal constant PATCH_VERSION = 0;
 
   /*================================================================================
   Storage State

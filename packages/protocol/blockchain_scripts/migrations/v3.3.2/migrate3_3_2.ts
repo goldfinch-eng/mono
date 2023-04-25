@@ -6,7 +6,7 @@ import {ContractDeployer, getEthersContract, getProtocolOwner, populateTxAndLog}
 import {getDeployEffects} from "../deployEffects"
 import {deployCallableLoanImplementation} from "../../baseDeploy/deployCallableLoanImplementation"
 import {MAINNET_WARBLER_LABS_MULTISIG} from "../../mainnetForkingHelpers"
-import {FAZZ_MAINNET_LOAN_ADDRESS} from "../../helpers/createCallableLoanForBorrower"
+import {FAZZ_MAINNET_CALLABLE_LOAN} from "../../helpers/createCallableLoanForBorrower"
 
 export const rewardsToRemoveFromStakingRewards = bigVal(1_200_000) // 1.2m GFI
 export const maxInterestDollarsEllibile = bigVal(34_000_000) // 34m 1e18
@@ -47,7 +47,7 @@ export async function main() {
     ],
   })
 
-  const fazzPoolProxy = await getEthersContract<UcuProxy>("UcuProxy", {at: FAZZ_MAINNET_LOAN_ADDRESS})
+  const fazzPoolProxy = await getEthersContract<UcuProxy>("UcuProxy", {at: FAZZ_MAINNET_CALLABLE_LOAN})
 
   await warblerDeployEffects.add({
     deferred: [
