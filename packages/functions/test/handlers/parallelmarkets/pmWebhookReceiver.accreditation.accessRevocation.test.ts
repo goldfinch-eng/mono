@@ -1,6 +1,6 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {getUsers, setTestFirestore} from "../../../src/db"
+import {getUsers, overrideFirestore} from "../../../src/db"
 import _ from "lodash"
 
 import firestore = admin.firestore
@@ -108,9 +108,9 @@ describe("pmWebhookReceiver accreditation access revocation", () => {
     stub = sandbox.stub(fetchModule, "default")
     testApp = firebaseTesting.initializeAdminApp({projectId: "goldfinch-frontend-test"})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({})
-    users = getUsers(testFirestore)
+    users = getUsers()
 
     // Save pending user to user store
     await users.doc(APPROVED_ADDRESS_INDIVIDUAL).set(APPROVED_FIRESTORE_INDIVIDUAL_USER)
@@ -132,7 +132,7 @@ describe("pmWebhookReceiver accreditation access revocation", () => {
       )
 
       await processAccreditationWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(APPROVED_ADDRESS_INDIVIDUAL).get()
+      const user = await getUsers().doc(APPROVED_ADDRESS_INDIVIDUAL).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...APPROVED_FIRESTORE_INDIVIDUAL_USER,
@@ -155,7 +155,7 @@ describe("pmWebhookReceiver accreditation access revocation", () => {
       )
 
       await processAccreditationWebhook(WEBHOOK_BUSINESS_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(APPROVED_ADDRESS_BUSINESS).get()
+      const user = await getUsers().doc(APPROVED_ADDRESS_BUSINESS).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...APPROVED_FIRESTORE_BUSINESS_USER,

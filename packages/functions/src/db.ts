@@ -1,6 +1,15 @@
 import {firestore} from "firebase-admin"
 
-let _firestoreForTest: firestore.Firestore
+// Optionally override the firestore for testing or emulation
+let _firestore: firestore.Firestore
+
+/**
+ * Override the firestore to use for tests. Need this so we can connect to the emulator.
+ * @param {firestore.Firestore} firestore The firestore to override with
+ */
+function overrideFirestore(firestore: firestore.Firestore): void {
+  _firestore = firestore
+}
 
 /**
  * Get the users collection given a reference to the firestore
@@ -47,19 +56,7 @@ const getCollection = (collection: string): firestore.CollectionReference<firest
  * @return {firestore.Firestore} The databse for the current env
  */
 function getDb(): firestore.Firestore {
-  if (process.env.NODE_ENV === "test") {
-    return _firestoreForTest
-  } else {
-    return firestore()
-  }
+  return _firestore || firestore()
 }
 
-/**
- * Override the firestore to use for tests. Need this so we can connect to the emulator.
- * @param {firestore.Firestore} firestore The firestore to override with
- */
-function setTestFirestore(firestore: firestore.Firestore): void {
-  _firestoreForTest = firestore
-}
-
-export {getUsers, getDestroyedUsers, getAgreements, getDb, setTestFirestore}
+export {getUsers, getDestroyedUsers, getAgreements, getDb, overrideFirestore}

@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {getUsers, setTestFirestore} from "../../../src/db"
+import {getUsers, overrideFirestore} from "../../../src/db"
 import {kycStatus} from "../../../src"
 
 chai.use(chaiSubset)
@@ -94,7 +94,7 @@ describe("kycStatus response", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},

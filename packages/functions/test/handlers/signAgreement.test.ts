@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {getAgreements, setTestFirestore} from "../../src/db"
+import {getAgreements, overrideFirestore} from "../../src/db"
 import {signAgreement} from "../../src"
 
 chai.use(chaiSubset)
@@ -62,7 +62,7 @@ describe("signAgreement", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},

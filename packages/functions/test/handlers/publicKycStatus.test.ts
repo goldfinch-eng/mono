@@ -1,7 +1,7 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import _ from "lodash"
 import * as admin from "firebase-admin"
-import {getUsers, setTestFirestore} from "../../src/db"
+import {getUsers, overrideFirestore} from "../../src/db"
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {setTestConfig} from "../../src/config"
@@ -19,7 +19,7 @@ describe("publicKycStatus", () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},

@@ -3,7 +3,6 @@ import chaiSubset from "chai-subset"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 
-import {setTestFirestore} from "../../src/db"
 import {poolTokenMetadata} from "../../src"
 
 import firestore = admin.firestore
@@ -11,6 +10,7 @@ import Firestore = firestore.Firestore
 import {Request} from "express"
 import {expectResponse} from "../utils"
 import {setTestConfig} from "../../src/config"
+import {overrideFirestore} from "../../src/db"
 
 chai.use(chaiSubset)
 
@@ -22,7 +22,7 @@ describe("poolTokenMetadata", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},

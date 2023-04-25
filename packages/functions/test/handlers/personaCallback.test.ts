@@ -7,7 +7,7 @@ import {fake} from "sinon"
 import {Request} from "firebase-functions"
 
 import crypto from "crypto"
-import {getUsers, setTestFirestore} from "../../src/db"
+import {getUsers, overrideFirestore} from "../../src/db"
 import {personaCallback} from "../../src"
 
 chai.use(chaiSubset)
@@ -67,9 +67,9 @@ describe("persona callback", async () => {
       persona: {allowed_ips: ""},
       slack: {token: ""},
     }
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig(config)
-    users = getUsers(testFirestore)
+    users = getUsers()
   })
 
   after(async () => {

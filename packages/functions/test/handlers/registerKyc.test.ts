@@ -4,7 +4,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
 import {setTestConfig} from "../../src/config"
-import {setTestFirestore, getUsers} from "../../src/db"
+import {getUsers, overrideFirestore} from "../../src/db"
 import {Request} from "express"
 import {fake, stub, restore} from "sinon"
 import {BaseProvider} from "@ethersproject/providers"
@@ -90,7 +90,7 @@ describe("registerKyc", async () => {
   beforeEach(async () => {
     testApp = firebaseTesting.initializeAdminApp({projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       slack: {token: "slackToken"},

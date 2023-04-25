@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {getDestroyedUsers, getUsers, setTestFirestore} from "../../src/db"
+import {getDestroyedUsers, getUsers, overrideFirestore} from "../../src/db"
 import {setTestConfig} from "../../src/config"
 import {destroyUser} from "../../src"
 
@@ -71,7 +71,7 @@ describe("destroyUser", () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
