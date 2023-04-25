@@ -170,7 +170,7 @@ const EarnPage: NextPageWithLayout<
         </>
       ) : (
         <>
-          {uidType ? null : (
+          {uidType ? null : account ? (
             <CallToActionBanner
               className="mb-20"
               renderButton={(props) => (
@@ -184,7 +184,7 @@ const EarnPage: NextPageWithLayout<
               title="Set up your UID to start"
               description={SETUP_UID_BANNER_TEXT}
             />
-          )}
+          ) : null}
           <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
           <EarnPageHeading>
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}
