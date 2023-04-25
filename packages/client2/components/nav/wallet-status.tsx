@@ -90,7 +90,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
             </div>
             <Button
               size="sm"
-              className="mt-1 block w-full"
+              className="mt-4 block w-full"
               colorScheme="secondary"
               disabled={!connector?.watchAsset}
               onClick={() =>
