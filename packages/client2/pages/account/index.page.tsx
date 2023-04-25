@@ -173,7 +173,7 @@ const AccountsPage: NextPageWithLayout = () => {
                   ) : status === "approved" ? (
                     accreditationStatus === "unaccredited" ? (
                       <CallToActionBanner
-                        colorScheme="white"
+                        colorScheme="red"
                         iconLeft="Exclamation"
                         title="We're sorry"
                         description="Non-accredited US businesses are not eligible for UID."
@@ -191,6 +191,19 @@ const AccountsPage: NextPageWithLayout = () => {
                         description="Your application is approved! Claim your UID to participate in the protocol."
                       />
                     )
+                  ) : status === "failed" ? (
+                    <CallToActionBanner
+                      colorScheme="red"
+                      iconLeft="Exclamation"
+                      title={
+                        accreditationStatus === "failed"
+                          ? "Accreditation check failed"
+                          : identityStatus === "failed"
+                          ? "Identity verification failed"
+                          : "You are not eligible"
+                      }
+                      description="Sorry, you have been deemed ineligible for a UID."
+                    />
                   ) : (
                     <CallToActionBanner
                       renderButton={(props) => (
