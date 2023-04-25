@@ -110,11 +110,6 @@ const AccountsPage: NextPageWithLayout = () => {
           <h1 className="font-serif text-5xl font-bold text-sand-800">
             Account
           </h1>
-          {error ? (
-            <div className="text-xl text-clay-500">
-              Unable to fetch data for your account.
-            </div>
-          ) : null}
         </div>
       </div>
       {!isMounted ? null : !account ? (
@@ -137,8 +132,20 @@ const AccountsPage: NextPageWithLayout = () => {
             <div className="mx-auto max-w-7xl pt-0">
               <TabPanels>
                 <TabContent>
-                  {isRegisteringKyc || loading ? (
-                    <Spinner size="lg" />
+                  {error ? (
+                    <div className="text-xl text-clay-500">
+                      Unable to fetch data for your account. Error:{" "}
+                      {error.message}
+                    </div>
+                  ) : isRegisteringKyc || loading ? (
+                    <div className="flex items-center gap-4">
+                      <Spinner size="lg" />
+                      <div className="text-lg">
+                        {isRegisteringKyc
+                          ? "Connecting to your Parallel Markets account, this requires a signature"
+                          : "Fetching your account data, this requires a signature"}
+                      </div>
+                    </div>
                   ) : uidType ? (
                     <div className="lg:px-5">
                       <div className="flex flex-col gap-y-2">
