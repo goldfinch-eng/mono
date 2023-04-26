@@ -144,7 +144,9 @@ const AccountsPage: NextPageWithLayout = () => {
                       iconLeft="Exclamation"
                       description={registerKycError.message}
                       renderButton={(props) => (
-                        <Button {...props}>Try again</Button>
+                        <Button {...props} onClick={openVerificationModal}>
+                          Try again
+                        </Button>
                       )}
                     />
                   ) : isRegisteringKyc || loading ? (
