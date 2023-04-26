@@ -6,7 +6,7 @@ const {ethers} = hre
 import {Block} from "@ethersproject/abstract-provider"
 import {getDeployedContract, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {TranchedPool} from "../typechain/ethers"
-import {getAgreements, getUsers} from "./helpers/db"
+import {getAgreements, getUsers, overrideFirestore} from "./helpers/db"
 
 import admin from "firebase-admin"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -55,6 +55,7 @@ async function main() {
     process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099"
     process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080"
     admin.initializeApp({projectId})
+    overrideFirestore(admin.firestore())
   }
 
   const tranchedPool = ((await getDeployedContract(deployments, "TranchedPool")) as TranchedPool).attach(poolAddress)

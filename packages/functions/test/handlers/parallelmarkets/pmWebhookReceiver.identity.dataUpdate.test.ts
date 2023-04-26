@@ -1,6 +1,6 @@
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import {getUsers, setTestFirestore} from "../../../src/db"
+import {getUsers, overrideFirestore} from "../../../src/db"
 import _ from "lodash"
 
 import firestore = admin.firestore
@@ -113,9 +113,9 @@ describe("pmWebhookReceiver identity data update", async () => {
     stub = sandbox.stub(fetchModule, "default")
     testApp = firebaseTesting.initializeAdminApp({projectId: "goldfinch-frontend-test"})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({})
-    users = getUsers(testFirestore)
+    users = getUsers()
 
     // Save pending user to user store
     await users.doc(PENDING_ADDRESS_INDIVIDUAL).set(PENDING_FIRESTORE_INDIVIDUAL_USER)
@@ -138,7 +138,7 @@ describe("pmWebhookReceiver identity data update", async () => {
 
       // EXECUTE TEST
       await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_INDIVIDUAL).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_INDIVIDUAL).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...PENDING_FIRESTORE_INDIVIDUAL_USER,
@@ -165,7 +165,7 @@ describe("pmWebhookReceiver identity data update", async () => {
         },
       }
       await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_INDIVIDUAL).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_INDIVIDUAL).get()
       // Their status is still pending, so nothing should have changed
       expect(user.data()).to.deep.eq(expectedUser)
     })
@@ -186,7 +186,7 @@ describe("pmWebhookReceiver identity data update", async () => {
         },
       }
       await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_INDIVIDUAL).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_INDIVIDUAL).get()
       // Their status is still pending, so nothing should have changed
       expect(user.data()).to.deep.eq(expectedUser)
     })
@@ -199,7 +199,7 @@ describe("pmWebhookReceiver identity data update", async () => {
 
       // EXECUTE TEST
       await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_INDIVIDUAL).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_INDIVIDUAL).get()
       // Their status should be expired now
       const expectedUser = {
         ...PENDING_FIRESTORE_INDIVIDUAL_USER,
@@ -231,7 +231,7 @@ describe("pmWebhookReceiver identity data update", async () => {
 
           // EXECUTE TEST
           await processIdentityWebhook(WEBHOOK_INDIVIDUAL_PAYLOAD)
-          const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_INDIVIDUAL).get()
+          const user = await getUsers().doc(PENDING_ADDRESS_INDIVIDUAL).get()
           expect(user.data()).to.deep.eq(expectedUser)
         }
       }
@@ -249,7 +249,7 @@ describe("pmWebhookReceiver identity data update", async () => {
 
       // EXECUTE TEST
       await processIdentityWebhook(WEBHOOK_BUSINESS_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_BUSINESS).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_BUSINESS).get()
       // Their status in firestore should be approved now
       const expectedUser = {
         ...PENDING_FIRESTORE_BUSINESS_USER,
@@ -268,7 +268,7 @@ describe("pmWebhookReceiver identity data update", async () => {
       stub.returns(new Promise((resolve) => resolve(new Response(JSON.stringify(stubbedResponse), {status: 200}))))
 
       await processIdentityWebhook(WEBHOOK_BUSINESS_PAYLOAD)
-      const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_BUSINESS).get()
+      const user = await getUsers().doc(PENDING_ADDRESS_BUSINESS).get()
       // We expect no change because they started off pending
       expect(user.data()).to.deep.eq(PENDING_FIRESTORE_BUSINESS_USER)
     })
@@ -290,7 +290,7 @@ describe("pmWebhookReceiver identity data update", async () => {
         stub.returns(new Promise((resolve) => resolve(new Response(JSON.stringify(stubbedResponse), {status: 200}))))
 
         await processIdentityWebhook(WEBHOOK_BUSINESS_PAYLOAD)
-        const user = await getUsers(admin.firestore()).doc(PENDING_ADDRESS_BUSINESS).get()
+        const user = await getUsers().doc(PENDING_ADDRESS_BUSINESS).get()
         expect(user.data()).to.deep.eq(expectedUser)
       }
     })

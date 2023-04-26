@@ -15,7 +15,7 @@ import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
-import {setTestFirestore, getUsers} from "../../src/db"
+import {overrideFirestore, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
@@ -192,7 +192,7 @@ describe("linkUserToUid", () => {
 
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
@@ -249,7 +249,7 @@ describe("linkUserToUid", () => {
         address: mainUserAddress,
         updatedAt: Date.now(),
       }
-      users = getUsers(testFirestore)
+      users = getUsers()
       await users.doc(mainUserAddress).set(mainUser)
     })
 
@@ -391,7 +391,7 @@ describe("linkUserToUid", () => {
         address: mainUserAddress,
         updatedAt: Date.now(),
       }
-      users = getUsers(testFirestore)
+      users = getUsers()
       await users.doc(mainUserAddress).set(mainUser)
     })
 

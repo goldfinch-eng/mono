@@ -1,12 +1,24 @@
+import chai from "chai"
+import chaiSubset from "chai-subset"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
 import {setTestConfig} from "../../src/config"
-import {setTestFirestore, getUsers} from "../../src/db"
+import {getUsers, overrideFirestore} from "../../src/db"
 import {Request} from "express"
-import {fake} from "sinon"
+import {fake, stub, restore} from "sinon"
 import {BaseProvider} from "@ethersproject/providers"
 import {mockGetBlockchain} from "../../src/helpers"
+import {ParallelMarkets} from "../../src/handlers/parallelmarkets/PmApi"
+import {
+  PmAccreditationResponse,
+  PmIdentity,
+  PmOauthResponse,
+  PmIndividualIdentityDetails,
+  PmBusinessIdentityDetails,
+} from "../../src/handlers/parallelmarkets/PmApiTypes"
+chai.use(chaiSubset)
+const expect = chai.expect
 
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
@@ -30,17 +42,6 @@ describe("registerKyc", async () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
   let users: firestore.CollectionReference<firestore.DocumentData>
-
-  const getEncodedPlaintext = (key: string) => {
-    return JSON.stringify({
-      key,
-      provider: "parallel_markets",
-    })
-  }
-
-  const getSignedMessage = async (key: string) => {
-    return testWallet.signMessage(getEncodedPlaintext(key))
-  }
 
   const genRegisterKycRequest = (
     address: string,
@@ -89,7 +90,7 @@ describe("registerKyc", async () => {
   beforeEach(async () => {
     testApp = firebaseTesting.initializeAdminApp({projectId})
     testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
+    overrideFirestore(testFirestore)
     setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       slack: {token: "slackToken"},
@@ -101,6 +102,7 @@ describe("registerKyc", async () => {
   })
 
   afterEach(async () => {
+    restore()
     await firebaseTesting.clearFirestoreData({projectId})
   })
 
@@ -121,39 +123,324 @@ describe("registerKyc", async () => {
       })
     })
 
-    describe.skip("creating new user", () => {
-      it("with correct fields", () => {
-        // TODO
+    describe("creating new user", () => {
+      it("with correct fields for individual", async () => {
+        const {address} = testWallet
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "low",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "individual",
+            accreditations: [{status: "current", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, plaintext, currentBlockNum)
+
+        await registerKyc(request, expectResponse(200, {status: "success"}))
+
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({
+          address: address.toLowerCase(),
+          countryCode: "US",
+          kycProvider: "parallelMarkets",
+          parallelMarkets: {
+            accreditationAccessRevocationAt: null,
+            accreditationExpiresAt: 1,
+            accreditationStatus: "approved",
+            id: "IDENTITY_ID",
+            identityAccessRevocationAt: null,
+            identityStatus: "failed",
+            type: "individual",
+          },
+        })
+      })
+
+      it("with correct fields for business", async () => {
+        const {address} = testWallet
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "business",
+            identityDetails: {
+              incorporationCountry: "MX",
+              principalLocation: "MX",
+              consistencySummary: {
+                overallRecordsMatchLevel: "high",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmBusinessIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "business",
+            accreditations: [{status: "current", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, plaintext, currentBlockNum)
+
+        await registerKyc(request, expectResponse(200, {status: "success"}))
+
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({
+          address: address.toLowerCase(),
+          countryCode: "MX",
+          kycProvider: "parallelMarkets",
+          parallelMarkets: {
+            accreditationAccessRevocationAt: null,
+            accreditationExpiresAt: 1,
+            accreditationStatus: "approved",
+            id: "IDENTITY_ID",
+            identityAccessRevocationAt: null,
+            identityStatus: "approved",
+            type: "business",
+          },
+        })
+      })
+
+      it("gives no accreditation if all documents invalid", async () => {
+        const {address} = testWallet
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "low",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "individual",
+            accreditations: [{status: "rejected", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, plaintext, currentBlockNum)
+
+        await registerKyc(request, expectResponse(200, {status: "success"}))
+
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({
+          address: address.toLowerCase(),
+          countryCode: "US",
+          kycProvider: "parallelMarkets",
+          parallelMarkets: {
+            accreditationAccessRevocationAt: null,
+            accreditationExpiresAt: 1,
+            accreditationStatus: "failed",
+            id: "IDENTITY_ID",
+            identityAccessRevocationAt: null,
+            identityStatus: "failed",
+            type: "individual",
+          },
+        })
+      })
+
+      it("fails on accreditation and identity type mismatch", async () => {
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "low",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "business",
+            accreditations: [{status: "rejected", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, plaintext, currentBlockNum)
+
+        await registerKyc(request, expectResponse(500, {status: "failed to save parallel markets data"}))
       })
     })
 
-    describe.skip("updatings existing user", () => {
-      it("resets revocations", () => {
-        // TODO
+    describe("updatings existing user", () => {
+      beforeEach(async () => {
+        const {address} = testWallet
+
+        await users.doc(address.toLowerCase()).set({
+          address: address.toLowerCase(),
+          countryCode: "CA",
+          kycProvider: "parallelMarkets",
+          parallelMarkets: {
+            accreditationAccessRevocationAt: 123,
+            accreditationExpiresAt: 1,
+            accreditationStatus: "approved",
+            id: "IDENTITY_ID",
+            identityAccessRevocationAt: 456,
+            identityStatus: "failed",
+            type: "individual",
+          },
+          persona: {
+            shouldStayHere: "here",
+          },
+        })
       })
 
-      it("overwrites fields", () => {
-        // TODO
+      it("reverts if they try to link their PM id to a different wallet", async () => {
+        const testAccount2 = {
+          address: "0xE60f3655a1494dA6Bc713cF62EfA473626992B0E",
+          privateKey: "046905a1e57bac2ad2fb13ef495adc06aece169c97e0adf400f64a5bd743e2a8",
+        }
+        const testWallet2 = new ethers.Wallet(testAccount2.privateKey)
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet2.signMessage(plaintext)
+
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "high",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "individual",
+            accreditations: [{status: "current", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
+
+        const request = genRegisterKycRequest(testAccount2.address, "test_key", sig, plaintext, currentBlockNum)
+        await registerKyc(request, expectResponse(400, {status: "your data is associated with a different wallet!"}))
       })
 
-      it("works for businesses", () => {
-        // TODO
-      })
+      it("resets revocations, overwrites fields", async () => {
+        const {address} = testWallet
+        const oauthCode = "OAUTH_CODE"
+        const plaintext = `Share your OAuth code with Goldfinch: ${oauthCode}`
+        const sig = await testWallet.signMessage(plaintext)
 
-      it("works for individualtes", () => {
-        // TODO
-      })
+        stub(ParallelMarkets, "tradeCodeForToken").returns(
+          Promise.resolve({accessToken: "ACCESS_TOKEN"} as PmOauthResponse),
+        )
+        stub(ParallelMarkets, "getIdentityForAccessToken").returns(
+          Promise.resolve({
+            id: "IDENTITY_ID",
+            type: "individual",
+            identityDetails: {
+              citizenshipCountry: "US",
+              residenceLocation: "US",
+              consistencySummary: {
+                overallRecordsMatchLevel: "high",
+                idValidity: "valid",
+              },
+              expiresAt: 123,
+            } as unknown as PmIndividualIdentityDetails,
+          } as PmIdentity),
+        )
+        stub(ParallelMarkets, "getAccreditationsForAccessToken").returns(
+          Promise.resolve({
+            id: "ACCREDITATION_ID",
+            type: "individual",
+            accreditations: [{status: "current", expiresAt: 1, createdAt: 0}],
+          } as unknown as PmAccreditationResponse),
+        )
 
-      it("sets country to US if resident or citizen", () => {
-        // TODO
-      })
+        const request = genRegisterKycRequest(testAccount.address, "test_key", sig, plaintext, currentBlockNum)
 
-      it("gives no accreditation if all documents invalid", () => {
-        // TODO
-      })
+        await registerKyc(request, expectResponse(200, {status: "success"}))
 
-      it("does not pass identity if match level is not high", () => {
-        // TODO
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({
+          address: address.toLowerCase(),
+          countryCode: "US",
+          kycProvider: "parallelMarkets",
+          parallelMarkets: {
+            accreditationAccessRevocationAt: null,
+            accreditationExpiresAt: 1,
+            accreditationStatus: "approved",
+            id: "IDENTITY_ID",
+            identityAccessRevocationAt: null,
+            identityStatus: "approved",
+            type: "individual",
+          },
+          persona: {
+            shouldStayHere: "here",
+          },
+        })
       })
     })
   })
