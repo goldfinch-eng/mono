@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
-import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
 contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   uint256 internal constant SECONDS_IN_30_DAY_MONTH = 2_592_000;
+  uint256 internal constant SECONDS_IN_DAY = 60 * 60 * 24;
 
   function testWritedownCallableByNonGovernance(
     address user
@@ -130,7 +130,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownShouldResetTo0IfFullyPaidBack() public {
-    (TranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -150,6 +150,143 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertTrue(sp.sharePrice() < sharePriceBefore);
     assertTrue(sp.assets() < assetsBefore);
     assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+
+    // Fully pay back pool
+    uint256 interestToPay = cl.interestOwed();
+    payTp(interestToPay, tp);
+
+    sp.writedown(poolToken);
+
+    assertEq(sp.sharePrice(), sharePriceBefore);
+  }
+
+  function testWritedownPostTermShouldResetTo0IfFullyPaidBack() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(20), tp);
+    lockJuniorCap(tp);
+    depositToSpFrom(GF_OWNER, usdcVal(100));
+    uint256 poolToken = sp.invest(tp);
+    lock(tp);
+    drawdownTp(usdcVal(100), tp);
+
+    // Advance to the end of the loan + out of the grace period + 1 day
+    // Added 1 day as writedowns are applied gradually over time, so 1 day provides some amount of writedown
+    vm.warp(cl.termEndTime() + (gfConfig.getLatenessGracePeriodInDays() + 1) * SECONDS_IN_DAY);
+
+    uint256 sharePriceBefore = sp.sharePrice();
+    uint256 assetsBefore = sp.assets();
+    uint256 totalWritedownsBefore = sp.totalWritedowns();
+
+    // Writedown
+    {
+      sp.writedown(poolToken);
+
+      assertTrue(sp.sharePrice() < sharePriceBefore);
+      assertTrue(sp.assets() < assetsBefore);
+      assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+    }
+
+    uint256 postWritedownShareprice = sp.sharePrice();
+    uint256 postWritedownAssets = sp.assets();
+
+    // Pay back interest
+    uint256 interestToPay = cl.interestOwed();
+    uint256 interestRedeemedExpected = (interestToPay * 56) / 100;
+
+    {
+      payTp(interestToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertTrue(sp.sharePrice() > postWritedownShareprice);
+      assertTrue(sp.assets() > postWritedownAssets);
+      assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+    }
+
+    // Pay back principal
+    {
+      uint256 principalToPay = cl.principalOwed();
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertTrue(principalToPay > 0);
+      assertEq(sp.sharePrice(), sharePriceBefore + interestRedeemedExpected * 1e10);
+    }
+  }
+
+  function testCompleteWritedownPostTermShouldResetTo0IfFullyPaidBack() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(20), tp);
+    lockJuniorCap(tp);
+    depositToSpFrom(GF_OWNER, usdcVal(100));
+    uint256 poolToken = sp.invest(tp);
+    lock(tp);
+    drawdownTp(usdcVal(100), tp);
+
+    // Advance to the end of the loan + past maximum late days + 1 day
+    vm.warp(
+      cl.termEndTime() +
+        (gfConfig.getLatenessGracePeriodInDays() + gfConfig.getLatenessMaxDays() + 1) *
+        SECONDS_IN_DAY
+    );
+
+    uint256 sharePriceBefore = sp.sharePrice();
+    uint256 assetsBefore = sp.assets();
+
+    // Writedown - PoolToken value is completely removed
+    {
+      sp.writedown(poolToken);
+
+      assertEq(sp.sharePrice(), 20e16);
+      assertEq(sp.assets(), usdcVal(20));
+      assertEq(sp.totalWritedowns(), usdcVal(80));
+    }
+
+    // Pay back interest
+    uint256 interestToPay = cl.interestOwed();
+    uint256 interestRedeemedExpected = (interestToPay * 56) / 100;
+
+    {
+      payTp(interestToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertEq(sp.sharePrice(), 20e16 + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), usdcVal(20) + interestRedeemedExpected);
+      // total writedowns doesn't change, only interest has been repaid
+      assertEq(sp.totalWritedowns(), usdcVal(80));
+    }
+
+    // Pay back part principal - all goes to senior pool
+    {
+      uint256 principalToPay = usdcVal(60);
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      // Share price is the current 20 + interest + 60 paid principal
+      assertEq(sp.sharePrice(), 80e16 + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), usdcVal(80) + interestRedeemedExpected);
+      assertEq(sp.totalWritedowns(), usdcVal(20));
+    }
+
+    // Pay back remaining principal
+    {
+      uint256 principalToPay = usdcVal(20);
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      // Share price is the original + interest
+      assertEq(sp.sharePrice(), sharePriceBefore + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), assetsBefore + interestRedeemedExpected);
+      assertEq(sp.totalWritedowns(), 0);
+    }
   }
 
   function testWritedownEmitsEvent() public {
@@ -217,7 +354,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     uint256 shares = depositToSpFrom(GF_OWNER, usdcVal(10_000));
     uint256 requestToken = requestWithdrawalFrom(GF_OWNER, shares);
 
-    (TranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(80));
