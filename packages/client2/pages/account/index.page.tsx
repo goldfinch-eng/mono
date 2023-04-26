@@ -267,10 +267,8 @@ function EmailUIDButton(
   props: Pick<ButtonProps, "className" | "size" | "variant" | "colorScheme">
 ) {
   return (
-    <NextLink href="mailto:uid@warblerlabs.com" passHref>
-      <Button {...props} as="a">
-        Email us
-      </Button>
-    </NextLink>
+    <Button {...props} as="a" href="mailto:uid@warblerlabs.com">
+      Email us
+    </Button>
   );
 }
