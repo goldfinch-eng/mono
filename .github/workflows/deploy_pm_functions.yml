@@ -1,6 +1,6 @@
-# This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
+# This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions
 # NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
-name: Deploy main functions to prod
+name: Deploy functions to dev
 on:
   push:
     branches: [ main ]
