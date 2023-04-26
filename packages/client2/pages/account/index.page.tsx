@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import {
   Button,
+  ButtonProps,
   Icon,
   Spinner,
   TabButton,
@@ -194,6 +195,7 @@ const AccountsPage: NextPageWithLayout = () => {
                   ) : status === "approved" ? (
                     accreditationStatus === "unaccredited" ? (
                       <CallToActionBanner
+                        renderButton={(props) => EmailUIDButton(props)}
                         colorScheme="red"
                         iconLeft="Exclamation"
                         title="We're sorry"
@@ -214,6 +216,7 @@ const AccountsPage: NextPageWithLayout = () => {
                     )
                   ) : status === "failed" ? (
                     <CallToActionBanner
+                      renderButton={(props) => EmailUIDButton(props)}
                       colorScheme="red"
                       iconLeft="Exclamation"
                       title={
@@ -265,5 +268,15 @@ function CheckableStep({ name, checked }: { name: string; checked: boolean }) {
       />
       <div>{name}</div>
     </div>
+  );
+}
+
+function EmailUIDButton(
+  props: Pick<ButtonProps, "className" | "size" | "variant" | "colorScheme">
+) {
+  return (
+    <Button {...props} as="a" href="mailto:uid@warblerlabs.com">
+      Email us
+    </Button>
   );
 }
