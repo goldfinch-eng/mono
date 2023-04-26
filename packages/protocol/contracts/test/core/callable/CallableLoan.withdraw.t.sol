@@ -76,6 +76,44 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     }
   }
 
+  function testAvailableToWithdrawReturns0DuringDrawdownPeriod(
+    uint256 amount1,
+    uint256 amount2,
+    address otherDepositor,
+    uint256 warpTime
+  ) public {
+    amount1 = bound(amount1, usdcVal(1), usdcVal(1_000_000_000));
+    amount2 = bound(amount2, usdcVal(1), usdcVal(1_000_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount1 + amount2);
+    vm.assume(fuzzHelper.isAllowed(otherDepositor));
+
+    uid._mintForTest(DEPOSITOR, 1, 1, "");
+    uid._mintForTest(otherDepositor, 1, 1, "");
+
+    uint256 token1 = deposit(callableLoan, 3, amount1, DEPOSITOR);
+    uint256 token2 = deposit(callableLoan, 3, amount2, otherDepositor);
+
+    drawdown(callableLoan, amount1 + amount2);
+
+    warpTime = bound(
+      warpTime,
+      0,
+      (cl.termStartTime() - block.timestamp) + DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS - 1
+    );
+
+    vm.warp(warpTime);
+    {
+      (uint256 interestRedeemable1, uint256 principalRedeemable1) = callableLoan
+        .availableToWithdraw(token1);
+      (uint256 interestRedeemable2, uint256 principalRedeemable2) = callableLoan
+        .availableToWithdraw(token2);
+      assertZero(principalRedeemable1);
+      assertZero(principalRedeemable1);
+      assertZero(interestRedeemable2);
+      assertZero(principalRedeemable2);
+    }
+  }
+
   function testWithdrawFailsIfNotGoListedAndWithoutAllowedUid(uint256 amount) public {
     amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
 
@@ -122,13 +160,11 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     address depositor3,
     uint256 depositAmount1,
     uint256 depositAmount2,
-    uint256 depositAmount3,
-    uint256 drawdownAmount
+    uint256 depositAmount3
   ) public {
     depositAmount1 = bound(depositAmount1, 1, usdcVal(1_000_000_000));
     depositAmount2 = bound(depositAmount2, 1, usdcVal(1_000_000_000));
     depositAmount3 = bound(depositAmount3, 1, usdcVal(1_000_000_000));
-    bound(drawdownAmount, 1, usdcVal(1_000_000_000));
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(
       depositAmount1 + depositAmount2 + depositAmount3
     );
@@ -144,16 +180,11 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     uint256 token2 = deposit(callableLoan, 3, depositAmount2, depositor2);
     uint256 token3 = deposit(callableLoan, 3, depositAmount3, depositor3);
 
-    {
-      uint256 userBalance1 = usdc.balanceOf(depositor1);
-      uint256 userBalance2 = usdc.balanceOf(depositor2);
-      uint256 userBalance3 = usdc.balanceOf(depositor3);
-
-      drawdown(callableLoan, depositAmount1 + depositAmount2 + depositAmount3);
-    }
-
+    _startImpersonation(depositor1);
     callableLoan.withdrawMax(token1);
+    _startImpersonation(depositor2);
     callableLoan.withdrawMax(token2);
+    _startImpersonation(depositor3);
     callableLoan.withdrawMax(token3);
   }
 
@@ -595,7 +626,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     drawdown(callableLoan, drawdownAmount);
     vm.warp(block.timestamp + secondsElapsed);
 
-    vm.expectRevert(ICallableLoanErrors.CannotWithdrawInDrawdownPeriod.selector);
+    vm.expectRevert(ICallableLoanErrors.ZeroWithdrawAmount.selector);
     withdrawMax(callableLoan, poolToken, user);
   }
 

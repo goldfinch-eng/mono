@@ -670,9 +670,6 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
-    if (totalWithdrawable == 0) {
-      return (0, 0);
-    }
     return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
@@ -705,8 +702,8 @@ contract CallableLoan is
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
-    if (tokenInfo.principalAmount == 0) {
-      // Bail out early to account for proportion of zero.
+    // Bail out early to account for proportion of zero or invalid phase for withdrawal
+    if (tokenInfo.principalAmount == 0 || loanPhase() == LoanPhase.DrawdownPeriod) {
       return (0, 0);
     }
 
