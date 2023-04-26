@@ -144,7 +144,9 @@ const AccountsPage: NextPageWithLayout = () => {
                       iconLeft="Exclamation"
                       description={registerKycError.message}
                       renderButton={(props) => (
-                        <Button {...props}>Try again</Button>
+                        <Button {...props} onClick={openVerificationModal}>
+                          Try again
+                        </Button>
                       )}
                     />
                   ) : isRegisteringKyc || loading ? (
@@ -172,7 +174,9 @@ const AccountsPage: NextPageWithLayout = () => {
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
-                      description="Almost there. Your UID is still being verified, please come back later."
+                      description={
+                        "Almost there. Your UID is still being verified, and this can take up to 72 hours. If you are still facing a delay, please email uid@warblerlabs.com."
+                      }
                       colorScheme="white"
                     >
                       <div className="mt-8 flex flex-col gap-2 sm:flex-row">
