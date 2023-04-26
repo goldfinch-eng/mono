@@ -22,7 +22,7 @@ const PARALLEL_MARKETS_API_URL =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "https://demo-api.parallelmarkets.com/v1"
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? "https://demo-api.parallelmarkets.com/v1" /* will change this to: "https://api.parallelmarkets.com/v1" before shipping */
+    ? "https://api.parallelmarkets.com/v1"
     : "";
 
 if (PARALLEL_MARKETS_API_URL === "") {
@@ -78,7 +78,7 @@ if (CMS_API_URL === "") {
 export const API_BASE_URL = process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   ? process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   : networkName === "mainnet"
-  ? "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net" /* will change this to: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net" before shipping. */
+  ? "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net"
   : networkName === "murmuration"
   ? "https://murmuration.goldfinch.finance/_gcloudfunctions"
   : "http://localhost:5001/goldfinch-frontends-dev/us-central1";
