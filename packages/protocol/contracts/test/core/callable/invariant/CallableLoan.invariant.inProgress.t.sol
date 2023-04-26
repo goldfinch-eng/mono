@@ -142,7 +142,7 @@ contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantT
         interestLessFees +
         handler.sumPrincipalPaid(),
       usdc.balanceOf(address(loan)),
-      1
+      HUNDREDTH_CENT // Margin of error is 1 atomic USDC per payment
     );
   }
 

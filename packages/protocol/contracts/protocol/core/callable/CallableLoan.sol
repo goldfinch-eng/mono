@@ -670,9 +670,6 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
-    if (totalWithdrawable == 0) {
-      return (0, 0);
-    }
     return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
@@ -705,8 +702,8 @@ contract CallableLoan is
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
-    if (tokenInfo.principalAmount == 0) {
-      // Bail out early to account for proportion of zero.
+    // Bail out early to account for proportion of zero or invalid phase for withdrawal
+    if (tokenInfo.principalAmount == 0 || loanPhase() == LoanPhase.DrawdownPeriod) {
       return (0, 0);
     }
 
@@ -717,14 +714,12 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
-    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
-
-    return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
-      totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
-    );
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
   }
 
   function _availableToWithdraw(
@@ -743,12 +738,25 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
+  }
+
+  function _availableToWithdrawGivenProportions(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 totalInterestWithdrawable,
+    uint256 totalPrincipalWithdrawable
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
     // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
     assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
 
     return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalInterestWithdrawable.saturatingSub(tokenInfo.interestRedeemed),
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
     );
   }
