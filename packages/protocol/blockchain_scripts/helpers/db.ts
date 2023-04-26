@@ -2,11 +2,9 @@
 // the original file likely has the required changes. This should likely be removed or refactored as part of:
 // https://linear.app/goldfinch/issue/GFI-766/simplify-package-dependencies-and-remove-circular-dependencies
 
-import * as admin from "firebase-admin"
+import {firestore} from "firebase-admin"
 import {isPlainObject, isString, isStringOrUndefined} from "@goldfinch-eng/utils"
-import firestore = admin.firestore
 
-let _firestoreForTest: firestore.Firestore
 let _configForTest: FirebaseConfig = {
   kyc: {allowed_origins: "http://localhost:3000"},
   persona: {allowed_ips: ""},
@@ -15,6 +13,17 @@ let _configForTest: FirebaseConfig = {
     release: process.env.COMMIT_ID_FOR_TEST || "",
     environment: "test",
   },
+}
+
+// Optionally override the firestore for testing or emulation
+let _firestore: firestore.Firestore
+
+/**
+ * Override the firestore to use for tests. Need this so we can connect to the emulator.
+ * @param {firestore.Firestore} firestore The firestore to override with
+ */
+function overrideFirestore(firestore: firestore.Firestore): void {
+  _firestore = firestore
 }
 
 /**
@@ -61,11 +70,7 @@ const getCollection = (collection: string): firestore.CollectionReference<firest
  * @return {firestore.Firestore} The databse for the current env
  */
 function getDb(): firestore.Firestore {
-  if (process.env.NODE_ENV === "test") {
-    return _firestoreForTest
-  } else {
-    return firestore()
-  }
+  return _firestore || firestore()
 }
 
 export type FirebaseConfig = {
@@ -141,18 +146,16 @@ function getConfig(functions: any): FirebaseConfig {
 
 /**
  * Override the firestore to use for tests. Need this so we can connect to the emulator.
- * @param {firestore.Firestore} firestore The firestore to override with
  * @param {Omit<FirebaseConfig, "sentry">} config The mock config to use for tests. (We exclude
  * Sentry-related configuration from this, as Sentry is configured upon importing the module
  * in which the functions are defined, so it is not readily amenable to being subsequently
  * modified as part of test setup, and we have no need to make it thusly modifiable.)
  */
-function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConfig, "sentry">): void {
-  _firestoreForTest = firestore
+function setConfigForTest(config: Omit<FirebaseConfig, "sentry">): void {
   _configForTest = {
     ..._configForTest,
     ...config,
   }
 }
 
-export {getUsers, getDestroyedUsers, getAgreements, getDb, getConfig, setEnvForTest}
+export {getUsers, getDestroyedUsers, getAgreements, getDb, getConfig, setConfigForTest, overrideFirestore}
