@@ -124,14 +124,16 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     gfConfig.addToGoList(address(otherLenders[2]));
 
     usdc.transfer(address(borrower), usdcVal(1_000_000_000));
-    usdc.transfer(address(otherLenders[0]), usdcVal(1_000));
-    usdc.transfer(address(otherLenders[1]), usdcVal(1_000));
-    usdc.transfer(address(otherLenders[2]), usdcVal(1_000));
+    usdc.transfer(address(otherLenders[0]), usdcVal(1_000_000_000));
+    usdc.transfer(address(otherLenders[1]), usdcVal(1_000_000_000));
+    usdc.transfer(address(otherLenders[2]), usdcVal(1_000_000_000));
     usdc.transfer(address(lender), usdcVal(1_000_000_000));
 
     _stopImpersonation();
 
-    (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder.build(address(borrower));
+    (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder
+      .withLimit(usdcVal(2_000_000))
+      .build(address(borrower));
 
     _startImpersonation(GF_OWNER);
     _loan.unpauseDrawdowns();
@@ -330,6 +332,87 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     {
       lender.withdraw(calledTokenInterestAvailableToWithdraw + 100);
     }
+  }
+
+  // Reproduces a bug which was surfaced during payment + call submission bug bash
+  // Fix was applied in commit cfab3d57c0233b327b733848414ca5fd270792f3
+  // Reverting commit cfab3d57c0233b327b733848414ca5fd270792f3 should cause this test to fail.
+  function test_assertionFailureScenario() public {
+    /* Deposit into loan */ {
+      lender.deposit(usdcVal(50_000));
+      otherLenders[0].deposit(usdcVal(500_000));
+      otherLenders[1].deposit(usdcVal(450_000));
+      otherLenders[2].deposit(usdcVal(1_000_000));
+      assertTrue(loan.loanPhase() == LoanPhase.Funding);
+    }
+
+    /* Full drawdown */ {
+      skip(1);
+
+      borrower.drawdown(usdcVal(2_000_000));
+      assertTrue(loan.loanPhase() == LoanPhase.DrawdownPeriod);
+    }
+
+    /* Fast forward past drawdown period */ {
+      while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
+        skip(60 * 60 * 24);
+      }
+      assertTrue(loan.loanPhase() == LoanPhase.InProgress);
+    }
+
+    /* Immediately submit a call */ {
+      otherLenders[0].submitCall(usdcVal(100_000));
+      otherLenders[1].submitCall(usdcVal(50_000));
+    }
+
+    /* Pay back call + interest */
+    uint256 estimatedInterest = loan.estimateOwedInterestAt(loan.nextDueTimeAt(block.timestamp));
+    uint256 interestOwedAt = creditLine.interestOwedAt(loan.nextDueTimeAt(block.timestamp));
+
+    assertEq(estimatedInterest, interestOwedAt);
+    borrower.pay(estimatedInterest);
+
+    skip(30 days);
+    estimatedInterest = loan.estimateOwedInterestAt(loan.nextDueTimeAt(block.timestamp));
+    interestOwedAt = creditLine.interestOwedAt(loan.nextDueTimeAt(block.timestamp));
+
+    assertEq(estimatedInterest, interestOwedAt);
+    borrower.pay(estimatedInterest);
+
+    skip(30 days);
+    estimatedInterest = loan.estimateOwedInterestAt(loan.nextDueTimeAt(block.timestamp));
+    interestOwedAt = creditLine.interestOwedAt(loan.nextDueTimeAt(block.timestamp));
+
+    assertEq(estimatedInterest, interestOwedAt);
+    borrower.pay(usdcVal(150_000) + estimatedInterest);
+
+    uint256 calledTrancheInterestPaid = ((100 * estimatedInterest) / 1000);
+    uint256 calledTokenInterestAvailableToWithdraw = ((calledTrancheInterestPaid * 90) / (100));
+
+    (uint256 interestRedeemable, uint256 principalRedeemable) = loan.availableToWithdraw(
+      lender.tokenId()
+    );
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+      otherLenders[0].callRequestTokenId()
+    );
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+      otherLenders[1].callRequestTokenId()
+    );
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(otherLenders[2].tokenId());
+
+    skip(30 days);
+
+    lender.submitCall(usdcVal(24_500));
+    otherLenders[0].submitCall(usdcVal(100_000));
+    otherLenders[1].submitCall(usdcVal(200_000));
+
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+      lender.callRequestTokenId()
+    );
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(
+      otherLenders[0].callRequestTokenId()
+    );
+    (interestRedeemable, principalRedeemable) = loan.availableToWithdraw(otherLenders[1].tokenId());
   }
 
   // Submit call, attempt to pay whole interest
