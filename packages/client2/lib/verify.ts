@@ -154,7 +154,7 @@ export function getUIDLabelFromType(type: UIDType) {
     case UIDType.USNonAccreditedIndividual:
       return "U.S. Non-Accredited Individual";
     case UIDType.USEntity:
-      return "U.S. Entity";
+      return "U.S. Accredited Entity";
     case UIDType.NonUSEntity:
       return "Non-U.S. Entity";
   }
@@ -164,7 +164,7 @@ const uidTypeToLabel: Record<UidType, string> = {
   NON_US_INDIVIDUAL: "Non-U.S. Individual",
   US_ACCREDITED_INDIVIDUAL: "U.S. Accredited Individual",
   US_NON_ACCREDITED_INDIVIDUAL: "U.S. Non-Accredited Individual",
-  US_ENTITY: "U.S. Entity",
+  US_ENTITY: "U.S. Accredited Entity",
   NON_US_ENTITY: "Non-U.S. Entity",
 };
 export function getUIDLabelFromGql(type: UidType) {
