@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
-import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
