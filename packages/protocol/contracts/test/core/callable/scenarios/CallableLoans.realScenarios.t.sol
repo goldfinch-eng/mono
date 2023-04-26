@@ -570,7 +570,7 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
 
     /* Fast forward past drawdown period */ {
       while (loan.loanPhase() == LoanPhase.DrawdownPeriod) {
-        skip(60 * 60 * 24);
+        skip(1 days);
       }
       assertTrue(loan.loanPhase() == LoanPhase.InProgress);
     }

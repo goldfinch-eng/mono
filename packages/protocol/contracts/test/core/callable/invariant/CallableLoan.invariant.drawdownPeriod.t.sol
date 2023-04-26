@@ -14,19 +14,17 @@ import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {IBorrower} from "../../../../interfaces/IBorrower.sol";
 import {console2 as console} from "forge-std/console2.sol";
-import {CallableLoanFundingHandler} from "./CallableLoanFundingHandler.t.sol";
-import {CallableLoanRandoHandler} from "./CallableLoanRandoHandler.t.sol";
+import {CallableLoanConstrainedHandler} from "./CallableLoanConstrainedHandler.t.sol";
 
 contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, InvariantTest {
-  CallableLoanFundingHandler private handler;
-  CallableLoanRandoHandler private randoHandler;
+  CallableLoanConstrainedHandler private handler;
   CallableLoan loan;
 
   function setUp() public override {
     super.setUp();
 
     (loan, ) = callableLoanBuilder.build(address(BORROWER));
-    handler = new CallableLoanFundingHandler(
+    handler = new CallableLoanConstrainedHandler(
       loan,
       usdc,
       uid,
@@ -34,26 +32,23 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
       BORROWER,
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
-    randoHandler = new CallableLoanRandoHandler(loan);
 
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
-    fundAddress(address(randoHandler), loan.limit() * 1e18);
 
-    bytes4[] memory selectors = new bytes4[](4);
-    selectors[0] = handler.deposit.selector;
-    selectors[1] = handler.withdraw.selector;
-    selectors[2] = handler.warpBeforeInProgress.selector;
-    selectors[3] = handler.drawdown.selector;
+    bytes4[] memory selectors = new bytes4[](9);
+    selectors[0] = handler.depositTarget.selector;
+    selectors[1] = handler.withdrawTarget.selector;
+    selectors[2] = handler.warpBeforeInProgressTarget.selector;
+    selectors[3] = handler.payTarget.selector;
+    selectors[4] = handler.submitCallTarget.selector;
+    selectors[5] = handler.deposit.selector;
+    selectors[6] = handler.withdraw.selector;
+    selectors[7] = handler.pay.selector;
+    selectors[8] = handler.submitCall.selector;
 
-    bytes4[] memory randomSelectors = new bytes4[](3);
-    randomSelectors[0] = randoHandler.drawdown.selector;
-    randomSelectors[1] = randoHandler.submitCall.selector;
-    randomSelectors[2] = randoHandler.pay.selector;
-
-    targetArtifact("UcuProxy");
+    targetContract(address(handler));
     targetSelector(FuzzSelector(address(handler), selectors));
-    targetSelector(FuzzSelector(address(randoHandler), randomSelectors));
   }
 
   // PoolTokens TokenInfo invariants
