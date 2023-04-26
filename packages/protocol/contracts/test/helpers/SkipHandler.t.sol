@@ -1,6 +1,6 @@
 import {Test} from "forge-std/Test.sol";
 
-contract UtilityHandler is Test {
+contract SkipHandler is Test {
   // Also exposes `skip` via Test
 
   function skipUpTo7Days(uint256 skipAmount) public {

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {BaseTest} from "../../BaseTest.t.sol";
 import {CallableLoanActorInfo, CallableLoanActorSet, CallableLoanActorSetLib} from "./CallableLoanActor.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
-import {UtilityHandler} from "../../../helpers/UtilityHandler.t.sol";
+import {SkipHandler} from "../../../helpers/SkipHandler.t.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {LoanPhase, ICallableLoan} from "../../../../interfaces/ICallableLoan.sol";
 import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
@@ -19,7 +19,7 @@ import {console2 as console} from "forge-std/console2.sol";
  * @notice CallableLoanHandler exposes Callable loan functions which keep track of the state of the loan
  *         via various public "ghost" variables. This is useful for testing invariants.
  */
-contract CallableLoanHandler is BaseTest, UtilityHandler {
+contract CallableLoanHandler is BaseTest, SkipHandler {
   struct RedeemableSnapshot {
     uint256 interestRedeemable;
     uint256 principalRedeemable;

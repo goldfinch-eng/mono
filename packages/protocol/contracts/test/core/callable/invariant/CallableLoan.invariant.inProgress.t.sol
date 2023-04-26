@@ -17,7 +17,7 @@ import {IBorrower} from "../../../../interfaces/IBorrower.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
 import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoanConstrainedHandler} from "./CallableLoanConstrainedHandler.t.sol";
-import {UtilityHandler} from "../../../helpers/UtilityHandler.t.sol";
+import {SkipHandler} from "../../../helpers/SkipHandler.t.sol";
 
 contract CallableLoanInProgressInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanConstrainedHandler private handler;

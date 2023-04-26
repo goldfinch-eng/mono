@@ -15,11 +15,11 @@ import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {IBorrower} from "../../../../interfaces/IBorrower.sol";
 import {console2 as console} from "forge-std/console2.sol";
 import {CallableLoanConstrainedHandler} from "./CallableLoanConstrainedHandler.t.sol";
-import {UtilityHandler} from "../../../helpers/UtilityHandler.t.sol";
+import {SkipHandler} from "../../../helpers/SkipHandler.t.sol";
 
 contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, InvariantTest {
   CallableLoanConstrainedHandler private handler;
-  UtilityHandler private utilityHandler;
+  SkipHandler private skipHandler;
   CallableLoan loan;
 
   function setUp() public override {
@@ -34,7 +34,7 @@ contract CallableLoanDrawdownPeriodInvariantTest is CallableLoanBaseTest, Invari
       BORROWER,
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
-    utilityHandler = new UtilityHandler();
+    skipHandler = new SkipHandler();
 
     // Add enough USDC to the handler that it can fund each depositor up to the loan limit
     fundAddress(address(handler), loan.limit() * 1e18);
