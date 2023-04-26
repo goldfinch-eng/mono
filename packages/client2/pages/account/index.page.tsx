@@ -217,6 +217,7 @@ const AccountsPage: NextPageWithLayout = () => {
                           {registerKycError ? "Try again" : "Begin UID setup"}
                         </Button>
                       )}
+                      colorScheme={registerKycError ? "red" : "blue-gradient"}
                       iconLeft={
                         registerKycError ? "Exclamation" : DEFAULT_UID_ICON
                       }
