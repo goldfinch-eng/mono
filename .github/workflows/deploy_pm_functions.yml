@@ -46,6 +46,6 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: server-functions-prod
         with:
-          environment: prod
+          environment: production
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
