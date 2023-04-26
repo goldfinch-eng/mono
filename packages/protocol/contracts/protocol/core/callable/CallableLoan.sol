@@ -717,14 +717,12 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
-    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
-
-    return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
-      totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
-    );
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
   }
 
   function _availableToWithdraw(
@@ -743,12 +741,25 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
+  }
+
+  function _availableToWithdrawGivenProportions(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 totalInterestWithdrawable,
+    uint256 totalPrincipalWithdrawable
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
     // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
     assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
 
     return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalInterestWithdrawable.saturatingSub(tokenInfo.interestRedeemed),
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
     );
   }
