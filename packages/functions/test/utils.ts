@@ -20,8 +20,11 @@ const expectResponse = function (expectedCode: number, expectedBody: Record<stri
       expect(actualCode).to.eq(expectedCode)
       return {
         send: async (actualBody: Record<string, unknown>) => {
-          expect(Object.keys(expectedBody).length).to.be.gt(0)
-          return expect(actualBody).to.containSubset(expectedBody)
+          if (Object.keys(expectedBody).length === 0) {
+            return expect(Object.keys(actualBody).length).to.eq(0, "Assertion empty body")
+          } else {
+            return expect(actualBody).to.containSubset(expectedBody)
+          }
         },
       }
     },

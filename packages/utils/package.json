@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "test": "mocha test/**/*",
     "pre-commit": "lint-staged",
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix . && prettier . --write"
@@ -22,10 +23,13 @@
   "license": "MIT",
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "bn.js": "^5.1.3",
+    "chai": "^4.3.4",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-import-resolver-typescript": "^2.5.0",
@@ -34,6 +38,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react-hooks": "^4.2.0",
     "lint-staged": "^13.1.0",
+    "mocha": "10.1.0",
     "prettier": "^2.8.0",
     "tsconfig-paths": "^3.11.0",
     "typescript": "^4.9.3"

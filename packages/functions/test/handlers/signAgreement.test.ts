@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getAgreements, setEnvForTest} from "../../src/db"
+import {getAgreements, overrideFirestore} from "../../src/db"
 import {signAgreement} from "../../src"
 
 chai.use(chaiSubset)
@@ -16,6 +16,7 @@ import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
+import {setTestConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -25,7 +26,6 @@ type FakeBlock = {
 describe("signAgreement", async () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   const address = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
   const validSignature =
@@ -62,12 +62,12 @@ describe("signAgreement", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {
+    overrideFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
       slack: {token: ""},
-    }
-    setEnvForTest(testFirestore, config)
+    })
     agreements = getAgreements()
   })
 

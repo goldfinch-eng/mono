@@ -1,7 +1,7 @@
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler, getBlockchain} from "../helpers"
 import {WebClient} from "@slack/web-api"
-import {getConfig} from "../db"
+import {getConfig} from "../config"
 import * as functions from "firebase-functions"
 import {header, links, transactionLink, callerLink, text} from "./slack/blocks"
 import {Event, SlackHandler} from "./slack/types"

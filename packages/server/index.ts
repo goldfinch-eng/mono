@@ -1,10 +1,7 @@
 /*
-
 Dedicated node service for handling custom backend routes that also has access to the Hardhat instance.
-
 Hardhat: In ../server/package.json and ../autotasks/package.json we using the "--network localhost" arguments to start a Hardhat Network, and expose it as a JSON-RPC and WebSocket server
 https://hardhat.org/hardhat-network/#running-stand-alone-in-order-to-support-wallets-and-other-software
-
 */
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
@@ -34,7 +31,7 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import admin, {firestore} from "firebase-admin"
 
-import {getDb, getUsers} from "@goldfinch-eng/functions/db"
+import {getDb, getUsers, overrideFirestore} from "@goldfinch-eng/functions/db"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {execSync} from "child_process"
 
@@ -186,6 +183,7 @@ app.post("/setupCurrentUser", async (req, res) => {
 })
 
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
+overrideFirestore(admin.firestore())
 
 app.post("/drainSeniorPool", async (req, res) => {
   if (process.env.NODE_ENV === "production") {

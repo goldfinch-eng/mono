@@ -40,11 +40,7 @@ export function MintStep() {
     if (!account || !signature || !provider || !walletSigner) {
       throw new Error("Unable to verify eligibility to mint.");
     }
-    const signer = await fetchUniqueIdentitySigner(
-      account,
-      signature.signature,
-      signature.signatureBlockNum
-    );
+    const signer = await fetchUniqueIdentitySigner(account, signature);
 
     const uidContract = await getContract({
       name: "UniqueIdentity",
@@ -54,12 +50,12 @@ export function MintStep() {
     const gasPrice = await provider.getGasPrice();
 
     const transaction = uidContract.mint(
-      signer.idVersion,
+      signer.uidType,
       signer.expiresAt,
       signer.signature,
       {
         value: UNIQUE_IDENTITY_MINT_PRICE,
-        gasPrice: gasPrice,
+        gasPrice,
       }
     );
 
@@ -72,7 +68,7 @@ export function MintStep() {
     await apolloClient.refetchQueries({ include: "active" });
     dataLayerPushEvent("UID_MINTED", {
       transactionHash: submittedTransaction.transactionHash,
-      uidType: getUIDLabelFromType(signer.idVersion),
+      uidType: getUIDLabelFromType(signer.uidType),
     });
     goToStep(VerificationFlowSteps.MintFinished);
   };

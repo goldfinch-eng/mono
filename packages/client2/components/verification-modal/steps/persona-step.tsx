@@ -24,12 +24,7 @@ export function PersonaStep() {
 
     // Send KYC details and continue opening Persona
     if (account && signature && entity && residency) {
-      postKYCDetails(
-        account,
-        signature.signature,
-        signature.signatureBlockNum,
-        residency
-      ).catch(() => {
+      postKYCDetails(account, signature, residency).catch(() => {
         throw new Error("Could not save KYC details");
       });
     }
