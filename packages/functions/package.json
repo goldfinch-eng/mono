@@ -17,7 +17,7 @@
     "ci_functions_config_set_dev": "yarn ci_functions_config_set --project=dev",
     "ci_functions_config_set_prod": "yarn ci_functions_config_set --project=prod",
     "pre-commit": "yarn lint-staged",
-    "pre-deploy": "yarn ts-node scripts/preDeploy.ts && yarn workspaces focus @goldfinch-eng/functions",
+    "pre-deploy": "yarn ts-node scripts/preDeploy.ts",
     "graphql:codegen": "graphql-codegen --config codegen.yml"
   },
   "engines": {
