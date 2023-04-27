@@ -151,6 +151,7 @@ jobs:
           environment: dev
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
+          if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -165,3 +166,4 @@ jobs:
           environment: production
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
+          if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
