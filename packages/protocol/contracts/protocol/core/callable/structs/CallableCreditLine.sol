@@ -233,15 +233,6 @@ library CallableCreditLineLogic {
       return;
     }
 
-    uint256 currentlyActivePrincipalPeriod = cl._paymentSchedule.currentPrincipalPeriod();
-    uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
-      cl._checkpointedAsOf
-    );
-
-    if (currentlyActivePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint) {
-      cl._waterfall.settleReserves(currentlyActivePrincipalPeriod);
-    }
-
     cl._lastFullPaymentTime = cl.lastFullPaymentTime();
 
     /// !! IMPORTANT !!
@@ -251,6 +242,15 @@ library CallableCreditLineLogic {
     /// Otherwise cl.previewTotalInterestOwed() (and thus cl._totalInterestOwedAtLastCheckpoint) will be incorrect.
     cl._totalInterestOwedAtLastCheckpoint = cl.previewTotalInterestOwed();
     cl._totalInterestAccruedAtLastCheckpoint = cl.previewTotalInterestAccrued();
+
+    uint256 currentlyActivePrincipalPeriod = cl._paymentSchedule.currentPrincipalPeriod();
+    uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
+      cl._checkpointedAsOf
+    );
+
+    if (currentlyActivePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint) {
+      cl._waterfall.settleReserves(currentlyActivePrincipalPeriod);
+    }
 
     cl._checkpointedAsOf = block.timestamp;
   }
@@ -402,7 +402,6 @@ library CallableCreditLineLogic {
       return 0;
     }
 
-    uint256 totalInterestOwedAtLastCheckpoint = cl._totalInterestOwedAtLastCheckpoint;
     totalInterestAccruedReturned = cl._totalInterestAccruedAtLastCheckpoint;
 
     uint256 firstInterestEndPoint = timestamp;
