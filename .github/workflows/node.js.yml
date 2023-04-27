@@ -141,7 +141,6 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn pre-deploy && yarn firebase deploy --only functions --project dev"
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -152,12 +151,10 @@ jobs:
           environment: dev
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_prod && yarn pre-deploy && yarn firebase deploy --only functions --project prod"
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -168,4 +165,3 @@ jobs:
           environment: production
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'

@@ -17,6 +17,7 @@ export const setUserKYCData = genRequestHandler({
       return res.status(401).send({error: "Unexpected signature"})
     }
 
+    // Fingers crossed
     const address = verificationResult.address.toLowerCase()
 
     const {residency} = req.body
