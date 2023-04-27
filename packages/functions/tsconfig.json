@@ -12,8 +12,7 @@
     "sourceMap": true,
     "noImplicitAny": true,
     "strict": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "ts-node": {
