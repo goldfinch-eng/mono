@@ -1,9 +1,8 @@
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
-import {KycProvider, SignatureVerificationSuccessResult} from "../types"
+import {SignatureVerificationSuccessResult} from "../types"
 
-// Called as the first step in the Persona KYC flow
 export const setUserKYCData = genRequestHandler({
   requireAuth: "signature",
   cors: true,
@@ -17,7 +16,6 @@ export const setUserKYCData = genRequestHandler({
       return res.status(401).send({error: "Unexpected signature"})
     }
 
-    // Fingers crossed!!!!!
     const address = verificationResult.address.toLowerCase()
 
     const {residency} = req.body
@@ -33,7 +31,6 @@ export const setUserKYCData = genRequestHandler({
       {
         address: address,
         updatedAt: Date.now(),
-        kycProvider: KycProvider.Persona.valueOf(),
         kyc: {
           residency,
         },
