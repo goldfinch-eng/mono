@@ -19,53 +19,58 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
 
   CallableLoan callableLoan;
   // Use storage array to get around Solidity stack size limits.
-  uint256 user1PoolTokenId;
-  uint256 user2PoolTokenId;
-  uint256 user3PoolTokenId;
+  uint256 public user1PoolTokenId;
+  uint256 public user2PoolTokenId;
+  uint256 public user3PoolTokenId;
 
-  uint256 user1PoolTokenIdCalledSplit;
-  uint256 user1PoolTokenIdUncalledSplit;
-  uint256 user2PoolTokenIdCalledSplit;
-  uint256 user2PoolTokenIdUncalledSplit;
-  uint256 totalDeposits;
+  uint256 public user1PoolTokenIdCalledSplit;
+  uint256 public user1PoolTokenIdUncalledSplit;
+  uint256 public user2PoolTokenIdCalledSplit;
+  uint256 public user2PoolTokenIdUncalledSplit;
+  uint256 public totalDeposits;
 
-  uint256 firstInterestAccrued;
-  uint256 firstInterestOwedAtNextDueTime;
-  uint256 firstInterestOwedAtNextPrincipalDueTime;
-  uint256 originalBalance;
-  uint256 loanContractBalanceBefore;
-  uint256 userBalanceBefore;
-  uint256 totalInterestPayment;
-  uint256 totalPrincipalPayment;
+  uint256 public firstInterestAccrued;
+  uint256 public firstInterestOwedAtNextDueTime;
+  uint256 public firstInterestOwedAtNextPrincipalDueTime;
+  uint256 public originalBalance;
+  uint256 public loanContractBalanceBefore;
+  uint256 public userBalanceBefore;
+  uint256 public totalInterestPayment;
+  uint256 public totalPrincipalPayment;
 
-  uint256 user1PoolTokenAvailableToCall;
-  uint256 user2PoolTokenAvailableToCall;
-  uint256 user3PoolTokenAvailableToCall;
-  uint256 user1PoolTokenUncalledSplitAvailableToCall;
+  uint256 public user1PoolTokenAvailableToCall;
+  uint256 public user2PoolTokenAvailableToCall;
+  uint256 public user3PoolTokenAvailableToCall;
+  uint256 public user1PoolTokenUncalledSplitAvailableToCall;
 
-  uint256 user1TokenPrincipalAvailableForWithdraw;
-  uint256 user2TokenInterestAvailableForWithdraw;
-  uint256 user2TokenPrincipalAvailableForWithdraw;
-  uint256 user3TokenInterestAvailableForWithdraw;
-  uint256 user3TokenPrincipalAvailableForWithdraw;
-  uint256 user1PoolTokenUncalledSplitInterestAvailableForWithdraw;
-  uint256 user1PoolTokenCalledSplitInterestAvailableForWithdraw;
-  uint256 user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw;
-  uint256 user1PoolTokenCalledSplitPrincipalAvailableForWithdraw;
-  // Use storage buffer to get around Solidity stack size limits.
-  uint256 interestAvailableToWithdraw;
-  uint256 principalAvailableToWithdraw;
+  uint256 public user1TokenPrincipalAvailableForWithdraw;
+  uint256 public user2TokenInterestAvailableForWithdraw;
+  uint256 public user2TokenPrincipalAvailableForWithdraw;
+  uint256 public user3TokenInterestAvailableForWithdraw;
+  uint256 public user3TokenPrincipalAvailableForWithdraw;
+  uint256 public user1PoolTokenUncalledSplitInterestAvailableForWithdraw;
+  uint256 public user1PoolTokenCalledSplitInterestAvailableForWithdraw;
+  uint256 public user1PoolTokenUncalledSplitPrincipalAvailableForWithdraw;
+  uint256 public user1PoolTokenCalledSplitPrincipalAvailableForWithdraw;
 
-  ILoan.PaymentAllocation paymentAllocation;
-  ICallableLoan.UncalledCapitalInfo uncalledCapitalInfo;
-  ICallableLoan.CallRequestPeriod callRequestPeriod;
+  // Use storage to get around Solidity stack size limits.
+  uint256 public interestAvailableToWithdraw;
+  uint256 public principalAvailableToWithdraw;
+
+  uint256 public totalCalled;
+
+  ILoan.PaymentAllocation public paymentAllocation;
+  ICallableLoan.UncalledCapitalInfo public uncalledCapitalInfo;
+  ICallableLoan.UncalledCapitalInfo public afterPaymentUncalledCapitalInfo;
+  ICallableLoan.CallRequestPeriod public callRequestPeriod;
+  ICallableLoan.CallRequestPeriod public afterPaymentCallRequestPeriod;
 
   /// Submit 1 call after the drawdown period.
   /// Make a repayment after the first call submission.
   /// Submit a second call after the repayment.
   /// Warp to an invalid call submission time (lockup period). Assert a third call cannot be submitted.
   /// Assert correct application of payment to principal and interest after the payment due date passes.
-  function testCallableScenario1(
+  function testCallableScenario(
     uint256 depositAmount1,
     uint256 depositAmount2,
     uint256 depositAmount3,
@@ -77,44 +82,47 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
     uint256 drawdownAmount,
     uint256 paymentAmount
   ) public {
-    depositAmount1 = bound(depositAmount1, 1, usdcVal(100_000_000));
-    depositAmount2 = bound(depositAmount2, 1, usdcVal(100_000_000));
-    depositAmount3 = bound(depositAmount3, 1, usdcVal(100_000_000));
-    totalDeposits = depositAmount1 + depositAmount2 + depositAmount3;
+    /// STAGE 1 - Drawdowns and deposits
+    {
+      depositAmount1 = bound(depositAmount1, 1, usdcVal(100_000_000));
+      depositAmount2 = bound(depositAmount2, 1, usdcVal(100_000_000));
+      depositAmount3 = bound(depositAmount3, 1, usdcVal(100_000_000));
+      totalDeposits = depositAmount1 + depositAmount2 + depositAmount3;
 
-    drawdownAmount = bound(drawdownAmount, 1, totalDeposits);
-    (callableLoan, ) = callableLoanWithLimit(totalDeposits);
+      drawdownAmount = bound(drawdownAmount, 1, totalDeposits);
+      (callableLoan, ) = callableLoanWithLimit(totalDeposits);
 
-    vm.assume(fuzzHelper.isAllowed(user1));
-    vm.assume(fuzzHelper.isAllowed(user2));
-    vm.assume(fuzzHelper.isAllowed(user3));
+      vm.assume(fuzzHelper.isAllowed(user1));
+      vm.assume(fuzzHelper.isAllowed(user2));
+      vm.assume(fuzzHelper.isAllowed(user3));
 
-    uid._mintForTest(user1, 1, 1, "");
-    uid._mintForTest(user2, 1, 1, "");
-    uid._mintForTest(user3, 1, 1, "");
+      uid._mintForTest(user1, 1, 1, "");
+      uid._mintForTest(user2, 1, 1, "");
+      uid._mintForTest(user3, 1, 1, "");
 
-    user1PoolTokenId = deposit(callableLoan, depositAmount1, user1);
-    user2PoolTokenId = deposit(callableLoan, depositAmount2, user2);
-    user3PoolTokenId = deposit(callableLoan, depositAmount3, user3);
+      user1PoolTokenId = deposit(callableLoan, depositAmount1, user1);
+      user2PoolTokenId = deposit(callableLoan, depositAmount2, user2);
+      user3PoolTokenId = deposit(callableLoan, depositAmount3, user3);
 
-    drawdown(callableLoan, drawdownAmount);
+      drawdown(callableLoan, drawdownAmount);
 
-    console.log("totalDeposits", totalDeposits);
-    uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-    assertEq(uncalledCapitalInfo.principalDeposited, totalDeposits, "Total principal deposits");
-    assertEq(
-      uncalledCapitalInfo.principalPaid,
-      totalDeposits - drawdownAmount,
-      "Total principal paid"
-    );
+      console.log("totalDeposits", totalDeposits);
+      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+      assertEq(uncalledCapitalInfo.principalDeposited, totalDeposits, "Total principal deposits");
+      assertEq(
+        uncalledCapitalInfo.principalPaid,
+        totalDeposits - drawdownAmount,
+        "Total principal paid"
+      );
+      console.log("drawdownAmount", drawdownAmount);
+    }
 
     warpToAfterDrawdownPeriod(callableLoan);
 
-    console.log("Before 1st call submission frame");
-    /// Call Submission 1 - After Drawdown Period
+    /// STAGE 2 - Call Submission 1 - After drawdown period
     /// Assert call submission updates accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
     {
+      console.log("After drawdown period");
       assertEq(
         callableLoan.totalPrincipalOwedAt(callableLoan.nextPrincipalDueTime()),
         0,
@@ -152,7 +160,8 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "Max available to call 1"
       );
 
-      callAmount1 = bound(callAmount1, 0, user1PoolTokenAvailableToCall);
+      totalCalled = callAmount1 = bound(callAmount1, 0, user1PoolTokenAvailableToCall);
+      console.log("callAmount1:", callAmount1);
       if (callAmount1 > 0) {
         (user1PoolTokenIdCalledSplit, user1PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
@@ -226,18 +235,33 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         callAmount1,
         "callRequestPeriod principal outstanding"
       );
-      assertEq(callRequestPeriod.principalReserved, 0, "callRequestPeriod principal Reserved");
-      assertEq(callRequestPeriod.interestPaid, 0, "callRequestPeriod interest paid");
+      assertZero(callRequestPeriod.principalReserved, "callRequestPeriod principal Reserved");
+      assertZero(callRequestPeriod.interestPaid, "callRequestPeriod interest paid");
 
       uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      assertEq(
+        uncalledCapitalInfo.principalDeposited,
+        totalDeposits - ((totalDeposits * callAmount1) / (drawdownAmount)),
+        "\nUncalled principal deposited.\n"
+        "See Tranche#take for calculation\n"
+        "totalDeposits = uncalled principal deposited before call\n"
+        "((totalDeposits * totalCalled) / (drawdownAmount)) = diff in principal deposited\n"
+      );
+      assertZero(uncalledCapitalInfo.principalReserved, "Uncalled principal reserved");
+      assertZero(uncalledCapitalInfo.interestPaid, "Uncalled interest paid");
+      assertEq(
+        uncalledCapitalInfo.principalPaid,
+        totalDeposits -
+          drawdownAmount -
+          (((totalDeposits * callAmount1) / drawdownAmount) - callAmount1),
+        "\nUncalled principal paid.\n"
+        "See Tranche#take for calculation\n"
+        "principalPaidTaken = principalDepositedTaken - principalOutstandingToTake\n"
+        "principalPaidTaken = ((totalDeposits * totalCalled) / drawdownAmount) - totalCalled)"
+      );
     }
 
-    /// Pay - After First Call Submission
-    /// Assert payment updates accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
-    console.log("Before pay frame");
-
+    /// STAGE 3 - Pay - After first call submission
     {
       paymentAmount = bound(paymentAmount, 1, usdcVal(100_000_000_000));
       fundAddress(address(this), paymentAmount);
@@ -246,6 +270,9 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       userBalanceBefore = usdc.balanceOf(address(this));
 
       paymentAllocation = callableLoan.pay(paymentAmount);
+
+      console.log("Just paid");
+
       assertEq(paymentAllocation.principalPayment, 0, "principal 0");
       assertApproxEqAbs(
         callableLoan.interestAccrued(),
@@ -275,7 +302,7 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         HUNDREDTH_CENT,
         "loan contract balance"
       );
-      callRequestPeriod = callableLoan.getCallRequestPeriod(0);
+      afterPaymentCallRequestPeriod = callRequestPeriod = callableLoan.getCallRequestPeriod(0);
 
       assertEq(
         callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
@@ -295,14 +322,43 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "callRequestPeriod interest paid"
       );
 
-      uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      afterPaymentUncalledCapitalInfo = uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
+
+      assertEq(
+        afterPaymentUncalledCapitalInfo.principalDeposited,
+        totalDeposits - ((totalDeposits * callAmount1) / (drawdownAmount)),
+        "\nUncalled principal deposited.\n"
+        "See Tranche#take for calculation\n"
+        "totalDeposits = uncalled principal deposited before call\n"
+        "((totalDeposits * callAmount1) / (drawdownAmount)) = diff in principal deposited\n"
+      );
+
+      assertEq(
+        afterPaymentUncalledCapitalInfo.principalReserved,
+        paymentAllocation.additionalBalancePayment - callRequestPeriod.principalReserved,
+        "Uncalled principal reserved"
+      );
+      assertApproxEqAbs(
+        afterPaymentUncalledCapitalInfo.interestPaid,
+        (paymentAllocation.accruedInterestPayment *
+          (afterPaymentUncalledCapitalInfo.principalDeposited -
+            afterPaymentUncalledCapitalInfo.principalPaid)) / callableLoan.interestBearingBalance(),
+        1,
+        "Uncalled interest paid"
+      );
+      assertEq(
+        afterPaymentUncalledCapitalInfo.principalPaid,
+        totalDeposits -
+          drawdownAmount -
+          ((totalDeposits * callAmount1) / (drawdownAmount) - callAmount1),
+        "\nUncalled principal paid.\n"
+        "See Tranche#take for calculation\n"
+        "principalPaidTaken = principalDepositedTaken - principalOutstandingToTake\n"
+        "principalPaidTaken = ((totalDeposits * callAmount1) / drawdownAmount) - callAmount1)"
+      );
     }
 
-    /// Submit Call request 2 from user 2
-    /// Check that we update accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
-    console.log("Before 2nd call submission frame");
+    /// STAGE 4 - Submit call request 2 from user 2
     {
       uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
       uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
@@ -344,19 +400,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         "Max available to call 2"
       );
       callAmount2 = bound(callAmount2, 0, user2PoolTokenAvailableToCall);
+      totalCalled = callAmount1 + callAmount2;
+
+      console.log("callAmount2:", callAmount2);
+      console.log("totalCalled:", totalCalled);
 
       if (callAmount2 > 0) {
-        console.log("About to call, here are accounting variables");
-        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
-
-        uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-        console.log(
-          "uncalledCapitalInfo.principalDeposited:",
-          uncalledCapitalInfo.principalDeposited
-        );
-        console.log("uncalledCapitalInfo.principalPaid:", uncalledCapitalInfo.principalPaid);
         (user2PoolTokenIdCalledSplit, user2PoolTokenIdUncalledSplit) = submitCall(
           callableLoan,
           callAmount2,
@@ -365,14 +414,8 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         );
 
         console.log("Submitted call 2!");
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdCalledSplit);
-        console.log("user2PoolTokenIdCalledSplit", user2PoolTokenIdUncalledSplit);
-        callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-        console.log("callRequestPeriod.principalDeposited:", callRequestPeriod.principalDeposited);
-        console.log("callRequestPeriod.principalPaid:", callRequestPeriod.principalPaid);
       }
 
-      console.log("user1PoolTokenIdUncalledSplit", user1PoolTokenIdUncalledSplit);
       if (user1PoolTokenIdUncalledSplit > 0) {
         assertApproxEqAbs(
           callableLoan.availableToCall(user1PoolTokenIdUncalledSplit),
@@ -412,12 +455,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
         interestAvailableToWithdraw,
         user3TokenInterestAvailableForWithdraw,
         HALF_CENT,
-        "Submitting a call should not affect how much others are owed - Interest 3"
+        "Submitting a call should not affect how much others are owed - Interest"
       );
 
       assertApproxEqAbs(
         callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        totalCalled.saturatingSub(paymentAllocation.additionalBalancePayment),
         HUNDREDTH_CENT,
         "New principal owed"
       );
@@ -443,12 +486,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       callRequestPeriod = callableLoan.getCallRequestPeriod(0);
       assertEq(
         callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
-        callAmount1 + callAmount2,
+        totalCalled,
         "callRequestPeriod principal outstanding"
       );
       assertEq(
         callRequestPeriod.principalReserved,
-        Math.min(callAmount1 + callAmount2, paymentAllocation.additionalBalancePayment),
+        Math.min(totalCalled, paymentAllocation.additionalBalancePayment),
         "callRequestPeriod principal Reserved"
       );
       assertApproxEqAbs(
@@ -461,9 +504,43 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       );
 
       uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalDeposited,
+        totalDeposits - ((totalDeposits * (totalCalled)) / (drawdownAmount)),
+        1,
+        "\nUncalled principal deposited.\n"
+        "See Tranche#take for calculation\n"
+        "totalDeposits = uncalled principal deposited before call\n"
+        "((totalDeposits * callAmount1) / (drawdownAmount)) = diff in principal deposited\n"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalReserved,
+        paymentAllocation.additionalBalancePayment - callRequestPeriod.principalReserved,
+        1,
+        "Uncalled principal reserved"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.interestPaid,
+        (paymentAllocation.accruedInterestPayment *
+          (uncalledCapitalInfo.principalDeposited - uncalledCapitalInfo.principalPaid)) /
+          callableLoan.interestBearingBalance(),
+        2, // Margin of error increases by 1 for every successful call (there were 2) submitted
+        "Uncalled interest paid"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalPaid,
+        totalDeposits -
+          drawdownAmount -
+          (((totalDeposits * (totalCalled)) / drawdownAmount) - (totalCalled)),
+        1,
+        "\nUncalled principal paid.\n"
+        "See Tranche#take for calculation\n"
+        "principalPaidTaken = principalDepositedTaken - principalOutstandingToTake\n"
+        "principalPaidTaken = ((totalDeposits * totalCalled) / drawdownAmount) - totalCalled"
+      );
     }
 
+    /// STAGE 5 - Attempt Invalid Call request 3 from user 3
     {
       // Hash and bound user3 to get pseudorandom warp destination
       // Cannot add another fuzzed variable because of stack size limits.
@@ -487,14 +564,12 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       }
     }
 
-    /// Warp to right principal payment period due time
-    vm.warp(callableLoan.nextPrincipalDueTime());
-
-    /// Warp to first principal payment period due time
+    /// STAGE 6 - Warped to first principal payment period due time
     /// Check that we update accounting correctly.
-    /// Use {} to produce new stack frame and avoid stack too deep errors.
-    console.log("After principal payment period due time frame");
     {
+      vm.warp(callableLoan.nextPrincipalDueTime());
+      console.log("Warped to next principal due time");
+
       uint256 interestOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
       uint256 interestOwedAtNextPrincipalDueTime = callableLoan.interestOwedAt(
         callableLoan.nextPrincipalDueTime()
@@ -502,14 +577,14 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
 
       assertApproxEqAbs(
         callableLoan.principalOwed(),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        (totalCalled).saturatingSub(paymentAllocation.additionalBalancePayment),
         HUNDREDTH_CENT,
         "Principal owed remains the same as previous principalOwedAt(nextPrincipalDueTime)"
       );
 
       assertApproxEqAbs(
         callableLoan.principalOwedAt(callableLoan.nextPrincipalDueTime()),
-        (callAmount1 + callAmount2).saturatingSub(paymentAllocation.additionalBalancePayment),
+        (totalCalled).saturatingSub(paymentAllocation.additionalBalancePayment),
         HUNDREDTH_CENT,
         "Principal owed at next principal due time remains the same as previous principalOwedAt(nextPrincipalDueTime)"
       );
@@ -521,10 +596,49 @@ contract CallableLoanScenario1Test is CallableLoanBaseTest {
       );
 
       callRequestPeriod = callableLoan.getCallRequestPeriod(0);
-      // TODO: callRequestPeriod Assertions
-
+      assertEq(
+        callRequestPeriod.principalDeposited - callRequestPeriod.principalPaid,
+        (totalCalled).saturatingSub(paymentAllocation.additionalBalancePayment),
+        "callRequestPeriod principal outstanding"
+      );
+      assertZero(callRequestPeriod.principalReserved, "callRequestPeriod principal Reserved");
       uncalledCapitalInfo = callableLoan.getUncalledCapitalInfo();
-      // TODO: uncalledCapitalInfo Assertions
+      assertZero(uncalledCapitalInfo.principalReserved, "uncalledCapitalInfo principal Reserved");
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalDeposited,
+        totalDeposits - ((totalDeposits * (totalCalled)) / (drawdownAmount)),
+        1,
+        "\nUncalled principal deposited.\n"
+        "See Tranche#take for calculation\n"
+        "totalDeposits = uncalled principal deposited before call\n"
+        "((totalDeposits * callAmount1) / (drawdownAmount)) = diff in principal deposited\n"
+      );
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        (totalDeposits * (totalCalled)) / (drawdownAmount),
+        1,
+        "\nCall request period principal deposited.\n"
+        "See Tranche#take for calculation\n"
+        "totalDeposits = uncalled principal deposited before call\n"
+        "((totalDeposits * callAmount1) / (drawdownAmount)) = diff in principal deposited\n"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalPaid + callRequestPeriod.principalPaid,
+        paymentAllocation.additionalBalancePayment + totalDeposits - drawdownAmount,
+        1,
+        "Total principal paid"
+      );
+      assertApproxEqAbs(
+        callRequestPeriod.principalPaid,
+        Math.min(paymentAllocation.additionalBalancePayment, totalCalled) +
+          callRequestPeriod.principalDeposited -
+          totalCalled,
+        1,
+        "\nCall request period principal paid.\n"
+        "See Tranche#take for calculation\n"
+        "principalPaidTaken = principalDepositedTaken - principalOutstandingToTake\n"
+      );
     }
   }
 }
