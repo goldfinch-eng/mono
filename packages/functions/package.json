@@ -4,7 +4,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
-    "build": "npm install --global yarn && yarn graphql:codegen && tsc --transpileOnly",
+    "build": "npm install --global yarn && yarn graphql:codegen && tsc",
     "serve": "yarn build && yarn firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "yarn build && yarn firebase functions:shell",
     "start": "yarn serve",
