@@ -1,0 +1,20 @@
+account_id: dab15b13-c962-4469-a2a9-92ef2ebf84f5
+exports:
+  localhost:
+    chain_config:
+      berlin_block: 0
+      byzantium_block: 0
+      constantinople_block: 0
+      eip150_block: 0
+      eip150_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+      eip155_block: 0
+      eip158_block: 0
+      homestead_block: 0
+      istanbul_block: 0
+      petersburg_block: 0
+    forked_network: Mainnet
+    project_slug: goldfinch/goldfinch-protocol
+    protocol: ""
+    rpc_address: 127.0.0.1:8545
+project_slug: goldfinch/goldfinch-protocol
+provider: Hardhat

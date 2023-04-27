@@ -1,0 +1,7 @@
+*.dev.json
+*.client_test.json
+solidity-docgen-docs/
+
+# solidity-coverage
+coverage/
+coverage.json
