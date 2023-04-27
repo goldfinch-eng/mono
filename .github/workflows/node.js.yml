@@ -137,6 +137,22 @@ jobs:
           NEXT_PUBLIC_NETWORK_NAME: mainnet
           NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
       - run: yarn workspace @goldfinch-eng/functions ci_test
+      - name: deploy-dev
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_dev && yarn pre-deploy && yarn firebase deploy --only functions --project dev"
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-dev
+        with:
+          environment: dev
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
