@@ -12,17 +12,22 @@ import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {CallableBorrower, CallableLender} from "./CallableScenarioActor.t.sol";
+import {CallableLoanAccountant} from "../../../../protocol/core/callable/CallableLoanAccountant.sol";
 
 contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   using SaturatingSub for uint256;
 
-  CallableLoan callableLoan;
-  ICreditLine creditLine;
-  CallableLender[4] lenders;
-  CallableBorrower borrower;
+  CallableLoan public callableLoan;
+  ICreditLine public creditLine;
+  CallableLender[4] public lenders;
+  CallableBorrower public borrower;
 
-  uint256 totalDeposits;
-  uint256 drawdownTime;
+  uint256 public totalDeposits;
+  uint256 public drawdownTime;
+
+  string public assertionTag;
+
+  uint256 public constant INTEREST_APR = 145 * 1e15;
 
   function setupDepositorsAndLenders(
     uint256 depositAmount1,
@@ -39,7 +44,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
 
     (callableLoan, creditLine) = callableLoanBuilder
       .withLimit(totalDeposits)
-      .withApr(145 * 1e15)
+      .withApr(INTEREST_APR)
       .build(address(borrower));
 
     borrower.setLoan(callableLoan);
@@ -102,41 +107,69 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     );
 
     {
-      uint256 availableToCall = callableLoan.availableToCall(lenders[0].tokenIds(0));
-      assertApproxEqAbs(availableToCall, depositAmount1, 1, "Available to call - 1");
-      callAmount1 = bound(callAmount1, 1, availableToCall);
+      assertionTag = "Call Request Period 1";
+      callAmount1 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[0].tokenIds(0),
+        fuzzedCallAmount: callAmount1,
+        expectedAmount: depositAmount1
+      });
+
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount1,
+        lenderIndexToCall: 0,
+        tokenIndexToCall: 0
+      });
+
+      uint256 preExistingBalance = CallableLoanAccountant.calculateInterest({
+        secondsElapsed: block.timestamp - drawdownTime,
+        principal: totalDeposits,
+        interestApr: 145 * 1e15
+      });
+      fullyPayThisQuarter({
+        preExistingBalance: preExistingBalance,
+        principalGeneratingInterest: totalDeposits,
+        principalDueAtEnd: callAmount1
+      });
     }
-    submitCallAndCheckOtherTokens({
-      callAmount: callAmount1,
-      lenderIndexToCall: 0,
-      tokenIndexToCall: 0
-    });
-    fullyPayThisQuarter();
 
     {
-      uint256 availableToCall = callableLoan.availableToCall(lenders[1].tokenIds(0));
-      assertApproxEqAbs(availableToCall, depositAmount2, HUNDREDTH_CENT, "Available to call - 2");
-      callAmount2 = bound(callAmount2, 1, availableToCall);
-    }
-    submitCallAndCheckOtherTokens({
-      callAmount: callAmount2,
-      lenderIndexToCall: 1,
-      tokenIndexToCall: 0
-    });
+      assertionTag = "Call Request Period 2";
+      callAmount2 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[1].tokenIds(0),
+        fuzzedCallAmount: callAmount2,
+        expectedAmount: depositAmount2
+      });
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount2,
+        lenderIndexToCall: 1,
+        tokenIndexToCall: 0
+      });
 
-    fullyPayThisQuarter();
+      fullyPayThisQuarter({
+        preExistingBalance: 0,
+        principalGeneratingInterest: totalDeposits - callAmount1,
+        principalDueAtEnd: callAmount2
+      });
+    }
 
     {
-      uint256 availableToCall = callableLoan.availableToCall(lenders[2].tokenIds(0));
-      assertApproxEqAbs(availableToCall, depositAmount3, HUNDREDTH_CENT, "Available to call - 3");
-      callAmount3 = bound(callAmount3, 1, availableToCall);
+      assertionTag = "Call Request Period 3";
+      callAmount3 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[2].tokenIds(0),
+        fuzzedCallAmount: callAmount3,
+        expectedAmount: depositAmount3
+      });
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount3,
+        lenderIndexToCall: 2,
+        tokenIndexToCall: 0
+      });
+      fullyPayThisQuarter({
+        preExistingBalance: 0,
+        principalGeneratingInterest: totalDeposits - callAmount1 - callAmount2,
+        principalDueAtEnd: callAmount3
+      });
     }
-    submitCallAndCheckOtherTokens({
-      callAmount: callAmount3,
-      lenderIndexToCall: 2,
-      tokenIndexToCall: 0
-    });
-    fullyPayThisQuarter();
   }
 
   /// Make deposits for each user (4 users)
@@ -157,7 +190,21 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     uint256 drawdownAmount
   ) public {}
 
-  function fullyPayThisQuarter() private {
+  function checkAndBoundCallRequestAmount(
+    uint256 tokenId,
+    uint256 fuzzedCallAmount,
+    uint256 expectedAmount
+  ) public returns (uint256 boundedCallAmount) {
+    uint256 availableToCall = callableLoan.availableToCall(tokenId);
+    assertApproxEqAbs(availableToCall, expectedAmount, HUNDREDTH_CENT, assertionTag);
+    return boundedCallAmount = bound(fuzzedCallAmount, 1, availableToCall);
+  }
+
+  function fullyPayThisQuarter(
+    uint256 preExistingBalance,
+    uint256 principalGeneratingInterest,
+    uint256 principalDueAtEnd
+  ) private {
     borrower.pay(callableLoan.interestOwedAt(callableLoan.nextDueTime()));
 
     vm.warp(callableLoan.nextDueTime());
@@ -171,8 +218,14 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
 
     vm.warp(callableLoan.nextDueTime());
 
-    assertZero(callableLoan.principalOwed());
-    assertZero(callableLoan.interestOwed());
+    assertZero(
+      callableLoan.principalOwed(),
+      string.concat("Principal owed zeroed out", assertionTag)
+    );
+    assertZero(
+      callableLoan.interestOwed(),
+      string.concat("Interest owed zeroed out", assertionTag)
+    );
   }
 
   function submitCallAndCheckOtherTokens(
@@ -207,7 +260,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
             availableToWithdraw[i][j],
             interest + principal,
             HUNDREDTH_CENT,
-            "Available to withdraw"
+            string.concat("Available to withdraw", assertionTag)
           );
         }
       }
