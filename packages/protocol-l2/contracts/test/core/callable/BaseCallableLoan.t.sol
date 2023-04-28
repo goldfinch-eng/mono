@@ -76,15 +76,6 @@ contract CallableLoanBaseTest is BaseTest {
     uid._mintForTest(DEPOSITOR, 1, 1, "");
     fuzzHelper.exclude(address(uid));
 
-    // BackerRewards setup
-    IBackerRewards backerRewards = IBackerRewards(deployCode("BackerRewards.sol"));
-    (bool backerRewardsInitializeSuccess, ) = address(backerRewards).call(
-      abi.encodeWithSignature("__initialize__(address,address)", GF_OWNER, address(gfConfig))
-    );
-    require(backerRewardsInitializeSuccess, "BackerRewards failed to initialize");
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
-    fuzzHelper.exclude(address(backerRewards));
-
     // PoolTokens setup
     poolTokens = IPoolTokens(deployCode("PoolTokens.sol"));
     (bool poolTokenInitializeSuccess, ) = address(poolTokens).call(
