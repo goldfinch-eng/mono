@@ -71,7 +71,9 @@ abstract contract BaseTest is Test {
   }
 
   function _startImpersonation(address sender, address origin) internal {
-    vm.stopPrank();
+    if (_pranks.length > 0) {
+      vm.stopPrank();
+    }
     _pranks.push(Impersonation(sender, origin));
     if (origin != address(0)) {
       vm.startPrank(sender, origin);

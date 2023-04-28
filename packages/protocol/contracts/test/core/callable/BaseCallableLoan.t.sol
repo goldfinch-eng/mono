@@ -37,6 +37,9 @@ contract CallableLoanBaseTest is BaseTest {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
   uint256 internal constant DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS = 7 days;
+
+  uint256 internal constant DOLLAR = 1e6;
+  uint256 internal constant CENT = 1e6 / 100;
   uint256 internal constant HALF_CENT = 1e6 / 200;
   uint256 internal constant HUNDREDTH_CENT = 1e6 / 10000;
   uint256 internal constant DEFAULT_RESERVE_FEE_DENOMINATOR = 10;
