@@ -120,7 +120,6 @@ contract CallableLoan is
       _lateAdditionalApr: _lateFeeApr,
       _limit: _limit
     });
-    drawdownsPaused = true;
     emit DrawdownsPaused(address(this));
   }
 
