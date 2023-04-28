@@ -156,18 +156,21 @@ contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
     creditLine = _creditLine;
   }
 
-  function octoberSanityCheck(string memory tag) public {
+  /**
+   * @notice Checking that October interest owed and interest bearing balance match expectations.
+   */
+  function octoberInterestChecks(string memory assertionTag) public {
     assertApproxEqAbs(
       loan.interestBearingBalance(),
       usdcVal(1_850_000),
       DOLLAR,
-      string.concat("Interest bearing balance - October - ", tag)
+      string.concat(assertionTag, "Interest bearing balance")
     );
     assertApproxEqAbs(
       creditLine.interestOwedAt(loan.nextDueTimeAt(block.timestamp)),
       22782876698,
       DOLLAR,
-      string.concat("October interest matches expectation - ", tag)
+      string.concat(assertionTag, "October interest matches expectation")
     );
   }
 
@@ -270,7 +273,7 @@ contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
 
     // Sunday, October 1, 2023 12:00:00 AM
     vm.warp(1696118400);
-    octoberSanityCheck("Start of October");
+    octoberInterestChecks({assertionTag: "Start of October: "});
 
     // 0x6294...7820	Withdrawal	-$33,275.81 USDC	1696545568	Tx
     // 0xbc62...bd67	Withdrawal	-$13,310.32 USDC	1696545551	Tx
@@ -283,9 +286,9 @@ contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
     {
       // Thursday, October 5, 2023 10:38:36 PM
       vm.warp(1696545516);
-      octoberSanityCheck("October 5th");
+      octoberInterestChecks({assertionTag: "October 5th: "});
       lender.withdrawMax(lender.tokenIds(0));
-      octoberSanityCheck("After withdraw");
+      octoberInterestChecks({assertionTag: "After withdraw: "});
 
       // Thursday, October 5, 2023 10:40:18 PM
       vm.warp(1696545533);
