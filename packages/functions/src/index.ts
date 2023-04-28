@@ -9,17 +9,19 @@ import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
 const _config = getConfig(functions)
-Sentry.GCPFunction.init({
-  dsn: _config.sentry.dsn,
-  integrations: [
-    new CaptureConsole({
-      levels: ["log", "info", "warn", "error"],
-    }),
-  ],
-  release: _config.sentry.release,
-  environment: _config.sentry.environment,
-  tracesSampleRate: _config.sentry.environment === "production" ? 0.25 : 1.0,
-})
+if (_config.sentry) {
+  Sentry.GCPFunction.init({
+    dsn: _config.sentry.dsn,
+    integrations: [
+      new CaptureConsole({
+        levels: ["log", "info", "warn", "error"],
+      }),
+    ],
+    release: _config.sentry.release,
+    environment: _config.sentry.environment,
+    tracesSampleRate: _config.sentry.environment === "production" ? 0.25 : 1.0,
+  })
+}
 
 admin.initializeApp()
 

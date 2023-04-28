@@ -8,6 +8,7 @@
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
     "build": "yarn graphql:codegen && tsc",
+    "gcp-build": "",
     "serve": "yarn build && yarn firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "yarn build && yarn firebase functions:shell",
     "start": "yarn serve",
