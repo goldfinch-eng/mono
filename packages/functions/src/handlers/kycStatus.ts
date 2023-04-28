@@ -144,7 +144,7 @@ export const kycStatus = genRequestHandler({
     res: Response,
     verificationResult: SignatureVerificationSuccessResult,
   ): Promise<Response> => {
-    // Verify plaintext matches expected plaintext to prevent the use of an arbitrary signature
+    // Verify plaintext matches expected plaintext to prevent the use of an arbitrary signature.
     const blockNum = extractHeaderValue(req, "x-goldfinch-signature-block-num")
     const expectedPlaintext = `Sign in to Goldfinch: ${blockNum}`
     if (verificationResult.plaintext !== expectedPlaintext) {
