@@ -21,8 +21,11 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   );
   event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
 
-  function testDepositJuniorFailsWithoutGoListOrUid() public {
+  function testDepositJuniorFailsWithoutGoListOrUid(address sender) public impersonating(sender) {
+    vm.assume(!go.go(sender));
+
     (TranchedPool pool, ) = defaultTranchedPool();
+
     usdc.approve(address(pool), type(uint256).max);
     vm.expectRevert(bytes("NA"));
     pool.deposit(2, 1);
