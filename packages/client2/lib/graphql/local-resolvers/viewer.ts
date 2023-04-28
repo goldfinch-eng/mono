@@ -1,5 +1,5 @@
 import { Resolvers } from "@apollo/client";
-import { getAccount, getProvider } from "@wagmi/core";
+import { getAccount, getProvider, fetchSigner, watchSigner } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
@@ -7,12 +7,14 @@ import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
+import { getSignatureForKyc, fetchKycStatus } from "@/lib/verify";
 
 import {
   Viewer,
   SupportedCrypto,
   IndirectGfiGrant,
   DirectGfiGrant,
+  KycStatus,
 } from "../generated";
 
 async function erc20Balance(
@@ -161,5 +163,37 @@ export const viewerResolvers: Resolvers[string] = {
     } catch (e) {
       return null;
     }
+  },
+  async kycStatus(): Promise<KycStatus | null> {
+    const { address } = getAccount();
+    const provider = getProvider();
+    if (!address || !provider) {
+      return null;
+    }
+
+    let signer = await fetchSigner();
+    if (!signer) {
+      // Need to make this wait for the signer to come online.
+      // await fetchSigner() can actually return null, even when an account is connected. This may or may not be a bug in Wagmi, but we have to work around it here.
+      const signerAvailablePromise = new Promise<void>((resolve, reject) => {
+        watchSigner({}, (provider) =>
+          provider?._isSigner ? resolve() : reject()
+        );
+      });
+      await signerAvailablePromise;
+      signer = await fetchSigner();
+      if (!signer) {
+        throw new Error("Signer not available when expected");
+      }
+    }
+
+    const signature = await getSignatureForKyc(provider, signer);
+    const kycStatus = await fetchKycStatus(address, signature);
+    return {
+      __typename: "KycStatus",
+      status: kycStatus.status,
+      identityStatus: kycStatus.identityStatus ?? null,
+      accreditationStatus: kycStatus.accreditationStatus ?? null,
+    };
   },
 };

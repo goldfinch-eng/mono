@@ -24,3 +24,4 @@ export * from "./table";
 export * from "./tabs";
 export * from "./tooltip";
 export * from "./typography";
+export * from "./call-to-action-banner";

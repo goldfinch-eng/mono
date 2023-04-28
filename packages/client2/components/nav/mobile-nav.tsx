@@ -7,7 +7,9 @@ import { Icon } from "@/components/design-system";
 import { TopLevelNavItem } from "@/components/nav";
 import { WalletButton } from "@/components/nav/wallet-button";
 
+import { AccountButton } from "./account-button";
 import { MOBILE_NAV } from "./nav-items";
+import { SecondaryMenu } from "./secondary-menu";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -50,15 +52,17 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       >
         <div className="flex flex-row px-6 md:px-10">
           <div className="self-center md:hidden">
-            <button className="p-1" onClick={onClose}>
+            <button className="-ml-1 p-1" onClick={onClose}>
               <Icon name="X" size="md" />
             </button>
           </div>
 
           <div className="flex flex-1"></div>
 
-          <div className="flex flex-1 flex-row justify-end self-center py-4">
+          <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
+            <AccountButton />
             <WalletButton />
+            <SecondaryMenu />
           </div>
         </div>
 

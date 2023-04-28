@@ -126,7 +126,7 @@
     "@typechain/ethers-v5": "^10.1.1",
     "@typechain/hardhat": "^6.1.4",
     "@typechain/truffle-v5": "^8.0.2",
-    "@types/chai": "^4.2.18",
+    "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/is-odd": "^3.0.0",
     "@types/mocha": "^10.0.1",

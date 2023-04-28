@@ -1,9 +1,6 @@
 {
   "name": "@goldfinch-eng/functions",
   "version": "0.0.1",
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  },
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
