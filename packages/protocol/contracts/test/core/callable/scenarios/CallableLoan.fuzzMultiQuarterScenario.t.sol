@@ -72,6 +72,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     lenders[2].deposit(depositAmount3);
     lenders[3].deposit(depositAmount4);
 
+    drawdownTime = block.timestamp;
     borrower.drawdown(totalDeposits);
     warpToAfterDrawdownPeriod(callableLoan);
   }
@@ -91,12 +92,15 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     uint256 callAmount1,
     uint256 callAmount2,
     uint256 callAmount3,
-    uint256 drawdownAmount
+    uint256 drawdownAmount,
+    uint256 fuzzWarpOffset
   ) public {
     depositAmount1 = bound(depositAmount1, usdcVal(1), usdcVal(100_000_000));
     depositAmount2 = bound(depositAmount2, usdcVal(1), usdcVal(100_000_000));
     depositAmount3 = bound(depositAmount3, usdcVal(1), usdcVal(100_000_000));
     depositAmount4 = bound(depositAmount4, usdcVal(1), usdcVal(100_000_000));
+    // 27 days - Just under the shortest month
+    fuzzWarpOffset = bound(fuzzWarpOffset, 0, 20 days);
 
     setupDepositorsAndLenders(
       depositAmount1,
@@ -107,7 +111,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     );
 
     {
-      assertionTag = "Call Request Period 1";
+      assertionTag = "Call Request Period 1: ";
       callAmount1 = checkAndBoundCallRequestAmount({
         tokenId: lenders[0].tokenIds(0),
         fuzzedCallAmount: callAmount1,
@@ -120,20 +124,22 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
         tokenIndexToCall: 0
       });
 
-      uint256 preExistingBalance = CallableLoanAccountant.calculateInterest({
-        secondsElapsed: block.timestamp - drawdownTime,
+      uint256 preExistingOwed = CallableLoanAccountant.calculateInterest({
+        secondsElapsed: callableLoan.termStartTime() - drawdownTime,
         principal: totalDeposits,
-        interestApr: 145 * 1e15
+        interestApr: INTEREST_APR
       });
       fullyPayThisQuarter({
-        preExistingBalance: preExistingBalance,
+        preExistingOwed: preExistingOwed,
         principalGeneratingInterest: totalDeposits,
-        principalDueAtEnd: callAmount1
+        principalDueAtEnd: callAmount1,
+        quarterStartTime: callableLoan.termStartTime(),
+        warpOffset: fuzzWarpOffset
       });
     }
 
     {
-      assertionTag = "Call Request Period 2";
+      assertionTag = "Call Request Period 2: ";
       callAmount2 = checkAndBoundCallRequestAmount({
         tokenId: lenders[1].tokenIds(0),
         fuzzedCallAmount: callAmount2,
@@ -146,14 +152,16 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       });
 
       fullyPayThisQuarter({
-        preExistingBalance: 0,
+        preExistingOwed: 0,
         principalGeneratingInterest: totalDeposits - callAmount1,
-        principalDueAtEnd: callAmount2
+        principalDueAtEnd: callAmount2,
+        quarterStartTime: block.timestamp,
+        warpOffset: fuzzWarpOffset
       });
     }
 
     {
-      assertionTag = "Call Request Period 3";
+      assertionTag = "Call Request Period 3: ";
       callAmount3 = checkAndBoundCallRequestAmount({
         tokenId: lenders[2].tokenIds(0),
         fuzzedCallAmount: callAmount3,
@@ -165,9 +173,11 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
         tokenIndexToCall: 0
       });
       fullyPayThisQuarter({
-        preExistingBalance: 0,
+        preExistingOwed: 0,
         principalGeneratingInterest: totalDeposits - callAmount1 - callAmount2,
-        principalDueAtEnd: callAmount3
+        principalDueAtEnd: callAmount3,
+        quarterStartTime: block.timestamp,
+        warpOffset: fuzzWarpOffset
       });
     }
   }
@@ -200,31 +210,110 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     return boundedCallAmount = bound(fuzzedCallAmount, 1, availableToCall);
   }
 
+  /**
+   * @param warpOffset - Warp with this time offset before making each payment
+   */
   function fullyPayThisQuarter(
-    uint256 preExistingBalance,
+    uint256 preExistingOwed,
     uint256 principalGeneratingInterest,
-    uint256 principalDueAtEnd
+    uint256 principalDueAtEnd,
+    uint256 quarterStartTime,
+    uint256 warpOffset
   ) private {
-    borrower.pay(callableLoan.interestOwedAt(callableLoan.nextDueTime()));
+    fullyPayInterestMonth({
+      preExistingOwed: preExistingOwed,
+      principalGeneratingInterest: principalGeneratingInterest,
+      monthStartTime: quarterStartTime,
+      warpOffset: warpOffset,
+      assertionMonthTag: " - Month 1 in quarter"
+    });
 
-    vm.warp(callableLoan.nextDueTime());
-    borrower.pay(callableLoan.interestOwedAt(callableLoan.nextDueTime()));
+    uint256 startOfMonth = callableLoan.nextDueTime();
+    vm.warp(startOfMonth);
 
-    vm.warp(callableLoan.nextDueTime());
-    borrower.pay(
-      callableLoan.interestOwedAt(callableLoan.nextDueTime()) +
-        callableLoan.principalOwedAt(callableLoan.nextDueTime())
+    fullyPayInterestMonth({
+      preExistingOwed: 0,
+      principalGeneratingInterest: principalGeneratingInterest,
+      monthStartTime: startOfMonth,
+      warpOffset: warpOffset,
+      assertionMonthTag: " - Month 2 in quarter"
+    });
+
+    startOfMonth = callableLoan.nextDueTime();
+    vm.warp(startOfMonth);
+
+    fullyPayInterestAndPrincipalMonth({
+      preExistingOwed: 0,
+      principalGeneratingInterest: principalGeneratingInterest,
+      principalDueAtEnd: principalDueAtEnd,
+      monthStartTime: startOfMonth,
+      warpOffset: warpOffset,
+      assertionMonthTag: " - Month 3 in quarter"
+    });
+  }
+
+  function fullyPayInterestMonth(
+    uint256 preExistingOwed,
+    uint256 principalGeneratingInterest,
+    uint256 monthStartTime,
+    uint256 warpOffset,
+    string memory assertionMonthTag
+  ) private {
+    skip(warpOffset);
+    assertEq(
+      callableLoan.principalOwedAt(callableLoan.nextDueTime()),
+      0,
+      "No principal should be owed - fully paying interest month"
     );
+    uint256 totalOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime());
+    assertApproxEqAbs(
+      totalOwedAtNextDueTime,
+      preExistingOwed +
+        CallableLoanAccountant.calculateInterest({
+          secondsElapsed: callableLoan.nextDueTime() - monthStartTime,
+          principal: principalGeneratingInterest,
+          interestApr: INTEREST_APR
+        }),
+      1,
+      string.concat(string.concat(assertionTag, "Total owed at next due time"), assertionMonthTag)
+    );
+    borrower.pay(totalOwedAtNextDueTime);
+  }
+
+  function fullyPayInterestAndPrincipalMonth(
+    uint256 preExistingOwed,
+    uint256 principalGeneratingInterest,
+    uint256 principalDueAtEnd,
+    uint256 monthStartTime,
+    uint256 warpOffset,
+    string memory assertionMonthTag
+  ) private {
+    skip(warpOffset);
+    uint256 totalOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime()) +
+      callableLoan.principalOwedAt(callableLoan.nextDueTime());
+    assertApproxEqAbs(
+      totalOwedAtNextDueTime,
+      CallableLoanAccountant.calculateInterest({
+        secondsElapsed: callableLoan.nextDueTime() - monthStartTime,
+        principal: principalGeneratingInterest,
+        interestApr: INTEREST_APR
+      }) +
+        principalDueAtEnd +
+        preExistingOwed,
+      1,
+      string.concat(string.concat(assertionTag, "Total owed at next due time"), assertionMonthTag)
+    );
+    borrower.pay(totalOwedAtNextDueTime);
 
     vm.warp(callableLoan.nextDueTime());
 
     assertZero(
       callableLoan.principalOwed(),
-      string.concat("Principal owed zeroed out", assertionTag)
+      string.concat(assertionTag, "Principal owed zeroed out")
     );
     assertZero(
       callableLoan.interestOwed(),
-      string.concat("Interest owed zeroed out", assertionTag)
+      string.concat(assertionTag, "Interest owed zeroed out")
     );
   }
 
@@ -260,7 +349,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
             availableToWithdraw[i][j],
             interest + principal,
             HUNDREDTH_CENT,
-            string.concat("Available to withdraw", assertionTag)
+            string.concat(assertionTag, "Available to withdraw")
           );
         }
       }
