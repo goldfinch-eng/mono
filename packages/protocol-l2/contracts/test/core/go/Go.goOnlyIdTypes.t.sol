@@ -131,7 +131,6 @@ contract GoGoOnlyIdTypesTest is GoBaseTest {
     address user,
     uint256 validUidType
   ) public onlyAllowListed(user) impersonating(GF_OWNER) {
-    vm.assume(user != address(protocol.stakingRewards()));
     validUidType = bound(validUidType, 0, 4);
     uint256[] memory uidTypes = new uint256[](1);
     uidTypes[0] = validUidType;

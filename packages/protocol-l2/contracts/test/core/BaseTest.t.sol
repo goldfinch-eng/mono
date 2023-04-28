@@ -47,10 +47,7 @@ abstract contract BaseTest is Test {
     fuzzHelper.exclude(GF_OWNER);
     fuzzHelper.exclude(TREASURY);
     fuzzHelper.exclude(address(protocol.gfFactory()));
-    fuzzHelper.exclude(address(protocol.fidu()));
-    fuzzHelper.exclude(address(protocol.gfi()));
     fuzzHelper.exclude(address(protocol.gfConfig()));
-    fuzzHelper.exclude(address(protocol.stakingRewards()));
     // Forge VM
     fuzzHelper.exclude(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // Forge Create2Deployer

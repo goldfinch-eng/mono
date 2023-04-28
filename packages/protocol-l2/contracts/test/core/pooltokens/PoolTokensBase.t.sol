@@ -4,19 +4,12 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {BaseTest} from "../BaseTest.t.sol";
-import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
-import {FixedLeverageRatioStrategy} from "../../../protocol/core/FixedLeverageRatioStrategy.sol";
-import {WithdrawalRequestToken} from "../../../protocol/core/WithdrawalRequestToken.sol";
 import {TestERC20} from "../../../test/TestERC20.sol";
 import {TestPoolTokens} from "../../../test/TestPoolTokens.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
-import {Fidu} from "../../../protocol/core/Fidu.sol";
-import {GFI} from "../../../protocol/core/GFI.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
-import {BackerRewards} from "../../../rewards/BackerRewards.sol";
-import {StakingRewards} from "../../../rewards/StakingRewards.sol";
 import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
@@ -27,16 +20,11 @@ import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 contract PoolTokensBaseTest is BaseTest {
-  GFI internal gfi;
-  Fidu internal fidu;
   TestERC20 internal usdc;
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
   TestPoolTokens internal poolTokens;
-  BackerRewards internal backerRewards;
-  StakingRewards internal stakingRewards;
   TranchedPoolBuilder internal tpBuilder;
-  SeniorPool internal sp;
   Go internal go;
   ITestUniqueIdentity0612 internal uid;
 
@@ -47,38 +35,11 @@ contract PoolTokensBaseTest is BaseTest {
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
     gfFactory = GoldfinchFactory(address(protocol.gfFactory()));
     usdc = TestERC20(address(protocol.usdc()));
-    fidu = Fidu(address(protocol.fidu()));
-    gfi = GFI(address(protocol.gfi()));
-
-    // SeniorPool
-    sp = new SeniorPool();
-    sp.initialize(GF_OWNER, gfConfig);
-    sp.initializeEpochs();
-    fidu.grantRole(TestConstants.MINTER_ROLE, address(sp));
-    FixedLeverageRatioStrategy strat = new FixedLeverageRatioStrategy();
-    strat.initialize(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(sp));
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
-
-    // WithdrawalRequestToken setup
-    WithdrawalRequestToken requestTokens = new WithdrawalRequestToken();
-    requestTokens.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
-      address(requestTokens)
-    );
 
     // PoolTokens setup
     poolTokens = new TestPoolTokens();
     poolTokens.__initialize__(GF_OWNER, gfConfig);
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
-
-    // BackerRewards setup
-    backerRewards = new BackerRewards();
-    backerRewards.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
-
-    stakingRewards = StakingRewards(address(protocol.stakingRewards()));
 
     // MonthlyScheduleRepository setup
     MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
@@ -91,7 +52,6 @@ contract PoolTokensBaseTest is BaseTest {
 
     tpBuilder = new TranchedPoolBuilder({
       _gfFactory: gfFactory,
-      _seniorPool: sp,
       _monthlyScheduleRepo: monthlyScheduleRepo
     });
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
@@ -137,7 +97,6 @@ contract PoolTokensBaseTest is BaseTest {
     (TranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
-    tp.grantRole(tp.SENIOR_ROLE(), address(sp));
     return (tp, cl);
   }
 
@@ -157,7 +116,6 @@ contract PoolTokensBaseTest is BaseTest {
       .build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
-    tp.grantRole(tp.SENIOR_ROLE(), address(sp));
     return (tp, cl);
   }
 }

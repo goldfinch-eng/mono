@@ -12,7 +12,6 @@ import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
-import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {IVersioned} from "../../interfaces/IVersioned.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
@@ -86,9 +85,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     _setupRole(LOCKER_ROLE, owner);
     _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
     _setRoleAdmin(SENIOR_ROLE, OWNER_ROLE);
-
-    // Give the senior pool the ability to deposit into the senior pool
-    _setupRole(SENIOR_ROLE, address(config.getSeniorPool()));
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
@@ -235,8 +231,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     totalDeployed = totalDeployed.add(amount);
 
     address borrower = creditLine.borrower();
-    IBackerRewards backerRewards = IBackerRewards(config.backerRewardsAddress());
-    backerRewards.onTranchedPoolDrawdown(numSlices - 1);
     config.getUSDC().safeERC20Transfer(borrower, amount);
     emit DrawdownMade(borrower, amount);
     emit SharePriceUpdated(
@@ -462,7 +456,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       totalInterestAccruedAtLastCheckpoint
     );
 
-    distributeToSlicesAndAllocateBackerRewards(interestAccruedSinceLastCheckpoint, pa);
+    distributeToSlices(interestAccruedSinceLastCheckpoint, pa);
     return pa;
   }
 
@@ -476,14 +470,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     PaymentAllocation memory pa = creditLine.pay(paymentAmount);
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
 
-    distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
+    distributeToSlices(interestAccrued, pa);
     return pa;
   }
 
-  function distributeToSlicesAndAllocateBackerRewards(
-    uint256 interestAccrued,
-    PaymentAllocation memory pa
-  ) internal {
+  function distributeToSlices(uint256 interestAccrued, PaymentAllocation memory pa) internal {
     // Split the interest accrued proportionally across slices so we know how much interest goes to each slice
     // We need this because the slice start at different times, so we cannot retroactively allocate the interest
     // linearly
@@ -519,8 +510,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
       }
 
       totalDeployed = totalDeployed.sub(principalPaymentsToSlices);
-
-      config.getBackerRewards().allocateRewards(interestPayment);
 
       emit PaymentApplied(
         creditLine.borrower(),

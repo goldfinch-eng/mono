@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
-import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
@@ -66,74 +65,6 @@ contract PoolTokensMintTest is PoolTokensBaseTest {
     assertZero(tokenInfo.interestRedeemed);
     assertEq(tokenInfo.principalAmount, amount);
     assertEq(tokenInfo.pool, address(tp));
-  }
-
-  function testSetsBackerRewardsTokenInfo() public {
-    uint256 tokenId = tp.deposit(2, usdcVal(1));
-
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = backerRewards
-      .getTokenInfo(tokenId);
-
-    assertZero(backerRewardsTokenInfo.rewardsClaimed);
-    assertZero(backerRewardsTokenInfo.accRewardsPerPrincipalDollarAtMint);
-  }
-
-  function testUsesCurrentAccRewardsPerPrincipalDollarAtMintOnSecondDrawdown() public {
-    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
-    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
-    fundAddress(address(this), usdcVal(2_000_000));
-    usdc.approve(address(tp), type(uint256).max);
-
-    _startImpersonation(GF_OWNER);
-    // Setup backer rewards
-    gfi.setCap(100_000_000 * 1e18);
-    gfi.mint(GF_OWNER, 100_000_000 * 1e18);
-    backerRewards.setMaxInterestDollarsEligible(1_000_000_000 * 1e18);
-    backerRewards.setTotalRewards(3_000_000 * 1e18);
-    stakingRewards.setRewardsParameters({
-      _targetCapacity: 1000 * 1e18,
-      _minRate: 100 * 1e18,
-      _maxRate: 1000 * 1e18,
-      _minRateAtPercent: 3 * 1e18,
-      _maxRateAtPercent: 5 * 1e17
-    });
-    gfi.approve(address(stakingRewards), 1000 * 1e18);
-    stakingRewards.loadRewards(1000 * 1e18);
-
-    // Approve this address to make senior pool deposits
-    tp.grantRole(TestConstants.SENIOR_ROLE, address(this));
-    _stopImpersonation();
-
-    tp.deposit(1, usdcVal(5));
-    tp.deposit(2, usdcVal(5));
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    tp.lockPool();
-    tp.drawdown(usdcVal(10));
-    _stopImpersonation();
-
-    // Ensure pool has some interst rewards allocated to it advancing time and paying interest
-    vm.warp(block.timestamp + 100 days);
-    tp.assess();
-    tp.pay(usdcVal(5));
-
-    uint256 accRewardsPerPrincipalDollarAfterPayment = backerRewards.pools(address(tp));
-    assertTrue(accRewardsPerPrincipalDollarAfterPayment > 0);
-
-    _startImpersonation(GF_OWNER);
-    tp.initializeNextSlice(0);
-    _stopImpersonation();
-
-    // Deposit 5 dollars into the next slice
-    uint256 tokenId = tp.deposit(3, usdcVal(5));
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = backerRewards
-      .getTokenInfo(tokenId);
-    assertZero(backerRewardsTokenInfo.rewardsClaimed);
-    assertEq(
-      backerRewardsTokenInfo.accRewardsPerPrincipalDollarAtMint,
-      accRewardsPerPrincipalDollarAfterPayment
-    );
   }
 
   function testSetsPoolInfo(uint256 amount) public {

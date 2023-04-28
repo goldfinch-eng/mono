@@ -25,7 +25,6 @@ contract UniqueIdentityBaseTest is BaseTest {
     _stopImpersonation();
 
     fuzzHelper.exclude(address(uid));
-    fuzzHelper.exclude(address(protocol.stakingRewards()));
   }
 
   /// @notice Generate a valid signature for `mint` given a private key

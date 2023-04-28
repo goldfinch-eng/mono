@@ -10,25 +10,17 @@ import {IProtocolHelper} from "./IProtocolHelper.sol";
 import {TestConstants} from "./TestConstants.t.sol";
 
 import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
-import {Fidu} from "../../protocol/core/Fidu.sol";
-import {GFI} from "../../protocol/core/GFI.sol";
-import {StakingRewards} from "../../rewards/StakingRewards.sol";
-import {IStakingRewards} from "../../interfaces/IStakingRewards.sol";
 import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
 import "forge-std/Test.sol";
 
 import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
-import {IFidu} from "../../interfaces/IFidu.sol";
 import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 
 contract ProtocolHelper is IProtocolHelper, Test {
   GoldfinchConfig internal _gfConfig;
   GoldfinchFactory internal _gfFactory;
-  Fidu internal _fidu;
-  GFI internal _gfi;
-  StakingRewards internal _stakingRewards;
   IERC20 internal _usdc;
 
   constructor(Vm vm, address gfOwner, address treasury) public {
@@ -51,17 +43,6 @@ contract ProtocolHelper is IProtocolHelper, Test {
     _gfFactory.initialize(gfOwner, _gfConfig);
     _gfConfig.setAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory), address(_gfFactory));
 
-    _fidu = new Fidu();
-    _fidu.__initialize__(gfOwner, "Fidu", "FIDU", _gfConfig);
-    _gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), address(_fidu));
-
-    _gfi = new GFI(gfOwner, "Goldfinch", "GFI", 100000000000000000000000000);
-    _gfConfig.setAddress(uint256(ConfigOptions.Addresses.GFI), address(_gfi));
-
-    _stakingRewards = new StakingRewards();
-    _stakingRewards.__initialize__(gfOwner, _gfConfig);
-    _gfConfig.setAddress(uint256(ConfigOptions.Addresses.StakingRewards), address(_stakingRewards));
-
     vm.stopPrank();
   }
 
@@ -69,20 +50,8 @@ contract ProtocolHelper is IProtocolHelper, Test {
     return IGoldfinchConfig(address(_gfConfig));
   }
 
-  function fidu() external override returns (IERC20) {
-    return IERC20(address(_fidu));
-  }
-
-  function gfi() external override returns (IERC20) {
-    return IERC20(address(_gfi));
-  }
-
   function gfFactory() external override returns (IGoldfinchFactory) {
     return IGoldfinchFactory(address(_gfFactory));
-  }
-
-  function stakingRewards() external override returns (IStakingRewards) {
-    return IStakingRewards(address(_stakingRewards));
   }
 
   function usdc() external override returns (IERC20) {

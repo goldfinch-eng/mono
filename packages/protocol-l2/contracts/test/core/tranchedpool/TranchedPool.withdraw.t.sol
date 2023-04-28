@@ -241,7 +241,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     withdraw(pool, juniorToken, depositAmount, user);
 
     vm.expectRevert(bytes("TL"));
-    seniorPool.redeem(seniorToken);
+    withdraw(pool, seniorToken, 4 * depositAmount, address(this));
   }
 
   function testLetsYouWithdrawAfterLockupEnds(
@@ -269,7 +269,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     assertEq(juniorTokenInfo.principalAmount, depositAmount);
     assertEq(juniorTokenInfo.principalRedeemed, depositAmount);
 
-    seniorPool.redeem(seniorToken);
+    withdraw(pool, seniorToken, 4 * depositAmount, address(this));
     PoolTokens.TokenInfo memory seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
     assertEq(seniorTokenInfo.principalAmount, 4 * depositAmount);
     assertEq(seniorTokenInfo.principalRedeemed, 4 * depositAmount);
@@ -585,7 +585,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     assertZero(interestRedeemed);
     assertEq(principalRedeemed, (limit * 8) / 10);
 
-    seniorPool.redeem(seniorToken);
+    withdrawMax(pool, seniorToken, address(this));
     PoolTokens.TokenInfo memory seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
     assertEq(seniorTokenInfo.principalRedeemed, (limit * 4 * 8) / 10);
 
@@ -595,7 +595,7 @@ contract TranchedPoolWithdrawTest is TranchedPoolBaseTest {
     (, principalRedeemed) = withdrawMax(pool, juniorToken, user);
     assertEq(principalRedeemed, (limit * 2) / 10);
 
-    seniorPool.redeem(seniorToken);
+    withdrawMax(pool, seniorToken, address(this));
     seniorTokenInfo = poolTokens.getTokenInfo(seniorToken);
     assertApproxEqAbs(seniorTokenInfo.principalRedeemed, limit * 4, HALF_CENT); // All principal redeemed
   }
