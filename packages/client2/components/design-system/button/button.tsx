@@ -36,7 +36,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
       | "twilight"
       | "eggplant"
       | "tidepool"
-      | "transparent-mustard";
+      | "transparent-mustard"
+      | "light-mustard";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -127,6 +128,8 @@ export const Button = forwardRef<
           ? "bg-tidepool-500 text-white hover:bg-tidepool-600 active:bg-tidepool-700"
           : colorScheme === "transparent-mustard"
           ? "!border-mustard-400 bg-transparent text-sand-700 hover:bg-mustard-400/25"
+          : colorScheme === "light-mustard"
+          ? "bg-mustard-100 text-sand-700 hover:bg-mustard-200 hover:text-sand-900 active:bg-mustard-300 active:text-sand-900"
           : null,
         className
       )}

@@ -55,6 +55,28 @@ type ObjectVerifier<Type> = {
     : (arg: Type[Key]) => boolean
 }
 
+const firebaseTestConfigVerifier: ObjectVerifier<Required<Omit<FirebaseConfig, "sentry">>> = {
+  kyc: {
+    allowed_origins: isString,
+  },
+  persona: {
+    allowed_ips: isString,
+    secret: isStringOrUndefined,
+  },
+  slack: {
+    token: isString,
+  },
+  parallelmarkets: {
+    base_url: isString,
+    api_key: isString,
+    client_id: isString,
+    client_secret: isString,
+    webhook_key: isString,
+    redirect_uri: isString,
+    env: (arg: string) => ["development", "test", "production"].includes(arg),
+  },
+}
+
 const firebaseConfigVerifier: ObjectVerifier<Required<FirebaseConfig>> = {
   sentry: {
     dsn: isString,
@@ -90,7 +112,9 @@ const firebaseConfigVerifier: ObjectVerifier<Required<FirebaseConfig>> = {
 function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
   if (!isPlainObject(obj)) return false
 
-  for (const [namespace, fields] of Object.entries(firebaseConfigVerifier)) {
+  const verifier = process.env.NODE_ENV === "production" ? firebaseConfigVerifier : firebaseTestConfigVerifier
+
+  for (const [namespace, fields] of Object.entries(verifier)) {
     const namespacedObject = obj[namespace]
     if (!isPlainObject(namespacedObject)) return false
 

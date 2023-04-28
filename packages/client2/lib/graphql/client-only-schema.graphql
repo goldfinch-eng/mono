@@ -154,6 +154,12 @@ type DirectGfiGrant implements GfiGrant {
   isAccepted: Boolean!
 }
 
+type KycStatus {
+  status: String!
+  identityStatus: String
+  accreditationStatus: String
+}
+
 type Viewer {
   account(format: String): String
   usdcBalance: UsdcAmount
@@ -163,6 +169,7 @@ type Viewer {
   gfiGrants: [GfiGrant!]!
   claimableMembershipRewards: FiduAmount
   accruedMembershipRewardsThisEpoch: FiduAmount
+  kycStatus: KycStatus
 }
 
 type BlockInfo {

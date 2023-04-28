@@ -5,6 +5,7 @@ import { forwardRef, useState } from "react";
 
 import { Link, GoldfinchLogo, Icon, Popover } from "@/components/design-system";
 
+import { AccountButton } from "./account-button";
 import { MobileNav } from "./mobile-nav";
 import { DESKTOP_NAV, NestedNav } from "./nav-items";
 import { SecondaryMenu } from "./secondary-menu";
@@ -70,7 +71,7 @@ export function Nav() {
         <div className="flex flex-1">
           <NextLink href="/" passHref>
             {/* padding + negative margin keeps the clickable area big, but keeps the actual logo the correct distance from the left edge */}
-            <a className="-ml-3 flex items-center justify-center p-3">
+            <a className="-ml-2 flex items-center justify-center p-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard-300">
                 <GoldfinchLogo className="h-5 w-5" />
               </div>
@@ -93,6 +94,7 @@ export function Nav() {
         </div>
 
         <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
+          <AccountButton />
           <WalletButton />
           <SecondaryMenu />
         </div>

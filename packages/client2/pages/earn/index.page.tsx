@@ -1,7 +1,14 @@
 import { gql, NetworkStatus } from "@apollo/client";
 import { InferGetStaticPropsType } from "next";
+import NextLink from "next/link";
 
-import { Button, HelperText, Link } from "@/components/design-system";
+import {
+  Button,
+  CallToActionBanner,
+  HelperText,
+  Link,
+} from "@/components/design-system";
+import { SETUP_UID_BANNER_TEXT } from "@/constants";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import {
@@ -10,6 +17,7 @@ import {
   getLoanRepaymentStatus,
   LoanFundingStatus,
 } from "@/lib/pools";
+import { useWallet } from "@/lib/wallet";
 import { NextPageWithLayout } from "@/pages/_app.page";
 import {
   GoldfinchPoolsMetrics,
@@ -23,7 +31,7 @@ import {
 import { ClosedDealCard, ClosedDealCardPlaceholder } from "./closed-deal-card";
 
 gql`
-  query EarnPage($numClosedPools: Int!) {
+  query EarnPage($numClosedPools: Int!, $account: ID!) {
     seniorPools(first: 1) {
       id
       name @client
@@ -68,6 +76,9 @@ gql`
         symbol
       }
     }
+    user(id: $account) {
+      uidType
+    }
     viewer @client {
       fiduBalance
     }
@@ -100,8 +111,9 @@ const earnCmsQuery = gql`
 const EarnPage: NextPageWithLayout<
   InferGetStaticPropsType<typeof getStaticProps>
 > = ({ dealMetadata }) => {
+  const { account } = useWallet();
   const { data, error, networkStatus, fetchMore } = useEarnPageQuery({
-    variables: { numClosedPools: 3 },
+    variables: { numClosedPools: 3, account: account?.toLowerCase() ?? "" },
     notifyOnNetworkStatusChange: true,
   });
 
@@ -130,6 +142,8 @@ const EarnPage: NextPageWithLayout<
 
   const loading = !seniorPool || !fiatPerGfi || !protocol;
 
+  const hasUID = !!data?.user?.uidType;
+
   return (
     <div>
       {error ? (
@@ -156,6 +170,21 @@ const EarnPage: NextPageWithLayout<
         </>
       ) : (
         <>
+          {account && !hasUID ? (
+            <CallToActionBanner
+              className="mb-20"
+              renderButton={(props) => (
+                <NextLink href="/account" passHref>
+                  <Button {...props} as="a">
+                    Go to my account
+                  </Button>
+                </NextLink>
+              )}
+              iconLeft="Globe"
+              title="Set up your UID to start"
+              description={SETUP_UID_BANNER_TEXT}
+            />
+          ) : null}
           <GoldfinchPoolsMetrics protocol={protocol} className="mb-20" />
           <EarnPageHeading>
             {`${openDealsCount} Open Deal${openDealsCount > 1 ? "s" : ""}`}

@@ -2,16 +2,26 @@ import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button, Link } from "@/components/design-system";
+import { PARALLEL_MARKETS } from "@/constants";
+import { buildURL } from "@/lib/urls";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
 import { StepTemplate } from "./step-template";
 
+const parallelMarketsOauthUrl = buildURL(
+  `${PARALLEL_MARKETS.API_URL}/oauth/authorize`,
+  {
+    client_id: PARALLEL_MARKETS.CLIENT_ID,
+    scope: PARALLEL_MARKETS.SCOPE,
+    response_type: "code",
+  }
+);
+
 export function ParallelMarketsStep() {
   const { entity, accredited } = useVerificationFlowContext();
   const { goToStep } = useWizard();
-
   return (
     <StepTemplate
       footer={
@@ -26,7 +36,18 @@ export function ParallelMarketsStep() {
           </Button>
           <Button
             as="a"
-            href="https://bridge.parallelmarkets.com/goldfinch"
+            href={parallelMarketsOauthUrl.toString()}
+            onClick={(e) => {
+              e.preventDefault();
+              const state = window.crypto.randomUUID();
+              parallelMarketsOauthUrl.searchParams.append("state", state);
+              parallelMarketsOauthUrl.searchParams.append(
+                "redirect_uri",
+                `${window.location.origin}/account`
+              );
+              sessionStorage.setItem(PARALLEL_MARKETS.STATE_KEY, state);
+              window.location.href = parallelMarketsOauthUrl.toString();
+            }}
             target="_blank"
             rel="noopener"
             className="w-full"
