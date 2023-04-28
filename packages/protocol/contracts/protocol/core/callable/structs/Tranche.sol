@@ -206,6 +206,13 @@ library TrancheLogic {
     return (t.principalOutstandingBeforeReserves() * principalAmount) / t.principalDeposited();
   }
 
+  function proportionalPrincipalOutstandingAfterReserves(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint256) {
+    return (t.principalOutstandingAfterReserves() * principalAmount) / t.principalDeposited();
+  }
+
   function proportionalInterestWithdrawable(
     Tranche storage t,
     uint256 principalAmount,

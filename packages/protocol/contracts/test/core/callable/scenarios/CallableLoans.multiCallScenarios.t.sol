@@ -16,89 +16,11 @@ import {IGoldfinchFactory} from "../../../../interfaces/IGoldfinchFactory.sol";
 import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {ITestUSDC} from "../../../ITestUSDC.t.sol";
 import {Test} from "forge-std/Test.sol";
-import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {TestConstants} from "../../TestConstants.t.sol";
 import {CallableLoanAccountant} from "../../../../protocol/core/callable/CallableLoanAccountant.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
-
-/**
- * Actor in a Callable loan scenario. Will either be a Lender or a Borrower and
- * can be trusted to complain if they end up with unexpected balances.
- */
-abstract contract CallableActor is Test {
-  ICallableLoan internal loan;
-  ITestUSDC internal usdc;
-
-  function setLoan(ICallableLoan _loan) external {
-    loan = _loan;
-  }
-
-  function setUSDC(ITestUSDC _usdc) external {
-    usdc = _usdc;
-  }
-
-  modifier expectUsdcIncrease(uint256 amount) {
-    uint256 balanceBefore = usdc.balanceOf(address(this));
-
-    _;
-
-    uint256 balanceAfter = usdc.balanceOf(address(this));
-    assertEq(balanceBefore + amount, balanceAfter, "usdc increase");
-  }
-
-  modifier expectUsdcDecrease(uint256 amount) {
-    uint256 balanceBefore = usdc.balanceOf(address(this));
-
-    _;
-
-    uint256 balanceAfter = usdc.balanceOf(address(this));
-    assertEq(balanceAfter + amount, balanceBefore, "usdc decrease");
-  }
-}
-
-contract CallableBorrower is CallableActor {
-  function pay(uint256 amount) external expectUsdcDecrease(amount) {
-    usdc.approve(address(loan), amount);
-    loan.pay(amount);
-  }
-
-  function drawdown(uint256 amount) external expectUsdcIncrease(amount) {
-    loan.drawdown(amount);
-  }
-}
-
-contract CallableLender is CallableActor {
-  uint256[] public tokenIds;
-
-  function submitCall(uint256 amount, uint256 tokenId) external {
-    uint256 balanceBefore = usdc.balanceOf(address(this));
-    (uint256 availablePrincipal, uint256 availableInterest) = loan.availableToWithdraw(tokenId);
-    (uint256 _callRequestTokenId, uint256 _tokenId) = loan.submitCall(amount, tokenId);
-    assertEq(
-      balanceBefore + availablePrincipal + availableInterest,
-      usdc.balanceOf(address(this)),
-      "usdc increase"
-    );
-    tokenIds.push(_callRequestTokenId);
-    tokenIds.push(_tokenId);
-  }
-
-  function deposit(uint256 amount) external expectUsdcDecrease(amount) {
-    usdc.approve(address(loan), amount);
-    tokenIds.push(loan.deposit(loan.uncalledCapitalTrancheIndex(), amount));
-  }
-
-  function withdraw(uint256 amount, uint256 tokenId) external expectUsdcIncrease(amount) {
-    // If there's a call request, do that. Otherwise try with the held token
-    loan.withdraw(tokenId, amount);
-  }
-
-  function withdrawMax(uint256 tokenId) external {
-    // If there's a call request, do that. Otherwise try with the held token
-    loan.withdrawMax(tokenId);
-  }
-}
+import {CallableBorrower, CallableLender} from "./CallableScenarioActor.t.sol";
 
 contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
   CallableBorrower private borrower;
@@ -110,11 +32,18 @@ contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
   function setUp() public virtual override {
     super.setUp();
 
-    borrower = new CallableBorrower();
-    lender = new CallableLender();
-    otherLenders[0] = new CallableLender();
-    otherLenders[1] = new CallableLender();
-    otherLenders[2] = new CallableLender();
+    borrower = new CallableBorrower(usdc);
+
+    (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder
+      .withLimit(usdcVal(2_000_000))
+      .withApr(145 * 1e15)
+      .build(address(borrower));
+
+    borrower.setLoan(_loan);
+    lender = new CallableLender(_loan, usdc);
+    otherLenders[0] = new CallableLender(_loan, usdc);
+    otherLenders[1] = new CallableLender(_loan, usdc);
+    otherLenders[2] = new CallableLender(_loan, usdc);
 
     _startImpersonation(GF_OWNER);
     gfConfig.addToGoList(address(borrower));
@@ -129,28 +58,7 @@ contract CallableLoans_MulticallScenarios_Test is CallableLoanBaseTest {
     usdc.transfer(address(otherLenders[1]), usdcVal(1_000_000_000));
     usdc.transfer(address(otherLenders[2]), usdcVal(1_000_000_000));
     usdc.transfer(address(lender), usdcVal(1_000_000_000));
-
     _stopImpersonation();
-
-    (CallableLoan _loan, ICreditLine _creditLine) = callableLoanBuilder
-      .withLimit(usdcVal(2_000_000))
-      .withApr(145 * 1e15)
-      .build(address(borrower));
-
-    _startImpersonation(GF_OWNER);
-    _loan.unpauseDrawdowns();
-    _stopImpersonation();
-
-    lender.setLoan(_loan);
-    lender.setUSDC(usdc);
-    otherLenders[0].setLoan(_loan);
-    otherLenders[0].setUSDC(usdc);
-    otherLenders[1].setLoan(_loan);
-    otherLenders[1].setUSDC(usdc);
-    otherLenders[2].setLoan(_loan);
-    otherLenders[2].setUSDC(usdc);
-    borrower.setLoan(_loan);
-    borrower.setUSDC(usdc);
 
     loan = _loan;
     creditLine = _creditLine;
