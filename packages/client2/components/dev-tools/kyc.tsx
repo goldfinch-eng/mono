@@ -15,7 +15,10 @@ export function Kyc() {
       return;
     }
     const signature = await getSignatureForKyc(provider, signer);
-    const kycStatus = await fetchKycStatus(account, signature);
+    const kycStatus = await fetchKycStatus(
+      account,
+      signature
+    );
     setShownData(kycStatus);
   };
 

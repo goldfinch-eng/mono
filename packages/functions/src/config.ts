@@ -30,14 +30,9 @@ export type FirebaseConfig = {
   }
 }
 
-let _configForTest: FirebaseConfig = {
+let _configForTest: Omit<FirebaseConfig, "sentry"> = {
   kyc: {allowed_origins: "http://localhost,https://gf-client2.warbler.ngrok.io"},
   persona: {allowed_ips: ""},
-  sentry: {
-    dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-    release: process.env.COMMIT_ID_FOR_TEST || "",
-    environment: "test",
-  },
   slack: {
     token: process.env.SLACK_TOKEN || "",
   },
@@ -58,6 +53,28 @@ type ObjectVerifier<Type> = {
     : Type[Key] extends unknown[]
     ? ObjectVerifier<Type[Key]>
     : (arg: Type[Key]) => boolean
+}
+
+const firebaseTestConfigVerifier: ObjectVerifier<Required<Omit<FirebaseConfig, "sentry">>> = {
+  kyc: {
+    allowed_origins: isString,
+  },
+  persona: {
+    allowed_ips: isString,
+    secret: isStringOrUndefined,
+  },
+  slack: {
+    token: isString,
+  },
+  parallelmarkets: {
+    base_url: isString,
+    api_key: isString,
+    client_id: isString,
+    client_secret: isString,
+    webhook_key: isString,
+    redirect_uri: isString,
+    env: (arg: string) => ["development", "test", "production"].includes(arg),
+  },
 }
 
 const firebaseConfigVerifier: ObjectVerifier<Required<FirebaseConfig>> = {
@@ -95,7 +112,9 @@ const firebaseConfigVerifier: ObjectVerifier<Required<FirebaseConfig>> = {
 function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
   if (!isPlainObject(obj)) return false
 
-  for (const [namespace, fields] of Object.entries(firebaseConfigVerifier)) {
+  const verifier = process.env.NODE_ENV === "production" ? firebaseConfigVerifier : firebaseTestConfigVerifier
+
+  for (const [namespace, fields] of Object.entries(verifier)) {
     const namespacedObject = obj[namespace]
     if (!isPlainObject(namespacedObject)) return false
 
