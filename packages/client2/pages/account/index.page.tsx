@@ -37,6 +37,7 @@ gql`
         status
         identityStatus
         accreditationStatus
+        kycProvider
       }
     }
   }
@@ -99,8 +100,9 @@ const AccountsPage: NextPageWithLayout = () => {
     // signer is not identity-stable and can't be included in the dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, provider, !!signer, router, router.isReady, refetch]);
-  const { status, identityStatus, accreditationStatus } =
+  const { status, identityStatus, accreditationStatus, kycProvider } =
     data?.viewer.kycStatus ?? {};
+  console.log({ kycProvider });
 
   const { uidType } = data?.user ?? {};
 
@@ -176,7 +178,9 @@ const AccountsPage: NextPageWithLayout = () => {
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
                       description={
-                        "Almost there. Your UID is still being verified, and this can take up to 72 hours. You will receive an email from Parallel Markets when your accreditation status gets updated. If you are still facing a delay, please email uid@warblerlabs.com."
+                        kycProvider === "parallelMarkets"
+                          ? "Almost there. Your UID is still being verified, and this can take up to 72 hours. You will receive an email from Parallel Markets when your accreditation status gets updated. If you are still facing a delay, please email uid@warblerlabs.com."
+                          : "Almost there. Your UID is still being verified, and this can take up to 72 hours. If you are still facing a delay, please email uid@warblerlabs.com."
                       }
                       colorScheme="white"
                     >
