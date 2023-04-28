@@ -176,7 +176,7 @@ const AccountsPage: NextPageWithLayout = () => {
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
                       description={
-                        "Almost there. Your UID is still being verified, and this can take up to 72 hours. If you are still facing a delay, please email uid@warblerlabs.com."
+                        "Almost there. Your UID is still being verified, and this can take up to 72 hours. You will receive an email from Parallel Markets when your accreditation status gets updated. If you are still facing a delay, please email uid@warblerlabs.com."
                       }
                       colorScheme="white"
                     >
