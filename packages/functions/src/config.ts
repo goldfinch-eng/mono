@@ -30,14 +30,9 @@ export type FirebaseConfig = {
   }
 }
 
-let _configForTest: FirebaseConfig = {
+let _configForTest: Omit<FirebaseConfig, "sentry"> = {
   kyc: {allowed_origins: "http://localhost,https://gf-client2.warbler.ngrok.io"},
   persona: {allowed_ips: ""},
-  sentry: {
-    dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-    release: process.env.COMMIT_ID_FOR_TEST || "",
-    environment: "test",
-  },
   slack: {
     token: process.env.SLACK_TOKEN || "",
   },
