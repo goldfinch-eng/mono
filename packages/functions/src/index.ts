@@ -14,7 +14,7 @@ if (_config.sentry) {
     dsn: _config.sentry.dsn,
     integrations: [
       new CaptureConsole({
-        levels: ["log", "info", "warn", "error"],
+        levels: ["warn", "error"],
       }),
     ],
     release: _config.sentry.release,
