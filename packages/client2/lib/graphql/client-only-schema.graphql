@@ -158,7 +158,6 @@ type KycStatus {
   status: String!
   identityStatus: String
   accreditationStatus: String
-  kycProvider: String
 }
 
 type Viewer {

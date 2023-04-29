@@ -1,12 +1,13 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import {
   Button,
   ButtonProps,
   Icon,
+  Link,
   Spinner,
   TabButton,
   TabContent,
@@ -37,7 +38,6 @@ gql`
         status
         identityStatus
         accreditationStatus
-        kycProvider
       }
     }
   }
@@ -100,9 +100,8 @@ const AccountsPage: NextPageWithLayout = () => {
     // signer is not identity-stable and can't be included in the dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, provider, !!signer, router, router.isReady, refetch]);
-  const { status, identityStatus, accreditationStatus, kycProvider } =
+  const { status, identityStatus, accreditationStatus } =
     data?.viewer.kycStatus ?? {};
-  console.log({ kycProvider });
 
   const { uidType } = data?.user ?? {};
 
@@ -177,24 +176,33 @@ const AccountsPage: NextPageWithLayout = () => {
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
-                      description={
-                        kycProvider === "parallelMarkets"
-                          ? "Almost there. Your UID is still being verified, and this can take up to 72 hours. You will receive an email from Parallel Markets when your accreditation status gets updated. If you are still facing a delay, please email uid@warblerlabs.com."
-                          : "Almost there. Your UID is still being verified, and this can take up to 72 hours. If you are still facing a delay, please email uid@warblerlabs.com."
-                      }
+                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email from Parallel Markets within 72 hours."
                       colorScheme="white"
                     >
-                      <div className="mt-8 flex flex-col gap-2 sm:flex-row">
-                        <CheckableStep name="Documents uploaded" checked />
-                        <CheckableStep
-                          name="Identity verification"
-                          checked={identityStatus === "approved"}
-                        />
-                        <CheckableStep
-                          name="Accreditation verification"
-                          checked={accreditationStatus === "approved"}
-                        />
-                      </div>
+                      <>
+                        <div className="my-8 flex flex-col gap-2 sm:flex-row">
+                          <CheckableStep name="Documents uploaded" checked />
+                          <CheckableStep
+                            name="Identity verification"
+                            checked={identityStatus === "approved"}
+                          />
+                          <CheckableStep
+                            name="Accreditation verification"
+                            checked={accreditationStatus === "approved"}
+                          />
+                        </div>
+                        <p className="text-sm">
+                          <>
+                            If you are still facing a delay, please email us at{" "}
+                            <Link
+                              rel="noopener"
+                              href="mailto:UID@warblerlabs.com"
+                            >
+                              UID@warblerlabs.com
+                            </Link>
+                          </>
+                        </p>
+                      </>
                     </CallToActionBanner>
                   ) : status === "approved" ? (
                     accreditationStatus === "unaccredited" ? (
