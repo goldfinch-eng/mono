@@ -8,14 +8,17 @@ import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol"
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../../../interfaces/ILoan.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
+import {IGoldfinchConfig} from "../../../../interfaces/IGoldfinchConfig.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {CallableBorrower, CallableLender} from "./CallableScenarioActor.t.sol";
 import {CallableLoanAccountant} from "../../../../protocol/core/callable/CallableLoanAccountant.sol";
+import {CallableLoanConfigHelper} from "../../../../protocol/core/callable/CallableLoanConfigHelper.sol";
 
 contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   using SaturatingSub for uint256;
+  using CallableLoanConfigHelper for IGoldfinchConfig;
 
   CallableLoan public callableLoan;
   ICreditLine public creditLine;
@@ -28,6 +31,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   string public assertionTag;
 
   uint256 public constant INTEREST_APR = 145 * 1e15;
+  uint256 public constant LATE_INTEREST_APR = 2 * 1e16;
 
   function setupDepositorsAndLenders(
     uint256 depositAmount1,
@@ -45,6 +49,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     (callableLoan, creditLine) = callableLoanBuilder
       .withLimit(totalDeposits)
       .withApr(INTEREST_APR)
+      .withLateFeeApr(LATE_INTEREST_APR)
       .build(address(borrower));
 
     borrower.setLoan(callableLoan);
@@ -99,7 +104,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     depositAmount2 = bound(depositAmount2, usdcVal(1), usdcVal(100_000_000));
     depositAmount3 = bound(depositAmount3, usdcVal(1), usdcVal(100_000_000));
     depositAmount4 = bound(depositAmount4, usdcVal(1), usdcVal(100_000_000));
-    // 27 days - Just under the shortest month
+    // 20 days - Even with drawdown period, will result in jump to a time in the same month.
     fuzzWarpOffset = bound(fuzzWarpOffset, 0, 20 days);
 
     setupDepositorsAndLenders(
@@ -186,7 +191,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   /// Submit 1st call for the first call request period
   /// Make full payments each interest period and then the call principal
   /// Submit 2nd call for the second call request period
-  /// Make late payemnt for principal payment period
+  /// Make late payemnt sometime during the principal payment period
   /// Submit 3rd call for the third call request period
   /// Make full payments each interest period and then the call principal
   function testMultiCallRequestPeriodsPayLate1(
@@ -197,8 +202,143 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     uint256 callAmount1,
     uint256 callAmount2,
     uint256 callAmount3,
-    uint256 drawdownAmount
-  ) public {}
+    uint256 drawdownAmount,
+    uint256 fuzzWarpOffset
+  ) public {
+    depositAmount1 = bound(depositAmount1, usdcVal(1), usdcVal(100_000_000));
+    depositAmount2 = bound(depositAmount2, usdcVal(1), usdcVal(100_000_000));
+    depositAmount3 = bound(depositAmount3, usdcVal(1), usdcVal(100_000_000));
+    depositAmount4 = bound(depositAmount4, usdcVal(1), usdcVal(100_000_000));
+    // 20 days - Even with drawdown period, will result in jump to a time in the same month.
+    fuzzWarpOffset = bound(fuzzWarpOffset, 0, 20 days);
+
+    setupDepositorsAndLenders(
+      depositAmount1,
+      depositAmount2,
+      depositAmount3,
+      depositAmount4,
+      drawdownAmount
+    );
+
+    {
+      assertionTag = "Call Request Period 1: ";
+      callAmount1 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[0].tokenIds(0),
+        fuzzedCallAmount: callAmount1,
+        expectedAmount: depositAmount1
+      });
+
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount1,
+        lenderIndexToCall: 0,
+        tokenIndexToCall: 0
+      });
+
+      uint256 preExistingOwed = CallableLoanAccountant.calculateInterest({
+        secondsElapsed: callableLoan.termStartTime() - drawdownTime,
+        principal: totalDeposits,
+        interestApr: INTEREST_APR
+      });
+      fullyPayThisQuarter({
+        preExistingOwed: preExistingOwed,
+        principalGeneratingInterest: totalDeposits,
+        principalDueAtEnd: callAmount1,
+        quarterStartTime: callableLoan.termStartTime(),
+        warpOffset: fuzzWarpOffset
+      });
+    }
+
+    {
+      assertionTag = "Call Request Period 2: ";
+      uint256 quarterStartTime = block.timestamp;
+      callAmount2 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[1].tokenIds(0),
+        fuzzedCallAmount: callAmount2,
+        expectedAmount: depositAmount2
+      });
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount2,
+        lenderIndexToCall: 1,
+        tokenIndexToCall: 0
+      });
+
+      /**
+       * SKIP PAYMENT FOR FIRST TWO MONTHS IN THE QUARTER
+       */
+      vm.warp(callableLoan.nextDueTime());
+      uint256 startOfLateFeeCounter = block.timestamp;
+      vm.warp(callableLoan.nextDueTime());
+
+      uint256 startOfMonth = block.timestamp;
+      skip(fuzzWarpOffset);
+      uint256 totalOwedAtNextDueTime = callableLoan.interestOwedAt(callableLoan.nextDueTime()) +
+        callableLoan.principalOwedAt(callableLoan.nextDueTime());
+      uint256 principalGeneratingInterest = totalDeposits - callAmount1;
+
+      uint256 regularInterestOwed = CallableLoanAccountant.calculateInterest({
+        secondsElapsed: callableLoan.nextDueTime() - quarterStartTime,
+        principal: principalGeneratingInterest,
+        interestApr: INTEREST_APR
+      });
+      uint256 lateInterestOwed = CallableLoanAccountant.calculateInterest({
+        secondsElapsed: (block.timestamp - startOfLateFeeCounter).saturatingSub(
+          gfConfig.getLatenessGracePeriodInDays()
+        ),
+        principal: principalGeneratingInterest,
+        interestApr: LATE_INTEREST_APR
+      });
+      assertApproxEqAbs(
+        callableLoan.interestOwedAt(callableLoan.nextDueTime()),
+        regularInterestOwed + lateInterestOwed,
+        1,
+        string.concat(assertionTag, "Total interest owed at next due time - Month 3")
+      );
+
+      assertApproxEqAbs(
+        callableLoan.principalOwedAt(callableLoan.nextDueTime()),
+        callAmount2,
+        1,
+        string.concat(assertionTag, "Total principal owed at next due time - Month 3")
+      );
+
+      borrower.pay(
+        callableLoan.interestOwedAt(callableLoan.nextDueTime()) +
+          callableLoan.principalOwedAt(callableLoan.nextDueTime())
+      );
+
+      vm.warp(callableLoan.nextDueTime());
+
+      assertZero(
+        callableLoan.principalOwed(),
+        string.concat(assertionTag, "Principal owed zeroed out")
+      );
+      assertZero(
+        callableLoan.interestOwed(),
+        string.concat(assertionTag, "Interest owed zeroed out")
+      );
+    }
+
+    {
+      assertionTag = "Call Request Period 3: ";
+      callAmount3 = checkAndBoundCallRequestAmount({
+        tokenId: lenders[2].tokenIds(0),
+        fuzzedCallAmount: callAmount3,
+        expectedAmount: depositAmount3
+      });
+      submitCallAndCheckOtherTokens({
+        callAmount: callAmount3,
+        lenderIndexToCall: 2,
+        tokenIndexToCall: 0
+      });
+      fullyPayThisQuarter({
+        preExistingOwed: 0,
+        principalGeneratingInterest: totalDeposits - callAmount1 - callAmount2,
+        principalDueAtEnd: callAmount3,
+        quarterStartTime: block.timestamp,
+        warpOffset: fuzzWarpOffset
+      });
+    }
+  }
 
   function checkAndBoundCallRequestAmount(
     uint256 tokenId,
@@ -252,6 +392,9 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     });
   }
 
+  /**
+   * @notice Assumes no late fees
+   */
   function fullyPayInterestMonth(
     uint256 preExistingOwed,
     uint256 principalGeneratingInterest,
@@ -280,6 +423,9 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     borrower.pay(totalOwedAtNextDueTime);
   }
 
+  /**
+   * @notice Assumes no late fees
+   */
   function fullyPayInterestAndPrincipalMonth(
     uint256 preExistingOwed,
     uint256 principalGeneratingInterest,
