@@ -88,6 +88,7 @@ jobs:
         NEXT_PUBLIC_GRAPHQL_URL: https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2
         NEXT_PUBLIC_NETWORK_NAME: mainnet
         NEXT_PUBLIC_MAINNET_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/blank
+        NEXT_PUBLIC_PARALLEL_MARKETS_CLIENT_ID: lint-ci
     - run: yarn run lint
 
   functions:
