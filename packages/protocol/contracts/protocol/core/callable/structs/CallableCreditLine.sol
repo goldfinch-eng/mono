@@ -565,7 +565,22 @@ library CallableCreditLineLogic {
     settledTrancheInfo.interestPaid = tranche.interestPaid();
     settledTrancheInfo.principalDeposited = tranche.principalDeposited();
 
-    if (cl.isActive() && trancheId < cl._paymentSchedule.currentPrincipalPeriod()) {
+    bool useSettledPrincipal;
+
+    if (cl.isActive()) {
+      if (trancheId == cl.uncalledCapitalTrancheIndex()) {
+        uint256 currentlyActivePrincipalPeriod = cl._paymentSchedule.currentPrincipalPeriod();
+        uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
+          cl._checkpointedAsOf
+        );
+        useSettledPrincipal =
+          currentlyActivePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint;
+      } else {
+        useSettledPrincipal = trancheId < cl._paymentSchedule.currentPrincipalPeriod();
+      }
+    }
+
+    if (useSettledPrincipal) {
       settledTrancheInfo.principalPaid = tranche.principalPaid() + tranche.principalReserved();
       settledTrancheInfo.principalReserved = 0;
     } else {
