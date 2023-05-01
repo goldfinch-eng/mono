@@ -232,7 +232,13 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     callableLoan.submitCall(invalidCallAmount, remainingTokenId);
   }
 
-  function testCallSplitsAvailableToWithdrawCorrectly(
+  uint256 availableInterest;
+  uint256 availablePrincipal;
+  uint256 calledTokenId;
+  uint256 remainderTokenId;
+  uint256 previousBalance;
+
+  function testSubmitCallWithdrawsAvailable(
     address user,
     uint256 depositAmount,
     uint256 drawdownAmount,
@@ -249,6 +255,43 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     callAmount = bound(callAmount, 1, drawdownAmount);
     paymentAmount = bound(paymentAmount, 1, drawdownAmount);
     drawdown(callableLoan, drawdownAmount);
+    warpToAfterDrawdownPeriod(callableLoan);
+    _startImpersonation(BORROWER);
+    usdc.approve(address(callableLoan), paymentAmount);
+    callableLoan.pay(paymentAmount);
+
+    (availableInterest, availablePrincipal) = callableLoan.availableToWithdraw(token);
+    previousBalance = usdc.balanceOf(user);
+
+    _startImpersonation(user);
+    (calledTokenId, remainderTokenId) = callableLoan.submitCall(callAmount, token);
+    _stopImpersonation();
+
+    {
+      (uint256 availableRemainderInterest, uint256 availableRemainderPrincipal) = callableLoan
+        .availableToWithdraw(remainderTokenId);
+      (uint256 availableCalledInterest, uint256 availableCalledPrincipal) = callableLoan
+        .availableToWithdraw(calledTokenId);
+      assertApproxEqAbs(
+        availableRemainderInterest + availableCalledInterest,
+        0,
+        1,
+        "Available interest to withdraw"
+      );
+
+      assertApproxEqAbs(
+        availableRemainderPrincipal + availableCalledPrincipal,
+        0,
+        1,
+        "Available principal to withdraw"
+      );
+      assertApproxEqAbs(
+        usdc.balanceOf(user),
+        previousBalance + availableInterest + availablePrincipal,
+        1,
+        "Difference in user balance"
+      );
+    }
   }
 
   function testSubmitsCallForCorrectTranche(
@@ -256,8 +299,69 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 depositAmount,
     uint256 drawdownAmount,
     uint256 callAmount,
-    uint256 secondsElapsed
+    uint256 paymentAmount
   ) public {
-    // TODO(PR):
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount * 4);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token1 = deposit(callableLoan, 3, depositAmount, user);
+    uint256 token2 = deposit(callableLoan, 3, depositAmount, user);
+    uint256 token3 = deposit(callableLoan, 3, depositAmount, user);
+
+    deposit(callableLoan, 3, depositAmount, user);
+
+    drawdownAmount = bound(drawdownAmount, usdcVal(1), depositAmount);
+    paymentAmount = bound(paymentAmount, 1, drawdownAmount / 4);
+    // drawdownAmount - paymentAmount = principalOutstanding
+    uint256 principalOutstanding = drawdownAmount - paymentAmount;
+    callAmount = bound(callAmount, 4, principalOutstanding / 4);
+    drawdown(callableLoan, drawdownAmount);
+    warpToAfterDrawdownPeriod(callableLoan);
+    _startImpersonation(BORROWER);
+    usdc.approve(address(callableLoan), paymentAmount);
+    callableLoan.pay(paymentAmount);
+    _stopImpersonation();
+
+    _startImpersonation(user);
+    (uint256 calledTokenId, uint256 uncalledTokenId) = callableLoan.submitCall(callAmount, token1);
+    assertEq(
+      poolTokens.getTokenInfo(calledTokenId).tranche,
+      0,
+      "First call request period should be tranche 0"
+    );
+    assertIsValidUncalledToken(uncalledTokenId);
+
+    vm.warp(callableLoan.nextPrincipalDueTime());
+
+    (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token2);
+    assertEq(
+      poolTokens.getTokenInfo(calledTokenId).tranche,
+      1,
+      "Second call request period should be tranche 1"
+    );
+    assertIsValidUncalledToken(uncalledTokenId);
+
+    vm.warp(callableLoan.nextPrincipalDueTime());
+
+    (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token3);
+    assertEq(
+      poolTokens.getTokenInfo(calledTokenId).tranche,
+      2,
+      "Third call request period should be tranche 2"
+    );
+    assertIsValidUncalledToken(uncalledTokenId);
+  }
+
+  function assertIsValidUncalledToken(uint256 tokenId) private {
+    // Token ID == 0 means no token was created
+    if (tokenId == 0) {
+      return;
+    }
+    assertEq(
+      poolTokens.getTokenInfo(tokenId).tranche,
+      3,
+      "Uncalled pool token should be uncalled capital tranche"
+    );
   }
 }
