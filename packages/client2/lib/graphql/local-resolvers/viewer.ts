@@ -194,6 +194,7 @@ export const viewerResolvers: Resolvers[string] = {
       status: kycStatus.status,
       identityStatus: kycStatus.identityStatus ?? null,
       accreditationStatus: kycStatus.accreditationStatus ?? null,
+      kycProvider: kycStatus.kycProvider ?? null,
     };
   },
 };

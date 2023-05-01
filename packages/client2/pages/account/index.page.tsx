@@ -7,6 +7,7 @@ import {
   Button,
   ButtonProps,
   Icon,
+  Link,
   Spinner,
   TabButton,
   TabContent,
@@ -34,6 +35,7 @@ gql`
     }
     viewer @client {
       kycStatus {
+        kycProvider
         status
         identityStatus
         accreditationStatus
@@ -99,7 +101,7 @@ const AccountsPage: NextPageWithLayout = () => {
     // signer is not identity-stable and can't be included in the dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, provider, !!signer, router, router.isReady, refetch]);
-  const { status, identityStatus, accreditationStatus } =
+  const { status, identityStatus, accreditationStatus, kycProvider } =
     data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
@@ -171,28 +173,40 @@ const AccountsPage: NextPageWithLayout = () => {
                         <div className="break-words">{account}</div>
                       </div>
                     </div>
-                  ) : status === "pending" ? (
+                  ) : status === "pending" ? ( // status can only be pending with parallel markets
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
-                      description={
-                        "Almost there. Your UID is still being verified, and this can take up to 72 hours. If you are still facing a delay, please email uid@warblerlabs.com."
-                      }
+                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
                       colorScheme="white"
                     >
-                      <div className="mt-8 flex flex-col gap-2 sm:flex-row">
-                        <CheckableStep name="Documents uploaded" checked />
-                        <CheckableStep
-                          name="Identity verification"
-                          checked={identityStatus === "approved"}
-                        />
-                        <CheckableStep
-                          name="Accreditation verification"
-                          checked={accreditationStatus === "approved"}
-                        />
-                      </div>
+                      <>
+                        <div className="my-8 flex flex-col gap-2 sm:flex-row">
+                          <CheckableStep name="Documents uploaded" checked />
+                          <CheckableStep
+                            name="Identity verification"
+                            checked={identityStatus === "approved"}
+                          />
+                          <CheckableStep
+                            name="Accreditation verification"
+                            checked={accreditationStatus === "approved"}
+                          />
+                        </div>
+                        <p className="text-sm">
+                          <>
+                            If you are still facing a delay, please email us at{" "}
+                            <Link
+                              rel="noopener"
+                              href="mailto:UID@warblerlabs.com"
+                            >
+                              UID@warblerlabs.com
+                            </Link>
+                          </>
+                        </p>
+                      </>
                     </CallToActionBanner>
                   ) : status === "approved" ? (
+                    kycProvider === "parallelMarkets" &&
                     accreditationStatus === "unaccredited" ? (
                       <CallToActionBanner
                         renderButton={(props) => EmailUIDButton(props)}
