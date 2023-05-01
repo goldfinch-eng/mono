@@ -395,6 +395,23 @@ describe("unique-identity-signer parallel markets", () => {
         })
       ).to.be.rejectedWith(`Non-accredited US businesses are not eligible for UID`)
     })
+
+    it("reverts for non-accredited individual", async () => {
+      const kycStatusResponse = _.cloneDeep(APPROVED_KYC_STATUS_RESPONSE_INDIVIDUAL)
+      kycStatusResponse.countryCode = "US"
+      kycStatusResponse.accreditationStatus = "unaccredited"
+
+      await expect(
+        main({
+          auth: validAuthAnotherUser,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchStubbedKycStatus(kycStatusResponse),
+        })
+      ).to.be.rejectedWith("Does not meet mint requirements: parallelMarkets unaccredited individual")
+    })
+
     it("returns valid sig for non-us accredited business", async () => {
       await uniqueIdentity.setSupportedUIDTypes(["4"], [true])
 
