@@ -15,6 +15,7 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 import {CallableBorrower, CallableLender} from "./CallableScenarioActor.t.sol";
 import {CallableLoanAccountant} from "../../../../protocol/core/callable/CallableLoanAccountant.sol";
 import {CallableLoanConfigHelper} from "../../../../protocol/core/callable/CallableLoanConfigHelper.sol";
+import {TestConstants} from "../../TestConstants.t.sol";
 
 contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   using SaturatingSub for uint256;
@@ -120,7 +121,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount1 = checkAndBoundCallRequestAmount({
         tokenId: lenders[0].tokenIds(0),
         fuzzedCallAmount: callAmount1,
-        expectedAmount: depositAmount1
+        expectedAvailable: depositAmount1
       });
 
       submitCallAndCheckOtherTokens({
@@ -148,7 +149,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount2 = checkAndBoundCallRequestAmount({
         tokenId: lenders[1].tokenIds(0),
         fuzzedCallAmount: callAmount2,
-        expectedAmount: depositAmount2
+        expectedAvailable: depositAmount2
       });
       submitCallAndCheckOtherTokens({
         callAmount: callAmount2,
@@ -170,7 +171,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount3 = checkAndBoundCallRequestAmount({
         tokenId: lenders[2].tokenIds(0),
         fuzzedCallAmount: callAmount3,
-        expectedAmount: depositAmount3
+        expectedAvailable: depositAmount3
       });
       submitCallAndCheckOtherTokens({
         callAmount: callAmount3,
@@ -225,7 +226,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount1 = checkAndBoundCallRequestAmount({
         tokenId: lenders[0].tokenIds(0),
         fuzzedCallAmount: callAmount1,
-        expectedAmount: depositAmount1
+        expectedAvailable: depositAmount1
       });
 
       submitCallAndCheckOtherTokens({
@@ -254,7 +255,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount2 = checkAndBoundCallRequestAmount({
         tokenId: lenders[1].tokenIds(0),
         fuzzedCallAmount: callAmount2,
-        expectedAmount: depositAmount2
+        expectedAvailable: depositAmount2
       });
       submitCallAndCheckOtherTokens({
         callAmount: callAmount2,
@@ -323,7 +324,7 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       callAmount3 = checkAndBoundCallRequestAmount({
         tokenId: lenders[2].tokenIds(0),
         fuzzedCallAmount: callAmount3,
-        expectedAmount: depositAmount3
+        expectedAvailable: depositAmount3
       });
       submitCallAndCheckOtherTokens({
         callAmount: callAmount3,
@@ -343,11 +344,11 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
   function checkAndBoundCallRequestAmount(
     uint256 tokenId,
     uint256 fuzzedCallAmount,
-    uint256 expectedAmount
+    uint256 expectedAvailable
   ) public returns (uint256 boundedCallAmount) {
     uint256 availableToCall = callableLoan.availableToCall(tokenId);
-    assertApproxEqAbs(availableToCall, expectedAmount, HUNDREDTH_CENT, assertionTag);
-    return boundedCallAmount = bound(fuzzedCallAmount, 1, availableToCall);
+    assertApproxEqAbs(availableToCall, expectedAvailable, HUNDREDTH_CENT, assertionTag);
+    boundedCallAmount = bound(fuzzedCallAmount, 1, availableToCall);
   }
 
   /**
@@ -402,6 +403,18 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
     uint256 warpOffset,
     string memory assertionMonthTag
   ) private {
+    console.log(
+      "gfConfig.getLatenessGracePeriodInDays() * TestConstants.SECONDS_PER_DAY",
+      gfConfig.getLatenessGracePeriodInDays() * TestConstants.SECONDS_PER_DAY
+    );
+    assertGe(
+      gfConfig.getLatenessGracePeriodInDays() * TestConstants.SECONDS_PER_DAY,
+      block.timestamp.saturatingSub(callableLoan.nextDueTimeAt(callableLoan.lastFullPaymentTime())),
+      string.concat(
+        string.concat(assertionTag, "fullyPayInterestMonth assumes no late fees"),
+        assertionMonthTag
+      )
+    );
     skip(warpOffset);
     assertEq(
       callableLoan.principalOwedAt(callableLoan.nextDueTime()),
@@ -485,14 +498,14 @@ contract CallableLoanMultiQuarterScenario is CallableLoanBaseTest {
       lenders[lenderIndexToCall].tokenIds(tokenIndexToCall)
     );
 
-    for (uint256 i = 0; i < lenders.length; i++) {
-      if (i != lenderIndexToCall) {
-        for (uint256 j = 0; j < lenders[i].tokenIdsLength(); j++) {
-          (uint256 interest, uint256 principal) = lenders[i].availableToWithdraw(
-            lenders[i].tokenIds(j)
+    for (uint256 l = 0; l < lenders.length; l++) {
+      if (l != lenderIndexToCall) {
+        for (uint256 t = 0; t < lenders[l].tokenIdsLength(); t++) {
+          (uint256 interest, uint256 principal) = lenders[l].availableToWithdraw(
+            lenders[l].tokenIds(t)
           );
           assertApproxEqAbs(
-            availableToWithdraw[i][j],
+            availableToWithdraw[l][t],
             interest + principal,
             HUNDREDTH_CENT,
             string.concat(assertionTag, "Available to withdraw")

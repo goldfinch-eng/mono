@@ -232,6 +232,25 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     callableLoan.submitCall(invalidCallAmount, remainingTokenId);
   }
 
+  function testCallSplitsAvailableToWithdrawCorrectly(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 paymentAmount,
+    uint256 secondsElapsed
+  ) public {
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
+    drawdownAmount = bound(drawdownAmount, 1, depositAmount);
+    callAmount = bound(callAmount, 1, drawdownAmount);
+    paymentAmount = bound(paymentAmount, 1, drawdownAmount);
+    drawdown(callableLoan, drawdownAmount);
+  }
+
   function testSubmitsCallForCorrectTranche(
     address user,
     uint256 depositAmount,
