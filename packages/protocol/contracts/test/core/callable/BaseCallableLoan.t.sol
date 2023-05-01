@@ -182,7 +182,6 @@ contract CallableLoanBaseTest is BaseTest {
   {
     (CallableLoan callableLoan, ICreditLine cl) = callableLoanBuilder.build(BORROWER);
     _startImpersonation(GF_OWNER);
-    callableLoan.unpauseDrawdowns();
     _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
@@ -199,7 +198,6 @@ contract CallableLoanBaseTest is BaseTest {
       .withLateFeeApr(lateFeeApr)
       .build(BORROWER);
     _startImpersonation(GF_OWNER);
-    callableLoan.unpauseDrawdowns();
     _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
@@ -217,7 +215,6 @@ contract CallableLoanBaseTest is BaseTest {
       BORROWER
     );
     _startImpersonation(GF_OWNER);
-    callableLoan.unpauseDrawdowns();
     _stopImpersonation();
     fuzzHelper.exclude(address(callableLoan));
     fuzzHelper.exclude(address(cl));
