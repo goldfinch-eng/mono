@@ -20,6 +20,12 @@ const isAuthenticPmRequest = (messageThatWasSigned: string, sig: string, webhook
   return Buffer.from(sig).equals(Buffer.from(recoveredSig))
 }
 
+/**
+ * Handle a webhook from Parallel Markets. Possible scopes are:
+ * 1. identity: when a user's identity is updated or OAuth access is revoked
+ * 2. accreditation_status: when a user's accreditation status is updated or OAuth access is revoked
+ * 3. profile: when a user's profile is updated
+ */
 export const pmWebhookReceiver = genRequestHandler({
   requireAuth: "none",
   cors: false,
@@ -81,8 +87,11 @@ export const pmWebhookReceiver = genRequestHandler({
       case "accreditation_status":
         await processAccreditationWebhook(payload)
         break
+      case "profile":
+        return response.status(200).send({status: "Ignoring profile scope event"})
+        break
       default:
-        return response.status(501).send({status: `unexpected scope: ${scope}`})
+        return response.status(501).send({status: `Unexpected scope: ${scope}`})
     }
 
     return response.status(200).send({status: "valid signature"})

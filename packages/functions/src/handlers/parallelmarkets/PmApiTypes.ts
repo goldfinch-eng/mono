@@ -10,6 +10,7 @@ export type PmIdentityEvent =
   | "pep_risk_monitor_match"
 
 export type PmAccreditationEvent = "data_update" | "access_revocation_scheduled"
+export type PmProfileEvent = "data_update" | "access_revocation_scheduled"
 
 export type PmType = "individual" | "business"
 
@@ -30,7 +31,13 @@ export type PmAccreditationPayload = {
   scope: "accreditation_status"
 }
 
-export type PmPayload = PmIdentityPayload | PmAccreditationPayload
+export type PmProfilePayload = {
+  entity: PmEntity
+  event: PmProfileEvent
+  scope: "profile"
+}
+
+export type PmPayload = PmIdentityPayload | PmAccreditationPayload | PmProfilePayload
 
 export type PmConsistencyLevel = "high" | "medium" | "low" | "none"
 export type PmIdentityDocumentValidity = "valid" | "valid_maybe_expired" | "expired" | "unreadable"

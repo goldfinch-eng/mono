@@ -148,7 +148,25 @@ describe("pmWebhookReceiver validation", async () => {
       )
     })
 
-    it("returns 501 for unimplemented scope", async () => {
+    it("returns 200 for profile scope", async () => {
+      config.parallelmarkets.env = "test"
+      await pmWebhookReceiver(
+        genRequest({
+          ...VALID_REQUEST,
+          body: {
+            ...VALID_REQUEST.body,
+            entity: {
+              id: "not_test",
+              type: "business",
+            },
+            scope: "profile",
+          },
+        }),
+        expectResponse(200, {status: "Ignoring profile scope event"}),
+      )
+    })
+
+    it("returns 501 for an unexpected scope", async () => {
       config.parallelmarkets.env = "test"
       await pmWebhookReceiver(
         genRequest({
@@ -162,7 +180,7 @@ describe("pmWebhookReceiver validation", async () => {
             scope: "blahblahblah",
           },
         }),
-        expectResponse(501, {status: "unexpected scope: blahblahblah"}),
+        expectResponse(501, {status: "Unexpected scope: blahblahblah"}),
       )
     })
   })

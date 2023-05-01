@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-import {assertUnreachable} from "@goldfinch-eng/utils"
 import {ParallelMarkets} from "./PmApi"
 import {
   PmAccreditationPayload,
@@ -38,7 +36,7 @@ export const processIdentityWebhook = async (payload: PmIdentityPayload) => {
       break
     // If we're here then we've received an undocumented event
     default:
-      throw new Error(`Unexpected event ${event}`)
+      console.error(`Ignoring unexpected event ${event}`)
   }
 }
 
@@ -52,9 +50,9 @@ export const processAccreditationWebhook = async (payload: PmAccreditationPayloa
       await processAccreditationRevocationScheduled(entity)
       break
     default:
-      // According to PM docs, there are no other values for event, so we should error if we see an
-      // unexpected one: https://developer.parallelmarkets.com/docs/webhooks/request-format#accreditation-status
-      assertUnreachable(event)
+      // According to PM docs, there are no other values for event, so reaching this code path is
+      // unexpected: https://developer.parallelmarkets.com/docs/webhooks/request-format#accreditation-status
+      console.error(`Ignoring unexpected event ${event}`)
   }
 }
 
