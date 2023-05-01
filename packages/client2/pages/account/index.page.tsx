@@ -173,7 +173,7 @@ const AccountsPage: NextPageWithLayout = () => {
                         <div className="break-words">{account}</div>
                       </div>
                     </div>
-                  ) : status === "pending" ? (
+                  ) : status === "pending" ? ( // status can only be pending with parallel markets
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
