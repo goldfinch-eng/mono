@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { useRouter } from "next/router";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Button,
@@ -35,6 +35,7 @@ gql`
     }
     viewer @client {
       kycStatus {
+        kycProvider
         status
         identityStatus
         accreditationStatus
@@ -100,7 +101,7 @@ const AccountsPage: NextPageWithLayout = () => {
     // signer is not identity-stable and can't be included in the dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, provider, !!signer, router, router.isReady, refetch]);
-  const { status, identityStatus, accreditationStatus } =
+  const { status, identityStatus, accreditationStatus, kycProvider } =
     data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
@@ -176,7 +177,7 @@ const AccountsPage: NextPageWithLayout = () => {
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
-                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email from Parallel Markets within 72 hours."
+                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
                       colorScheme="white"
                     >
                       <>
@@ -205,6 +206,7 @@ const AccountsPage: NextPageWithLayout = () => {
                       </>
                     </CallToActionBanner>
                   ) : status === "approved" ? (
+                    kycProvider === "parallelMarkets" &&
                     accreditationStatus === "unaccredited" ? (
                       <CallToActionBanner
                         renderButton={(props) => EmailUIDButton(props)}
