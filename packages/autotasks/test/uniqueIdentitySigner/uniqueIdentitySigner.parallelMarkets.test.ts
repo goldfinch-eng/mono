@@ -307,30 +307,6 @@ describe("unique-identity-signer parallel markets", () => {
       ).to.be.fulfilled
     })
 
-    it("returns valid sig for us non-accredited individual", async () => {
-      await uniqueIdentity.setSupportedUIDTypes(["2"], [true])
-
-      const kycStatusResponse = _.cloneDeep(APPROVED_KYC_STATUS_RESPONSE_INDIVIDUAL)
-      kycStatusResponse.countryCode = "US"
-      kycStatusResponse.accreditationStatus = "unaccredited"
-
-      const result = await main({
-        auth: validAuthAnotherUser,
-        signer,
-        network,
-        uniqueIdentity: ethersUniqueIdentity,
-        fetchKYCStatus: fetchStubbedKycStatus(kycStatusResponse),
-      })
-
-      // Mint US-Accredited UID
-      await expect(
-        uniqueIdentity.mint("2", result.expiresAt, result.signature, {
-          from: anotherUser,
-          value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
-        })
-      ).to.be.fulfilled
-    })
-
     it("returns valid sig for us accredited business", async () => {
       await uniqueIdentity.setSupportedUIDTypes(["3"], [true])
 
@@ -395,6 +371,39 @@ describe("unique-identity-signer parallel markets", () => {
         })
       ).to.be.rejectedWith(`Non-accredited US businesses are not eligible for UID`)
     })
+
+    it("reverts for non-us individual", async () => {
+      const kycStatusResponse = _.cloneDeep(APPROVED_KYC_STATUS_RESPONSE_INDIVIDUAL)
+      kycStatusResponse.countryCode = "CA"
+      kycStatusResponse.accreditationStatus = "unaccredited"
+
+      await expect(
+        main({
+          auth: validAuthAnotherUser,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchStubbedKycStatus(kycStatusResponse),
+        })
+      ).to.be.rejectedWith("Does not meet mint requirements: parallelMarkets unaccredited individual")
+    })
+
+    it("reverts for us non-accredited individual", async () => {
+      const kycStatusResponse = _.cloneDeep(APPROVED_KYC_STATUS_RESPONSE_INDIVIDUAL)
+      kycStatusResponse.countryCode = "US"
+      kycStatusResponse.accreditationStatus = "unaccredited"
+
+      await expect(
+        main({
+          auth: validAuthAnotherUser,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchStubbedKycStatus(kycStatusResponse),
+        })
+      ).to.be.rejectedWith("Does not meet mint requirements: parallelMarkets unaccredited individual")
+    })
+
     it("returns valid sig for non-us accredited business", async () => {
       await uniqueIdentity.setSupportedUIDTypes(["4"], [true])
 
