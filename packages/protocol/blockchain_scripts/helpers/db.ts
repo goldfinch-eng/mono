@@ -2,78 +2,70 @@
 // the original file likely has the required changes. This should likely be removed or refactored as part of:
 // https://linear.app/goldfinch/issue/GFI-766/simplify-package-dependencies-and-remove-circular-dependencies
 
-import * as admin from "firebase-admin"
+import {firestore} from "firebase-admin"
 import {isPlainObject, isString, isStringOrUndefined} from "@goldfinch-eng/utils"
-import firestore = admin.firestore
 
-let _firestoreForTest: firestore.Firestore
-let _configForTest: FirebaseConfig = {
+let _configForTest: Omit<FirebaseConfig, "sentry"> = {
   kyc: {allowed_origins: "http://localhost:3000"},
   persona: {allowed_ips: ""},
-  sentry: {
-    dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-    release: process.env.COMMIT_ID_FOR_TEST || "",
-    environment: "test",
-  },
+}
+
+// Optionally override the firestore for testing or emulation
+let _firestore: firestore.Firestore
+
+/**
+ * Override the firestore to use for tests. Need this so we can connect to the emulator.
+ * @param {firestore.Firestore} firestore The firestore to override with
+ */
+function overrideFirestore(firestore: firestore.Firestore): void {
+  _firestore = firestore
 }
 
 /**
  * Get the users collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("users", firestore)
+function getUsers(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("users")
 }
 
 /**
  * Get the destroyed users collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getDestroyedUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("destroyedUsers", firestore)
+function getDestroyedUsers(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("destroyedUsers")
 }
 
 /**
  * Get the agreements collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getAgreements(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("agreements", firestore)
+function getAgreements(): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("agreements")
 }
 
 /**
  * Generic function to get any collection given a reference to the name and the firestore (test aware)
  * @param {string} collection The collection name
- * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-const getCollection = (
-  collection: string,
-  firestore: firestore.Firestore
-): firestore.CollectionReference<firestore.DocumentData> => {
+const getCollection = (collection: string): firestore.CollectionReference<firestore.DocumentData> => {
   let collectionPrefix = ""
 
   if (process.env.NODE_ENV === "test") {
     collectionPrefix = "test_"
   }
   const collectionName = `${collectionPrefix}${collection}`
-  return getDb(firestore).collection(collectionName)
+  return getDb().collection(collectionName)
 }
 
 /**
  * Get the database (test aware)
- * @param {firestore.Firestore} firestore The default db if not test env
  * @return {firestore.Firestore} The databse for the current env
  */
-function getDb(firestore: firestore.Firestore): firestore.Firestore {
-  if (process.env.NODE_ENV === "test") {
-    return _firestoreForTest
-  } else {
-    return firestore
-  }
+function getDb(): firestore.Firestore {
+  return _firestore || firestore()
 }
 
 export type FirebaseConfig = {
@@ -149,18 +141,16 @@ function getConfig(functions: any): FirebaseConfig {
 
 /**
  * Override the firestore to use for tests. Need this so we can connect to the emulator.
- * @param {firestore.Firestore} firestore The firestore to override with
  * @param {Omit<FirebaseConfig, "sentry">} config The mock config to use for tests. (We exclude
  * Sentry-related configuration from this, as Sentry is configured upon importing the module
  * in which the functions are defined, so it is not readily amenable to being subsequently
  * modified as part of test setup, and we have no need to make it thusly modifiable.)
  */
-function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConfig, "sentry">): void {
-  _firestoreForTest = firestore
+function setConfigForTest(config: Omit<FirebaseConfig, "sentry">): void {
   _configForTest = {
     ..._configForTest,
     ...config,
   }
 }
 
-export {getUsers, getDestroyedUsers, getAgreements, getDb, getConfig, setEnvForTest}
+export {getUsers, getDestroyedUsers, getAgreements, getDb, getConfig, setConfigForTest, overrideFirestore}

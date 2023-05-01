@@ -1,13 +1,11 @@
 {
   "name": "@goldfinch-eng/functions",
   "version": "0.0.1",
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  },
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
     "build": "yarn graphql:codegen && tsc",
+    "gcp-build": "",
     "serve": "yarn build && yarn firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "yarn build && yarn firebase functions:shell",
     "start": "yarn serve",
@@ -44,6 +42,7 @@
     "@sentry/serverless": "^6.8.0",
     "@slack/web-api": "^6.8.0",
     "@svgdotjs/svg.js": "^3.1.2",
+    "@types/node-fetch": "^2.6.3",
     "@types/validator": "^13.7.14",
     "bignumber.js": "^9.0.2",
     "defender-autotask-utils": "^1.37.0",

@@ -4,7 +4,10 @@ import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
 import { MetaMaskConnector } from "wagmi/connectors/metaMask";
 import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
 import { alchemyProvider } from "wagmi/providers/alchemy";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 import { publicProvider } from "wagmi/providers/public";
+
+import { RPC_URLS } from "./chains";
 
 if (!process.env.NEXT_PUBLIC_MAINNET_RPC_URL) {
   throw new Error("Mainnet RPC URL is not defined");
@@ -15,7 +18,10 @@ if (!alchemyApiKey) {
 }
 const { chains, provider } =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
-    ? configureChains([hardhat], [publicProvider()])
+    ? configureChains(
+        [hardhat],
+        [jsonRpcProvider({ rpc: () => ({ http: RPC_URLS[hardhat.id] }) })]
+      )
     : configureChains(
         [mainnet],
         [alchemyProvider({ apiKey: alchemyApiKey }), publicProvider()]

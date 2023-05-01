@@ -6,7 +6,7 @@ const {ethers} = hre
 import {Block} from "@ethersproject/abstract-provider"
 import {getDeployedContract, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {TranchedPool} from "../typechain/ethers"
-import {getAgreements, getUsers} from "./helpers/db"
+import {getAgreements, getUsers, overrideFirestore} from "./helpers/db"
 
 import admin from "firebase-admin"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -55,6 +55,7 @@ async function main() {
     process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099"
     process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080"
     admin.initializeApp({projectId})
+    overrideFirestore(admin.firestore())
   }
 
   const tranchedPool = ((await getDeployedContract(deployments, "TranchedPool")) as TranchedPool).attach(poolAddress)
@@ -105,13 +106,13 @@ async function main() {
         blocks[block.number] = block
       }
 
-      const agreements = getAgreements(admin.firestore())
+      const agreements = getAgreements()
       const key = `${tranchedPool.address.toLowerCase()}-${addr.toLowerCase()}`
       const agreement = await agreements.doc(key).get()
       const fullName = agreement.data()?.fullName
       const email = agreement.data()?.email
 
-      const users = getUsers(admin.firestore())
+      const users = getUsers()
       const user = await users.doc(`${addr.toLowerCase()}`).get()
       const personaInquiryId = user.data()?.persona?.id
       let emailFromPersona

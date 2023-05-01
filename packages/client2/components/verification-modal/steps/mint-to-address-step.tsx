@@ -1,3 +1,6 @@
+
+ 
+
 import { useApolloClient } from "@apollo/client";
 import { ethers } from "ethers";
 import { useForm } from "react-hook-form";
@@ -49,8 +52,7 @@ export function MintToAddressStep() {
     }
     const signer = await fetchUniqueIdentitySigner(
       account,
-      signature.signature,
-      signature.signatureBlockNum,
+      signature,
       mintToAddress
     );
 
@@ -63,7 +65,7 @@ export function MintToAddressStep() {
 
     const transaction = uidContract.mintTo(
       mintToAddress,
-      signer.idVersion,
+      signer.uidType,
       signer.expiresAt,
       signer.signature,
       {
@@ -81,7 +83,7 @@ export function MintToAddressStep() {
     await apolloClient.refetchQueries({ include: "active" });
     dataLayerPushEvent("UID_MINTED", {
       transactionHash: submittedTransaction.transactionHash,
-      uidType: getUIDLabelFromType(signer.idVersion),
+      uidType: getUIDLabelFromType(signer.uidType),
     });
     goToStep(VerificationFlowSteps.MintFinished);
   };

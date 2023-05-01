@@ -15,6 +15,7 @@ import {
 } from "@/lib/graphql/generated";
 
 const threeWeeksMs = 1000 * 60 * 60 * 24 * 7 * 3;
+const fazzCloseExtraPadding = 60 * 60 * 8 * 1000 + 259200 * 1000; // TODO Fazz wanted to close a few hours later and 3 days, just take this out when Fazz is closed.
 
 export const FUNDING_STATS_LOAN_FIELDS = gql`
   fragment FundingStatsLoanFields on Loan {
@@ -66,7 +67,9 @@ export function FundingStats({
     FixedNumber.from(maxFundingAmount)
   );
 
-  const estimatedCloseDate = new Date(loan.fundableAt * 1000 + threeWeeksMs);
+  const estimatedCloseDate = new Date(
+    loan.fundableAt * 1000 + threeWeeksMs + fazzCloseExtraPadding
+  );
 
   return (
     <StatGrid bgColor="mustard-50" numColumns={3}>

@@ -4,7 +4,8 @@ import * as crypto from "crypto"
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import {assertIsString} from "@goldfinch-eng/utils"
-import {getConfig, getDb, getUsers} from "../db"
+import {getDb, getUsers} from "../db"
+import {getConfig} from "../config"
 import {genRequestHandler} from "../helpers"
 import firestore = admin.firestore
 import {KycProvider} from "../types"
@@ -84,8 +85,8 @@ export const personaCallback = genRequestHandler({
       Sentry.setUser({id: address, address})
 
       const countryCode = getCountryCode(relatedEntities)
-      const db = getDb(admin.firestore())
-      const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+      const db = getDb()
+      const userRef = getUsers().doc(`${address.toLowerCase()}`)
 
       try {
         await db.runTransaction(async (t: firestore.Transaction) => {

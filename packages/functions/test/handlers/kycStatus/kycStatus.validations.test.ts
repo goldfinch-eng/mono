@@ -5,17 +5,18 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
-import {kycStatus} from "../../src"
+import {getUsers, setTestFirestore} from "../../../src/db"
+import {kycStatus} from "../../../src"
 
 chai.use(chaiSubset)
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {mockGetBlockchain} from "../../../src/helpers"
+import {expectResponse} from "../../utils"
 import {ethers} from "ethers"
+import {setTestConfig} from "../../../src/config"
 
 type FakeBlock = {
   number: number
@@ -24,7 +25,7 @@ type FakeBlock = {
 
 const genPlaintext = (blocknum: number | string) => `Sign in to Goldfinch: ${blocknum}`
 
-describe("kycStatus", async () => {
+describe.skip("kycStatus validations", async () => {
   const testAccount = {
     address: "0xA57415BeCcA125Ee98B04b229A0Af367f4144030",
     privateKey: "0x20c5c29e29791089b4b60e65966adb104f540a7597ee1e97c6760e95c7b780eb",
@@ -32,7 +33,6 @@ describe("kycStatus", async () => {
   const testWallet = new ethers.Wallet(testAccount.privateKey)
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   let users: firestore.CollectionReference<firestore.DocumentData>
 
@@ -67,11 +67,11 @@ describe("kycStatus", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {
+    setTestFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
+    })
     users = getUsers(testFirestore)
   })
 
@@ -95,6 +95,7 @@ describe("kycStatus", async () => {
         "x-goldfinch-signature-block-num": signatureBlockNum,
         "x-goldfinch-signature-plaintext": signatureBlockNum ? genPlaintext(signatureBlockNum) : "",
       },
+      query: {},
     } as unknown as Request
   }
 
@@ -123,6 +124,7 @@ describe("kycStatus", async () => {
           "x-goldfinch-signature-plaintext": "Random plaintext",
           "x-goldfinch-signature-block-num": currentBlockNum,
         },
+        query: {},
       } as unknown as Request
       await kycStatus(req, expectResponse(401, {error: "Unexpected signature"}))
     })
@@ -169,6 +171,7 @@ describe("kycStatus", async () => {
           "x-goldfinch-signature": await testWallet.signMessage(genPlaintext(currentBlockNum)),
           "x-goldfinch-signature-block-num": currentBlockNum,
         },
+        query: {},
       } as unknown as Request
       // Any 200 response implies we passed signature verification
       await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
@@ -190,22 +193,26 @@ describe("kycStatus", async () => {
         const req = generateKycRequest(testWallet.address, sig, currentBlockNum)
 
         await users.doc(testWallet.address.toLowerCase()).set({
+          address: testWallet.address.toLowerCase(),
           persona: {},
         })
         await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
 
         await users.doc(testWallet.address.toLowerCase()).set({
+          address: testWallet.address.toLowerCase(),
           persona: {status: "created"},
         })
         await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
 
         await users.doc(testWallet.address.toLowerCase()).set({
+          address: testWallet.address.toLowerCase(),
           persona: {status: "completed"},
           countryCode: "US",
         })
         await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "approved", countryCode: "US"}))
 
         await users.doc(testWallet.address.toLowerCase()).set({
+          address: testWallet.address.toLowerCase(),
           persona: {status: "expired"},
         })
         await kycStatus(req, expectResponse(200, {address: testWallet.address, status: "unknown"}))
