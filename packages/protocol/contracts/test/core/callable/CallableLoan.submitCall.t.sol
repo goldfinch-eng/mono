@@ -3,15 +3,22 @@
 pragma solidity ^0.8.0;
 
 import {console2 as console} from "forge-std/console2.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
 import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
+  using SaturatingSub for uint256;
+
+  CallableLoan callableLoan;
+  ICreditLine cl;
+
   function testPoolTokenDustLimit() public {
     // TODO
   }
@@ -26,7 +33,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   ) public {
     vm.assume(rando != poolTokenOwner);
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
     // vm.assume after building callable loan to properly exclude contracts.
     vm.assume(fuzzHelper.isAllowed(poolTokenOwner));
     vm.assume(fuzzHelper.isAllowed(rando));
@@ -55,7 +62,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint128 secondsElapsedSinceLoanConstruction,
     address caller
   ) public {
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(loanLimit);
+    (callableLoan, cl) = callableLoanWithLimit(loanLimit);
     vm.warp(block.timestamp + secondsElapsedSinceLoanConstruction);
     // This state is so invalid there are many reasons it could revert.
     vm.expectRevert();
@@ -69,7 +76,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint128 secondsElapsedSinceDeposit
   ) public {
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(depositor, 1, 1, "");
@@ -100,7 +107,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       DEFAULT_DRAWDOWN_PERIOD_IN_SECONDS
     );
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(depositor)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(depositor, 1, 1, "");
@@ -137,7 +144,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   ) public {
     secondsElapsedAfterLastLockup = bound(secondsElapsedAfterLastLockup, 0, 3650 days);
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
     uint256 token = deposit(callableLoan, 3, depositAmount, user);
@@ -184,7 +191,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   ) public {
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
     callAmount = bound(callAmount, depositAmount + 1, usdcVal(100_000_000_000));
-    (CallableLoan callableLoan, ) = callableLoanWithLimit(depositAmount);
+    (callableLoan, ) = callableLoanWithLimit(depositAmount);
 
     fundAddress(DEPOSITOR, depositAmount);
 
@@ -247,13 +254,15 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 secondsElapsed
   ) public {
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount);
-    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
-    uid._mintForTest(user, 1, 1, "");
-    uint256 token = deposit(callableLoan, 3, depositAmount, user);
     drawdownAmount = bound(drawdownAmount, 1, depositAmount);
     callAmount = bound(callAmount, 1, drawdownAmount);
     paymentAmount = bound(paymentAmount, 1, drawdownAmount);
+
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
+
     drawdown(callableLoan, drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
     _startImpersonation(BORROWER);
@@ -266,6 +275,28 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     _startImpersonation(user);
     (calledTokenId, remainderTokenId) = callableLoan.submitCall(callAmount, token);
     _stopImpersonation();
+
+    secondsElapsed = bound(
+      secondsElapsed,
+      1,
+      callableLoan.nextDueTimeAt(callableLoan.nextDueTime()) - block.timestamp
+    );
+    skip(secondsElapsed);
+
+    assertApproxEqAbs(
+      poolTokens.getTokenInfo(calledTokenId).principalAmount,
+      (depositAmount * callAmount) / drawdownAmount,
+      1,
+      "Principal amount moved to called pool token is correct"
+    );
+    if (remainderTokenId != 0) {
+      assertApproxEqAbs(
+        poolTokens.getTokenInfo(remainderTokenId).principalAmount,
+        depositAmount - (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Principal amount moved to uncalled pool token is correct"
+      );
+    }
 
     {
       (uint256 availableRemainderInterest, uint256 availableRemainderPrincipal) = callableLoan
@@ -294,6 +325,276 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     }
   }
 
+  function testPaymentIsAllocatedToCallsCorrectly(
+    address user,
+    uint256 depositAmount,
+    uint256 drawdownAmount,
+    uint256 callAmount,
+    uint256 paymentAmount,
+    uint256 secondsElapsed
+  ) public {
+    depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
+    drawdownAmount = bound(drawdownAmount, 1, depositAmount);
+    callAmount = bound(callAmount, 1, drawdownAmount);
+    paymentAmount = bound(paymentAmount, 1, drawdownAmount);
+
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount);
+    vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
+    uid._mintForTest(user, 1, 1, "");
+    uint256 token = deposit(callableLoan, 3, depositAmount, user);
+
+    drawdown(callableLoan, drawdownAmount);
+    warpToAfterDrawdownPeriod(callableLoan);
+    _startImpersonation(BORROWER);
+
+    (availableInterest, availablePrincipal) = callableLoan.availableToWithdraw(token);
+    previousBalance = usdc.balanceOf(user);
+
+    _startImpersonation(user);
+    (calledTokenId, remainderTokenId) = callableLoan.submitCall(callAmount, token);
+    _stopImpersonation();
+
+    secondsElapsed = bound(
+      secondsElapsed,
+      1,
+      callableLoan.nextDueTimeAt(callableLoan.nextDueTime()) - block.timestamp
+    );
+    skip(secondsElapsed);
+
+    uint256 totalInterestOwed = callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime());
+
+    usdc.approve(address(callableLoan), paymentAmount);
+    callableLoan.pay(paymentAmount);
+
+    assertApproxEqAbs(
+      poolTokens.getTokenInfo(calledTokenId).principalAmount,
+      (depositAmount * callAmount) / drawdownAmount,
+      1,
+      "Principal amount moved to called pool token is correct"
+    );
+    if (remainderTokenId != 0) {
+      assertApproxEqAbs(
+        poolTokens.getTokenInfo(remainderTokenId).principalAmount,
+        depositAmount - (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Principal amount moved to uncalled pool token is correct"
+      );
+    }
+
+    {
+      ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
+        .getUncalledCapitalInfo();
+      ICallableLoan.CallRequestPeriod memory callRequestPeriod = callableLoan.getCallRequestPeriod(
+        0
+      );
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalDeposited,
+        depositAmount - (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Uncalled principal deposited"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalPaid,
+        (depositAmount - drawdownAmount) -
+          (((depositAmount * callAmount) / drawdownAmount) - callAmount),
+        1,
+        "Uncalled principal paid"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalReserved,
+        Math.min(
+          paymentAmount.saturatingSub(totalInterestOwed).saturatingSub(callAmount),
+          uncalledCapitalInfo.principalDeposited
+        ),
+        1,
+        "Uncalled principal reserved"
+      );
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.interestPaid,
+        (Math.min(paymentAmount, totalInterestOwed) * uncalledCapitalInfo.principalDeposited) /
+          (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+        1,
+        "Uncalled interest paid"
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Called principal deposited"
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalPaid,
+        ((depositAmount * callAmount) / drawdownAmount) - callAmount,
+        1,
+        "Called principal paid"
+      );
+      assertApproxEqAbs(
+        callRequestPeriod.principalReserved,
+        Math.min(
+          Math.min(callAmount, paymentAmount.saturatingSub(totalInterestOwed)),
+          callRequestPeriod.principalDeposited
+        ),
+        1,
+        "Called principal reserved"
+      );
+      assertApproxEqAbs(
+        callRequestPeriod.interestPaid,
+        (Math.min(paymentAmount, totalInterestOwed) * callRequestPeriod.principalDeposited) /
+          (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+        1,
+        "Called interest paid"
+      );
+      if (uncalledCapitalInfo.principalDeposited > 0) {
+        assertOwedAmountsMatch(
+          remainderTokenId,
+          uncalledCapitalInfo.principalDeposited,
+          uncalledCapitalInfo.interestPaid,
+          uncalledCapitalInfo.principalPaid
+        );
+      }
+      assertOwedAmountsMatch(
+        calledTokenId,
+        callRequestPeriod.principalDeposited,
+        callRequestPeriod.interestPaid,
+        callRequestPeriod.principalPaid
+      );
+    }
+
+    // After principal reserved has been applied.
+    vm.warp(callableLoan.nextPrincipalDueTime());
+    {
+      ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
+        .getUncalledCapitalInfo();
+      ICallableLoan.CallRequestPeriod memory callRequestPeriod = callableLoan.getCallRequestPeriod(
+        0
+      );
+
+      assertZero(uncalledCapitalInfo.principalReserved);
+      assertZero(callRequestPeriod.principalReserved);
+
+      if (uncalledCapitalInfo.principalDeposited > 0) {
+        assertOwedAmountsMatch(
+          remainderTokenId,
+          uncalledCapitalInfo.principalDeposited,
+          uncalledCapitalInfo.interestPaid,
+          uncalledCapitalInfo.principalPaid
+        );
+      }
+      assertOwedAmountsMatch(
+        calledTokenId,
+        callRequestPeriod.principalDeposited,
+        callRequestPeriod.interestPaid,
+        callRequestPeriod.principalPaid
+      );
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalDeposited,
+        depositAmount - (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Uncalled principal deposited"
+      );
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalPaid,
+        (depositAmount - drawdownAmount) -
+          (((depositAmount * callAmount) / drawdownAmount) - callAmount) +
+          Math.min(
+            paymentAmount.saturatingSub(totalInterestOwed).saturatingSub(callAmount),
+            uncalledCapitalInfo.principalDeposited
+          ),
+        1,
+        "Uncalled principal paid"
+      );
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.interestPaid,
+        (Math.min(paymentAmount, totalInterestOwed) * uncalledCapitalInfo.principalDeposited) /
+          (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+        1,
+        "Uncalled interest paid"
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        (depositAmount * callAmount) / drawdownAmount,
+        1,
+        "Called principal deposited"
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalPaid,
+        ((depositAmount * callAmount) / drawdownAmount) -
+          callAmount +
+          Math.min(
+            Math.min(callAmount, paymentAmount.saturatingSub(totalInterestOwed)),
+            callRequestPeriod.principalDeposited
+          ),
+        1,
+        "Called principal paid"
+      );
+      assertApproxEqAbs(
+        callRequestPeriod.interestPaid,
+        (Math.min(paymentAmount, totalInterestOwed) * callRequestPeriod.principalDeposited) /
+          (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+        1,
+        "Called interest paid"
+      );
+    }
+  }
+
+  function assertOwedInterestMatches(
+    uint256 tokenId,
+    uint256 principalDepositedInTranche,
+    uint256 interestPaidInTranche,
+    uint256 principalPaidInTranche
+  ) internal {
+    (uint256 availableInterest, uint256 availablePrincipal) = callableLoan.availableToWithdraw(
+      tokenId
+    );
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    assertApproxEqAbs(
+      availableInterest,
+      (interestPaidInTranche *
+        tokenInfo.principalAmount *
+        (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / (principalDepositedInTranche * 100),
+      1,
+      "Owed interest matches"
+    );
+  }
+
+  function assertOwedAmountsMatch(
+    uint256 tokenId,
+    uint256 principalDepositedInTranche,
+    uint256 interestPaidInTranche,
+    uint256 principalPaidInTranche
+  ) internal {
+    (uint256 availableInterest, uint256 availablePrincipal) = callableLoan.availableToWithdraw(
+      tokenId
+    );
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    assertApproxEqAbs(
+      availableInterest,
+      (interestPaidInTranche *
+        tokenInfo.principalAmount *
+        (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / (principalDepositedInTranche * 100),
+      1,
+      "Owed interest matches"
+    );
+
+    assertApproxEqAbs(
+      availablePrincipal,
+      ((principalPaidInTranche * tokenInfo.principalAmount) / principalDepositedInTranche) -
+        tokenInfo.principalRedeemed,
+      1,
+      "Owed principal matches"
+    );
+  }
+
   function testSubmitsCallForCorrectTranche(
     address user,
     uint256 depositAmount,
@@ -302,7 +603,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     uint256 paymentAmount
   ) public {
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(depositAmount * 4);
+    (callableLoan, cl) = callableLoanWithLimit(depositAmount * 4);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
     uid._mintForTest(user, 1, 1, "");
     uint256 token1 = deposit(callableLoan, 3, depositAmount, user);
