@@ -205,7 +205,9 @@ contract CallableLoans_OneLender_OneBorrower_Test is CallableLoanBaseTest {
     lender.submitCall(5e6);
     borrower.pay(2e6);
 
-    assertEq(loan.availableToCall(lender.tokenId()), 5e6);
+    // Available to call should be 5e6.
+    // Margin of error of 1 to account for rounding errors during checkpointing.
+    assertApproxEqAbs(loan.availableToCall(lender.tokenId()), 5e6, 1);
   }
 
   function test_availableToWithdraw() public {

@@ -522,17 +522,6 @@ library CallableCreditLineLogic {
     return cl._waterfall.totalPrincipalOutstandingAfterReserves();
   }
 
-  function proportionalCallablePrincipal(
-    CallableCreditLine storage cl,
-    uint256 trancheId,
-    uint256 principalDeposited
-  ) internal view returns (uint256) {
-    return
-      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingBeforeReserves(
-        principalDeposited
-      );
-  }
-
   /// @notice Returns the tranche index which the given timestamp falls within.
   /// @return The tranche index will go 1 beyond the max tranche index to represent the "after loan" period.
   ///         This is not to be confused with activeCallSubmissionTrancheIndex, which is the tranche for which
@@ -705,6 +694,28 @@ library PreviewCallableCreditLineLogic {
         : tranche.proportionalInterestAndPrincipalAvailable(principal, feePercent);
   }
 
+  function previewProportionalCallablePrincipal(
+    CallableCreditLine storage cl,
+    uint256 trancheId,
+    uint256 principalDeposited
+  ) internal view returns (uint256) {
+    uint256 currentlyActivePrincipalPeriod = cl._paymentSchedule.currentPrincipalPeriod();
+    uint256 activePrincipalPeriodAtLastCheckpoint = cl._paymentSchedule.principalPeriodAt(
+      cl._checkpointedAsOf
+    );
+    if (currentlyActivePrincipalPeriod > activePrincipalPeriodAtLastCheckpoint) {
+      return
+        cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingAfterReserves(
+          principalDeposited
+        );
+    } else {
+      return
+        cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingBeforeReserves(
+          principalDeposited
+        );
+    }
+  }
+
   /// Returns the total interest owed less total interest paid
   function previewInterestOwed(CallableCreditLine storage cl) internal view returns (uint256) {
     return cl.interestOwedAt(block.timestamp);
@@ -740,6 +751,17 @@ library CheckpointedCallableCreditLineLogic {
   function totalInterestAccrued(CallableCreditLine storage cl) internal view returns (uint256) {
     assert(cl._checkpointedAsOf == block.timestamp);
     return cl._totalInterestAccruedAtLastCheckpoint;
+  }
+
+  function proportionalCallablePrincipal(
+    CallableCreditLine storage cl,
+    uint256 trancheId,
+    uint256 principalDeposited
+  ) internal view returns (uint256) {
+    return
+      cl._waterfall.getTranche(trancheId).proportionalPrincipalOutstandingBeforeReserves(
+        principalDeposited
+      );
   }
 
   function proportionalInterestAndPrincipalAvailable(

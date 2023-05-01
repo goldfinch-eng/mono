@@ -207,7 +207,7 @@ library StaleCallableCreditLineLogic {
     uint256 trancheId,
     uint256 principalDeposited
   ) internal view returns (uint256) {
-    return cl._cl.proportionalCallablePrincipal(trancheId, principalDeposited);
+    return cl._cl.previewProportionalCallablePrincipal(trancheId, principalDeposited);
   }
 
   function proportionalInterestAndPrincipalAvailable(

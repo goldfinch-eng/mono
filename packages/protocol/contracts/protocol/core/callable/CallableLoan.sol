@@ -633,14 +633,14 @@ contract CallableLoan is
     uint256 principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
     {
-      LoanPhase loanPhase = cl.loanPhase();
-      if (loanPhase == LoanPhase.InProgress) {
+      LoanPhase _loanPhase = cl.loanPhase();
+      if (_loanPhase == LoanPhase.InProgress) {
         poolTokens.redeem({
           tokenId: tokenId,
           principalRedeemed: principalToRedeem,
           interestRedeemed: interestToRedeem
         });
-      } else if (loanPhase == LoanPhase.Funding) {
+      } else if (_loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
         cl.withdraw(principalToRedeem);
