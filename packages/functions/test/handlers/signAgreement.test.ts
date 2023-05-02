@@ -1,22 +1,19 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
 import {fake} from "sinon"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
+import {initializeFirebaseTestEnv} from "../../src/db"
 
-import {getAgreements, overrideFirestore} from "../../src/db"
 import {signAgreement} from "../../src"
 
 chai.use(chaiSubset)
 const expect = chai.expect
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
-import {setTestConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -24,13 +21,13 @@ type FakeBlock = {
 }
 
 describe("signAgreement", async () => {
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  const projectId = "goldfinch-frontend-test"
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let agreements: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
+
   const address = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
   const validSignature =
     "0x46855997425525c8ae449fde8624668ce1f72485886900c585d08459822de466363faa239b8070393a2c3d1f97abe50abc48019be415258615e128b59cfd91a31c"
-  let agreements: firestore.CollectionReference<firestore.DocumentData>
 
   const currentBlockNum = 84
   const yesterdayBlockNum = 80
@@ -59,16 +56,9 @@ describe("signAgreement", async () => {
     mockGetBlockchain(mock)
   })
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    overrideFirestore(testFirestore)
-    setTestConfig({
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-      slack: {token: ""},
-    })
-    agreements = getAgreements()
+  beforeEach(async () => {
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test", config))
+    agreements = testContext.firestore().collection("test_agreements")
   })
 
   after(async () => {
@@ -76,7 +66,7 @@ describe("signAgreement", async () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generateAgreementRequest = (

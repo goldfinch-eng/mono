@@ -132,7 +132,7 @@ export const destroyUser = genRequestHandler({
             address: addressToDestroy,
             deletions,
           }
-          t.create(destroyedUserRef, updatedDocument)
+          t.set(destroyedUserRef, updatedDocument)
         }
       })
     } catch (e) {

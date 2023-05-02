@@ -1,34 +1,25 @@
-import * as firebaseTesting from "@firebase/rules-unit-testing"
 import _ from "lodash"
-import * as admin from "firebase-admin"
-import {getUsers, overrideFirestore} from "../../src/db"
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
-import {setTestConfig} from "../../src/config"
 import {Request} from "express"
 import {publicKycStatus} from "../../src"
 import {expectResponse} from "../utils"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
+
+import {initializeFirebaseTestEnv} from "../../src/db"
 
 describe("publicKycStatus", () => {
   const ADDRESS = "0x4F7280C3ba9a9Cef45e468165a1Bf611129157c9"
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  const projectId = "goldfinch-frontend-test"
-  let users: firestore.CollectionReference<firestore.DocumentData>
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    overrideFirestore(testFirestore)
-    setTestConfig({
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-    })
-    users = getUsers()
+  beforeEach(async () => {
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test"))
+    users = testContext.firestore().collection("test_users")
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generateDocumentExpiryRequest = (address?: string): Request => {

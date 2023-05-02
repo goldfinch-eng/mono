@@ -1,10 +1,8 @@
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
-import {getUsers, overrideFirestore} from "../../../src/db"
+import {getUsers, initializeFirebaseTestEnv} from "../../../src/db"
 import _ from "lodash"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {processIdentityWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
 
 import sinon, {SinonSandbox, SinonStub} from "sinon"
@@ -18,7 +16,6 @@ import {
   PmIdentityPayload,
   PmIndividualIdentity,
 } from "../../../src/handlers/parallelmarkets/PmApiTypes"
-import {setTestConfig} from "../../../src/config"
 
 describe("pmWebhookReceiver identity data update", async () => {
   const PENDING_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"
@@ -102,20 +99,17 @@ describe("pmWebhookReceiver identity data update", async () => {
     scope: "identity",
   }
 
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let users: firestore.CollectionReference<firestore.DocumentData>
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
   let sandbox: SinonSandbox
   let stub: SinonStub
 
   beforeEach(async () => {
     sandbox = sinon.createSandbox()
     stub = sandbox.stub(fetchModule, "default")
-    testApp = firebaseTesting.initializeAdminApp({projectId: "goldfinch-frontend-test"})
-    testFirestore = testApp.firestore()
-    overrideFirestore(testFirestore)
-    setTestConfig({})
-    users = getUsers()
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontends-test"))
+    users = testContext.firestore().collection("test_users")
 
     // Save pending user to user store
     await users.doc(PENDING_ADDRESS_INDIVIDUAL).set(PENDING_FIRESTORE_INDIVIDUAL_USER)
@@ -123,7 +117,7 @@ describe("pmWebhookReceiver identity data update", async () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId: "goldfinch-frontend-test"})
+    await testEnv.clearFirestore()
     sandbox.restore()
   })
 

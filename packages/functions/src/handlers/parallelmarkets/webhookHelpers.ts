@@ -7,7 +7,6 @@ import {
   PmIndividualIdentity,
 } from "./PmApiTypes"
 import {getUsers} from "../../db"
-import {FieldPath} from "@google-cloud/firestore"
 import {
   getAccreditationStatus,
   getBusinessIdentityStatus,
@@ -221,8 +220,7 @@ const processAccreditationRevocationScheduled = async ({id, type}: PmEntity) => 
  */
 export const getUserDocByPMId = async (id: string) => {
   const users = getUsers()
-  const fieldPath = new FieldPath("parallelMarkets", "id")
-  const userSnapshot = await users.where(fieldPath, "==", id).get()
+  const userSnapshot = await users.where("parallelMarkets.id", "==", id).get()
   if (userSnapshot.empty) {
     console.log(`User ${id} not found`)
     return undefined

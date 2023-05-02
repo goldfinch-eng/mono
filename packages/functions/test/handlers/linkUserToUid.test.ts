@@ -1,10 +1,9 @@
 import chai, {expect} from "chai"
 import chaiSubset from "chai-subset"
-import * as admin from "firebase-admin"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
 chai.use(chaiSubset)
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable, presignedMintToMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
@@ -14,13 +13,11 @@ import {BaseProvider} from "@ethersproject/providers"
 import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import {overrideFirestore, getUsers} from "../../src/db"
+import {initializeFirebaseTestEnv} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
 import _ from "lodash"
-import {setTestConfig} from "../../src/config"
+import {HttpsFunction} from "firebase-functions/v1"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
@@ -81,9 +78,6 @@ describe("linkUserToUid", () => {
   let signer: Wallet
   let testLinkKycToUid: HttpsFunction
   let uniqueIdentity: {address: string}
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let users: firestore.CollectionReference<firestore.DocumentData>
   let expiresAt: number
   let validMintPresigMessage: BytesLike
   let validMintSignature: string
@@ -91,6 +85,9 @@ describe("linkUserToUid", () => {
   let validMintToSignature: string
   let mintRequest: Request
   let mintToRequest: Request
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
   let currentBlockNum: number
   let currentBlockTimestamp: number
@@ -142,7 +139,6 @@ describe("linkUserToUid", () => {
 
   const expectSuccessfulMintToLink = async (fromAddress: string, recipientAddress: string, customExpiresAt: number) => {
     const startedAt = Date.now()
-    console.log(`customExpiresAt: ${customExpiresAt}`)
     const presigMintToMessage = presignedMintToMessage(
       fromAddress,
       recipientAddress,
@@ -189,14 +185,8 @@ describe("linkUserToUid", () => {
     const block = await web3.eth.getBlock("latest")
     currentBlockNum = block.number
     currentBlockTimestamp = block.timestamp as number
-
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    overrideFirestore(testFirestore)
-    setTestConfig({
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-    })
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontends-test"))
+    users = testContext.firestore().collection("test_users")
 
     chainId = await hardhat.getChainId()
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})
@@ -249,12 +239,11 @@ describe("linkUserToUid", () => {
         address: mainUserAddress,
         updatedAt: Date.now(),
       }
-      users = getUsers()
       await users.doc(mainUserAddress).set(mainUser)
     })
 
     afterEach(async () => {
-      await firebaseTesting.clearFirestoreData({projectId})
+      await testEnv.clearFirestore()
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
@@ -391,12 +380,11 @@ describe("linkUserToUid", () => {
         address: mainUserAddress,
         updatedAt: Date.now(),
       }
-      users = getUsers()
       await users.doc(mainUserAddress).set(mainUser)
     })
 
     afterEach(async () => {
-      await firebaseTesting.clearFirestoreData({projectId})
+      await testEnv.clearFirestore()
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
@@ -434,8 +422,6 @@ describe("linkUserToUid", () => {
 
     it("throws a 400 error when the user already received a signature to mint a UID of tokenId linked to a different UID recipient", async () => {
       let userDoc = await users.doc(mainUserAddress).get()
-      console.log("user data before test")
-      console.log(userDoc.data())
       await expectSuccessfulMintToLink(mainUserAddress, otherUserAddress, expiresAt)
       await testLinkKycToUid(
         mintToRequest,
@@ -445,8 +431,6 @@ describe("linkUserToUid", () => {
         }),
       )
       userDoc = await users.doc(mainUserAddress).get()
-      console.log("user data after test")
-      console.log(userDoc.data())
       expect(userDoc.exists).to.be.true
       expect(userDoc.data()).to.containSubset(_.omit(mainUser, "updatedAt"))
       const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations

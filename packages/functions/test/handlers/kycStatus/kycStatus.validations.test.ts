@@ -1,22 +1,21 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {getUsers, setTestFirestore} from "../../../src/db"
 import {kycStatus} from "../../../src"
 
 chai.use(chaiSubset)
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../../src/helpers"
 import {expectResponse} from "../../utils"
 import {ethers} from "ethers"
-import {setTestConfig} from "../../../src/config"
+
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
+
+import {initializeFirebaseTestEnv} from "../../../src/db"
 
 type FakeBlock = {
   number: number
@@ -31,10 +30,10 @@ describe.skip("kycStatus validations", async () => {
     privateKey: "0x20c5c29e29791089b4b60e65966adb104f540a7597ee1e97c6760e95c7b780eb",
   }
   const testWallet = new ethers.Wallet(testAccount.privateKey)
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  const projectId = "goldfinch-frontend-test"
-  let users: firestore.CollectionReference<firestore.DocumentData>
+
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
   const currentBlockNum = 84
   const yesterdayBlockNum = 80
@@ -64,15 +63,9 @@ describe.skip("kycStatus validations", async () => {
     mockGetBlockchain(mock)
   })
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    setTestFirestore(testFirestore)
-    setTestConfig({
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-    })
-    users = getUsers(testFirestore)
+  beforeEach(async () => {
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontends-test"))
+    users = testContext.firestore().collection("test_users")
   })
 
   after(async () => {
@@ -80,7 +73,7 @@ describe.skip("kycStatus validations", async () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generateKycRequest = (

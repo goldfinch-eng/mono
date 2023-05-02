@@ -1,7 +1,46 @@
 import {firestore} from "firebase-admin"
+import {FirebaseConfig, setTestConfig} from "./config"
+import {initializeTestEnvironment, RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 
 // Optionally override the firestore for testing or emulation
 let _firestore: firestore.Firestore
+
+/**
+ * Setup firebase test env by creating a test firestore
+ * @param {string} projectId project id
+ * @param {Omit<FirebaseConfig, "sentry">} config testing config
+ * @return {Object} the test env and test context
+ */
+async function initializeFirebaseTestEnv(
+  projectId: string,
+  config?: Omit<FirebaseConfig, "sentry" | "parallelmarkets">,
+): Promise<{testEnv: RulesTestEnvironment; testContext: RulesTestContext}> {
+  const rules =
+    "service cloud.firestore {" +
+    "  match /databases/{database}/documents {" +
+    "    match /{document=**} {" +
+    "      allow read, write: if true;" +
+    "    }" +
+    "  }" +
+    "}"
+  const testEnv = await initializeTestEnvironment({
+    projectId,
+    firestore: {
+      rules,
+    },
+  })
+  const testContext = testEnv.unauthenticatedContext()
+
+  // test firestores are a little different than the production firestore
+  // pretend that they're the same, we don't use any of the special commands
+  overrideFirestore(testContext.firestore() as unknown as firestore.Firestore)
+
+  if (config) {
+    setTestConfig(config)
+  }
+
+  return {testEnv, testContext}
+}
 
 /**
  * Override the firestore to use for tests. Need this so we can connect to the emulator.
@@ -59,4 +98,4 @@ function getDb(): firestore.Firestore {
   return _firestore || firestore()
 }
 
-export {getUsers, getDestroyedUsers, getAgreements, getDb, overrideFirestore}
+export {getUsers, getDestroyedUsers, getAgreements, getDb, overrideFirestore, initializeFirebaseTestEnv}
