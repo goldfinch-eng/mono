@@ -1462,6 +1462,9 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("CallableLoans", () => {
+    /**
+     * TODO: Reintroduce these tests for a generic callable loan. They are currently failing
+       because the Fazz callable loan is past the funding phase.
     describe("Fazz callable loan after unpausing drawdowns", () => {
       let callableLoan: CallableLoanInstance
       let borrowerContract: BorrowerInstance
@@ -1542,6 +1545,7 @@ describe("mainnet forking tests", async function () {
         await expectCallableLoanState(usdcVal(100_000))
       })
     })
+     */
   })
 
   describe("CommunityRewards", () => {

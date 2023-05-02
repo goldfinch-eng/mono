@@ -47,6 +47,10 @@ import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
 import {EXISTING_POOL_TO_TOKEN} from "@goldfinch-eng/protocol/test/util/tranchedPool"
 import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/CallableLoan"
 
+// https://etherscan.io/tx/0x18de9f70e363ffeb11e17aebfe283c552dc1bb08e79f668f262d4e19fdf7327b
+const EXAMPLE_FAZZ_POOL_TOKEN = 946
+const EXAMPLE_FAZZ_POOL_TOKEN_OWNER = "0xc0d67e9ab24e98e84d3efc150ae14c5754db33d4"
+
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 
@@ -228,9 +232,18 @@ describe("v3.3.0", async function () {
   })
 
   describe("Lender", async () => {
-    let originalPoolTokenId: string
-    const depositAmount = usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))
+    it("can submit a call request", async () => {
+      await advanceAndMineBlock({days: 120})
 
+      await fundWithWhales(["ETH"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER])
+      await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
+      await callableLoanInstance.submitCall(1000, EXAMPLE_FAZZ_POOL_TOKEN, {
+        from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER,
+      })
+    })
+    /**
+    TODO: Reintroduce these tests for a generic callable loan. They are currently failing
+          because the Fazz callable loan is past the funding phase.
     context("with a generic deposit", async () => {
       beforeEach(async () => {
         await makeDeposit({
@@ -250,15 +263,6 @@ describe("v3.3.0", async function () {
 
         // Advance past the drawdown locking period
         await advanceAndMineBlock({days: 120})
-      })
-
-      it("can withdraw before drawdown", async () => {
-        const previousBalance = await usdc.balanceOf(defaultLenderAddress)
-
-        await expect(callableLoanInstance.withdraw(originalPoolTokenId, usdcVal(1000), {from: defaultLenderAddress})).to
-          .not.be.rejected
-
-        expect(await usdc.balanceOf(defaultLenderAddress)).to.equal(previousBalance.add(usdcVal(1000)))
       })
 
       it("can submit a call request", async () => {
@@ -318,6 +322,15 @@ describe("v3.3.0", async function () {
         .rejected
       expect(await usdc.balanceOf(lenders[2])).to.equal(lender2OriginalBalance.sub(usdcVal(4000)))
     })
+    it("can withdraw before drawdown", async () => {
+      const previousBalance = await usdc.balanceOf(defaultLenderAddress)
+
+      await expect(callableLoanInstance.withdraw(originalPoolTokenId, usdcVal(1000), {from: defaultLenderAddress})).to
+        .not.be.rejected
+
+      expect(await usdc.balanceOf(defaultLenderAddress)).to.equal(previousBalance.add(usdcVal(1000)))
+    })
+     
 
     it("does not allow someone to withdraw someone elses pool token", async () => {
       // Deposit for lender 0
@@ -332,6 +345,21 @@ describe("v3.3.0", async function () {
       )
       await expect(callableLoanInstance.withdraw(lender0PoolToken, usdcVal(100), {from: lenders[1]})).to.be.rejected
       await expect(callableLoanInstance.withdraw(lender0PoolToken, usdcVal(100), {from: lenders[0]})).to.not.be.rejected
+    })*/
+
+    it("does not allow someone to withdraw someone elses pool token", async () => {
+      await advanceTime({days: 30})
+
+      await fundWithWhales(["ETH", "USDC"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER])
+      await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
+      await usdc.approve(callableLoanInstance.address, usdcVal(1_000), {from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER})
+      await callableLoanInstance.methods["pay(uint256)"](usdcVal(1_000), {from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER})
+
+      await advanceTime({days: 90})
+
+      await expect(callableLoanInstance.withdrawMax(EXAMPLE_FAZZ_POOL_TOKEN, {from: lenders[1]})).to.be.rejected
+      await expect(callableLoanInstance.withdrawMax(EXAMPLE_FAZZ_POOL_TOKEN, {from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER})).to
+        .not.be.rejected
     })
 
     it("does not allow someone to withdraw any tranched pool token on callable loans", async () => {
@@ -384,6 +412,9 @@ describe("v3.3.0", async function () {
       ).to.eventually.be.rejectedWith()
     })
 
+    /*
+    TODO: Reintroduce these tests for a generic callable loan. They are currently failing
+      because the Fazz callable loan is past the funding phase.
     it("can initially not successfully drawdown and transfer funds to the borrower address, but it can after warbler gov unpauses drawdowns", async () => {
       await makeDeposit({depositAmount: usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))})
 
@@ -414,13 +445,9 @@ describe("v3.3.0", async function () {
       expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.equal(previousBorrowerBalance.add(usdcVal(100_000)))
       expect(await usdc.balanceOf(callableLoanInstance.address)).to.equal(previousLoanBalance.sub(usdcVal(100_000)))
     })
+    */
 
     it("can successfully pay on behalf of the borrower using the pay function", async () => {
-      await makeDeposit({depositAmount: usdcVal(FAZZ_DEAL_LIMIT_IN_DOLLARS).div(new BN(20))})
-      await borrowerContract.drawdown(callableLoanInstance.address, usdcVal(100_000), FAZZ_MAINNET_EOA, {
-        from: FAZZ_MAINNET_EOA,
-      })
-
       await advanceTime({days: 90})
 
       const previousBorrowerBalance = await usdc.balanceOf(FAZZ_MAINNET_EOA)
