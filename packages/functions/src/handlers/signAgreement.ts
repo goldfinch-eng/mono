@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getAgreements} from "../db"
 import {genRequestHandler} from "../helpers"
@@ -15,6 +16,9 @@ export const signAgreement = genRequestHandler({
     if (!address) {
       return res.status(403).send({error: "Invalid address"})
     }
+
+    Sentry.setUser({id: address})
+
     const fullName = (req.body.fullName || "").trim()
     const email = (req.body.email || "").trim()
 

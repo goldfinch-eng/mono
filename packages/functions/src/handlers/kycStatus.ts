@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
@@ -152,6 +153,9 @@ export const kycStatus = genRequestHandler({
     }
 
     const address = verificationResult.address
+
+    Sentry.setUser({id: address})
+
     let payload: KycStatusResponse = {
       address: address,
       status: "unknown",

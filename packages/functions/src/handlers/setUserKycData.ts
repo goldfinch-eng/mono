@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/serverless"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
@@ -18,6 +19,8 @@ export const setUserKYCData = genRequestHandler({
     }
 
     const address = verificationResult.address.toLowerCase()
+
+    Sentry.setUser({id: verificationResult.address})
 
     const {residency} = req.body
 
