@@ -191,7 +191,7 @@ export const viewerResolvers: Resolvers[string] = {
     const kycStatus = await fetchKycStatus(address, signature);
     return {
       __typename: "KycStatus",
-      status: kycStatus.status,
+      status: kycStatus.status ?? null,
       identityStatus: kycStatus.identityStatus ?? null,
       accreditationStatus: kycStatus.accreditationStatus ?? null,
       kycProvider: kycStatus.kycProvider ?? null,

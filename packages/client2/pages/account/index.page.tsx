@@ -86,7 +86,7 @@ const AccountsPage: NextPageWithLayout = () => {
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (router.query.code !== undefined && account && provider) {
+        if (router.query.code !== undefined && provider) {
           const plaintext = `Share your OAuth code with Goldfinch: ${router.query.code}`;
           const sig = await getSignatureForKyc(provider, signer, plaintext);
           await registerKyc(account, sig);
@@ -113,6 +113,7 @@ const AccountsPage: NextPageWithLayout = () => {
   } = data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
+  const hasUID = !!uidType;
 
   return (
     <div>
@@ -169,7 +170,7 @@ const AccountsPage: NextPageWithLayout = () => {
                           : "Fetching your account data, this requires a signature"}
                       </div>
                     </div>
-                  ) : uidType ? (
+                  ) : hasUID ? (
                     <div className="lg:px-5">
                       <div className="flex flex-col gap-y-2">
                         <h2 className="text-sand-500">Information</h2>
@@ -181,11 +182,15 @@ const AccountsPage: NextPageWithLayout = () => {
                         <div className="break-words">{account}</div>
                       </div>
                     </div>
-                  ) : status === "pending" ? ( // status can only be pending with parallel markets
+                  ) : status === "pending" ? (
                     <CallToActionBanner
                       iconLeft={DEFAULT_UID_ICON}
                       title="UID is being verified"
-                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+                      description={
+                        kycProvider === "parallelMarkets"
+                          ? "Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+                          : "Almost there. Your UID is still being verified."
+                      }
                       colorScheme="white"
                     >
                       <>
@@ -213,35 +218,6 @@ const AccountsPage: NextPageWithLayout = () => {
                         </p>
                       </>
                     </CallToActionBanner>
-                  ) : status === "approved" ? (
-                    kycProvider === "parallelMarkets" &&
-                    accreditationStatus === "unaccredited" ? (
-                      <CallToActionBanner
-                        renderButton={(props) => EmailUIDButton(props)}
-                        colorScheme="red"
-                        iconLeft="Exclamation"
-                        title="We're sorry"
-                        description={
-                          type === "business"
-                            ? countryCode === "US"
-                              ? "Non-accredited US businesses are not eligible for UID"
-                              : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business
-                            : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual
-                        }
-                      />
-                    ) : (
-                      <CallToActionBanner
-                        renderButton={(props) => (
-                          <Button {...props} onClick={openVerificationModal}>
-                            Claim UID
-                          </Button>
-                        )}
-                        colorScheme="green"
-                        iconLeft={DEFAULT_UID_ICON}
-                        title="Claim your UID"
-                        description="Your application is approved! Claim your UID to participate in the protocol."
-                      />
-                    )
                   ) : status === "failed" ? (
                     <CallToActionBanner
                       renderButton={(props) => EmailUIDButton(props)}
@@ -256,7 +232,39 @@ const AccountsPage: NextPageWithLayout = () => {
                       }
                       description="Sorry, you have been deemed ineligible for a UID."
                     />
+                  ) : status === "approved" ? (
+                    kycProvider === "persona" ||
+                    (kycProvider === "parallelMarkets" &&
+                      accreditationStatus === "approved") ? (
+                      <CallToActionBanner
+                        renderButton={(props) => (
+                          <Button {...props} onClick={openVerificationModal}>
+                            Claim UID
+                          </Button>
+                        )}
+                        colorScheme="green"
+                        iconLeft={DEFAULT_UID_ICON}
+                        title="Claim your UID"
+                        description="Your application is approved! Claim your UID to participate in the protocol."
+                      />
+                    ) : (
+                      // unaccredited parallel markets case
+                      <CallToActionBanner
+                        renderButton={(props) => EmailUIDButton(props)}
+                        colorScheme="red"
+                        iconLeft="Exclamation"
+                        title="We're sorry"
+                        description={
+                          type === "business"
+                            ? countryCode === "US"
+                              ? "Non-accredited US businesses are not eligible for UID"
+                              : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business - should use persona
+                            : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual - should use persona
+                        }
+                      />
+                    )
                   ) : (
+                    // if status is unknown
                     <CallToActionBanner
                       renderButton={(props) => (
                         <Button {...props} onClick={openVerificationModal}>
