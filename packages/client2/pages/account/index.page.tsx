@@ -51,7 +51,12 @@ const DEFAULT_UID_ICON = "Globe";
 const AccountsPage: NextPageWithLayout = () => {
   const isMounted = useIsMounted();
   const { account, provider, signer } = useWallet();
-  const { data, error, loading, refetch } = useAccountPageQuery({
+  const {
+    data,
+    error,
+    loading: isFetchingAccountData,
+    refetch,
+  } = useAccountPageQuery({
     variables: { account: account?.toLowerCase() ?? "" },
     skip: !account,
     fetchPolicy: "network-only",
@@ -86,7 +91,7 @@ const AccountsPage: NextPageWithLayout = () => {
             "You have declined to give Goldfinch consent for authorization to Parallel Markets. Please try authenticating with Parallel Markets through Goldfinch again."
           );
         }
-        if (router.query.code !== undefined && account && provider) {
+        if (router.query.code !== undefined && provider) {
           const plaintext = `Share your OAuth code with Goldfinch: ${router.query.code}`;
           const sig = await getSignatureForKyc(provider, signer, plaintext);
           await registerKyc(account, sig);
@@ -113,6 +118,7 @@ const AccountsPage: NextPageWithLayout = () => {
   } = data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
+  const hasUID = !!uidType;
 
   return (
     <div>
@@ -160,7 +166,7 @@ const AccountsPage: NextPageWithLayout = () => {
                         </Button>
                       )}
                     />
-                  ) : isRegisteringKyc || loading ? (
+                  ) : isRegisteringKyc || isFetchingAccountData ? (
                     <div className="flex items-center gap-4">
                       <Spinner size="lg" />
                       <div className="text-lg">
@@ -169,7 +175,7 @@ const AccountsPage: NextPageWithLayout = () => {
                           : "Fetching your account data, this requires a signature"}
                       </div>
                     </div>
-                  ) : uidType ? (
+                  ) : hasUID ? (
                     <div className="lg:px-5">
                       <div className="flex flex-col gap-y-2">
                         <h2 className="text-sand-500">Information</h2>
@@ -181,92 +187,16 @@ const AccountsPage: NextPageWithLayout = () => {
                         <div className="break-words">{account}</div>
                       </div>
                     </div>
-                  ) : status === "pending" ? ( // status can only be pending with parallel markets
-                    <CallToActionBanner
-                      iconLeft={DEFAULT_UID_ICON}
-                      title="UID is being verified"
-                      description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
-                      colorScheme="white"
-                    >
-                      <>
-                        <div className="my-8 flex flex-col gap-2 sm:flex-row">
-                          <CheckableStep name="Documents uploaded" checked />
-                          <CheckableStep
-                            name="Identity verification"
-                            checked={identityStatus === "approved"}
-                          />
-                          <CheckableStep
-                            name="Accreditation verification"
-                            checked={accreditationStatus === "approved"}
-                          />
-                        </div>
-                        <p className="text-sm">
-                          <>
-                            If you are still facing a delay, please email us at{" "}
-                            <Link
-                              rel="noopener"
-                              href="mailto:UID@warblerlabs.com"
-                            >
-                              UID@warblerlabs.com
-                            </Link>
-                          </>
-                        </p>
-                      </>
-                    </CallToActionBanner>
-                  ) : status === "approved" ? (
-                    kycProvider === "parallelMarkets" &&
-                    accreditationStatus === "unaccredited" ? (
-                      <CallToActionBanner
-                        renderButton={(props) => EmailUIDButton(props)}
-                        colorScheme="red"
-                        iconLeft="Exclamation"
-                        title="We're sorry"
-                        description={
-                          type === "business"
-                            ? countryCode === "US"
-                              ? "Non-accredited US businesses are not eligible for UID"
-                              : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business
-                            : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual
-                        }
-                      />
-                    ) : (
-                      <CallToActionBanner
-                        renderButton={(props) => (
-                          <Button {...props} onClick={openVerificationModal}>
-                            Claim UID
-                          </Button>
-                        )}
-                        colorScheme="green"
-                        iconLeft={DEFAULT_UID_ICON}
-                        title="Claim your UID"
-                        description="Your application is approved! Claim your UID to participate in the protocol."
-                      />
-                    )
-                  ) : status === "failed" ? (
-                    <CallToActionBanner
-                      renderButton={(props) => EmailUIDButton(props)}
-                      colorScheme="red"
-                      iconLeft="Exclamation"
-                      title={
-                        accreditationStatus === "failed"
-                          ? "Accreditation check failed"
-                          : identityStatus === "failed"
-                          ? "Identity verification failed"
-                          : "You are not eligible"
-                      }
-                      description="Sorry, you have been deemed ineligible for a UID."
-                    />
                   ) : (
-                    <CallToActionBanner
-                      renderButton={(props) => (
-                        <Button {...props} onClick={openVerificationModal}>
-                          Begin UID setup
-                        </Button>
-                      )}
-                      iconLeft={DEFAULT_UID_ICON}
-                      title="Setup your UID to start"
-                      description={SETUP_UID_BANNER_TEXT}
-                    />
+                    KYCStatusBanner(
+                      status,
+                      accreditationStatus,
+                      identityStatus,
+                      openVerificationModal,
+                      kycProvider,
+                      countryCode,
+                      type
+                    )
                   )}
                 </TabContent>
               </TabPanels>
@@ -307,4 +237,107 @@ function EmailUIDButton(
       Email us
     </Button>
   );
+}
+
+function KYCStatusBanner(
+  status: string | null | undefined,
+  accreditationStatus: string | null | undefined,
+  identityStatus: string | null | undefined,
+  onClick: () => void,
+  kycProvider: string | null | undefined,
+  countryCode: string | null | undefined,
+  type: string | null | undefined
+) {
+  switch (status) {
+    case "pending":
+      return (
+        <CallToActionBanner
+          iconLeft={DEFAULT_UID_ICON}
+          title="UID is being verified"
+          description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+          colorScheme="white"
+        >
+          <>
+            <div className="my-8 flex flex-col gap-2 sm:flex-row">
+              <CheckableStep name="Documents uploaded" checked />
+              <CheckableStep
+                name="Identity verification"
+                checked={identityStatus === "approved"}
+              />
+              <CheckableStep
+                name="Accreditation verification"
+                checked={accreditationStatus === "approved"}
+              />
+            </div>
+            <p className="text-sm">
+              <>
+                If you are still facing a delay, please email us at{" "}
+                <Link rel="noopener" href="mailto:UID@warblerlabs.com">
+                  UID@warblerlabs.com
+                </Link>
+              </>
+            </p>
+          </>
+        </CallToActionBanner>
+      );
+    case "approved":
+      return kycProvider === "parallelMarkets" &&
+        accreditationStatus === "unaccredited" ? (
+        <CallToActionBanner
+          renderButton={(props) => EmailUIDButton(props)}
+          colorScheme="red"
+          iconLeft="Exclamation"
+          title="We're sorry"
+          description={
+            type === "business"
+              ? countryCode === "US"
+                ? "Non-accredited US businesses are not eligible for UID"
+                : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business
+              : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual
+          }
+        />
+      ) : (
+        <CallToActionBanner
+          renderButton={(props) => (
+            <Button {...props} onClick={onClick}>
+              Claim UID
+            </Button>
+          )}
+          colorScheme="green"
+          iconLeft={DEFAULT_UID_ICON}
+          title="Claim your UID"
+          description="Your application is approved! Claim your UID to participate in the protocol."
+        />
+      );
+    case "failed":
+      return (
+        <CallToActionBanner
+          renderButton={(props) => EmailUIDButton(props)}
+          colorScheme="red"
+          iconLeft="Exclamation"
+          title={
+            accreditationStatus === "failed"
+              ? "Accreditation check failed"
+              : identityStatus === "failed"
+              ? "Identity verification failed"
+              : "You are not eligible"
+          }
+          description="Sorry, you have been deemed ineligible for a UID."
+        />
+      );
+
+    default: // status is unknown
+      return (
+        <CallToActionBanner
+          renderButton={(props) => (
+            <Button {...props} onClick={openVerificationModal}>
+              Begin UID setup
+            </Button>
+          )}
+          iconLeft={DEFAULT_UID_ICON}
+          title="Setup your UID to start"
+          description={SETUP_UID_BANNER_TEXT}
+        />
+      );
+  }
 }
