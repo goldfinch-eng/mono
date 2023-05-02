@@ -18,10 +18,7 @@ import {
   PoolTokensInstance,
   GFIInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {
-  MAINNET_GOVERNANCE_MULTISIG,
-  MAINNET_WARBLER_LABS_MULTISIG,
-} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
   advanceAndMineBlock,
   advanceTime,
@@ -45,7 +42,7 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdentity"
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
 import {EXISTING_POOL_TO_TOKEN} from "@goldfinch-eng/protocol/test/util/tranchedPool"
-import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/CallableLoan"
+import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/callable/CallableLoan"
 
 // https://etherscan.io/tx/0x18de9f70e363ffeb11e17aebfe283c552dc1bb08e79f668f262d4e19fdf7327b
 const EXAMPLE_FAZZ_POOL_TOKEN = 946
@@ -157,7 +154,7 @@ describe("v3.3.0", async function () {
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
 
-      await advanceTime({days: 30})
+      await advanceAndMineBlock({days: 10})
       const callResult = await callableLoanInstance.submitCall(callAmount, originalPoolTokenId, {
         from: lenderAddress,
       })
@@ -233,7 +230,7 @@ describe("v3.3.0", async function () {
 
   describe("Lender", async () => {
     it("can submit a call request", async () => {
-      await advanceAndMineBlock({days: 120})
+      await advanceAndMineBlock({days: 10})
 
       await fundWithWhales(["ETH"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER])
       await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
