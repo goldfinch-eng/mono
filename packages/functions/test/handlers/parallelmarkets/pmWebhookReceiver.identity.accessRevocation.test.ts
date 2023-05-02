@@ -1,4 +1,4 @@
-import {getUsers, initializeFirebaseTestEnv} from "../../../src/db"
+import {getUsers} from "../../../src/db"
 import _ from "lodash"
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
@@ -10,6 +10,7 @@ import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
 import {PmIdentityPayload, PmProfileResponse} from "../../../src/handlers/parallelmarkets/PmApiTypes"
+import {initializeFirebaseTestEnv} from "../../utils"
 
 describe("pmWebhookReceiver identity access revocation", () => {
   const APPROVED_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"

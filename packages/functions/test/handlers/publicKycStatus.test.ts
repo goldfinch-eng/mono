@@ -1,11 +1,9 @@
 import _ from "lodash"
 import {Request} from "express"
 import {publicKycStatus} from "../../src"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-
-import {initializeFirebaseTestEnv} from "../../src/db"
 
 describe("publicKycStatus", () => {
   const ADDRESS = "0x4F7280C3ba9a9Cef45e468165a1Bf611129157c9"

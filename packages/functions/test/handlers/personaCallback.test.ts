@@ -9,13 +9,12 @@ import {personaCallback} from "../../src"
 
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-import {initializeFirebaseTestEnv} from "../../src/db"
 
 chai.use(chaiSubset)
 const expect = chai.expect
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 import {FirebaseConfig} from "../../src/config"
 
 type FakeBlock = {

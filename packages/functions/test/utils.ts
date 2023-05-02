@@ -3,7 +3,11 @@ import chaiSubset from "chai-subset"
 chai.use(chaiSubset)
 const expect = chai.expect
 import {Response} from "firebase-functions"
+import {FirebaseConfig, setTestConfig} from "../src/config"
 import firebase from "firebase/compat/app"
+import {firestore} from "firebase-admin"
+import {initializeTestEnvironment, RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import {overrideFirestore} from "../src/db"
 
 /**
  * Assert a response object of a cloud function matches the expected http status code and reponse body.
@@ -41,4 +45,41 @@ const expectSize = async (
   expect((await collection.get()).size).to.equal(size)
 }
 
-export {expectResponse, expectSize}
+/**
+ * Setup firebase test env by creating a test firestore
+ * @param {string} projectId project id
+ * @param {Omit<FirebaseConfig, "sentry">} config testing config
+ * @return {Object} the test env and test context
+ */
+async function initializeFirebaseTestEnv(
+  projectId: string,
+  config?: Omit<FirebaseConfig, "sentry" | "parallelmarkets">,
+): Promise<{testEnv: RulesTestEnvironment; testContext: RulesTestContext}> {
+  const rules =
+    "service cloud.firestore {" +
+    "  match /databases/{database}/documents {" +
+    "    match /{document=**} {" +
+    "      allow read, write: if true;" +
+    "    }" +
+    "  }" +
+    "}"
+  const testEnv = await initializeTestEnvironment({
+    projectId,
+    firestore: {
+      rules,
+    },
+  })
+  const testContext = testEnv.unauthenticatedContext()
+
+  // test firestores are a little different than the production firestore
+  // pretend that they're the same, we don't use any of the special commands
+  overrideFirestore(testContext.firestore() as unknown as firestore.Firestore)
+
+  if (config) {
+    setTestConfig(config)
+  }
+
+  return {testEnv, testContext}
+}
+
+export {expectResponse, expectSize, initializeFirebaseTestEnv}

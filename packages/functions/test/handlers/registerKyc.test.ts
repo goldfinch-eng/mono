@@ -17,12 +17,11 @@ chai.use(chaiSubset)
 const expect = chai.expect
 
 import {registerKyc} from "../../src"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-import {initializeFirebaseTestEnv} from "../../src/db"
 
 type FakeBlock = {
   number: number

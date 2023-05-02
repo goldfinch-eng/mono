@@ -9,13 +9,11 @@ chai.use(chaiSubset)
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../../src/helpers"
-import {expectResponse} from "../../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../../utils"
 import {ethers} from "ethers"
 
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-
-import {initializeFirebaseTestEnv} from "../../../src/db"
 
 type FakeBlock = {
   number: number

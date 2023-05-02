@@ -1,6 +1,6 @@
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-import {getUsers, initializeFirebaseTestEnv} from "../../../src/db"
+import {getUsers} from "../../../src/db"
 import _ from "lodash"
 
 import {processAccreditationWebhook} from "../../../src/handlers/parallelmarkets/webhookHelpers"
@@ -15,6 +15,7 @@ import sinon, {SinonSandbox, SinonStub} from "sinon"
 import * as fetchModule from "node-fetch"
 import {Response} from "node-fetch"
 import {expect} from "chai"
+import {initializeFirebaseTestEnv} from "../../utils"
 
 describe("pmWebhookReceiver accreditation data update", async () => {
   const PENDING_ADDRESS_INDIVIDUAL = "0xA57415BeCcA125Ee98B04b229A0Af367f4144030"

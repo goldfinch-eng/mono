@@ -6,7 +6,6 @@ import {fake} from "sinon"
 import {destroyUser} from "../../src"
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-import {initializeFirebaseTestEnv} from "../../src/db"
 
 chai.use(chaiSubset)
 const expect = chai.expect
@@ -14,7 +13,7 @@ import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {ethers} from "ethers"
-import {expectResponse, expectSize} from "../utils"
+import {expectResponse, expectSize, initializeFirebaseTestEnv} from "../utils"
 
 type FakeBlock = {
   number: number

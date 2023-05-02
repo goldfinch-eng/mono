@@ -4,7 +4,6 @@ import {BaseProvider} from "@ethersproject/providers"
 import {fake} from "sinon"
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"
-import {initializeFirebaseTestEnv} from "../../src/db"
 
 import {signAgreement} from "../../src"
 
@@ -13,7 +12,7 @@ const expect = chai.expect
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 
 type FakeBlock = {
   number: number
@@ -57,7 +56,7 @@ describe("signAgreement", async () => {
   })
 
   beforeEach(async () => {
-    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test", config))
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test"))
     agreements = testContext.firestore().collection("test_agreements")
   })
 
