@@ -27,6 +27,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   uint256 private previousBalance;
 
   uint256 private constant LIMIT = 100_000_000_000 * 10e6;
+  uint256 private constant UNCALLED_CAPITAL_TRANCHE_ID = 3;
 
   address[4] private USERS = [
     address(uint160(42)),
@@ -55,7 +56,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     callAmount = bound(callAmount, 1, drawdownAmount);
     paymentAmount = bound(paymentAmount, 1, drawdownAmount);
 
-    uint256 token = deposit(callableLoan, 3, depositAmount, USERS[0]);
+    uint256 token = deposit(callableLoan, UNCALLED_CAPITAL_TRANCHE_ID, depositAmount, USERS[0]);
 
     drawdown(callableLoan, drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
@@ -98,8 +99,6 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       );
     }
 
-    // Assert uncalled capital info
-    // Assert call request period
     {
       ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
         .getUncalledCapitalInfo();
@@ -265,19 +264,18 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
   function testPaymentIsAllocatedToCallsAcrossAllPaymentPeriods(
     uint256 depositAmount,
-    uint256 drawdownAmount,
     uint256 callAmount,
     uint256 secondsElapsed
   ) public {
     depositAmount = bound(depositAmount, usdcVal(10), usdcVal(100_000_000));
-    uint256 token1 = deposit(callableLoan, 3, depositAmount, USERS[1]);
-    uint256 token2 = deposit(callableLoan, 3, depositAmount, USERS[2]);
-    uint256 token3 = deposit(callableLoan, 3, depositAmount, USERS[3]);
+    uint256 token1 = deposit(callableLoan, UNCALLED_CAPITAL_TRANCHE_ID, depositAmount, USERS[1]);
+    uint256 token2 = deposit(callableLoan, UNCALLED_CAPITAL_TRANCHE_ID, depositAmount, USERS[2]);
+    uint256 token3 = deposit(callableLoan, UNCALLED_CAPITAL_TRANCHE_ID, depositAmount, USERS[3]);
 
     // Uncalled token
-    deposit(callableLoan, 3, depositAmount, USERS[0]);
+    deposit(callableLoan, UNCALLED_CAPITAL_TRANCHE_ID, depositAmount, USERS[0]);
 
-    drawdownAmount = bound(drawdownAmount, usdcVal(1), depositAmount);
+    uint256 drawdownAmount = depositAmount * 4;
     uint256 principalOutstanding = drawdownAmount;
     callAmount = bound(callAmount, 4, drawdownAmount / 4);
     drawdown(callableLoan, drawdownAmount);
@@ -285,17 +283,19 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     _startImpersonation(BORROWER);
     _stopImpersonation();
 
-    _startImpersonation(USERS[0]);
+    _startImpersonation(USERS[1]);
     (uint256 calledTokenId, uint256 uncalledTokenId) = callableLoan.submitCall(callAmount, token1);
     assertIsValidUncalledToken(uncalledTokenId);
 
     vm.warp(callableLoan.nextPrincipalDueTime());
 
+    _startImpersonation(USERS[2]);
     (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token2);
     assertIsValidUncalledToken(uncalledTokenId);
 
     vm.warp(callableLoan.nextPrincipalDueTime());
 
+    _startImpersonation(USERS[3]);
     (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token3);
     assertIsValidUncalledToken(uncalledTokenId);
 
@@ -304,6 +304,94 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     callableLoan.pay(paymentAmount);
 
     // TODO: Make assertions that all tranches have been paid
+
+    // Check uncalled capital tranche index
+    {
+      ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
+        .getUncalledCapitalInfo();
+
+      assertApproxEqAbs(
+        uncalledCapitalInfo.principalDeposited,
+        drawdownAmount - callAmount * 4,
+        1,
+        "Uncalled principal deposited"
+      );
+
+      // assertApproxEqAbs(
+      //   uncalledCapitalInfo.principalPaid,
+      //   (depositAmount - drawdownAmount) -
+      //     (((depositAmount * callAmount) / drawdownAmount) - callAmount),
+      //   1,
+      //   "Uncalled principal paid"
+      // );
+      // assertApproxEqAbs(
+      //   uncalledCapitalInfo.principalReserved,
+      //   Math.min(
+      //     paymentAmount.saturatingSub(totalInterestOwed).saturatingSub(callAmount),
+      //     uncalledCapitalInfo.principalDeposited
+      //   ),
+      //   1,
+      //   "Uncalled principal reserved"
+      // );
+
+      // assertApproxEqAbs(
+      //   uncalledCapitalInfo.interestPaid,
+      //   (Math.min(paymentAmount, totalInterestOwed) * uncalledCapitalInfo.principalDeposited) /
+      //     (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+      //   1,
+      //   "Uncalled interest paid"
+      // );
+
+      // assertApproxEqAbs(
+      //   callRequestPeriod.principalDeposited,
+      //   (depositAmount * callAmount) / drawdownAmount,
+      //   1,
+      //   "Called principal deposited"
+      // );
+
+      // assertApproxEqAbs(
+      //   callRequestPeriod.principalPaid,
+      //   ((depositAmount * callAmount) / drawdownAmount) - callAmount,
+      //   1,
+      //   "Called principal paid"
+      // );
+      // assertApproxEqAbs(
+      //   callRequestPeriod.principalReserved,
+      //   Math.min(
+      //     Math.min(callAmount, paymentAmount.saturatingSub(totalInterestOwed)),
+      //     callRequestPeriod.principalDeposited
+      //   ),
+      //   1,
+      //   "Called principal reserved"
+      // );
+      // assertApproxEqAbs(
+      //   callRequestPeriod.interestPaid,
+      //   (Math.min(paymentAmount, totalInterestOwed) * callRequestPeriod.principalDeposited) /
+      //     (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
+      //   1,
+      //   "Called interest paid"
+      // );
+      // if (uncalledCapitalInfo.principalDeposited > 0) {
+      //   assertOwedAmountsMatch(
+      //     remainderTokenId,
+      //     uncalledCapitalInfo.principalDeposited,
+      //     uncalledCapitalInfo.interestPaid,
+      //     uncalledCapitalInfo.principalPaid
+      //   );
+      // }
+      // assertOwedAmountsMatch(
+      //   calledTokenId,
+      //   callRequestPeriod.principalDeposited,
+      //   callRequestPeriod.interestPaid,
+      //   callRequestPeriod.principalPaid
+      // );
+    }
+
+    // Check tranche for call request period 1 (index 0)
+
+    // Check tranche for call request period 2
+
+    // Check tranche for call request period 3 (current period)
   }
 
   function assertOwedAmountsMatch(
