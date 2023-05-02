@@ -277,11 +277,9 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     uint256 drawdownAmount = depositAmount * 4;
     uint256 principalOutstanding = drawdownAmount;
-    callAmount = bound(callAmount, 4, drawdownAmount / 4);
+    callAmount = bound(callAmount, 1000, drawdownAmount / 4);
     drawdown(callableLoan, drawdownAmount);
     warpToAfterDrawdownPeriod(callableLoan);
-    _startImpersonation(BORROWER);
-    _stopImpersonation();
 
     _startImpersonation(USERS[1]);
     (uint256 calledTokenId, uint256 uncalledTokenId) = callableLoan.submitCall(callAmount, token1);
@@ -299,11 +297,14 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token3);
     assertIsValidUncalledToken(uncalledTokenId);
 
-    uint256 paymentAmount = callableLoan.interestOwed() + callableLoan.principalOwed();
+    _startImpersonation(BORROWER);
+    // Make payment amount less than fully owed so we can verify that all tranches are paid and that
+    // some of the uncalled tranche remains unpaid
+    uint256 totalInterestOwed = callableLoan.interestOwed();
+    uint256 paymentAmount = totalInterestOwed + callableLoan.principalOwed() - 100;
     usdc.approve(address(callableLoan), paymentAmount);
     callableLoan.pay(paymentAmount);
-
-    // TODO: Make assertions that all tranches have been paid
+    _stopImpersonation();
 
     // Check uncalled capital tranche index
     {
@@ -312,86 +313,105 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
       assertApproxEqAbs(
         uncalledCapitalInfo.principalDeposited,
-        drawdownAmount - callAmount * 4,
+        drawdownAmount - callAmount * 3,
         1,
         "Uncalled principal deposited"
       );
 
-      // assertApproxEqAbs(
-      //   uncalledCapitalInfo.principalPaid,
-      //   (depositAmount - drawdownAmount) -
-      //     (((depositAmount * callAmount) / drawdownAmount) - callAmount),
-      //   1,
-      //   "Uncalled principal paid"
-      // );
-      // assertApproxEqAbs(
-      //   uncalledCapitalInfo.principalReserved,
-      //   Math.min(
-      //     paymentAmount.saturatingSub(totalInterestOwed).saturatingSub(callAmount),
-      //     uncalledCapitalInfo.principalDeposited
-      //   ),
-      //   1,
-      //   "Uncalled principal reserved"
-      // );
+      assertZero(uncalledCapitalInfo.principalReserved);
+      assertZero(uncalledCapitalInfo.principalPaid);
 
-      // assertApproxEqAbs(
-      //   uncalledCapitalInfo.interestPaid,
-      //   (Math.min(paymentAmount, totalInterestOwed) * uncalledCapitalInfo.principalDeposited) /
-      //     (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
-      //   1,
-      //   "Uncalled interest paid"
-      // );
-
-      // assertApproxEqAbs(
-      //   callRequestPeriod.principalDeposited,
-      //   (depositAmount * callAmount) / drawdownAmount,
-      //   1,
-      //   "Called principal deposited"
-      // );
-
-      // assertApproxEqAbs(
-      //   callRequestPeriod.principalPaid,
-      //   ((depositAmount * callAmount) / drawdownAmount) - callAmount,
-      //   1,
-      //   "Called principal paid"
-      // );
-      // assertApproxEqAbs(
-      //   callRequestPeriod.principalReserved,
-      //   Math.min(
-      //     Math.min(callAmount, paymentAmount.saturatingSub(totalInterestOwed)),
-      //     callRequestPeriod.principalDeposited
-      //   ),
-      //   1,
-      //   "Called principal reserved"
-      // );
-      // assertApproxEqAbs(
-      //   callRequestPeriod.interestPaid,
-      //   (Math.min(paymentAmount, totalInterestOwed) * callRequestPeriod.principalDeposited) /
-      //     (uncalledCapitalInfo.principalDeposited + callRequestPeriod.principalDeposited),
-      //   1,
-      //   "Called interest paid"
-      // );
-      // if (uncalledCapitalInfo.principalDeposited > 0) {
-      //   assertOwedAmountsMatch(
-      //     remainderTokenId,
-      //     uncalledCapitalInfo.principalDeposited,
-      //     uncalledCapitalInfo.interestPaid,
-      //     uncalledCapitalInfo.principalPaid
-      //   );
-      // }
-      // assertOwedAmountsMatch(
-      //   calledTokenId,
-      //   callRequestPeriod.principalDeposited,
-      //   callRequestPeriod.interestPaid,
-      //   callRequestPeriod.principalPaid
-      // );
+      // Interest is pro-rata
+      assertApproxEqAbs(
+        uncalledCapitalInfo.interestPaid,
+        (totalInterestOwed * uncalledCapitalInfo.principalDeposited) / principalOutstanding,
+        HUNDREDTH_CENT, // Margin of error increases slightly for each call request period
+        "Uncalled interest paid"
+      );
     }
 
-    // Check tranche for call request period 1 (index 0)
+    // Check the first call request period tranche
+    {
+      ICallableLoan.CallRequestPeriod memory callRequestPeriod = callableLoan.getCallRequestPeriod(
+        0
+      );
 
-    // Check tranche for call request period 2
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        callAmount,
+        1,
+        "Called principal deposited 0"
+      );
 
-    // Check tranche for call request period 3 (current period)
+      assertApproxEqAbs(
+        callRequestPeriod.principalPaid,
+        callRequestPeriod.principalDeposited,
+        1,
+        "Called principal paid 0"
+      );
+
+      assertZero(callRequestPeriod.principalReserved);
+      // Interest is pro-rata
+      assertApproxEqAbs(
+        callRequestPeriod.interestPaid,
+        (totalInterestOwed * callRequestPeriod.principalDeposited) / principalOutstanding,
+        HUNDREDTH_CENT, // Margin of error increases slightly for each call request period
+        "callRequestPeriod 0 interest paid"
+      );
+    }
+
+    {
+      ICallableLoan.CallRequestPeriod memory callRequestPeriod = callableLoan.getCallRequestPeriod(
+        1
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        callAmount,
+        1,
+        "Called principal deposited 1"
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalPaid,
+        callRequestPeriod.principalDeposited - 100,
+        1,
+        "Called principal paid 1"
+      );
+
+      assertZero(callRequestPeriod.principalReserved);
+      // Interest is pro-rata
+      assertApproxEqAbs(
+        callRequestPeriod.interestPaid,
+        (totalInterestOwed * callRequestPeriod.principalDeposited) / principalOutstanding,
+        HUNDREDTH_CENT, // Margin of error increases slightly for each call request period
+        "callRequestPeriod 1 interest paid"
+      );
+    }
+
+    // The final call tranche was not fully paid
+    {
+      ICallableLoan.CallRequestPeriod memory callRequestPeriod = callableLoan.getCallRequestPeriod(
+        2
+      );
+
+      assertApproxEqAbs(
+        callRequestPeriod.principalDeposited,
+        callAmount,
+        1,
+        "Called principal deposited 2"
+      );
+
+      assertZero(callRequestPeriod.principalPaid);
+      assertZero(callRequestPeriod.principalReserved);
+      // Interest is pro-rata
+      assertApproxEqAbs(
+        callRequestPeriod.interestPaid,
+        (totalInterestOwed * callRequestPeriod.principalDeposited) / principalOutstanding,
+        HUNDREDTH_CENT, // Margin of error increases slightly for each call request period
+        "callRequestPeriod 2 interest paid"
+      );
+    }
   }
 
   function assertOwedAmountsMatch(
