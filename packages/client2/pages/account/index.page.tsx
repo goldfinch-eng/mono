@@ -51,12 +51,7 @@ const DEFAULT_UID_ICON = "Globe";
 const AccountsPage: NextPageWithLayout = () => {
   const isMounted = useIsMounted();
   const { account, provider, signer } = useWallet();
-  const {
-    data,
-    error,
-    loading: isFetchingAccountData,
-    refetch,
-  } = useAccountPageQuery({
+  const { data, error, loading, refetch } = useAccountPageQuery({
     variables: { account: account?.toLowerCase() ?? "" },
     skip: !account,
     fetchPolicy: "network-only",
@@ -166,7 +161,7 @@ const AccountsPage: NextPageWithLayout = () => {
                         </Button>
                       )}
                     />
-                  ) : isRegisteringKyc || isFetchingAccountData ? (
+                  ) : isRegisteringKyc || loading ? (
                     <div className="flex items-center gap-4">
                       <Spinner size="lg" />
                       <div className="text-lg">
@@ -187,16 +182,97 @@ const AccountsPage: NextPageWithLayout = () => {
                         <div className="break-words">{account}</div>
                       </div>
                     </div>
-                  ) : (
-                    KYCStatusBanner(
-                      status,
-                      accreditationStatus,
-                      identityStatus,
-                      openVerificationModal,
-                      kycProvider,
-                      countryCode,
-                      type
+                  ) : status === "pending" ? (
+                    <CallToActionBanner
+                      iconLeft={DEFAULT_UID_ICON}
+                      title="UID is being verified"
+                      description={
+                        kycProvider === "parallelMarkets"
+                          ? "Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+                          : "Almost there. Your UID is still being verified."
+                      }
+                      colorScheme="white"
+                    >
+                      <>
+                        <div className="my-8 flex flex-col gap-2 sm:flex-row">
+                          <CheckableStep name="Documents uploaded" checked />
+                          <CheckableStep
+                            name="Identity verification"
+                            checked={identityStatus === "approved"}
+                          />
+                          <CheckableStep
+                            name="Accreditation verification"
+                            checked={accreditationStatus === "approved"}
+                          />
+                        </div>
+                        <p className="text-sm">
+                          <>
+                            If you are still facing a delay, please email us at{" "}
+                            <Link
+                              rel="noopener"
+                              href="mailto:UID@warblerlabs.com"
+                            >
+                              UID@warblerlabs.com
+                            </Link>
+                          </>
+                        </p>
+                      </>
+                    </CallToActionBanner>
+                  ) : status === "failed" ? (
+                    <CallToActionBanner
+                      renderButton={(props) => EmailUIDButton(props)}
+                      colorScheme="red"
+                      iconLeft="Exclamation"
+                      title={
+                        accreditationStatus === "failed"
+                          ? "Accreditation check failed"
+                          : identityStatus === "failed"
+                          ? "Identity verification failed"
+                          : "You are not eligible"
+                      }
+                      description="Sorry, you have been deemed ineligible for a UID."
+                    />
+                  ) : status === "approved" ? (
+                    kycProvider === "parallelMarkets" &&
+                    accreditationStatus === "unaccredited" ? (
+                      <CallToActionBanner
+                        renderButton={(props) => EmailUIDButton(props)}
+                        colorScheme="red"
+                        iconLeft="Exclamation"
+                        title="We're sorry"
+                        description={
+                          type === "business"
+                            ? countryCode === "US"
+                              ? "Non-accredited US businesses are not eligible for UID"
+                              : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business
+                            : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual
+                        }
+                      />
+                    ) : (
+                      <CallToActionBanner
+                        renderButton={(props) => (
+                          <Button {...props} onClick={openVerificationModal}>
+                            Claim UID
+                          </Button>
+                        )}
+                        colorScheme="green"
+                        iconLeft={DEFAULT_UID_ICON}
+                        title="Claim your UID"
+                        description="Your application is approved! Claim your UID to participate in the protocol."
+                      />
                     )
+                  ) : (
+                    // if status is unknown
+                    <CallToActionBanner
+                      renderButton={(props) => (
+                        <Button {...props} onClick={openVerificationModal}>
+                          Begin UID setup
+                        </Button>
+                      )}
+                      iconLeft={DEFAULT_UID_ICON}
+                      title="Setup your UID to start"
+                      description={SETUP_UID_BANNER_TEXT}
+                    />
                   )}
                 </TabContent>
               </TabPanels>
@@ -254,7 +330,9 @@ function KYCStatusBanner(
         <CallToActionBanner
           iconLeft={DEFAULT_UID_ICON}
           title="UID is being verified"
-          description="Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+          description={
+            "Almost there. Your UID is still being verified. After you have completed verification, you will receive an email within 72 hours."
+          }
           colorScheme="white"
         >
           <>
