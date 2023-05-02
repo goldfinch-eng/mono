@@ -188,17 +188,6 @@ export async function main({
     throw new Error(`Does not meet mint requirements: missing countryCode`)
   }
 
-  // If the kycProvider is parallelMarkets and they're a non-accredited individual, then we should reject
-  // their mint attempt to prevent them from minting multiple UIDs. Non-accredited individuals should have
-  // kyc'd through persona which means if they've made it here then they deliberately misrepresented themselves.
-  if (
-    kycItem.kycProvider === "parallelMarkets" &&
-    kycItem?.type === "individual" &&
-    kycItem.accreditationStatus === "unaccredited"
-  ) {
-    throw new Error(`Does not meet mint requirements: parallelMarkets unaccredited individual`)
-  }
-
   const currentBlock = await signer.provider.getBlock("latest")
   const expiresAt = currentBlock.timestamp + UNIQUE_IDENTITY_SIGNATURE_EXPIRY_TIME
   const nonce = await uniqueIdentity.nonces(userAddress)
