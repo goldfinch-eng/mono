@@ -39,6 +39,8 @@ gql`
         status
         identityStatus
         accreditationStatus
+        countryCode
+        type
       }
     }
   }
@@ -101,8 +103,14 @@ const AccountsPage: NextPageWithLayout = () => {
     // signer is not identity-stable and can't be included in the dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, provider, !!signer, router, router.isReady, refetch]);
-  const { status, identityStatus, accreditationStatus, kycProvider } =
-    data?.viewer.kycStatus ?? {};
+  const {
+    status,
+    identityStatus,
+    accreditationStatus,
+    kycProvider,
+    countryCode,
+    type,
+  } = data?.viewer.kycStatus ?? {};
 
   const { uidType } = data?.user ?? {};
 
@@ -213,7 +221,13 @@ const AccountsPage: NextPageWithLayout = () => {
                         colorScheme="red"
                         iconLeft="Exclamation"
                         title="We're sorry"
-                        description="Non-accredited US businesses are not eligible for UID."
+                        description={
+                          type === "business"
+                            ? countryCode === "US"
+                              ? "Non-accredited US businesses are not eligible for UID"
+                              : "You have selected the wrong KYC provider. Please contact us to proceed." // non-US business
+                            : "You have selected the wrong KYC provider. Please contact us to proceed." // US or non-US individual
+                        }
                       />
                     ) : (
                       <CallToActionBanner
