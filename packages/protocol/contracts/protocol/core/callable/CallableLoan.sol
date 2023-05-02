@@ -174,7 +174,7 @@ contract CallableLoan is
       );
     }
 
-    // 2. Determine the amount of principal and interest that can be withdrawn
+    // 2. Determine the total amount of principal and interest that can be withdrawn
     //    on the given pool token. Withdraw all of this amount.
     (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
