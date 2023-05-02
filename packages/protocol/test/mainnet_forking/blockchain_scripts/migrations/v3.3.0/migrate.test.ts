@@ -17,6 +17,7 @@ import {
   MembershipOrchestratorInstance,
   PoolTokensInstance,
   GFIInstance,
+  GoldfinchConfigInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {MAINNET_WARBLER_LABS_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
@@ -43,10 +44,15 @@ import {mintUidIfNotMinted} from "@goldfinch-eng/protocol/test/util/uniqueIdenti
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
 import {EXISTING_POOL_TO_TOKEN} from "@goldfinch-eng/protocol/test/util/tranchedPool"
 import {CallRequestSubmitted} from "@goldfinch-eng/protocol/typechain/truffle/contracts/protocol/core/callable/CallableLoan"
+import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 
 // https://etherscan.io/tx/0x18de9f70e363ffeb11e17aebfe283c552dc1bb08e79f668f262d4e19fdf7327b
 const EXAMPLE_FAZZ_POOL_TOKEN = 946
 const EXAMPLE_FAZZ_POOL_TOKEN_OWNER = "0xc0d67e9ab24e98e84d3efc150ae14c5754db33d4"
+
+// Only makes sense in CI where test pollution occurs.
+// Otherwise, we should be able to consistently advanceTime from the mainnet forked block
+const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1684218438 // Tue May 16 2023 06:27:18 GMT+0000
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
@@ -55,6 +61,7 @@ const setupTest = deployments.createFixture(async () => {
   await fundWithWhales(["GFI"], [await getProtocolOwner()])
 
   return {
+    gfConfig: await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig"),
     uniqueIdentity: await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity"),
     gfFactory: await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory"),
     membershipOrchestrator: await getTruffleContract<MembershipOrchestratorInstance>("MembershipOrchestrator"),
@@ -68,6 +75,7 @@ describe("v3.3.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let usdc: ERC20Instance
+  let gfConfig: GoldfinchConfigInstance
   let gfFactory: GoldfinchFactoryInstance
   let membershipOrchestrator: MembershipOrchestratorInstance
   let poolTokens: PoolTokensInstance
@@ -82,7 +90,7 @@ describe("v3.3.0", async function () {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, gfFactory, uniqueIdentity, membershipOrchestrator, poolTokens, gfi} = await setupTest())
+    ;({usdc, gfFactory, gfConfig, uniqueIdentity, membershipOrchestrator, poolTokens, gfi} = await setupTest())
     allSigners = await hre.ethers.getSigners()
     signer = (await allSigners[0]?.getAddress()) as string
     defaultLenderAddress = (await allSigners[1]?.getAddress()) as string
@@ -154,7 +162,8 @@ describe("v3.3.0", async function () {
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
 
-      await advanceAndMineBlock({days: 10})
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
+
       const callResult = await callableLoanInstance.submitCall(callAmount, originalPoolTokenId, {
         from: lenderAddress,
       })
@@ -230,7 +239,7 @@ describe("v3.3.0", async function () {
 
   describe("Lender", async () => {
     it("can submit a call request", async () => {
-      await advanceAndMineBlock({days: 10})
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
 
       await fundWithWhales(["ETH"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER])
       await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
@@ -552,6 +561,94 @@ describe("v3.3.0", async function () {
           `RequiresLockerRole("${randoUser}")`
         )
       }
+    })
+  })
+
+  describe("Scenario: Borrower pays back loan on correct schedule and lenders can withdraw", async () => {
+    it("reserve is paid and lenders can withdraw correct amounts", async () => {
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
+
+      await fundWithWhales(["ETH", "USDC"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER, FAZZ_MAINNET_EOA])
+      await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
+
+      const reserveAddress = await gfConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
+      const previousBorrowerBalance = await usdc.balanceOf(FAZZ_MAINNET_EOA)
+      const previousLoanBalance = await usdc.balanceOf(callableLoanInstance.address)
+      const previousReserveBalance = await usdc.balanceOf(reserveAddress)
+      const reserveFeeNumerator = new BN(90)
+      const reserveFeeDenominator = new BN(100)
+      const marginOfError = 100
+
+      const callSubmissionAmount = usdcVal(100)
+
+      const callResult = await callableLoanInstance.submitCall(callSubmissionAmount, EXAMPLE_FAZZ_POOL_TOKEN, {
+        from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER,
+      })
+
+      const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
+        callResult.receipt.rawLogs,
+        callableLoanInstance,
+        "CallRequestSubmitted"
+      )
+
+      // Assumes a 10% reserve fee and assumes a $100 interest payment.
+      let nextDueTime = await callableLoanInstance.nextDueTime()
+      let interestOwed = await callableLoanInstance.interestOwedAt(nextDueTime)
+      let totalInterestOwed = interestOwed
+
+      await usdc.approve(borrowerContract.address, interestOwed, {from: FAZZ_MAINNET_EOA})
+      await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, interestOwed, {
+        from: FAZZ_MAINNET_EOA,
+      })
+
+      await advanceAndMineBlock({days: 30})
+      nextDueTime = await callableLoanInstance.nextDueTime()
+      interestOwed = await callableLoanInstance.interestOwedAt(nextDueTime)
+      totalInterestOwed = totalInterestOwed.add(interestOwed)
+
+      await usdc.approve(borrowerContract.address, interestOwed, {from: FAZZ_MAINNET_EOA})
+      await borrowerContract.methods["pay(address,uint256)"](callableLoanInstance.address, interestOwed, {
+        from: FAZZ_MAINNET_EOA,
+      })
+
+      await advanceAndMineBlock({days: 30})
+      nextDueTime = await callableLoanInstance.nextDueTime()
+      interestOwed = await callableLoanInstance.interestOwedAt(nextDueTime)
+      totalInterestOwed = totalInterestOwed.add(interestOwed)
+
+      await usdc.approve(borrowerContract.address, interestOwed.add(callSubmissionAmount), {from: FAZZ_MAINNET_EOA})
+      await borrowerContract.methods["pay(address,uint256)"](
+        callableLoanInstance.address,
+        interestOwed.add(callSubmissionAmount),
+        {
+          from: FAZZ_MAINNET_EOA,
+        }
+      )
+
+      expect(await usdc.balanceOf(FAZZ_MAINNET_EOA)).to.be.closeTo(
+        previousBorrowerBalance.sub(totalInterestOwed.add(usdcVal(100))),
+        marginOfError
+      )
+      expect(await usdc.balanceOf(callableLoanInstance.address)).to.be.closeTo(
+        previousLoanBalance.add(
+          totalInterestOwed.mul(reserveFeeNumerator).div(reserveFeeDenominator).add(usdcVal(100))
+        ),
+        marginOfError
+      )
+      const reserveFee = totalInterestOwed.mul(new BN(100).sub(reserveFeeNumerator)).div(reserveFeeDenominator)
+      expect(await usdc.balanceOf(reserveAddress)).to.be.closeTo(previousReserveBalance.add(reserveFee), marginOfError)
+
+      const expectCorrectWithdrawal = async (tokenId) => {
+        const availableToWithdrawResult = await callableLoanInstance.availableToWithdraw(tokenId)
+        const beforeWithdrawBalance = await usdc.balanceOf(EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
+        await callableLoanInstance.withdrawMax(tokenId, {from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER})
+        expect(await usdc.balanceOf(EXAMPLE_FAZZ_POOL_TOKEN_OWNER)).to.be.closeTo(
+          beforeWithdrawBalance.add(availableToWithdrawResult[0]).add(availableToWithdrawResult[1]),
+          marginOfError
+        )
+      }
+      await expectCorrectWithdrawal(callEvent.args.callRequestedTokenId)
+      await expectCorrectWithdrawal(callEvent.args.remainingTokenId)
     })
   })
 

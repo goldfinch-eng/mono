@@ -84,12 +84,10 @@ describe("StakingRewards", () => {
         await stakingRewards.unstake(tokenId, amount, {from: account})
         await stakingRewards.getReward(tokenId, {from: account})
 
-        const balanceBefore = await gfi.balanceOf(account)
-
         await advanceTime({days: 30})
 
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: account})).toChange([
-          [async () => (await gfi.balanceOf(account)).sub(balanceBefore), {byCloseTo: expectedChange}],
+        await expectAction(async () => stakingRewards.getReward(tokenId, {from: account})).toChange([
+          [() => gfi.balanceOf(account), {byCloseTo: expectedChange}],
         ])
       })
 
