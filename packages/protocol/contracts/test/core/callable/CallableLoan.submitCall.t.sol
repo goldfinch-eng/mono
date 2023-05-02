@@ -19,6 +19,13 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   CallableLoan callableLoan;
   ICreditLine cl;
 
+  // Used to avoid stack too deep errors in more complicated tests
+  uint256 private availableInterest;
+  uint256 private availablePrincipal;
+  uint256 private calledTokenId;
+  uint256 private remainderTokenId;
+  uint256 private previousBalance;
+
   function testPoolTokenDustLimit() public {
     // TODO
   }
@@ -238,12 +245,6 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     );
     callableLoan.submitCall(invalidCallAmount, remainingTokenId);
   }
-
-  uint256 availableInterest;
-  uint256 availablePrincipal;
-  uint256 calledTokenId;
-  uint256 remainderTokenId;
-  uint256 previousBalance;
 
   function testSubmitCallWithdrawsAvailable(
     address user,
@@ -614,7 +615,6 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     drawdownAmount = bound(drawdownAmount, usdcVal(1), depositAmount);
     paymentAmount = bound(paymentAmount, 1, drawdownAmount / 4);
-    // drawdownAmount - paymentAmount = principalOutstanding
     uint256 principalOutstanding = drawdownAmount - paymentAmount;
     callAmount = bound(callAmount, 4, principalOutstanding / 4);
     drawdown(callableLoan, drawdownAmount);
