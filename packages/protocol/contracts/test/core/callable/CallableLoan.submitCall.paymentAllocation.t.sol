@@ -38,10 +38,9 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   function setUp() public override {
     super.setUp();
     (callableLoan, cl) = callableLoanWithLimit(LIMIT);
-    uid._mintForTest(USERS[0], 1, 1, "");
-    uid._mintForTest(USERS[1], 1, 1, "");
-    uid._mintForTest(USERS[2], 1, 1, "");
-    uid._mintForTest(USERS[3], 1, 1, "");
+    for (uint i = 0; i < USERS.length; ++i) {
+      uid._mintForTest(USERS[i], 1, 1, "");
+    }
   }
 
   function testPaymentIsAllocatedToCallsCorrectly(
@@ -87,6 +86,9 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       1,
       "Principal amount moved to called pool token is correct"
     );
+    assertIsValidUncalledToken(remainderTokenId);
+
+    // If the remainder is under the minimum deposit amount, it is not moved to a new token
     if (remainderTokenId != 0) {
       assertApproxEqAbs(
         poolTokens.getTokenInfo(remainderTokenId).principalAmount,
@@ -96,6 +98,8 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       );
     }
 
+    // Assert uncalled capital info
+    // Assert call request period
     {
       ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
         .getUncalledCapitalInfo();
@@ -179,7 +183,6 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
       );
     }
 
-    // After principal reserved has been applied.
     vm.warp(callableLoan.nextPrincipalDueTime());
     {
       ICallableLoan.UncalledCapitalInfo memory uncalledCapitalInfo = callableLoan
@@ -284,40 +287,23 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
 
     _startImpersonation(USERS[0]);
     (uint256 calledTokenId, uint256 uncalledTokenId) = callableLoan.submitCall(callAmount, token1);
+    assertIsValidUncalledToken(uncalledTokenId);
 
     vm.warp(callableLoan.nextPrincipalDueTime());
 
     (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token2);
+    assertIsValidUncalledToken(uncalledTokenId);
 
     vm.warp(callableLoan.nextPrincipalDueTime());
 
     (calledTokenId, uncalledTokenId) = callableLoan.submitCall(callAmount, token3);
+    assertIsValidUncalledToken(uncalledTokenId);
 
     uint256 paymentAmount = callableLoan.interestOwed() + callableLoan.principalOwed();
     usdc.approve(address(callableLoan), paymentAmount);
     callableLoan.pay(paymentAmount);
 
     // TODO: Make assertions that all tranches have been paid
-  }
-
-  function assertOwedInterestMatches(
-    uint256 tokenId,
-    uint256 principalDepositedInTranche,
-    uint256 interestPaidInTranche
-  ) internal {
-    (uint256 availableInterest, uint256 availablePrincipal) = callableLoan.availableToWithdraw(
-      tokenId
-    );
-    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-
-    assertApproxEqAbs(
-      availableInterest,
-      (interestPaidInTranche *
-        tokenInfo.principalAmount *
-        (100 - DEFAULT_RESERVE_FEE_DENOMINATOR)) / (principalDepositedInTranche * 100),
-      1,
-      "Owed interest matches"
-    );
   }
 
   function assertOwedAmountsMatch(
@@ -349,6 +335,7 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     );
   }
 
+  /// @notice Assert that a token belongs to the uncalled capital tranche
   function assertIsValidUncalledToken(uint256 tokenId) private {
     // Token ID == 0 means no token was created
     if (tokenId == 0) {
