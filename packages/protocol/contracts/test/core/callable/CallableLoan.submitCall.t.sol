@@ -10,6 +10,7 @@ import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {StdCheats} from "forge-std/Test.sol";
 
 contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
   function testPoolTokenDustLimit() public {
@@ -176,6 +177,40 @@ contract CallableLoanSubmitCallTest is CallableLoanBaseTest {
     vm.warp(block.timestamp + secondsElapsedAfterLastLockup);
     vm.expectRevert(ICallableLoanErrors.TooLateToSubmitCallRequests.selector);
     submitCall(callableLoan, callAmount, token, user);
+  }
+
+  function testDoesNotLetYouSubmitCallForRepaidLoans(address user, uint256 amount) public {
+    amount = bound(amount, usdcVal(24), usdcVal(1_000_000_000));
+
+    (CallableLoan callableLoan, ) = callableLoanWithLimit(amount);
+    vm.assume(fuzzHelper.isAllowed(user));
+    uid._mintForTest(user, 1, 1, "");
+
+    uint256 token = deposit(callableLoan, 3, amount, user);
+
+    drawdown(callableLoan, amount);
+    warpToAfterDrawdownPeriod(callableLoan);
+
+    // Fully pay back loan
+    _startImpersonation(BORROWER);
+    uint256 interestOwed = callableLoan.interestOwedAt(callableLoan.nextPrincipalDueTime());
+    StdCheats.deal(address(usdc), BORROWER, amount + interestOwed);
+    usdc.approve(address(callableLoan), interestOwed + amount);
+    callableLoan.pay(interestOwed + amount);
+    _stopImpersonation();
+
+    // Calls may still be submitted until payment is accounted for
+    vm.warp(callableLoan.nextPrincipalDueTime());
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.ExcessiveCallSubmissionAmount.selector,
+        token,
+        amount,
+        0
+      )
+    );
+    submitCall(callableLoan, amount, token, user);
   }
 
   function testDoesNotLetYouSubmitCallForMorePrincipalOutstandingThanIsAvailable(

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// solhint-disable func-name-mixedcase, var-name-mixedcase
 
 pragma solidity ^0.8.0;
 
@@ -194,7 +195,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
     address withdrawer
   ) public {
     amount = bound(amount, 1, usdc.balanceOf(GF_OWNER));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount);
+    (CallableLoan callableLoan, ) = callableLoanWithLimit(amount);
     vm.assume(fuzzHelper.isAllowed(owner));
     vm.assume(fuzzHelper.isAllowed(withdrawer));
     vm.assume(owner != withdrawer);
@@ -210,6 +211,48 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
       )
     );
     withdraw(callableLoan, token, amount, withdrawer);
+  }
+
+  function test_WithdrawFailsIfForNonPoolTokenOwner_CalledTokens(
+    address owner,
+    uint256 amount,
+    address withdrawer
+  ) public {
+    amount = bound(amount, usdcVal(24), usdcVal(1_000_000_000));
+
+    (CallableLoan callableLoan, ) = callableLoanWithLimit(amount);
+    vm.assume(fuzzHelper.isAllowed(owner));
+    vm.assume(fuzzHelper.isAllowed(withdrawer));
+    vm.assume(owner != withdrawer);
+    uid._mintForTest(owner, 1, 1, "");
+    uid._mintForTest(withdrawer, 1, 1, "");
+
+    uint256 token = deposit(callableLoan, 3, amount, owner);
+
+    drawdown(callableLoan, amount);
+    warpToAfterDrawdownPeriod(callableLoan);
+
+    _startImpersonation(owner);
+    (uint256 calledTokenId, uint256 remainderTokenId) = callableLoan.submitCall(usdcVal(10), token);
+    _stopImpersonation();
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.NotAuthorizedToWithdraw.selector,
+        withdrawer,
+        calledTokenId
+      )
+    );
+    withdraw(callableLoan, calledTokenId, amount, withdrawer);
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.NotAuthorizedToWithdraw.selector,
+        withdrawer,
+        remainderTokenId
+      )
+    );
+    withdraw(callableLoan, remainderTokenId, amount, withdrawer);
   }
 
   function testWithdrawFailsForPoolTokenFromDifferentPool(
@@ -240,7 +283,7 @@ contract CallableLoanWithdrawTest is CallableLoanBaseTest {
 
   function testWithdrawFailsIfExceedsWithdrawable(address user, uint256 amount) public {
     amount = bound(amount, usdcVal(1), usdcVal(100_000_000));
-    (CallableLoan callableLoan, ICreditLine cl) = callableLoanWithLimit(amount);
+    (CallableLoan callableLoan, ) = callableLoanWithLimit(amount);
     vm.assume(fuzzHelper.isAllowed(user)); // Assume after building callable loan to properly exclude contracts.
 
     uid._mintForTest(user, 1, 1, "");
