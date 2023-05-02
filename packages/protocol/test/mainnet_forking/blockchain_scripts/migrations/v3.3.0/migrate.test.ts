@@ -50,6 +50,10 @@ import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys
 const EXAMPLE_FAZZ_POOL_TOKEN = 946
 const EXAMPLE_FAZZ_POOL_TOKEN_OWNER = "0xc0d67e9ab24e98e84d3efc150ae14c5754db33d4"
 
+// Only makes sense in CI where test pollution occurs.
+// Otherwise, we should be able to consistently advanceTime from the mainnet forked block
+const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1684218438 // Tue May 16 2023 06:27:18 GMT+0000
+
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 
@@ -158,7 +162,8 @@ describe("v3.3.0", async function () {
       await gfi.approve(membershipOrchestrator.address, String(gfiDepositAmount), {from: lenderAddress})
       await poolTokens.approve(membershipOrchestrator.address, originalPoolTokenId, {from: lenderAddress})
 
-      await advanceAndMineBlock({days: 10})
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
+
       const callResult = await callableLoanInstance.submitCall(callAmount, originalPoolTokenId, {
         from: lenderAddress,
       })
@@ -234,7 +239,7 @@ describe("v3.3.0", async function () {
 
   describe("Lender", async () => {
     it("can submit a call request", async () => {
-      await advanceAndMineBlock({days: 10})
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
 
       await fundWithWhales(["ETH"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER])
       await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
@@ -561,7 +566,7 @@ describe("v3.3.0", async function () {
 
   describe("Scenario: Borrower pays back loan on correct schedule and lenders can withdraw", async () => {
     it("reserve is paid and lenders can withdraw correct amounts", async () => {
-      await advanceAndMineBlock({days: 10})
+      await hre.ethers.provider.send("evm_setNextBlockTimestamp", [EXAMPLE_CALL_SUBMISSION_TIMESTAMP])
 
       await fundWithWhales(["ETH", "USDC"], [EXAMPLE_FAZZ_POOL_TOKEN_OWNER, FAZZ_MAINNET_EOA])
       await impersonateAccount(hre, EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
@@ -576,9 +581,15 @@ describe("v3.3.0", async function () {
 
       const callSubmissionAmount = usdcVal(100)
 
-      await callableLoanInstance.submitCall(callSubmissionAmount, EXAMPLE_FAZZ_POOL_TOKEN, {
+      const callResult = await callableLoanInstance.submitCall(callSubmissionAmount, EXAMPLE_FAZZ_POOL_TOKEN, {
         from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER,
       })
+
+      const callEvent = decodeAndGetFirstLog<CallRequestSubmitted>(
+        callResult.receipt.rawLogs,
+        callableLoanInstance,
+        "CallRequestSubmitted"
+      )
 
       // Assumes a 10% reserve fee and assumes a $100 interest payment.
       let nextDueTime = await callableLoanInstance.nextDueTime()
@@ -624,11 +635,20 @@ describe("v3.3.0", async function () {
         ),
         marginOfError
       )
-      const reserveFeeMultiplier = new BN(100).sub(reserveFeeNumerator).div(reserveFeeDenominator)
-      const reserveFee = totalInterestOwed.mul(reserveFeeMultiplier)
+      const reserveFee = totalInterestOwed.mul(new BN(100).sub(reserveFeeNumerator)).div(reserveFeeDenominator)
       expect(await usdc.balanceOf(reserveAddress)).to.be.closeTo(previousReserveBalance.add(reserveFee), marginOfError)
 
-      // TODO: Withdraw and assert correct USDC transfer
+      const expectCorrectWithdrawal = async (tokenId) => {
+        const availableToWithdrawResult = await callableLoanInstance.availableToWithdraw(tokenId)
+        const beforeWithdrawBalance = await usdc.balanceOf(EXAMPLE_FAZZ_POOL_TOKEN_OWNER)
+        await callableLoanInstance.withdrawMax(tokenId, {from: EXAMPLE_FAZZ_POOL_TOKEN_OWNER})
+        expect(await usdc.balanceOf(EXAMPLE_FAZZ_POOL_TOKEN_OWNER)).to.be.closeTo(
+          beforeWithdrawBalance.add(availableToWithdrawResult[0]).add(availableToWithdrawResult[1]),
+          marginOfError
+        )
+      }
+      await expectCorrectWithdrawal(callEvent.args.callRequestedTokenId)
+      await expectCorrectWithdrawal(callEvent.args.remainingTokenId)
     })
   })
 
