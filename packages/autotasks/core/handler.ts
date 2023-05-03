@@ -27,6 +27,7 @@ export default function handler<T>(
 
   return async (arg: HandlerParams) => {
     const transaction = Sentry.startTransaction(context)
+    Sentry.setTag("autotask", name)
 
     try {
       return await callback(arg)
