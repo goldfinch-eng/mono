@@ -1,6 +1,6 @@
 import {firestore} from "firebase-admin"
-import {AgreementsConverter} from "./dbConverters"
-import {Agreement} from "./dbTypes"
+import {AgreementsConverter, DestroyedUsersConverter} from "./dbConverters"
+import {Agreement, DestroyedUser} from "./dbTypes"
 
 // Optionally override the firestore for testing or emulation
 let _firestore: firestore.Firestore
@@ -23,10 +23,10 @@ function getUsers(): firestore.CollectionReference<firestore.DocumentData> {
 
 /**
  * Get the destroyed users collection given a reference to the firestore
- * @return {firestore.CollectionReference} A Collection object that can be queried
+ * @return {firestore.CollectionReference<DestroyedUser>} A Collection object that can be queried
  */
-function getDestroyedUsers(): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("destroyedUsers")
+function getDestroyedUsers(): firestore.CollectionReference<DestroyedUser> {
+  return getCollection("destroyedUsers").withConverter(DestroyedUsersConverter)
 }
 
 /**

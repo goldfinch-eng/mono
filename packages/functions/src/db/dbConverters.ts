@@ -1,11 +1,16 @@
 import {FirestoreDataConverter, DocumentData} from "firebase-admin/firestore"
-import {Agreement} from "./dbTypes"
+import {Agreement, DestroyedUser} from "./dbTypes"
 
-export const AgreementsConverter: FirestoreDataConverter<Agreement> = {
-  toFirestore(agreement: Agreement): DocumentData {
-    return agreement
-  },
-  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): Agreement {
-    return snapshot.data() as Agreement
-  },
+const firestoreConverters: <T>() => FirestoreDataConverter<T> = <T>() => {
+  return {
+    toFirestore(data: FirebaseFirestore.WithFieldValue<T>): DocumentData {
+      return data as DocumentData
+    },
+    fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): T {
+      return snapshot.data() as T
+    },
+  }
 }
+
+export const AgreementsConverter = firestoreConverters<Agreement>()
+export const DestroyedUsersConverter = firestoreConverters<DestroyedUser>()

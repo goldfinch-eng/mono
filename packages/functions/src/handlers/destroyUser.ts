@@ -57,8 +57,6 @@ export const destroyUser = genRequestHandler({
       : [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS],
   cors: false,
   handler: async (_, res, verificationResult): Promise<Response> => {
-    console.log("destroyUser start")
-
     let addressToDestroy: string
     let burnedUidType: number
     try {
@@ -68,10 +66,10 @@ export const destroyUser = genRequestHandler({
       return res.status(400).send({status: "error", message: "Bad plaintext"})
     }
 
-    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
-
     // Having verified the request, we can set the Sentry user context accordingly.
     Sentry.setUser({id: addressToDestroy})
+
+    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
 
     const db = getDb()
     const userRef = getUsers().doc(`${addressToDestroy.toLowerCase()}`)
@@ -102,7 +100,7 @@ export const destroyUser = genRequestHandler({
 
         // Build document data for destroyedUsers entry
         const newDeletion = {
-          countryCode: user.data()?.countryCode,
+          countryCode: user.data()?.countryCode || "",
           burnedUidType: burnedUidType.toString(),
           persona: {
             id: personaData.id,
@@ -144,7 +142,6 @@ export const destroyUser = genRequestHandler({
       return res.status(errorStatus).send({status: "error", message: (e as Error).message})
     }
 
-    console.log("destroyUser end")
     return res.status(200).send({status: "success"})
   },
 })
