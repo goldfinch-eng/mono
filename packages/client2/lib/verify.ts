@@ -9,7 +9,7 @@ import { UidType } from "./graphql/generated";
 function setCachedSignature(cacheKey: string, sig: KycSignature) {
   const { address } = getAccount();
   const { chain } = getNetwork();
-  sessionStorage.setItem(
+  localStorage.setItem(
     cacheKey,
     JSON.stringify({
       ...sig,
@@ -26,7 +26,7 @@ async function getCachedSignature(
 ): Promise<KycSignature | null> {
   try {
     const cachedSig = JSON.parse(
-      sessionStorage.getItem(cacheKey) as string
+      localStorage.getItem(cacheKey) as string
     ) as CachedKycSignature;
     const { plaintext, signature, signatureBlockNum, address, chainId } =
       cachedSig;

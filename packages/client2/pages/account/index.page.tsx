@@ -72,7 +72,7 @@ const AccountsPage: NextPageWithLayout = () => {
       try {
         /* Check for cross-site forgery on redirection to account page from parallel markets when page first renders */
         if (router.query.state !== undefined) {
-          const parallel_markets_state = sessionStorage.getItem(
+          const parallel_markets_state = localStorage.getItem(
             PARALLEL_MARKETS.STATE_KEY
           );
           if (router.query.state !== parallel_markets_state) {
