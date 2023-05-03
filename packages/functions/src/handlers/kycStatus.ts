@@ -185,25 +185,6 @@ export const kycStatus = genRequestHandler({
     console.log("Payload to return is")
     console.log(payload)
 
-    // Mock a parallel markets user response. If both query params are present then
-    // any data in the user store is ignored.
-    // TODO - remove after sufficient testing
-    if (req.query.pmIdentityStatus && req.query.pmAccreditationStatus) {
-      console.log("Overriding payload based on request query params")
-      const pmIdentityStatus = req.query.pmIdentityStatus as KycIdentityStatus
-      const pmAccreditationStatus = req.query.pmAccreditationStatus as KycAccreditationStatus
-      payload = {
-        address,
-        status: userStatusFromPmStatus(pmIdentityStatus, pmAccreditationStatus),
-        countryCode: "US",
-        residency: "us",
-        kycProvider: "parallelMarkets",
-        type: "individual",
-        identityStatus: pmIdentityStatus,
-        accreditationStatus: pmIdentityStatus,
-      }
-    }
-
     return res.status(200).send(payload)
   },
 })
