@@ -134,48 +134,12 @@ contract Go is IGo, BaseUpgradeablePausable {
   }
 
   /**
-   * @notice Returns a dynamic array of UID types accepted by the senior pool
-   */
-  function getSeniorPoolIdTypes() public pure returns (uint256[] memory) {
-    // using a fixed size array because you can only define fixed size array literals.
-    uint256[4] memory allowedSeniorPoolIdTypesStaging = [
-      ID_TYPE_0,
-      ID_TYPE_1,
-      ID_TYPE_3,
-      ID_TYPE_4
-    ];
-
-    // create a dynamic array and copy the fixed array over so we return a dynamic array
-    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](
-      allowedSeniorPoolIdTypesStaging.length
-    );
-    for (uint256 i = 0; i < allowedSeniorPoolIdTypesStaging.length; i++) {
-      allowedSeniorPoolIdTypes[i] = allowedSeniorPoolIdTypesStaging[i];
-    }
-
-    return allowedSeniorPoolIdTypes;
-  }
-
-  /**
    * @notice Returns whether the provided account is go-listed for any UID type
    * @param account The account whose go status to obtain
    * @return The account's go status
    */
   function go(address account) public view override returns (bool) {
     return goOnlyIdTypes(account, getAllIdTypes());
-  }
-
-  /**
-   * @notice Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.
-   * @param account The account whose go status to obtain
-   * @return The account's go status
-   */
-  function goSeniorPool(address account) public view override returns (bool) {
-    if (account == config.stakingRewardsAddress()) {
-      return true;
-    }
-
-    return goOnlyIdTypes(account, getSeniorPoolIdTypes());
   }
 
   function _getLegacyGoList() internal view returns (GoldfinchConfig) {

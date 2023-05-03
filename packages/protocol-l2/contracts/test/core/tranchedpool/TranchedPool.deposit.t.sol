@@ -21,8 +21,11 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   );
   event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
 
-  function testDepositJuniorFailsWithoutGoListOrUid() public {
+  function testDepositJuniorFailsWithoutGoListOrUid(address sender) public impersonating(sender) {
+    vm.assume(!go.go(sender));
+
     (TranchedPool pool, ) = defaultTranchedPool();
+
     usdc.approve(address(pool), type(uint256).max);
     vm.expectRevert(bytes("NA"));
     pool.deposit(2, 1);
@@ -162,7 +165,7 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   }
 
   function testDepositSeniorRevertsIfDepositorIsNotSeniorPool(address notSeniorPool) public {
-    vm.assume(notSeniorPool != address(seniorPool));
+    vm.assume(notSeniorPool != address(this));
     vm.assume(notSeniorPool != address(0));
     (TranchedPool pool, ) = defaultTranchedPool();
 
@@ -189,7 +192,7 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
 
     // Event should be emitted for deposit
     vm.expectEmit(true, true, true, true);
-    emit DepositMade(address(seniorPool), 1, 2, usdcVal(4000));
+    emit DepositMade(address(this), 1, 2, usdcVal(4000));
 
     uint256 seniorPoolTokenId = seniorDepositAndInvest(pool, usdcVal(4000));
 
@@ -201,12 +204,8 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     assertEq(senior.principalDeposited, usdcVal(4000));
 
     // Token info is correct
-    assertEq(poolTokens.balanceOf(address(seniorPool)), 1);
-    assertEq(
-      poolTokens.ownerOf(seniorPoolTokenId),
-      address(seniorPool),
-      "Senior pool owns pool token"
-    );
+    assertEq(poolTokens.balanceOf(address(this)), 1);
+    assertEq(poolTokens.ownerOf(seniorPoolTokenId), address(this), "Senior pool owns pool token");
     PoolTokens.TokenInfo memory seniorPoolTokenInfo = poolTokens.getTokenInfo(seniorPoolTokenId);
     assertEq(seniorPoolTokenInfo.principalAmount, usdcVal(4000));
     assertEq(seniorPoolTokenInfo.tranche, 1);

@@ -8,7 +8,6 @@ import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWit
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IGoldfinchFactory} from "../../../interfaces/IGoldfinchFactory.sol";
 import {IGo} from "../../../interfaces/IGo.sol";
-import {ICurveLP} from "../../../interfaces/ICurveLP.sol";
 
 /**
  * @title ConfigHelper

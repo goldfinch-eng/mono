@@ -7,7 +7,6 @@ import {TestConstants} from "../TestConstants.t.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
-import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 
 contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   TranchedPool private tp;
@@ -24,43 +23,9 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   function setUp() public override {
     super.setUp();
 
-    // Setup backer rewards
-    uint256 totalGFISupply = 100_000_000;
-    uint256 totalRewards = 1_000;
-    uint256 totalStakingRewards = totalGFISupply / 2;
-    uint256 totalBackerRewards = totalGFISupply / 2;
-    uint256 maxInterestDollarsEligible = 1_000_000_000;
-
     _startImpersonation(GF_OWNER);
 
     gfConfig.addToGoList(GF_OWNER);
-
-    gfi.setCap(bigVal(totalGFISupply));
-    gfi.mint(GF_OWNER, bigVal(totalGFISupply));
-    gfi.approve(GF_OWNER, bigVal(totalGFISupply));
-
-    backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible));
-    backerRewards.setTotalRewards(bigVal(totalRewards * 100) / 100);
-    backerRewards.setTotalInterestReceived(0);
-
-    // Transfer GFI to Backer rewards contract
-    gfi.approve(address(backerRewards), bigVal(totalBackerRewards));
-    gfi.transfer(address(backerRewards), bigVal(totalBackerRewards));
-
-    // Configure the StakingRewards contract such that the current earn rate is non-zero.
-    stakingRewards.setRewardsParameters({
-      _targetCapacity: bigVal(1000),
-      _minRate: bigVal(1) / 100,
-      _maxRate: bigVal(2) * 100,
-      _minRateAtPercent: 3 * 1e18,
-      _maxRateAtPercent: 5 * 1e17
-    });
-
-    gfi.approve(address(stakingRewards), bigVal(totalStakingRewards));
-    stakingRewards.loadRewards(bigVal(totalStakingRewards));
-
-    usdc.approve(address(stakingRewards), usdcVal(1000));
-    stakingRewards.depositAndStake(usdcVal(1000));
 
     _stopImpersonation();
 
@@ -295,130 +260,6 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     );
   }
 
-  function testSplitRewardsClaimedProportionally(uint256 principal1) public {
-    principal1 = bound(principal1, 1, tokenInfo.principalAmount - 1);
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(20));
-    tp.deposit(1, usdcVal(20));
-    tp.drawdown(usdcVal(25));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    tp.pay(cl.interestOwed());
-    assertZero(cl.interestOwed());
-
-    uint256 claimableRewards = backerRewards.poolTokenClaimableRewards(tokenId);
-    assertTrue(claimableRewards > 0);
-    backerRewards.withdraw(tokenId);
-
-    (uint256 token1, uint256 token2) = poolTokens.splitToken(tokenId, principal1);
-    IBackerRewards.BackerRewardsTokenInfo memory token1BackerRewardsInfo = backerRewards
-      .getTokenInfo(token1);
-    IBackerRewards.BackerRewardsTokenInfo memory token2BackerRewardsInfo = backerRewards
-      .getTokenInfo(token2);
-
-    assertEq(
-      token1BackerRewardsInfo.rewardsClaimed,
-      (claimableRewards * principal1) / tokenInfo.principalAmount
-    );
-
-    assertEq(
-      token2BackerRewardsInfo.rewardsClaimed,
-      claimableRewards - (claimableRewards * principal1) / tokenInfo.principalAmount
-    );
-
-    assertEq(
-      token1BackerRewardsInfo.rewardsClaimed + token2BackerRewardsInfo.rewardsClaimed,
-      claimableRewards
-    );
-  }
-
-  function testUsesAccRewardsPerPrincipalDollarAtMintForSplitTokens() public {
-    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
-    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
-    fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), type(uint256).max);
-    tokenId = tp.deposit(2, usdcVal(5));
-    tokenInfo = poolTokens.getTokenInfo(tokenId);
-    grantRole(address(tp), TestConstants.SENIOR_ROLE, GF_OWNER);
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(20));
-    tp.deposit(1, usdcVal(20));
-    // Drawdown and make first interest payment. This will make accRewardsPerPrincipalDollar for the pool non-zero.
-    // Then, when we initialize the next slice and deposit, the minted pool token will have a non-zero
-    // accRewardsPerPrincipalDollarAtMint
-    tp.drawdown(usdcVal(25));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime());
-    tp.assess();
-    tp.pay(cl.interestOwed());
-
-    // Initialize next slice and deposit
-    _startImpersonation(GF_OWNER);
-    tp.initializeNextSlice(block.timestamp);
-    usdc.approve(address(tp), usdcVal(25));
-    uint256 juniorTokenSlice2 = tp.deposit(4, usdcVal(5));
-    tp.lockJuniorCapital();
-    tp.deposit(3, usdcVal(20));
-    tp.lockPool();
-
-    IBackerRewards.BackerRewardsTokenInfo memory juniorBackerRewardsInfoSlice2 = backerRewards
-      .getTokenInfo(juniorTokenSlice2);
-
-    (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(
-      juniorTokenSlice2,
-      usdcVal(5) / 2
-    );
-    _stopImpersonation();
-
-    assertEq(
-      backerRewards.getTokenInfo(newToken1).accRewardsPerPrincipalDollarAtMint,
-      juniorBackerRewardsInfoSlice2.accRewardsPerPrincipalDollarAtMint
-    );
-
-    assertEq(
-      backerRewards.getTokenInfo(newToken2).accRewardsPerPrincipalDollarAtMint,
-      juniorBackerRewardsInfoSlice2.accRewardsPerPrincipalDollarAtMint
-    );
-  }
-
-  function testUsesAccRewardsPerTokenAtLastWithdrawForSplitTokens() public {
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(20));
-    tp.deposit(1, usdcVal(20));
-    vm.warp(block.timestamp + 100);
-    tp.drawdown(usdcVal(25));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    tp.pay(cl.interestOwed());
-
-    backerRewards.withdraw(tokenId);
-    uint256 accRewardsPerTokenAtLastWithdraw = backerRewards
-      .getStakingRewardsTokenInfo(tokenId)
-      .accumulatedRewardsPerTokenAtLastWithdraw;
-    assertEq(accRewardsPerTokenAtLastWithdraw, 0);
-
-    (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, usdcVal(5) / 2);
-
-    assertEq(
-      backerRewards.getStakingRewardsTokenInfo(newToken1).accumulatedRewardsPerTokenAtLastWithdraw,
-      accRewardsPerTokenAtLastWithdraw
-    );
-    assertEq(
-      backerRewards.getStakingRewardsTokenInfo(newToken2).accumulatedRewardsPerTokenAtLastWithdraw,
-      accRewardsPerTokenAtLastWithdraw
-    );
-  }
-
   function testOwnerOfNewTokensIsOwnerOfOriginalToken() public {
     (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(
       tokenId,
@@ -445,20 +286,10 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     tp.pay(totalOwed);
 
     tp.withdrawMax(tokenId);
-    backerRewards.withdraw(tokenId);
 
     tokenInfo = poolTokens.getTokenInfo(tokenId);
     assertGt(tokenInfo.principalRedeemed, 0);
     assertGt(tokenInfo.interestRedeemed, 0);
-
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = backerRewards
-      .getTokenInfo(tokenId);
-    assertGt(backerRewardsTokenInfo.rewardsClaimed, 0);
-
-    assertEq(
-      backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw,
-      0
-    );
 
     poolTokens.splitToken(tokenId, tokenInfo.principalAmount / 2);
     // Token no longer exists
@@ -472,16 +303,6 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     assertZero(tokenInfo.principalAmount);
     assertZero(tokenInfo.interestRedeemed);
     assertZero(tokenInfo.principalRedeemed);
-
-    // Backer rewards info is deleted
-    backerRewardsTokenInfo = backerRewards.getTokenInfo(tokenId);
-    assertZero(backerRewardsTokenInfo.rewardsClaimed);
-    assertZero(backerRewardsTokenInfo.accRewardsPerPrincipalDollarAtMint);
-
-    // Staking rewards info is deleted
-    assertZero(
-      backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw
-    );
   }
 
   function testFutureInterestAndPrincipalRedeemableIsSame() public {
@@ -551,185 +372,6 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
         "total principal should be the same"
       );
     }
-  }
-
-  function testClaimableRewardsIsSameIfRewardsClaimedBeforeSplit() public {
-    // Pay interest => claim rewards => split token => pay off loan
-
-    // We do another junior investment EQUAL to the first. We'll split the first junior investment but not split
-    // the second. We can compare them against each other to show that at the end of the day you get the same
-    // rewards out of a split vs non-split token.
-    uint256 tokenId2 = tp.deposit(2, usdcVal(5));
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(40));
-    tp.deposit(1, usdcVal(40));
-    tp.drawdown(usdcVal(50));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed());
-    tp.pay(cl.interestOwed());
-
-    assertGt(backerRewards.poolTokenClaimableRewards(tokenId), 0);
-    backerRewards.withdraw(tokenId);
-    assertZero(backerRewards.poolTokenClaimableRewards(tokenId));
-
-    uint256 principal1 = tokenInfo.principalAmount / 8;
-    (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, principal1);
-
-    // Advance to end of loan and pay
-    vm.warp(cl.termEndTime());
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed() + cl.principalOwed());
-    tp.pay(cl.interestOwed() + cl.principalOwed());
-
-    // Check total rewards match up
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo1 = backerRewards.getTokenInfo(
-      newToken1
-    );
-    uint256 claimableRewards1 = backerRewards.poolTokenClaimableRewards(newToken1);
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo2 = backerRewards.getTokenInfo(
-      newToken2
-    );
-    uint256 claimableRewards2 = backerRewards.poolTokenClaimableRewards(newToken2);
-
-    uint256 totalClaimed = bRewardsTokenInfo1.rewardsClaimed + bRewardsTokenInfo2.rewardsClaimed;
-    uint256 totalClaimable = claimableRewards1 + claimableRewards2;
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfoJunior2 = backerRewards
-      .getTokenInfo(tokenId2);
-    uint256 claimableRewardsJunior2 = backerRewards.poolTokenClaimableRewards(tokenId2);
-    uint256 expectedTotalRewards = bRewardsTokenInfoJunior2.rewardsClaimed +
-      claimableRewardsJunior2;
-
-    assertEq(
-      totalClaimed + totalClaimable,
-      expectedTotalRewards,
-      "Total rewards should be the same"
-    );
-  }
-
-  function testClaimableRewardsIsSameIfRewardsClaimedAfterSplit() public {
-    // Pay interest => split token => claim rewards => pay off loan
-
-    // We do another junior investment EQUAL to the first. We'll split the first junior investment but not split
-    // the second. We can compare them against each other to show that at the end of the day you get the same
-    // rewards out of a split vs non-split token.
-    uint256 tokenId2 = tp.deposit(2, usdcVal(5));
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(40));
-    tp.deposit(1, usdcVal(40));
-    tp.drawdown(usdcVal(50));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed());
-    tp.pay(cl.interestOwed());
-
-    uint256 principal1 = tokenInfo.principalAmount / 8;
-    (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, principal1);
-
-    assertGt(backerRewards.poolTokenClaimableRewards(newToken1), 0);
-    assertGt(backerRewards.poolTokenClaimableRewards(newToken2), 0);
-    backerRewards.withdraw(newToken1);
-    backerRewards.withdraw(newToken2);
-    assertZero(backerRewards.poolTokenClaimableRewards(newToken1));
-    assertZero(backerRewards.poolTokenClaimableRewards(newToken2));
-
-    // Advance to end of loan and pay
-    vm.warp(cl.termEndTime());
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed() + cl.principalOwed());
-    tp.pay(cl.interestOwed() + cl.principalOwed());
-
-    // Check total rewards match up
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo1 = backerRewards.getTokenInfo(
-      newToken1
-    );
-    uint256 claimableRewards1 = backerRewards.poolTokenClaimableRewards(newToken1);
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo2 = backerRewards.getTokenInfo(
-      newToken2
-    );
-    uint256 claimableRewards2 = backerRewards.poolTokenClaimableRewards(newToken2);
-
-    uint256 totalClaimed = bRewardsTokenInfo1.rewardsClaimed + bRewardsTokenInfo2.rewardsClaimed;
-    uint256 totalClaimable = claimableRewards1 + claimableRewards2;
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfoJunior2 = backerRewards
-      .getTokenInfo(tokenId2);
-    uint256 claimableRewardsJunior2 = backerRewards.poolTokenClaimableRewards(tokenId2);
-    uint256 expectedTotalRewards = bRewardsTokenInfoJunior2.rewardsClaimed +
-      claimableRewardsJunior2;
-
-    assertEq(
-      totalClaimed + totalClaimable,
-      expectedTotalRewards,
-      "Total rewards should be the same"
-    );
-  }
-
-  function testClaimableRewardsIsSameIfNoRewardsClaimed() public {
-    // Pay interest => split token => pay off loan
-
-    // We do another junior investment EQUAL to the first. We'll split the first junior investment but not split
-    // the second. We can compare them against each other to show that at the end of the day you get the same
-    // rewards out of a split vs non-split token.
-    uint256 tokenId2 = tp.deposit(2, usdcVal(5));
-
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(40));
-    tp.deposit(1, usdcVal(40));
-    tp.drawdown(usdcVal(50));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed());
-    tp.pay(cl.interestOwed());
-
-    uint256 principal1 = tokenInfo.principalAmount / 8;
-    (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, principal1);
-
-    // Advance to end of loan and pay
-    vm.warp(cl.termEndTime());
-    tp.assess();
-    usdc.approve(address(tp), cl.interestOwed() + cl.principalOwed());
-    tp.pay(cl.interestOwed() + cl.principalOwed());
-
-    // Check total rewards match up
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo1 = backerRewards.getTokenInfo(
-      newToken1
-    );
-    uint256 claimableRewards1 = backerRewards.poolTokenClaimableRewards(newToken1);
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfo2 = backerRewards.getTokenInfo(
-      newToken2
-    );
-    uint256 claimableRewards2 = backerRewards.poolTokenClaimableRewards(newToken2);
-
-    uint256 totalClaimed = bRewardsTokenInfo1.rewardsClaimed + bRewardsTokenInfo2.rewardsClaimed;
-    uint256 totalClaimable = claimableRewards1 + claimableRewards2;
-
-    IBackerRewards.BackerRewardsTokenInfo memory bRewardsTokenInfoJunior2 = backerRewards
-      .getTokenInfo(tokenId2);
-    uint256 claimableRewardsJunior2 = backerRewards.poolTokenClaimableRewards(tokenId2);
-    uint256 expectedTotalRewards = bRewardsTokenInfoJunior2.rewardsClaimed +
-      claimableRewardsJunior2;
-
-    assertEq(
-      totalClaimed + totalClaimable,
-      expectedTotalRewards,
-      "Total rewards should be the same"
-    );
   }
 
   function testWorksWhenPoolPaused() public {

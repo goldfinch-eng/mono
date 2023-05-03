@@ -31,7 +31,7 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
 
   function testInitializationGrantsProperRoles() public {
     (TranchedPool pool, ) = defaultTranchedPool();
-    assertTrue(pool.hasRole(pool.SENIOR_ROLE(), address(seniorPool)));
+    assertTrue(pool.hasRole(pool.SENIOR_ROLE(), address(this)));
     assertTrue(pool.hasRole(pool.LOCKER_ROLE(), GF_OWNER));
     assertTrue(pool.hasRole(pool.LOCKER_ROLE(), BORROWER));
   }

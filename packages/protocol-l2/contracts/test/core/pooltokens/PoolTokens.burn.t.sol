@@ -7,7 +7,6 @@ import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
-import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 
 contract PoolTokensBurnTest is PoolTokensBaseTest {
@@ -20,42 +19,9 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
     super.setUp();
 
     // Setup backer rewards
-    uint256 totalGFISupply = 100_000_000;
-    uint256 totalRewards = 1_000;
-    uint256 totalStakingRewards = totalGFISupply / 2;
-    uint256 totalBackerRewards = totalGFISupply / 2;
-    uint256 maxInterestDollarsEligible = 1_000_000_000;
-
     _startImpersonation(GF_OWNER);
 
     gfConfig.addToGoList(GF_OWNER);
-
-    gfi.setCap(bigVal(totalGFISupply));
-    gfi.mint(GF_OWNER, bigVal(totalGFISupply));
-    gfi.approve(GF_OWNER, bigVal(totalGFISupply));
-
-    backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible));
-    backerRewards.setTotalRewards(bigVal(totalRewards * 100) / 100);
-    backerRewards.setTotalInterestReceived(0);
-
-    // Transfer GFI to Backer rewards contract
-    gfi.approve(address(backerRewards), bigVal(totalBackerRewards));
-    gfi.transfer(address(backerRewards), bigVal(totalBackerRewards));
-
-    // Configure the StakingRewards contract such that the current earn rate is non-zero.
-    stakingRewards.setRewardsParameters({
-      _targetCapacity: bigVal(1000),
-      _minRate: bigVal(1) / 100,
-      _maxRate: bigVal(2) * 100,
-      _minRateAtPercent: 3 * 1e18,
-      _maxRateAtPercent: 5 * 1e17
-    });
-
-    gfi.approve(address(stakingRewards), bigVal(totalStakingRewards));
-    stakingRewards.loadRewards(bigVal(totalStakingRewards));
-
-    usdc.approve(address(stakingRewards), usdcVal(1000));
-    stakingRewards.depositAndStake(usdcVal(1000));
 
     _stopImpersonation();
 
@@ -84,29 +50,6 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
     poolTokens.burn(tokenId);
   }
 
-  function testRevertsIfBackerRewardsNotFullyRedeemed() public {
-    _startImpersonation(GF_OWNER);
-    tp.lockJuniorCapital();
-    usdc.approve(address(tp), usdcVal(20));
-    tp.deposit(1, usdcVal(20));
-    tp.drawdown(usdcVal(25));
-    _stopImpersonation();
-
-    vm.warp(cl.nextDueTime() + 1);
-    tp.assess();
-    tp.pay(cl.interestOwed());
-    assertZero(cl.interestOwed());
-
-    uint256 claimableRewards = backerRewards.poolTokenClaimableRewards(tokenId);
-    assertTrue(claimableRewards > 0);
-
-    poolTokens._setSender(payable(address(tp)));
-    poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
-
-    vm.expectRevert("rewards>0");
-    poolTokens.burn(tokenId);
-  }
-
   function testCanBurnOnceFullyRedeemed() public {
     poolTokens._setSender(payable(address(tp)));
     poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
@@ -127,39 +70,21 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
     tp.pay(cl.interestOwed() + cl.principalOwed());
 
     tp.withdrawMax(tokenId);
-    backerRewards.withdraw(tokenId);
 
     IPoolTokens.TokenInfo memory tokenInfoBeforeBurn = poolTokens.getTokenInfo(tokenId);
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsInfoBeforeBurn = backerRewards
-      .getTokenInfo(tokenId);
-    uint256 accRewardsPerTokenAtLastWithdrawBeforeBurn = backerRewards
-      .getStakingRewardsTokenInfo(tokenId)
-      .accumulatedRewardsPerTokenAtLastWithdraw;
 
     assertGt(tokenInfoBeforeBurn.principalRedeemed, 0);
     assertGt(tokenInfoBeforeBurn.interestRedeemed, 0);
-    assertGt(backerRewardsInfoBeforeBurn.rewardsClaimed, 0);
-    assertEq(accRewardsPerTokenAtLastWithdrawBeforeBurn, 0);
 
     poolTokens.burn(tokenId);
 
     IPoolTokens.TokenInfo memory tokenInfoAfterBurn = poolTokens.getTokenInfo(tokenId);
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsInfoAfterBurn = backerRewards
-      .getTokenInfo(tokenId);
-    uint256 accRewardsPerTokenAtLastWithdrawAfterBurn = backerRewards
-      .getStakingRewardsTokenInfo(tokenId)
-      .accumulatedRewardsPerTokenAtLastWithdraw;
 
     assertZero(tokenInfoAfterBurn.principalAmount);
     assertZero(tokenInfoAfterBurn.principalRedeemed);
     assertZero(tokenInfoAfterBurn.interestRedeemed);
     assertZero(tokenInfoAfterBurn.tranche);
     assertEq(tokenInfoAfterBurn.pool, address(0));
-
-    assertZero(backerRewardsInfoAfterBurn.rewardsClaimed);
-    assertZero(backerRewardsInfoAfterBurn.accRewardsPerPrincipalDollarAtMint);
-
-    assertZero(accRewardsPerTokenAtLastWithdrawAfterBurn);
   }
 
   function testEmitsTokenBurnedEvent() public {

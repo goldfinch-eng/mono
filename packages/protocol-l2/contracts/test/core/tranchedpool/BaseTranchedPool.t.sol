@@ -11,13 +11,7 @@ import {Accountant} from "../../../protocol/core/Accountant.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
-import {SeniorPool} from "../../../protocol/core/SeniorPool.sol";
-import {Fidu} from "../../../protocol/core/Fidu.sol";
-import {LeverageRatioStrategy} from "../../../protocol/core/LeverageRatioStrategy.sol";
-import {FixedLeverageRatioStrategy} from "../../../protocol/core/FixedLeverageRatioStrategy.sol";
-import {WithdrawalRequestToken} from "../../../protocol/core/WithdrawalRequestToken.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
-import {BackerRewards} from "../../../rewards/BackerRewards.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
@@ -41,10 +35,6 @@ contract TranchedPoolBaseTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
   TestERC20 internal usdc;
-  Fidu internal fidu;
-  SeniorPool internal seniorPool;
-  LeverageRatioStrategy internal strat;
-  WithdrawalRequestToken internal requestTokens;
   ITestUniqueIdentity0612 internal uid;
   TranchedPoolBuilder internal poolBuilder;
   PoolTokens internal poolTokens;
@@ -64,33 +54,7 @@ contract TranchedPoolBaseTest is BaseTest {
     // USDC setup
     usdc = TestERC20(address(protocol.usdc()));
 
-    // FIDU setup
-    fidu = Fidu(address(protocol.fidu()));
-
-    // SeniorPool setup
-    seniorPool = new SeniorPool();
-    seniorPool.initialize(GF_OWNER, gfConfig);
-    seniorPool.initializeEpochs();
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPool), address(seniorPool));
-    fuzzHelper.exclude(address(seniorPool));
-
-    fidu.grantRole(TestConstants.MINTER_ROLE, address(seniorPool));
-    FixedLeverageRatioStrategy _strat = new FixedLeverageRatioStrategy();
-    _strat.initialize(GF_OWNER, gfConfig);
-    strat = _strat;
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy), address(strat));
-    fuzzHelper.exclude(address(strat));
-
     approveTokensMaxAmount(GF_OWNER);
-
-    // WithdrawalRequestToken setup
-    requestTokens = new WithdrawalRequestToken();
-    requestTokens.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.WithdrawalRequestToken),
-      address(requestTokens)
-    );
-    fuzzHelper.exclude(address(requestTokens));
 
     // UniqueIdentity setup
     uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
@@ -109,12 +73,6 @@ contract TranchedPoolBaseTest is BaseTest {
     poolTokens.__initialize__(GF_OWNER, gfConfig);
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
     fuzzHelper.exclude(address(poolTokens));
-
-    // BackerRewards setup
-    BackerRewards backerRewards = new BackerRewards();
-    backerRewards.__initialize__(GF_OWNER, gfConfig);
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.BackerRewards), address(backerRewards));
-    fuzzHelper.exclude(address(backerRewards));
 
     // Go setup
     go = new Go();
@@ -150,7 +108,7 @@ contract TranchedPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(monthlyScheduleRepo));
     fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
 
-    poolBuilder = new TranchedPoolBuilder(gfFactory, seniorPool, monthlyScheduleRepo);
+    poolBuilder = new TranchedPoolBuilder(gfFactory, monthlyScheduleRepo);
     fuzzHelper.exclude(address(poolBuilder));
     // Allow the builder to create pools
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(poolBuilder));
@@ -165,7 +123,7 @@ contract TranchedPoolBaseTest is BaseTest {
 
     // Other stuff
     addToGoList(GF_OWNER);
-    addToGoList(address(seniorPool));
+    addToGoList(address(this));
 
     fuzzHelper.exclude(BORROWER);
     fuzzHelper.exclude(DEPOSITOR);
@@ -194,7 +152,7 @@ contract TranchedPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(cl));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
+    pool.grantRole(pool.SENIOR_ROLE(), address(this));
     return (pool, cl);
   }
 
@@ -208,7 +166,7 @@ contract TranchedPoolBaseTest is BaseTest {
     fuzzHelper.exclude(address(cl));
     (ISchedule schedule, ) = cl.schedule();
     fuzzHelper.exclude(address(schedule));
-    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
+    pool.grantRole(pool.SENIOR_ROLE(), address(this));
     return (pool, cl);
   }
 
@@ -219,7 +177,7 @@ contract TranchedPoolBaseTest is BaseTest {
     (TranchedPool pool, CreditLine cl) = poolBuilder.withLateFeeApr(lateFeeApr).build(BORROWER);
     fuzzHelper.exclude(address(pool));
     fuzzHelper.exclude(address(cl));
-    pool.grantRole(pool.SENIOR_ROLE(), address(seniorPool));
+    pool.grantRole(pool.SENIOR_ROLE(), address(this));
     gfConfig.setNumber(
       uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays),
       lateFeeGracePeriodInDays
@@ -228,16 +186,20 @@ contract TranchedPoolBaseTest is BaseTest {
   }
 
   function approveTokensMaxAmount(address user) internal impersonating(user) {
-    usdc.approve(address(seniorPool), type(uint256).max);
-    fidu.approve(address(seniorPool), type(uint256).max);
+    usdc.approve(address(this), type(uint256).max);
   }
 
-  function seniorDepositAndInvest(
-    TranchedPool pool,
-    uint256 amount
-  ) internal impersonating(GF_OWNER) returns (uint256) {
-    seniorPool.deposit(amount);
-    return seniorPool.invest(ITranchedPool(address(pool)));
+  function seniorDepositAndInvest(TranchedPool pool, uint256 amount) internal returns (uint256) {
+    _startImpersonation(GF_OWNER);
+    usdc.transfer(address(this), amount);
+    _stopImpersonation();
+
+    _startImpersonation(address(this));
+    usdc.approve(address(pool), amount);
+    uint256 tokenId = pool.deposit(1, amount);
+    _stopImpersonation();
+
+    return tokenId;
   }
 
   function deposit(

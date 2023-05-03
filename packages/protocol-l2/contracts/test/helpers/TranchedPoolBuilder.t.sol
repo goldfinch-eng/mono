@@ -8,7 +8,6 @@ import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
-import {SeniorPool} from "../../protocol/core/SeniorPool.sol";
 import {TestConstants} from "../core/TestConstants.t.sol";
 import {TranchedPool} from "../../protocol/core/TranchedPool.sol";
 
@@ -19,7 +18,6 @@ contract TranchedPoolBuilder {
   uint256 public constant DEFAULT_LATE_APR = 0;
 
   GoldfinchFactory private gfFactory;
-  SeniorPool private seniorPool;
   MonthlyScheduleRepo private monthlyScheduleRepo;
   uint256 private juniorFeePercent;
   uint256 private maxLimit;
@@ -32,13 +30,8 @@ contract TranchedPoolBuilder {
   uint256 private _periodsPerPrincipalPeriod = 12;
   uint256 private _gracePrincipalPeriods = 0;
 
-  constructor(
-    GoldfinchFactory _gfFactory,
-    SeniorPool _seniorPool,
-    MonthlyScheduleRepo _monthlyScheduleRepo
-  ) public {
+  constructor(GoldfinchFactory _gfFactory, MonthlyScheduleRepo _monthlyScheduleRepo) public {
     gfFactory = _gfFactory;
-    seniorPool = _seniorPool;
     monthlyScheduleRepo = _monthlyScheduleRepo;
     juniorFeePercent = DEFAULT_JUNIOR_FEE_PERCENT;
     maxLimit = DEFAULT_MAX_LIMIT;

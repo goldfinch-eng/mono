@@ -12,7 +12,6 @@ import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
 import {IERC2981} from "../../interfaces/IERC2981.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
-import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 
 /**
  * @title PoolTokens
@@ -83,8 +82,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
       poolAddress: poolAddress,
       mintTo: to
     });
-
-    config.getBackerRewards().setPoolTokenAccRewardsPerPrincipalDollarAtMint(_msgSender(), tokenId);
   }
 
   /// @inheritdoc IPoolTokens
@@ -172,9 +169,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
       token.principalRedeemed == token.principalAmount,
       "Can only burn fully redeemed tokens"
     );
-    // If we let you burn with claimable backer rewards then it would blackhole your rewards,
-    // so you must claim all rewards before burning
-    require(config.getBackerRewards().poolTokenClaimableRewards(tokenId) == 0, "rewards>0");
     _destroyAndBurn(owner, address(token.pool), tokenId);
   }
 
@@ -217,14 +211,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     TokenInfo memory tokenInfo = _getTokenInfo(tokenId);
     require(0 < newPrincipal1 && newPrincipal1 < tokenInfo.principalAmount, "IA");
 
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = config
-      .getBackerRewards()
-      .getTokenInfo(tokenId);
-
-    IBackerRewards.StakingRewardsTokenInfo memory backerStakingRewardsTokenInfo = config
-      .getBackerRewards()
-      .getStakingRewardsTokenInfo(tokenId);
-
     // Burn the original token before calling out to other contracts to prevent possible reentrancy attacks.
     // A reentrancy guard on this function alone is insufficient because someone may be able to reenter the
     // protocol through a different contract that reads pool token metadata. Following checks-effects-interactions
@@ -234,14 +220,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     _destroyAndBurn(tokenOwner, address(tokenInfo.pool), tokenId);
 
     (tokenId1, tokenId2) = _createSplitTokens(tokenInfo, tokenOwner, newPrincipal1);
-    _setBackerRewardsForSplitTokens(
-      tokenInfo,
-      backerRewardsTokenInfo,
-      backerStakingRewardsTokenInfo,
-      tokenId1,
-      tokenId2,
-      newPrincipal1
-    );
 
     emit TokenSplit({
       owner: tokenOwner,
@@ -251,34 +229,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
       newPrincipal1: newPrincipal1,
       newTokenId2: tokenId2,
       newPrincipal2: tokenInfo.principalAmount.sub(newPrincipal1)
-    });
-  }
-
-  /// @notice Initialize the backer rewards metadata for split tokens
-  function _setBackerRewardsForSplitTokens(
-    TokenInfo memory tokenInfo,
-    IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo,
-    IBackerRewards.StakingRewardsTokenInfo memory stakingRewardsTokenInfo,
-    uint256 newTokenId1,
-    uint256 newTokenId2,
-    uint256 newPrincipal1
-  ) internal {
-    uint256 rewardsClaimed1 = backerRewardsTokenInfo.rewardsClaimed.mul(newPrincipal1).div(
-      tokenInfo.principalAmount
-    );
-
-    config.getBackerRewards().setBackerAndStakingRewardsTokenInfoOnSplit({
-      originalBackerRewardsTokenInfo: backerRewardsTokenInfo,
-      originalStakingRewardsTokenInfo: stakingRewardsTokenInfo,
-      newTokenId: newTokenId1,
-      newRewardsClaimed: rewardsClaimed1
-    });
-
-    config.getBackerRewards().setBackerAndStakingRewardsTokenInfoOnSplit({
-      originalBackerRewardsTokenInfo: backerRewardsTokenInfo,
-      originalStakingRewardsTokenInfo: stakingRewardsTokenInfo,
-      newTokenId: newTokenId2,
-      newRewardsClaimed: backerRewardsTokenInfo.rewardsClaimed.sub(rewardsClaimed1)
     });
   }
 
@@ -365,7 +315,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   function _destroyAndBurn(address owner, address pool, uint256 tokenId) internal {
     delete tokens[tokenId];
     _burn(tokenId);
-    config.getBackerRewards().clearTokenInfo(tokenId);
     emit TokenBurned(owner, pool, tokenId);
   }
 
