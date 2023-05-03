@@ -16,6 +16,8 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
+import {Address} from "openzeppelin-contracts-0-8-x/utils/Address.sol";
+
 contract CallableLoanDepositTest is CallableLoanBaseTest {
   using SaturatingSub for uint256;
   event DepositMade(
@@ -108,11 +110,14 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     uint256 lender2Deposit1,
     uint256 lender2Deposit2
   ) public {
-    vm.assume(fuzzHelper.isAllowed(lender1));
-    vm.assume(fuzzHelper.isAllowed(lender2));
-
     loanLimit = bound(loanLimit, usdcVal(1), usdcVal(100_000_000_000));
     (CallableLoan loan, ) = callableLoanBuilder.withLimit(loanLimit).build(BORROWER);
+
+    vm.assume(fuzzHelper.isAllowed(lender1));
+    vm.assume(!Address.isContract(lender1));
+
+    vm.assume(fuzzHelper.isAllowed(lender2));
+    vm.assume(!Address.isContract(lender2));
 
     // Need to filter deposit amounts individually before checking the sum otherwise there can be overflow
     vm.assume(lender1Deposit1 > 0 && lender1Deposit1 < usdcVal(100_000_000_000));
