@@ -1,4 +1,4 @@
-import {getUsers} from "../../../src/db"
+import {getUsers} from "../../../src/db/db"
 import _ from "lodash"
 import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
 import firebase from "firebase/compat/app"

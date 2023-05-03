@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getDb, getUsers} from "../db"
+import {getDb, getUsers} from "../db/db"
 import {genRequestHandler} from "../helpers"
 import {KycProvider, SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"

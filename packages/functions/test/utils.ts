@@ -7,7 +7,7 @@ import {FirebaseConfig, setTestConfig} from "../src/config"
 import firebase from "firebase/compat/app"
 import {firestore} from "firebase-admin"
 import {initializeTestEnvironment, RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
-import {overrideFirestore} from "../src/db"
+import {overrideFirestore} from "../src/db/db"
 
 /**
  * Assert a response object of a cloud function matches the expected http status code and reponse body.

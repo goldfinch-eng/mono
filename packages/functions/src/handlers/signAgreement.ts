@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getAgreements} from "../db"
+import {getAgreements} from "../db/db"
 import {genRequestHandler} from "../helpers"
 import isEmail from "validator/lib/isEmail"
 

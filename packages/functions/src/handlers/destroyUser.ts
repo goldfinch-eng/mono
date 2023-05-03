@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/serverless"
 import * as admin from "firebase-admin"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getDb, getDestroyedUsers, getUsers} from "../db"
+import {getDb, getDestroyedUsers, getUsers} from "../db/db"
 import {genRequestHandler} from "../helpers"
 import {ethers} from "ethers"
 import firestore = admin.firestore

@@ -4,7 +4,7 @@ import * as crypto from "crypto"
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import {assertIsString} from "@goldfinch-eng/utils"
-import {getDb, getUsers} from "../db"
+import {getDb, getUsers} from "../db/db"
 import {getConfig} from "../config"
 import {genRequestHandler} from "../helpers"
 import firestore = admin.firestore

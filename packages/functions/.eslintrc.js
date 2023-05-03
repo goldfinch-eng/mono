@@ -33,7 +33,7 @@ module.exports = {
       // https://github.com/firebase/firebase-admin-node/discussions/1359
       "error",
       {
-        ignore: ["^firebase-functions/.+"],
+        ignore: ["^firebase-functions/.+", "^firebase-admin/.+"],
       },
     ],
   },

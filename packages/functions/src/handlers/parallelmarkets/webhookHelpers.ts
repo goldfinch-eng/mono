@@ -6,7 +6,7 @@ import {
   PmIdentityPayload,
   PmIndividualIdentity,
 } from "./PmApiTypes"
-import {getUsers} from "../../db"
+import {getUsers} from "../../db/db"
 import {
   getAccreditationStatus,
   getBusinessIdentityStatus,

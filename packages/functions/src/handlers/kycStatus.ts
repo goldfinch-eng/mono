@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getUsers} from "../db"
+import {getUsers} from "../db/db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
 import {
