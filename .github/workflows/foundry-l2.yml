@@ -1,0 +1,38 @@
+on: [push]
+
+name: Foundry (protocol-l2)
+
+jobs:
+  check:
+    name: Foundry Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check forge version
+        run: forge --version
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.1
+          cache: 'yarn'
+
+      - run: yarn workspaces focus @goldfinch-eng/protocol-l2
+
+      - run: yarn workspaces foreach -ptR --from @goldfinch-eng/protocol-l2 run build
+
+      - name: Check forge tree
+        working-directory: packages/protocol-l2/
+        run: forge tree
+
+      - name: Run tests
+        working-directory: packages/protocol-l2/
+        run: RUST_BACKTRACE=1 forge test -vvv --gas-report

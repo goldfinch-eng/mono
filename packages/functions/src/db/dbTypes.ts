@@ -8,3 +8,19 @@ export type Agreement = {
   signedAt: number
   email?: string
 }
+
+export type DestroyedUserInfo = {
+  burnedUidType: string
+  countryCode: string
+  deletedAt: number
+  persona: {
+    // Inquiry id
+    id: string
+    status: string
+  }
+}
+
+export type DestroyedUser = {
+  address: string
+  deletions: DestroyedUserInfo[]
+}

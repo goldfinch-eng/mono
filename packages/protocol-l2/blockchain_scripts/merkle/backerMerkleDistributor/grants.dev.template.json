@@ -1,0 +1,52 @@
+[
+  {
+    "account": "REPLACE_ME",
+    "reason": "backer",
+    "grant": {
+      "amount": "1000000000000000000000",
+      "vestingLength": "0",
+      "cliffLength": "0",
+      "vestingInterval": "1"
+    }
+  },
+  {
+    "account": "REPLACE_ME",
+    "reason": "backer",
+    "grant": {
+      "amount": "1000000000000000000000",
+      "vestingLength": "31536000",
+      "cliffLength": "0",
+      "vestingInterval": "1"
+    }
+  },
+  {
+    "account": "REPLACE_ME",
+    "reason": "backer",
+    "grant": {
+      "amount": "1000000000000000000000",
+      "vestingLength": "31536000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000"
+    }
+  },
+  {
+    "account": "REPLACE_ME",
+    "reason": "backer",
+    "grant": {
+      "amount": "1000000000000000000000",
+      "vestingLength": "31536000",
+      "cliffLength": "15768000",
+      "vestingInterval": "1"
+    }
+  },
+  {
+    "account": "REPLACE_ME",
+    "reason": "backer",
+    "grant": {
+      "amount": "1000000000000000000000",
+      "vestingLength": "31536000",
+      "cliffLength": "15768000",
+      "vestingInterval": "2628000"
+    }
+  }
+]
