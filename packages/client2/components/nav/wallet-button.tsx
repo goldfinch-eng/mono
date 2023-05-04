@@ -1,60 +1,51 @@
-import { useEffect, useState } from "react";
+import {
+  useAccount,
+  useEnsAvatar,
+  useEnsName,
+  useNetwork,
+  useSwitchNetwork,
+} from "wagmi";
 
 import { Button, Popover } from "@/components/design-system";
 import { DESIRED_CHAIN_ID } from "@/constants";
+import { useIsMounted } from "@/hooks";
 import { openWalletModal } from "@/lib/state/actions";
-import { abbreviateAddress, useWallet } from "@/lib/wallet";
+import { abbreviateAddress } from "@/lib/wallet";
 
 import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, error, connector, provider, ENSName } = useWallet();
-  const [ENSAvatar, setENSAvatar] = useState<string | null>(null);
-  useEffect(() => {
-    if (!provider || !account) {
-      return;
-    }
-    const asyncEffect = async () => {
-      try {
-        const avatar = await provider.getAvatar(account);
-        setENSAvatar(avatar);
-      } catch (e) {
-        // do nothing. an error would occur if the current network doesn't support ENS (this is true on localhost)
-      }
-    };
-    asyncEffect();
-  }, [provider, account]);
+  const isMounted = useIsMounted();
+  const { address } = useAccount();
+  const network = useNetwork();
+  const skipENS = network.chain?.id === 31337;
+  // ENS doesn't exist on Hardhat so we purposefully withhold `address` here to make this skip, otherwise you get an annoying but non-blocking error
+  const { data: ENSName } = useEnsName({
+    address: skipENS ? undefined : address,
+  });
+  const { data: ENSAvatar } = useEnsAvatar({
+    address: skipENS ? undefined : address,
+  });
+  const isWrongNetwork = network.chain?.unsupported;
+  const { switchNetwork } = useSwitchNetwork();
 
-  return error ? (
+  return !isMounted ? null : isWrongNetwork ? (
     <Button
       variant="rounded"
-      className="h-10 text-clay-500"
-      iconRight="Exclamation"
-      colorScheme="sand"
-      onClick={
-        error.name === "ChainIdNotAllowedError"
-          ? () => connector.activate(DESIRED_CHAIN_ID)
-          : openWalletModal
-      }
+      size="sm"
+      iconLeft="Exclamation"
+      colorScheme="light-mustard"
+      onClick={() => switchNetwork?.(DESIRED_CHAIN_ID)}
     >
-      {error.name === "ChainIdNotAllowedError"
-        ? "Wrong network"
-        : "Wallet error"}
+      <span className="text-clay-500">Wrong Network</span>
     </Button>
-  ) : account ? (
+  ) : address ? (
     <Popover
       placement="bottom-end"
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
     >
-      <Button
-        className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
-        variant="rounded"
-        colorScheme="sand"
-      >
-        <span className="hidden md:block">
-          {ENSName ? ENSName : abbreviateAddress(account)}
-        </span>
+      <Button variant="rounded" size="sm" colorScheme="light-mustard">
         {ENSAvatar ? (
           // Not using next/image because we can't know the origin of this image ahead of time
           // eslint-disable-next-line @next/next/no-img-element
@@ -62,17 +53,20 @@ export function WalletButton() {
             alt="Your avatar"
             aria-hidden="true"
             src={ENSAvatar}
-            className="h-6 w-6 rounded-full object-cover"
+            className="h-4 w-4 rounded-full object-cover"
           />
         ) : (
-          <Identicon account={account} scale={3} />
+          <Identicon account={address} scale={2} />
         )}
+        <span className="hidden md:block">
+          {ENSName ? ENSName : abbreviateAddress(address)}
+        </span>
       </Button>
     </Popover>
   ) : (
     <Button
-      className="h-10"
       variant="rounded"
+      size="sm"
       colorScheme="primary"
       onClick={openWalletModal}
     >

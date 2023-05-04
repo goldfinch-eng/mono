@@ -4,7 +4,7 @@ import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler} from "../helpers"
 import POOL_METADATA from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {GraphQLClient} from "graphql-request"
-import {getSdk, PoolTokenMetadataQuery} from "../graphql/generated/graphql"
+import {getSdk} from "../graphql/generated/graphql"
 import {BigNumber} from "bignumber.js"
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -53,27 +53,11 @@ Object.keys(POOL_METADATA).forEach((addr) => {
   metadataStore[addr.toLowerCase()] = metadata
 })
 
-/**
- * Calculate net asset value for a given pool token
- * @param {PoolTokenMetadataQuery} poolToken Query result from goldfinch subgraph
- * @return {BigNumber} NAV
- */
-async function calculateNAV(poolToken: NonNullable<PoolTokenMetadataQuery["tranchedPoolToken"]>) {
-  const principalAmount = new BigNumber(poolToken.principalAmount.toString())
-  const principalRedeemed = new BigNumber(poolToken.principalRedeemed.toString())
-  const principalRedeemable = new BigNumber(poolToken.principalRedeemable.toString())
-
-  const nav = principalAmount.minus(principalRedeemed).minus(principalRedeemable)
-
-  return nav
-}
-
 type AttributeType =
   | "POOL_NAME"
   | "POOL_ADDRESS"
   | "BORROWER_NAME"
   | "BACKER_POSITION_PRINCIPAL"
-  | "BACKER_POSITION_NAV"
   | "MONTHLY_INTEREST_PAYMENT"
   | "USDC_INTEREST_RATE"
   | "TOTAL_LOAN_SIZE"
@@ -81,7 +65,6 @@ type AttributeType =
   | "PAYMENT_TERM"
   | "TERM_REMAINING"
   | "TOTAL_AMOUNT_REPAID"
-  | "NEXT_REPAYMENT_DATE"
   | "LAST_UPDATED_AT"
 type TokenAttribute = {type: AttributeType; value: string}
 
@@ -94,40 +77,36 @@ const isTermStarted = (termEndTime: BigNumber) => termEndTime.toNumber() !== 0
  * @return {Array<TokenAttribute>} A list of attributes
  */
 async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute>> {
-  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2")
+  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch")
   const sdk = getSdk(client)
 
   const graphQlResponse = await sdk.poolTokenMetadata({id: tokenId.toString()})
-  const {tranchedPoolToken} = graphQlResponse
+  const {poolToken} = graphQlResponse
 
-  assertNonNullable(tranchedPoolToken, `Token ID ${tokenId} not found in subgraph`)
-  const {tranchedPool} = tranchedPoolToken
+  assertNonNullable(poolToken, `Token ID ${tokenId} not found in subgraph`)
+  const {loan} = poolToken
 
-  const poolId = tranchedPool.id.toLowerCase()
+  const poolId = loan.id.toLowerCase()
   const poolMetadata = INVALID_POOLS.has(poolId) ? {name: "invalid", borrowerName: "invalid"} : metadataStore[poolId]
-  assertNonNullable(poolMetadata, `Pool ${tranchedPool.id} not found`)
+  assertNonNullable(poolMetadata, `Pool ${loan.id} not found`)
 
   const now = new Date()
   const nowSinceEpoch = Math.floor(now.getTime() / 1000)
-  const termEndTime = new BigNumber(tranchedPool.creditLine.termEndTime.toString())
+  const termEndTime = new BigNumber(loan.termEndTime.toString())
   const termRemainingInSeconds = termEndTime.minus(nowSinceEpoch).toNumber()
   const secondsInDay = 60 * 60 * 24
   const termRemainingInDays = Math.max(0, Math.floor(termRemainingInSeconds / secondsInDay))
-  const backerApr = new BigNumber(tranchedPool.estimatedJuniorApy.toString())
+  const backerApr = new BigNumber(loan.usdcApy.toString())
 
-  const totalLoanSize = new BigNumber(tranchedPool.creditLine.limit.toString()).dividedBy(1e6)
+  const totalLoanSize = ethers.BigNumber.from(loan.principalAmount).isZero()
+    ? new BigNumber(loan.fundingLimit.toString()).dividedBy(1e6)
+    : new BigNumber(ethers.BigNumber.from(loan.principalAmount).toString()).dividedBy(1e6)
 
-  const nextRepaymentDate =
-    isTermStarted(termEndTime) && ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() !== 0
-      ? new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
-      : undefined
-
-  const principalAmount = new BigNumber(tranchedPoolToken.principalAmount.toString())
-  const nav = await calculateNAV(tranchedPoolToken)
+  const principalAmount = new BigNumber(poolToken.principalAmount.toString())
   const monthlyInterestPayment = principalAmount.multipliedBy(backerApr).dividedBy(12)
 
-  const totalAmountRepaid = new BigNumber(tranchedPoolToken.tranchedPool.principalAmountRepaid.toString()).plus(
-    new BigNumber(tranchedPoolToken.tranchedPool.interestAmountRepaid.toString()),
+  const totalAmountRepaid = new BigNumber(poolToken.loan.principalAmountRepaid.toString()).plus(
+    new BigNumber(poolToken.loan.interestAmountRepaid.toString()),
   )
 
   return [
@@ -137,7 +116,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "POOL_ADDRESS",
-      value: tranchedPool.id,
+      value: loan.id,
     },
     {
       type: "BORROWER_NAME",
@@ -146,10 +125,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     {
       type: "BACKER_POSITION_PRINCIPAL",
       value: `$${doubleDigitFormatter.format(principalAmount.dividedBy(1e6).toNumber())}`,
-    },
-    {
-      type: "BACKER_POSITION_NAV",
-      value: `$${doubleDigitFormatter.format(nav.dividedBy(1e6).toNumber())}`,
     },
     {
       type: "MONTHLY_INTEREST_PAYMENT",
@@ -165,11 +140,11 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "PAYMENT_FREQUENCY",
-      value: `${new BigNumber(tranchedPool.creditLine.paymentPeriodInDays.toString()).toNumber()} days`,
+      value: loan.repaymentFrequency.toString(),
     },
     {
       type: "PAYMENT_TERM",
-      value: `${new BigNumber(tranchedPool.creditLine.termInDays.toString()).toNumber()} days`,
+      value: `${Math.ceil(loan.termInSeconds / secondsInDay)} days`,
     },
     {
       type: "TERM_REMAINING",
@@ -178,10 +153,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     {
       type: "TOTAL_AMOUNT_REPAID",
       value: `$${doubleDigitFormatter.format(totalAmountRepaid.dividedBy(1e6).toNumber())}`,
-    },
-    {
-      type: "NEXT_REPAYMENT_DATE",
-      value: nextRepaymentDate?.toISOString() || "N/A",
     },
     {
       type: "LAST_UPDATED_AT",
@@ -201,7 +172,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     POOL_ADDRESS: "Pool Address",
     BORROWER_NAME: "Borrower Name",
     BACKER_POSITION_PRINCIPAL: "Backer Position Principal",
-    BACKER_POSITION_NAV: "Backer Position NAV",
     MONTHLY_INTEREST_PAYMENT: "Backer Position Monthly Interest Payment",
     USDC_INTEREST_RATE: "USDC Interest Rate",
     TOTAL_LOAN_SIZE: "Total Loan Size",
@@ -209,7 +179,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     PAYMENT_TERM: "Payment Term",
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
-    NEXT_REPAYMENT_DATE: "Next Repayment Date",
     LAST_UPDATED_AT: "Last Updated At",
   }
 
@@ -230,7 +199,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     POOL_ADDRESS: "Pool Address",
     BORROWER_NAME: "Borrower",
     BACKER_POSITION_PRINCIPAL: "Principal",
-    BACKER_POSITION_NAV: "NAV",
     MONTHLY_INTEREST_PAYMENT: "Monthly Interest Payment",
     USDC_INTEREST_RATE: "USDC Interest Rate",
     TOTAL_LOAN_SIZE: "Total Loan Size",
@@ -238,7 +206,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     PAYMENT_TERM: "Payment Term",
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
-    NEXT_REPAYMENT_DATE: "Next Repayment Date",
     LAST_UPDATED_AT: "Updated At",
   }
 

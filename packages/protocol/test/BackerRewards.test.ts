@@ -1939,14 +1939,9 @@ describe("BackerRewards", function () {
     })
 
     describe("stakingRewardsEarnedSinceLastWithdraw", () => {
-      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
+      it("Junior-tranche pool token returns 0", async () => {
         const juniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(juniorTokenId)
-        const expectedJuniorStakingRewardsEarned = juniorPrincipal
-          .mul(FIDU_DECIMALS)
-          .div(USDC_DECIMALS)
-          .div(sharePrice)
-          .mul(currentEarnRate.mul((await creditLine.termEndTime()).sub(drawdownTime)))
-        expect(juniorStakingRewardsEarned).to.bignumber.equal(expectedJuniorStakingRewardsEarned)
+        expect(juniorStakingRewardsEarned).to.bignumber.equal(new BN(0))
       })
       it("Senior-tranched pool token returns 0", async () => {
         const seniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(seniorTokenId)
@@ -1955,16 +1950,11 @@ describe("BackerRewards", function () {
     })
 
     describe("stakingRewardsClaimed", () => {
-      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
+      it("Junior-tranche pool token returns 0", async () => {
         const juniorStakingRewardsEarnedBefore = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(
           juniorTokenId
         )
-        const expectedJuniorStakingRewardsEarnedBefore = juniorPrincipal
-          .mul(FIDU_DECIMALS)
-          .div(USDC_DECIMALS)
-          .div(sharePrice)
-          .mul(currentEarnRate.mul((await creditLine.termEndTime()).sub(drawdownTime)))
-        expect(juniorStakingRewardsEarnedBefore).to.bignumber.equal(expectedJuniorStakingRewardsEarnedBefore)
+        expect(juniorStakingRewardsEarnedBefore).to.bignumber.equal(new BN(0))
 
         const juniorStakingRewardsClaimedBefore = await backerRewards.stakingRewardsClaimed(juniorTokenId)
         expect(juniorStakingRewardsClaimedBefore).to.bignumber.equal(new BN(0))
@@ -1976,6 +1966,7 @@ describe("BackerRewards", function () {
         const juniorStakingRewardsClaimedAfter = await backerRewards.stakingRewardsClaimed(juniorTokenId)
         expect(juniorStakingRewardsClaimedAfter).to.bignumber.equal(juniorStakingRewardsEarnedBefore)
       })
+
       it("Senior-tranche pool token returns 0", async () => {
         const seniorStakingRewardsClaimed = await backerRewards.stakingRewardsClaimed(seniorTokenId)
         expect(seniorStakingRewardsClaimed).to.bignumber.equal(new BN(0))

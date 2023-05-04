@@ -1,4 +1,4 @@
-import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/utils"
+import {NON_US_UID_TYPES, US_UID_TYPES, US_UID_TYPES_SANS_NON_ACCREDITED} from "@goldfinch-eng/utils"
 import {JsonRpcSigner} from "@ethersproject/providers"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
@@ -17,6 +17,7 @@ import {
   FIDU_DECIMALS,
   getEthersContract,
   getProtocolOwner,
+  getTruffleContract,
   getUSDCAddress,
   interestAprAsBN,
   isMainnetForking,
@@ -30,11 +31,17 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {
+  advanceTime,
+  getCurrentTimestamp,
+  getTruffleContractAtAddress,
+  GFI_DECIMALS,
+  toEthers,
+  usdcVal,
+} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
-  CallableLoan,
   CommunityRewards,
   CreditLine,
   GFI,
@@ -52,7 +59,8 @@ import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 import {getDeploymentFor} from "../test/util/fixtures"
-import {MonthlyScheduleRepoInstance} from "../typechain/truffle"
+import {ERC20Instance, GoldfinchFactoryInstance, MonthlyScheduleRepoInstance} from "../typechain/truffle"
+import {createCallableLoanForBorrower, createFazzExampleLoan} from "./helpers/createCallableLoanForBorrower"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -201,14 +209,26 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     let txn
 
+    const truffleGoldfinchFactory = await getTruffleContractAtAddress<GoldfinchFactoryInstance>(
+      "GoldfinchFactory",
+      goldfinchFactory.address
+    )
+    const erc20Instance = await getTruffleContractAtAddress<ERC20Instance>("ERC20", erc20.address)
     /*** CALLABLE LOAN OPEN START ***/
     const openCallableLoan = await createCallableLoanForBorrower({
-      getOrNull,
-      underwriter,
-      goldfinchFactory,
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
       borrower: protocolBorrowerCon,
-      erc20,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+      erc20: erc20Instance,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
+      numPeriods: 24,
+      numLockPeriods: 2,
+      gracePrincipalPeriods: 0,
+      numPeriodsPerInterestPeriod: 1,
+      numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
     })
     // TODO: Pool metadata will be incorrect for now
     await writePoolMetadata({pool: openCallableLoan, borrower: "CALLABLE OPEN"})
@@ -217,18 +237,42 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await erc20.connect(signer).approve(openCallableLoan.address, String(depositAmount))
     await txn.wait()
 
-    txn = await openCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
-    await txn.wait()
-    /*** CALLABLE LOAN END ***/
+    await openCallableLoan.deposit(7, String(depositAmount), {
+      from: await signer.getAddress(),
+    })
+    await openCallableLoan.unpauseDrawdowns({from: protocol_owner})
+    /*** CALLABLE LOAN OPEN END ***/
+
+    /*** CALLABLE LOAN - FAZZ EXAMPLE START ***/
+    const fazzExampleCallableLoan = await createFazzExampleLoan({
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
+      erc20: erc20Instance,
+      fazzBorrowerContract: protocolBorrowerCon,
+      txSender: protocol_owner,
+    })
+    // TODO: Pool metadata will be incorrect for now
+    await writePoolMetadata({pool: fazzExampleCallableLoan, borrower: "FAZZ EXAMPLE"})
+
+    /*** CALLABLE LOAN FAZZ EXAMPLE END ***/
 
     /*** CALLABLE LOAN CLOSED START ***/
     const closedCallableLoan = await createCallableLoanForBorrower({
-      getOrNull,
-      underwriter,
-      goldfinchFactory,
+      hre,
+      logger,
+      goldfinchFactory: truffleGoldfinchFactory,
+      callableLoanProxyOwner: protocol_owner,
       borrower: protocolBorrowerCon,
-      erc20,
-      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+      erc20: erc20Instance,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES_SANS_NON_ACCREDITED],
+      numPeriods: 24,
+      numLockPeriods: 2,
+      gracePrincipalPeriods: 0,
+      numPeriodsPerInterestPeriod: 1,
+      numPeriodsPerPrincipalPeriod: 3,
+      txSender: protocol_owner,
     })
     await writePoolMetadata({pool: closedCallableLoan, borrower: "CALLABLE CLOSED"})
     await impersonateAccount(hre, borrower)
@@ -236,11 +280,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     depositAmount = new BN(10000).mul(USDCDecimals)
     txn = await erc20.connect(signer).approve(closedCallableLoan.address, String(depositAmount))
     await txn.wait()
-    txn = await closedCallableLoan.connect(signer).deposit(UNCALLED_CAPITAL_TRANCHE, String(depositAmount))
-    await txn.wait()
-
-    txn = await closedCallableLoan.drawdown(String(depositAmount))
-    await txn.wait()
+    await closedCallableLoan.deposit(7, String(depositAmount), {
+      from: await signer.getAddress(),
+    })
+    await closedCallableLoan.unpauseDrawdowns({from: protocol_owner})
+    await closedCallableLoan.drawdown(String(depositAmount))
     /*** CALLABLE LOAN CLOSED END ***/
 
     /*** UNITRANCHE OPEN START ***/
@@ -854,91 +898,4 @@ async function createPoolForBorrower({
     logger(`Deposited ${depositAmount} into ${pool.address} via ${depositor}`)
   }
   return pool
-}
-
-const CALLABLE_LOAN_SCHEDULE_CONFIG = {
-  numPeriods: 24,
-  numPeriodsPerPrincipalPeriods: 3,
-  numPeriodsPerInterestPeriod: 1,
-  gracePrincipalPeriods: 1,
-}
-const UNCALLED_CAPITAL_TRANCHE =
-  CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods / CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods -
-  CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods -
-  1
-async function createCallableLoanForBorrower({
-  getOrNull,
-  underwriter,
-  goldfinchFactory,
-  borrower,
-  depositor,
-  erc20,
-  allowedUIDTypes,
-  limitInDollars,
-}: {
-  getOrNull: any
-  underwriter: string
-  goldfinchFactory: GoldfinchFactory
-  borrower: string
-  depositor?: string
-  erc20: Contract
-  allowedUIDTypes: Array<number>
-  limitInDollars?: number
-}): Promise<CallableLoan> {
-  const monthlyScheduleRepo = await getDeploymentFor<MonthlyScheduleRepoInstance>("MonthlyScheduleRepo")
-  await monthlyScheduleRepo.createSchedule(
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
-  )
-  const schedule = await monthlyScheduleRepo.getSchedule(
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerPrincipalPeriods,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.numPeriodsPerInterestPeriod,
-    CALLABLE_LOAN_SCHEDULE_CONFIG.gracePrincipalPeriods
-  )
-
-  const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
-  const interestApr = String(interestAprAsBN("5.00"))
-  const lateFeeApr = String(new BN(0))
-  const fundableAt = String(new BN(0))
-  const numLockPeriods = 2
-  const underwriterSigner = ethers.provider.getSigner(underwriter)
-
-  const result = await (
-    await goldfinchFactory
-      .connect(underwriterSigner)
-      .createCallableLoan(
-        borrower,
-        limit,
-        interestApr,
-        numLockPeriods,
-        schedule,
-        lateFeeApr,
-        fundableAt,
-        allowedUIDTypes
-      )
-  ).wait()
-  const lastEventArgs = getLastEventArgs(result)
-  const loanAddress = lastEventArgs[0]
-  const loanContract = await getDeployedAsEthersContract<CallableLoan>(getOrNull, "CallableLoan")
-  assertNonNullable(loanContract)
-  const loan = loanContract.attach(loanAddress).connect(underwriterSigner)
-
-  logger(`Created a Callable Loan ${loanAddress} for the borrower ${borrower}`)
-  let txn = await erc20.connect(underwriterSigner).approve(loan.address, String(limit))
-  await txn.wait()
-
-  if (depositor) {
-    const depositAmount = String(new BN(limit).div(new BN(20)))
-    const depositorSigner = ethers.provider.getSigner(depositor)
-    txn = await erc20.connect(depositorSigner).approve(loan.address, String(limit))
-    await txn.wait()
-    txn = await loan.connect(depositorSigner).deposit(UNCALLED_CAPITAL_TRANCHE, depositAmount)
-    await txn.wait()
-
-    logger(`Deposited ${depositAmount} into ${loan.address} via ${depositor}`)
-  }
-  return loan
 }

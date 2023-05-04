@@ -35,7 +35,9 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
       | "mint"
       | "twilight"
       | "eggplant"
-      | "tidepool";
+      | "tidepool"
+      | "transparent-mustard"
+      | "light-mustard";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -91,7 +93,7 @@ export const Button = forwardRef<
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ref={ref as any}
       className={clsx(
-        "inline-flex items-center justify-center font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center border-2 border-transparent font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
         size === "sm"
           ? "gap-2 py-1 px-3 text-xs"
           : size === "md"
@@ -124,6 +126,10 @@ export const Button = forwardRef<
           ? "bg-eggplant-700 text-white hover:bg-eggplant-800 active:bg-eggplant-900"
           : colorScheme === "tidepool"
           ? "bg-tidepool-500 text-white hover:bg-tidepool-600 active:bg-tidepool-700"
+          : colorScheme === "transparent-mustard"
+          ? "!border-mustard-400 bg-transparent text-sand-700 hover:bg-mustard-400/25"
+          : colorScheme === "light-mustard"
+          ? "bg-mustard-100 text-sand-700 hover:bg-mustard-200 hover:text-sand-900 active:bg-mustard-300 active:text-sand-900"
           : null,
         className
       )}

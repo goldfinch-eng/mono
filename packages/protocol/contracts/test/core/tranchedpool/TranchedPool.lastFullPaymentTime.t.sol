@@ -40,7 +40,7 @@ contract TranchedPoolLastFullPaymentTimeTest is TranchedPoolBaseTest {
     assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
   }
 
-  function testNotSetWhenIfInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
+  function testNotSetWhenInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
     (TranchedPool pool, CreditLine cl) = defaultTranchedPool();
     deposit(pool, 2, usdcVal(100), GF_OWNER);
     lockJuniorTranche(pool);

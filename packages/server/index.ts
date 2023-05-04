@@ -1,10 +1,7 @@
 /*
-
 Dedicated node service for handling custom backend routes that also has access to the Hardhat instance.
-
 Hardhat: In ../server/package.json and ../autotasks/package.json we using the "--network localhost" arguments to start a Hardhat Network, and expose it as a JSON-RPC and WebSocket server
 https://hardhat.org/hardhat-network/#running-stand-alone-in-order-to-support-wallets-and-other-software
-
 */
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
@@ -34,8 +31,9 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import admin, {firestore} from "firebase-admin"
 
-import {getDb, getUsers} from "@goldfinch-eng/functions/db"
+import {getDb, getUsers, overrideFirestore} from "@goldfinch-eng/functions/db"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {execSync} from "child_process"
 
 const app = express()
 app.use(express.json())
@@ -110,6 +108,8 @@ app.post("/setupForTesting", async (req, res) => {
         console.log(...args)
       },
     })
+    // Seeds CMS with borrower page Borrower and Deals
+    execSync("yarn run seed:borrower-page", {cwd: "../../packages/cms"})
   } catch (e) {
     console.error("setupForTesting error", e)
     return res.status(500).send({message: "setupForTesting error"})
@@ -183,6 +183,7 @@ app.post("/setupCurrentUser", async (req, res) => {
 })
 
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
+overrideFirestore(admin.firestore())
 
 app.post("/drainSeniorPool", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
@@ -231,8 +232,8 @@ app.post("/kycStatus", async (req, res) => {
   }
 
   const {address, countryCode, kycStatus} = req.body
-  const db = getDb(admin.firestore())
-  const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+  const db = getDb()
+  const userRef = getUsers().doc(`${address.toLowerCase()}`)
   const residency = req.body.residency ?? (countryCode.toLowerCase() === "us" ? "us" : "non-us")
 
   try {

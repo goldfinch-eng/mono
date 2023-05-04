@@ -13,6 +13,8 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { CURVE_LP_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { useIsMounted } from "@/hooks";
+import { computePercentage } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
@@ -44,14 +46,14 @@ gql`
     id
     amount
   }
-  fragment DashboardPoolTokenFields on TranchedPoolToken {
+  fragment DashboardPoolTokenFields on PoolToken {
     id
     principalAmount
     principalRedeemed
     interestRedeemable
     rewardsClaimable
     stakingRewardsClaimable
-    tranchedPool {
+    loan {
       id
       name @client
     }
@@ -93,7 +95,7 @@ gql`
     curvePool @client {
       usdPerLpToken
     }
-    tranchedPoolTokens(
+    poolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
       orderBy: mintedAt
       orderDirection: desc
@@ -157,6 +159,7 @@ export default function DashboardPage() {
   const { account } = useWallet();
   const { data, loading, error } = useDashboardPageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
+    skip: !account,
   });
 
   const sharePrice = data?.seniorPools[0].sharePrice;
@@ -171,7 +174,7 @@ export default function DashboardPage() {
     );
     const gfiTotalClaimable = sumTotalClaimable(
       grantsWithTokens,
-      data.tranchedPoolTokens,
+      data.poolTokens,
       data.pastAndCurrentSeniorPoolPositions
     );
     const gfiTotalLocked = sumTotalLocked(
@@ -194,7 +197,7 @@ export default function DashboardPage() {
     }
     const borrowerPoolTotal = {
       token: "USDC",
-      amount: data.tranchedPoolTokens
+      amount: data.poolTokens
         .concat(data.vaultedPoolTokens.map((v) => v.poolToken))
         .reduce(
           (prev, current) => prev.add(valueOfPoolToken(current)),
@@ -318,12 +321,14 @@ export default function DashboardPage() {
     }
   }, [router.asPath, router.isReady]);
 
+  const isMounted = useIsMounted();
+
   return (
     <div>
       <Heading level={1} className="mb-12">
         Dashboard
       </Heading>
-      {!account && !loading ? (
+      {!isMounted ? null : !account ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your dashboard
           <div className="mt-3">
@@ -391,13 +396,13 @@ export default function DashboardPage() {
                           You have no holdings in Goldfinch yet
                         </div>
                       ) : null}
-                      {data.tranchedPoolTokens.length > 0 ||
+                      {data.poolTokens.length > 0 ||
                       data.vaultedPoolTokens.length > 0 ? (
                         <ExpandableHoldings
                           title="Backer Positions"
                           tooltip="Your active investment in Goldfinch Borrower Pools. Each investment position, including its claimable interest, is represented by a unique Backer PoolToken NFT held in your linked wallet."
                           colorClass={borrowerPoolColorClass}
-                          holdings={data.tranchedPoolTokens
+                          holdings={data.poolTokens
                             .map((poolToken) =>
                               transformPoolTokenToHolding(poolToken, totalUsdc)
                             )
@@ -693,13 +698,6 @@ function curveLpTokensToUsdc(
   };
 }
 
-function computePercentage(n: BigNumber, total: BigNumber): number {
-  if (total.isZero()) {
-    return 0;
-  }
-  return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
-}
-
 function setAll<S extends string, T>(
   obj: Record<S, T>,
   value: T
@@ -727,7 +725,7 @@ function transformPoolTokenToHolding(
   vaulted = false
 ): Holding {
   return {
-    name: poolToken.tranchedPool.name,
+    name: poolToken.loan.name,
     percentage: computePercentage(
       valueOfPoolToken(poolToken),
       totalUsdc.amount
@@ -737,7 +735,7 @@ function transformPoolTokenToHolding(
       token: "USDC",
       amount: valueOfPoolToken(poolToken),
     },
-    url: `/pools/${poolToken.tranchedPool.id}`,
+    url: `/pools/${poolToken.loan.id}`,
     vaulted,
   };
 }

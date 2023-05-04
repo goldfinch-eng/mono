@@ -5,28 +5,25 @@ import { useForm } from "react-hook-form";
 import { Button, DollarInput, Form } from "@/components/design-system";
 import { getContract } from "@/lib/contracts";
 import { stringToCryptoAmount } from "@/lib/format";
+import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface DrawdownProps {
+  loan: LoanBorrowerAccountingFieldsFragment;
   availableForDrawdown: BigNumber;
-  tranchedPoolAddress: string;
   creditLineStatus?: CreditLineStatus;
-  isAfterTermEndTime: boolean;
-  borrowerContractAddress: string;
   onClose: () => void;
 }
 
 export function DrawdownForm({
+  loan,
   availableForDrawdown,
-  tranchedPoolAddress,
   creditLineStatus,
-  isAfterTermEndTime,
-  borrowerContractAddress,
   onClose,
 }: DrawdownProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   type FormFields = { usdcAmount: string };
@@ -34,22 +31,18 @@ export function DrawdownForm({
   const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
 
     const usdc = stringToCryptoAmount(data.usdcAmount, "USDC");
     const borrowerContract = await getContract({
       name: "Borrower",
-      address: borrowerContractAddress,
-      provider,
+      address: loan.borrowerContract.id,
+      signer,
     });
     await toastTransaction({
-      transaction: borrowerContract.drawdown(
-        tranchedPoolAddress,
-        usdc.amount,
-        account
-      ),
+      transaction: borrowerContract.drawdown(loan.id, usdc.amount, account),
       pendingPrompt: "Credit Line drawdown submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });
@@ -72,7 +65,7 @@ export function DrawdownForm({
         <div className="mb-4 text-lg">
           Cannot drawdown when payment is past due
         </div>
-      ) : isAfterTermEndTime ? (
+      ) : loan.isAfterTermEndTime ? (
         <div className="mb-4 text-lg ">Cannot drawdown after term end time</div>
       ) : null}
       <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -91,7 +84,7 @@ export function DrawdownForm({
             maxValue={availableForDrawdown}
             disabled={
               creditLineStatus === CreditLineStatus.PaymentLate ||
-              isAfterTermEndTime
+              loan.isAfterTermEndTime
             }
           />
           <Button
@@ -102,7 +95,7 @@ export function DrawdownForm({
             className="border border-transparent !px-12 !py-5"
             disabled={
               creditLineStatus === CreditLineStatus.PaymentLate ||
-              isAfterTermEndTime
+              loan.isAfterTermEndTime
             }
           >
             Submit

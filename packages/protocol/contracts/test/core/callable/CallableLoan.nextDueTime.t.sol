@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
@@ -76,9 +75,9 @@ contract CallableLoanNextDueTimeTest is CallableLoanBaseTest {
   function testNextDueTimeUpdatesWhenBalanceIsZero(uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
-    uint timeOfDrawdown = block.timestamp;
+    uint256 timeOfDrawdown = block.timestamp;
     warpToAfterDrawdownPeriod(callableLoan);
-    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
     pay(
       callableLoan,
       cl.balance() +

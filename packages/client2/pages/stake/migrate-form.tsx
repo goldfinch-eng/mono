@@ -48,21 +48,21 @@ export function MigrateForm({
     token: "FIDU",
     amount: sum("amount", positions),
   } as const;
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<StakeMigrateForm>();
   const { control, setValue, getValues } = rhfMethods;
 
   const onSubmit = async (data: StakeMigrateForm) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
     const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      provider,
+      signer,
     });
-    const zapperContract = await getContract({ name: "Zapper", provider });
-    const usdcContract = await getContract({ name: "USDC", provider });
+    const zapperContract = await getContract({ name: "Zapper", signer });
+    const usdcContract = await getContract({ name: "USDC", signer });
 
     const fiduValue = utils.parseUnits(data.fiduAmount, FIDU_DECIMALS);
     const usdcValue = utils.parseUnits(data.usdcAmount, USDC_DECIMALS);

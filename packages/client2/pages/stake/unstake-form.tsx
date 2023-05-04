@@ -44,7 +44,7 @@ export function UnstakeForm({
     token: positionType === "CurveLP" ? "CURVE_LP" : "FIDU",
     amount: sum("amount", positions),
   };
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
 
   const rhfMethods = useForm<UnstakeFormFields>();
   const { control } = rhfMethods;
@@ -56,12 +56,12 @@ export function UnstakeForm({
   }
 
   const onSubmit = async (data: UnstakeFormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
     const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      provider,
+      signer,
     });
 
     const value = utils.parseUnits(

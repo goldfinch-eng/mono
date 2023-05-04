@@ -20,7 +20,7 @@ export async function deployGoldfinchFactory(
   const goldfinchFactory = await deployer.deploy<GoldfinchFactory>("GoldfinchFactory", {
     from: gf_deployer,
     proxy: {
-      owner: gf_deployer,
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",

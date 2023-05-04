@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
@@ -85,7 +85,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     vm.expectRevert("Pausable: paused");
     callableLoan.pay(usdcVal(1));
 
-    vm.expectRevert("Pausable: paused");
+    vm.expectRevert(abi.encodeWithSelector(ICallableLoanErrors.UnsupportedOperation.selector));
     callableLoan.pay(usdcVal(1), usdcVal(1));
   }
 
@@ -129,6 +129,7 @@ contract CallableLoanAccessControlTest is CallableLoanBaseTest {
     withdrawMax(callableLoan, 2, user);
     drawdown(callableLoan, usdcVal(99));
     warpToAfterDrawdownPeriod(callableLoan);
+
     pay(callableLoan, usdcVal(99));
   }
 

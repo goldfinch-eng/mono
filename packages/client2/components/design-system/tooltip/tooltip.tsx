@@ -124,7 +124,7 @@ export function Tooltip({
           {...getFloatingProps({
             ref: floating,
             style: {
-              zIndex: 11,
+              zIndex: 999,
               position: strategy,
               top: y ?? "",
               left: x ?? "",

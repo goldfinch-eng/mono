@@ -74,7 +74,7 @@ export function Modal({
     <Transition show={isOpen} as={Fragment}>
       <Dialog
         onClose={onClose}
-        className="fixed inset-0 z-10 flex items-center justify-center"
+        className="fixed inset-0 z-50 flex items-center justify-center"
       >
         <Transition.Child
           as={Fragment}

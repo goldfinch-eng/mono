@@ -2,12 +2,16 @@ import fs from "fs";
 import path from "path";
 
 import { withSentry } from "@sentry/nextjs";
+import { GraphQLClient, gql } from "graphql-request";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import { SUBGRAPH_API_URL } from "@/constants";
 import { GrantManifest, GrantWithSource } from "@/lib/gfi-rewards";
 import {
   IndirectGrantSource,
   DirectGrantSource,
+  KnownTokensQueryVariables,
+  KnownTokensQuery,
 } from "@/lib/graphql/generated";
 
 type ExpectedQuery = {
@@ -25,6 +29,23 @@ const fileToSource: Record<string, IndirectGrantSource | DirectGrantSource> = {
     "BACKER_MERKLE_DIRECT_DISTRIBUTOR",
   "./backerMerkleDirectDistributorInfo.dev.json":
     "BACKER_MERKLE_DIRECT_DISTRIBUTOR",
+};
+
+const isHardhat = process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost";
+
+const sourceToFile: Record<IndirectGrantSource | DirectGrantSource, string> = {
+  MERKLE_DISTRIBUTOR: isHardhat
+    ? "./merkleDistributorInfo.dev.json"
+    : "./merkleDistributorInfo.json",
+  BACKER_MERKLE_DISTRIBUTOR: isHardhat
+    ? "./backerMerkleDistributorInfo.dev.json"
+    : "./backerMerkleDistributorInfo.json",
+  MERKLE_DIRECT_DISTRIBUTOR: isHardhat
+    ? "./merkleDirectDistributorInfo.dev.json"
+    : "./merkleDirectDistributorInfo.json",
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR: isHardhat
+    ? "./backerMerkleDirectDistributorInfo.dev.json"
+    : "./backerMerkleDirectDistributorInfo.json",
 };
 
 const merkleDistributorFiles: (keyof typeof fileToSource)[] =
@@ -46,21 +67,26 @@ const merkleDirectDistributorFiles: (keyof typeof fileToSource)[] =
         "./backerMerkleDirectDistributorInfo.dev.json",
       ];
 
-const filesToSearch = merkleDistributorFiles.concat(
-  merkleDirectDistributorFiles
-);
-
-const fileData = filesToSearch.map((file) => {
+function readGrantFile(file: string) {
   const pathname = path.resolve(`${process.cwd()}/gfi-grants`, file);
   const grantManifest: GrantManifest = JSON.parse(
     fs.readFileSync(pathname, "utf-8")
   );
+  return grantManifest;
+}
+
+const filesToSearch = merkleDistributorFiles.concat(
+  merkleDirectDistributorFiles
+);
+
+const allFileData = filesToSearch.map((file) => {
+  const grantManifest = readGrantFile(file);
   return { file, grantManifest };
 });
 
-function findMatchingGrants(account: string): GrantWithSource[] {
+function findMatchingGrantsByAccount(account: string): GrantWithSource[] {
   let allMatchingGrants: GrantWithSource[] = [];
-  for (const { file, grantManifest } of fileData) {
+  for (const { file, grantManifest } of allFileData) {
     const matchingGrants = grantManifest.grants.filter(
       (grant) => grant.account.toLowerCase() === account.toLowerCase()
     );
@@ -75,6 +101,63 @@ function findMatchingGrants(account: string): GrantWithSource[] {
   return allMatchingGrants;
 }
 
+function findMatchingGrantsByIndexAndSource(
+  index: number,
+  source: DirectGrantSource | IndirectGrantSource
+): GrantWithSource[] {
+  // locate the json file
+  const grantManifest = allFileData.filter(
+    ({ file }) => file == sourceToFile[source]
+  )[0].grantManifest;
+
+  const matchingGrants = grantManifest.grants.filter(
+    (grant) => grant.index === index
+  );
+
+  return matchingGrants.map((g) => ({
+    source,
+    ...g,
+  }));
+}
+const gqlClient = new GraphQLClient(SUBGRAPH_API_URL);
+const knownTokens = gql`
+  query KnownTokens(
+    $account: String!
+    $merkleDistributorIndices: [Int!]!
+    $backerMerkleDistributorIndices: [Int!]!
+  ) {
+    ownedTokens: communityRewardsTokens(where: { user: $account }) {
+      user {
+        id
+      }
+      index
+      source
+    }
+    relinquishedTokens: communityRewardsTokens(
+      where: {
+        and: [
+          { user_not: $account }
+          {
+            or: [
+              {
+                index_in: $merkleDistributorIndices
+                source: MERKLE_DISTRIBUTOR
+              }
+              {
+                index_in: $backerMerkleDistributorIndices
+                source: BACKER_MERKLE_DISTRIBUTOR
+              }
+            ]
+          }
+        ]
+      }
+    ) {
+      index
+      source
+    }
+  }
+`;
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const account = (req.query as ExpectedQuery).account;
   if (!account) {
@@ -84,8 +167,60 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const matchingGrants = findMatchingGrants(account);
-    res.status(200).json({ account, matchingGrants });
+    const matchingGrantsFromJson = findMatchingGrantsByAccount(account);
+    const merkleDistributorIndices = Array.from(
+      new Set(
+        matchingGrantsFromJson
+          .filter((g) => g.source === "MERKLE_DISTRIBUTOR")
+          .map((g) => g.index)
+      )
+    );
+    const backerMerkleDistributorIndices = Array.from(
+      new Set(
+        matchingGrantsFromJson
+          .filter((g) => g.source === "BACKER_MERKLE_DISTRIBUTOR")
+          .map((g) => g.index)
+      )
+    );
+
+    const knownTokensResult = await gqlClient.request<
+      KnownTokensQuery,
+      KnownTokensQueryVariables
+    >(knownTokens, {
+      account: account.toLowerCase(),
+      merkleDistributorIndices,
+      backerMerkleDistributorIndices,
+    });
+    const matchingGrantsFromOwnedTokens = knownTokensResult.ownedTokens.flatMap(
+      (token: {
+        index: number;
+        source: DirectGrantSource | IndirectGrantSource;
+      }) => findMatchingGrantsByIndexAndSource(token.index, token.source)
+    );
+
+    // add owned tokens (but only the ones that aren't already included in matchingGrantsFromJson)
+    let matchingGrants = matchingGrantsFromJson.concat(
+      matchingGrantsFromOwnedTokens.filter(
+        (gfot) =>
+          !matchingGrantsFromJson.some(
+            (gfj) => gfj.source === gfot.source && gfj.index === gfot.index
+          )
+      )
+    );
+
+    // remove relinquished tokens from matching grants
+    matchingGrants = matchingGrants.filter(
+      (grant) =>
+        !knownTokensResult.relinquishedTokens.some(
+          (token) =>
+            token.source === grant.source && token.index === grant.index
+        )
+    );
+
+    res.status(200).json({
+      account,
+      matchingGrants,
+    });
   } catch (e) {
     res
       .status(500)

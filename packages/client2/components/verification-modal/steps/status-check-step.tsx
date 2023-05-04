@@ -17,11 +17,7 @@ const statusCheckStepQuery = gql`
   query StatusCheckStep($account: ID!) {
     user(id: $account) {
       id
-      isUsEntity
-      isNonUsEntity
-      isUsAccreditedIndividual
-      isUsNonAccreditedIndividual
-      isNonUsIndividual
+      uidType
     }
   }
 `;
@@ -30,14 +26,14 @@ export function StatusCheckStep() {
   const { goToStep } = useWizard();
   const apolloClient = useApolloClient();
   const { setSignature, setUidVersion } = useVerificationFlowContext();
-  const { account, provider } = useWallet();
+  const { account, provider, signer } = useWallet();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!account || !provider) {
-      return;
-    }
     const asyncEffect = async () => {
+      if (!account || !signer) {
+        return;
+      }
       try {
         const { data, error } = await apolloClient.query<
           StatusCheckStepQuery,
@@ -49,34 +45,20 @@ export function StatusCheckStep() {
         if (error) {
           throw error;
         }
-        if (
-          data.user &&
-          (data.user.isUsEntity ||
-            data.user.isNonUsEntity ||
-            data.user.isUsAccreditedIndividual ||
-            data.user.isUsNonAccreditedIndividual ||
-            data.user.isNonUsIndividual)
-        ) {
+        if (data.user && !!data.user.uidType) {
           goToStep(VerificationFlowSteps.AlreadyMinted);
           return;
         }
 
-        const signature = await getSignatureForKyc(provider);
+        const signature = await getSignatureForKyc(provider, signer);
         setSignature(signature);
-        const kycStatus = await fetchKycStatus(
-          account,
-          signature.signature,
-          signature.signatureBlockNum
-        );
-        const goldfinchUtils = await import("@goldfinch-eng/utils");
-        const idVersion = goldfinchUtils.getIDType({
-          address: account,
-          kycStatus,
-        });
-        setUidVersion(idVersion);
+        const kycStatus = await fetchKycStatus(account, signature);
         if (kycStatus.status === "failed") {
           goToStep(VerificationFlowSteps.Ineligible);
         } else if (kycStatus.status === "approved") {
+          const { getIDType } = await import("@goldfinch-eng/utils");
+          const idVersion = getIDType(kycStatus);
+          setUidVersion(idVersion);
           goToStep(VerificationFlowSteps.Mint);
         } else {
           goToStep(VerificationFlowSteps.Intro);
@@ -86,7 +68,15 @@ export function StatusCheckStep() {
       }
     };
     asyncEffect();
-  }, [account, provider, setSignature, goToStep, apolloClient, setUidVersion]);
+  }, [
+    account,
+    provider,
+    signer,
+    setSignature,
+    goToStep,
+    apolloClient,
+    setUidVersion,
+  ]);
 
   return (
     <div className="flex h-full w-full grow items-center justify-center text-center">
@@ -95,7 +85,7 @@ export function StatusCheckStep() {
         <div>
           {error ? (
             <span className="text-clay-500">{error}</span>
-          ) : !account || !provider ? (
+          ) : !account ? (
             "You must connect your wallet to proceed"
           ) : (
             "Checking your verification status, this requires a signature"

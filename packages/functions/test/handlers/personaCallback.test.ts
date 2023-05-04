@@ -7,7 +7,7 @@ import {fake} from "sinon"
 import {Request} from "firebase-functions"
 
 import crypto from "crypto"
-import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
+import {getUsers, overrideFirestore} from "../../src/db"
 import {personaCallback} from "../../src"
 
 chai.use(chaiSubset)
@@ -17,6 +17,7 @@ import Firestore = firestore.Firestore
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
+import {setTestConfig, FirebaseConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -64,9 +65,11 @@ describe("persona callback", async () => {
     config = {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
+      slack: {token: ""},
     }
-    setEnvForTest(testFirestore, config)
-    users = getUsers(testFirestore)
+    overrideFirestore(testFirestore)
+    setTestConfig(config)
+    users = getUsers()
   })
 
   after(async () => {
@@ -92,6 +95,7 @@ describe("persona callback", async () => {
       body: {
         data: {
           attributes: {
+            name: "inquiry.failed",
             payload: {
               data: {id: personaCallbackId, type: "inquiry", attributes: attributes},
               included: [

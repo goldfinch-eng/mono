@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { formatDistanceStrict } from "date-fns";
 import { FixedNumber } from "ethers/lib/ethers";
 import Image from "next/future/image";
 import NextLink from "next/link";
@@ -20,7 +21,7 @@ interface OpenDealCardProps {
   usdcApy: FixedNumber;
   gfiApy: FixedNumber;
   gfiApyTooltip: ReactNode;
-  termLengthInMonths?: number;
+  termLengthInMs?: number;
   liquidity: string;
   href: string;
 }
@@ -33,7 +34,7 @@ export function OpenDealCard({
   usdcApy,
   gfiApy,
   gfiApyTooltip,
-  termLengthInMonths,
+  termLengthInMs,
   liquidity,
   href,
 }: OpenDealCardProps) {
@@ -51,8 +52,8 @@ export function OpenDealCard({
               src={icon}
               alt={`${title} icon`}
               fill
-              sizes="48px"
-              className="object-contain"
+              sizes="96px"
+              className="object-cover"
             />
           ) : null}
         </div>
@@ -69,7 +70,7 @@ export function OpenDealCard({
       <div>
         <div className="mb-6">
           <div className="mb-2 text-sm">
-            {termLengthInMonths ? "Fixed " : ""}USDC interest
+            {termLengthInMs ? "Fixed " : ""}USDC interest
           </div>
           <div className="flex items-end justify-between">
             <div className="font-serif text-4xl font-semibold leading-none">
@@ -91,12 +92,16 @@ export function OpenDealCard({
           <InfoLine
             label="Loan term"
             tooltip={
-              termLengthInMonths
+              termLengthInMs
                 ? "The length of time during which the loan is outstanding. The entire principal is expected to have been repaid by the end of the loan term."
                 : "This deal does not have a fixed term length."
             }
             value={
-              termLengthInMonths ? `${termLengthInMonths} months` : "Open-ended"
+              termLengthInMs
+                ? formatDistanceStrict(0, termLengthInMs, {
+                    unit: "month",
+                  })
+                : "Open-ended"
             }
           />
           <InfoLine

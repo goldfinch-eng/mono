@@ -3,21 +3,21 @@ import NextLink from "next/link";
 import { ReactNode } from "react";
 
 import { InfoIconTooltip } from "@/components/design-system";
-import { TranchedPoolBorrowCardFieldsFragment } from "@/lib/graphql/generated";
+import { LoanBorrowCardFieldsFragment } from "@/lib/graphql/generated";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface CreditLineCardProps {
   className?: string;
   href: string;
-  dealMetaData: TranchedPoolBorrowCardFieldsFragment;
+  dealMetaData: LoanBorrowCardFieldsFragment;
   description: ReactNode;
   nextPayment: ReactNode;
   status: CreditLineStatus;
   dueDateLabel: ReactNode;
 }
 
-export const TRANCHED_POOL_BORROW_CARD_DEAL_FIELDS = gql`
-  fragment TranchedPoolBorrowCardFields on Deal {
+gql`
+  fragment LoanBorrowCardFields on Deal {
     id
     name
     category

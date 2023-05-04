@@ -89,6 +89,27 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "highlights",
+      type: "array",
+      minRows: 0,
+      fields: [
+        {
+          name: "heading",
+          type: "text",
+          required: true,
+        },
+        {
+          name: "body",
+          type: "richText",
+          required: true,
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
+        },
+      ],
+    },
+    {
       name: "defaultInterestRate",
       label: "Default Interest Rate",
       type: "number",
@@ -103,6 +124,7 @@ const Deals: CollectionConfig = {
         leaves: ["bold", "italic", "underline"],
       },
     },
+    // TODO remove this after new deal page ux goes live. This is unused.
     { name: "transactionStructure", type: "upload", relationTo: "media" },
     {
       name: "agreement",
@@ -118,6 +140,14 @@ const Deals: CollectionConfig = {
       admin: {
         description:
           "This should be a URL linking to the dataroom for this deal.",
+      },
+    },
+    {
+      name: "dueDiligenceContact",
+      type: "text",
+      admin: {
+        description:
+          "This should be a URL linking to the direct chat with the borrower for due diligence.",
       },
     },
     {
@@ -204,6 +234,7 @@ const Deals: CollectionConfig = {
           },
           label: "Recourse description",
         },
+        // TODO delete this after new deal page ux goes live. This is unused.
         {
           name: "covenants",
           type: "richText",
@@ -214,12 +245,41 @@ const Deals: CollectionConfig = {
         },
       ],
     },
+    // TODO delete this after the new deal page ux goes live. This is unused.
     {
       name: "documents",
       type: "blocks",
       minRows: 0,
       maxRows: 999,
       blocks: [Document],
+    },
+    {
+      ...generateBinarySelect(
+        "onChainCapitalPriority",
+        "On-chain capital priority",
+        [
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+        ]
+      ),
+    },
+    {
+      ...generateBinarySelect(
+        "offChainCapitalPriority",
+        "Off-chain capital priority",
+        [
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+        ]
+      ),
+    },
+    {
+      name: "collateralAssets",
+      type: "richText",
+      admin: {
+        elements: ["link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
   ],
 };

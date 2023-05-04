@@ -363,13 +363,16 @@ describe("the FIDU-USDC Curve Pool", async function () {
   context("when single-sided FIDU is removed from the pool", async () => {
     let fiduBalanceBefore: BN
     let usdcBalanceBefore: BN
+    let goListedUserUsdcBalanceBefore: BN
     let totalLPTokenSupplyBefore: BN
     let fiduDeposited: BN
     let userLPTokensBefore: BN
     let lpTokensWithdrawn: BN
 
     beforeEach(async () => {
-      const {fidu, curvePool, curveLPToken} = resources
+      const {fidu, curvePool, curveLPToken, usdc} = resources
+
+      goListedUserUsdcBalanceBefore = await usdc.balanceOf(goListedUser)
 
       // First add liquidity
       await fundWithWhales(["USDC"], [goListedUser], 5_000_000)
@@ -402,7 +405,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
       const {usdc} = resources
 
       const userUsdcBalance = await usdc.balanceOf(goListedUser)
-      expect(userUsdcBalance).to.bignumber.closeTo(new BN(0), new BN(3))
+      expect(userUsdcBalance).to.bignumber.closeTo(goListedUserUsdcBalanceBefore, new BN(3))
     })
 
     it("updates the total balance of FIDU in the Curve pool correctly", async () => {

@@ -211,7 +211,7 @@ function GrantButton({
   claimable: BigNumber;
   locked: BigNumber;
 }) {
-  const { provider } = useWallet();
+  const { signer } = useWallet();
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 
@@ -226,29 +226,29 @@ function GrantButton({
     : "Claim GFI";
 
   const handleAction = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
 
     const communityRewardsContract = await getContract({
       name: "CommunityRewards",
-      provider,
+      signer,
     });
     const merkleDistributorContract = await getContract({
       name: "MerkleDistributor",
-      provider,
+      signer,
     });
     const backerMerkleDistributorContract = await getContract({
       name: "BackerMerkleDistributor",
-      provider,
+      signer,
     });
     const merkleDirectDistributorContract = await getContract({
       name: "MerkleDirectDistributor",
-      provider,
+      signer,
     });
     const backerMerkleDirectDistributorContract = await getContract({
       name: "BackerMerkleDirectDistributor",
-      provider,
+      signer,
     });
 
     if (grant.__typename === "IndirectGfiGrant") {

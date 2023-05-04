@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.18;
 pragma experimental ABIEncoderV2;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
@@ -19,13 +19,6 @@ library PaymentScheduleLogic {
   function startAt(PaymentSchedule storage s, uint256 timestamp) internal {
     assert(s.startTime == 0);
     s.startTime = uint64(timestamp);
-  }
-
-  function previousDueTimeAt(
-    PaymentSchedule storage s,
-    uint256 timestamp
-  ) internal view isActiveMod(s) returns (uint256) {
-    return s.schedule.previousDueTimeAt(s.startTime, timestamp);
   }
 
   function previousInterestDueTimeAt(
@@ -76,10 +69,6 @@ library PaymentScheduleLogic {
     uint timestamp
   ) internal view isActiveMod(s) returns (uint256) {
     return s.schedule.periodAt(s.startTime, timestamp);
-  }
-
-  function totalPrincipalPeriods(PaymentSchedule storage s) internal view returns (uint256) {
-    return s.schedule.totalPrincipalPeriods();
   }
 
   function isActive(PaymentSchedule storage s) internal view returns (bool) {

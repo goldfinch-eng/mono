@@ -8,17 +8,16 @@ import { useWallet } from "@/lib/wallet";
 import { AsyncButton, devserverRequest } from "./helpers";
 
 export function Kyc() {
-  const { account, provider } = useWallet();
+  const { account, provider, signer } = useWallet();
   const [shownData, setShownData] = useState({});
   const fetchCurrentKycStatus = async () => {
-    if (!account || !provider) {
+    if (!account || !provider || !signer) {
       return;
     }
-    const signature = await getSignatureForKyc(provider);
+    const signature = await getSignatureForKyc(provider, signer);
     const kycStatus = await fetchKycStatus(
       account,
-      signature.signature,
-      signature.signatureBlockNum
+      signature
     );
     setShownData(kycStatus);
   };

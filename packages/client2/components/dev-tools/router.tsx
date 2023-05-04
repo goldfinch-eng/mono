@@ -10,6 +10,8 @@ import {
 import { Icon } from "@/components/design-system";
 
 import { BorrowTools } from "./borrow-tools";
+import { CallableTools } from "./callable-tools";
+import { CommunityRewards } from "./community-rewards";
 import { Home } from "./home";
 import { Kyc } from "./kyc";
 import { Membership } from "./membership";
@@ -25,6 +27,8 @@ export default function DevToolsRouter2() {
         <Route path="/membership" element={<Membership />} />
         <Route path="/withdrawal-mechanics" element={<WithdrawalMechanics />} />
         <Route path="/borrow" element={<BorrowTools />} />
+        <Route path="/callable-loans" element={<CallableTools />} />
+        <Route path="/community-rewards" element={<CommunityRewards />} />
       </Routes>
     </MemoryRouter>
   );
