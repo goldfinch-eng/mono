@@ -13,6 +13,7 @@ import {Accountant} from "./Accountant.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
 
@@ -26,7 +27,7 @@ import {ISchedule} from "../../interfaces/ISchedule.sol";
  * @author Warbler Labs Engineering
  */
 
-contract CreditLine is BaseUpgradeablePausable, ICreditLine {
+contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable, ICreditLine {
   using ConfigHelper for GoldfinchConfig;
   using PaymentScheduleLib for PaymentSchedule;
 
@@ -71,7 +72,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   External functions
   =============================================================================*/
 
-  /// @inheritdoc ICreditLine
+  /// @inheritdoc ITranchedCreditLineInitializable
   function initialize(
     address _config,
     address owner,
@@ -99,9 +100,9 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   function pay(
-    uint paymentAmount
+    uint256 paymentAmount
   ) external override onlyAdmin returns (ITranchedPool.PaymentAllocation memory) {
-    (uint interestAmount, uint principalAmount) = Accountant.splitPayment(
+    (uint256 interestAmount, uint256 principalAmount) = Accountant.splitPayment(
       paymentAmount,
       balance,
       interestOwed(),
@@ -133,8 +134,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       })
     );
 
-    uint totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
-    uint totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
+    uint256 totalInterestPayment = pa.owedInterestPayment.add(pa.accruedInterestPayment);
+    uint256 totalPrincipalPayment = pa.principalPayment.add(pa.additionalBalancePayment);
 
     totalInterestPaid = totalInterestPaid.add(totalInterestPayment);
     balance = balance.sub(totalPrincipalPayment);
@@ -151,7 +152,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function drawdown(uint256 amount) external override onlyAdmin {
     require(
       !schedule.isActive() || block.timestamp < termEndTime(),
-      "After termEndTime or uninitialized"
+      "Uninitialized or after termEndTime"
     );
     require(amount.add(balance) <= limit(), "Cannot drawdown more than the limit");
     require(amount > 0, "Invalid drawdown amount");
@@ -166,6 +167,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     // The balance is about to change.. checkpoint amounts owed!
     _checkpoint();
 
+    // TODO - find a better way to enforce that the balance can only be updated on a "non-stale"
+    // credit line. I.e. follow the same pattern done for callable loans with StaleCallableCreditLine
     balance = balance.add(amount);
     require(!_isLate(block.timestamp), "Cannot drawdown when payments are past due");
   }
@@ -362,9 +365,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
-    uint256 gracePeriodInSeconds = config.getLatenessGracePeriodInDays().mul(SECONDS_PER_DAY);
     uint256 oldestUnpaidDueTime = schedule.nextDueTimeAt(lastFullPaymentTime);
-    return balance > 0 && timestamp > oldestUnpaidDueTime.add(gracePeriodInSeconds);
+    return balance > 0 && timestamp > oldestUnpaidDueTime;
   }
 }
 

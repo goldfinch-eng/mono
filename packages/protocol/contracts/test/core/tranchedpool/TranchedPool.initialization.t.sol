@@ -58,6 +58,25 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
     pool.getAmountsOwed(block.timestamp);
   }
 
+  function testJuniorFeePercentCannotExceed100(uint256 juniorFeePercent) public {
+    vm.assume(juniorFeePercent > 100);
+    TranchedPool pool = new TranchedPool();
+    uint256[] memory uidTypes = new uint256[](1);
+    ISchedule s = defaultSchedule();
+    vm.expectRevert(bytes("JF"));
+    pool.initialize({
+      _config: address(gfConfig),
+      _borrower: address(this),
+      _juniorFeePercent: juniorFeePercent,
+      _limit: 1,
+      _interestApr: 1,
+      _schedule: s,
+      _lateFeeApr: 1,
+      _fundableAt: 0,
+      _allowedUIDTypes: uidTypes
+    });
+  }
+
   function defaultSchedule() public returns (ISchedule) {
     return
       createMonthlySchedule({

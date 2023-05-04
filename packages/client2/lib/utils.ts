@@ -48,18 +48,6 @@ export async function waitForSubgraphBlock(
   }
 }
 
-export type ApolloClientError = {
-  reason: string;
-};
-export function handleApolloClientError(e: ApolloClientError) {
-  const reason = e.reason;
-  const actualReason = reason.match(/reverted with reason string \'(.+)\'/);
-  if (actualReason) {
-    throw new Error(actualReason[1]);
-  }
-  throw e;
-}
-
 export function usePoller({
   callback,
   delay = 1000,

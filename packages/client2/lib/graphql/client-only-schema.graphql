@@ -10,10 +10,50 @@ extend type SeniorPool {
   epochEndsAt: Int!
 }
 
+enum LoanDelinquency {
+  CURRENT
+  GRACE_PERIOD
+  LATE
+}
+
+extend type Loan {
+  name: String!
+  borrowerName: String!
+  borrowerLogo: String
+  isAfterTermEndTime: Boolean!
+  delinquency: LoanDelinquency!
+}
+
 extend type TranchedPool {
   name: String!
   borrowerName: String!
   borrowerLogo: String
+  delinquency: LoanDelinquency!
+  isAfterTermEndTime: Boolean!
+  interestOwed: BigInt!
+  collectedPaymentBalance: BigInt!
+}
+
+enum LoanPhase {
+  Prefunding
+  Funding
+  DrawdownPeriod
+  InProgress
+}
+
+extend type CallableLoan {
+  name: String!
+  borrowerName: String!
+  borrowerLogo: String
+  isAfterTermEndTime: Boolean!
+  periodInterestDueAmount: BigInt!
+  periodPrincipalDueAmount: BigInt!
+  termTotalDueAmount: BigInt!
+  nextDueTime: BigInt!
+  delinquency: LoanDelinquency!
+  inLockupPeriod: Boolean!
+  nextPrincipalDueTime: Int!
+  loanPhase: LoanPhase!
 }
 
 extend type CreditLine {
@@ -114,6 +154,12 @@ type DirectGfiGrant implements GfiGrant {
   isAccepted: Boolean!
 }
 
+type KycStatus {
+  status: String!
+  identityStatus: String
+  accreditationStatus: String
+}
+
 type Viewer {
   account(format: String): String
   usdcBalance: UsdcAmount
@@ -123,6 +169,7 @@ type Viewer {
   gfiGrants: [GfiGrant!]!
   claimableMembershipRewards: FiduAmount
   accruedMembershipRewardsThisEpoch: FiduAmount
+  kycStatus: KycStatus
 }
 
 type BlockInfo {
@@ -153,4 +200,8 @@ extend type SeniorPoolWithdrawalRequest {
   Comes from SeniorPool.withdrawalRequest() view function, which may simulate an epoch ending if appropriate
   """
   previewFiduRequested: BigInt!
+}
+
+extend type PoolToken {
+  principalRedeemable: BigInt!
 }

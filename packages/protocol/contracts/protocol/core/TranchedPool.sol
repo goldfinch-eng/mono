@@ -7,10 +7,11 @@ import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ILoan} from "../../interfaces/ITranchedPool.sol";
+import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
+import {ITranchedCreditLineInitializable} from "../../interfaces/ITranchedCreditLineInitializable.sol";
 import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {IVersioned} from "../../interfaces/IVersioned.sol";
@@ -36,7 +37,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
   uint8 internal constant MAJOR_VERSION = 1;
   uint8 internal constant MINOR_VERSION = 0;
-  uint8 internal constant PATCH_VERSION = 0;
+  uint8 internal constant PATCH_VERSION = 1;
 
   ICreditLine public override creditLine;
   uint256 public override createdAt;
@@ -64,6 +65,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256[] calldata _allowedUIDTypes
   ) public override initializer {
     require(address(_config) != address(0) && address(_borrower) != address(0), "ZERO");
+    require(_juniorFeePercent <= 100, "JF");
 
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
@@ -420,6 +422,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   }
 
   /// @inheritdoc ILoan
+  function getLoanType() external view override returns (LoanType) {
+    return LoanType.TranchedPool;
+  }
+
+  /// @inheritdoc ILoan
   function availableToWithdraw(uint256 tokenId) public view override returns (uint256, uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     ITranchedPool.TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
@@ -447,11 +454,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // It also causes issues trying to allocate payments to an empty slice (divide by zero)
     require(_locked(), "NL");
 
-    uint256 interestAccrued = creditLine.totalInterestAccruedAt(creditLine.interestAccruedAsOf());
+    uint256 totalInterestAccruedAtLastCheckpoint = creditLine.totalInterestAccruedAt(
+      creditLine.interestAccruedAsOf()
+    );
     PaymentAllocation memory pa = creditLine.pay(principalPayment, interestPayment);
-    interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
+    uint256 interestAccruedSinceLastCheckpoint = creditLine.totalInterestAccrued().sub(
+      totalInterestAccruedAtLastCheckpoint
+    );
 
-    distributeToSlicesAndAllocateBackerRewards(interestAccrued, pa);
+    distributeToSlicesAndAllocateBackerRewards(interestAccruedSinceLastCheckpoint, pa);
     return pa;
   }
 
@@ -478,14 +489,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     // linearly
     uint256[] memory principalPaymentsPerSlice = new uint256[](numSlices);
     for (uint256 i = 0; i < numSlices; i++) {
+      ITranchedPool.PoolSlice storage slice = _poolSlices[i];
       uint256 interestForSlice = TranchingLogic.scaleByFraction(
         interestAccrued,
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       principalPaymentsPerSlice[i] = TranchingLogic.scaleByFraction(
         pa.principalPayment.add(pa.additionalBalancePayment),
-        _poolSlices[i].principalDeployed,
+        slice.principalDeployed,
         totalDeployed
       );
       _poolSlices[i].totalInterestAccrued = _poolSlices[i].totalInterestAccrued.add(
@@ -551,7 +563,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     uint256 _lateFeeApr
   ) internal {
     creditLine = ICreditLine(config.getGoldfinchFactory().createCreditLine());
-    creditLine.initialize(
+    ITranchedCreditLineInitializable(address(creditLine)).initialize(
       address(config),
       address(this), // Set self as the owner
       _borrower,

@@ -136,10 +136,10 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
       .getStakingRewardsTokenInfo(tokenId)
       .accumulatedRewardsPerTokenAtLastWithdraw;
 
-    assertTrue(tokenInfoBeforeBurn.principalRedeemed > 0);
-    assertTrue(tokenInfoBeforeBurn.interestRedeemed > 0);
-    assertTrue(backerRewardsInfoBeforeBurn.rewardsClaimed > 0);
-    assertTrue(accRewardsPerTokenAtLastWithdrawBeforeBurn > 0);
+    assertGt(tokenInfoBeforeBurn.principalRedeemed, 0);
+    assertGt(tokenInfoBeforeBurn.interestRedeemed, 0);
+    assertGt(backerRewardsInfoBeforeBurn.rewardsClaimed, 0);
+    assertEq(accRewardsPerTokenAtLastWithdrawBeforeBurn, 0);
 
     poolTokens.burn(tokenId);
 

@@ -21,18 +21,18 @@ export function RewardClaimer({
   className,
   claimable,
 }: RewardClaimerProps) {
-  const { account, provider } = useWallet();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
 
   const onSubmit = async () => {
-    if (!provider || !account) {
+    if (!signer) {
       throw new Error("Wallet not connected properly");
     }
     const membershipContract = await getContract({
       name: "MembershipOrchestrator",
-      provider,
+      signer,
     });
     const transaction = membershipContract.collectRewards();
     await toastTransaction({ transaction });

@@ -1,24 +1,16 @@
 import { ParsedUrlQuery } from "querystring";
 
 import { gql } from "@apollo/client";
-import { FixedNumber, utils } from "ethers";
+import clsx from "clsx";
 import { GetStaticPaths, GetStaticProps } from "next";
 
+import { AdaptiveStickyContainer } from "@/components/adaptive-sticky-container";
 import {
-  Breadcrumb,
-  Button,
-  TabButton,
-  TabContent,
-  TabGroup,
-  TabList,
-  TabPanels,
-  Heading,
-  ShimmerLines,
-  HelperText,
-  Marquee,
   Banner,
+  ScrollingSectionedContainer,
 } from "@/components/design-system";
-import { BannerPortal, SubnavPortal } from "@/components/layout";
+import { BannerPortal } from "@/components/layout";
+import { BacktoOpenDealsButton } from "@/components/pools/back-to-open-deals-button";
 import { SEO } from "@/components/seo";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
@@ -26,98 +18,68 @@ import {
   SingleDealQuery,
   AllDealsQuery,
   SingleDealQueryVariables,
+  SingleDealDocument,
 } from "@/lib/graphql/generated";
 import {
-  PoolStatus,
-  getTranchedPoolStatus,
-  TRANCHED_POOL_STATUS_FIELDS,
+  getLoanFundingStatus,
+  getLoanRepaymentStatus,
+  LoanFundingStatus,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
+import { NextPageWithLayout } from "@/pages/_app.page";
 
+import { AmountStats } from "./amount-stats";
+import { BorrowerProfile } from "./borrower-profile";
+import { ClaimPanel } from "./claim-panel";
+import { ComingSoonPanel } from "./coming-soon-panel";
+import { CreditMemoAnalysisCard } from "./credit-memo-analysis-card";
+import { DealHighlights } from "./deal-highlights";
+import { FundingStats } from "./funding-stats";
+import { InvestAndWithdrawTabs } from "./invest-and-withdraw/invest-and-withdraw-tabs";
+import { LoanSummary, LoanSummaryPlaceholder } from "./loan-summary";
 import {
-  BorrowerProfile,
-  BORROWER_PROFILE_FIELDS,
-  BORROWER_OTHER_POOL_FIELDS,
-} from "./borrower-profile";
-import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
-import { ClaimPanel, CLAIM_PANEL_POOL_TOKEN_FIELDS } from "./claim-panel";
-import ComingSoonPanel from "./coming-soon-panel";
-import { CREDIT_MEMO_FIELDS } from "./credit-memos";
-import DealSummary from "./deal-summary";
+  RepaymentTermsSchedule,
+  RepaymentTermsSchedulePlaceholder,
+} from "./repayment-terms/repayment-terms-schedule";
 import {
-  SECURITIES_RECOURSE_TABLE_FIELDS,
-  BORROWER_FINANCIALS_TABLE_FIELDS,
-  BORROWER_PERFORMANCE_TABLE_FIELDS,
-} from "./deal-tables";
-import { DOCUMENT_FIELDS } from "./documents-list";
-import FundingBar from "./funding-bar";
-import RepaymentProgressPanel from "./repayment-progress-panel";
-import {
-  StatusSection,
-  TRANCHED_POOL_STAT_GRID_FIELDS,
-} from "./status-section";
-import SupplyPanel, { SUPPLY_PANEL_USER_FIELDS } from "./supply-panel";
-import {
-  WithdrawalPanel,
-  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
-} from "./withdrawal-panel";
+  RepaymentTermsStats,
+  RepaymentTermsStatsPlaceholder,
+} from "./repayment-terms/repayment-terms-stats";
+import { RiskTable } from "./risk-table";
+import { TransactionTable } from "./transaction-table";
 
 gql`
-  ${TRANCHED_POOL_STATUS_FIELDS}
-  ${TRANCHED_POOL_STAT_GRID_FIELDS}
-  ${SUPPLY_PANEL_USER_FIELDS}
-  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
-  ${CLAIM_PANEL_POOL_TOKEN_FIELDS}
-  ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
-    $borrowerOtherPools: [ID!]
+    $borrowerAllPools: [ID!]
   ) {
-    tranchedPool(id: $tranchedPoolId) {
+    loan(id: $tranchedPoolId) {
+      __typename
       id
       allowedUidTypes
-      estimatedJuniorApy
-      estimatedJuniorApyFromGfiRaw
-      estimatedLeverageRatio
+      usdcApy
+      rawGfiApy
       fundableAt
-      isPaused
-      numBackers
-      juniorTranches {
-        lockedUntil
-      }
-      juniorDeposited
-      creditLine {
-        id
-        limit
-        maxLimit
-        id
-        isLate @client
-        isInDefault @client
-        termInDays
-        paymentPeriodInDays
-        nextDueTime
-        interestAprDecimal
-        borrowerContract {
-          id
-        }
-        lateFeeApr
-      }
-      initialInterestOwed
-      principalAmountRepaid
-      interestAmountRepaid
-      ...TranchedPoolStatusFields
+      ...LoanSummaryFields
+      ...FundingStatusLoanFields
+      ...SupplyPanelLoanFields
+      ...ClaimPanelLoanFields
+      ...RepaymentTermsStatsFields
+      ...AmountStatsFields
+      ...RepaymentTableLoanFields
     }
-    borrowerOtherPools: tranchedPools(
-      where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
+    borrowerAllPools: tranchedPools(
+      where: { id_in: $borrowerAllPools, principalAmount_not: 0 }
+      orderBy: createdAt
+      orderDirection: desc
     ) {
-      ...BorrowerOtherPoolFields
+      ...BorrowerAllPoolFields
     }
     seniorPools(first: 1) {
       id
       estimatedApyFromGfiRaw
-      sharePrice
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -128,11 +90,11 @@ gql`
     user(id: $userId) {
       id
       ...SupplyPanelUserFields
-      tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+      poolTokens(where: { loan: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
         ...ClaimPanelPoolTokenFields
       }
-      vaultedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
+      vaultedPoolTokens(where: { loan: $tranchedPoolAddress }) {
         id
         poolToken {
           ...WithdrawalPanelPoolTokenFields
@@ -147,49 +109,7 @@ gql`
   }
 `;
 
-const getMarqueeColor = (
-  poolStatus: PoolStatus
-): "yellow" | "purple" | "blue" | "green" | undefined => {
-  switch (poolStatus) {
-    case PoolStatus.Closed:
-    case PoolStatus.Full:
-      return "yellow";
-    case PoolStatus.Open:
-      return "purple";
-    case PoolStatus.ComingSoon:
-      return "blue";
-    case PoolStatus.Repaid:
-      return "green";
-    default:
-      return undefined;
-  }
-};
-
-const getMarqueeText = (poolStatus: PoolStatus, numBackers?: number) => {
-  switch (poolStatus) {
-    case PoolStatus.Full:
-      return ["Filled", `${numBackers} Backers`];
-    case PoolStatus.Open:
-      return ["Open", `${numBackers} Backers`];
-    case PoolStatus.ComingSoon:
-      return "Coming Soon";
-    case PoolStatus.Closed:
-      return "Closed";
-    case PoolStatus.Repaid:
-      return "Repaid";
-    default:
-      return "Paused";
-  }
-};
-
-const singleDealQuery = gql`
-  ${DOCUMENT_FIELDS}
-  ${CMS_TEAM_MEMBER_FIELDS}
-  ${SECURITIES_RECOURSE_TABLE_FIELDS}
-  ${BORROWER_FINANCIALS_TABLE_FIELDS}
-  ${BORROWER_PERFORMANCE_TABLE_FIELDS}
-  ${BORROWER_PROFILE_FIELDS}
-  ${CREDIT_MEMO_FIELDS}
+gql`
   query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
@@ -197,15 +117,19 @@ const singleDealQuery = gql`
       dealType
       category
       borrower {
+        ...LoanSummaryBorrowerFields
         ...BorrowerProfileFields
+        deals {
+          id
+        }
       }
       overview
+      highlights {
+        ...DealHighlightFields
+      }
       details
       agreement
       dataroom
-      securitiesAndRecourse {
-        ...SecuritiesRecourseTableFields
-      }
       defaultInterestRate
       transactionStructure {
         filename
@@ -214,12 +138,11 @@ const singleDealQuery = gql`
         url
         mimeType
       }
-      documents {
-        ...DocumentFields
-      }
       creditMemos {
         ...CreditMemoFields
       }
+      ...SupplyPanelDealFields
+      ...RiskTableDealFields
     }
   }
 `;
@@ -228,7 +151,9 @@ interface PoolPageProps {
   dealDetails: NonNullable<SingleDealQuery["Deal"]>;
 }
 
-export default function PoolPage({ dealDetails }: PoolPageProps) {
+const PoolPage: NextPageWithLayout<PoolPageProps> = ({
+  dealDetails,
+}: PoolPageProps) => {
   const { account } = useWallet();
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -242,63 +167,40 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       tranchedPoolId: dealDetails?.id as string,
       tranchedPoolAddress: dealDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
-      borrowerOtherPools: otherPoolsFromThisBorrower,
+      borrowerAllPools: otherPoolsFromThisBorrower,
     },
-    returnPartialData: true,
   });
 
-  const tranchedPool = data?.tranchedPool;
+  const tranchedPool = data?.loan;
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-  const isMultitranche = dealDetails.dealType === "multitranche";
 
   if (error) {
     return (
       <div className="text-2xl">
-        Unable to load the specified tranched pool.
+        Unable to load the specified loan. {error.message}
       </div>
     );
   }
 
-  const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
-  const backerSupply = tranchedPool?.juniorDeposited
-    ? ({
-        token: "USDC",
-        amount: tranchedPool.juniorDeposited,
-      } as const)
-    : undefined;
-
-  const seniorSupply =
-    backerSupply && tranchedPool?.estimatedLeverageRatio && isMultitranche
-      ? ({
-          token: "USDC",
-          amount: utils.parseUnits(
-            FixedNumber.from(backerSupply.amount)
-              .mulUnsafe(tranchedPool.estimatedLeverageRatio)
-              .toString(),
-            0
-          ),
-        } as const)
-      : undefined;
+  const fundingStatus = tranchedPool
+    ? getLoanFundingStatus(tranchedPool, data.currentBlock.timestamp)
+    : null;
 
   // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =
-    tranchedPool?.allowedUidTypes.includes("US_ACCREDITED_INDIVIDUAL") ||
-    tranchedPool?.allowedUidTypes.includes("US_ENTITY");
-  const noUid =
-    !user?.isNonUsEntity &&
-    !user?.isNonUsIndividual &&
-    !user?.isUsAccreditedIndividual &&
-    !user?.isUsEntity &&
-    !user?.isUsNonAccreditedIndividual;
+    tranchedPool?.allowedUidTypes?.includes("US_ACCREDITED_INDIVIDUAL") ||
+    tranchedPool?.allowedUidTypes?.includes("US_ENTITY");
+  const noUid = !user?.uidType;
   const uidIsUs =
-    user?.isUsAccreditedIndividual ||
-    user?.isUsEntity ||
-    user?.isUsNonAccreditedIndividual;
-  const uidIsNonUs = user?.isNonUsEntity || user?.isNonUsIndividual;
+    user?.uidType === "US_ACCREDITED_INDIVIDUAL" ||
+    user?.uidType === "US_ENTITY" ||
+    user?.uidType === "US_NON_ACCREDITED_INDIVIDUAL";
+  const uidIsNonUs =
+    user?.uidType === "NON_US_ENTITY" || user?.uidType === "NON_US_INDIVIDUAL";
   if (poolSupportsUs && noUid) {
     initialBannerContent =
       "This offering is only available to non-U.S. persons or U.S. accredited investors.";
@@ -334,168 +236,169 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </BannerPortal>
       ) : null}
 
-      <SubnavPortal>
-        {poolStatus && tranchedPool ? (
-          <Marquee colorScheme={getMarqueeColor(poolStatus)}>
-            {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
-          </Marquee>
-        ) : (
-          <Marquee className="invisible">LOADING (placeholder)</Marquee>
-        )}
-        {/* gives the illusion of rounded corners on the top of the page */}
-        <div className="-mt-3 h-3 rounded-t-xl bg-white" />
-      </SubnavPortal>
-
       <div className="pool-layout">
-        <div style={{ gridArea: "heading" }}>
-          <div className="mb-8 flex flex-wrap justify-between gap-2">
-            <div>
-              <Breadcrumb label={dealDetails.name} image={borrower.logo?.url} />
-            </div>
-            {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
-              <Button
-                variant="rounded"
-                colorScheme="secondary"
-                iconRight="ArrowTopRight"
-                as="a"
-                href={`https://etherscan.io/address/${tranchedPool.id}`}
-                target="_blank"
-                rel="noopener"
-              >
-                Contract
-              </Button>
-            ) : null}
-          </div>
-          <Heading
-            level={1}
-            className="mb-12 text-center text-sand-800 md:text-left"
-          >
-            {dealDetails.name}
-          </Heading>
-
-          {error ? (
-            <HelperText isError>
-              There was a problem fetching data on this pool. Shown data may be
-              outdated.
-            </HelperText>
-          ) : null}
-
-          {poolStatus === PoolStatus.Open ||
-          poolStatus === PoolStatus.Closed ? (
-            <FundingBar
-              isMultitranche={isMultitranche}
-              goal={
-                tranchedPool?.creditLine.maxLimit
-                  ? {
-                      token: "USDC",
-                      amount: tranchedPool.creditLine.maxLimit,
-                    }
-                  : undefined
-              }
-              backerSupply={backerSupply}
-              seniorSupply={seniorSupply}
-            />
-          ) : null}
-
-          {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
-            <StatusSection
-              className="mt-12"
-              poolStatus={poolStatus}
-              tranchedPool={tranchedPool}
-              seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-              fiatPerGfi={fiatPerGfi}
-            />
-          ) : null}
-        </div>
-
-        <div className="relative" style={{ gridArea: "widgets" }}>
-          {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open ? (
-                <SupplyPanel
-                  tranchedPool={tranchedPool}
-                  user={user}
-                  fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={seniorPool.estimatedApyFromGfiRaw}
-                  agreement={dealDetails.agreement}
-                  isUnitrancheDeal={dealDetails.dealType === "unitranche"}
-                />
-              ) : null}
-
-              {poolStatus === PoolStatus.Open &&
-              data?.user &&
-              data?.user.tranchedPoolTokens.length > 0 ? (
-                <WithdrawalPanel
-                  tranchedPoolAddress={tranchedPool.id}
-                  poolTokens={data.user.tranchedPoolTokens}
-                  vaultedPoolTokens={data.user.vaultedPoolTokens.map(
-                    (v) => v.poolToken
-                  )}
-                />
-              ) : null}
-
-              {poolStatus !== PoolStatus.Open &&
-              data?.user &&
-              (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.vaultedPoolTokens.length > 0) ? (
-                <ClaimPanel
-                  poolTokens={data.user.tranchedPoolTokens}
-                  vaultedPoolTokens={data.user.vaultedPoolTokens}
-                  fiatPerGfi={fiatPerGfi}
-                  tranchedPool={tranchedPool}
-                />
-              ) : null}
-
-              {tranchedPool &&
-              (poolStatus === PoolStatus.Full ||
-                poolStatus === PoolStatus.Repaid) ? (
-                <RepaymentProgressPanel
-                  poolStatus={poolStatus}
-                  tranchedPool={tranchedPool}
-                  userPoolTokens={user?.tranchedPoolTokens ?? []}
-                />
-              ) : null}
-
-              {poolStatus === PoolStatus.ComingSoon ? (
-                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
         <div style={{ gridArea: "info" }}>
-          <TabGroup>
-            <TabList>
-              <TabButton>Deal Overview</TabButton>
-              <TabButton>Borrower Profile</TabButton>
-            </TabList>
-            <TabPanels>
-              <TabContent>
-                {tranchedPool && poolStatus !== null ? (
-                  <DealSummary
-                    dealData={dealDetails}
-                    poolChainData={tranchedPool}
-                    poolStatus={poolStatus}
+          <ScrollingSectionedContainer
+            sections={[
+              {
+                navTitle: "Overview",
+                title: "Overview",
+                content: !tranchedPool ? (
+                  <div className="h-60 rounded-xl border border-sand-200" />
+                ) : fundingStatus === LoanFundingStatus.Open ? (
+                  <FundingStats
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    currentBlockTimestamp={data.currentBlock.timestamp}
                   />
                 ) : (
-                  <ShimmerLines lines={10} />
-                )}
-              </TabContent>
-              <TabContent>
-                {data && data.borrowerOtherPools ? (
+                  <AmountStats loan={tranchedPool} />
+                ),
+              },
+              ...(dealDetails.highlights && dealDetails.highlights.length > 0
+                ? [
+                    {
+                      navTitle: "Highlights",
+                      title: "Highlights",
+                      content: (
+                        <DealHighlights highlights={dealDetails.highlights} />
+                      ),
+                    },
+                  ]
+                : []),
+              ...(dealDetails.creditMemos && dealDetails.creditMemos.length > 0
+                ? [
+                    {
+                      navTitle: "Analysis",
+                      title: "Analysis",
+                      subtitle:
+                        "Analysis and summary of this deal completed by independent credit experts",
+                      content: dealDetails.creditMemos.map((creditMemo) => (
+                        <CreditMemoAnalysisCard
+                          key={creditMemo.id}
+                          creditMemo={creditMemo}
+                          className="mb-1.5"
+                        />
+                      )),
+                    },
+                  ]
+                : []),
+              {
+                navTitle: "Repayment",
+                title: "Repayment terms",
+                content: (
+                  <div className="space-y-6">
+                    {tranchedPool ? (
+                      <>
+                        <RepaymentTermsStats loan={tranchedPool} />
+                        <RepaymentTermsSchedule
+                          loan={tranchedPool}
+                          repaymentStatus={getLoanRepaymentStatus(tranchedPool)}
+                          currentBlockTimestamp={data.currentBlock.timestamp}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <RepaymentTermsStatsPlaceholder />
+                        <RepaymentTermsSchedulePlaceholder />
+                      </>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                navTitle: "Borrower",
+                title: "Borrower details",
+                content: (
                   <BorrowerProfile
                     borrower={borrower}
-                    borrowerPools={data.borrowerOtherPools}
+                    borrowerAllPools={data?.borrowerAllPools ?? []}
+                    currentPoolAddress={tranchedPool?.id ?? ""}
                   />
-                ) : null}
-              </TabContent>
-            </TabPanels>
-          </TabGroup>
+                ),
+              },
+              {
+                navTitle: "Risk",
+                title: "Risk mitigation",
+                subtitle:
+                  "Information on deal structure, collateral used to secure this loan, and options in the case of a default on repayment by the borrower",
+                content:
+                  dealDetails && tranchedPool ? (
+                    <RiskTable deal={dealDetails} loan={tranchedPool} />
+                  ) : (
+                    <div className="h-96" />
+                  ),
+              },
+            ]}
+            navAddons={
+              dealDetails.dataroom
+                ? [{ text: "Dataroom", href: dealDetails.dataroom }]
+                : undefined
+            }
+          />
+
+          <h2 className="mb-6 font-semibold">Recent activity</h2>
+          {tranchedPool ? (
+            <TransactionTable loanAddress={tranchedPool.id} />
+          ) : null}
+        </div>
+
+        <div className="flex flex-col" style={{ gridArea: "widgets" }}>
+          <BacktoOpenDealsButton />
+
+          <AdaptiveStickyContainer>
+            <div
+              className={clsx(
+                "divide-y divide-mustard-200 self-stretch rounded-3xl border [&>*]:p-5 [&>*]:lg:p-10",
+                fundingStatus === LoanFundingStatus.Closed
+                  ? "border-sand-200 bg-white"
+                  : "border-transparent bg-mustard-100"
+              )}
+            >
+              {tranchedPool && seniorPool && fiatPerGfi ? (
+                <>
+                  <LoanSummary
+                    loan={tranchedPool}
+                    deal={dealDetails}
+                    borrower={borrower}
+                    fiatPerGfi={fiatPerGfi}
+                  />
+                  {fundingStatus === LoanFundingStatus.Open ||
+                  fundingStatus === LoanFundingStatus.Cancelled ? (
+                    <InvestAndWithdrawTabs
+                      tranchedPool={tranchedPool}
+                      user={user}
+                      deal={dealDetails}
+                      poolTokens={user?.poolTokens ?? []}
+                    />
+                  ) : fundingStatus === LoanFundingStatus.Closed &&
+                    user &&
+                    (user.poolTokens.length > 0 ||
+                      user.vaultedPoolTokens.length > 0) ? (
+                    <ClaimPanel
+                      poolTokens={user.poolTokens}
+                      vaultedPoolTokens={user.vaultedPoolTokens}
+                      fiatPerGfi={fiatPerGfi}
+                      loan={tranchedPool}
+                    />
+                  ) : fundingStatus === LoanFundingStatus.ComingSoon ? (
+                    <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+                  ) : null}
+                </>
+              ) : (
+                <LoanSummaryPlaceholder />
+              )}
+            </div>
+          </AdaptiveStickyContainer>
         </div>
       </div>
     </>
   );
-}
+};
+
+PoolPage.layout = "mustard-background";
+
+export default PoolPage;
 
 interface StaticParams extends ParsedUrlQuery {
   address: string;
@@ -541,7 +444,7 @@ export const getStaticProps: GetStaticProps<
     SingleDealQuery,
     SingleDealQueryVariables
   >({
-    query: singleDealQuery,
+    query: SingleDealDocument,
     variables: {
       id: address.toLowerCase(),
     },

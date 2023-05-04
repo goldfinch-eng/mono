@@ -5,7 +5,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getAgreements, setEnvForTest} from "../../src/db"
+import {getAgreements, overrideFirestore} from "../../src/db"
 import {signAgreement} from "../../src"
 
 chai.use(chaiSubset)
@@ -16,6 +16,7 @@ import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
+import {setTestConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -25,7 +26,6 @@ type FakeBlock = {
 describe("signAgreement", async () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   const address = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
   const validSignature =
@@ -62,12 +62,13 @@ describe("signAgreement", async () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {
+    overrideFirestore(testFirestore)
+    setTestConfig({
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
-    agreements = getAgreements(testFirestore)
+      slack: {token: ""},
+    })
+    agreements = getAgreements()
   })
 
   after(async () => {
@@ -82,6 +83,7 @@ describe("signAgreement", async () => {
     address: string,
     pool: string,
     fullName: string,
+    email: string,
     signature: string,
     signatureBlockNum: number | string | undefined,
   ) => {
@@ -91,7 +93,7 @@ describe("signAgreement", async () => {
         "x-goldfinch-signature": signature,
         "x-goldfinch-signature-block-num": signatureBlockNum,
       },
-      body: {pool, fullName},
+      body: {pool, fullName, email},
     } as unknown as Request
   }
   const pool = "0x1234asdADF"
@@ -99,8 +101,20 @@ describe("signAgreement", async () => {
   describe("validation", async () => {
     it("checks if address is present", async () => {
       await signAgreement(
-        generateAgreementRequest("", "", "", "", currentBlockNum),
+        generateAgreementRequest("", "0xbeef", "John Doe", "john@example.com", "sig", currentBlockNum),
         expectResponse(403, {error: "Invalid address"}),
+      )
+    })
+    it("checks if email is present", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
+      )
+    })
+    it("checks if email is valid", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "lol", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
       )
     })
   })
@@ -112,7 +126,7 @@ describe("signAgreement", async () => {
       expect((await agreements.doc(key).get()).exists).to.be.false
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -125,7 +139,7 @@ describe("signAgreement", async () => {
       const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -133,7 +147,7 @@ describe("signAgreement", async () => {
       expect(agreementDoc.data()).to.containSubset({fullName: "Test User"})
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User 2", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User 2", "test2@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 

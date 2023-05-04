@@ -1,4 +1,4 @@
-import { InMemoryCacheConfig } from "@apollo/client";
+import { InMemoryCacheConfig, FieldPolicy } from "@apollo/client";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import {
@@ -6,29 +6,34 @@ import {
   isVerificationModalOpenVar,
 } from "@/lib/state/vars";
 
+const offsetLimitPaginationFieldPolicy: FieldPolicy = {
+  keyArgs: ["where", "orderBy", "orderDirection"],
+  // merge function reference for offset/limit pagination: https://github.com/apollographql/apollo-client/blob/main/src/utilities/policies/pagination.ts#L33-L49
+  merge(existing, incoming, { args }) {
+    const merged = existing ? existing.slice(0) : [];
+    if (incoming) {
+      if (args) {
+        const { skip = 0 } = args;
+        for (let i = 0; i < incoming.length; ++i) {
+          merged[skip + i] = incoming[i];
+        }
+      } else {
+        merged.push(incoming);
+      }
+    }
+    return merged;
+  },
+};
+
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
       isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
-      transactions: {
-        keyArgs: ["where", "orderBy", "orderDirection"],
-        // merge function reference for offset/limit pagination: https://github.com/apollographql/apollo-client/blob/main/src/utilities/policies/pagination.ts#L33-L49
-        merge(existing, incoming, { args }) {
-          const merged = existing ? existing.slice(0) : [];
-          if (incoming) {
-            if (args) {
-              const { skip = 0 } = args;
-              for (let i = 0; i < incoming.length; ++i) {
-                merged[skip + i] = incoming[i];
-              }
-            } else {
-              merged.push(incoming);
-            }
-          }
-          return merged;
-        },
-      },
+      transactions: offsetLimitPaginationFieldPolicy,
+      tranchedPools: offsetLimitPaginationFieldPolicy,
+      callableLoans: offsetLimitPaginationFieldPolicy,
+      loans: offsetLimitPaginationFieldPolicy,
     },
   },
   SeniorPool: {

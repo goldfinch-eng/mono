@@ -1,6 +1,8 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
 
-import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+pragma solidity ^0.8.17;
+
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {ILoan} from "../../../interfaces/ILoan.sol";
 
@@ -18,14 +20,21 @@ library CallableLoanAccountant {
   uint256 internal constant SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 
   /// @notice Allocate a payment to proper balances according to the payment waterfall.
+  ///         Expected payment waterfall:
+  ///         1. Interest owed
+  ///         2. Principal owed
+  ///         3. Interest accrued
+  ///         4. Interest guaranteed to accrue before the next principal settlement
+  ///         5. Any additional remaining balance
   /// @param paymentAmount amount to allocate
   /// @param balance Balance = Remaining principal outstanding
   /// @param interestOwed interest owed on the credit line up to the last due time
   /// @param interestAccrued interest accrued between the last due time and the present time
   /// @param interestRate interest which is guaranteed to accrue between now and
   ///                      the next time principal is settled
-  /// @param timeUntilNextPrincipalSettlemenet time at which the next principal payment is due
+  /// @param timeUntilNextPrincipalSettlement time at which the next principal payment is due
   /// @param principalOwed principal owed on the credit line
+  /// @param guaranteedFutureInterestPaid guaranteed future interest which has already been paid
   /// @return PaymentAllocation payment allocation
   function allocatePayment(
     uint256 paymentAmount,
@@ -33,34 +42,34 @@ library CallableLoanAccountant {
     uint256 interestAccrued,
     uint256 principalOwed,
     uint256 interestRate,
-    uint256 timeUntilNextPrincipalSettlemenet,
-    uint256 balance
+    uint256 timeUntilNextPrincipalSettlement,
+    uint256 balance,
+    uint256 guaranteedFutureInterestPaid
   ) internal pure returns (ILoan.PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
-    uint256 owedInterestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
+    uint256 owedInterestPayment = Math.min(interestOwed, paymentRemaining);
+    paymentRemaining -= owedInterestPayment;
 
-    paymentRemaining = paymentRemaining - owedInterestPayment;
+    uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
+    paymentRemaining -= principalPayment;
 
-    uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining - principalPayment;
-
-    uint256 accruedInterestPayment = MathUpgradeable.min(interestAccrued, paymentRemaining);
-    paymentRemaining = paymentRemaining - accruedInterestPayment;
+    uint256 accruedInterestPayment = Math.min(interestAccrued, paymentRemaining);
+    paymentRemaining -= accruedInterestPayment;
 
     uint256 balanceRemaining = balance - principalPayment;
     uint256 guaranteedFutureInterest = calculateInterest({
-      secondsElapsed: timeUntilNextPrincipalSettlemenet,
+      secondsElapsed: timeUntilNextPrincipalSettlement,
       principal: balanceRemaining,
       interestApr: interestRate
     });
-    uint256 guaranteedFutureAccruedInterestPayment = MathUpgradeable.min(
-      guaranteedFutureInterest,
+    uint256 guaranteedFutureAccruedInterestPayment = Math.min(
+      guaranteedFutureInterest.saturatingSub(guaranteedFutureInterestPaid),
       paymentRemaining
     );
-    paymentRemaining = paymentRemaining - guaranteedFutureAccruedInterestPayment;
+    paymentRemaining -= guaranteedFutureAccruedInterestPayment;
 
-    uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
-    paymentRemaining = paymentRemaining - additionalBalancePayment;
+    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
+    paymentRemaining -= additionalBalancePayment;
 
     return
       ILoan.PaymentAllocation({
@@ -79,9 +88,12 @@ library CallableLoanAccountant {
     uint256 secondsElapsed,
     uint256 principal,
     uint256 interestApr
-  ) internal pure returns (uint256 interest) {
-    uint256 totalInterestPerYear = (principal * interestApr) / INTEREST_DECIMALS;
-    interest = (totalInterestPerYear * secondsElapsed) / SECONDS_PER_YEAR;
+  ) internal pure returns (uint256) {
+    // More readable, but less gas efficient implementation:
+    // uint256 totalInterestPerYear = (principal * interestApr) / INTEREST_DECIMALS;
+    // interest = (totalInterestPerYear * secondsElapsed) / SECONDS_PER_YEAR;
+
+    return (principal * interestApr * secondsElapsed) / (INTEREST_DECIMALS * SECONDS_PER_YEAR);
   }
 
   /**
@@ -92,16 +104,19 @@ library CallableLoanAccountant {
     uint256 start,
     uint256 end,
     uint256 lateFeesStartsAt,
+    uint256 lateFeesEndAt,
     uint256 principal,
     uint256 interestApr,
-    uint256 lateInterestApr
+    uint256 lateInterestAdditionalApr
   ) internal pure returns (uint256 interest) {
     if (end <= start) return 0;
     uint256 totalDuration = end - start;
     interest = calculateInterest(totalDuration, principal, interestApr);
-    if (lateFeesStartsAt < end) {
-      uint256 lateDuration = end.saturatingSub(MathUpgradeable.max(lateFeesStartsAt, start));
-      interest += calculateInterest(lateDuration, principal, lateInterestApr);
+    if (lateFeesStartsAt < end && lateFeesEndAt > lateFeesStartsAt) {
+      uint256 lateDuration = Math.min(lateFeesEndAt, end).saturatingSub(
+        Math.max(lateFeesStartsAt, start)
+      );
+      interest += calculateInterest(lateDuration, principal, lateInterestAdditionalApr);
     }
   }
 }

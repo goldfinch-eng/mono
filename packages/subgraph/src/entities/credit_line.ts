@@ -14,6 +14,9 @@ export function getOrInitCreditLine(address: Address, timestamp: BigInt): Credit
   return creditLine
 }
 
+/**
+ * @deprecated Phasing out credit line entites in the subgraph
+ */
 export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): CreditLine {
   let creditLine = CreditLine.load(address.toHexString())
   if (!creditLine) {
@@ -25,8 +28,6 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   creditLine.balance = contract.balance()
   creditLine.interestApr = contract.interestApr()
   creditLine.interestAccruedAsOf = contract.interestAccruedAsOf()
-  creditLine.paymentPeriodInDays = contract.paymentPeriodInDays()
-  creditLine.termInDays = contract.termInDays()
   creditLine.nextDueTime = contract.nextDueTime()
   creditLine.limit = contract.limit()
   creditLine.termEndTime = contract.termEndTime()

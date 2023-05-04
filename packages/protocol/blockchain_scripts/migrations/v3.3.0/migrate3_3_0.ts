@@ -1,4 +1,4 @@
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {Context, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
@@ -9,11 +9,14 @@ import {
   getProtocolOwner,
   populateTxAndLog,
 } from "../../deployHelpers"
+import {MAINNET_WARBLER_LABS_MULTISIG} from "../../mainnetForkingHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
-  console.log(`Upgrading contracts`)
   const deployer = new ContractDeployer(console.log, hre)
+  const upgrader = new ContractUpgrader(deployer)
+
+  console.log(`Upgrading contracts`)
   const deployEffects = await getDeployEffects({
     title: "v3.3.0 Upgrade",
     description: "",
@@ -24,6 +27,28 @@ export async function main() {
   assertNonNullable(gf_deployer)
 
   const gfConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  const gfFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory")
+  const context = await getEthersContract<Context>("Context", {path: "contracts/cake/Context.sol:Context"})
+  const borrowerRole = await gfFactory.BORROWER_ROLE()
+
+  const monthlyScheduleRepo = await deployer.deploy("MonthlyScheduleRepo", {
+    from: gf_deployer,
+  })
+
+  const upgradedContracts = await upgrader.upgrade({
+    contracts: [{name: "CapitalLedger", args: [context.address]}, "GoldfinchFactory", "GoldfinchConfig"],
+  })
+  await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
+
+  // Set monthly schedule repo address in config - need to do this after upgrading GoldfinchConfig!
+  await deployEffects.add({
+    deferred: [
+      await populateTxAndLog(
+        gfConfig.populateTransaction.setMonthlyScheduleRepo(monthlyScheduleRepo.address),
+        `Populated tx to set the MonthlyScheduleRepo address to ${monthlyScheduleRepo.address}`
+      ),
+    ],
+  })
 
   const borrowerImpl = await deployer.deploy("Borrower", {
     from: gf_deployer,
@@ -32,7 +57,7 @@ export async function main() {
     deferred: [
       await populateTxAndLog(
         gfConfig.populateTransaction.setBorrowerImplementation(borrowerImpl.address),
-        `Populated tx to set CreditLine impl to ${borrowerImpl.address}`
+        `Populated tx to set Borrower impl to ${borrowerImpl.address}`
       ),
     ],
   })
@@ -57,6 +82,7 @@ export async function main() {
       },
     },
   })
+
   await deployEffects.add({
     deferred: [
       await populateTxAndLog(
@@ -66,14 +92,12 @@ export async function main() {
         ),
         `Populated tx to set the CallableLoanImplementationRepository address to ${callableLoanImplRepo.address}`
       ),
+      await populateTxAndLog(
+        gfFactory.populateTransaction.grantRole(borrowerRole, MAINNET_WARBLER_LABS_MULTISIG),
+        `Populated tx to grant '${MAINNET_WARBLER_LABS_MULTISIG}' the borrower role(${borrowerRole})`
+      ),
     ],
   })
-
-  // TODO: GoldfinchFactory upgrade is not required while migration 3.2.1 is being run before this one.
-  // const upgrader = new ContractUpgrader(deployer)
-  // const upgradedContracts = await upgrader.upgrade({contracts: ["GoldfinchFactory"]})
-
-  // await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
   await deployEffects.executeDeferred()
 

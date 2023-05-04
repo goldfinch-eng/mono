@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
-
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 
 contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   function testTermEndTimeIsSetOnFirstDrawdown(uint256 amount) public {
     amount = bound(amount, usdcVal(1), usdcVal(10_000_000));
     (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(amount).build(BORROWER);
+    _startImpersonation(GF_OWNER);
 
     assertZero(callableLoan.termEndTime());
     depositAndDrawdown(callableLoan, amount, GF_OWNER);
@@ -22,7 +22,7 @@ contract CallableLoanTermEndTimeTest is CallableLoanBaseTest {
   function testTermEndTimeDoesNotChangeOnSubsequentDrawdown(uint256 drawdownAmount) public {
     drawdownAmount = bound(drawdownAmount, usdcVal(2), usdcVal(10_000_000));
     (CallableLoan callableLoan, ) = callableLoanBuilder.withLimit(drawdownAmount).build(BORROWER);
-
+    _startImpersonation(GF_OWNER);
     deposit(callableLoan, 3, drawdownAmount, DEPOSITOR);
     drawdown(callableLoan, drawdownAmount / 2);
     uint256 termEndTimeBefore = callableLoan.termEndTime();

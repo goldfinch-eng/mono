@@ -1,0 +1,49 @@
+# This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
+# NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
+name: Manually deploy main to Google Cloud functions
+on: workflow_dispatch
+jobs:
+  functions:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16.x ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: yarn
+      - name: Cache Firestore emulator
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-firestore-emulator
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+      - run: yarn workspaces focus @goldfinch-eng/functions
+      - run: yarn workspaces foreach -ptR --from @goldfinch-eng/functions run build
+      - run: yarn workspace @goldfinch-eng/functions ci_test
+      - name: deploy-prod
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: yarn workspace @goldfinch-eng/functions exec "yarn ci_functions_config_set_prod && yarn pre-deploy && yarn firebase deploy --only functions --project prod"
+        if: github.ref == 'refs/heads/main'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-prod
+        with:
+          environment: production
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+        if: github.ref == 'refs/heads/main'

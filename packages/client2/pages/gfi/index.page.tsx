@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import { useMemo } from "react";
 
 import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
+import { useIsMounted } from "@/hooks";
 import { formatCrypto } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
@@ -40,7 +41,7 @@ gql`
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
     }
-    tranchedPoolTokens(
+    poolTokens(
       where: { user: $userId }
       orderBy: mintedAt
       orderDirection: asc
@@ -70,14 +71,14 @@ gql`
 `;
 
 export default function GfiPage() {
-  const { account, isActivating } = useWallet();
+  const { account } = useWallet();
   const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
     skip: !account,
   });
-  const showLoadingState = isActivating || loading || !data;
+  const showLoadingState = loading || !data;
 
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
@@ -89,7 +90,7 @@ export default function GfiPage() {
 
   const totalClaimable = sumTotalClaimable(
     grantsWithTokens,
-    data?.tranchedPoolTokens.concat(
+    data?.poolTokens.concat(
       data?.vaultedPoolTokens.map((vpt) => vpt.poolToken)
     ),
     data?.seniorPoolStakedPositions.concat(
@@ -106,19 +107,21 @@ export default function GfiPage() {
   const userHasRewards =
     (data?.seniorPoolStakedPositions.length ?? 0) +
       (data?.vaultedStakedPositions.length ?? 0) +
-      (data?.tranchedPoolTokens.length ?? 0) +
+      (data?.poolTokens.length ?? 0) +
       (data?.vaultedPoolTokens.length ?? 0) +
       (grantsWithTokens?.length ?? 0) >
     0;
+
+  const isMounted = useIsMounted();
 
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
         GFI
       </Heading>
-      {error ? (
+      {!isMounted ? null : error ? (
         <div className="text-clay-500">{error.message}</div>
-      ) : !account && !isActivating ? (
+      ) : !account ? (
         <div>You must connect your wallet to view GFI rewards</div>
       ) : (
         <div>
@@ -190,7 +193,7 @@ export default function GfiPage() {
                     vaultedCapitalPositionId={v.id}
                   />
                 ))}
-                {data.tranchedPoolTokens.map((token) => (
+                {data.poolTokens.map((token) => (
                   <BackerCard key={token.id} token={token} />
                 ))}
                 {data.vaultedPoolTokens.map((v) => (

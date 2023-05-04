@@ -46,8 +46,9 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrEq0PrincOwedGt0 is TranchedPool
     for (uint i = 0; i < numPeriodsToAdvance; ++i) {
       vm.warp(cl.nextDueTime());
     }
+
     vm.assume(cl.principalOwed() > 0);
-    vm.assume(cl.interestOwed() > 0);
+    vm.assume(cl.interestOwed() > 1);
     vm.assume(cl.interestAccrued() == 0);
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);
@@ -70,8 +71,9 @@ contract TranchedPoolPaySeparateIntOwedGt0IntAccrEq0PrincOwedGt0 is TranchedPool
     for (uint i = 0; i < numPeriodsToAdvance; ++i) {
       vm.warp(cl.nextDueTime());
     }
+
     vm.assume(cl.principalOwed() > 0);
-    vm.assume(cl.interestOwed() > 0);
+    vm.assume(cl.interestOwed() > 1);
     vm.assume(cl.interestAccrued() == 0);
 
     intPayment = bound(intPayment, 1, cl.interestOwed() - 1);

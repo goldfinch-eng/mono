@@ -133,7 +133,7 @@ abstract contract BaseTest is Test {
   /**
    * @dev Wraps bound in uint128 cast. Better to be declarative than rely on implicit conversions.
    */
-  function boundUint128(uint128 x, uint128 min, uint128 max) internal returns (uint128) {
+  function boundUint128(uint128 x, uint128 min, uint128 max) internal view returns (uint128) {
     return uint128(bound(uint256(x), uint256(min), uint256(max)));
   }
 

@@ -13,6 +13,7 @@ import {
 import { USDC_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
+import { LoanBorrowerAccountingFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
@@ -20,10 +21,9 @@ import { useWallet } from "@/lib/wallet";
 import { CreditLineStatus } from "@/pages/borrow/helpers";
 
 interface PaymentFormProps {
+  loan: LoanBorrowerAccountingFieldsFragment;
   remainingPeriodDueAmount: BigNumber;
   remainingTotalDueAmount: BigNumber;
-  borrowerContractAddress: string;
-  tranchedPoolAddress: string;
   creditLineStatus?: CreditLineStatus;
   onClose: () => void;
 }
@@ -36,14 +36,13 @@ enum PaymentOption {
 }
 
 export function PaymentForm({
+  loan,
   remainingPeriodDueAmount,
   remainingTotalDueAmount,
-  borrowerContractAddress,
-  tranchedPoolAddress,
   creditLineStatus,
   onClose,
 }: PaymentFormProps) {
-  const { account, provider } = useWallet();
+  const { account, signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const showPayMinimumDueOption =
@@ -65,17 +64,18 @@ export function PaymentForm({
   const { control, register, setValue, watch } = rhfMethods;
 
   const onSubmit = async ({ usdcAmount }: FormFields) => {
-    if (!account || !provider) {
+    if (!account || !signer) {
       return;
     }
     const usdc = stringToCryptoAmount(usdcAmount, "USDC");
 
     const borrowerContract = await getContract({
       name: "Borrower",
-      address: borrowerContractAddress,
-      provider,
+      address: loan.borrowerContract.id,
+      signer,
     });
-    const usdcContract = await getContract({ name: "USDC", provider });
+
+    const usdcContract = await getContract({ name: "USDC", signer });
 
     await approveErc20IfRequired({
       account,
@@ -84,7 +84,7 @@ export function PaymentForm({
       amount: usdc.amount,
     });
     await toastTransaction({
-      transaction: borrowerContract.pay(tranchedPoolAddress, usdc.amount),
+      transaction: borrowerContract.pay(loan.id, usdc.amount),
       pendingPrompt: "Credit Line payment submitted.",
     });
     await apolloClient.refetchQueries({ include: "active" });
@@ -161,6 +161,9 @@ export function PaymentForm({
               <div>
                 {creditLineStatus === CreditLineStatus.PaymentLate
                   ? "Pay amount due: "
+                  : loan.__typename === "CallableLoan" &&
+                    loan.periodPrincipalDueAmount.gt(0)
+                  ? "Pre-pay accrued interest and called capital: "
                   : "Pre-pay accrued interest: "}
                 <span className="font-semibold">
                   {`${formatCrypto({

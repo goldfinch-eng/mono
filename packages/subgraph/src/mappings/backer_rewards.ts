@@ -1,6 +1,6 @@
 import {Address, BigInt, ethereum} from "@graphprotocol/graph-ts"
 
-import {TranchedPoolToken, VaultedPoolToken} from "../../generated/schema"
+import {PoolToken, VaultedPoolToken} from "../../generated/schema"
 import {
   BackerRewardsSetTotalRewards,
   BackerRewardsSetMaxInterestDollarsEligible,
@@ -15,20 +15,16 @@ import {createTransactionFromEvent} from "../entities/helpers"
 export function handleSetTotalRewards(event: BackerRewardsSetTotalRewards): void {
   updateBackerRewardsData(event.address)
   // It's a little odd to see this calculation initiated here, but it's in order to ensure that rewards are calculated if the backer contract is deployed after some pools
-  calculateApyFromGfiForAllPools(event.block.timestamp)
+  calculateApyFromGfiForAllPools()
 }
 
 export function handleSetMaxInterestDollarsEligible(event: BackerRewardsSetMaxInterestDollarsEligible): void {
   updateBackerRewardsData(event.address)
   // It's a little odd to see this calculation initiated here, but it's in order to ensure that rewards are calculated if the backer contract is deployed after some pools
-  calculateApyFromGfiForAllPools(event.block.timestamp)
+  calculateApyFromGfiForAllPools()
 }
 
-function saveBackerRewardsClaimedTransaction(
-  event: ethereum.Event,
-  gfiAmount: BigInt,
-  poolToken: TranchedPoolToken
-): void {
+function saveBackerRewardsClaimedTransaction(event: ethereum.Event, gfiAmount: BigInt, poolToken: PoolToken): void {
   let underlyingOwner = poolToken.user
   if (poolToken.vaultedAsset != null) {
     const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))
@@ -37,12 +33,12 @@ function saveBackerRewardsClaimedTransaction(
   const transaction = createTransactionFromEvent(event, "BACKER_REWARDS_CLAIMED", Address.fromString(underlyingOwner))
   transaction.receivedAmount = gfiAmount
   transaction.receivedToken = "GFI"
-  transaction.tranchedPool = poolToken.tranchedPool
+  transaction.loan = poolToken.loan
   transaction.save()
 }
 
 export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
-  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
   poolToken.rewardsClaimed = event.params.amount
   poolToken.rewardsClaimable = BigInt.zero()
   poolToken.save()
@@ -51,7 +47,7 @@ export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
 }
 
 export function handleBackerRewardsClaimed1(event: BackerRewardsClaimed1): void {
-  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
   poolToken.rewardsClaimed = event.params.amountOfTranchedPoolRewards
   poolToken.stakingRewardsClaimed = event.params.amountOfSeniorPoolRewards
   poolToken.rewardsClaimable = BigInt.zero()

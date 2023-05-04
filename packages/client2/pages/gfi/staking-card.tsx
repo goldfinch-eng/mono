@@ -58,18 +58,18 @@ export function StakingCard({
     "MMM d, y"
   );
 
-  const { provider } = useWallet();
+  const { signer } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
   const handleClaim = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
     if (vaulted) {
       const membershipOrchestratorContract = await getContract({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
@@ -78,7 +78,7 @@ export function StakingCard({
     } else {
       const stakingRewardsContract = await getContract({
         name: "StakingRewards",
-        provider,
+        signer,
       });
       const transaction = stakingRewardsContract.getReward(position.id);
       await toastTransaction({ transaction });

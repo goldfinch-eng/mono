@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.17;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanConfigHelper} from "../../../protocol/core/callable/CallableLoanConfigHelper.sol";
+import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
 // solhint-disable-next-line max-line-length
@@ -14,25 +15,55 @@ import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token
 import {PaymentScheduleLogic, PaymentSchedule} from "../../../protocol/core/schedule/PaymentSchedule.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
   using CallableLoanConfigHelper for IGoldfinchConfig;
   using PaymentScheduleLogic for PaymentSchedule;
 
+  uint256 lateGracePeriodInDays;
+
+  function setUp() public override {
+    super.setUp();
+    lateGracePeriodInDays = gfConfig.getNumber(
+      uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays)
+    );
+  }
+
   function testGetInterestVariablesRevertsForInvalidTimestamp(uint256 timestamp) public {
     (, ICreditLine cl) = defaultCallableLoan();
     timestamp = bound(timestamp, 0, cl.interestAccruedAsOf() - 1);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.interestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("PT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InputTimestampInThePast.selector, timestamp)
+    );
     cl.interestAccruedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestOwedAt(timestamp);
 
-    vm.expectRevert(bytes("IT"));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ICallableLoanErrors.InputTimestampBeforeCheckpoint.selector,
+        timestamp,
+        cl.interestAccruedAsOf()
+      )
+    );
     cl.totalInterestAccruedAt(timestamp);
   }
 
@@ -67,6 +98,9 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
 
   function testAccountingVarsCrossingOneOrMorePaymentPeriods(uint256 timestamp) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
+    uint256 lateGracePeriodInDays = gfConfig.getNumber(
+      uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays)
+    );
 
     depositAndDrawdown(callableLoan, usdcVal(1000), GF_OWNER);
     timestamp = bound(timestamp, cl.nextDueTime(), cl.termEndTime() - 1);
@@ -75,20 +109,37 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 expectedPrincipalOwed = cl.principalOwed();
     // Interest owed should be up to the most recently past next due time
     ISchedule schedule = callableLoan.schedule();
-    uint256 previousDueTime = schedule.previousInterestDueTimeAt(block.timestamp, timestamp);
+    uint256 previousDueTimeAtTimestamp = schedule.previousInterestDueTimeAt(
+      block.timestamp,
+      timestamp
+    );
     uint256 expectedInterestOwed = getInterestAccrued(
       block.timestamp,
-      previousDueTime,
+      previousDueTimeAtTimestamp,
       cl.balance(),
       cl.interestApr()
     );
+    uint256 expectedInterestOwedLateFees = getInterestAccrued(
+      cl.nextDueTime() + lateGracePeriodInDays,
+      previousDueTimeAtTimestamp,
+      cl.balance(),
+      cl.lateFeeApr()
+    );
+
     // Interest accrued should be from due time to the current time
     uint256 expectedInterestAccrued = getInterestAccrued(
-      previousDueTime,
+      previousDueTimeAtTimestamp,
       timestamp,
       cl.balance(),
       cl.interestApr()
     );
+    uint256 expectedInterestAccruedLateFees = getInterestAccrued(
+      Math.max(previousDueTimeAtTimestamp, cl.nextDueTime() + lateGracePeriodInDays),
+      timestamp,
+      cl.balance(),
+      cl.lateFeeApr()
+    );
+
     uint256 expectedTotalInterestAccrued = getInterestAccrued(
       block.timestamp,
       timestamp,
@@ -96,32 +147,52 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.interestApr()
     );
 
-    // TODO: Investigate why CallableLoans require half cent margin of error for marked assertions.
-    //       TranchedPool only requires margin of error for interestAccruedAt
-    // TODO: Why margin of error?
+    uint256 expectedTotalInterestAccruedLateFees = getInterestAccrued(
+      cl.nextDueTime() + lateGracePeriodInDays,
+      timestamp,
+      cl.balance(),
+      cl.lateFeeApr()
+    );
+
     assertApproxEqAbs(cl.interestOwedAt(timestamp), expectedInterestOwed, HUNDREDTH_CENT);
     assertApproxEqAbs(cl.interestAccruedAt(timestamp), expectedInterestAccrued, HUNDREDTH_CENT);
     assertEq(cl.principalOwedAt(timestamp), expectedPrincipalOwed);
-    // TODO: Why margin of error?
     assertApproxEqAbs(
       cl.totalInterestAccruedAt(timestamp),
       expectedTotalInterestAccrued,
       HUNDREDTH_CENT
     );
 
-    // TODO: Why margin of error?
     assertApproxEqAbs(cl.totalInterestOwedAt(timestamp), expectedInterestOwed, HUNDREDTH_CENT);
 
     vm.warp(timestamp);
 
-    // TODO: Why margin of error?
-    assertApproxEqAbs(cl.interestOwed(), expectedInterestOwed, HUNDREDTH_CENT);
-    assertApproxEqAbs(cl.interestAccrued(), expectedInterestAccrued, HUNDREDTH_CENT);
+    assertApproxEqAbs(
+      cl.interestOwed(),
+      expectedInterestOwed + expectedInterestOwedLateFees,
+      HUNDREDTH_CENT,
+      "After warp should include late fees interestOwed"
+    );
+    assertApproxEqAbs(
+      cl.interestAccrued(),
+      expectedInterestAccrued + expectedInterestAccruedLateFees,
+      HUNDREDTH_CENT,
+      "After warp should include late fees interestAccrued"
+    );
     assertEq(cl.principalOwed(), expectedPrincipalOwed);
-    // TODO: Why margin of error?
-    assertApproxEqAbs(cl.totalInterestAccrued(), expectedTotalInterestAccrued, HUNDREDTH_CENT);
-    // TODO: Why margin of error?
-    assertApproxEqAbs(cl.totalInterestOwed(), expectedInterestOwed, HUNDREDTH_CENT);
+
+    assertApproxEqAbs(
+      cl.totalInterestOwed(),
+      expectedInterestOwed + expectedInterestOwedLateFees,
+      HUNDREDTH_CENT,
+      "After warp should include late fees totalInterestOwed"
+    );
+    assertApproxEqAbs(
+      cl.totalInterestAccrued(),
+      expectedTotalInterestAccrued + expectedTotalInterestAccruedLateFees,
+      HUNDREDTH_CENT,
+      "After warp should include late fees totalInterestAccrued"
+    );
   }
 
   function testAccountingVarsForLatePaymentWithinGracePeriod(uint256 timestamp) public {
@@ -181,20 +252,20 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       callableLoan.nextDueTimeAt(nextDueTime + 1) - 1
     );
 
-    // total interest accrued should include late fees
+    // total interest accrued should not include late fees
     uint256 expectedTotalInterestAccrued = getInterestAccrued(
       drawdownTime,
       timestamp,
       cl.balance(),
       cl.interestApr()
-    ) + getInterestAccrued(cl.nextDueTime() + 5 days, timestamp, cl.balance(), 10 * 1e16);
-    // interest accrued should include late fees
+    );
+    // interest accrued should include not late fees
     uint256 expectedInterestAccrued = getInterestAccrued(
       cl.nextDueTime(),
       timestamp,
       cl.balance(),
       cl.interestApr()
-    ) + getInterestAccrued(cl.nextDueTime() + 5 days, timestamp, cl.balance(), 10 * 1e16);
+    );
     // all interest from the previous period should be owed
     uint256 expectedInterestOwed = getInterestAccrued(
       drawdownTime,
@@ -212,8 +283,33 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertEq(cl.interestOwedAt(timestamp), expectedInterestOwed);
 
     vm.warp(timestamp);
-    assertApproxEqAbs(cl.totalInterestAccrued(), expectedTotalInterestAccrued, HUNDREDTH_CENT);
-    assertApproxEqAbs(cl.interestAccrued(), expectedInterestAccrued, HUNDREDTH_CENT);
+
+    uint256 totalInterestAccruedLateFees = getInterestAccrued(
+      nextDueTime + 5 days,
+      timestamp,
+      cl.balance(),
+      10 * 1e16
+    );
+
+    uint256 interestAccruedLateFees = getInterestAccrued(
+      nextDueTime + 5 days,
+      timestamp,
+      cl.balance(),
+      10 * 1e16
+    );
+
+    assertApproxEqAbs(
+      cl.totalInterestAccrued(),
+      expectedTotalInterestAccrued + totalInterestAccruedLateFees,
+      HUNDREDTH_CENT,
+      "totalInterestAccrued with late fees"
+    );
+    assertApproxEqAbs(
+      cl.interestAccrued(),
+      expectedInterestAccrued + interestAccruedLateFees,
+      HUNDREDTH_CENT,
+      "interestAccrued with late fees"
+    );
     assertEq(cl.interestOwed(), expectedInterestOwed);
   }
 
@@ -248,11 +344,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       cl.lateFeeApr()
     );
 
-    assertApproxEqAbs(
-      cl.totalInterestAccruedAt(timestamp),
-      totalRegIntAccrued + totalLateIntAccrued,
-      HUNDREDTH_CENT
-    );
+    assertApproxEqAbs(cl.totalInterestAccruedAt(timestamp), totalRegIntAccrued, HUNDREDTH_CENT);
     vm.warp(timestamp);
     assertApproxEqAbs(
       cl.totalInterestAccrued(),
@@ -299,12 +391,11 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       );
     }
 
-    assertApproxEqAbs(
-      cl.interestAccruedAt(timestamp),
-      regIntAccrued + lateIntAccrued,
-      HUNDREDTH_CENT
-    );
+    // Does not account for future late interest
+    assertApproxEqAbs(cl.interestAccruedAt(timestamp), regIntAccrued, HUNDREDTH_CENT);
     vm.warp(timestamp);
+
+    // Accounts for late fees that have accrued in the past.
     assertApproxEqAbs(cl.interestAccrued(), regIntAccrued + lateIntAccrued, HUNDREDTH_CENT);
   }
 
@@ -343,7 +434,7 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
       );
     }
 
-    assertApproxEqAbs(cl.interestOwedAt(timestamp), regIntOwed + lateIntOwed, HUNDREDTH_CENT);
+    assertApproxEqAbs(cl.interestOwedAt(timestamp), regIntOwed, HUNDREDTH_CENT);
     vm.warp(timestamp);
     assertApproxEqAbs(cl.interestOwed(), regIntOwed + lateIntOwed, HUNDREDTH_CENT);
   }
@@ -374,6 +465,13 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     uint256 expectedInterestOwed = expectedTotalInterestAccrued;
     uint256 expectedPrincipalOwed = cl.balance();
 
+    uint256 expectedTotalInterestAccruedLateFees = getInterestAccrued(
+      cl.nextDueTime() + lateGracePeriodInDays,
+      timestamp,
+      cl.balance(),
+      cl.lateFeeApr()
+    );
+
     assertApproxEqAbs(
       cl.totalInterestAccruedAt(timestamp),
       expectedTotalInterestAccrued,
@@ -385,8 +483,16 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     vm.warp(timestamp);
 
     assertApproxEqAbs(cl.totalPrincipalOwed(), expectedPrincipalOwed, HUNDREDTH_CENT);
-    assertApproxEqAbs(cl.totalInterestAccrued(), expectedTotalInterestAccrued, HUNDREDTH_CENT);
-    assertApproxEqAbs(cl.interestOwed(), expectedInterestOwed, HUNDREDTH_CENT);
+    assertApproxEqAbs(
+      cl.totalInterestAccrued(),
+      expectedTotalInterestAccrued + expectedTotalInterestAccruedLateFees,
+      HUNDREDTH_CENT
+    );
+    assertApproxEqAbs(
+      cl.interestOwed(),
+      expectedInterestOwed + expectedTotalInterestAccruedLateFees,
+      HUNDREDTH_CENT
+    );
     assertZero(cl.interestAccrued());
   }
 
@@ -402,7 +508,8 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     firstJump = bound(firstJump, block.timestamp, cl.termEndTime());
     vm.warp(firstJump);
 
-    uint nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+    uint256 nextPrincipalDueTime = callableLoan.nextPrincipalDueTime();
+
     pay(
       callableLoan,
       cl.interestAccruedAt(nextPrincipalDueTime) +
@@ -414,14 +521,14 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertZero(cl.interestAccrued());
 
     // Advance to next due time - interest or principal
-    uint nextDueTimeJump = callableLoan.nextDueTime();
+    uint256 nextDueTimeJump = callableLoan.nextDueTime();
     vm.warp(nextDueTimeJump);
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
 
     // Advance to next principal payment period in order for principal payment to process.
-    uint nextPrincipalDueTimeJump = callableLoan.nextPrincipalDueTime();
+    uint256 nextPrincipalDueTimeJump = callableLoan.nextPrincipalDueTime();
     vm.warp(nextPrincipalDueTimeJump);
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
@@ -433,5 +540,9 @@ contract CallableLoanAccountingVarsTest is CallableLoanBaseTest {
     assertZero(cl.balance());
     assertZero(cl.interestOwed());
     assertZero(cl.interestAccrued());
+  }
+
+  function testTotalInterestAccruedAtWhereLastFullPaymentTimeLandsOnPrincipalDueTime() public {
+    // TODO
   }
 }

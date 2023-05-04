@@ -30,7 +30,8 @@ interface ITranchedPool is ILoan {
   /// @param _config address of GoldfinchConfig
   /// @param _borrower address of borrower, a non-transferrable role for performing privileged actions like
   ///   drawdown
-  /// @param _juniorFeePercent percent (whole number) of senior interest that gets re-allocated to the junior tranche
+  /// @param _juniorFeePercent percent (whole number) of senior interest that gets re-allocated to the junior tranche.
+  ///   valid range is [0, 100]
   /// @param _limit the max USDC amount that can be drawn down across all pool slices
   /// @param _interestApr interest rate for the loan
   /// @param _lateFeeApr late fee interest rate for the loan, which kicks in `LatenessGracePeriodInDays` days after a
@@ -95,7 +96,7 @@ interface ITranchedPool is ILoan {
   /// @return numSlices total current slice count
   function numSlices() external view returns (uint256);
 
-  // Note: This has to exactly match the even in the TranchingLogic library for events to be emitted
+  // Note: This has to exactly match the event in the TranchingLogic library for events to be emitted
   // correctly
   event SharePriceUpdated(
     address indexed pool,

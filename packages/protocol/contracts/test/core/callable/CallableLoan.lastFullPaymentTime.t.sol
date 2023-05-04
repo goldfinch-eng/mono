@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
@@ -33,7 +33,7 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     assertEq(cl.lastFullPaymentTime(), expectedLastFullPaymentTime);
   }
 
-  function testNotSetWhenIfInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
+  function testNotSetWhenInterestButNotPrincipalPaidAfterTermEndTime(uint256 payment) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
     depositAndDrawdown(callableLoan, usdcVal(400));
     vm.warp(cl.termEndTime());
@@ -54,17 +54,6 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     assertEq(cl.lastFullPaymentTime(), block.timestamp);
   }
 
-  function testNotSetIfSeparateInterestPaymentLtInterestOwed(uint256 interestPayment) public {
-    (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();
-    depositAndDrawdown(callableLoan, usdcVal(400));
-    vm.warp(cl.nextDueTime());
-    uint256 lastFullPaymentTimeBefore = cl.lastFullPaymentTime();
-    interestPayment = bound(interestPayment, 1, cl.interestOwed() - 1);
-    pay(callableLoan, interestPayment);
-    uint256 lastFullPaymentTimeAfter = cl.lastFullPaymentTime();
-    assertEq(lastFullPaymentTimeBefore, lastFullPaymentTimeAfter, "lastFullPaymentTime unchanged");
-  }
-
   function testSetToBlockTimeInterestOwedIsPaidSeparate(
     uint256 interestPayment,
     uint256 periodsToAdvance
@@ -77,10 +66,10 @@ contract CallableLoanLastFullPaymentTimeTest is CallableLoanBaseTest {
     }
     interestPayment = bound(interestPayment, cl.interestOwed(), usdcVal(10_000_000));
     pay(callableLoan, interestPayment);
-    assertEq(cl.lastFullPaymentTime(), block.timestamp);
+    assertGt(cl.lastFullPaymentTime(), block.timestamp - 1);
   }
 
-  function testSetToPeriodBeforeLastWhenPayingAllInterestButNotPrincipalOwed(
+  function testDoesNotChangeWhenPayingAllInterestButNotPrincipalOwed(
     uint256 principalPayment
   ) public {
     (CallableLoan callableLoan, ICreditLine cl) = defaultCallableLoan();

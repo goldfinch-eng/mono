@@ -14,7 +14,7 @@ import {TestConstants} from "../core/TestConstants.t.sol";
 contract CallableLoanBuilder {
   uint256 public constant DEFAULT_LIMIT = 1_000_000 * 1e6;
   uint256 public constant DEFAULT_APR = 5 * 1e16;
-  uint256 public constant DEFAULT_LATE_APR = 0;
+  uint256 public constant DEFAULT_LATE_APR = 1 * 1e16;
   uint256 public constant DEFAULT_NUM_LOCKUP_PERIODS = 2;
   IGoldfinchFactory private gfFactory;
   IMonthlyScheduleRepo private monthlyScheduleRepo;
@@ -30,6 +30,7 @@ contract CallableLoanBuilder {
     monthlyScheduleRepo = _monthlyScheduleRepo;
     limit = DEFAULT_LIMIT;
     apr = DEFAULT_APR;
+    lateFeeApr = DEFAULT_LATE_APR;
     numLockUpPeriods = DEFAULT_NUM_LOCKUP_PERIODS;
     fundableAt = block.timestamp;
   }
@@ -79,6 +80,11 @@ contract CallableLoanBuilder {
 
   function withFundableAt(uint256 _fundableAt) external returns (CallableLoanBuilder) {
     fundableAt = _fundableAt;
+    return this;
+  }
+
+  function withNumLockupPeriods(uint256 _numLockUpPeriods) external returns (CallableLoanBuilder) {
+    numLockUpPeriods = _numLockUpPeriods;
     return this;
   }
 

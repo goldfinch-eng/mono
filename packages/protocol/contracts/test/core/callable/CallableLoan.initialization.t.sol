@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
 import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
+import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
+
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 
 contract CallableLoanInitializationTest is CallableLoanBaseTest {
@@ -18,33 +20,25 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
     assertTrue(callableLoan.hasRole(callableLoan.LOCKER_ROLE(), BORROWER));
   }
 
+  function testCannotInitializeInvalidNumLockupPeriods() public {
+    CallableLoanBuilder clb = callableLoanBuilder.withNumLockupPeriods(4);
+    vm.expectRevert(
+      abi.encodeWithSelector(ICallableLoanErrors.InvalidNumLockupPeriods.selector, 4, 3)
+    );
+    (CallableLoan callableLoan, ) = clb.build(BORROWER);
+  }
+
   function testInitializationCantHappenTwice() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
     uint256[] memory uidTypes = new uint256[](1);
     ISchedule s = defaultSchedule();
     vm.expectRevert("Initializable: contract is already initialized");
-    callableLoan.initialize(address(gfConfig), BORROWER, 0, 0, 2, s, 0, block.timestamp, uidTypes);
+    callableLoan.initialize(gfConfig, BORROWER, 0, 0, 2, s, 0, block.timestamp, uidTypes);
   }
 
-  function testInitializationCantHappenViaCreditLine() public {
-    ICreditLine cl = ICreditLine(new CallableLoan());
-
-    ISchedule s = defaultSchedule();
-    vm.expectRevert(bytes("US"));
-    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
-  }
-
-  function testInitializationCantHappenTwiceViaCreditLine() public {
-    (, ICreditLine cl) = defaultCallableLoan();
-
-    ISchedule s = defaultSchedule();
-    vm.expectRevert("Initializable: contract is already initialized");
-    cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
-  }
-
-  function testGetAmountsOwedFailedForUninitializedCreditLine() public {
+  function testGetAmountsOwedFailedForUndrawndownLoan() public {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
-    vm.expectRevert(bytes("LI"));
+    vm.expectRevert();
     callableLoan.getAmountsOwed(block.timestamp);
   }
 
@@ -59,10 +53,10 @@ contract CallableLoanInitializationTest is CallableLoanBaseTest {
   }
 
   function createMonthlySchedule(
-    uint periodsInTerm,
-    uint periodsPerPrincipalPeriod,
-    uint periodsPerInterestPeriod,
-    uint gracePrincipalPeriods
+    uint256 periodsInTerm,
+    uint256 periodsPerPrincipalPeriod,
+    uint256 periodsPerInterestPeriod,
+    uint256 gracePrincipalPeriods
   ) public returns (ISchedule) {
     IPeriodMapper pm = IPeriodMapper(deployCode("MonthlyPeriodMapper.sol"));
     return

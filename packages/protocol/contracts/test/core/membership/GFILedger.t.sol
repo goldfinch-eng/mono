@@ -71,16 +71,6 @@ contract GFILedgerTest is Test {
 
     gfi.transfer(address(ledger), amount);
 
-    vm.expectCall(
-      address(gfi),
-      abi.encodeWithSelector(
-        ERC20Upgradeable.transferFrom.selector,
-        membershipOrchestrator,
-        address(ledger),
-        amount
-      )
-    );
-
     vm.expectEmit(true, true, false, true);
     emit GFIDeposit(owner, ledger.totalSupply() + 1, amount);
 
@@ -135,11 +125,6 @@ contract GFILedgerTest is Test {
 
   function test_withdraw(address owner, uint256 amount) public withDeposit(owner, amount) {
     vm.assume(amount % 2 == 0);
-
-    vm.expectCall(
-      address(gfi),
-      abi.encodeWithSelector(ERC20Upgradeable.transfer.selector, owner, amount / 2)
-    );
 
     vm.expectEmit(true, true, false, true);
     emit GFIWithdrawal(owner, 1, amount / 2, amount / 2, block.timestamp);

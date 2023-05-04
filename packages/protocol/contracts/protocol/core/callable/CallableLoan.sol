@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.18;
 
 // solhint-disable-next-line max-line-length
 import {IERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 // solhint-disable-next-line max-line-length
 import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import {ICallableLoan} from "../../../interfaces/ICallableLoan.sol";
-import {ILoan} from "../../../interfaces/ILoan.sol";
+import {ICallableLoan, LoanPhase} from "../../../interfaces/ICallableLoan.sol";
+import {ICallableLoanErrors} from "../../../interfaces/ICallableLoanErrors.sol";
+import {ILoan, LoanType} from "../../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../../interfaces/IRequiresUID.sol";
 import {IERC20UpgradeableWithDec} from "../../../interfaces/IERC20UpgradeableWithDec.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
@@ -23,7 +23,7 @@ import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall} from "./structs/Waterfall.sol";
 // solhint-disable-next-line max-line-length
-import {CallableCreditLine, CallableCreditLineLogic, SettledTrancheInfo, LoanState} from "./structs/CallableCreditLine.sol";
+import {CallableCreditLine, CallableCreditLineLogic, CheckpointedCallableCreditLineLogic, SettledTrancheInfo} from "./structs/CallableCreditLine.sol";
 import {StaleCallableCreditLine, StaleCallableCreditLineLogic} from "./structs/StaleCallableCreditLine.sol";
 import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 import {PaymentSchedule, PaymentScheduleLogic} from "../schedule/PaymentSchedule.sol";
@@ -37,10 +37,12 @@ import {CallableLoanAccountant} from "./CallableLoanAccountant.sol";
 contract CallableLoan is
   BaseUpgradeablePausable,
   ICallableLoan,
+  ICallableLoanErrors,
   ICreditLine,
   IRequiresUID,
   IVersioned
 {
+  using CheckpointedCallableCreditLineLogic for CallableCreditLine;
   using CallableLoanConfigHelper for IGoldfinchConfig;
   using SafeERC20 for IERC20UpgradeableWithDec;
   using SaturatingSub for uint256;
@@ -49,15 +51,20 @@ contract CallableLoan is
   Constants
   ================================================================================*/
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
+  // When splitting a pool token as part of submitting a call, the remainder on a
+  // pool token should be voided if it does not meet this threshold.
+  // Why 5e3 (half a cent)? Large enough to rule out rounding errors, but small
+  // enough to not materially effect USD accounting.
+  uint256 public constant SPLIT_TOKEN_DUST_THRESHOLD = 5e3;
+
   uint8 internal constant MAJOR_VERSION = 1;
-  uint8 internal constant MINOR_VERSION = 0;
+  uint8 internal constant MINOR_VERSION = 1;
   uint8 internal constant PATCH_VERSION = 0;
 
   /*================================================================================
   Storage State
   ================================================================================*/
   StaleCallableCreditLine private _staleCreditLine;
-  uint256 public fundableAt;
   bool public drawdownsPaused;
   uint256[] public allowedUIDTypes;
 
@@ -71,21 +78,9 @@ contract CallableLoan is
   /*================================================================================
   Initialization
   ================================================================================*/
-  /// Unsupported - only included for compatibility with ICreditLine.
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external override initializer {
-    revert("US");
-  }
 
   function initialize(
-    address _config,
+    IGoldfinchConfig _config,
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
@@ -94,39 +89,47 @@ contract CallableLoan is
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external initializer {
+  ) external override initializer {
     // NOTE: This check can be replaced with an after deploy verification rather than
     //       a require statement which increases bytecode size.
     // require(address(_config) != address(0) && address(_borrower) != address(0), "00");
+    if (_numLockupPeriods >= _schedule.periodsPerPrincipalPeriod()) {
+      revert InvalidNumLockupPeriods(_numLockupPeriods, _schedule.periodsPerPrincipalPeriod());
+    }
 
-    config = IGoldfinchConfig(_config);
-    address owner = config.protocolAdminAddress();
-    __BaseUpgradeablePausable__init(owner);
-    _staleCreditLine.initialize(
-      config,
-      _interestApr,
-      _numLockupPeriods,
-      _schedule,
-      _lateFeeApr,
-      _limit
-    );
+    config = _config;
     borrower = _borrower;
     createdAt = block.timestamp;
     allowedUIDTypes = _allowedUIDTypes;
 
-    _setupRole(LOCKER_ROLE, _borrower);
-    _setupRole(LOCKER_ROLE, owner);
-    _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+    {
+      address owner = config.protocolAdminAddress();
+      __BaseUpgradeablePausable__init(owner);
+
+      _setupRole(LOCKER_ROLE, _borrower);
+      _setupRole(LOCKER_ROLE, owner);
+      _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+    }
+
+    _staleCreditLine.initialize({
+      _config: _config,
+      _fundableAt: _fundableAt,
+      _numLockupPeriods: _numLockupPeriods,
+      _schedule: _schedule,
+      _interestApr: _interestApr,
+      _lateAdditionalApr: _lateFeeApr,
+      _limit: _limit
+    });
+    emit DrawdownsPaused(address(this));
   }
 
   /*================================================================================
   Main Public/External Write functions
   ================================================================================*/
   /// @inheritdoc ICallableLoan
-  /// @dev IA: Invalid amount - Call amount must be non-zero amount < than principal remaining.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @notice Supply capital to the loan.
+  /// @notice Submit a call request for the given amount of capital.
+  ///         The borrower is obligated to pay the call request back at the end of the
+  ///         corresponding call request period.
   /// @param callAmount Amount of capital to call back
   /// @param poolTokenId Pool token id to be called back.
   function submitCall(
@@ -139,20 +142,41 @@ contract CallableLoan is
     whenNotPaused
     returns (uint256 callRequestedTokenId, uint256 remainingTokenId)
   {
+    // 1. Checkpoint the credit line and perform basic validation on the call request.
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
-    require(
-      poolTokens.isApprovedOrOwner(msg.sender, poolTokenId) &&
-        hasAllowedUID(msg.sender) &&
-        tokenInfo.tranche == cl.uncalledCapitalTrancheIndex(),
-      "NA"
-    );
+    if (!poolTokens.isApprovedOrOwner(msg.sender, poolTokenId) || !hasAllowedUID(msg.sender)) {
+      revert NotAuthorizedToSubmitCall(msg.sender, poolTokenId);
+    }
+    if (tokenInfo.tranche != cl.uncalledCapitalTrancheIndex()) {
+      revert InvalidCallSubmissionPoolToken(poolTokenId);
+    }
 
-    // Pseudo-withdraw max while also caching the total amount of interest and principal withdrawable.
-    // Total interest & principal withdrawable are useful for calculating how much will be redeemed on
-    // the newly split pool tokens.
-    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = cl
+    if (callAmount == 0) {
+      revert ZeroCallSubmissionAmount();
+    }
+
+    if (
+      callAmount >
+      cl.proportionalCallablePrincipal({
+        trancheId: tokenInfo.tranche,
+        principalDeposited: tokenInfo.principalAmount
+      })
+    ) {
+      revert ExcessiveCallSubmissionAmount(
+        poolTokenId,
+        callAmount,
+        cl.proportionalCallablePrincipal({
+          trancheId: tokenInfo.tranche,
+          principalDeposited: tokenInfo.principalAmount
+        })
+      );
+    }
+
+    // 2. Determine the total amount of principal and interest that can be withdrawn
+    //    on the given pool token. Withdraw all of this amount.
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
         principal: tokenInfo.principalAmount,
@@ -160,28 +184,30 @@ contract CallableLoan is
       });
 
     {
-      uint netWithdrawableAmount = totalPrincipalWithdrawable -
+      uint256 netWithdrawableAmount = totalPrincipalWithdrawable -
         tokenInfo.principalRedeemed +
         totalInterestWithdrawable -
         tokenInfo.interestRedeemed;
       if (netWithdrawableAmount > 0) {
-        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount);
+        _withdraw(tokenInfo, poolTokenId, netWithdrawableAmount, cl);
       }
     }
 
-    {
-      uint256 callablePrincipal = cl.proportionalCallablePrincipal({
-        trancheId: tokenInfo.tranche,
-        principalDeposited: tokenInfo.principalAmount
-      });
-      require(callAmount > 0 && callablePrincipal >= callAmount, "IA");
-    }
-
-    (uint principalDepositedMoved, uint principalPaidMoved, , uint interestRedeemable) = cl
-      .submitCall(callAmount);
+    // 3. Account for the call request in the credit line - this will return the corresponding
+    //    amounts of principal deposited, principal paid, and interest redeemable which have
+    //    been moved from the pool token to the call request token.
+    (
+      uint256 principalDepositedMoved,
+      uint256 principalPaidRedeemable,
+      ,
+      uint256 interestRedeemable
+    ) = cl.submitCall(callAmount);
     interestRedeemable = (interestRedeemable * (100 - _reserveFundsFeePercent())) / 100;
 
     {
+      // 4. Mint a new token representing the call requested pool token.
+      //    Redeem the principal paid and interest redeemed to make sure a user cannot
+      //    double withdraw their redeemable balances on the call requested token.
       address owner = poolTokens.ownerOf(poolTokenId);
       callRequestedTokenId = poolTokens.mint(
         IPoolTokens.MintParams({
@@ -191,10 +217,13 @@ contract CallableLoan is
         owner
       );
 
-      poolTokens.redeem(callRequestedTokenId, principalPaidMoved, interestRedeemable);
+      poolTokens.redeem(callRequestedTokenId, principalPaidRedeemable, interestRedeemable);
 
-      // TODO: Determine "dust" threshold at which we should just not mint a remaining token.
-      if (tokenInfo.principalAmount - principalDepositedMoved > 0) {
+      // 5. If an above SPLIT_TOKEN_DUST_THRESHOLD amount of principal remains on the pool token,
+      //    mint a new token representing the remainder.
+      //    Redeem the principal paid and interest redeemed to make sure a user cannot
+      //    double withdraw their redeemable balances on the call requested token.
+      if (tokenInfo.principalAmount - principalDepositedMoved > SPLIT_TOKEN_DUST_THRESHOLD) {
         remainingTokenId = poolTokens.mint(
           IPoolTokens.MintParams({
             principalAmount: tokenInfo.principalAmount - principalDepositedMoved,
@@ -202,27 +231,19 @@ contract CallableLoan is
           }),
           owner
         );
-        // TODO: Remove scaffolding
-        //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-        //       This scaffolding is to verify the error is within some reasonable margin.
-        require(
-          principalPaidMoved <= totalPrincipalWithdrawable,
-          "Principal withdrawable is less than principal move"
-        );
-        require(
-          interestRedeemable <= totalInterestWithdrawable,
-          "Interest withdrawable is less than interest moved"
-        );
+
+        assert(principalPaidRedeemable <= totalPrincipalWithdrawable);
+        assert(interestRedeemable <= totalInterestWithdrawable);
+
         poolTokens.redeem(
           remainingTokenId,
-          totalPrincipalWithdrawable - principalPaidMoved,
+          totalPrincipalWithdrawable - principalPaidRedeemable,
           totalInterestWithdrawable - interestRedeemable
         );
-      } else {
-        remainingTokenId = 0;
       }
     }
 
+    // 6. Redeem the original pool token's balance so we can burn it. Then burn it.
     poolTokens.redeem(poolTokenId, tokenInfo.principalAmount - totalPrincipalWithdrawable, 0);
     poolTokens.burn(poolTokenId);
 
@@ -231,7 +252,7 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
   function deposit(
@@ -243,7 +264,7 @@ contract CallableLoan is
 
   /// @inheritdoc ILoan
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* -
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @param deadline deadline of permit operation
   /// @param v v portion of signature
@@ -280,16 +301,18 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev LEN: argument length mismatch
   function withdrawMultiple(
     uint256[] calldata tokenIds,
     uint256[] calldata amounts
   ) external override nonReentrant whenNotPaused {
-    require(tokenIds.length == amounts.length, "LN");
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
+    if (tokenIds.length != amounts.length) {
+      revert ArrayLengthMismatch(tokenIds.length, amounts.length);
+    }
 
     for (uint256 i = 0; i < amounts.length; i++) {
       IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenIds[i]);
-      _withdraw(tokenInfo, tokenIds[i], amounts[i]);
+      _withdraw(tokenInfo, tokenIds[i], amounts[i], cl);
     }
   }
 
@@ -307,13 +330,15 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev DP: drawdowns paused
-  /// @dev ZA: Zero amount - must be greater than 0
   function drawdown(
     uint256 amount
   ) external override(ICreditLine, ILoan) nonReentrant onlyLocker whenNotPaused {
-    require(!drawdownsPaused, "DP");
-    require(amount > 0, "ZA");
+    if (drawdownsPaused) {
+      revert CannotDrawdownWhenDrawdownsPaused();
+    }
+    if (amount == 0) {
+      revert ZeroDrawdownAmount();
+    }
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
 
     cl.drawdown(amount);
@@ -323,7 +348,6 @@ contract CallableLoan is
   }
 
   /// @inheritdoc ILoan
-  /// @dev ZA: zero amount
   function pay(
     uint256 amount
   )
@@ -351,25 +375,75 @@ contract CallableLoan is
   /// Set accepted UID types for the loan.
   /// Requires that users have not already begun to deposit.
   function setAllowedUIDTypes(uint256[] calldata ids) external onlyLocker {
-    require(_staleCreditLine.checkpoint().totalPrincipalDeposited() == 0, "AF");
+    if (_staleCreditLine.totalPrincipalDeposited() != 0) {
+      revert CannotSetAllowedUIDTypesAfterDeposit();
+    }
     allowedUIDTypes = ids;
   }
 
   /// @inheritdoc ILoan
   function setFundableAt(uint256 newFundableAt) external override onlyLocker {
-    fundableAt = newFundableAt;
+    _staleCreditLine.checkpoint().setFundableAt(newFundableAt);
   }
 
   /*================================================================================
   Main Public/External View functions
   ================================================================================*/
+
+  /// @inheritdoc ILoan
+  function getLoanType() external pure override returns (LoanType) {
+    return LoanType.CallableLoan;
+  }
+
+  function getFundableAt() external view returns (uint256) {
+    return _staleCreditLine.fundableAt();
+  }
+
   function getAllowedUIDTypes() external view override returns (uint256[] memory) {
     return allowedUIDTypes;
   }
 
+  function inLockupPeriod() public view override returns (bool) {
+    return _staleCreditLine.inLockupPeriod();
+  }
+
+  function numLockupPeriods() public view override returns (uint256) {
+    return _staleCreditLine.numLockupPeriods();
+  }
+
+  /// @inheritdoc ICallableLoan
+  function estimateOwedInterestAt(
+    uint256 assumedBalance,
+    uint256 timestamp
+  ) public view override returns (uint256) {
+    return
+      (_staleCreditLine.totalInterestAccrued() +
+        CallableLoanAccountant.calculateInterest(
+          timestamp - block.timestamp,
+          assumedBalance,
+          _staleCreditLine.interestApr()
+        )).saturatingSub(_staleCreditLine.totalInterestPaid());
+  }
+
+  /// @inheritdoc ICallableLoan
+  function estimateOwedInterestAt(uint256 timestamp) external view override returns (uint256) {
+    return estimateOwedInterestAt(interestBearingBalance(), timestamp);
+  }
+
+  /// @inheritdoc ICallableLoan
+  function loanPhase() public view override returns (LoanPhase) {
+    return _staleCreditLine.loanPhase();
+  }
+
+  /// TODO: Low priority tests - currently only used for tests and frontend
+  /// @inheritdoc ICallableLoan
+  function interestBearingBalance() public view override returns (uint256) {
+    return
+      _staleCreditLine.totalPrincipalDeposited() -
+      _staleCreditLine.totalPrincipalPaidAt(block.timestamp);
+  }
+
   /// @inheritdoc ILoan
-  /// @dev IT: invalid timestamp
-  /// @dev LI: loan inactive
   function getAmountsOwed(
     uint256 timestamp
   )
@@ -382,14 +456,14 @@ contract CallableLoan is
       uint256 returnedPrincipalOwed
     )
   {
-    require(timestamp >= block.timestamp, "IT");
-    // TODO: Verify this is the correct loan inactive condition.
-    require(termEndTime() > 0, "LI");
+    if (timestamp < block.timestamp) {
+      revert InputTimestampInThePast(timestamp);
+    }
 
     return (interestOwedAt(timestamp), interestAccruedAt(timestamp), principalOwedAt(timestamp));
   }
 
-  function uncalledCapitalTrancheIndex() public view returns (uint256) {
+  function uncalledCapitalTrancheIndex() public view override returns (uint256) {
     return _staleCreditLine.uncalledCapitalTrancheIndex();
   }
 
@@ -407,9 +481,11 @@ contract CallableLoan is
   }
 
   function getCallRequestPeriod(
-    uint callRequestPeriodIndex
+    uint256 callRequestPeriodIndex
   ) external view returns (CallRequestPeriod memory) {
-    require(callRequestPeriodIndex < uncalledCapitalTrancheIndex());
+    if (callRequestPeriodIndex >= uncalledCapitalTrancheIndex()) {
+      revert OutOfCallRequestPeriodBounds(uncalledCapitalTrancheIndex() - 1);
+    }
     SettledTrancheInfo memory info = _staleCreditLine.getSettledTrancheInfo(callRequestPeriodIndex);
     return
       CallRequestPeriod({
@@ -420,14 +496,11 @@ contract CallableLoan is
       });
   }
 
-  function interestBearingBalance() public view returns (uint256) {
-    return _staleCreditLine.totalPrincipalOutstandingWithoutReserves();
-  }
-
-  /// @dev OU: Only the uncalled tranche can call
-  function availableToCall(uint256 tokenId) public view returns (uint256) {
+  function availableToCall(uint256 tokenId) public view override returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    require(tokenInfo.tranche == uncalledCapitalTrancheIndex(), "OU");
+    if (tokenInfo.tranche != uncalledCapitalTrancheIndex()) {
+      revert MustSubmitCallToUncalledTranche(tokenInfo.tranche, uncalledCapitalTrancheIndex());
+    }
     return
       _staleCreditLine.proportionalCallablePrincipal({
         trancheId: tokenInfo.tranche,
@@ -449,27 +522,25 @@ contract CallableLoan is
   ================================================================================*/
   function _pay(uint256 amount) internal returns (ILoan.PaymentAllocation memory) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    require(amount > 0, "ZA");
+    if (amount == 0) {
+      revert ZeroPaymentAmount();
+    }
 
-    uint interestOwedBeforePayment = cl.interestOwed();
-    uint interestAccruedBeforePayment = cl.interestAccrued();
-
-    uint timeUntilNextPrincipalSettlemenet = cl
-      .nextPrincipalDueTimeAt(block.timestamp)
-      .saturatingSub(block.timestamp);
     ILoan.PaymentAllocation memory pa = CallableLoanAccountant.allocatePayment({
       paymentAmount: amount,
-      interestOwed: interestOwedBeforePayment,
-      interestAccrued: interestAccruedBeforePayment,
+      interestOwed: cl.interestOwed(),
+      interestAccrued: cl.interestAccrued(),
       principalOwed: cl.principalOwed(),
       interestRate: cl.interestApr(),
-      timeUntilNextPrincipalSettlemenet: timeUntilNextPrincipalSettlemenet,
-      balance: cl.totalPrincipalOutstanding()
+      balance: cl.totalPrincipalOutstanding(),
+      timeUntilNextPrincipalSettlement: cl.nextPrincipalDueTimeAt(block.timestamp).saturatingSub(
+        block.timestamp
+      ),
+      guaranteedFutureInterestPaid: cl.totalInterestPaid().saturatingSub(cl.totalInterestAccrued())
     });
 
     uint256 totalInterestPayment = pa.owedInterestPayment + pa.accruedInterestPayment;
     uint256 totalPrincipalPayment = pa.principalPayment + pa.additionalBalancePayment;
-    uint256 totalPayment = totalInterestPayment + totalPrincipalPayment;
 
     uint256 reserveFundsFee = (_reserveFundsFeePercent() * totalInterestPayment) / 100;
 
@@ -479,30 +550,35 @@ contract CallableLoan is
       pool: address(this),
       interest: totalInterestPayment,
       principal: totalPrincipalPayment,
-      remaining: 0,
+      remaining: pa.paymentRemaining,
       reserve: reserveFundsFee
     });
 
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), totalPayment);
+    config.getUSDC().safeTransferFrom(
+      msg.sender,
+      address(this),
+      totalInterestPayment + totalPrincipalPayment
+    );
     config.getUSDC().safeTransfer(config.reserveAddress(), reserveFundsFee);
     emit ReserveFundsCollected(address(this), reserveFundsFee);
     return pa;
   }
 
-  /// @dev ZA: zero amount - must be greater than 0.
-  /// @dev IT: invalid tranche - must be uncalled capital tranche
-  /// @dev NA: not authorized. Must have correct UID or be go listed
-  /// @dev NF: not open for funding. Must be after fundableAt
   /// @notice Supply capital to the loan.
-  /// @param tranche *UNSUPPORTED* - Should always be uncalled capital tranche index.
+  /// @param tranche Should always be uncalled capital tranche index.
   /// @param amount amount of capital to supply
   /// @return tokenId NFT representing your position in this pool
   function _deposit(uint256 tranche, uint256 amount) internal returns (uint256) {
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    require(amount > 0, "ZA");
-    require(tranche == cl.uncalledCapitalTrancheIndex(), "IT");
-    require(hasAllowedUID(msg.sender), "NA");
-    require(block.timestamp >= fundableAt, "NF");
+    if (amount == 0) {
+      revert ZeroDepositAmount();
+    }
+    if (tranche != cl.uncalledCapitalTrancheIndex()) {
+      revert MustDepositToUncalledTranche(tranche, cl.uncalledCapitalTrancheIndex());
+    }
+    if (!hasAllowedUID(msg.sender)) {
+      revert InvalidUIDForDepositor(msg.sender);
+    }
 
     cl.deposit(amount);
     uint256 tokenId = config.getPoolTokens().mint(
@@ -515,50 +591,68 @@ contract CallableLoan is
     return tokenId;
   }
 
-  /// @dev ZA: Zero amount
-  /// @dev IA: Invalid amount - amount too large
-  /// @dev DL: Deposits Locked
   function _withdraw(
     IPoolTokens.TokenInfo memory tokenInfo,
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256, uint256) {
-    require(amount > 0, "ZA");
-    IPoolTokens poolTokens = config.getPoolTokens();
-    /// @dev NA: not authorized
-    require(poolTokens.isApprovedOrOwner(msg.sender, tokenId) && hasAllowedUID(msg.sender), "NA");
-
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
-    // calculate the amount that will ever be redeemable
-    (uint interestWithdrawable, uint principalWithdrawable) = _availableToWithdraw(tokenInfo);
+    return _withdraw(tokenInfo, tokenId, amount, cl);
+  }
 
-    require(amount <= interestWithdrawable + principalWithdrawable, "IA");
+  function _withdraw(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 tokenId,
+    uint256 amount,
+    CallableCreditLine storage cl
+  ) internal returns (uint256, uint256) {
+    if (amount == 0) {
+      revert ZeroWithdrawAmount();
+    }
+    IPoolTokens poolTokens = config.getPoolTokens();
+    if (!poolTokens.isApprovedOrOwner(msg.sender, tokenId) || !hasAllowedUID(msg.sender)) {
+      revert NotAuthorizedToWithdraw(msg.sender, tokenId);
+    }
+
+    // calculate the amount that will ever be redeemable
+    (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(
+      tokenInfo,
+      cl
+    );
+
+    if (amount > interestWithdrawable + principalWithdrawable) {
+      revert WithdrawAmountExceedsWithdrawable(
+        amount,
+        interestWithdrawable + principalWithdrawable
+      );
+    }
 
     // prefer to withdraw interest first, then principal
-    uint interestToRedeem = Math.min(interestWithdrawable, amount);
-    uint amountAfterInterest = amount - interestToRedeem;
-    uint principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
+    uint256 interestToRedeem = Math.min(interestWithdrawable, amount);
+    uint256 amountAfterInterest = amount - interestToRedeem;
+    uint256 principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
     {
-      if (cl.loanState() == LoanState.InProgress) {
+      LoanPhase _loanPhase = cl.loanPhase();
+      if (_loanPhase == LoanPhase.InProgress) {
         poolTokens.redeem({
           tokenId: tokenId,
           principalRedeemed: principalToRedeem,
           interestRedeemed: interestToRedeem
         });
-      } else if (cl.loanState() == LoanState.FundingPeriod) {
+      } else if (_loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
-        cl.withdraw(tokenInfo.tranche, principalToRedeem);
+        cl.withdraw(principalToRedeem);
         poolTokens.withdrawPrincipal({tokenId: tokenId, principalAmount: principalToRedeem});
-      } else if (cl.loanState() == LoanState.DrawdownPeriod) {
-        // Could currently just use a else statement, but this is more explicit and future-proof.
-        revert("IS");
+      } else {
+        revert CannotWithdrawInDrawdownPeriod();
       }
     }
 
     config.getUSDC().safeTransfer(msg.sender, interestToRedeem + principalToRedeem);
 
+    // While owner is the label of the first argument, it is actually the sender of the transaction.
     emit WithdrawalMade({
       owner: msg.sender,
       tranche: tokenInfo.tranche,
@@ -571,24 +665,21 @@ contract CallableLoan is
   }
 
   function _withdrawMax(uint256 tokenId) internal returns (uint256, uint256) {
-    /* CallableCreditLine storage cl = */ _staleCreditLine.checkpoint();
+    CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
-    uint totalWithdrawable = interestWithdrawable + principalWithdrawable;
-    if (totalWithdrawable == 0) {
-      return (0, 0);
-    }
-    return _withdraw(tokenInfo, tokenId, totalWithdrawable);
+    uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
+    return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
   /*================================================================================
   PaymentSchedule proxy functions
   ================================================================================*/
-  function nextPrincipalDueTime() public view returns (uint) {
+  function nextPrincipalDueTime() public view override returns (uint256) {
     return _staleCreditLine.nextPrincipalDueTime();
   }
 
-  function nextDueTimeAt(uint256 timestamp) public view returns (uint256) {
+  function nextDueTimeAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.nextDueTimeAt(timestamp);
   }
 
@@ -609,32 +700,62 @@ contract CallableLoan is
 
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
-  ) internal view returns (uint interestAvailable, uint principalAvailable) {
-    if (tokenInfo.principalAmount == 0) {
-      // Bail out early to account for proportion of zero.
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
+    // Bail out early to account for proportion of zero or invalid phase for withdrawal
+    if (tokenInfo.principalAmount == 0 || loanPhase() == LoanPhase.DrawdownPeriod) {
       return (0, 0);
     }
 
-    (uint totalInterestWithdrawable, uint totalPrincipalWithdrawable) = _staleCreditLine
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = _staleCreditLine
       .proportionalInterestAndPrincipalAvailable({
         trancheId: tokenInfo.tranche,
         principal: tokenInfo.principalAmount,
         feePercent: _reserveFundsFeePercent()
       });
 
-    // TODO: Remove scaffolding
-    //       Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-    //       This scaffolding is to verify the error is within some reasonable margin.
-    require(
-      tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1,
-      "Principal withdrawable is less than principal redeemed"
-    );
-    require(
-      tokenInfo.interestRedeemed <= totalInterestWithdrawable,
-      "Interest withdrawable is less than interest redeemed"
-    );
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
+  }
+
+  function _availableToWithdraw(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    CallableCreditLine storage cl
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
+    if (tokenInfo.principalAmount == 0) {
+      // Bail out early to account for proportion of zero.
+      return (0, 0);
+    }
+
+    (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
+      .proportionalInterestAndPrincipalAvailable({
+        trancheId: tokenInfo.tranche,
+        principal: tokenInfo.principalAmount,
+        feePercent: _reserveFundsFeePercent()
+      });
+
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
+  }
+
+  function _availableToWithdrawGivenProportions(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 totalInterestWithdrawable,
+    uint256 totalPrincipalWithdrawable
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
+    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
+    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
+
     return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalInterestWithdrawable.saturatingSub(tokenInfo.interestRedeemed),
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
     );
   }
@@ -695,7 +816,7 @@ contract CallableLoan is
 
   /// @inheritdoc ICreditLine
   function lateFeeApr() public view override returns (uint256) {
-    return _staleCreditLine.lateFeeApr();
+    return _staleCreditLine.lateAdditionalApr();
   }
 
   /// @inheritdoc ICreditLine
@@ -703,11 +824,13 @@ contract CallableLoan is
     return _staleCreditLine.isLate();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccrued() public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestAccruedAt(timestamp);
@@ -718,26 +841,31 @@ contract CallableLoan is
     return _staleCreditLine.totalInterestPaid();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwed() public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwed();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function totalInterestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.totalInterestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestOwedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestOwedAt(timestamp);
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccrued() public view override returns (uint256) {
     return _staleCreditLine.interestAccrued();
   }
 
+  /// @notice If a checkpoint has not occurred, late fees may be overestimated beyond the next due time.
   /// @inheritdoc ICreditLine
   function interestAccruedAt(uint256 timestamp) public view override returns (uint256) {
     return _staleCreditLine.interestAccruedAt(timestamp);
@@ -780,25 +908,27 @@ contract CallableLoan is
 
   /// Unsupported in callable loans.
   function pay(
-    uint256 principalPayment,
-    uint256 interestPayment
-  ) external override(ICreditLine) nonReentrant whenNotPaused returns (PaymentAllocation memory) {
-    revert("US");
+    uint256,
+    uint256
+  ) external pure override(ICreditLine) returns (PaymentAllocation memory) {
+    revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
-  function maxLimit() external view override returns (uint256) {
-    revert("US");
+  function maxLimit() external pure override returns (uint256) {
+    revert UnsupportedOperation();
   }
 
   /// Unsupported in callable loans.
-  function setMaxLimit(uint256 newAmount) external override onlyAdmin {
-    revert("US");
+
+  function setMaxLimit(uint256) external pure override {
+    revert UnsupportedOperation();
   }
 
   /// Unsupported ICreditLine method kept for ICreditLine conformance
-  function setLimit(uint256 newAmount) external override onlyAdmin {
-    revert("US");
+
+  function setLimit(uint256) external pure override {
+    revert UnsupportedOperation();
   }
 
   /*================================================================================
@@ -809,9 +939,10 @@ contract CallableLoan is
     (version[0], version[1], version[2]) = (MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
   }
 
-  /// @dev NA: not authorized. not locker
   modifier onlyLocker() {
-    require(hasRole(LOCKER_ROLE, msg.sender), "NA");
+    if (!hasRole(LOCKER_ROLE, msg.sender)) {
+      revert RequiresLockerRole(msg.sender);
+    }
     _;
   }
 }

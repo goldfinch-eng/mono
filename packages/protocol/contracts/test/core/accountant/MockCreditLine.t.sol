@@ -151,17 +151,6 @@ contract MockCreditLine is ICreditLine {
 
   function setMaxLimit(uint256) external override {}
 
-  //NOTE: Has initializer modifier just to please solhint.json
-  function initialize(
-    address _config,
-    address owner,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    ISchedule _schedule,
-    uint256 _lateFeeApr
-  ) external override initializer {}
-
   function pay(
     uint paymentAmount
   ) external override returns (ITranchedPool.PaymentAllocation memory) {}
@@ -191,9 +180,5 @@ contract MockCreditLine is ICreditLine {
 
   function setInterestApr(uint256 __interestApr) external {
     _interestApr = __interestApr;
-  }
-
-  modifier initializer() {
-    _;
   }
 }
