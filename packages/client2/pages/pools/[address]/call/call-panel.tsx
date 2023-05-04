@@ -45,6 +45,7 @@ interface CallPanel {
 export function CallPanel({ className, callableLoan, poolTokens }: CallPanel) {
   const repaymentStatus = getLoanRepaymentStatus(callableLoan);
   const shouldDisableCalls =
+    true || // TODO: Re-enable calls - temporarily disabled while waiting on gov approval of upgrades
     callableLoan.inLockupPeriod ||
     callableLoan.loanPhase !== "InProgress" ||
     repaymentStatus === LoanRepaymentStatus.Repaid;
