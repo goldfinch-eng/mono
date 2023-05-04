@@ -1,3 +1,5 @@
+import {setTimeout} from "timers/promises"
+
 import * as Sentry from "@sentry/node"
 import {HandlerParams} from "../types"
 
@@ -36,6 +38,11 @@ export default function handler<T>(
       throw e
     } finally {
       transaction.finish()
+
+      // Give sentry time to send the transaction data. Without this, the autotask
+      // sometimes closes the entire process and we lose all traces. 700ms was
+      // empirically found to give enough time for a request to be sent.
+      await setTimeout(700)
     }
   }
 }
