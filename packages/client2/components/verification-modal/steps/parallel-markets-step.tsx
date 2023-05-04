@@ -45,7 +45,7 @@ export function ParallelMarketsStep() {
                 "redirect_uri",
                 `${window.location.origin}/account`
               );
-              sessionStorage.setItem(PARALLEL_MARKETS.STATE_KEY, state);
+              localStorage.setItem(PARALLEL_MARKETS.STATE_KEY, state);
               window.location.href = parallelMarketsOauthUrl.toString();
             }}
             target="_blank"
