@@ -74,11 +74,11 @@ export function SeniorPoolSupplyPanel({
             },
           }}
         />
-        <Alert className="mb-6 text-left" type="info" hasIcon={false}>
+        <Alert className="mb-6 text-justify" type="info" hasIcon={false}>
           <div className="mb-2 flex">
             <div className="text-md mx-1 font-bold">Withdrawal Requests</div>
           </div>
-          <p>
+          <p className="my-2">
             Based on the withdrawal queue (~$42,000) and the projected
             repayments by borrowers, you may not be able to withdraw your assets
             for an extended period of time. Currently, the estimated average
@@ -90,7 +90,7 @@ export function SeniorPoolSupplyPanel({
             of factors.
           </p>
         </Alert>
-        <p className="mb-6 text-left text-xs text-sand-400">
+        <p className="mb-6 text-justify text-xs text-sand-400">
           By clicking “Confirm” below, I hereby agree and acknowledge that I am
           investing capital in an asset that may not be available to withdraw.
         </p>
