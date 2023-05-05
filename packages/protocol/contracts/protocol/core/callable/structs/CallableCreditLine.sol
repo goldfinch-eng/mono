@@ -32,13 +32,21 @@ using CallableCreditLineLogic for CallableCreditLine global;
  *         See "./notes.md" for notes on entities in the CallableCreditLine
  */
 
-// TODO: Add notes to fields to describe each (pseudo-natspec)
+/// @param _fundableAt When LoanPhase.Funding begins (before is LoanPhase.Prefunding)
+/// @param _limit The maximum amount of capital which can be deposited in the loan
+/// @param _interestApr The interest APR of the loan with 1e18 decimal places (e.g. 145000000000000000 is 14.5% APR)
+/// @param _lateAdditionalApr The additional APR of the loan when late on repayments.
+///                           1e18 decimal places just like _interestApr
 /// @param _numLockupPeriods Describes when newly submitted call requests are rolled over
 ///                          to the next call request period.
 ///                          Number of periods is relative to the end date of a call request period.
 ///                          e.g. if _numLockupPeriods is 2, then newly submitted call requests
 ///                          in the last two periods of a call request period will be rolled over
 ///                          to the next call request period.
+/// @param _checkpointedAsOf The timestamp of the last time the loan was checkpointed.
+///                          Checkpoint details should be an internal concern, solely used for accounting of interest.
+/// @param _lastFullPaymentTime The timestamp of the last time the loan was fully paid.
+///                             This can be up to two periods after now, since a paymentcan pay off future obligations.
 struct CallableCreditLine {
   IGoldfinchConfig _config;
   uint256 _fundableAt;
