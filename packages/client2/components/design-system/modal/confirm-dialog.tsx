@@ -11,6 +11,7 @@ import { Modal } from "./modal";
  */
 export function confirmDialog(
   children: ReactNode,
+  title = "Alert",
   includeButtons = true
 ): Promise<boolean> {
   const confirmRoot = document.createElement("div");
@@ -22,7 +23,7 @@ export function confirmDialog(
       document.body.removeChild(confirmRoot);
     };
     render(
-      <Modal title="Alert" isOpen size="xs" onClose={handleClose(false)}>
+      <Modal title={title} isOpen size="xs" onClose={handleClose(false)}>
         <div className="text-center">{children}</div>
         {includeButtons ? (
           <div className="mt-4 flex gap-4">
