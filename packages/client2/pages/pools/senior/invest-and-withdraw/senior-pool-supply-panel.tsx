@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  Alert,
+  AssetBox,
   Button,
   Checkbox,
   DollarInput,
   Form,
+  Icon,
   InfoIconTooltip,
   Link,
   confirmDialog,
@@ -20,6 +23,7 @@ import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated
 import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
+import { commify } from "ethers/lib/utils.js";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -60,7 +64,38 @@ export function SeniorPoolSupplyPanel({
     }
 
     const investmentAmountConfirmed = await confirmDialog(
-      <>Random</>,
+      <>
+        <AssetBox
+          asset={{
+            name: "Total Investment",
+            description: "",
+            usdcAmount: {
+              token: "USDC",
+              amount: utils.parseUnits(data.supply, USDC_DECIMALS),
+            },
+          }}
+        />
+        <Alert className="mb-6 text-left" type="info">
+          <div className="mb-2 flex">
+            <div className="text-md mx-1 font-bold">Withdrawal Requests</div>
+          </div>
+          <p>
+            Based on the withdrawal queue (~$42,000) and the projected
+            repayments by borrowers, you may not be able to withdraw your assets
+            for an extended period of time. Currently, the estimated average
+            withdrawal time for ${commify(data.supply)} is 24 months.
+          </p>
+          <p>
+            Senior Pool liquidity constantly changes, so the actual time to
+            withdraw your assets may be shorter or longer depending on a variety
+            of factors.
+          </p>
+        </Alert>
+        <p className="text-left text-sm text-sand-400">
+          By clicking “Confirm” below, I hereby agree and acknowledge that I am
+          investing capital in an asset that may not be available to withdraw.
+        </p>
+      </>,
       "Confirm Investment"
     );
 
