@@ -1,5 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { commify } from "ethers/lib/utils.js";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -10,7 +11,6 @@ import {
   Checkbox,
   DollarInput,
   Form,
-  Icon,
   InfoIconTooltip,
   Link,
   confirmDialog,
@@ -23,7 +23,6 @@ import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated
 import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { isSmartContract, useWallet } from "@/lib/wallet";
-import { commify } from "ethers/lib/utils.js";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -75,7 +74,7 @@ export function SeniorPoolSupplyPanel({
             },
           }}
         />
-        <Alert className="mb-6 text-left" type="info">
+        <Alert className="mb-6 text-left" type="info" hasIcon={false}>
           <div className="mb-2 flex">
             <div className="text-md mx-1 font-bold">Withdrawal Requests</div>
           </div>
@@ -91,7 +90,7 @@ export function SeniorPoolSupplyPanel({
             of factors.
           </p>
         </Alert>
-        <p className="text-left text-sm text-sand-400">
+        <p className="mb-6 text-left text-xs text-sand-400">
           By clicking “Confirm” below, I hereby agree and acknowledge that I am
           investing capital in an asset that may not be available to withdraw.
         </p>
