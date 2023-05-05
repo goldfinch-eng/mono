@@ -10,6 +10,7 @@ import {
   Form,
   InfoIconTooltip,
   Link,
+  confirmDialog,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
@@ -55,6 +56,15 @@ export function SeniorPoolSupplyPanel({
 
   const onSubmit = async (data: FormFields) => {
     if (!account || !signer) {
+      return;
+    }
+
+    const investmentAmountConfirmed = await confirmDialog(
+      <>Random</>,
+      "Confirm Investment"
+    );
+
+    if (!investmentAmountConfirmed) {
       return;
     }
 
