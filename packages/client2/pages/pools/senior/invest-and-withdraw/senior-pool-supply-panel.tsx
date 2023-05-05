@@ -79,7 +79,7 @@ export function SeniorPoolSupplyPanel({
             <div className="text-md mx-1 font-bold">Withdrawal Requests</div>
           </div>
           <p className="my-2">
-            Based on the withdrawal queue (~$42,000) and the projected
+            Based on the withdrawal queue (~$42,000,000) and the projected
             repayments by borrowers, you may not be able to withdraw your assets
             for an extended period of time. Currently, the estimated average
             withdrawal time for ${commify(data.supply)} is 24 months.
