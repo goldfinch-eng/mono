@@ -32,6 +32,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   using TranchingLogic for ITranchedPool.PoolSlice;
   using TranchingLogic for ITranchedPool.TrancheInfo;
   using SafeERC20Transfer for IERC20withDec;
+  using SafeMathUpgradeable for uint256;
 
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");

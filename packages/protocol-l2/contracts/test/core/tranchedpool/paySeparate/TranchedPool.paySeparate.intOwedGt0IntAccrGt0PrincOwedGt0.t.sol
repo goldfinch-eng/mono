@@ -29,6 +29,7 @@ import {TranchedPoolBaseTest} from "../BaseTranchedPool.t.sol";
  */
 contract TranchedPoolPaySeparateIntOwedGt0IntAccrGt0PrincOwedGt0 is TranchedPoolBaseTest {
   using SafeMathUpgradeable for uint256;
+  using SaturatingSub for uint256;
 
   TranchedPool private tp;
   CreditLine private cl;

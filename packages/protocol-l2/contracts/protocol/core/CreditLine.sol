@@ -32,6 +32,7 @@ contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable
   using ConfigHelper for GoldfinchConfig;
   using PaymentScheduleLib for PaymentSchedule;
   using SaturatingSub for uint256;
+  using SafeMathUpgradeable for uint256;
 
   uint256 internal constant INTEREST_DECIMALS = 1e18;
   uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
