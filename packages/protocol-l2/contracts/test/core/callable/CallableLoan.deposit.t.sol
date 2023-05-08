@@ -16,8 +16,6 @@ import {CallableLoanBaseTest} from "./BaseCallableLoan.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
-import {Address} from "openzeppelin-contracts-0-8-x/utils/Address.sol";
-
 contract CallableLoanDepositTest is CallableLoanBaseTest {
   using SaturatingSub for uint256;
   event DepositMade(
