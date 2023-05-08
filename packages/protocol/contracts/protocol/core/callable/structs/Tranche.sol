@@ -14,7 +14,8 @@ using TrancheLogic for Tranche global;
  *         - Drawdown of funds
  *         - Repayment of borrowed funds
  *         - Withdrawal of paid funds
- *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ *         See "/packages/docs/docs/reference/contracts/core/callable/internal-structure.md" for notes on
+ *         relationships between struct entities in Callable Loans.
  */
 
 struct Tranche {

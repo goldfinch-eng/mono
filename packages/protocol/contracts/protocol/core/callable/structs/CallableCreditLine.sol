@@ -29,7 +29,8 @@ using CallableCreditLineLogic for CallableCreditLine global;
  *         - Drawdown of funds which should start the loan.
  *         - Repayment of borrowed funds.
  *         - Withdrawal of undrawndown funds which were not used to drawdown the loan.
- *         See "./notes.md" for notes on entities in the CallableCreditLine
+ *         See "/packages/docs/docs/reference/contracts/core/callable/internal-structure.md" for notes on
+ *         relationships between struct entities in Callable Loans.
  */
 
 /// @param _fundableAt When LoanPhase.Funding begins (before is LoanPhase.Prefunding)
