@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
