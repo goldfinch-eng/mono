@@ -13,8 +13,9 @@ const gtmThirdPartyOrigins = [
 // Note: we attempted to have a very restrictive connect-src and image-src, but the various third-party modules we use have so many external dependencies that it was difficult to list them all out (and they're subject to change without warning)
 // ! script-src unsafe-inline is required for MetaMask to work. On FireFox the MetaMask extension is considered an inline script. Perplexingly, this is not the case on Chrome.
 const ContentSecurityPolicy = `
-  script-src 'self' 'unsafe-inline' ${gtmThirdPartyOrigins.join(" ")} ${process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "" // Next.js devtools (like fast refresh) are eval'd scripts
-  };
+  script-src 'self' 'unsafe-inline' ${gtmThirdPartyOrigins.join(" ")} ${
+  process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "" // Next.js devtools (like fast refresh) are eval'd scripts
+};
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
   font-src 'self' https://fonts.gstatic.com/;
   frame-src 'self' https://withpersona.com/;
@@ -99,11 +100,6 @@ const nextConfig = {
       {
         source: "/",
         destination: "/earn",
-        permanent: false,
-      },
-      {
-        source: "/verify",
-        destination: "/account",
         permanent: false,
       },
     ];

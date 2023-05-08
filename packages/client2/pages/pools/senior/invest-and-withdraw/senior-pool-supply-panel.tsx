@@ -73,8 +73,9 @@ export function SeniorPoolSupplyPanel({
               amount: utils.parseUnits(data.supply, USDC_DECIMALS),
             },
           }}
+          omitWrapperStyle
         />
-        <Alert className="mb-6 text-justify" type="info" hasIcon={false}>
+        <Alert className="my-6 text-justify" type="info" hasIcon={false}>
           <div className="mb-2 flex">
             <div className="text-md font-bold">Withdrawal Requests</div>
           </div>
