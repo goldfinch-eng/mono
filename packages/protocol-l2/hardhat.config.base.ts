@@ -1,13 +1,5 @@
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
-import {
-  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
-  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
-} from "./test/blockchain_scripts/merkle/merkleDistributor/fixtures"
-import {
-  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
-  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
-} from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
 import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 import "solidity-docgen"
@@ -108,18 +100,6 @@ export default {
       1: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
       4: "0x80B9823A6D12Cc00d70E184b2b310d360220E792",
       31337: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
-    },
-    test_merkle_distributor_recipient_a: {
-      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
-    },
-    test_merkle_distributor_recipient_b: {
-      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
-    },
-    test_merkle_direct_distributor_recipient_a: {
-      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
-    },
-    test_merkle_direct_distributor_recipient_b: {
-      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
     },
   },
   gasReporter: {
