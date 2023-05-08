@@ -67,7 +67,7 @@ _the cap must be greater than the current total supply_
 ### mintingAmountIsWithinCap
 
 ```solidity
-function mintingAmountIsWithinCap(uint256 amount) internal returns (bool)
+function mintingAmountIsWithinCap(uint256 amount) internal view returns (bool)
 ```
 
 ### pause

@@ -2,7 +2,7 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0xf0F8d382a4e1e2F26891B1a95f9Dcb89406bd4A1
+https://etherscan.io/address/0x6CE93728877396D43874eFdd6345E8c251dFE008
 
 Library for handling key financial calculations, such as interest and principal accrual.
 
@@ -30,32 +30,17 @@ uint256 SECONDS_PER_DAY
 uint256 SECONDS_PER_YEAR
 ```
 
-### PaymentAllocation
+### AllocatePaymentParams
 
 ```solidity
-struct PaymentAllocation {
-  uint256 interestPayment;
+struct AllocatePaymentParams {
   uint256 principalPayment;
-  uint256 additionalBalancePayment;
+  uint256 interestPayment;
+  uint256 balance;
+  uint256 interestOwed;
+  uint256 interestAccrued;
+  uint256 principalOwed;
 }
-```
-
-### calculateInterestAndPrincipalAccrued
-
-```solidity
-function calculateInterestAndPrincipalAccrued(contract CreditLine cl, uint256 timestamp, uint256 lateFeeGracePeriod) public view returns (uint256, uint256)
-```
-
-### calculateInterestAndPrincipalAccruedOverPeriod
-
-```solidity
-function calculateInterestAndPrincipalAccruedOverPeriod(contract CreditLine cl, uint256 balance, uint256 startTime, uint256 endTime, uint256 lateFeeGracePeriod) public view returns (uint256, uint256)
-```
-
-### calculatePrincipalAccrued
-
-```solidity
-function calculatePrincipalAccrued(contract ICreditLine cl, uint256 balance, uint256 timestamp) public view returns (uint256)
 ```
 
 ### calculateWritedownFor
@@ -76,27 +61,39 @@ function calculateWritedownForPrincipal(contract ICreditLine cl, uint256 princip
 function calculateAmountOwedForOneDay(contract ICreditLine cl) public view returns (struct FixedPoint.Unsigned)
 ```
 
-### calculateInterestAccrued
+### splitPayment
 
 ```solidity
-function calculateInterestAccrued(contract CreditLine cl, uint256 balance, uint256 timestamp, uint256 lateFeeGracePeriodInDays) public view returns (uint256)
+function splitPayment(uint256 paymentAmount, uint256 balance, uint256 interestOwed, uint256 interestAccrued, uint256 principalOwed) external pure returns (uint256 interestPayment, uint256 principalPayment)
 ```
 
-### calculateInterestAccruedOverPeriod
-
-```solidity
-function calculateInterestAccruedOverPeriod(contract CreditLine cl, uint256 balance, uint256 startTime, uint256 endTime, uint256 lateFeeGracePeriodInDays) public view returns (uint256 interestOwed)
-```
-
-### lateFeeApplicable
-
-```solidity
-function lateFeeApplicable(contract CreditLine cl, uint256 timestamp, uint256 gracePeriodInDays) public view returns (bool)
-```
+Given a lump sum, returns the amount of the payment that should be allocated
+        to paying interest, and the amount that should be allocated to paying principal
 
 ### allocatePayment
 
 ```solidity
-function allocatePayment(uint256 paymentAmount, uint256 balance, uint256 interestOwed, uint256 principalOwed) public pure returns (struct Accountant.PaymentAllocation)
+function allocatePayment(struct Accountant.AllocatePaymentParams params) public pure returns (struct ILoan.PaymentAllocation)
 ```
+
+Allocate a payment.
+ 1. interestOwed must be paid before principalOwed
+ 2. principalOwed must be paid before interestAccrued
+ 3. interestAccrued must be paid before the rest of the balance
+
+_IO - Interest Owed
+PO - Principal Owed
+AI - Accrued Interest_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params | struct Accountant.AllocatePaymentParams | specifying payment amounts and amounts owed |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct ILoan.PaymentAllocation | payment allocation |
 

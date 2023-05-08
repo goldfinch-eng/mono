@@ -32,6 +32,25 @@ Record an increase of `amount` in the `total`. This is counted toward the
 | total | struct UserEpochTotal | storage pointer to the UserEpochTotal |
 | amount | uint256 | amount to increase the total by |
 
+### recordInstantIncrease
+
+```solidity
+function recordInstantIncrease(struct UserEpochTotal total, uint256 amount, uint256 depositTimestamp) internal
+```
+
+Record an increase of `amount` instantly based on the time of the deposit.
+ This is counted either:
+ 1. To just the totalAmount if the deposit was this epoch
+ 2. To both the totalAmount and eligibleAmount if the deposit was before this epoch
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| total | struct UserEpochTotal | storage pointer to the UserEpochTotal |
+| amount | uint256 | amount to increase the total by |
+| depositTimestamp | uint256 |  |
+
 ### recordDecrease
 
 ```solidity

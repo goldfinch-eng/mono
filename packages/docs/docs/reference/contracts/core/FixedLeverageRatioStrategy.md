@@ -25,6 +25,6 @@ function initialize(address owner, contract GoldfinchConfig _config) public
 ### getLeverageRatio
 
 ```solidity
-function getLeverageRatio(contract ITranchedPool pool) public view returns (uint256)
+function getLeverageRatio(contract ITranchedPool) public view returns (uint256)
 ```
 

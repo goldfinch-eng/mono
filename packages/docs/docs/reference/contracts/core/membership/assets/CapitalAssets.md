@@ -86,3 +86,23 @@ Get the point-in-time USDC equivalent value of the ERC721 asset. This
 | ---- | ---- | ----------- |
 | [0] | uint256 | USDC equivalent value |
 
+### harvest
+
+```solidity
+function harvest(contract Context context, address owner, contract IERC721Upgradeable asset, uint256 assetTokenId) internal
+```
+
+Harvests the associated rewards, interest, and other accrued assets
+ associated with the asset token. For example, if given a PoolToken asset,
+ this will collect the GFI rewards (if available), redeemable interest, and
+ redeemable principal, and send that to the `owner`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| context | contract Context | goldfinch context for routing |
+| owner | address | address to send the harvested assets to |
+| asset | contract IERC721Upgradeable | ERC721 to harvest |
+| assetTokenId | uint256 | id of the token to harvest |
+
