@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /// @notice Library to house logic around the ERC2981 royalty standard. Contracts
 ///   using this library should define a ConfigurableRoyaltyStandard.RoyaltyParams
@@ -10,7 +10,7 @@ import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/
 ///   take care to ensure that a public `setRoyaltyParams` method is only callable
 ///   by an admin.
 library ConfigurableRoyaltyStandard {
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
 
   /// @dev bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a
   bytes4 internal constant _INTERFACE_ID_ERC2981 = 0x2a55205a;

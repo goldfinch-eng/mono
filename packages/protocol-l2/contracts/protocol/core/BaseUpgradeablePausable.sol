@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import {AccessControlUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 import {ReentrancyGuardUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 import {Initializable} from "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
-import {SafeMath} from "../../library/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {PauserPausable} from "./PauserPausable.sol";
 
 /**
@@ -23,7 +23,7 @@ contract BaseUpgradeablePausable is
   ReentrancyGuardUpgradeSafe
 {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
   // Pre-reserving a few slots in the base contract in case we need to add things in the future.
   // This does not actually take up gas cost or storage cost, but it does reserve the storage slots.
   // See OpenZeppelin's use of this pattern here:

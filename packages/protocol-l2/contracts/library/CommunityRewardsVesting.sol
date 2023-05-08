@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 library CommunityRewardsVesting {
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
   using CommunityRewardsVesting for Rewards;
 
   /// @dev All time values in the Rewards struct (i.e. `startTime`, `endTime`,

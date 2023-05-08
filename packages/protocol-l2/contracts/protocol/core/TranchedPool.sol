@@ -5,7 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
@@ -31,6 +32,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
   using TranchingLogic for ITranchedPool.PoolSlice;
   using TranchingLogic for ITranchedPool.TrancheInfo;
   using SafeERC20Transfer for IERC20withDec;
+  using SafeMathUpgradeable for uint256;
 
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
