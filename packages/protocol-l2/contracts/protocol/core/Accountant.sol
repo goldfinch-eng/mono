@@ -8,6 +8,7 @@ import {ILoan} from "../../interfaces/ILoan.sol";
 
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
+import {SafeMath} from "../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
@@ -17,6 +18,7 @@ import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math
  */
 
 library Accountant {
+  using SafeMath for uint256;
   using FixedPoint for FixedPoint.Signed;
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for int256;
