@@ -91,10 +91,10 @@ const tokenMap: Record<SupportedCrypto, string> = {
   CURVE_LP: "FIDU-USDC-F",
 };
 
-export function stringToCryptoAmount(
+export function stringToCryptoAmount<T extends SupportedCrypto>(
   s: string | null | undefined,
-  token: SupportedCrypto
-): CryptoAmount {
+  token: T
+): CryptoAmount<T> {
   const amount = utils.parseUnits(
     !s ? "0" : s === "" ? "0" : s,
     cryptoPrecision[token]

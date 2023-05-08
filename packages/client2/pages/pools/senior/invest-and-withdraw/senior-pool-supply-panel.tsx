@@ -1,20 +1,26 @@
 import { gql, useApolloClient } from "@apollo/client";
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  Alert,
+  AssetBox,
   Button,
   Checkbox,
   DollarInput,
   Form,
   InfoIconTooltip,
   Link,
+  confirmDialog,
 } from "@/components/design-system";
-import { USDC_DECIMALS } from "@/constants";
 import { dataLayerPushEvent } from "@/lib/analytics";
 import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
-import { formatCrypto, formatPercent } from "@/lib/format";
+import {
+  formatCrypto,
+  formatPercent,
+  stringToCryptoAmount,
+} from "@/lib/format";
 import { SeniorPoolSupplyPanelPoolFieldsFragment } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, computeApyFromGfiInFiat } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -58,10 +64,49 @@ export function SeniorPoolSupplyPanel({
       return;
     }
 
+    const supplyAmount = stringToCryptoAmount(data.supply, "USDC");
+
+    const investmentAmountConfirmed = await confirmDialog(
+      <>
+        <AssetBox
+          asset={{
+            name: "Total Investment",
+            description: "",
+            usdcAmount: supplyAmount,
+          }}
+          omitWrapperStyle
+        />
+        <Alert className="my-6 text-justify" type="info" hasIcon={false}>
+          <div className="mb-2 flex">
+            <div className="text-md font-bold">Withdrawal Requests</div>
+          </div>
+          <p className="my-2">
+            Based on the withdrawal queue (~$42,000,000) and the projected
+            repayments by borrowers, you may not be able to withdraw your assets
+            for an extended period of time. Currently, the estimated average
+            withdrawal time for ${formatCrypto(supplyAmount)} is 24 months.
+          </p>
+          <p>
+            Senior Pool liquidity constantly changes, so the actual time to
+            withdraw your assets may be shorter or longer depending on a variety
+            of factors.
+          </p>
+        </Alert>
+        <p className="mb-6 text-justify text-xs text-sand-400">
+          By clicking “Confirm” below, I hereby agree and acknowledge that I am
+          investing capital in an asset that may not be available to withdraw.
+        </p>
+      </>,
+      "Confirm Investment"
+    );
+
+    if (!investmentAmountConfirmed) {
+      return;
+    }
+
     const chainId = await signer.getChainId();
     const usdcContract = await getContract({ name: "USDC", signer });
 
-    const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     let submittedTransaction;
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
@@ -74,11 +119,13 @@ export function SeniorPoolSupplyPanel({
         await approveErc20IfRequired({
           account,
           spender: stakingRewardsContract.address,
-          amount: value,
+          amount: supplyAmount.amount,
           erc20Contract: usdcContract,
         });
         submittedTransaction = await toastTransaction({
-          transaction: stakingRewardsContract.depositAndStake(value),
+          transaction: stakingRewardsContract.depositAndStake(
+            supplyAmount.amount
+          ),
           pendingPrompt: "Deposit and stake to senior pool submitted.",
         });
       } else {
@@ -89,11 +136,11 @@ export function SeniorPoolSupplyPanel({
         await approveErc20IfRequired({
           account,
           spender: seniorPoolContract.address,
-          amount: value,
+          amount: supplyAmount.amount,
           erc20Contract: usdcContract,
         });
         submittedTransaction = await toastTransaction({
-          transaction: seniorPoolContract.deposit(value),
+          transaction: seniorPoolContract.deposit(supplyAmount.amount),
           pendingPrompt: "Deposit into senior pool submitted",
         });
       }
@@ -111,11 +158,11 @@ export function SeniorPoolSupplyPanel({
           chainId,
           owner: account,
           spender: stakingRewardsContract.address,
-          value,
+          value: supplyAmount.amount,
           deadline,
         });
         const transaction = stakingRewardsContract.depositWithPermitAndStake(
-          value,
+          supplyAmount.amount,
           deadline,
           signature.v,
           signature.r,
@@ -135,11 +182,11 @@ export function SeniorPoolSupplyPanel({
           chainId,
           owner: account,
           spender: seniorPoolContract.address,
-          value,
+          value: supplyAmount.amount,
           deadline,
         });
         const transaction = seniorPoolContract.depositWithPermit(
-          value,
+          supplyAmount.amount,
           deadline,
           signature.v,
           signature.r,
@@ -174,13 +221,13 @@ export function SeniorPoolSupplyPanel({
       return;
     }
     const usdcContract = await getContract({ name: "USDC" });
-    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+    const valueAsUsdc = stringToCryptoAmount(value, "USDC");
 
-    if (valueAsUsdc.lt(utils.parseUnits("0.01", USDC_DECIMALS))) {
+    if (valueAsUsdc.amount.lt(stringToCryptoAmount("0.01", "USDC").amount)) {
       return "Must deposit more than $0.01";
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
-    if (valueAsUsdc.gt(userUsdcBalance)) {
+    if (valueAsUsdc.amount.gt(userUsdcBalance)) {
       return "Amount exceeds USDC balance";
     }
   };
