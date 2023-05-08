@@ -3,9 +3,9 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ILoan, LoanType} from "../../interfaces/ILoan.sol";
 import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
@@ -141,7 +141,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, IRequiresUID, I
     bytes32 r,
     bytes32 s
   ) public override whenNotPaused returns (uint256 tokenId) {
-    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
+    IERC20PermitUpgradeable(config.usdcAddress()).permit(
+      msg.sender,
+      address(this),
+      amount,
+      deadline,
+      v,
+      r,
+      s
+    );
     return deposit(tranche, amount);
   }
 

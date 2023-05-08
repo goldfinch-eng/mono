@@ -9,7 +9,7 @@ import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /**

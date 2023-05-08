@@ -14,8 +14,7 @@ import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../interfaces/ILoan.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
-import {ContextUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -28,7 +27,7 @@ import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math
  * @author Goldfinch
  */
 
-contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
+contract Borrower is BaseUpgradeablePausable, IBorrower {
   using SafeERC20Transfer for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
 
@@ -337,19 +336,6 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     override(ContextUpgradeSafe, BaseRelayRecipient)
     returns (address payable)
   {
-    return BaseRelayRecipient._msgSender();
-  }
-
-  function _msgData()
-    internal
-    view
-    override(ContextUpgradeSafe, BaseRelayRecipient)
-    returns (bytes memory ret)
-  {
-    return BaseRelayRecipient._msgData();
-  }
-
-  function versionRecipient() external view override returns (string memory) {
-    return "2.0.0";
+    return msg.sender;
   }
 }

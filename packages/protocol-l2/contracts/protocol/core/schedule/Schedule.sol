@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {SafeMath} from "../../../library/SafeMath.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title Schedule

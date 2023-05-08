@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
 import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeMath} from "../../library/SafeMath.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";

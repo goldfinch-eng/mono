@@ -9,7 +9,7 @@ import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
-import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
 contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   event DepositMade(
