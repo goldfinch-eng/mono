@@ -4821,9 +4821,9 @@ __metadata:
     "@nomiclabs/hardhat-truffle5": ^2.0.7
     "@nomiclabs/hardhat-web3": ^2.0.0
     "@openzeppelin/cli": ^2.6.0
-    "@openzeppelin/contracts": ^3.4.1
+    "@openzeppelin/contracts": ^4.8.3
     "@openzeppelin/contracts-ethereum-package": ^3.0.0
-    "@openzeppelin/contracts-upgradeable": 4.3.2
+    "@openzeppelin/contracts-upgradeable": ^4.8.3
     "@openzeppelin/hardhat-upgrades": ^1.21.0
     "@openzeppelin/test-helpers": ^0.5.6
     "@openzeppelin/upgrades": ^2.8.0
@@ -4887,7 +4887,6 @@ __metadata:
     method-missing: ^1.2.4
     mocha: ^10.1.0
     mocha-each: ^2.0.1
-    openzeppelin-contracts-0-8-x: "npm:@openzeppelin/contracts@^4.8.0"
     prettier: ^2.8.0
     prettier-plugin-solidity: ^1.0.0
     rollup: ^2.33.3
@@ -7459,10 +7458,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts-upgradeable@npm:^4.8.3":
+  version: 4.8.3
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.8.3"
+  checksum: 022c99bac4828980e771ddf3426a58b5a6f27932a1b1ec93dd2ed3f11c89d8e407867b845bedd0660bdd11c683971d566737c10504db8a1f144f61daec8b5ed6
+  languageName: node
+  linkType: hard
+
 "@openzeppelin/contracts@npm:^3.4.1":
   version: 3.4.2
   resolution: "@openzeppelin/contracts@npm:3.4.2"
   checksum: 0c90f029fe50a49643588e4c8670dae3bbf31795133a6ddce9bdcbc258486332700bb732287baabf7bf807f39182fe8ea2ffa19aa5caf359b1b9c0f083280748
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:^4.8.3":
+  version: 4.8.3
+  resolution: "@openzeppelin/contracts@npm:4.8.3"
+  checksum: aea130d38d46840c5cbe3adbaa9a7ac645e4bd66ad3f3baf2fa78588c408d1a686170b3408c9e2e5e05530fba22ecdc00d7efb6b27852a8b29f91accbc0af255
   languageName: node
   linkType: hard
 
