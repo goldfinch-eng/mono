@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.s
  * @title Library for fixed point arithmetic on uints
  */
 library FixedPoint {
-  using SafeMath for uint256;
   using SignedSafeMath for int256;
 
   // Supports 18 decimals. E.g., 1e18 represents "1", 5e17 represents "0.5".

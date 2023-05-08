@@ -4,8 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {SafeMath} from "../../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {SaturatingSub} from "../../library/SaturatingSub.sol";
 
 /**
  * @title Schedule
@@ -55,7 +55,6 @@ import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math
  */
 contract Schedule is ISchedule {
   using Math for uint256;
-  using SafeMath for uint256;
 
   /// @notice the payment date schedule
   IPeriodMapper public immutable periodMapper;

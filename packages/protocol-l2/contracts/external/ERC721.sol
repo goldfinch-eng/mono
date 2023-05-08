@@ -32,7 +32,6 @@ contract ERC721UpgradeSafe is
   IERC721Metadata,
   IERC721Enumerable
 {
-  using SafeMath for uint256;
   using Address for address;
   using EnumerableSet for EnumerableSet.UintSet;
   using EnumerableMap for EnumerableMap.UintToAddressMap;
