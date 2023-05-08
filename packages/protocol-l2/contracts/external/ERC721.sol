@@ -14,7 +14,6 @@ import "../interfaces/openzeppelin/IERC721Metadata.sol";
 import "../interfaces/openzeppelin/IERC721Enumerable.sol";
 import "../interfaces/openzeppelin/IERC721Receiver.sol";
 import "./ERC165.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableMap.sol";
