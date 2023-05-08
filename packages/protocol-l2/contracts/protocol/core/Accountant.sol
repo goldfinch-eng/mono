@@ -8,7 +8,8 @@ import {ILoan} from "../../interfaces/ILoan.sol";
 
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {FixedPoint} from "../../external/FixedPoint.sol";
-import {SafeMath} from "../../library/SafeMath.sol";
+// solhint-disable-next-line max-line-length
+import {SafeMathUpgradeable as OzSafeMath} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
@@ -18,7 +19,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
  */
 
 library Accountant {
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
   using FixedPoint for FixedPoint.Signed;
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for int256;

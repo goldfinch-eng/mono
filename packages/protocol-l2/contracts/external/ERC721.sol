@@ -14,7 +14,7 @@ import "../interfaces/openzeppelin/IERC721Metadata.sol";
 import "../interfaces/openzeppelin/IERC721Enumerable.sol";
 import "../interfaces/openzeppelin/IERC721Receiver.sol";
 import "./ERC165.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableMap.sol";
@@ -33,7 +33,7 @@ contract ERC721UpgradeSafe is
   IERC721Metadata,
   IERC721Enumerable
 {
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
   using Address for address;
   using EnumerableSet for EnumerableSet.UintSet;
   using EnumerableMap for EnumerableMap.UintToAddressMap;

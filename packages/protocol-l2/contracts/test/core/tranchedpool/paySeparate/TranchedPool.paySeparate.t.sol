@@ -6,13 +6,13 @@ import {TranchedPool} from "../../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../../../interfaces/ISchedule.sol";
-import {SafeMath} from "../../../../library/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 import {TranchedPoolBaseTest} from "../BaseTranchedPool.t.sol";
 
 contract TranchedPoolPaySeparateTest is TranchedPoolBaseTest {
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
 
   function testRevertsIfPaymentEq0() public {
     (TranchedPool pool, ) = defaultTranchedPool();

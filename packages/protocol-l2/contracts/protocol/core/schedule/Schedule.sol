@@ -4,8 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {SafeMath} from "../../../library/SafeMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import {SaturatingSub} from "../../library/SaturatingSub.sol";
 
 /**
  * @title Schedule
@@ -55,7 +56,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
  */
 contract Schedule is ISchedule {
   using Math for uint256;
-  using SafeMath for uint256;
+  using SafeMathUpgradeable for uint256;
+  using SaturatingSub for uint256;
 
   /// @notice the payment date schedule
   IPeriodMapper public immutable periodMapper;

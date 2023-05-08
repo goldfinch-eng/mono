@@ -5,11 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeMath} from "../../library/SafeMath.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {Accountant} from "./Accountant.sol";
+import {SaturatingSub} from "../../library/SaturatingSub.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ILoan} from "../../interfaces/ITranchedPool.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
@@ -30,6 +31,7 @@ import {ISchedule} from "../../interfaces/ISchedule.sol";
 contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable, ICreditLine {
   using ConfigHelper for GoldfinchConfig;
   using PaymentScheduleLib for PaymentSchedule;
+  using SaturatingSub for uint256;
 
   uint256 internal constant INTEREST_DECIMALS = 1e18;
   uint256 internal constant SECONDS_PER_DAY = 60 * 60 * 24;
