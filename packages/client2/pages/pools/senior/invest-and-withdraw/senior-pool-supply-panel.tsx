@@ -76,7 +76,7 @@ export function SeniorPoolSupplyPanel({
         />
         <Alert className="mb-6 text-justify" type="info" hasIcon={false}>
           <div className="mb-2 flex">
-            <div className="text-md mx-1 font-bold">Withdrawal Requests</div>
+            <div className="text-md font-bold">Withdrawal Requests</div>
           </div>
           <p className="my-2">
             Based on the withdrawal queue (~$42,000,000) and the projected
