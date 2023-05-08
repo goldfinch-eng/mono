@@ -5,7 +5,7 @@
   Alterations:
    * Make supportsInterface virtual so it can be overriden by inheriting contracts
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.19;
 
 import "../interfaces/openzeppelin/IERC165.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";

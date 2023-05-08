@@ -1,3 +1,5 @@
+pragma solidity ^0.8.19;
+
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {Test} from "forge-std/Test.sol";
 

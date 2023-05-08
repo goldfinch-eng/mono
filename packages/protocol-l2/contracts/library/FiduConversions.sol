@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.19;
 
 library FiduConversions {
   uint256 internal constant FIDU_MANTISSA = 1e18;

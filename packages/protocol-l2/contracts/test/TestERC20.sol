@@ -1,7 +1,6 @@
 // contracts/GLDToken.sol
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 

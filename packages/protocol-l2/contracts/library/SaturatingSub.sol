@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.18;
+pragma solidity ^0.8.19;
 
 library SaturatingSub {
   /// @notice Do a - b but if that would result in underflow error, then just return 0

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // solhint-disable
 // Imported from https://github.com/UMAprotocol/protocol/blob/4d1c8cc47a4df5e79f978cb05647a7432e111a3d/packages/core/contracts/common/implementation/FixedPoint.sol
-pragma solidity 0.6.12;
+pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";

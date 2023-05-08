@@ -1,4 +1,4 @@
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.19;
 
 // NOTE: this file exists only to remove the extremely long error messages in safe math.
 

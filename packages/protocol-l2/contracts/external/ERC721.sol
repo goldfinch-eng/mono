@@ -6,7 +6,7 @@
    * Use vendored ERC165 with virtual supportsInterface
 */
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 import "../interfaces/openzeppelin/IERC721.sol";

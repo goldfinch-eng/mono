@@ -3,7 +3,7 @@
 // solhint-disable reentrancy
 // solhint-disable contract-name-camelcase
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";

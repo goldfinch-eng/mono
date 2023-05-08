@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";

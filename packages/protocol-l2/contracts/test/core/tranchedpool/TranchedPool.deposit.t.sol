@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.19;
 
 import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";

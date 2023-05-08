@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.19;
 
 interface IERC2981 {
   /// @notice Called with the sale price to determine how much royalty
