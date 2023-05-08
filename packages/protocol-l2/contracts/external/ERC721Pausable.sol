@@ -6,7 +6,7 @@
    * Use vendored ERC721, which inherits from vendored ERC165 with virtual supportsInterface
 */
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.19;
 
 import "./ERC721.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";

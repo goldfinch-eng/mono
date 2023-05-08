@@ -1,4 +1,4 @@
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.19;
 
 library ERCInterfaces {
   bytes4 internal constant ERC721 = 0x80ac58cd;

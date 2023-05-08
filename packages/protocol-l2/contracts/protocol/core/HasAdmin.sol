@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 

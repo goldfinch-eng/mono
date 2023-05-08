@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // solhint-disable func-name-mixedcase
 
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.19;
 
 import {Arrays} from "../../library/Arrays.sol";
 import {Test} from "forge-std/Test.sol";

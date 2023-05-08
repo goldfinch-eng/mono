@@ -10,7 +10,7 @@
      we do not want, because we use a deployer account, which is separate from the protocol owner.
 */
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";

@@ -9,7 +9,7 @@
    * change solidity version from 0.6.2 -> 0.6.12 to match our contracts
 */
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.19;
 
 /**
  * a contract must implement this interface in order to support relayed transaction.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.19;
 
 /// @title IPeriodMapper
 /// @notice A mapping of timestamps to "periods"

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.19;
 
 interface ITestUniqueIdentity0612 {
   function _mintForTest(address to, uint256 id, uint256 amount, bytes memory data) external;

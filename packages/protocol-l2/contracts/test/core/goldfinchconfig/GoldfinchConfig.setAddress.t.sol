@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.19;
 
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {GoldfinchConfigBaseTest} from "./BaseGoldfinchConfig.t.sol";

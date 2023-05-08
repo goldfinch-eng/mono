@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.19;
 
 /// @dev This interface provides a subset of the functionality of the IUniqueIdentity
 /// interface -- namely, the subset of functionality needed by Goldfinch protocol contracts
