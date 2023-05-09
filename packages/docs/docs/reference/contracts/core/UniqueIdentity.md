@@ -158,11 +158,55 @@ _Gets the token symbol._
 function mint(uint256 id, uint256 expiresAt, bytes signature) public payable
 ```
 
+Mint a new UniqueIdentity token to the msgSender
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| id | uint256 | The id representing the KYC type of the UniqueIdentity |
+| expiresAt | uint256 | The expiration time of the signature |
+| signature | bytes | An EIP-191 signature of the corresponding mint params:                  account, id, expiresAt, address(this), nonces[account], block.chainid                  from an address with the SIGNER_ROLE. |
+
+### mintTo
+
+```solidity
+function mintTo(address recipient, uint256 id, uint256 expiresAt, bytes signature) public payable
+```
+
+Mint a new UniqueIdentity token to the `recipient`
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| recipient | address | The recipient address to be minted to. |
+| id | uint256 | The id representing the KYC type of the UniqueIdentity |
+| expiresAt | uint256 | The expiration time of the signature |
+| signature | bytes | An EIP-191 signature of the corresponding mintTo params:                  (account, recipient, id, expiresAt, address(this), nonces[account], block.chainid)                  from an address with the SIGNER_ROLE. |
+
+### _mintTo
+
+```solidity
+function _mintTo(address mintToAddress, uint256 id) private
+```
+
 ### burn
 
 ```solidity
 function burn(address account, uint256 id, uint256 expiresAt, bytes signature) public
 ```
+
+Burn a UniqueIdentity token of `id` from the `account`
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | The account which currently owns the UID |
+| id | uint256 | The id representing the KYC type of the UniqueIdentity |
+| expiresAt | uint256 | The expiration time of the signature |
+| signature | bytes | An EIP-191 signature of the corresponding burn params:                  (account, id, expiresAt, address(this), nonces[account], block.chainid)                  from an address with the SIGNER_ROLE. |
 
 ### _beforeTokenTransfer
 
@@ -180,6 +224,12 @@ Requirements:
 
 ```solidity
 modifier onlySigner(address account, uint256 id, uint256 expiresAt, bytes signature)
+```
+
+### onlySignerMintTo
+
+```solidity
+modifier onlySignerMintTo(address mintToAddress, uint256 id, uint256 expiresAt, bytes signature)
 ```
 
 ### incrementNonce

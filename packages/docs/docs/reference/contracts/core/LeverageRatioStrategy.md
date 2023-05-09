@@ -9,7 +9,7 @@ uint256 LEVERAGE_RATIO_DECIMALS
 ### invest
 
 ```solidity
-function invest(contract ISeniorPool seniorPool, contract ITranchedPool pool) public view returns (uint256)
+function invest(contract ISeniorPool, contract ITranchedPool pool) public view returns (uint256)
 ```
 
 Determines how much money to invest in the senior tranche based on what is committed to the junior
@@ -21,19 +21,19 @@ function can be used "idempotently" to achieve the investment target amount with
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| seniorPool | contract ISeniorPool | The senior pool to invest from |
+|  | contract ISeniorPool |  |
 | pool | contract ITranchedPool | The tranched pool to invest into (as the senior) |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | The amount of money to invest into the tranched pool's senior tranche, from the senior pool |
+| [0] | uint256 |  |
 
 ### estimateInvestment
 
 ```solidity
-function estimateInvestment(contract ISeniorPool seniorPool, contract ITranchedPool pool) public view returns (uint256)
+function estimateInvestment(contract ISeniorPool, contract ITranchedPool pool) public view returns (uint256)
 ```
 
 A companion of `invest()`: determines how much would be returned by `invest()`, as the
@@ -44,7 +44,7 @@ were not locked.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| seniorPool | contract ISeniorPool | The senior pool to invest from |
+|  | contract ISeniorPool |  |
 | pool | contract ITranchedPool | The tranched pool to invest into (as the senior) |
 
 #### Return Values

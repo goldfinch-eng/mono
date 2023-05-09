@@ -58,7 +58,7 @@ contract CallableLoan is
   uint256 public constant SPLIT_TOKEN_DUST_THRESHOLD = 5e3;
 
   uint8 internal constant MAJOR_VERSION = 1;
-  uint8 internal constant MINOR_VERSION = 0;
+  uint8 internal constant MINOR_VERSION = 1;
   uint8 internal constant PATCH_VERSION = 0;
 
   /*================================================================================
@@ -120,7 +120,6 @@ contract CallableLoan is
       _lateAdditionalApr: _lateFeeApr,
       _limit: _limit
     });
-    drawdownsPaused = true;
     emit DrawdownsPaused(address(this));
   }
 
@@ -143,7 +142,6 @@ contract CallableLoan is
     whenNotPaused
     returns (uint256 callRequestedTokenId, uint256 remainingTokenId)
   {
-    revert RequiresUpgrade();
     // 1. Checkpoint the credit line and perform basic validation on the call request.
     CallableCreditLine storage cl = _staleCreditLine.checkpoint();
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -176,7 +174,7 @@ contract CallableLoan is
       );
     }
 
-    // 2. Determine the amount of principal and interest that can be withdrawn
+    // 2. Determine the total amount of principal and interest that can be withdrawn
     //    on the given pool token. Withdraw all of this amount.
     (uint256 totalInterestWithdrawable, uint256 totalPrincipalWithdrawable) = cl
       .proportionalInterestAndPrincipalAvailable({
@@ -359,7 +357,6 @@ contract CallableLoan is
     whenNotPaused
     returns (PaymentAllocation memory)
   {
-    revert RequiresUpgrade();
     return _pay(amount);
   }
 
@@ -636,14 +633,14 @@ contract CallableLoan is
     uint256 principalToRedeem = Math.min(amountAfterInterest, principalWithdrawable);
 
     {
-      LoanPhase loanPhase = cl.loanPhase();
-      if (loanPhase == LoanPhase.InProgress) {
+      LoanPhase _loanPhase = cl.loanPhase();
+      if (_loanPhase == LoanPhase.InProgress) {
         poolTokens.redeem({
           tokenId: tokenId,
           principalRedeemed: principalToRedeem,
           interestRedeemed: interestToRedeem
         });
-      } else if (loanPhase == LoanPhase.Funding) {
+      } else if (_loanPhase == LoanPhase.Funding) {
         // if the pool is still funding, we need to decrease the deposit rather than the amount redeemed
         assert(interestToRedeem == 0);
         cl.withdraw(principalToRedeem);
@@ -672,9 +669,6 @@ contract CallableLoan is
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     (uint256 interestWithdrawable, uint256 principalWithdrawable) = _availableToWithdraw(tokenInfo);
     uint256 totalWithdrawable = interestWithdrawable + principalWithdrawable;
-    if (totalWithdrawable == 0) {
-      return (0, 0);
-    }
     return _withdraw(tokenInfo, tokenId, totalWithdrawable, cl);
   }
 
@@ -707,8 +701,8 @@ contract CallableLoan is
   function _availableToWithdraw(
     IPoolTokens.TokenInfo memory tokenInfo
   ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
-    if (tokenInfo.principalAmount == 0) {
-      // Bail out early to account for proportion of zero.
+    // Bail out early to account for proportion of zero or invalid phase for withdrawal
+    if (tokenInfo.principalAmount == 0 || loanPhase() == LoanPhase.DrawdownPeriod) {
       return (0, 0);
     }
 
@@ -719,14 +713,12 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
-    // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
-    assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
-
-    return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
-      totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
-    );
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
   }
 
   function _availableToWithdraw(
@@ -745,12 +737,25 @@ contract CallableLoan is
         feePercent: _reserveFundsFeePercent()
       });
 
+    return
+      _availableToWithdrawGivenProportions(
+        tokenInfo,
+        totalInterestWithdrawable,
+        totalPrincipalWithdrawable
+      );
+  }
+
+  function _availableToWithdrawGivenProportions(
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 totalInterestWithdrawable,
+    uint256 totalPrincipalWithdrawable
+  ) internal view returns (uint256 interestAvailable, uint256 principalAvailable) {
     // Due to integer math, redeemeded amounts can be more than redeemable amounts after splitting.
     assert(tokenInfo.principalRedeemed <= totalPrincipalWithdrawable + 1);
-    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable);
+    assert(tokenInfo.interestRedeemed <= totalInterestWithdrawable + 1);
 
     return (
-      totalInterestWithdrawable - tokenInfo.interestRedeemed,
+      totalInterestWithdrawable.saturatingSub(tokenInfo.interestRedeemed),
       totalPrincipalWithdrawable.saturatingSub(tokenInfo.principalRedeemed)
     );
   }

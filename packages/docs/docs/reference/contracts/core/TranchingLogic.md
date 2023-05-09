@@ -2,7 +2,7 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0x9BCE1F08012DD6e72756Cd015E50068f90963D22
+https://etherscan.io/address/0x100656CbB440D37a7880F4c5BD4aC5edcf411066
 
 Library for handling the payments waterfall
 
@@ -79,13 +79,13 @@ function scaleForSlice(struct ITranchedPool.PoolSlice slice, uint256 amount, uin
 ### getSliceInfo
 
 ```solidity
-function getSliceInfo(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed, uint256 reserveFeePercent) public view returns (struct TranchingLogic.SliceInfo)
+function getSliceInfo(struct ITranchedPool.PoolSlice slice, contract ICreditLine creditLine, uint256 totalDeployed, uint256 reserveFeePercent) public view returns (struct TranchingLogic.SliceInfo)
 ```
 
 ### getTotalInterestAndPrincipal
 
 ```solidity
-function getTotalInterestAndPrincipal(struct ITranchedPool.PoolSlice slice, contract IV2CreditLine creditLine, uint256 totalDeployed) public view returns (uint256, uint256)
+function getTotalInterestAndPrincipal(struct ITranchedPool.PoolSlice slice, contract ICreditLine creditLine, uint256 totalDeployed) public view returns (uint256, uint256)
 ```
 
 ### scaleByFraction
@@ -97,7 +97,7 @@ function scaleByFraction(uint256 amount, uint256 fraction, uint256 total) public
 ### applyToAllSlices
 
 ```solidity
-function applyToAllSlices(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine, uint256 juniorFeePercent) external returns (uint256)
+function applyToAllSlices(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract ICreditLine creditLine, uint256 juniorFeePercent) external returns (uint256)
 ```
 
 apply a payment to all slices
@@ -112,7 +112,7 @@ apply a payment to all slices
 | principal | uint256 | amount of principal to apply |
 | reserveFeePercent | uint256 | percentage that protocol will take for reserves |
 | totalDeployed | uint256 | total amount of principal deployed |
-| creditLine | contract IV2CreditLine | creditline to account for |
+| creditLine | contract ICreditLine | creditline to account for |
 | juniorFeePercent | uint256 | percentage the junior tranche will take |
 
 #### Return Values
@@ -124,13 +124,13 @@ apply a payment to all slices
 ### applyToAllSeniorTranches
 
 ```solidity
-function applyToAllSeniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine, uint256 juniorFeePercent) internal returns (struct TranchingLogic.ApplyResult)
+function applyToAllSeniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract ICreditLine creditLine, uint256 juniorFeePercent) internal returns (struct TranchingLogic.ApplyResult)
 ```
 
 ### applyToAllJuniorTranches
 
 ```solidity
-function applyToAllJuniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract IV2CreditLine creditLine) internal returns (uint256 totalReserveAmount)
+function applyToAllJuniorTranches(mapping(uint256 => struct ITranchedPool.PoolSlice) poolSlices, uint256 numSlices, uint256 interest, uint256 principal, uint256 reserveFeePercent, uint256 totalDeployed, contract ICreditLine creditLine) internal returns (uint256 totalReserveAmount)
 ```
 
 ### emitSharePriceUpdatedEvent
@@ -149,18 +149,6 @@ function applyToSeniorTranche(struct ITranchedPool.PoolSlice slice, uint256 inte
 
 ```solidity
 function applyToJuniorTranche(struct ITranchedPool.PoolSlice slice, uint256 interestRemaining, uint256 principalRemaining, struct TranchingLogic.SliceInfo sliceInfo) public returns (struct TranchingLogic.ApplyResult)
-```
-
-### migrateAccountingVariables
-
-```solidity
-function migrateAccountingVariables(contract IV2CreditLine originalCl, contract IV2CreditLine newCl) external
-```
-
-### closeCreditLine
-
-```solidity
-function closeCreditLine(contract IV2CreditLine cl) external
 ```
 
 ### trancheIdToSliceIndex

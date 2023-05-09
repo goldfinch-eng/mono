@@ -2,7 +2,7 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0xB8276651612df04E48DA5f353c969aa1C0076099
+https://etherscan.io/address/0xE1635F4F0EEE83C5E24023Ac7f8B9F2079fdD7d6
 
 These contracts represent the a convenient way for a borrower to interact with Goldfinch
  They are 100% optional. However, they let us add many sophisticated and convient features for borrowers
@@ -65,21 +65,34 @@ function lockPool(address poolAddress) external
 function drawdown(address poolAddress, uint256 amount, address addressToSendTo) external
 ```
 
-Allows a borrower to drawdown on their credit line through a TranchedPool.
+Drawdown on a loan
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| poolAddress | address | The creditline from which they would like to drawdown |
-| amount | uint256 | The amount, in USDC atomic units, that a borrower wishes to drawdown |
-| addressToSendTo | address | The address where they would like the funds sent. If the zero address is passed,  it will be defaulted to the contracts address (msg.sender). This is a convenience feature for when they would  like the funds sent to an exchange or alternate wallet, different from the authentication address |
+| poolAddress | address | Pool to drawdown from |
+| amount | uint256 | usdc amount to drawdown |
+| addressToSendTo | address | Address to send the funds. Null address or address(this) will send funds back to the caller |
 
 ### drawdownWithSwapOnOneInch
 
 ```solidity
 function drawdownWithSwapOnOneInch(address poolAddress, uint256 amount, address addressToSendTo, address toToken, uint256 minTargetAmount, uint256[] exchangeDistribution) public
 ```
+
+Drawdown on a v1 or v2 pool and swap the usdc to the desired token using OneInch
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| poolAddress | address |  |
+| amount | uint256 | usdc amount to drawdown from the pool |
+| addressToSendTo | address | address to send the `toToken` to |
+| toToken | address | address of the ERC20 to swap to |
+| minTargetAmount | uint256 | min amount of `toToken` you're willing to accept from the swap (i.e. a slippage tolerance) |
+| exchangeDistribution | uint256[] |  |
 
 ### transferERC20
 
@@ -93,20 +106,45 @@ function transferERC20(address token, address to, uint256 amount) public
 function pay(address poolAddress, uint256 amount) external
 ```
 
-Allows a borrower to pay back loans by calling the `pay` function directly on a TranchedPool
+Pay back a v1 or v2 tranched pool
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| poolAddress | address | The credit line to be paid back |
-| amount | uint256 | The amount, in USDC atomic units, that the borrower wishes to pay |
+| poolAddress | address | pool address |
+| amount | uint256 | USDC amount to pay |
 
 ### payMultiple
 
 ```solidity
 function payMultiple(address[] pools, uint256[] amounts) external
 ```
+
+Pay back multiple pools. Supports v0.1.0 and v1.0.0 pools
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| pools | address[] | list of pool addresses for which the caller is the borrower |
+| amounts | uint256[] | amounts to pay back |
+
+### pay
+
+```solidity
+function pay(address poolAddress, uint256 principalAmount, uint256 interestAmount) external
+```
+
+Pay back a v2.0.0 Tranched Pool
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| poolAddress | address | The pool to be paid back |
+| principalAmount | uint256 | principal amount to pay |
+| interestAmount | uint256 | interest amount to pay |
 
 ### payInFull
 
@@ -126,10 +164,16 @@ function payWithSwapOnOneInch(address poolAddress, uint256 originAmount, address
 function payMultipleWithSwapOnOneInch(address[] pools, uint256[] minAmounts, uint256 originAmount, address fromToken, uint256[] exchangeDistribution) external
 ```
 
-### _transferAndPay
+### _pay
 
 ```solidity
-function _transferAndPay(contract IERC20withDec usdc, address poolAddress, uint256 amount) internal
+function _pay(address poolAddress, uint256 amount) internal
+```
+
+### _payV2Separate
+
+```solidity
+function _payV2Separate(address poolAddress, uint256 principalAmount, uint256 interestAmount) internal returns (struct ILoan.PaymentAllocation)
 ```
 
 ### transferFrom

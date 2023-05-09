@@ -182,6 +182,20 @@ function __initialize__(address owner, contract GoldfinchConfig _config) externa
 function getPosition(uint256 tokenId) external view returns (struct StakedPosition position)
 ```
 
+Get the staking rewards position
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | uint256 | id of the position token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| position | struct StakedPosition | the position |
+
 ### stakedBalanceOf
 
 ```solidity
@@ -191,7 +205,9 @@ function stakedBalanceOf(uint256 tokenId) external view returns (uint256)
 Returns the staked balance of a given position token.
 
 _The value returned is the bare amount, not the effective amount. The bare amount represents
-  the number of tokens the user has staked for a given position._
+  the number of tokens the user has staked for a given position. The effective amount is the bare
+  amount multiplied by the token's underlying asset type multiplier. This multiplier is a crypto-
+  economic parameter determined by governance._
 
 #### Parameters
 
@@ -572,8 +588,9 @@ function _stake(address staker, address nftRecipient, uint256 amount, enum Stake
 function unstake(uint256 tokenId, uint256 amount) public
 ```
 
-Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
-  Any remaining staked amount will continue to accrue rewards.
+Unstake an amount of `stakingToken()` (FIDU, FiduUSDCCurveLP, etc) associated with
+  a given position and transfer to msg.sender. Any remaining staked amount will continue to
+  accrue rewards.
 
 _This function checkpoints rewards_
 
@@ -647,7 +664,7 @@ _This will also checkpoint their rewards up to the current time._
 ### getReward
 
 ```solidity
-function getReward(uint256 tokenId) external
+function getReward(uint256 tokenId) external returns (uint256)
 ```
 
 Claim rewards for a given staked position
@@ -657,6 +674,12 @@ Claim rewards for a given staked position
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | A staking position token ID |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | amount of rewards claimed |
 
 ### addToStake
 
@@ -680,6 +703,14 @@ function loadRewards(uint256 rewards) external
 ```
 
 Transfer rewards from msg.sender, to be used for reward distribution
+
+### removeRewards
+
+```solidity
+function removeRewards(uint256 amount) external
+```
+
+Transfer rewards from staking rewards, to the caller
 
 ### setRewardsParameters
 

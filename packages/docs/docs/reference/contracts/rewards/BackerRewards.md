@@ -34,53 +34,6 @@ uint256 USDC_MANTISSA
 uint256 NUM_TRANCHES_PER_SLICE
 ```
 
-### BackerRewardsInfo
-
-```solidity
-struct BackerRewardsInfo {
-  uint256 accRewardsPerPrincipalDollar;
-}
-```
-
-### BackerRewardsTokenInfo
-
-```solidity
-struct BackerRewardsTokenInfo {
-  uint256 rewardsClaimed;
-  uint256 accRewardsPerPrincipalDollarAtMint;
-}
-```
-
-### StakingRewardsPoolInfo
-
-```solidity
-struct StakingRewardsPoolInfo {
-  uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
-  uint256 lastUpdateTime;
-  struct BackerRewards.StakingRewardsSliceInfo[] slicesInfo;
-}
-```
-
-### StakingRewardsSliceInfo
-
-```solidity
-struct StakingRewardsSliceInfo {
-  uint256 fiduSharePriceAtDrawdown;
-  uint256 principalDeployedAtLastCheckpoint;
-  uint256 accumulatedRewardsPerTokenAtDrawdown;
-  uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
-  uint256 unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint;
-}
-```
-
-### StakingRewardsTokenInfo
-
-```solidity
-struct StakingRewardsTokenInfo {
-  uint256 accumulatedRewardsPerTokenAtLastWithdraw;
-}
-```
-
 ### totalRewards
 
 ```solidity
@@ -116,31 +69,25 @@ totalRewards/totalGFISupply * 100, times 1e18
 ### tokens
 
 ```solidity
-mapping(uint256 => struct BackerRewards.BackerRewardsTokenInfo) tokens
+mapping(uint256 => struct IBackerRewards.BackerRewardsTokenInfo) tokens
 ```
-
-poolTokenId -> BackerRewardsTokenInfo
 
 ### pools
 
 ```solidity
-mapping(address => struct BackerRewards.BackerRewardsInfo) pools
+mapping(address => struct IBackerRewards.BackerRewardsInfo) pools
 ```
-
-pool.address -> BackerRewardsInfo
 
 ### poolStakingRewards
 
 ```solidity
-mapping(contract ITranchedPool => struct BackerRewards.StakingRewardsPoolInfo) poolStakingRewards
+mapping(contract ITranchedPool => struct IBackerRewards.StakingRewardsPoolInfo) poolStakingRewards
 ```
-
-Staking rewards info for each pool
 
 ### tokenStakingRewards
 
 ```solidity
-mapping(uint256 => struct BackerRewards.StakingRewardsTokenInfo) tokenStakingRewards
+mapping(uint256 => struct IBackerRewards.StakingRewardsTokenInfo) tokenStakingRewards
 ```
 
 Staking rewards info for each pool token
@@ -151,17 +98,6 @@ Staking rewards info for each pool token
 function __initialize__(address owner, contract GoldfinchConfig _config) public
 ```
 
-### forceInitializeStakingRewardsPoolInfo
-
-```solidity
-function forceInitializeStakingRewardsPoolInfo(contract ITranchedPool pool, uint256 fiduSharePriceAtDrawdown, uint256 principalDeployedAtDrawdown, uint256 rewardsAccumulatorAtDrawdown) external
-```
-
-intialize the first slice of a StakingRewardsPoolInfo
-
-_this is _only_ meant to be called on pools that didnt qualify for the backer rewards airdrop
-      but were deployed before this contract._
-
 ### allocateRewards
 
 ```solidity
@@ -169,13 +105,13 @@ function allocateRewards(uint256 _interestPaymentAmount) external
 ```
 
 Calculates the accRewardsPerPrincipalDollar for a given pool,
-         when a interest payment is received by the protocol
+  when a interest payment is received by the protocol
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _interestPaymentAmount | uint256 | The amount of total dollars the interest payment, expects 10^6 value |
+| _interestPaymentAmount | uint256 | Atomic usdc amount of the interest payment |
 
 ### setTotalRewards
 
@@ -227,24 +163,86 @@ function setPoolTokenAccRewardsPerPrincipalDollarAtMint(address poolAddress, uin
 ```
 
 When a pool token is minted for multiple drawdowns,
- set accRewardsPerPrincipalDollarAtMint to the current accRewardsPerPrincipalDollar price
+  set accRewardsPerPrincipalDollarAtMint to the current accRewardsPerPrincipalDollar price
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| poolAddress | address |  |
+| poolAddress | address | Address of the pool associated with the pool token |
 | tokenId | uint256 | Pool token id |
 
 ### onTranchedPoolDrawdown
 
 ```solidity
-function onTranchedPoolDrawdown(uint256 sliceIndex) external
+function onTranchedPoolDrawdown(uint256 _sliceIndex) external
 ```
 
 callback for TranchedPools when they drawdown
 
-_initializes rewards info for the calling TranchedPool_
+_initializes rewards info for the calling TranchedPool if it's the first
+ drawdown for the given slice_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _sliceIndex | uint256 |  |
+
+### setBackerAndStakingRewardsTokenInfoOnSplit
+
+```solidity
+function setBackerAndStakingRewardsTokenInfoOnSplit(struct IBackerRewards.BackerRewardsTokenInfo originalBackerRewardsTokenInfo, struct IBackerRewards.StakingRewardsTokenInfo originalStakingRewardsTokenInfo, uint256 newTokenId, uint256 newRewardsClaimed) external
+```
+
+Set BackerRewards and BackerStakingRewards metadata for tokens created by a pool token split.
+
+_The sum of newRewardsClaimed across the split tokens MUST be equal to (or be very slightly smaller
+than, in the case of rounding due to integer division) the original token's rewardsClaimed. Furthermore,
+they must be split proportional to the original and new token's principalAmounts. This impl validates
+neither of those things because only the pool tokens contract can call it, and it trusts that the PoolTokens
+contract doesn't call maliciously._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| originalBackerRewardsTokenInfo | struct IBackerRewards.BackerRewardsTokenInfo | backer rewards info for the pool token that was split |
+| originalStakingRewardsTokenInfo | struct IBackerRewards.StakingRewardsTokenInfo | backer staking rewards info for the pool token that was split |
+| newTokenId | uint256 | id of one of the tokens in the split |
+| newRewardsClaimed | uint256 | rewardsClaimed value for the new token. |
+
+### clearTokenInfo
+
+```solidity
+function clearTokenInfo(uint256 tokenId) external
+```
+
+Clear all BackerRewards and StakingRewards associated data for `tokenId`
+
+### getTokenInfo
+
+```solidity
+function getTokenInfo(uint256 poolTokenId) external view returns (struct IBackerRewards.BackerRewardsTokenInfo)
+```
+
+Get backer rewards metadata for a pool token
+
+### getStakingRewardsTokenInfo
+
+```solidity
+function getStakingRewardsTokenInfo(uint256 poolTokenId) external view returns (struct IBackerRewards.StakingRewardsTokenInfo)
+```
+
+Get backer staking rewards metadata for a pool token
+
+### getBackerStakingRewardsPoolInfo
+
+```solidity
+function getBackerStakingRewardsPoolInfo(contract ITranchedPool pool) external view returns (struct IBackerRewards.StakingRewardsPoolInfo)
+```
+
+Get backer staking rewards for a pool
 
 ### poolTokenClaimableRewards
 
@@ -305,7 +303,7 @@ PoolToken request to withdraw multiple PoolTokens allocated rewards
 ### withdraw
 
 ```solidity
-function withdraw(uint256 tokenId) public
+function withdraw(uint256 tokenId) public returns (uint256)
 ```
 
 PoolToken request to withdraw all allocated rewards
@@ -315,6 +313,12 @@ PoolToken request to withdraw all allocated rewards
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenId | uint256 | Pool token id |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | amount of rewards withdrawn |
 
 ### stakingRewardsEarnedSinceLastWithdraw
 
@@ -342,43 +346,6 @@ time its staking rewards were withdrawn.
 ```solidity
 function _allocateRewards(uint256 _interestPaymentAmount) internal
 ```
-
-### _allocateStakingRewards
-
-```solidity
-function _allocateStakingRewards() internal
-```
-
-### _checkpointPoolStakingRewards
-
-```solidity
-function _checkpointPoolStakingRewards(contract ITranchedPool pool, bool publish) internal
-```
-
-Checkpoints staking reward accounting for a given pool.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| pool | contract ITranchedPool | pool to checkpoint |
-| publish | bool | if true, the updated rewards values will be immediately available for                 backers to withdraw. otherwise, the accounting will be updated but backers                 will not be able to withdraw |
-
-### _checkpointSliceStakingRewards
-
-```solidity
-function _checkpointSliceStakingRewards(contract ITranchedPool pool, uint256 sliceIndex, bool publish) internal
-```
-
-checkpoint the staking rewards accounting for a single tranched pool slice
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| pool | contract ITranchedPool | pool that the slice belongs to |
-| sliceIndex | uint256 | index of slice to checkpoint rewards accounting for |
-| publish | bool | if true, the updated rewards values will be immediately available for                 backers to withdraw. otherwise, the accounting will be updated but backers                 will not be able to withdraw |
 
 ### _checkpointTokenStakingRewards
 
@@ -457,26 +424,6 @@ Returns the equivalent amount of USDC given an amount of fidu and a share price
 | ---- | ---- | ----------- |
 | [0] | uint256 | equivalent amount of USDC |
 
-### _sliceIndexToJuniorTrancheId
-
-```solidity
-function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256)
-```
-
-Returns the junior tranche id for the given slice index
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| index | uint256 | slice index |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | junior tranche id of given slice index |
-
 ### _juniorTrancheIdToSliceIndex
 
 ```solidity
@@ -497,20 +444,6 @@ Returns the slice index for the given junior tranche id
 | ---- | ---- | ----------- |
 | [0] | uint256 | slice index that the given tranche id belongs to |
 
-### _getUpdatedStakingRewards
-
-```solidity
-function _getUpdatedStakingRewards() internal returns (contract IStakingRewards)
-```
-
-get the StakingRewards contract after checkpoint the rewards values
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | contract IStakingRewards | StakingRewards with updated rewards values |
-
 ### _poolRewardsHaveBeenInitialized
 
 ```solidity
@@ -528,7 +461,7 @@ Returns true if a TranchedPool's rewards parameters have been initialized, other
 ### _poolStakingRewardsInfoHaveBeenInitialized
 
 ```solidity
-function _poolStakingRewardsInfoHaveBeenInitialized(struct BackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (bool)
+function _poolStakingRewardsInfoHaveBeenInitialized(struct IBackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (bool)
 ```
 
 Returns true if a given pool's staking rewards parameters have been initialized
@@ -544,7 +477,7 @@ Returns true if a TranchedPool's slice's rewards parameters have been initialize
 ### _getSliceAccumulatorAtLastCheckpoint
 
 ```solidity
-function _getSliceAccumulatorAtLastCheckpoint(struct BackerRewards.StakingRewardsSliceInfo sliceInfo, struct BackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (uint256)
+function _getSliceAccumulatorAtLastCheckpoint(struct IBackerRewards.StakingRewardsSliceInfo sliceInfo, struct IBackerRewards.StakingRewardsPoolInfo poolInfo) internal pure returns (uint256)
 ```
 
 Return a slice's rewards accumulator if it has been intialized,
@@ -553,85 +486,16 @@ Return a slice's rewards accumulator if it has been intialized,
 ### _getTokenAccumulatorAtLastWithdraw
 
 ```solidity
-function _getTokenAccumulatorAtLastWithdraw(struct BackerRewards.StakingRewardsTokenInfo tokenInfo, struct BackerRewards.StakingRewardsSliceInfo sliceInfo) internal pure returns (uint256)
+function _getTokenAccumulatorAtLastWithdraw(struct IBackerRewards.StakingRewardsTokenInfo tokenInfo, struct IBackerRewards.StakingRewardsSliceInfo sliceInfo) internal pure returns (uint256)
 ```
 
 Return a tokenss rewards accumulator if its been initialized, otherwise return the slice's accumulator
 
-### _getJuniorTrancheForTranchedPoolSlice
+### onlyPoolTokens
 
 ```solidity
-function _getJuniorTrancheForTranchedPoolSlice(contract ITranchedPool pool, uint256 sliceIndex) internal view returns (struct ITranchedPool.TrancheInfo)
+modifier onlyPoolTokens()
 ```
-
-Returns the junior tranche of a pool given a slice index
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| pool | contract ITranchedPool | pool to retreive tranche from |
-| sliceIndex | uint256 | slice index |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | struct ITranchedPool.TrancheInfo | tranche in specified slice and pool |
-
-### _getPrincipalDeployedForTranche
-
-```solidity
-function _getPrincipalDeployedForTranche(struct ITranchedPool.TrancheInfo tranche) internal pure returns (uint256)
-```
-
-Return the amount of principal currently deployed in a given slice
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tranche | struct ITranchedPool.TrancheInfo | tranche to get principal outstanding of |
-
-### _initializeStakingRewardsSliceInfo
-
-```solidity
-function _initializeStakingRewardsSliceInfo(uint256 fiduSharePriceAtDrawdown, uint256 principalDeployedAtDrawdown, uint256 rewardsAccumulatorAtDrawdown) internal pure returns (struct BackerRewards.StakingRewardsSliceInfo)
-```
-
-Return an initialized StakingRewardsSliceInfo with the given parameters
-
-### _calculateProRatedRewardsForPeriod
-
-```solidity
-function _calculateProRatedRewardsForPeriod(uint256 rewardsAccruedSinceLastCheckpoint, uint256 lastUpdatedTime, uint256 currentTime, uint256 endTime) internal pure returns (uint256)
-```
-
-Returns the amount of rewards accrued from `lastUpdatedTime` to `endTime`
-          We assume the reward rate was linear during this time
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| rewardsAccruedSinceLastCheckpoint | uint256 | rewards accumulated between `lastUpdatedTime` and `currentTime` |
-| lastUpdatedTime | uint256 | the last timestamp the rewards accumulator was updated |
-| currentTime | uint256 | the current timestamp |
-| endTime | uint256 | the end time of the period that is elligible to accrue rewards |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | approximate rewards accrued from `lastUpdateTime` to `endTime` |
-
-### _updateStakingRewardsPoolInfoAccumulator
-
-```solidity
-function _updateStakingRewardsPoolInfoAccumulator(struct BackerRewards.StakingRewardsPoolInfo poolInfo, uint256 newAccumulatorValue) internal
-```
-
-update a Pool's staking rewards accumulator
 
 ### onlyPool
 

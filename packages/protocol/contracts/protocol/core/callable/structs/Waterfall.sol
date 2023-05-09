@@ -18,7 +18,8 @@ using WaterfallLogic for Waterfall global;
  *         - Repayment of borrowed funds - across all tranches
  *         - Withdrawal of paid funds (from the uncalled tranche)
  *         - Summing accounting variables across all tranches
- *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ *         See "/packages/docs/docs/reference/contracts/core/callable/internal-structure.md" for notes on
+ *         relationships between struct entities in Callable Loans.
  */
 
 struct Waterfall {

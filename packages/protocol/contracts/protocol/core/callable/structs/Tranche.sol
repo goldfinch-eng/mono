@@ -14,7 +14,8 @@ using TrancheLogic for Tranche global;
  *         - Drawdown of funds
  *         - Repayment of borrowed funds
  *         - Withdrawal of paid funds
- *         See "./notes.md" for notes on relationships between struct entities in Callable Loans.
+ *         See "/packages/docs/docs/reference/contracts/core/callable/internal-structure.md" for notes on
+ *         relationships between struct entities in Callable Loans.
  */
 
 struct Tranche {
@@ -103,8 +104,8 @@ library TrancheLogic {
     // interestTaken = (t._interestPaid * principalDepositedTaken) /
     //                 tranchePrincipalOutstandingBeforeReserves;
     interestTaken =
-      ((t._interestPaid * t._principalDeposited * principalOutstandingToTake)) /
-      (t._principalDeposited * tranchePrincipalOutstandingBeforeReserves);
+      (t._interestPaid * principalOutstandingToTake) /
+      tranchePrincipalOutstandingBeforeReserves;
 
     t._principalPaid -= principalPaidTaken;
     t._interestPaid -= interestTaken;
@@ -204,6 +205,13 @@ library TrancheLogic {
     uint256 principalAmount
   ) internal view returns (uint256) {
     return (t.principalOutstandingBeforeReserves() * principalAmount) / t.principalDeposited();
+  }
+
+  function proportionalPrincipalOutstandingAfterReserves(
+    Tranche storage t,
+    uint256 principalAmount
+  ) internal view returns (uint256) {
+    return (t.principalOutstandingAfterReserves() * principalAmount) / t.principalDeposited();
   }
 
   function proportionalInterestWithdrawable(

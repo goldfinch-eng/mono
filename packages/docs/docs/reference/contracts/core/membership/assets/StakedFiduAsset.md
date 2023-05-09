@@ -57,3 +57,19 @@ Get the point-in-time USDC equivalent value of the ERC721 asset. This
 | ---- | ---- | ----------- |
 | [0] | uint256 | USDC equivalent value |
 
+### harvest
+
+```solidity
+function harvest(contract Context context, address owner, uint256 assetTokenId) internal
+```
+
+Harvest GFI rewards on a staked fidu token and send them to `owner`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| context | contract Context | goldfinch context for routing |
+| owner | address | address to send the GFI to |
+| assetTokenId | uint256 | id of the position to harvest |
+

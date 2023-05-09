@@ -81,6 +81,12 @@ function getStakingRewards(contract GoldfinchConfig config) internal view return
 function getTranchedPoolImplementationRepository(contract GoldfinchConfig config) internal view returns (contract ImplementationRepository)
 ```
 
+### getCallableLoanImplementationRepository
+
+```solidity
+function getCallableLoanImplementationRepository(contract GoldfinchConfig config) internal view returns (contract ImplementationRepository)
+```
+
 ### getWithdrawalRequestToken
 
 ```solidity
