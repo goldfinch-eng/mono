@@ -80,9 +80,6 @@
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []
         },
-        "**/BaseUpgradeablePausable08x.sol:BaseUpgradeablePausable": {
-          "__BaseUpgradeablePausable__init": []
-        },
         "**/Fidu.sol:Fidu": {
           "__initialize__": [],
           "mintTo": [],
@@ -133,11 +130,6 @@
           "pay": ["whenNotPaused"]
         },
         "**/PauserPausable.sol:PauserPausable": {
-          "__PauserPausable__init": [],
-          "pause": ["onlyPauserRole"],
-          "unpause": ["onlyPauserRole"]
-        },
-        "**/PauserPausable08x.sol:PauserPausable": {
           "__PauserPausable__init": [],
           "pause": ["onlyPauserRole"],
           "unpause": ["onlyPauserRole"]
