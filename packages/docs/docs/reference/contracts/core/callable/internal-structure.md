@@ -11,6 +11,8 @@ Checkpointing makes a snapshot of time-dependent accounting variables. The snaps
 
 This is important for keeping track of interest bearing balance, and tracking the accrual of interest when the interest-bearing balance can change.
 
+Checkpointing also settles reserved principal if a principal payment due date has passed since the last time a checkpoint occurred. Settling reserved principal converts the reserved principal into principal paid.
+
 # Interest bearing balance
 See the general documentation on Interest bearing balance for general business logic.
 
