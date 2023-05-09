@@ -9,10 +9,9 @@ import * as migrate332 from "../blockchain_scripts/migrations/v3.3.2/migrate3_3_
  * on mainnet before the hard mainnet fork block num.
  */
 async function main(hre: HardhatRuntimeEnvironment) {
-  // console.log("No pending mainnet migrations...")
-  console.log("Running pending mainnet migrations...")
-  await migrate332.main()
-  console.log("Ran pending mainnet migrations...")
+  console.log("No pending mainnet migrations...")
+  // console.log("Running pending mainnet migrations...")
+  // console.log("Ran pending mainnet migrations...")
 }
 
 module.exports = main
