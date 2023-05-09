@@ -484,6 +484,9 @@ describe("v3.3.0", async function () {
       for (let i = 3; i < 10; i++) {
         const randoUser = (await allSigners[i]?.getAddress()) as string
         await impersonateAccount(hre, randoUser)
+        const requiresLockerRoleError = unknownCustomError(
+          `${requiresLockerRoleSelector}${ERROR_SELECTOR_BUFFER}${randoUser.slice(2).toLowerCase()}`
+        )
         await expect(
           borrowerContract.initialize(randoUser, randoUser, {from: randoUser})
         ).to.eventually.be.rejectedWith("Contract instance has already been initialized")
@@ -562,13 +565,13 @@ describe("v3.3.0", async function () {
           )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
         await expect(callableLoanInstance.setAllowedUIDTypes([1], {from: randoUser})).to.eventually.be.rejectedWith(
-          unknownCustomError(`${requiresLockerRoleSelector}${ERROR_SELECTOR_BUFFER}${randoUser.slice(2).toLowerCase()}`)
+          requiresLockerRoleError
         )
         await expect(callableLoanInstance.setFundableAt(0, {from: randoUser})).to.eventually.be.rejectedWith(
-          unknownCustomError(`${requiresLockerRoleSelector}${ERROR_SELECTOR_BUFFER}${randoUser.slice(2).toLowerCase()}`)
+          requiresLockerRoleError
         )
         await expect(callableLoanInstance.drawdown(usdcVal(100), {from: randoUser})).to.eventually.be.rejectedWith(
-          unknownCustomError(`${requiresLockerRoleSelector}${ERROR_SELECTOR_BUFFER}${randoUser.slice(2).toLowerCase()}`)
+          requiresLockerRoleError
         )
       }
     })
