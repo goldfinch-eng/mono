@@ -33,7 +33,7 @@ contract ERC1155PresetPauserUpgradeable is
    * @dev Grants `OWNER_ROLE` and `PAUSER_ROLE` to the account that
    * deploys the contract.
    */
-  function __ERC1155PresetPauser_init(address owner, string memory uri) internal initializer {
+  function __ERC1155PresetPauser_init(address owner, string memory uri) internal onlyInitializing {
     __Context_init_unchained();
     __ERC165_init_unchained();
     __AccessControl_init_unchained();
@@ -44,7 +44,7 @@ contract ERC1155PresetPauserUpgradeable is
     __ERC1155PresetPauser_init_unchained(owner);
   }
 
-  function __ERC1155PresetPauser_init_unchained(address owner) internal initializer {
+  function __ERC1155PresetPauser_init_unchained(address owner) internal onlyInitializing {
     _setupRole(OWNER_ROLE, owner);
     _setupRole(PAUSER_ROLE, owner);
 

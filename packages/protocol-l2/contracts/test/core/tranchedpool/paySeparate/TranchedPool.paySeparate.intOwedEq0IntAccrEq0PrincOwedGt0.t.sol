@@ -6,9 +6,11 @@ import {TranchedPool} from "../../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import {SaturatingSub} from "../../../../protocol/library/SaturatingSub.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {SaturatingSub} from "../../../../library/SaturatingSub.sol";
 import {TranchedPoolBaseTest} from "../BaseTranchedPool.t.sol";
+
+using SaturatingSub for uint256;
 
 /**
  * Testing paySeparate when
