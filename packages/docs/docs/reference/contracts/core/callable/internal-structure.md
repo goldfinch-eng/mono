@@ -1,3 +1,27 @@
+# General documentation
+General documentation can be found in the community docs
+[https://docs.goldfinch.finance/] Hosted app URL
+[https://github.com/goldfinch-eng/community-docs] Public repo URL
+
+# Checkpointing
+Checkpointing makes a snapshot of time-dependent accounting variables. The snapshot includes:
+- Checkpoint time
+- Accrued interest
+- Owed interest
+
+This is important for keeping track of interest bearing balance, and tracking the accrual of interest when the interest-bearing balance can change.
+
+# Interest bearing balance
+See the general documentation on Interest bearing balance for general business logic.
+
+In the implementation, we account for interest bearing balance by keeping track of paid principal in two places, each tranche's `principalPaid` and each tranche's `principalReserved`.
+
+In order to determine interest bearing balance, start by summing `principalPaid` across all tranches.
+
+Then add `principalReserved` summed across all the tranches if a principal payment due date has passed since the last time a checkpoint occurred.
+
+
+
 # Relationship between tranches, PaymentSchedule principal periods, and Call Request Periods
 
 Tranches, PaymentSchedule principal periods, and Call Request Periods are all directly related to one another.
