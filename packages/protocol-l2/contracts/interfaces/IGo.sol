@@ -22,6 +22,6 @@ abstract contract IGo {
 
   function goOnlyIdTypes(
     address account,
-    uint256[] calldata onlyIdTypes
+    uint256[] memory onlyIdTypes
   ) public view virtual returns (bool);
 }

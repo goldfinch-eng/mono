@@ -155,9 +155,4 @@ contract UcuProxy is IUcuProxy, Proxy {
     require(msg.sender == _getOwner(), "NA");
     _;
   }
-
-  // /////////////////////// EVENTS ///////////////////////////////////////////////////////////////////////////
-
-  /// @dev Emitted when the implementation is upgraded.
-  event Upgraded(address indexed implementation);
 }

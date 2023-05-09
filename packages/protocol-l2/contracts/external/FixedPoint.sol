@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol";
+import {SignedSafeMath} from "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 
 /**
  * @title Library for fixed point arithmetic on uints

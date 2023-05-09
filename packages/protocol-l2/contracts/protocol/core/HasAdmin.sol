@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 /// @notice Base contract that provides an OWNER_ROLE and convenience function/modifier for
 ///   checking sender against this role. Inherting contracts must set up this role using
 ///   `_setupRole` and `_setRoleAdmin`.
-contract HasAdmin is AccessControlUpgradeSafe {
+contract HasAdmin is AccessControlUpgradeable {
   /// @notice ID for OWNER_ROLE
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 

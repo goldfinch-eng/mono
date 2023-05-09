@@ -13,8 +13,8 @@ import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ILoan} from "../../interfaces/ILoan.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
-import {BaseRelayRecipient} from "../../external/BaseRelayRecipient.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -28,6 +28,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
  */
 
 contract Borrower is BaseUpgradeablePausable, IBorrower {
+  using SafeMathUpgradeable for uint256;
+  using Math for uint256;
   using SafeERC20Transfer for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
 
@@ -46,13 +48,15 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
 
-    trustedForwarder = config.trustedForwarderAddress();
-
     // Handle default approvals. Pool, and OneInch for maximum amounts
     address oneInch = config.oneInchAddress();
     IERC20withDec usdc = config.getUSDC();
-    usdc.approve(oneInch, uint256(-1));
-    bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
+    usdc.approve(oneInch, type(uint256).max);
+    bytes memory data = abi.encodeWithSignature(
+      "approve(address,uint256)",
+      oneInch,
+      type(uint256).max
+    );
     _invoke(USDT_ADDRESS, data);
     _invoke(BUSD_ADDRESS, data);
     _invoke(GUSD_ADDRESS, data);
@@ -81,7 +85,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
     ILoan(poolAddress).drawdown(amount);
 
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
-      addressToSendTo = _msgSender();
+      addressToSendTo = msg.sender;
     }
 
     transferERC20(config.usdcAddress(), addressToSendTo, amount);
@@ -110,7 +114,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
 
     // Default to sending to the owner, and don't let funds stay in this contract
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
-      addressToSendTo = _msgSender();
+      addressToSendTo = msg.sender;
     }
 
     // Fulfill the send to
@@ -131,7 +135,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
    */
   function pay(address poolAddress, uint256 amount) external onlyAdmin {
     require(
-      config.getUSDC().transferFrom(_msgSender(), address(this), amount),
+      config.getUSDC().transferFrom(msg.sender, address(this), amount),
       "Failed to transfer USDC"
     );
     _pay(poolAddress, amount);
@@ -152,7 +156,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
 
     // Do a single transfer, which is cheaper
     require(
-      config.getUSDC().transferFrom(_msgSender(), address(this), totalAmount),
+      config.getUSDC().transferFrom(msg.sender, address(this), totalAmount),
       "Failed to transfer USDC"
     );
 
@@ -181,7 +185,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
     uint256 principalPayment = Math.min(principalAmount, maxPrincipalPayment);
     uint256 interestPayment = Math.min(interestAmount, maxInterestPayment);
     config.getUSDC().safeERC20TransferFrom(
-      _msgSender(),
+      msg.sender,
       address(this),
       principalPayment + interestPayment
     );
@@ -198,7 +202,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
 
   function payInFull(address poolAddress, uint256 amount) external onlyAdmin {
     require(
-      config.getUSDC().transferFrom(_msgSender(), address(this), amount),
+      config.getUSDC().transferFrom(msg.sender, address(this), amount),
       "Failed to transfer USDC"
     );
     _pay(poolAddress, amount);
@@ -212,7 +216,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
     uint256 minTargetAmount,
     uint256[] calldata exchangeDistribution
   ) external onlyAdmin {
-    transferFrom(fromToken, _msgSender(), address(this), originAmount);
+    transferFrom(fromToken, msg.sender, address(this), originAmount);
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
     uint256 usdcBalance = usdc.balanceOf(address(this));
@@ -233,7 +237,7 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
       totalMinAmount = totalMinAmount.add(minAmounts[i]);
     }
 
-    transferFrom(fromToken, _msgSender(), address(this), originAmount);
+    transferFrom(fromToken, msg.sender, address(this), originAmount);
 
     IERC20withDec usdc = config.getUSDC();
 
@@ -324,18 +328,5 @@ contract Borrower is BaseUpgradeablePausable, IBorrower {
     assembly {
       value := mload(add(_bytes, 0x20))
     }
-  }
-
-  // OpenZeppelin contracts come with support for GSN _msgSender() (which just defaults to msg.sender)
-  // Since there are two different versions of the function in the hierarchy, we need to instruct solidity to
-  // use the relay recipient version which can actually pull the real sender from the parameters.
-  // https://www.notion.so/My-contract-is-using-OpenZeppelin-How-do-I-add-GSN-support-2bee7e9d5f774a0cbb60d3a8de03e9fb
-  function _msgSender()
-    internal
-    view
-    override(ContextUpgradeSafe, BaseRelayRecipient)
-    returns (address payable)
-  {
-    return msg.sender;
   }
 }

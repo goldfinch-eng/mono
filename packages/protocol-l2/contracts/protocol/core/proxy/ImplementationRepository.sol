@@ -216,13 +216,4 @@ contract ImplementationRepository is BaseUpgradeablePausable, IImplementationRep
   function _lineageExists(uint256 lineageId) internal view returns (bool) {
     return lineageId != INVALID_LINEAGE_ID && lineageId <= currentLineageId;
   }
-
-  // //////// Events //////////////////////////////////////////////////////////////
-  event Added(
-    uint256 indexed lineageId,
-    address indexed newImplementation,
-    address indexed oldImplementation
-  );
-  event Removed(uint256 indexed lineageId, address indexed implementation);
-  event UpgradeDataSet(address indexed implementation, bytes data);
 }

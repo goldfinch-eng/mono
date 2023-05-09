@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import {SafeCast} from "@openzeppelin/contracts-ethereum-package/contracts/utils/SafeCast.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -99,7 +99,7 @@ contract CreditLine is BaseUpgradeablePausable, ITranchedCreditLineInitializable
     schedule.schedule = _schedule;
 
     // Unlock owner, which is a TranchedPool, for infinite amount
-    assert(config.getUSDC().approve(owner, uint256(-1)));
+    assert(config.getUSDC().approve(owner, type(uint256).max));
   }
 
   function pay(

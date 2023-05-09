@@ -42,7 +42,7 @@ contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
     royaltyParams.setRoyaltyParams(newReceiver, newRoyaltyPercent);
   }
 
-  function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+  function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
     return interfaceId == ConfigurableRoyaltyStandard._INTERFACE_ID_ERC2981;
   }
 }

@@ -12,11 +12,11 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Counters.sol";
-import "./ERC721Pausable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {ERC721PausableUpgradeable, ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
+import {ERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
  * @dev {ERC721} token, including:
@@ -35,9 +35,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
  */
 contract ERC721PresetMinterPauserAutoIdUpgradeSafe is
   Initializable,
-  ContextUpgradeSafe,
-  AccessControlUpgradeSafe,
-  ERC721PausableUpgradeSafe
+  AccessControlUpgradeable,
+  ERC721PausableUpgradeable,
+  ERC721EnumerableUpgradeable
 {
   using Counters for Counters.Counter;
 
@@ -80,12 +80,28 @@ contract ERC721PresetMinterPauserAutoIdUpgradeSafe is
     _unpause();
   }
 
+  function supportsInterface(
+    bytes4 interfaceId
+  )
+    public
+    view
+    virtual
+    override(AccessControlUpgradeable, ERC721Upgradeable, ERC721EnumerableUpgradeable)
+    returns (bool)
+  {
+    return
+      AccessControlUpgradeable.supportsInterface(interfaceId) ||
+      ERC721Upgradeable.supportsInterface(interfaceId) ||
+      ERC721EnumerableUpgradeable.supportsInterface(interfaceId);
+  }
+
   function _beforeTokenTransfer(
     address from,
     address to,
-    uint256 tokenId
-  ) internal virtual override(ERC721PausableUpgradeSafe) {
-    super._beforeTokenTransfer(from, to, tokenId);
+    uint256 tokenId,
+    uint256 amount
+  ) internal virtual override(ERC721PausableUpgradeable, ERC721EnumerableUpgradeable) {
+    super._beforeTokenTransfer(from, to, tokenId, amount);
   }
 
   uint256[49] private __gap;

@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.19;
 
-import "./openzeppelin/IERC721.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
-interface IPoolTokens is IERC721 {
+interface IPoolTokens is IERC721Upgradeable {
   struct TokenInfo {
     address pool;
     uint256 tranche;

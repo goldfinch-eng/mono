@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 /**
  * @title PauserPausable
@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.
  * @author Goldfinch
  */
 
-contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
+contract PauserPausable is AccessControlUpgradeable, PausableUpgradeable {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
   // solhint-disable-next-line func-name-mixedcase

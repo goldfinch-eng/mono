@@ -3,9 +3,9 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import {AccessControlUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
-import {ReentrancyGuardUpgradeSafe} from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
-import {Initializable} from "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {PauserPausable} from "./PauserPausable.sol";
 
@@ -18,9 +18,9 @@ import {PauserPausable} from "./PauserPausable.sol";
 
 contract BaseUpgradeablePausable is
   Initializable,
-  AccessControlUpgradeSafe,
+  AccessControlUpgradeable,
   PauserPausable,
-  ReentrancyGuardUpgradeSafe
+  ReentrancyGuardUpgradeable
 {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   using SafeMathUpgradeable for uint256;

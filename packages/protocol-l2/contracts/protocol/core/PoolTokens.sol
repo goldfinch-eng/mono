@@ -2,8 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {ERC721PresetMinterPauserAutoIdUpgradeSafe} from "../../external/ERC721PresetMinterPauserAutoId.sol";
-import {ERC165UpgradeSafe} from "../../external/ERC721PresetMinterPauserAutoId.sol";
-import {IERC165} from "../../external/ERC721PresetMinterPauserAutoId.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {IERC165} from "../../interfaces/openzeppelin/IERC165.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {HasAdmin} from "./HasAdmin.sol";
@@ -11,6 +14,7 @@ import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
 import {IERC2981} from "../../interfaces/IERC2981.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title PoolTokens
@@ -19,6 +23,10 @@ import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
  * @author Goldfinch
  */
 contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin, IERC2981 {
+  using Strings for uint256;
+  using Counters for Counters.Counter;
+  using SafeMathUpgradeable for uint256;
+
   bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
   bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
   bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
@@ -34,6 +42,15 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
 
   ConfigurableRoyaltyStandard.RoyaltyParams public royaltyParams;
   using ConfigurableRoyaltyStandard for ConfigurableRoyaltyStandard.RoyaltyParams;
+
+  // Optional mapping for token URIs
+  mapping(uint256 => string) private _tokenURIs;
+
+  string private __baseURI;
+
+  function _baseURI() internal view override returns (string memory) {
+    return __baseURI;
+  }
 
   /*
     We are using our own initializer function so that OZ doesn't automatically
@@ -316,6 +333,22 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     emit TokenBurned(owner, pool, tokenId);
   }
 
+  function _burn(uint256 tokenId) internal virtual override {
+    address owner = ownerOf(tokenId);
+
+    _beforeTokenTransfer(owner, address(0), tokenId, 1);
+
+    // Clear approvals
+    _approve(address(0), tokenId);
+
+    // Clear metadata (if any)
+    if (bytes(_tokenURIs[tokenId]).length != 0) {
+      delete _tokenURIs[tokenId];
+    }
+
+    emit Transfer(owner, address(0), tokenId);
+  }
+
   function _validPool(address poolAddress) internal view virtual returns (bool) {
     return pools[poolAddress].created;
   }
@@ -347,12 +380,43 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   }
 
   function setBaseURI(string calldata baseURI_) external onlyAdmin {
-    _setBaseURI(baseURI_);
+    __baseURI = baseURI_;
+  }
+
+  function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
+    require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+    _tokenURIs[tokenId] = _tokenURI;
+  }
+
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+
+    string memory _tokenURI = _tokenURIs[tokenId];
+
+    // If there is no base URI, return the token URI.
+    if (bytes(__baseURI).length == 0) {
+      return _tokenURI;
+    }
+    // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+    if (bytes(_tokenURI).length > 0) {
+      return string(abi.encodePacked(__baseURI, _tokenURI));
+    }
+    // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
+    return string(abi.encodePacked(__baseURI, tokenId.toString()));
   }
 
   function supportsInterface(
     bytes4 id
-  ) public view override(ERC165UpgradeSafe, IERC165) returns (bool) {
+  )
+    public
+    pure
+    override(
+      AccessControlUpgradeable,
+      IERC165Upgradeable,
+      ERC721PresetMinterPauserAutoIdUpgradeSafe
+    )
+    returns (bool)
+  {
     return (id == _INTERFACE_ID_ERC721 ||
       id == _INTERFACE_ID_ERC721_METADATA ||
       id == _INTERFACE_ID_ERC721_ENUMERABLE ||

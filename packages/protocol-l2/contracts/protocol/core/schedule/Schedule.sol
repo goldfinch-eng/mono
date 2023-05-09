@@ -6,7 +6,7 @@ import {IPeriodMapper} from "../../../interfaces/IPeriodMapper.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import {SaturatingSub} from "../../library/SaturatingSub.sol";
+import {SaturatingSub} from "../../../library/SaturatingSub.sol";
 
 /**
  * @title Schedule

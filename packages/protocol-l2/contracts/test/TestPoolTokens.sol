@@ -24,12 +24,4 @@ contract TestPoolTokens is PoolTokens {
       return super._validPool(_sender);
     }
   }
-
-  function _msgSender() internal view override returns (address payable) {
-    if (sender != address(0)) {
-      return sender;
-    } else {
-      return super._msgSender();
-    }
-  }
 }
