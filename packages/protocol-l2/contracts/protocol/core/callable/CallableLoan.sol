@@ -18,7 +18,7 @@ import {IVersioned} from "../../../interfaces/IVersioned.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {IGoldfinchConfig} from "../../../interfaces/IGoldfinchConfig.sol";
 
-import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable08x.sol";
+import {BaseUpgradeablePausable} from "../BaseUpgradeablePausable.sol";
 
 import {CallableLoanConfigHelper} from "./CallableLoanConfigHelper.sol";
 import {Waterfall} from "./structs/Waterfall.sol";
