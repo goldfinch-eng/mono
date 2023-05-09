@@ -18,7 +18,6 @@ import {TranchedPoolBaseTest} from "../BaseTranchedPool.t.sol";
  */
 contract TranchedPoolPaySeparateIntOwedEq0IntAccrEq0PrincOwedGt0 is TranchedPoolBaseTest {
   using SafeMath for uint256;
-  using SaturatingSub for uint256;
 
   function testAcceptsAllPaymentAmounts(
     uint256 intPayment,
