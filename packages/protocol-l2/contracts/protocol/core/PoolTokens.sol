@@ -6,7 +6,6 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {IERC165} from "../../interfaces/openzeppelin/IERC165.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {HasAdmin} from "./HasAdmin.sol";
