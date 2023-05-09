@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
-import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 import {CallableLoan} from "../../../protocol/core/callable/CallableLoan.sol";
 import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {IGoldfinchFactory} from "../../../interfaces/IGoldfinchFactory.sol";

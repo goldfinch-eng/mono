@@ -33,7 +33,7 @@ contract BaseUpgradeablePausable is
   uint256[50] private __gap4;
 
   // solhint-disable-next-line func-name-mixedcase
-  function __BaseUpgradeablePausable__init(address owner) public initializer {
+  function __BaseUpgradeablePausable__init(address owner) public onlyInitializing {
     require(owner != address(0), "Owner cannot be the zero address");
     __AccessControl_init_unchained();
     __Pausable_init_unchained();

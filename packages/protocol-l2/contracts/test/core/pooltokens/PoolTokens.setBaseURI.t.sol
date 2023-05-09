@@ -19,8 +19,8 @@ contract PoolTokensSetBaseURITest is PoolTokensBaseTest {
   function testAdminCanSet(string memory baseUri) public impersonating(GF_OWNER) {
     poolTokens.setBaseURI(baseUri);
     assertEq(
-      keccak256(abi.encodePacked(poolTokens.baseURI())),
-      keccak256(abi.encodePacked(baseUri))
+      keccak256(abi.encodePacked(poolTokens.tokenURI(1))),
+      keccak256(abi.encodePacked(baseUri, "1"))
     );
   }
 

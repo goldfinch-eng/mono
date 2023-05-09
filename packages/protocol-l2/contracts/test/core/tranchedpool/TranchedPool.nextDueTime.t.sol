@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";

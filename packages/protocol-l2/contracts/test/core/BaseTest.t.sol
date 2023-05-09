@@ -7,6 +7,7 @@ import {TestConstants} from "./TestConstants.t.sol";
 import {FuzzingHelper} from "../helpers/FuzzingHelper.t.sol";
 
 import {IProtocolHelper} from "./IProtocolHelper.sol";
+import {ProtocolHelper} from "./ProtocolHelper.t.sol";
 
 abstract contract BaseTest is Test {
   address internal constant PROTOCOL_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
@@ -27,12 +28,7 @@ abstract contract BaseTest is Test {
 
   function setUp() public virtual {
     // We use deployCode and cast to an interface so that BaseTest can be used by both 0.6.x and 0.8.x test files.
-    protocol = IProtocolHelper(
-      deployCode(
-        "./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json",
-        abi.encode(vm, GF_OWNER, TREASURY)
-      )
-    );
+    protocol = IProtocolHelper(new ProtocolHelper(vm, GF_OWNER, TREASURY));
 
     excludeAddresses();
   }

@@ -16,8 +16,9 @@ import "forge-std/Test.sol";
 import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
 import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
+import {TestERC20} from "../TestERC20.sol";
 
-contract ProtocolHelper is IProtocolHelper, Test {
+contract ProtocolHelper is IProtocolHelper {
   GoldfinchConfig internal _gfConfig;
   GoldfinchFactory internal _gfFactory;
   IERC20 internal _usdc;
@@ -27,9 +28,7 @@ contract ProtocolHelper is IProtocolHelper, Test {
     vm.assume(treasury != address(0));
     vm.startPrank(gfOwner);
 
-    _usdc = IERC20(
-      deployCode("TestERC20.sol", abi.encode(type(uint256).max, uint8(TestConstants.USDC_DECIMALS)))
-    );
+    _usdc = IERC20(address(new TestERC20(type(uint256).max, uint8(TestConstants.USDC_DECIMALS))));
 
     _gfConfig = new GoldfinchConfig();
     _gfConfig.initialize(gfOwner);

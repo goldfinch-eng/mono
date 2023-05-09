@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
 import {TranchedPool} from "../../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../../protocol/core/CreditLine.sol";
 import {ITranchedPool} from "../../../../interfaces/ITranchedPool.sol";
-import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 import {TranchedPoolBaseTest} from "../BaseTranchedPool.t.sol";
 
