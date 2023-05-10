@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "../protocol/core/ConfigurableRoyaltyStandard.sol";
 import "../protocol/core/HasAdmin.sol";
 import "../interfaces/IERC2981.sol";
@@ -14,7 +16,7 @@ contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
   // don't get confused. See https://medium.com/aragondec/library-driven-development-in-solidity-2bebcaf88736#7ed4
   event RoyaltyParamsSet(address indexed sender, address newReceiver, uint256 newRoyaltyPercent);
 
-  constructor(address owner) public {
+  constructor(address owner) public initializer {
     __AccessControl_init_unchained();
     _setupRole(OWNER_ROLE, owner);
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);

@@ -15,6 +15,8 @@ import {TranchedPoolImplementationRepository} from "../../../protocol/core/Tranc
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 
+import {StringFormat} from "../../helpers/StringFormat.t.sol";
+
 contract GoldfinchFactoryTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
@@ -127,7 +129,14 @@ contract GoldfinchFactoryTest is BaseTest {
     address newBorrower
   ) public impersonating(notOwner) {
     vm.assume(!gfFactory.hasRole(TestConstants.OWNER_ROLE, notOwner));
-    vm.expectRevert("AccessControl: sender must be an admin to grant");
+    vm.expectRevert(
+      abi.encodePacked(
+        "AccessControl: account ",
+        StringFormat.formatAddress(notOwner),
+        " is missing role ",
+        StringFormat.formatRole(TestConstants.OWNER_ROLE)
+      )
+    );
     gfFactory.grantRole(TestConstants.BORROWER_ROLE, newBorrower);
   }
 
@@ -138,7 +147,14 @@ contract GoldfinchFactoryTest is BaseTest {
     grantRole(address(gfFactory), TestConstants.BORROWER_ROLE, address(this));
 
     _startImpersonation(borrower);
-    vm.expectRevert("AccessControl: sender must be an admin to grant");
+    vm.expectRevert(
+      abi.encodePacked(
+        "AccessControl: account ",
+        StringFormat.formatAddress(borrower),
+        " is missing role ",
+        StringFormat.formatRole(TestConstants.OWNER_ROLE)
+      )
+    );
     gfFactory.grantRole(TestConstants.BORROWER_ROLE, newBorrower);
   }
 

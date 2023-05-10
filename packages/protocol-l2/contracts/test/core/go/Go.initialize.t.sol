@@ -51,7 +51,7 @@ contract GoInitializeTest is GoBaseTest {
   }
 
   function testCannotBeCalledTwice() public {
-    vm.expectRevert("Contract instance has already been initialized");
+    vm.expectRevert("Initializable: contract is already initialized");
     go.initialize(GF_OWNER, gfConfig, address(uid));
   }
 }

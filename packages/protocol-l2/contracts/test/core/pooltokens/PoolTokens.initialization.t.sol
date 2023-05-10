@@ -7,7 +7,7 @@ import {TestConstants} from "../TestConstants.t.sol";
 
 contract PoolTokensInitializationTest is PoolTokensBaseTest {
   function testCantBeInitializedTwice() public {
-    vm.expectRevert("Contract instance has already been initialized");
+    vm.expectRevert("Initializable: contract is already initialized");
     poolTokens.__initialize__(GF_OWNER, gfConfig);
   }
 

@@ -37,7 +37,7 @@ contract ImplementationRepositoryTest is BaseTest {
     repo.initialize(caller, impl);
 
     // second should fail
-    vm.expectRevert("Contract instance has already been initialized");
+    vm.expectRevert("Initializable: contract is already initialized");
     repo.initialize(caller, otherImpl);
   }
 

@@ -42,12 +42,12 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   }
 
   // solhint-disable-next-line func-name-mixedcase
-  function __UniqueIdentity_init(address owner) internal initializer {
+  function __UniqueIdentity_init(address owner) internal onlyInitializing {
     __UniqueIdentity_init_unchained(owner);
   }
 
   // solhint-disable-next-line func-name-mixedcase
-  function __UniqueIdentity_init_unchained(address owner) internal initializer {
+  function __UniqueIdentity_init_unchained(address owner) internal onlyInitializing {
     _setupRole(SIGNER_ROLE, owner);
     _setRoleAdmin(SIGNER_ROLE, OWNER_ROLE);
   }

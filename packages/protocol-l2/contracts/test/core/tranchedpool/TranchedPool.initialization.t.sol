@@ -39,7 +39,7 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
     (TranchedPool pool, ) = defaultTranchedPool();
     uint256[] memory uidTypes = new uint256[](1);
     ISchedule s = defaultSchedule();
-    vm.expectRevert("Contract instance has already been initialized");
+    vm.expectRevert("Initializable: contract is already initialized");
     pool.initialize(address(gfConfig), BORROWER, 0, 0, 0, s, 0, block.timestamp, uidTypes);
   }
 
@@ -47,7 +47,7 @@ contract TranchedPoolInitializationTest is TranchedPoolBaseTest {
     (, CreditLine cl) = defaultTranchedPool();
 
     ISchedule s = defaultSchedule();
-    vm.expectRevert("Contract instance has already been initialized");
+    vm.expectRevert("Initializable: contract is already initialized");
     cl.initialize(address(gfConfig), GF_OWNER, BORROWER, 0, 0, s, 0);
   }
 

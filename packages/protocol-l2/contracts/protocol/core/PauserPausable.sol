@@ -17,7 +17,7 @@ contract PauserPausable is AccessControlUpgradeable, PausableUpgradeable {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
   // solhint-disable-next-line func-name-mixedcase
-  function __PauserPausable__init() public initializer {
+  function __PauserPausable__init() public onlyInitializing {
     __Pausable_init_unchained();
   }
 

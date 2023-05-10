@@ -9,6 +9,8 @@ import {IERC20WithName} from "../../../interfaces/IERC20WithName.sol";
 import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 
+import {StringFormat} from "../../helpers/StringFormat.t.sol";
+
 contract TranchedPoolAccessControlTest is TranchedPoolBaseTest {
   function testAccessControlOwnerIsGovernance() public {
     (TranchedPool pool, ) = defaultTranchedPool();
@@ -44,7 +46,14 @@ contract TranchedPoolAccessControlTest is TranchedPoolBaseTest {
     vm.assume(fuzzHelper.isAllowed(user));
 
     bytes32 ownerRole = pool.OWNER_ROLE();
-    vm.expectRevert("AccessControl: sender must be an admin to grant");
+    vm.expectRevert(
+      abi.encodePacked(
+        "AccessControl: account ",
+        StringFormat.formatAddress(user),
+        " is missing role ",
+        StringFormat.formatRole(ownerRole)
+      )
+    );
     pool.grantRole(ownerRole, user);
   }
 
