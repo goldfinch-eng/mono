@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.19;
 
+import {stdError} from "forge-std/Test.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
@@ -29,12 +30,12 @@ contract PoolTokensReducePrincipalAmountTest is PoolTokensBaseTest {
     uint256 amountToReduceBy
   ) public impersonating(GF_OWNER) {
     principalToRedeem = bound(principalToRedeem, 1, tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(token, principalToRedeem, 0);
 
     vm.assume(amountToReduceBy > principalToRedeem);
-    poolTokens._setSender(payable(address(tp)));
-    vm.expectRevert("SafeMath: subtraction overflow");
+    _startImpersonation(GF_OWNER);
+    vm.expectRevert(stdError.arithmeticError);
     poolTokens.reducePrincipalAmount(token, amountToReduceBy);
   }
 
@@ -50,7 +51,7 @@ contract PoolTokensReducePrincipalAmountTest is PoolTokensBaseTest {
 
   function testReducesPrincipalAmount(uint256 principalToRedeem, uint256 amountToReduce) public {
     principalToRedeem = bound(principalToRedeem, 1, tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(token, principalToRedeem, 0);
 
     tokenInfo = poolTokens.getTokenInfo(token);

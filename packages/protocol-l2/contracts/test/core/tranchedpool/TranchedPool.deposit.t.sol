@@ -11,6 +11,8 @@ import {TranchedPoolBaseTest} from "./BaseTranchedPool.t.sol";
 import {DepositWithPermitHelpers} from "../../helpers/DepositWithPermitHelpers.t.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
+import {AssumeHelper} from "../../helpers/AssumeHelper.t.sol";
+
 contract TranchedPoolDepositTest is TranchedPoolBaseTest {
   event DepositMade(
     address indexed owner,
@@ -123,8 +125,8 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     uint256 amount2
   ) public impersonating(DEPOSITOR) {
     vm.assume(amount1 > 0 && amount2 > 0);
-    uint256 total = amount1 + amount2; // Check for underflow
-    vm.assume(amount2 < total && total <= usdc.balanceOf(DEPOSITOR));
+    vm.assume(AssumeHelper.canAdd(amount1, amount2));
+    vm.assume(amount1 + amount2 <= usdc.balanceOf(DEPOSITOR));
 
     (TranchedPool pool, ) = defaultTranchedPool();
     uid._mintForTest(DEPOSITOR, 1, 1, "");

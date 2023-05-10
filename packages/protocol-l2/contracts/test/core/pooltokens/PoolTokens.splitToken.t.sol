@@ -292,7 +292,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
 
     poolTokens.splitToken(tokenId, tokenInfo.principalAmount / 2);
     // Token no longer exists
-    vm.expectRevert("ERC721: owner query for nonexistent token");
+    vm.expectRevert("ERC721: invalid token ID");
     poolTokens.ownerOf(tokenId);
 
     // Token info is deleted

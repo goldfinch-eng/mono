@@ -42,7 +42,7 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
 
   function testRevertsIfPrincipalNotFullyRedeemed(uint256 principalToRedeem) public {
     principalToRedeem = bound(principalToRedeem, 1, tokenInfo.principalAmount - 1);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(tokenId, principalToRedeem, 0);
 
     vm.expectRevert("Can only burn fully redeemed tokens");
@@ -50,7 +50,7 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
   }
 
   function testCanBurnOnceFullyRedeemed() public {
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
     // Should not revert
     poolTokens.burn(tokenId);
@@ -87,7 +87,7 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
   }
 
   function testEmitsTokenBurnedEvent() public {
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
 
     vm.expectEmit(true, true, true, false);
@@ -97,7 +97,7 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
   }
 
   function testEmitsTransferEvent() public {
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
 
     vm.expectEmit(true, true, true, false);

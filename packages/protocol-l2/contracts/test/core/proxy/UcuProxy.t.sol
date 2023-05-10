@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 
 import {ImplementationRepository as Repo} from "../../../protocol/core/proxy/ImplementationRepository.sol";
 import {UcuProxy} from "../../../protocol/core/proxy/UcuProxy.sol";
-import {Test} from "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 
 contract TestImplementationRepository is Test {
   address internal constant REPO_OWNER = 0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2;
@@ -165,10 +165,9 @@ contract TestImplementationRepository is Test {
     vm.stopPrank();
 
     vm.startPrank(PROXY_OWNER);
-    uint256 valueBefore = proxyAsImpl.value();
+    // subtract should have been called while migrating, resulting in an underflow
+    vm.expectRevert(stdError.arithmeticError);
     proxy.upgradeImplementation();
-    // subtract should have been called while migrating
-    assertEq(proxyAsImpl.value(), valueBefore - 1);
   }
 
   function testCanCreateProxiesForValidLineages() public {

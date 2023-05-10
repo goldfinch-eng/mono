@@ -43,7 +43,7 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
   function testRevertsForValidTokenButWrongPoolSender(address payable badPool) public {
     vm.assume(badPool != address(tp));
     // The tokenId is valid but the pool is wrong
-    poolTokens._setSender(badPool);
+    _startImpersonation(badPool);
 
     vm.expectRevert("Invalid pool!");
     poolTokens.withdrawPrincipal(tokenId, usdcVal(1));
@@ -56,7 +56,7 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
     redeemAmount = bound(redeemAmount, 1, tokenInfo.principalAmount);
     vm.assume(withdrawalAmount > 0);
 
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(tokenId, tokenInfo.principalAmount, 0);
     vm.expectRevert("Token redeemed");
     poolTokens.withdrawPrincipal(tokenId, withdrawalAmount);
@@ -64,14 +64,14 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
 
   function testWithdrawMoreThanPrincipalAmountReverts(uint256 withdrawalAmount) public {
     vm.assume(withdrawalAmount > tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     vm.expectRevert("Insufficient principal");
     poolTokens.withdrawPrincipal(tokenId, withdrawalAmount);
   }
 
   function testUpdatesTokenInfo(uint256 withdrawalAmount) public {
     withdrawalAmount = bound(withdrawalAmount, 1, tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.withdrawPrincipal(tokenId, withdrawalAmount);
 
     IPoolTokens.TokenInfo memory tokenInfoAfterWithdrawal = poolTokens.getTokenInfo(tokenId);
@@ -87,7 +87,7 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
 
   function testDecrementsPoolTotalMinted(uint256 withdrawalAmount) public {
     withdrawalAmount = bound(withdrawalAmount, 1, tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
 
     IPoolTokens.PoolInfo memory poolInfoBefore = poolTokens.getPoolInfo(address(tp));
     poolTokens.withdrawPrincipal(tokenId, withdrawalAmount);
@@ -100,7 +100,7 @@ contract PoolTokensWithdrawPrincipalTest is PoolTokensBaseTest {
 
   function testEmitsTokenPrincipalWithdrawnEvent(uint256 withdrawalAmount) public {
     withdrawalAmount = bound(withdrawalAmount, 1, tokenInfo.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
 
     vm.expectEmit(true, true, true, true);
     emit TokenPrincipalWithdrawn({
