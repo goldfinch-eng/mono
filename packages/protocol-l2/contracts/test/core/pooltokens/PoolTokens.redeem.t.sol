@@ -36,7 +36,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
   function testUpdatesTokenInfo(uint256 principalToRedeem, uint256 interestToRedeem) public {
     uint256 originalPrincipalAmount = tokenInfo1.principalAmount;
     vm.assume(principalToRedeem <= originalPrincipalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
 
     poolTokens.redeem(token1, principalToRedeem, interestToRedeem);
     tokenInfo1 = poolTokens.getTokenInfo(token1);
@@ -53,7 +53,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
     IPoolTokens.PoolInfo memory poolInfo = poolTokens.getPoolInfo(address(tp));
     vm.assume(principalToRedeem > poolInfo.totalMinted);
 
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     vm.expectRevert("Cannot redeem more than we minted");
     poolTokens.redeem(token1, principalToRedeem, interestToRedeem);
   }
@@ -62,7 +62,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
     principal1 = bound(principal1, 1, tokenInfo1.principalAmount);
     principal2 = bound(principal2, 1, tokenInfo2.principalAmount);
 
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(token1, principal1, 0);
     poolTokens.redeem(token2, principal2, 0);
 
@@ -74,7 +74,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
     principalToRedeem1 = bound(principalToRedeem1, 1, tokenInfo1.principalAmount - 1);
     uint256 principalToRedeem2 = tokenInfo1.principalAmount - principalToRedeem1;
 
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
 
     poolTokens.redeem(token1, principalToRedeem1, 0);
     assertEq(poolTokens.getTokenInfo(token1).principalRedeemed, principalToRedeem1);
@@ -92,7 +92,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
       tokenInfo1.principalAmount + 1,
       tokenInfo1.principalAmount + tokenInfo2.principalAmount
     );
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     vm.expectRevert("Cannot redeem more than principal-deposited amount for token");
     poolTokens.redeem(token1, principalToRedeem, 0);
   }
@@ -101,7 +101,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
     uint256 principalToRedeem
   ) public {
     // Redeem a valid amount
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     poolTokens.redeem(token1, usdcVal(1), 0);
 
     // We have $4 left to redeem. Any amount greater (but under total minted) should trigger
@@ -121,14 +121,14 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
 
   function testRevertsForWrongPool() public {
     poolTokens._disablePoolValidation(true);
-    poolTokens._setSender(payable(address(this)));
+    _startImpersonation(address(this));
     vm.expectRevert("Only the token's pool can redeem");
     poolTokens.redeem(token1, usdcVal(1), usdcVal(2));
   }
 
   function testEmitsTokenRedeemedEvent(uint256 principalToRedeem, uint256 interestToRedeem) public {
     principalToRedeem = bound(principalToRedeem, 1, tokenInfo1.principalAmount);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     vm.expectEmit(true, true, true, true);
     emit TokenRedeemed({
       owner: address(this),
@@ -143,7 +143,7 @@ contract PoolTokensRedeemTest is PoolTokensBaseTest {
 
   function testRevertsWhenPaused() public impersonating(GF_OWNER) {
     poolTokens.pause();
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
     vm.expectRevert("Pausable: paused");
     poolTokens.redeem(token1, 1, 1);
   }

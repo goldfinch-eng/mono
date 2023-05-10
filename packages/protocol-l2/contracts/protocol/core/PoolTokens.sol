@@ -333,19 +333,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   }
 
   function _burn(uint256 tokenId) internal virtual override {
-    address owner = ownerOf(tokenId);
-
-    _beforeTokenTransfer(owner, address(0), tokenId, 1);
-
-    // Clear approvals
-    _approve(address(0), tokenId);
+    super._burn(tokenId);
 
     // Clear metadata (if any)
     if (bytes(_tokenURIs[tokenId]).length != 0) {
       delete _tokenURIs[tokenId];
     }
-
-    emit Transfer(owner, address(0), tokenId);
   }
 
   function _validPool(address poolAddress) internal view virtual returns (bool) {

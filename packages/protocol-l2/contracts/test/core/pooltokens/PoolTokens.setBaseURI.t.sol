@@ -21,7 +21,7 @@ contract PoolTokensSetBaseURITest is PoolTokensBaseTest {
 
     poolTokens.setBaseURI("http://example.com/");
     poolTokens._disablePoolValidation(true);
-    poolTokens._setSender(payable(address(tp)));
+    _startImpersonation(address(tp));
 
     uint256 tokenId = poolTokens.mint(
       IPoolTokens.MintParams({principalAmount: 1, tranche: 2}),

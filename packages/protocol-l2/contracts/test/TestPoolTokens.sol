@@ -12,11 +12,6 @@ contract TestPoolTokens is PoolTokens {
     disablePoolValidation = shouldDisable;
   }
 
-  // solhint-disable-next-line modifiers/ensure-modifiers
-  function _setSender(address payable _sender) public {
-    sender = _sender;
-  }
-
   function _validPool(address _sender) internal view override returns (bool) {
     if (disablePoolValidation) {
       return true;
