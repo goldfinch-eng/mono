@@ -76,15 +76,14 @@ export function SeniorPoolSupplyPanel({
           }}
           omitWrapperStyle
         />
-        <Alert className="my-6 text-justify" type="info" hasIcon={false}>
+        <Alert className="my-6 text-left" type="info" hasIcon={false}>
           <div className="mb-2 flex">
-            <div className="text-md font-bold">Withdrawal Requests</div>
+            <div className="text-md font-bold">Withdrawal Timeline</div>
           </div>
           <p className="my-2">
             Based on the withdrawal queue (~$42,000,000) and the projected
-            repayments by borrowers, you may not be able to withdraw your assets
-            for an extended period of time. Currently, the estimated average
-            withdrawal time for ${formatCrypto(supplyAmount)} is 24 months.
+            repayments by borrowers, you may not be able to withdraw the
+            majority of your assets for at least 24 months.
           </p>
           <p>
             Senior Pool liquidity constantly changes, so the actual time to
