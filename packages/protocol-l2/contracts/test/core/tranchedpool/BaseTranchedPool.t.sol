@@ -22,6 +22,7 @@ import {BaseTest} from "../BaseTest.t.sol";
 import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 contract TranchedPoolBaseTest is BaseTest {
   address public constant BORROWER = 0x228994aE78d75939A5aB9260a83bEEacBE77Ddd0; // random address
@@ -96,7 +97,16 @@ contract TranchedPoolBaseTest is BaseTest {
       uint256(ConfigOptions.Addresses.CreditLineImplementation),
       address(creditLineImpl)
     );
+    UpgradeableBeacon creditLineBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditLineBeacon),
+      address(creditLineBeacon)
+    );
     fuzzHelper.exclude(address(creditLineImpl));
+    fuzzHelper.exclude(address(creditLineBeacon));
 
     // MonthlyScheduleRepository setup
     MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();

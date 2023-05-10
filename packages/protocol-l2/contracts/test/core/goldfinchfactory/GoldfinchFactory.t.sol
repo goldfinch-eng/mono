@@ -14,10 +14,15 @@ import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import {StringFormat} from "../../helpers/StringFormat.t.sol";
 
 contract GoldfinchFactoryTest is BaseTest {
+  using ConfigHelper for GoldfinchConfig;
+
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
 
@@ -42,6 +47,23 @@ contract GoldfinchFactoryTest is BaseTest {
     );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
 
+    // CreditLine setup
+    CreditLine creditLineImpl = new CreditLine();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditLineImplementation),
+      address(creditLineImpl)
+    );
+    UpgradeableBeacon creditLineBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditLineBeacon),
+      address(creditLineBeacon)
+    );
+
+    fuzzHelper.exclude(address(creditLineImpl));
+    fuzzHelper.exclude(address(creditLineBeacon));
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(gfFactory));
     fuzzHelper.exclude(address(poolImpl));
@@ -181,6 +203,69 @@ contract GoldfinchFactoryTest is BaseTest {
     });
   }
 
+  function testCreateBeaconRevertsForNonAdmin(address nonAdmin) public impersonating(nonAdmin) {
+    vm.assume(
+      fuzzHelper.isAllowed(nonAdmin) && !gfFactory.hasRole(TestConstants.OWNER_ROLE, nonAdmin)
+    );
+    vm.expectRevert("Must have admin role to perform this action");
+    gfFactory.createBeacon(ConfigOptions.Addresses.CreditLineImplementation, address(this));
+  }
+
+  function testCreateBeaconSucceedsForAdmin() public impersonating(GF_OWNER) {
+    UpgradeableBeacon expectedBeacon = UpgradeableBeacon(
+      computeCreateAddress(address(gfFactory), vm.getNonce(address(gfFactory)))
+    );
+    address expectedOwner = address(this);
+    address expectedImpl = gfConfig.creditLineImplementationAddress();
+
+    vm.expectEmit(true, true, true, false);
+
+    emit BeaconCreated({
+      beacon: expectedBeacon,
+      owner: expectedOwner,
+      implementation: expectedImpl
+    });
+
+    gfFactory.createBeacon(ConfigOptions.Addresses.CreditLineImplementation, address(this));
+  }
+
+  function testCreateBeaconAssignsOwner(address owner) public impersonating(GF_OWNER) {
+    vm.assume(fuzzHelper.isAllowed(owner));
+    UpgradeableBeacon beacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      owner
+    );
+    assertEq(beacon.owner(), owner);
+  }
+
+  function testBeaconOwnerCanChangeImplementation(address owner) public impersonating(GF_OWNER) {
+    vm.assume(fuzzHelper.isAllowed(owner));
+    UpgradeableBeacon beacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      owner
+    );
+    address newImpl = address(this);
+    _startImpersonation(owner);
+    vm.expectEmit(true, true, true, false);
+    emit Upgraded(newImpl);
+    beacon.upgradeTo(newImpl);
+    assertEq(beacon.implementation(), newImpl);
+  }
+
+  function testNonBeaconOwnerCannotChangeImplementation(
+    address nonOwner
+  ) public impersonating(GF_OWNER) {
+    vm.assume(fuzzHelper.isAllowed(nonOwner) && nonOwner != GF_OWNER);
+    UpgradeableBeacon beacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      GF_OWNER
+    );
+    address newImpl = address(this);
+    _startImpersonation(nonOwner);
+    vm.expectRevert("Ownable: caller is not the owner");
+    beacon.upgradeTo(address(this));
+  }
+
   /**
    * @notice Create a standard 1 yr bullet loan with a monthly period mapper
    */
@@ -214,4 +299,11 @@ contract GoldfinchFactoryTest is BaseTest {
   }
 
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
+  event BeaconCreated(
+    UpgradeableBeacon indexed beacon,
+    address indexed owner,
+    address indexed implementation
+  );
+  // Emitted when a beacon is upgraded
+  event Upgraded(address indexed implementation);
 }

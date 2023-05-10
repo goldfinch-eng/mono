@@ -5,6 +5,9 @@ pragma experimental ABIEncoderV2;
 
 import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
+import {ConfigOptions} from "./ConfigOptions.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
@@ -34,6 +37,11 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
   event CallableLoanCreated(ICallableLoan indexed loan, address indexed borrower);
   event CreditLineCreated(ICreditLine indexed creditLine);
+  event BeaconCreated(
+    UpgradeableBeacon indexed beacon,
+    address indexed owner,
+    address indexed implementation
+  );
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(
@@ -51,7 +59,9 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    *  by a TranchedPool during it's creation process.
    */
   function createCreditLine() external returns (ICreditLine) {
-    ICreditLine creditLine = ICreditLine(_deployMinimal(config.creditLineImplementationAddress()));
+    ICreditLine creditLine = ICreditLine(
+      address(new BeaconProxy(address(config.getCreditLineBeacon()), ""))
+    );
     emit CreditLineCreated(creditLine);
     return creditLine;
   }
@@ -103,6 +113,17 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     );
     emit PoolCreated(pool, _borrower);
     config.getPoolTokens().onPoolCreated(address(pool));
+  }
+
+  function createBeacon(
+    ConfigOptions.Addresses impl,
+    address beaconOwner
+  ) external onlyAdmin returns (UpgradeableBeacon) {
+    address implAddress = config.getAddress(uint256(impl));
+    UpgradeableBeacon beacon = new UpgradeableBeacon(implAddress);
+    beacon.transferOwnership(beaconOwner);
+    emit BeaconCreated(beacon, beaconOwner, implAddress);
+    return beacon;
   }
 
   /**

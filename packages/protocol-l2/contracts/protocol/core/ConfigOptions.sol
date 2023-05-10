@@ -57,6 +57,7 @@ library ConfigOptions {
     TranchedPoolImplementationRepository,
     WithdrawalRequestToken,
     MonthlyScheduleRepo,
-    CallableLoanImplementationRepository
+    CallableLoanImplementationRepository,
+    CreditLineBeacon
   }
 }

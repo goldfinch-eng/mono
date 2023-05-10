@@ -121,4 +121,8 @@ library ConfigHelper {
   function getDrawdownPeriodInSeconds(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
   }
+
+  function getCreditLineBeacon(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineBeacon));
+  }
 }

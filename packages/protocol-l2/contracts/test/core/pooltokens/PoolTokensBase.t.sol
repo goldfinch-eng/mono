@@ -17,6 +17,8 @@ import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.s
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
+import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 contract PoolTokensBaseTest is BaseTest {
   TestERC20 internal usdc;
@@ -78,8 +80,22 @@ contract PoolTokensBaseTest is BaseTest {
       address(tpImplRepo)
     );
 
-    CreditLine clImpl = new CreditLine();
-    gfConfig.setAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation), address(clImpl));
+    // CreditLine setup
+    CreditLine creditLineImpl = new CreditLine();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditLineImplementation),
+      address(creditLineImpl)
+    );
+    fuzzHelper.exclude(address(creditLineImpl));
+    UpgradeableBeacon creditLineBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.CreditLineBeacon),
+      address(creditLineBeacon)
+    );
+    fuzzHelper.exclude(address(creditLineBeacon));
 
     gfConfig.addToGoList(address(this));
 
