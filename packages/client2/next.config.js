@@ -102,6 +102,11 @@ const nextConfig = {
         destination: "/earn",
         permanent: false,
       },
+      {
+        source: "/verify",
+        destination: "/account",
+        permanent: false,
+      },
     ];
   },
   async headers() {
