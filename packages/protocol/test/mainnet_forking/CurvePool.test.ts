@@ -337,7 +337,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
       expect(fiduBalance).to.bignumber.eq(fiduBalanceBefore)
     })
 
-    // TODO: Fix this test
+    // TODO: Fix this test - we believe it fails due to a race condition
     it.skip("updates the total balance of USDC correctly", async () => {
       const {curvePool, usdc} = resources
 
@@ -542,7 +542,7 @@ describe("the FIDU-USDC Curve Pool", async function () {
       expect(fiduBalance).to.bignumber.eq(fiduBalanceBefore.add(fiduDeposited))
     })
 
-    // TODO: Fix this test
+    // TODO: Fix this test - we believe it fails due to a race condition
     it.skip("updates the total balance of USDC in the Curve pool correctly", async () => {
       const {curvePool, usdc} = resources
 

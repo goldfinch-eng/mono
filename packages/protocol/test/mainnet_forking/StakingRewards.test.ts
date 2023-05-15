@@ -73,7 +73,7 @@ describe("StakingRewards", () => {
 
       beforeEach(async () => ({account, amount} = await setup({tokenId})))
 
-      // TODO: Fix this test
+      // TODO: Fix this test - we believe we need to use a new token id
       it.skip("continues vesting unvested rewards after fully unstaking without slashing", async () => {
         // Establish totalUnvested before unstaking, cover slashing case
         await stakingRewards.getReward(tokenId, {from: account})
