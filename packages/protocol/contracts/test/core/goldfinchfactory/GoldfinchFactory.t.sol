@@ -166,37 +166,5 @@ contract GoldfinchFactoryTest is BaseTest {
     });
   }
 
-  /**
-   * @notice Create a standard 1 yr bullet loan with a monthly period mapper
-   */
-  function defaultSchedule() public returns (ISchedule) {
-    return
-      createMonthlySchedule({
-        periodsInTerm: 12,
-        periodsPerInterestPeriod: 1,
-        periodsPerPrincipalPeriod: 12,
-        gracePrincipalPeriods: 0
-      });
-  }
-
-  /**
-   * @notice Create an arbitrary schedule with a monthly period mapper
-   */
-  function createMonthlySchedule(
-    uint periodsInTerm,
-    uint periodsPerPrincipalPeriod,
-    uint periodsPerInterestPeriod,
-    uint gracePrincipalPeriods
-  ) public returns (ISchedule) {
-    return
-      new Schedule({
-        _periodMapper: new MonthlyPeriodMapper(),
-        _periodsInTerm: periodsInTerm,
-        _periodsPerInterestPeriod: periodsPerInterestPeriod,
-        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
-        _gracePrincipalPeriods: gracePrincipalPeriods
-      });
-  }
-
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
 }

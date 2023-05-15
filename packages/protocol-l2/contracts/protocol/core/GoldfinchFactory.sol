@@ -11,6 +11,7 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IBorrower} from "../../interfaces/IBorrower.sol";
 import {ISchedule} from "../../interfaces/ISchedule.sol";
+import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {ICallableLoan} from "../../interfaces/ICallableLoan.sol";
 import {ICreditLine} from "../../interfaces/ICreditLine.sol";
@@ -24,8 +25,7 @@ import {UcuProxy} from "./proxy/UcuProxy.sol";
  *  Note GoldfinchFactory is a legacy name. More properly this can be considered simply the GoldfinchFactory
  * @author Goldfinch
  */
-
-contract GoldfinchFactory is BaseUpgradeablePausable {
+contract GoldfinchFactory is IGoldfinchFactory, BaseUpgradeablePausable {
   GoldfinchConfig public config;
 
   /// Role to allow for pool creation
@@ -53,12 +53,8 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     _setRoleAdmin(BORROWER_ROLE, OWNER_ROLE);
   }
 
-  /**
-   * @notice Allows anyone to create a CreditLine contract instance
-   * @dev There is no value to calling this function directly. It is only meant to be called
-   *  by a TranchedPool during it's creation process.
-   */
-  function createCreditLine() external returns (ICreditLine) {
+  /// @inheritdoc IGoldfinchFactory
+  function createCreditLine() external override returns (ICreditLine) {
     ICreditLine creditLine = ICreditLine(
       address(new BeaconProxy(address(config.getCreditLineBeacon()), ""))
     );
@@ -66,10 +62,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return creditLine;
   }
 
-  /**
-   * @notice Allows anyone to create a Borrower contract instance
-   * @param owner The address that will own the new Borrower instance
-   */
+  /// @inheritdoc IGoldfinchFactory
   function createBorrower(address owner) external returns (address) {
     address _borrower = _deployMinimal(config.borrowerImplementationAddress());
     IBorrower borrower = IBorrower(_borrower);
@@ -78,11 +71,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return address(borrower);
   }
 
-  /**
-   * @notice Allows anyone to create a new TranchedPool for a single borrower
-   * Requirements:
-   *  You are the admin or a borrower
-   */
+  /// @inheritdoc IGoldfinchFactory
   function createPool(
     address _borrower,
     uint256 _juniorFeePercent,
@@ -110,10 +99,11 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     config.getPoolTokens().onPoolCreated(address(pool));
   }
 
+  /// @inheritdoc IGoldfinchFactory
   function createBeacon(
     ConfigOptions.Addresses impl,
     address beaconOwner
-  ) external onlyAdmin returns (UpgradeableBeacon) {
+  ) external override onlyAdmin returns (UpgradeableBeacon) {
     address implAddress = config.getAddress(uint256(impl));
     UpgradeableBeacon beacon = new UpgradeableBeacon(implAddress);
     beacon.transferOwnership(beaconOwner);
@@ -121,11 +111,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return beacon;
   }
 
-  /**
-   * @notice Allows anyone to create a new CallableLoan for a single borrower
-   * Requirements:
-   *  You are the admin or a borrower
-   */
+  /// @inheritdoc IGoldfinchFactory
   function createCallableLoan(
     address _borrower,
     uint256 _limit,
@@ -135,7 +121,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external onlyAdminOrBorrower returns (ICallableLoan loan) {
+  ) external override onlyAdminOrBorrower returns (ICallableLoan loan) {
     return
       _createCallableLoanWithProxyOwner(
         _borrower,
@@ -150,9 +136,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       );
   }
 
-  /**
-   * @notice Create a callable loan where the proxy owner is different than the borrower
-   */
+  /// @inheritdoc IGoldfinchFactory
   function createCallableLoanWithProxyOwner(
     address _proxyOwner,
     address _borrower,
@@ -163,7 +147,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _lateFeeApr,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external onlyAdminOrBorrower returns (ICallableLoan loan) {
+  ) external override onlyAdminOrBorrower returns (ICallableLoan loan) {
     return
       _createCallableLoanWithProxyOwner(
         _proxyOwner,
