@@ -6,7 +6,7 @@
 
 [Goldfinch](https://goldfinch.finance/) is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend, and other supporting code. For the latest documentation, check out our [docs](https://docs.goldfinch.finance/).
 
-Stay up to date by joining our [Goldfinch Discord server](https://discord.com/invite/HVeaca3fN8) or following us on [Twitter @goldfinch_fi](https://twitter.com/goldfinch_fi).
+Stay up to date by joining our [Goldfinch Discord server](https://discord.gg/goldfinch) or following us on [Twitter @goldfinch_fi](https://twitter.com/goldfinch_fi).
 
 ## Software Development Set Up 
 

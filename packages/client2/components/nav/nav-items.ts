@@ -36,7 +36,7 @@ export const SECONDARY_MENU_ITEMS = [
   { label: "Docs", href: "https://docs.goldfinch.finance/goldfinch/" },
   {
     label: "Discord community",
-    href: "https://discord.com/invite/HVeaca3fN8",
+    href: "https://discord.gg/goldfinch",
   },
   { label: "Bug bounty", href: "https://immunefi.com/bounty/goldfinch/" },
   {
