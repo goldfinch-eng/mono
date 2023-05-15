@@ -131,7 +131,7 @@ describe("registerKyc", async () => {
                 overallRecordsMatchLevel: "low",
                 idValidity: "valid",
               },
-              expiresAt: 123,
+              expiresAt: "2021-06-29T13:32:21Z",
             } as unknown as PmIndividualIdentityDetails,
           } as PmIdentity),
         )
@@ -154,11 +154,10 @@ describe("registerKyc", async () => {
           countryCode: "US",
           kycProvider: "parallelMarkets",
           parallelMarkets: {
-            accreditationAccessRevocationAt: null,
             accreditationExpiresAt: 1,
+            identityExpiresAt: 1624973541,
             accreditationStatus: "approved",
             id: "IDENTITY_ID",
-            identityAccessRevocationAt: null,
             identityStatus: "failed",
             type: "individual",
           },
@@ -185,7 +184,7 @@ describe("registerKyc", async () => {
                 overallRecordsMatchLevel: "high",
                 idValidity: "valid",
               },
-              expiresAt: 123,
+              expiresAt: "2021-06-29T13:32:21Z",
             } as unknown as PmBusinessIdentityDetails,
           } as PmIdentity),
         )
@@ -208,11 +207,10 @@ describe("registerKyc", async () => {
           countryCode: "MX",
           kycProvider: "parallelMarkets",
           parallelMarkets: {
-            accreditationAccessRevocationAt: null,
             accreditationExpiresAt: 1,
             accreditationStatus: "approved",
             id: "IDENTITY_ID",
-            identityAccessRevocationAt: null,
+            identityExpiresAt: 1624973541,
             identityStatus: "approved",
             type: "business",
           },
@@ -239,7 +237,7 @@ describe("registerKyc", async () => {
                 overallRecordsMatchLevel: "low",
                 idValidity: "valid",
               },
-              expiresAt: 123,
+              expiresAt: "2021-06-29T13:32:21Z",
             } as unknown as PmIndividualIdentityDetails,
           } as PmIdentity),
         )
@@ -262,12 +260,11 @@ describe("registerKyc", async () => {
           countryCode: "US",
           kycProvider: "parallelMarkets",
           parallelMarkets: {
-            accreditationAccessRevocationAt: null,
             accreditationExpiresAt: 1,
             accreditationStatus: "failed",
             id: "IDENTITY_ID",
-            identityAccessRevocationAt: null,
             identityStatus: "failed",
+            identityExpiresAt: 1624973541,
             type: "individual",
           },
         })
@@ -393,7 +390,7 @@ describe("registerKyc", async () => {
                 overallRecordsMatchLevel: "high",
                 idValidity: "valid",
               },
-              expiresAt: 123,
+              expiresAt: "2021-06-29T13:32:21Z",
             } as unknown as PmIndividualIdentityDetails,
           } as PmIdentity),
         )
@@ -416,12 +413,11 @@ describe("registerKyc", async () => {
           countryCode: "US",
           kycProvider: "parallelMarkets",
           parallelMarkets: {
-            accreditationAccessRevocationAt: null,
             accreditationExpiresAt: 1,
             accreditationStatus: "approved",
             id: "IDENTITY_ID",
-            identityAccessRevocationAt: null,
             identityStatus: "approved",
+            identityExpiresAt: 1624973541,
             type: "individual",
           },
           persona: {

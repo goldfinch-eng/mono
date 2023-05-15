@@ -1,7 +1,8 @@
+import { KycAccreditationStatus } from "@goldfinch-eng/utils"
 import {PmAccreditationResponse, PmConsistencyLevel, PmIdentityDocumentValidity} from "../parallelmarkets/PmApiTypes"
 
 // We don't need a separate fn for businesses and individuals because they have the same accreditation statuses
-export const getAccreditationStatus = (accreditation: PmAccreditationResponse) => {
+export const getAccreditationStatus = (accreditation: PmAccreditationResponse): {status: KycAccreditationStatus, expiresAt?: number} => {
   console.log(`Evaluating accreditation status for ${accreditation.type} ${accreditation.id}`)
   if (accreditation.indicatedUnaccredited) {
     return {status: "unaccredited", expiresAt: undefined}

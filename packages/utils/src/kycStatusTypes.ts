@@ -12,7 +12,8 @@ export type KycAccreditationStatus =
   | "legacy"
 
 // Possible identity statuses for PM users stored in our db
-export type KycIdentityStatus =
+export type KycBusinessIdentityStatus = "approved" | "pending" | "failed"
+export type KycIndividualIdentityStatus = 
   | "pending_documents"
   | "pending_verification"
   | "expired"
@@ -20,6 +21,7 @@ export type KycIdentityStatus =
   | "failed"
   | "legacy"
   | "unknown"
+export type KycIdentityStatus = KycBusinessIdentityStatus | KycIndividualIdentityStatus
 
 export type KycStatusResponse = {
   address: string

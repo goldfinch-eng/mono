@@ -1,6 +1,6 @@
 import {firestore} from "firebase-admin"
-import {AgreementsConverter, DestroyedUsersConverter} from "./dbConverters"
-import {Agreement, DestroyedUser} from "./dbTypes"
+import {AgreementsConverter, DestroyedUsersConverter, UsersConverter} from "./dbConverters"
+import {Agreement, DestroyedUser, User} from "./dbTypes"
 
 // Optionally override the firestore for testing or emulation
 let _firestore: firestore.Firestore
@@ -17,8 +17,8 @@ function overrideFirestore(firestore: firestore.Firestore): void {
  * Get the users collection given a reference to the firestore
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
-function getUsers(): firestore.CollectionReference<firestore.DocumentData> {
-  return getCollection("users")
+function getUsers(): firestore.CollectionReference<User> {
+  return getCollection("users").withConverter(UsersConverter)
 }
 
 /**

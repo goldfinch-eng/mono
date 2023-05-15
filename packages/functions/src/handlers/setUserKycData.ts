@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/serverless"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db/db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
-import {KycProvider, SignatureVerificationSuccessResult} from "../types"
+import {SignatureVerificationSuccessResult} from "../types"
 
 // Called as the first step in the Persona KYC flow
 export const setUserKYCData = genRequestHandler({
@@ -35,7 +35,7 @@ export const setUserKYCData = genRequestHandler({
       {
         address: address,
         updatedAt: Date.now(),
-        kycProvider: KycProvider.Persona.valueOf(),
+        kycProvider: "persona",
         kyc: {
           residency,
         },

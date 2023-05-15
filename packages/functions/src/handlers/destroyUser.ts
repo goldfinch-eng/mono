@@ -88,7 +88,17 @@ export const destroyUser = genRequestHandler({
           return
         }
 
-        const personaData = user.data()?.persona
+        const userData = user.data()
+        if (!userData) {
+          throw new Error(`User data for ${addressToDestroy} was blank`)
+        }
+
+        if (userData.kycProvider === "parallelMarkets") {
+          // This function isn't setup to delete users who were KYC'd by Parallel Markets
+          throw new Error("Cannot delete users who were KYC'd by Parallel Markets")
+        }
+
+        const personaData = userData.persona
 
         // The only valid use of this function is to delete a user who was already approved by persona
         // and minted a UID. If their status is not approved then something's wrong here.

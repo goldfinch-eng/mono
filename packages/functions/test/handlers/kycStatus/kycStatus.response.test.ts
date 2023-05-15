@@ -252,6 +252,7 @@ describe("kycStatus response", async () => {
             address: nonLegacyTestWallet.address.toLowerCase(),
             countryCode: "US",
             residency: "us",
+            kycProvider: "parallelMarkets",
             parallelMarkets: {
               type: "individual",
               identityStatus: "approved",
@@ -290,6 +291,7 @@ describe("kycStatus response", async () => {
                 address: nonLegacyTestWallet.address.toLowerCase(),
                 countryCode: "US",
                 residency: "us",
+                kycProvider: "parallelMarkets",
                 parallelMarkets: {
                   type: "business",
                   identityStatus,
@@ -316,8 +318,7 @@ describe("kycStatus response", async () => {
           for (const accreditationStatus of ["pending_documents", "pending_verification", "approved", "expired"]) {
             await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
               address: nonLegacyTestWallet.address.toLowerCase(),
-              countryCode: null,
-              residency: null,
+              kycProvider: "parallelMarkets",
               parallelMarkets: {
                 type: "individual",
                 identityStatus: "failed",
@@ -338,8 +339,7 @@ describe("kycStatus response", async () => {
           for (const identityStatus of ["pending_documents", "pending_verification", "approved", "expired"]) {
             await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
               address: nonLegacyTestWallet.address.toLowerCase(),
-              countryCode: null,
-              residency: null,
+              kycProvider: "parallelMarkets",
               parallelMarkets: {
                 type: "individual",
                 identityStatus,
@@ -359,8 +359,7 @@ describe("kycStatus response", async () => {
           // When they are both failed
           await users.doc(nonLegacyTestWallet.address.toLowerCase()).set({
             address: nonLegacyTestWallet.address.toLowerCase(),
-            countryCode: null,
-            residency: null,
+            kycProvider: "parallelMarkets",
             parallelMarkets: {
               type: "individual",
               identityStatus: "failed",
@@ -384,6 +383,7 @@ describe("kycStatus response", async () => {
               address: nonLegacyTestWallet.address.toLowerCase(),
               countryCode: "US",
               residency: "us",
+              kycProvider: "parallelMarkets",
               parallelMarkets: {
                 type: "individual",
                 identityStatus: "expired",
@@ -408,6 +408,7 @@ describe("kycStatus response", async () => {
               address: nonLegacyTestWallet.address.toLowerCase(),
               countryCode: "US",
               residency: "us",
+              kycProvider: "parallelMarkets",
               parallelMarkets: {
                 identityStatus,
                 accreditationStatus: "expired",
@@ -431,6 +432,7 @@ describe("kycStatus response", async () => {
             address: nonLegacyTestWallet.address.toLowerCase(),
             countryCode: "US",
             residency: "us",
+            kycProvider: "parallelMarkets",
             parallelMarkets: {
               identityStatus: "expired",
               accreditationStatus: "expired",

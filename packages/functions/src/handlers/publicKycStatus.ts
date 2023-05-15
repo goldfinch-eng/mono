@@ -27,18 +27,20 @@ export const publicKycStatus = genRequestHandler({
       return res.status(404).send({message: "Not found"})
     }
 
-    const data = user.data()
-    const parallelMarkets = data?.parallelMarkets
-    // We have this check here for typescript, but if we've already validated that the user exists
-    // then the data is guaranteed to be there
-    if (!parallelMarkets) {
-      return res.status(200).send({})
+    const userData = user.data()
+
+    if (!userData) {
+      return res.status(404).send({message: "Not found"})
     }
 
-    const {identityExpiresAt, accreditationExpiresAt} = parallelMarkets
-    return res.status(200).send({
-      ...(identityExpiresAt && {identityExpiresAt}),
-      ...(accreditationExpiresAt && {accreditationExpiresAt}),
-    })
+    if (userData.kycProvider === "parallelMarkets") {
+      const {identityExpiresAt, accreditationExpiresAt} = userData.parallelMarkets
+      return res.status(200).send({
+        ...(identityExpiresAt && {identityExpiresAt}),
+        ...(accreditationExpiresAt && {accreditationExpiresAt}),
+      })
+    } else {
+      return res.status(200).send({})
+    }
   },
 })

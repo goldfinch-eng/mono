@@ -293,6 +293,30 @@ const verifySignatureAndAllowList = async (
   return {res: undefined, address: signerAddress, plaintext: signatureVerification.plaintext}
 }
 
+export const removeUndefinedProperties = (obj: any, opts: {removeNull: boolean}) => {
+  if (!_.isObject(obj) || typeof obj === "function") {
+    return obj
+  }
+
+  const {removeNull} = opts
+
+  return Object.entries(obj).reduce((acc: any, [key, value]) => {
+    if (Array.isArray(value)) {
+      acc[key] = value
+        // Filter out null and undefined values before recursive call, otherwise
+        // they will be returned
+        .filter((el) => el !== undefined && el !== null)
+        .map((el) => removeUndefinedProperties(el, opts))
+    } else if (typeof value === "object" && value !== null) {
+      // Recursively strip object properties
+      acc[key] = removeUndefinedProperties(value, opts)
+    } else if (value || (!removeNull && value === null)) {
+      acc[key] = value
+    }
+    return acc
+  }, {} as any)
+}
+
 export const genRequestHandler = (config: RequestHandlerConfig): functions.HttpsFunction => {
   return functions.https.onRequest(
     wrapWithSentry(async (req, res): Promise<Response> => {

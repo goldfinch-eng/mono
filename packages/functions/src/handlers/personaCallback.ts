@@ -51,14 +51,13 @@ const verifyRequest = (req: Request) => {
   }
 }
 
-const getCountryCode = (entities: AllEntities[]): string | null => {
+const getCountryCode = (entities: AllEntities[]): string | undefined => {
   const account = entities.find(isAccount)
   const verification = entities
     .filter(isVerification("verification/government-id"))
     .find((i) => i.attributes.status === "passed")
 
-  // If not countryCode is found, use an explicit null, firestore does not like "undefined"
-  return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
+  return account?.attributes?.countryCode || verification?.attributes?.countryCode
 }
 
 export const personaCallback = genRequestHandler({
@@ -95,15 +94,23 @@ export const personaCallback = genRequestHandler({
           if (doc.exists) {
             const existingData = doc.data()
 
-            t.update(userRef, {
-              persona: {
-                id: inquiry.id,
-                status: existingData?.persona?.status === "approved" ? "approved" : status,
+            if (!existingData || existingData.kycProvider === KycProvider.ParallelMarkets) {
+              throw new Error(`User ${address} is not using Persona`)
+            }
+
+            t.set(
+              userRef,
+              {
+                persona: {
+                  id: inquiry.id,
+                  status: existingData?.persona?.status === "approved" ? "approved" : status,
+                },
+                kycProvider: "persona",
+                countryCode,
+                updatedAt: Date.now(),
               },
-              kycProvider: KycProvider.Persona.valueOf(),
-              countryCode: countryCode || existingData?.countryCode || null,
-              updatedAt: Date.now(),
-            })
+              {merge: true},
+            )
           } else {
             t.set(userRef, {
               address: address,
@@ -111,7 +118,7 @@ export const personaCallback = genRequestHandler({
                 id: inquiry.id,
                 status,
               },
-              kycProvider: KycProvider.Persona.valueOf(),
+              kycProvider: "persona",
               countryCode,
               updatedAt: Date.now(),
             })

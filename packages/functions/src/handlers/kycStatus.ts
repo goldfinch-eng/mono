@@ -170,12 +170,14 @@ export const kycStatus = genRequestHandler({
     if (user.exists) {
       console.log(`Found user in store for address ${address.toLowerCase()}`)
       const data = user.data()
-      if (data?.persona) {
-        console.log("User is persona user")
-        payload = getPersonaStatusResponse(data)
-      } else if (data?.parallelMarkets) {
-        console.log("User is parallelMarkets user")
-        payload = getPmStatusResponse(data)
+      if (data) {
+        if (data.kycProvider === "persona" || !data.kycProvider) {
+          console.log("User is persona user")
+          payload = getPersonaStatusResponse(data)
+        } else if (data.kycProvider === "parallelMarkets") {
+          console.log("User is parallelMarkets user")
+          payload = getPmStatusResponse(data)
+        }
       }
     } else if (isLegacyAccreditedUser(address)) {
       console.log(`Found user in legacy json lists for address ${address.toLowerCase()}`)

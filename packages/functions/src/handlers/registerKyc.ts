@@ -2,17 +2,17 @@ import * as Sentry from "@sentry/serverless"
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getDb, getUsers} from "../db/db"
 import {genRequestHandler} from "../helpers"
-import {KycProvider, SignatureVerificationSuccessResult} from "../types"
+import {SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
 import {ParallelMarkets} from "./parallelmarkets/PmApi"
 import firestore = admin.firestore
-import {KycItemParallelMarkets, KycItem} from "./kyc/kycTypes"
 import {
   getAccreditationStatus,
   getBusinessIdentityStatus,
   getIndividualIdentityStatus,
 } from "./kyc/parallelMarketsConverter"
 import {getUserDocByPMId} from "./parallelmarkets/webhookHelpers"
+import {KycAccreditationStatus, KycIdentityStatus} from "@goldfinch-eng/utils"
 
 export const registerKyc = genRequestHandler({
   requireAuth: "signature",
@@ -62,8 +62,8 @@ type ParallelMarketsUserData = {
   id: string
   countryCode: string
   type: "business" | "individual"
-  accreditationStatus?: string
-  identityStatus?: string
+  accreditationStatus: KycAccreditationStatus
+  identityStatus: KycIdentityStatus
   accreditationExpiresAt?: number
   identityExpiresAt?: number
 }
@@ -146,44 +146,51 @@ const saveParallelMarketsUser = async (
 
     if (doc.exists) {
       console.log(`User exists for address ${address} - merging`)
-      const existingData = doc.data() as KycItem
 
-      if (existingData.persona && existingData.persona.status === "approved") {
+      const existingData = doc.data()
+
+      if (!existingData) {
+        throw new Error(`User ${address} exists but has no data`)
+      }
+
+      if (existingData.kycProvider === "persona" && existingData.persona.status === "approved") {
         throw new Error(`User ${address} has already passed kyc'd through Persona`)
       }
 
-      t.update(userRef, {
-        parallelMarkets: {
-          ...(existingData || {}).parallelMarkets,
-          id,
-          accreditationStatus: accreditationStatus || null,
-          accreditationAccessRevocationAt: null,
-          accreditationExpiresAt: accreditationExpiresAt || null,
-          identityStatus: identityStatus || null,
-          identityAccessRevocationAt: null,
-          identityExpiresAt: identityExpiresAt || null,
-        },
-        countryCode: countryCode || null,
-        updatedAt: Date.now(),
-      } as KycItemParallelMarkets)
+      if (existingData.kycProvider === "parallelMarkets") {
+        t.set(
+          userRef,
+          {
+            parallelMarkets: {
+              ...(existingData || {}).parallelMarkets,
+              id,
+              accreditationStatus,
+              accreditationExpiresAt,
+              identityStatus,
+              identityExpiresAt,
+            },
+            countryCode,
+            updatedAt: Date.now(),
+          },
+          {merge: true},
+        )
+      }
     } else {
       console.log(`User doesn't exist for address ${address} - setting`)
       t.set(userRef, {
-        address: address,
+        address,
         parallelMarkets: {
           id,
           type,
-          accreditationStatus: accreditationStatus || null,
-          accreditationAccessRevocationAt: null,
-          accreditationExpiresAt: accreditationExpiresAt || null,
-          identityStatus: identityStatus || null,
-          identityAccessRevocationAt: null,
-          identityExpiresAt: identityExpiresAt || null,
+          accreditationStatus,
+          accreditationExpiresAt,
+          identityStatus,
+          identityExpiresAt,
         },
-        kycProvider: KycProvider.ParallelMarkets.valueOf(),
-        countryCode: countryCode || null,
+        kycProvider: "parallelMarkets",
+        countryCode,
         updatedAt: Date.now(),
-      } as KycItemParallelMarkets)
+      })
     }
   })
 }
