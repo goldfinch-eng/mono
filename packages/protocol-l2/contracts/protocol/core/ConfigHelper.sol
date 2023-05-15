@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {ConfigOptions} from "./ConfigOptions.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
@@ -122,7 +123,12 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
   }
 
-  function getCreditLineBeacon(GoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineBeacon));
+  function getCreditLineBeacon(GoldfinchConfig config) internal view returns (UpgradeableBeacon) {
+    return UpgradeableBeacon(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineBeacon)));
+  }
+
+  function getTranchedPoolBeacon(GoldfinchConfig config) internal view returns (UpgradeableBeacon) {
+    return
+      UpgradeableBeacon(config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolBeacon)));
   }
 }

@@ -93,12 +93,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
   ) external onlyAdminOrBorrower returns (ITranchedPool pool) {
-    // need to enclose in a scope to avoid overflowing stack
-    {
-      ImplementationRepository repo = config.getTranchedPoolImplementationRepository();
-      UcuProxy poolProxy = new UcuProxy(repo, _borrower, repo.currentLineageId());
-      pool = ITranchedPool(address(poolProxy));
-    }
+    pool = ITranchedPool(address(new BeaconProxy(address(config.getTranchedPoolBeacon()), "")));
 
     pool.initialize(
       address(config),

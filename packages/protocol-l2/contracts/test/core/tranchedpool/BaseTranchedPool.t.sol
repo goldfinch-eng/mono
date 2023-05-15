@@ -82,14 +82,20 @@ contract TranchedPoolBaseTest is BaseTest {
 
     // TranchedPool setup
     TranchedPool tranchedPoolImpl = new TranchedPool();
-    TranchedPoolImplementationRepository tranchedPoolRepo = new TranchedPoolImplementationRepository();
-    tranchedPoolRepo.initialize(GF_OWNER, address(tranchedPoolImpl));
     gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
-      address(tranchedPoolRepo)
+      uint256(ConfigOptions.Addresses.TranchedPoolImplementation),
+      address(tranchedPoolImpl)
     );
     fuzzHelper.exclude(address(tranchedPoolImpl));
-    fuzzHelper.exclude(address(tranchedPoolRepo));
+    UpgradeableBeacon tranchedPoolBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.TranchedPoolImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolBeacon),
+      address(tranchedPoolBeacon)
+    );
+    fuzzHelper.exclude(address(tranchedPoolBeacon));
 
     // CreditLine setup
     CreditLine creditLineImpl = new CreditLine();

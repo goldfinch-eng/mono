@@ -11,12 +11,14 @@ import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
 import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
 import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
-import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
+import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ICreditLine} from "../../../interfaces/ICreditLine.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
 import {ConfigHelper} from "../../../protocol/core/ConfigHelper.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 
 import {StringFormat} from "../../helpers/StringFormat.t.sol";
 
@@ -26,6 +28,8 @@ contract GoldfinchFactoryTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
 
+  bytes32 constant BEACON_STORAGE_SLOT = bytes32(uint256(keccak256("eip1967.proxy.beacon")) - 1);
+
   function setUp() public override {
     super.setUp();
 
@@ -34,17 +38,9 @@ contract GoldfinchFactoryTest is BaseTest {
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
     gfFactory = GoldfinchFactory(address(protocol.gfFactory()));
 
-    TranchedPool poolImpl = new TranchedPool();
-    TranchedPoolImplementationRepository poolImplRepo = new TranchedPoolImplementationRepository();
-    poolImplRepo.initialize(GF_OWNER, address(poolImpl));
-
     PoolTokens poolTokens = new PoolTokens();
     poolTokens.__initialize__(GF_OWNER, gfConfig);
 
-    gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
-      address(poolImplRepo)
-    );
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.PoolTokens), address(poolTokens));
 
     // CreditLine setup
@@ -62,35 +58,50 @@ contract GoldfinchFactoryTest is BaseTest {
       address(creditLineBeacon)
     );
 
+    // TranchedPool setup
+    TranchedPool tranchedPoolImpl = new TranchedPool();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolImplementation),
+      address(tranchedPoolImpl)
+    );
+    UpgradeableBeacon tranchedPoolBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.TranchedPoolImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolBeacon),
+      address(tranchedPoolBeacon)
+    );
+
     fuzzHelper.exclude(address(creditLineImpl));
     fuzzHelper.exclude(address(creditLineBeacon));
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(gfFactory));
-    fuzzHelper.exclude(address(poolImpl));
-    fuzzHelper.exclude(address(poolImplRepo));
     fuzzHelper.exclude(address(poolTokens));
+    fuzzHelper.exclude(address(tranchedPoolImpl));
+    fuzzHelper.exclude(address(tranchedPoolBeacon));
 
     _stopImpersonation();
   }
 
   function testAdminCanCreatePool() public impersonating(GF_OWNER) {
     uint256[] memory allowedIdTypes = new uint256[](1);
-    vm.expectEmit(true, true, false, false);
     address expectedPoolAddress = computeCreateAddress(
       address(gfFactory),
       vm.getNonce(address(gfFactory))
     );
+    vm.expectEmit(true, true, false, false);
     emit PoolCreated(ITranchedPool(expectedPoolAddress), address(this));
-    ITranchedPool pool = gfFactory.createPool(
-      address(this),
-      1,
-      2,
-      3,
-      defaultSchedule(),
-      7,
-      block.timestamp,
-      allowedIdTypes
-    );
+    ITranchedPool pool = gfFactory.createPool({
+      _borrower: address(this),
+      _juniorFeePercent: 1,
+      _limit: 2,
+      _interestApr: 3,
+      _schedule: defaultSchedule(),
+      _lateFeeApr: 7,
+      _fundableAt: block.timestamp,
+      _allowedUIDTypes: allowedIdTypes
+    });
     assertEq(address(pool), expectedPoolAddress);
   }
 
@@ -264,6 +275,50 @@ contract GoldfinchFactoryTest is BaseTest {
     _startImpersonation(nonOwner);
     vm.expectRevert("Ownable: caller is not the owner");
     beacon.upgradeTo(address(this));
+  }
+
+  function testBeaconImplIsTheImplPointedToByTheEnumValue() public impersonating(GF_OWNER) {
+    UpgradeableBeacon beacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.CreditLineImplementation,
+      GF_OWNER
+    );
+    assertEq(
+      beacon.implementation(),
+      gfConfig.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation))
+    );
+  }
+
+  function testCreateCreditLineCreatesABeaconProxyWhoseBeaconIsTheCreditLineBeacon()
+    public
+    impersonating(GF_OWNER)
+  {
+    ICreditLine creditLine = gfFactory.createCreditLine();
+    BeaconProxy creditLineProxy = BeaconProxy(payable(address(creditLine)));
+    // Must use load cheat to read the beacon because it's not a public var
+    bytes32 beacon = vm.load(address(creditLineProxy), BEACON_STORAGE_SLOT);
+    assertEq(beacon, bytes32(uint256(uint160(address(gfConfig.getCreditLineBeacon())))));
+  }
+
+  function testCreateTranchedPoolCreatesABeaconProxyWhoseBeaconIsTheTranchedPoolBeacon()
+    public
+    impersonating(GF_OWNER)
+  {
+    uint256[] memory allowedIdTypes = new uint256[](1);
+    ITranchedPool pool = gfFactory.createPool({
+      _borrower: address(this),
+      _juniorFeePercent: 0,
+      _limit: 0,
+      _interestApr: 1,
+      _schedule: defaultSchedule(),
+      _lateFeeApr: 1,
+      _fundableAt: block.timestamp,
+      _allowedUIDTypes: allowedIdTypes
+    });
+
+    BeaconProxy poolProxy = BeaconProxy(payable(address(pool)));
+    // Must use load cheat to read the beacon because it's not a public var
+    bytes32 beacon = vm.load(address(poolProxy), BEACON_STORAGE_SLOT);
+    assertEq(beacon, bytes32(uint256(uint160(address(gfConfig.getTranchedPoolBeacon())))));
   }
 
   /**

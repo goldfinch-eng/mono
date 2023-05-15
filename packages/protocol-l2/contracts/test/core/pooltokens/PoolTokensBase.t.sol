@@ -14,7 +14,6 @@ import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
-import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
@@ -71,14 +70,22 @@ contract PoolTokensBaseTest is BaseTest {
     go.initialize(GF_OWNER, gfConfig, address(uid));
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
 
-    // TranchedPool and CreditLine setup
-    TranchedPool tpImpl = new TranchedPool();
-    TranchedPoolImplementationRepository tpImplRepo = new TranchedPoolImplementationRepository();
-    tpImplRepo.initialize(GF_OWNER, address(tpImpl));
+    // TranchedPool setup
+    TranchedPool tranchedPoolImpl = new TranchedPool();
     gfConfig.setAddress(
-      uint256(ConfigOptions.Addresses.TranchedPoolImplementationRepository),
-      address(tpImplRepo)
+      uint256(ConfigOptions.Addresses.TranchedPoolImplementation),
+      address(tranchedPoolImpl)
     );
+    UpgradeableBeacon tranchedPoolBeacon = gfFactory.createBeacon(
+      ConfigOptions.Addresses.TranchedPoolImplementation,
+      GF_OWNER
+    );
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.TranchedPoolBeacon),
+      address(tranchedPoolBeacon)
+    );
+    fuzzHelper.exclude(address(tranchedPoolImpl));
+    fuzzHelper.exclude(address(tranchedPoolBeacon));
 
     // CreditLine setup
     CreditLine creditLineImpl = new CreditLine();

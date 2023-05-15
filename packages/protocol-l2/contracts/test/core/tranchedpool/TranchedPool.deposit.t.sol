@@ -191,11 +191,16 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     deposit(pool, 2, usdcVal(1000), DEPOSITOR);
     lockJuniorTranche(pool);
 
-    // Event should be emitted for deposit
+    _startImpersonation(GF_OWNER);
+    usdc.transfer(address(this), usdcVal(4000));
+    _stopImpersonation();
+
+    _startImpersonation(address(this));
+    usdc.approve(address(pool), usdcVal(4000));
     vm.expectEmit(true, true, true, true);
     emit DepositMade(address(this), 1, 2, usdcVal(4000));
-
-    uint256 seniorPoolTokenId = seniorDepositAndInvest(pool, usdcVal(4000));
+    uint256 seniorPoolTokenId = pool.deposit(1, usdcVal(4000));
+    _stopImpersonation();
 
     // Junior tranche info has principal deposited
     TranchedPool.TrancheInfo memory junior = pool.getTranche(2);
@@ -254,12 +259,11 @@ contract TranchedPoolDepositTest is TranchedPoolBaseTest {
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
 
-    vm.expectEmit(true, true, true, true);
-    emit DepositMade(user, 2, 1, usdcVal(100));
-
     uid._mintForTest(user, 1, 1, "");
     // Deposit with permit
     _startImpersonation(user);
+    vm.expectEmit(true, true, true, true);
+    emit DepositMade(user, 2, 1, usdcVal(100));
     uint256 poolTokenId = pool.depositWithPermit(2, usdcVal(100), deadline, v, r, s);
     _stopImpersonation();
 

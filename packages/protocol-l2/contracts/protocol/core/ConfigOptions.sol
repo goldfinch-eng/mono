@@ -44,7 +44,7 @@ library ConfigOptions {
     CUSDCContract,
     GoldfinchConfig,
     PoolTokens,
-    TranchedPoolImplementation, // deprecated
+    TranchedPoolImplementation,
     SeniorPool,
     SeniorPoolStrategy,
     MigratedTranchedPoolImplementation,
@@ -58,6 +58,7 @@ library ConfigOptions {
     WithdrawalRequestToken,
     MonthlyScheduleRepo,
     CallableLoanImplementationRepository,
-    CreditLineBeacon
+    CreditLineBeacon,
+    TranchedPoolBeacon
   }
 }
