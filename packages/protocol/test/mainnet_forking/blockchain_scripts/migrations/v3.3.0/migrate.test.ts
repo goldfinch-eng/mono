@@ -52,7 +52,7 @@ const EXAMPLE_FAZZ_POOL_TOKEN_OWNER = "0xc0d67e9ab24e98e84d3efc150ae14c5754db33d
 
 // Only makes sense in CI where test pollution occurs.
 // Otherwise, we should be able to consistently advanceTime from the mainnet forked block
-const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1684218438 // Tue May 16 2023 06:27:18 GMT+0000
+const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1692146432 // Wed Aug 16 2023 00:40:32 GMT+0000
 
 // Empty bytes padding the rest of a word after filling the 4 bytes of an error selector
 const ERROR_SELECTOR_BUFFER = "000000000000000000000000"
