@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import {BaseTest} from "../BaseTest.t.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
-import {ISchedule} from "../../../interfaces/ISchedule.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {GoldfinchFactory} from "../../../protocol/core/GoldfinchFactory.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
@@ -15,6 +14,9 @@ import {PoolTokens} from "../../../protocol/core/PoolTokens.sol";
 import {TranchedPoolImplementationRepository} from "../../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
 
 contract GoldfinchFactoryTest is BaseTest {
   GoldfinchConfig internal gfConfig;
@@ -164,6 +166,32 @@ contract GoldfinchFactoryTest is BaseTest {
       _fundableAt: 0,
       _allowedUIDTypes: _allowedUIDTypes
     });
+  }
+
+  function defaultSchedule() public returns (ISchedule) {
+    return
+      createMonthlySchedule({
+        periodsInTerm: 12,
+        periodsPerInterestPeriod: 1,
+        periodsPerPrincipalPeriod: 12,
+        gracePrincipalPeriods: 0
+      });
+  }
+
+  function createMonthlySchedule(
+    uint periodsInTerm,
+    uint periodsPerPrincipalPeriod,
+    uint periodsPerInterestPeriod,
+    uint gracePrincipalPeriods
+  ) public returns (ISchedule) {
+    return
+      new Schedule({
+        _periodMapper: new MonthlyPeriodMapper(),
+        _periodsInTerm: periodsInTerm,
+        _periodsPerInterestPeriod: periodsPerInterestPeriod,
+        _periodsPerPrincipalPeriod: periodsPerPrincipalPeriod,
+        _gracePrincipalPeriods: gracePrincipalPeriods
+      });
   }
 
   event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
