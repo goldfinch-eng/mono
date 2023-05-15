@@ -52,8 +52,12 @@ const EXAMPLE_FAZZ_POOL_TOKEN_OWNER = "0xc0d67e9ab24e98e84d3efc150ae14c5754db33d
 
 // Only makes sense in CI where test pollution occurs.
 // Otherwise, we should be able to consistently advanceTime from the mainnet forked block
-const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1684218438 // Tue May 16 2023 06:27:18 GMT+0000
+const EXAMPLE_CALL_SUBMISSION_TIMESTAMP = 1692146432 // Wed Aug 16 2023 00:40:32 GMT+0000
 
+// Empty bytes padding the rest of a word after filling the 4 bytes of an error selector
+const ERROR_SELECTOR_BUFFER = "000000000000000000000000"
+const UNKNOWN_CUSTOM_ERROR_PREFIX =
+  "VM Exception while processing transaction: reverted with an unrecognized custom error (return data: "
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("pendingMainnetMigrations", {keepExistingDeployments: true})
 
@@ -87,6 +91,7 @@ describe("v3.3.0", async function () {
   let allSigners: SignerWithAddress[]
   let lenders: [string, string, string]
   let signer: string
+  let requiresLockerRoleSelector: string
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -95,7 +100,12 @@ describe("v3.3.0", async function () {
     signer = (await allSigners[0]?.getAddress()) as string
     defaultLenderAddress = (await allSigners[1]?.getAddress()) as string
     lenders = allSigners.slice(2, 5).map((signer) => signer.address) as typeof lenders
-
+    const utils = hre.ethers.utils
+    requiresLockerRoleSelector = utils.hexDataSlice(
+      utils.keccak256(utils.toUtf8Bytes("RequiresLockerRole(address)")),
+      0,
+      4
+    )
     await fundWithWhales(["USDC"], [FAZZ_MAINNET_EOA])
     await fundWithWhales(["GFI", "USDC", "ETH"], [defaultLenderAddress, MAINNET_WARBLER_LABS_MULTISIG, ...lenders])
     await gfFactory.grantRole(await gfFactory.BORROWER_ROLE(), FAZZ_MAINNET_EOA)
@@ -474,6 +484,9 @@ describe("v3.3.0", async function () {
       for (let i = 3; i < 10; i++) {
         const randoUser = (await allSigners[i]?.getAddress()) as string
         await impersonateAccount(hre, randoUser)
+        const requiresLockerRoleError = unknownCustomError(
+          `${requiresLockerRoleSelector}${ERROR_SELECTOR_BUFFER}${randoUser.slice(2).toLowerCase()}`
+        )
         await expect(
           borrowerContract.initialize(randoUser, randoUser, {from: randoUser})
         ).to.eventually.be.rejectedWith("Contract instance has already been initialized")
@@ -551,14 +564,14 @@ describe("v3.3.0", async function () {
             }
           )
         ).to.eventually.be.rejectedWith("Must have admin role to perform this action")
-        await expect(callableLoanInstance.drawdown(usdcVal(100), {from: randoUser})).to.eventually.be.rejectedWith(
-          `RequiresLockerRole("${randoUser}")`
-        )
         await expect(callableLoanInstance.setAllowedUIDTypes([1], {from: randoUser})).to.eventually.be.rejectedWith(
-          `RequiresLockerRole("${randoUser}")`
+          requiresLockerRoleError
         )
         await expect(callableLoanInstance.setFundableAt(0, {from: randoUser})).to.eventually.be.rejectedWith(
-          `RequiresLockerRole("${randoUser}")`
+          requiresLockerRoleError
+        )
+        await expect(callableLoanInstance.drawdown(usdcVal(100), {from: randoUser})).to.eventually.be.rejectedWith(
+          requiresLockerRoleError
         )
       }
     })
@@ -662,5 +675,9 @@ describe("v3.3.0", async function () {
     await callableLoanInstance.deposit(FAZZ_DEAL_UNCALLED_CAPITAL_TRANCHE, depositAmount, {
       from: lender,
     })
+  }
+
+  function unknownCustomError(errorString: string) {
+    return `${UNKNOWN_CUSTOM_ERROR_PREFIX}${errorString})`
   }
 })

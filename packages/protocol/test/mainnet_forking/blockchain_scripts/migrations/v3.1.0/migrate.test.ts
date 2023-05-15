@@ -39,7 +39,16 @@ const setupTest = deployments.createFixture(async () => {
 
   await fundWithWhales(
     ["USDC", "BUSD", "USDT", "ETH"],
-    [protocolOwner, gf_deployer, owner, signerAddress, anotherUser, anotherUser2, anotherUser3]
+    [
+      protocolOwner,
+      gf_deployer,
+      owner,
+      signerAddress,
+      anotherUser,
+      anotherUser2,
+      anotherUser3,
+      MAINNET_WARBLER_LABS_MULTISIG,
+    ]
   )
   await impersonateAccount(hre, MAINNET_WARBLER_LABS_MULTISIG)
 

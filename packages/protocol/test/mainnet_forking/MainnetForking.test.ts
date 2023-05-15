@@ -502,6 +502,7 @@ describe("mainnet forking tests", async function () {
       for (let i = 0; i < stakedFiduHolders.length; ++i) {
         const {stakingRewardsTokenId, address} = stakedFiduHolders[i]!
         const fiduBalance = await stakingRewards.stakedBalanceOf(stakingRewardsTokenId)
+        await fundWithWhales(["ETH"], [address])
         await impersonateAccount(hre, address)
         await stakingRewards.unstake(stakingRewardsTokenId, fiduBalance, {
           from: address,
