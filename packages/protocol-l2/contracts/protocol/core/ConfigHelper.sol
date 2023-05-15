@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
 import {ConfigOptions} from "./ConfigOptions.sol";
-import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {IGoldfinchFactory} from "../../interfaces/IGoldfinchFactory.sol";
+import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
 import {IGo} from "../../interfaces/IGo.sol";
 
 /**
@@ -20,24 +20,24 @@ import {IGo} from "../../interfaces/IGo.sol";
  */
 
 library ConfigHelper {
-  function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {
+  function getUSDC(IGoldfinchConfig config) internal view returns (IERC20withDec) {
     return IERC20withDec(usdcAddress(config));
   }
 
-  function getPoolTokens(GoldfinchConfig config) internal view returns (IPoolTokens) {
+  function getPoolTokens(IGoldfinchConfig config) internal view returns (IPoolTokens) {
     return IPoolTokens(poolTokensAddress(config));
   }
 
-  function getGoldfinchFactory(GoldfinchConfig config) internal view returns (IGoldfinchFactory) {
+  function getGoldfinchFactory(IGoldfinchConfig config) internal view returns (IGoldfinchFactory) {
     return IGoldfinchFactory(goldfinchFactoryAddress(config));
   }
 
-  function getGo(GoldfinchConfig config) internal view returns (IGo) {
+  function getGo(IGoldfinchConfig config) internal view returns (IGo) {
     return IGo(goAddress(config));
   }
 
   function getTranchedPoolImplementationRepository(
-    GoldfinchConfig config
+    IGoldfinchConfig config
   ) internal view returns (ImplementationRepository) {
     return
       ImplementationRepository(
@@ -46,7 +46,7 @@ library ConfigHelper {
   }
 
   function getCallableLoanImplementationRepository(
-    GoldfinchConfig config
+    IGoldfinchConfig config
   ) internal view returns (ImplementationRepository) {
     return
       ImplementationRepository(
@@ -54,80 +54,84 @@ library ConfigHelper {
       );
   }
 
-  function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
+  function oneInchAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
 
-  function creditLineImplementationAddress(GoldfinchConfig config) internal view returns (address) {
+  function creditLineImplementationAddress(
+    IGoldfinchConfig config
+  ) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
   }
 
   /// @dev deprecated because we no longer use GSN
-  function trustedForwarderAddress(GoldfinchConfig config) internal view returns (address) {
+  function trustedForwarderAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TrustedForwarder));
   }
 
-  function configAddress(GoldfinchConfig config) internal view returns (address) {
+  function configAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig));
   }
 
-  function poolTokensAddress(GoldfinchConfig config) internal view returns (address) {
+  function poolTokensAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
-  function goldfinchFactoryAddress(GoldfinchConfig config) internal view returns (address) {
+  function goldfinchFactoryAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory));
   }
 
-  function usdcAddress(GoldfinchConfig config) internal view returns (address) {
+  function usdcAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.USDC));
   }
 
-  function tranchedPoolAddress(GoldfinchConfig config) internal view returns (address) {
+  function tranchedPoolAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
   }
 
-  function reserveAddress(GoldfinchConfig config) internal view returns (address) {
+  function reserveAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve));
   }
 
-  function protocolAdminAddress(GoldfinchConfig config) internal view returns (address) {
+  function protocolAdminAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.ProtocolAdmin));
   }
 
-  function borrowerImplementationAddress(GoldfinchConfig config) internal view returns (address) {
+  function borrowerImplementationAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.BorrowerImplementation));
   }
 
-  function goAddress(GoldfinchConfig config) internal view returns (address) {
+  function goAddress(IGoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Go));
   }
 
-  function getReserveDenominator(GoldfinchConfig config) internal view returns (uint256) {
+  function getReserveDenominator(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.ReserveDenominator));
   }
 
-  function getWithdrawFeeDenominator(GoldfinchConfig config) internal view returns (uint256) {
+  function getWithdrawFeeDenominator(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator));
   }
 
-  function getLatenessGracePeriodInDays(GoldfinchConfig config) internal view returns (uint256) {
+  function getLatenessGracePeriodInDays(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays));
   }
 
-  function getLatenessMaxDays(GoldfinchConfig config) internal view returns (uint256) {
+  function getLatenessMaxDays(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxDays));
   }
 
-  function getDrawdownPeriodInSeconds(GoldfinchConfig config) internal view returns (uint256) {
+  function getDrawdownPeriodInSeconds(IGoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
   }
 
-  function getCreditLineBeacon(GoldfinchConfig config) internal view returns (UpgradeableBeacon) {
+  function getCreditLineBeacon(IGoldfinchConfig config) internal view returns (UpgradeableBeacon) {
     return UpgradeableBeacon(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineBeacon)));
   }
 
-  function getTranchedPoolBeacon(GoldfinchConfig config) internal view returns (UpgradeableBeacon) {
+  function getTranchedPoolBeacon(
+    IGoldfinchConfig config
+  ) internal view returns (UpgradeableBeacon) {
     return
       UpgradeableBeacon(config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolBeacon)));
   }

@@ -6,10 +6,10 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {HasAdmin} from "./HasAdmin.sol";
 import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
+import {IGoldfinchConfig} from "../../interfaces/IGoldfinchConfig.sol";
 import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
@@ -36,8 +36,8 @@ contract PoolTokens is
   bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
   bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;
 
-  GoldfinchConfig public config;
-  using ConfigHelper for GoldfinchConfig;
+  IGoldfinchConfig public config;
+  using ConfigHelper for IGoldfinchConfig;
 
   // tokenId => tokenInfo
   mapping(uint256 => TokenInfo) public tokens;
@@ -61,7 +61,7 @@ contract PoolTokens is
     set owner as msg.sender. Also, it lets us set our config contract
   */
   // solhint-disable-next-line func-name-mixedcase
-  function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+  function __initialize__(address owner, IGoldfinchConfig _config) external initializer {
     require(
       owner != address(0) && address(_config) != address(0),
       "Owner and config addresses cannot be empty"
