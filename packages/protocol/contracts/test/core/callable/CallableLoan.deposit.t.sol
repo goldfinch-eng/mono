@@ -326,9 +326,10 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
 
   function testLockPoolEmitsEvent() public impersonating(BORROWER) {
     (CallableLoan callableLoan, ) = defaultCallableLoan();
+    deposit(callableLoan, 3, usdcVal(100), DEPOSITOR);
     vm.expectEmit(true, true, true, true);
     emit DepositsLocked(address(callableLoan));
-    depositAndDrawdown(callableLoan, usdcVal(100), DEPOSITOR);
+    callableLoan.drawdown(usdcVal(100));
   }
 
   function testDepositUsingPermit(uint256 userPrivateKey, uint256 depositAmount) public {
@@ -361,12 +362,11 @@ contract CallableLoanDepositTest is CallableLoanBaseTest {
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
 
-    vm.expectEmit(true, true, true, true);
-    emit DepositMade(user, 3, 1, depositAmount);
-
     uid._mintForTest(user, 1, depositAmount, "");
     // Deposit with permit
     _startImpersonation(user);
+    vm.expectEmit(true, true, true, true);
+    emit DepositMade(user, 3, 1, depositAmount);
     uint256 poolTokenId = callableLoan.depositWithPermit(3, depositAmount, deadline, v, r, s);
     _stopImpersonation();
 
