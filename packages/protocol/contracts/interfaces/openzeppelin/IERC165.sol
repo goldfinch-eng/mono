@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity >=0.6.0;
 
 // This file copied from OZ, but with the version pragma updated to use >=.

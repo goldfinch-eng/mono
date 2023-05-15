@@ -2,12 +2,19 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0x4Df1e7fFB382F79736CA565F378F783678d995D8
+https://etherscan.io/address/0x86db002dbBb64D67ef4B43C76C432BF5BCBF7197
 
 A contract that represents the agreement between Backers and
- a Borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
- A CreditLine belongs to a TranchedPool, and is fully controlled by that TranchedPool. It does not
- operate in any standalone capacity. It should generally be considered internal to the TranchedPool.
+ a Borrower. Includes the terms of the loan, as well as the accounting state such as interest owed.
+ A CreditLine instance belongs to a TranchedPool instance and is fully controlled by that TranchedPool
+ instance. It should not operate in any standalone capacity and should generally be considered internal
+ to the TranchedPool instance.
+
+### INTEREST_DECIMALS
+
+```solidity
+uint256 INTEREST_DECIMALS
+```
 
 ### SECONDS_PER_DAY
 
@@ -15,10 +22,16 @@ A contract that represents the agreement between Backers and
 uint256 SECONDS_PER_DAY
 ```
 
-### GoldfinchConfigUpdated
+### SECONDS_PER_YEAR
 
 ```solidity
-event GoldfinchConfigUpdated(address who, address configAddress)
+uint256 SECONDS_PER_YEAR
+```
+
+### config
+
+```solidity
+contract GoldfinchConfig config
 ```
 
 ### borrower
@@ -45,24 +58,6 @@ uint256 maxLimit
 uint256 interestApr
 ```
 
-### paymentPeriodInDays
-
-```solidity
-uint256 paymentPeriodInDays
-```
-
-### termInDays
-
-```solidity
-uint256 termInDays
-```
-
-### principalGracePeriodInDays
-
-```solidity
-uint256 principalGracePeriodInDays
-```
-
 ### lateFeeApr
 
 ```solidity
@@ -75,35 +70,13 @@ uint256 lateFeeApr
 uint256 balance
 ```
 
-### interestOwed
+### totalInterestPaid
 
 ```solidity
-uint256 interestOwed
+uint256 totalInterestPaid
 ```
 
-### principalOwed
-
-```solidity
-uint256 principalOwed
-```
-
-### termEndTime
-
-```solidity
-uint256 termEndTime
-```
-
-### nextDueTime
-
-```solidity
-uint256 nextDueTime
-```
-
-### interestAccruedAsOf
-
-```solidity
-uint256 interestAccruedAsOf
-```
+Cumulative interest paid back up to now
 
 ### lastFullPaymentTime
 
@@ -111,29 +84,68 @@ uint256 interestAccruedAsOf
 uint256 lastFullPaymentTime
 ```
 
-### totalInterestAccrued
+### _totalInterestAccrued
 
 ```solidity
-uint256 totalInterestAccrued
+uint256 _totalInterestAccrued
 ```
 
-### config
+### _totalInterestOwed
 
 ```solidity
-contract GoldfinchConfig config
+uint256 _totalInterestOwed
+```
+
+### _checkpointedAsOf
+
+```solidity
+uint256 _checkpointedAsOf
+```
+
+### schedule
+
+```solidity
+struct PaymentSchedule schedule
 ```
 
 ### initialize
 
 ```solidity
-function initialize(address _config, address owner, address _borrower, uint256 _maxLimit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays) public
+function initialize(address _config, address owner, address _borrower, uint256 _maxLimit, uint256 _interestApr, contract ISchedule _schedule, uint256 _lateFeeApr) public
 ```
 
-### limit
+Initialize a brand new credit line
+
+### pay
 
 ```solidity
-function limit() external view returns (uint256)
+function pay(uint256 paymentAmount) external returns (struct ILoan.PaymentAllocation)
 ```
+
+Process a bulk payment, allocating the payment amount based on the payment waterfall
+
+### pay
+
+```solidity
+function pay(uint256 principalPayment, uint256 interestPayment) public returns (struct ILoan.PaymentAllocation)
+```
+
+Process a payment according to the waterfall described in `Accountant.allocatePayment`
+
+_II: insufficient interest_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| principalPayment | uint256 | principal payment amount |
+| interestPayment | uint256 | interest payment amount |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct ILoan.PaymentAllocation | payment allocation |
 
 ### drawdown
 
@@ -141,20 +153,13 @@ function limit() external view returns (uint256)
 function drawdown(uint256 amount) external
 ```
 
-Updates the internal accounting to track a drawdown as of current block timestamp.
-Does not move any money
+Drawdown on the line
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| amount | uint256 | The amount in USDC that has been drawndown |
-
-### setLateFeeApr
-
-```solidity
-function setLateFeeApr(uint256 newLateFeeApr) external
-```
+| amount | uint256 | amount to drawdown. Cannot exceed the line's limit |
 
 ### setLimit
 
@@ -168,11 +173,14 @@ function setLimit(uint256 newAmount) external
 function setMaxLimit(uint256 newAmount) external
 ```
 
-### termStartTime
+### interestAccruedAsOf
 
 ```solidity
-function termStartTime() external view returns (uint256)
+function interestAccruedAsOf() public view virtual returns (uint256)
 ```
+
+We keep this to conform to the ICreditLine interface, but it's redundant information
+  now that we have `checkpointedAsOf`
 
 ### isLate
 
@@ -183,84 +191,165 @@ function isLate() external view returns (bool)
 ### withinPrincipalGracePeriod
 
 ```solidity
-function withinPrincipalGracePeriod() external view returns (bool)
+function withinPrincipalGracePeriod() public view returns (bool)
 ```
 
-### setTermEndTime
+### interestOwed
 
 ```solidity
-function setTermEndTime(uint256 newTermEndTime) public
+function interestOwed() public view virtual returns (uint256)
 ```
 
-### setNextDueTime
+### interestOwedAt
 
 ```solidity
-function setNextDueTime(uint256 newNextDueTime) public
+function interestOwedAt(uint256 timestamp) public view returns (uint256)
 ```
 
-### setBalance
+Interest that would be owed at `timestamp`
+
+### totalInterestAccrued
 
 ```solidity
-function setBalance(uint256 newBalance) public
+function totalInterestAccrued() public view returns (uint256)
 ```
 
-### setTotalInterestAccrued
+Cumulative interest accrued up to now
+
+### totalInterestAccruedAt
 
 ```solidity
-function setTotalInterestAccrued(uint256 _totalInterestAccrued) public
+function totalInterestAccruedAt(uint256 timestamp) public view returns (uint256)
 ```
 
-### setInterestOwed
+Cumulative interest accrued up to `timestamp`
+
+### totalInterestOwedAt
 
 ```solidity
-function setInterestOwed(uint256 newInterestOwed) public
+function totalInterestOwedAt(uint256 timestamp) public view returns (uint256)
 ```
 
-### setPrincipalOwed
+Cumulative interest owed up to `timestamp`
+
+### limit
 
 ```solidity
-function setPrincipalOwed(uint256 newPrincipalOwed) public
+function limit() public view returns (uint256)
 ```
 
-### setInterestAccruedAsOf
+### totalPrincipalPaid
 
 ```solidity
-function setInterestAccruedAsOf(uint256 newInterestAccruedAsOf) public
+function totalPrincipalPaid() public view returns (uint256)
 ```
 
-### setLastFullPaymentTime
+Returns the total amount of principal thats been paid
+
+### totalInterestOwed
 
 ```solidity
-function setLastFullPaymentTime(uint256 newLastFullPaymentTime) public
+function totalInterestOwed() public view returns (uint256)
 ```
 
-### assess
+Cumulative interest owed up to now
+
+### interestAccrued
 
 ```solidity
-function assess() public returns (uint256, uint256, uint256)
+function interestAccrued() public view returns (uint256)
 ```
 
-Triggers an assessment of the creditline. Any USDC balance available in the creditline is applied
-towards the interest and principal.
+Interest accrued in the current payment period up to now. Converted to
+  owed interest once we cross into the next payment period. Is 0 if the
+  current time is after loan maturity (all interest accrued immediately becomes
+  interest owed).
 
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | Any amount remaining after applying payments towards the interest and principal |
-| [1] | uint256 | Amount applied towards interest |
-| [2] | uint256 | Amount applied towards principal |
-
-### calculateNextDueTime
+### principalOwedAt
 
 ```solidity
-function calculateNextDueTime() internal view returns (uint256)
+function principalOwedAt(uint256 timestamp) public view returns (uint256)
 ```
 
-### currentTime
+Principal owed up to `timestamp`
+
+### totalPrincipalOwedAt
 
 ```solidity
-function currentTime() internal view virtual returns (uint256)
+function totalPrincipalOwedAt(uint256 timestamp) public view returns (uint256)
+```
+
+Cumulative principal owed at timestamp
+
+### principalOwed
+
+```solidity
+function principalOwed() public view returns (uint256)
+```
+
+### interestAccruedAt
+
+```solidity
+function interestAccruedAt(uint256 timestamp) public view returns (uint256)
+```
+
+Interest accrued in the current payment period for `timestamp`. Coverted to
+  owed interest once we cross into the payment period after `timestamp`. Is 0
+  if `timestamp` is after loan maturity (all interest accrued immediately becomes
+  interest owed).
+
+### nextDueTime
+
+```solidity
+function nextDueTime() external view returns (uint256)
+```
+
+### nextDueTimeAt
+
+```solidity
+function nextDueTimeAt(uint256 timestamp) external view returns (uint256)
+```
+
+### termStartTime
+
+```solidity
+function termStartTime() public view returns (uint256)
+```
+
+Time of first drawdown
+
+### termEndTime
+
+```solidity
+function termEndTime() public view returns (uint256)
+```
+
+### totalPrincipalOwed
+
+```solidity
+function totalPrincipalOwed() public view returns (uint256)
+```
+
+Cumulative principal owed at current timestamp
+
+### _checkpoint
+
+```solidity
+function _checkpoint() internal
+```
+
+Updates accounting variables. This should be called before any changes to `balance`!
+
+### _interestAccruedOverPeriod
+
+```solidity
+function _interestAccruedOverPeriod(uint256 start, uint256 end) internal view returns (uint256)
+```
+
+### _lateFeesAccuredOverPeriod
+
+```solidity
+function _lateFeesAccuredOverPeriod(uint256 start, uint256 end) internal view returns (uint256)
 ```
 
 ### _isLate
@@ -269,46 +358,80 @@ function currentTime() internal view virtual returns (uint256)
 function _isLate(uint256 timestamp) internal view returns (bool)
 ```
 
-### _termStartTime
+## PaymentSchedule
 
 ```solidity
-function _termStartTime() internal view returns (uint256)
+struct PaymentSchedule {
+  contract ISchedule schedule;
+  uint64 startTime;
+}
 ```
 
-### handlePayment
+## PaymentScheduleLib
+
+### startAt
 
 ```solidity
-function handlePayment(uint256 paymentAmount, uint256 timestamp) internal returns (uint256, uint256, uint256)
+function startAt(struct PaymentSchedule s, uint256 timestamp) internal
 ```
 
-Applies `amount` of payment for a given credit line. This moves already collected money into the Pool.
- It also updates all the accounting variables. Note that interest is always paid back first, then principal.
- Any extra after paying the minimum will go towards existing principal (reducing the
- effective interest rate). Any extra after the full loan has been paid off will remain in the
- USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| paymentAmount | uint256 | The amount, in USDC atomic units, to be applied |
-| timestamp | uint256 | The timestamp on which accrual calculations should be based. This allows us  to be precise when we assess a Credit Line |
-
-### _updateAndGetInterestAndPrincipalOwedAsOf
+### previousDueTimeAt
 
 ```solidity
-function _updateAndGetInterestAndPrincipalOwedAsOf(uint256 timestamp) internal returns (uint256, uint256)
+function previousDueTimeAt(struct PaymentSchedule s, uint256 timestamp) internal view returns (uint256)
 ```
 
-### updateCreditLineAccounting
+### previousInterestDueTimeAt
 
 ```solidity
-function updateCreditLineAccounting(uint256 newBalance, uint256 newInterestOwed, uint256 newPrincipalOwed) internal
+function previousInterestDueTimeAt(struct PaymentSchedule s, uint256 timestamp) internal view returns (uint256)
 ```
 
-### _getUSDCBalance
+### principalPeriodAt
 
 ```solidity
-function _getUSDCBalance(address _address) internal view returns (uint256)
+function principalPeriodAt(struct PaymentSchedule s, uint256 timestamp) internal view returns (uint256)
+```
+
+### totalPrincipalPeriods
+
+```solidity
+function totalPrincipalPeriods(struct PaymentSchedule s) internal view returns (uint256)
+```
+
+### isActive
+
+```solidity
+function isActive(struct PaymentSchedule s) internal view returns (bool)
+```
+
+### termEndTime
+
+```solidity
+function termEndTime(struct PaymentSchedule s) internal view returns (uint256)
+```
+
+### termStartTime
+
+```solidity
+function termStartTime(struct PaymentSchedule s) internal view returns (uint256)
+```
+
+### nextDueTimeAt
+
+```solidity
+function nextDueTimeAt(struct PaymentSchedule s, uint256 timestamp) internal view returns (uint256)
+```
+
+### withinPrincipalGracePeriodAt
+
+```solidity
+function withinPrincipalGracePeriodAt(struct PaymentSchedule s, uint256 timestamp) internal view returns (bool)
+```
+
+### isActiveMod
+
+```solidity
+modifier isActiveMod(struct PaymentSchedule s)
 ```
 

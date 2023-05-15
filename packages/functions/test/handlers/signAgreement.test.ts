@@ -1,21 +1,18 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
 import {fake} from "sinon"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
-import {FirebaseConfig, getAgreements, setEnvForTest} from "../../src/db"
 import {signAgreement} from "../../src"
 
 chai.use(chaiSubset)
 const expect = chai.expect
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 
 type FakeBlock = {
   number: number
@@ -23,14 +20,13 @@ type FakeBlock = {
 }
 
 describe("signAgreement", async () => {
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
-  const projectId = "goldfinch-frontend-test"
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let agreements: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
+
   const address = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
   const validSignature =
     "0x46855997425525c8ae449fde8624668ce1f72485886900c585d08459822de466363faa239b8070393a2c3d1f97abe50abc48019be415258615e128b59cfd91a31c"
-  let agreements: firestore.CollectionReference<firestore.DocumentData>
 
   const currentBlockNum = 84
   const yesterdayBlockNum = 80
@@ -59,15 +55,9 @@ describe("signAgreement", async () => {
     mockGetBlockchain(mock)
   })
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    config = {
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
-    agreements = getAgreements(testFirestore)
+  beforeEach(async () => {
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test"))
+    agreements = testContext.firestore().collection("test_agreements")
   })
 
   after(async () => {
@@ -75,13 +65,14 @@ describe("signAgreement", async () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generateAgreementRequest = (
     address: string,
     pool: string,
     fullName: string,
+    email: string,
     signature: string,
     signatureBlockNum: number | string | undefined,
   ) => {
@@ -91,7 +82,7 @@ describe("signAgreement", async () => {
         "x-goldfinch-signature": signature,
         "x-goldfinch-signature-block-num": signatureBlockNum,
       },
-      body: {pool, fullName},
+      body: {pool, fullName, email},
     } as unknown as Request
   }
   const pool = "0x1234asdADF"
@@ -99,8 +90,20 @@ describe("signAgreement", async () => {
   describe("validation", async () => {
     it("checks if address is present", async () => {
       await signAgreement(
-        generateAgreementRequest("", "", "", "", currentBlockNum),
+        generateAgreementRequest("", "0xbeef", "John Doe", "john@example.com", "sig", currentBlockNum),
         expectResponse(403, {error: "Invalid address"}),
+      )
+    })
+    it("checks if email is present", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
+      )
+    })
+    it("checks if email is valid", async () => {
+      await signAgreement(
+        generateAgreementRequest("0x420", "0xbeef", "John Doe", "lol", "sig", currentBlockNum),
+        expectResponse(403, {error: "Invalid email address"}),
       )
     })
   })
@@ -112,7 +115,7 @@ describe("signAgreement", async () => {
       expect((await agreements.doc(key).get()).exists).to.be.false
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -125,7 +128,7 @@ describe("signAgreement", async () => {
       const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User", "test@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 
@@ -133,7 +136,7 @@ describe("signAgreement", async () => {
       expect(agreementDoc.data()).to.containSubset({fullName: "Test User"})
 
       await signAgreement(
-        generateAgreementRequest(address, pool, "Test User 2", validSignature, currentBlockNum),
+        generateAgreementRequest(address, pool, "Test User 2", "test2@example.com", validSignature, currentBlockNum),
         expectResponse(200, {status: "success"}),
       )
 

@@ -27,7 +27,7 @@ export function Footer() {
           <div className="mt-6 flex justify-center sm:mt-0 sm:justify-end">
             <a
               className="p-2 hover:opacity-75"
-              href="https://discord.gg/HVeaca3fN8"
+              href="https://discord.gg/goldfinch"
               target="_blank"
               rel="noreferrer"
             >

@@ -1,6 +1,5 @@
 import { Resolvers } from "@apollo/client";
-
-import { getProvider } from "@/lib/wallet";
+import { getAccount, getProvider } from "@wagmi/core";
 
 import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
 
@@ -69,13 +68,12 @@ export const rootQueryResolvers: Resolvers[string] = {
       price: { __typename: "FiatAmount", symbol: fiat, amount },
     };
   },
-  async viewer(): Promise<Partial<Viewer>> {
-    const provider = await getProvider();
+  viewer(): Partial<Viewer> {
+    const account = getAccount();
     try {
-      const account = await provider.getSigner().getAddress();
       return {
         __typename: "Viewer",
-        account,
+        account: account?.address ?? null,
       };
     } catch (e) {
       return {
@@ -85,7 +83,7 @@ export const rootQueryResolvers: Resolvers[string] = {
     }
   },
   async currentBlock(): Promise<BlockInfo | null> {
-    const provider = await getProvider();
+    const provider = getProvider();
     const currentBlock = await provider.getBlock("latest");
     return {
       __typename: "BlockInfo",

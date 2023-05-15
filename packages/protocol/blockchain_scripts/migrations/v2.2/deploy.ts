@@ -28,7 +28,6 @@ import poolMetadata from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {Contract} from "ethers"
 import {deployCommunityRewards} from "../../baseDeploy/deployCommunityRewards"
 import {deployConfigProxy} from "../../baseDeploy/deployConfigProxy"
-import {deployDynamicLeverageRatioStrategy} from "../../baseDeploy/deployDynamicLeverageRatioStrategy"
 import {deployLPStakingRewards} from "../../baseDeploy/deployLPStakingRewards"
 import {deployMerkleDirectDistributor} from "../../baseDeploy/deployMerkleDirectDistributor"
 import {deployMerkleDistributor} from "../../baseDeploy/deployMerkleDistributor"
@@ -333,10 +332,6 @@ export async function deploy(deployEffects: DeployEffects, anonDeployEffects: De
   })
 
   // 4.
-  // Deploy DynamicLeverageRatioStrategy (unused for now)
-  const dynamicLeverageRatioStrategy = await deployDynamicLeverageRatioStrategy(deployer)
-
-  // 5.
   // Pause deployed contracts
   // CommunityRewards, MerkleDirectDistributor, StakingRewards
   const merkleDirectDistributorEthersContract = await getEthersContract<MerkleDirectDistributor>(
@@ -365,7 +360,6 @@ export async function deploy(deployEffects: DeployEffects, anonDeployEffects: De
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
-      dynamicLeverageRatioStrategy,
     },
     upgradedContracts: {},
   }

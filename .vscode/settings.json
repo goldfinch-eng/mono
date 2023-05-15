@@ -1,14 +1,14 @@
 {
-  "solidity.compileUsingRemoteVersion": "v0.6.12+commit.27d51765",
-  "solidity.enableLocalNodeCompiler": false,
+  "solidity.compileUsingRemoteVersion": "v0.8.18",
   "editor.tabSize": 2,
-  "solidity.solhintRules": {},
+  "solidity.linter": "solhint",
   "eslint.workingDirectories": [
     "./packages/client2"
   ],
   "solidity.defaultCompiler": "remote",
-  "solidity.packageDefaultDependenciesDirectory": "packages/protocol/node_modules",
-  "solidity.remappings": ["forge-std/=packages/protocol/lib/forge-std/src/"],
+  "solidity.packageDefaultDependenciesDirectory": "packages/protocol-l2/node_modules",
+  "solidity.remappings": ["forge-std/=packages/protocol-l2/lib/forge-std/src/"],
+  "solidity.monoRepoSupport": true,
 
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,

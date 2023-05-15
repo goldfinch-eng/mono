@@ -29,12 +29,15 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     colorScheme?:
       | "primary"
       | "secondary"
+      | "sand"
       | "sky"
       | "mustard"
       | "mint"
       | "twilight"
       | "eggplant"
-      | "tidepool";
+      | "tidepool"
+      | "transparent-mustard"
+      | "light-mustard";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -90,7 +93,7 @@ export const Button = forwardRef<
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ref={ref as any}
       className={clsx(
-        "inline-flex items-center justify-center font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center border-2 border-transparent font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
         size === "sm"
           ? "gap-2 py-1 px-3 text-xs"
           : size === "md"
@@ -109,6 +112,8 @@ export const Button = forwardRef<
           ? "bg-sand-700 text-white hover:bg-sand-800 active:bg-sand-900"
           : colorScheme === "secondary"
           ? "bg-sand-100 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900"
+          : colorScheme === "sand"
+          ? "bg-sand-200 text-sand-700 hover:bg-sand-300 hover:text-sand-900 active:bg-sand-400 active:text-sand-900"
           : colorScheme === "sky"
           ? "bg-sky-800 text-white hover:bg-sky-900 active:bg-sky-900"
           : colorScheme === "mustard"
@@ -121,6 +126,10 @@ export const Button = forwardRef<
           ? "bg-eggplant-700 text-white hover:bg-eggplant-800 active:bg-eggplant-900"
           : colorScheme === "tidepool"
           ? "bg-tidepool-500 text-white hover:bg-tidepool-600 active:bg-tidepool-700"
+          : colorScheme === "transparent-mustard"
+          ? "!border-mustard-400 bg-transparent text-sand-700 hover:bg-mustard-400/25"
+          : colorScheme === "light-mustard"
+          ? "bg-mustard-100 text-sand-700 hover:bg-mustard-200 hover:text-sand-900 active:bg-mustard-300 active:text-sand-900"
           : null,
         className
       )}

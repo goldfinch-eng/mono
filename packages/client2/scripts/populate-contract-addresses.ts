@@ -91,6 +91,7 @@ const addresses = {
     networkName === "localhost"
       ? contracts.ERC20Splitter.address
       : "0xE2da0Cf4DCEe902F74D4949145Ea2eC24F0718a4", // TODO all.json isn't updated with Membership contracts yet (not that this one really matters, it's used in a devtool)
+  GoldfinchConfig: contracts.GoldfinchConfig.address,
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

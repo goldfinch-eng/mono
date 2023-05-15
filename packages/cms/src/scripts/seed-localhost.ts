@@ -4,20 +4,7 @@ import { GraphQLClient, gql } from "graphql-request";
 import _ from "lodash";
 
 import { Borrower, Deal, Media } from "payload/generated-types";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
-
-const initializePayload = async () => {
-  await payload.init({
-    secret: process.env.PAYLOAD_SECRET as string,
-    mongoURL: process.env.MONGODB_URI as string,
-    mongoOptions: {
-      dbName: "payload",
-    },
-    local: true,
-  });
-};
+import { initializePayload } from "./helpers";
 
 const localBorrowers = [
   {
@@ -155,21 +142,20 @@ const importDeals = async () => {
 
   const query = gql`
     {
-      tranchedPools {
+      loans {
+        __typename
         id
         borrowerContract {
           id
         }
-        creditLine {
-          termStartTime
-        }
+        termStartTime
       }
     }
   `;
   const gqlResult = await gqlClient.request(query);
 
   console.log(
-    `Importing tranched pools from subgraph as deals (${gqlResult.tranchedPools.length} total)`
+    `Importing loans from subgraph as deals (${gqlResult.loans.length} total)`
   );
 
   // Keep track of deals per borrower
@@ -187,10 +173,10 @@ const importDeals = async () => {
   const borrowers = allBorrowersRequest.docs;
 
   await Promise.all(
-    gqlResult.tranchedPools.map(async (tranchedPool) => {
-      const id = tranchedPool.id;
-      const index = parseInt(tranchedPool.id.slice(-2), 16) % borrowers.length;
-      const isDrawnDown = tranchedPool.creditLine.termStartTime === "0";
+    gqlResult.loans.map(async (loan) => {
+      const id = loan.id;
+      const index = parseInt(loan.id.slice(-2), 16) % borrowers.length;
+      const isDrawnDown = loan.termStartTime === "0";
       const borrower = borrowers[index];
       const deal = {
         name: _.sample([
@@ -203,7 +189,7 @@ const importDeals = async () => {
         category: _.sample(["NFT Loans", "Luncheon", "Prank"]),
         description:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero.",
-        highlights: ["Uno", "Dos", "Tres"],
+        dealHighlights: ["Uno", "Dos", "Tres"],
         borrower: borrower.id,
       };
       if (dealMapping[borrower.id]) {
@@ -220,7 +206,7 @@ const importDeals = async () => {
             ...deal,
             id,
             overview: [{ text: deal.description }],
-            details: deal.highlights
+            details: deal.dealHighlights
               ? [
                   {
                     children: [
@@ -231,7 +217,7 @@ const importDeals = async () => {
                     type: "h3",
                   },
                   {
-                    children: deal.highlights.map((item) => ({
+                    children: deal.dealHighlights.map((item) => ({
                       children: [
                         {
                           text: item,
@@ -244,18 +230,19 @@ const importDeals = async () => {
                 ]
               : null,
             borrower: borrower.id,
-            dealType: isDrawnDown
-              ? "multitranche"
-              : (_.sample(["multitranche", "unitranche"]) as
-                  | "multitranche"
-                  | "unitranche"),
+            dealType:
+              loan.__typename === "CallableLoan"
+                ? "unitranche"
+                : isDrawnDown
+                ? "multitranche"
+                : (_.sample(["multitranche", "unitranche"]) as
+                    | "multitranche"
+                    | "unitranche"),
           } as unknown as Deal,
         });
       } catch (e) {
-        // if this failed, it was probably because the deal already existed.
-        console.log(
-          `Did not import tranched pool ${id} because it already existed in db`
-        );
+        console.log(`Error: ${(e as Error).message}`);
+        console.log(`Did not import loan ${id} due to the above error`);
       }
     })
   );

@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import {
   forwardRef,
   ReactNode,
@@ -17,6 +18,7 @@ interface NuxProps {
   version?: number;
   children: ReactNode;
   title?: string;
+  shouldShowOnPage?: (pathname: string) => boolean;
 }
 
 export const Nux = forwardRef<NuxRef, NuxProps>(function Nux(
@@ -25,6 +27,7 @@ export const Nux = forwardRef<NuxRef, NuxProps>(function Nux(
     version = 1,
     children,
     title = "From the Goldfinch Team",
+    shouldShowOnPage = () => true,
   }: NuxProps,
   ref
 ) {
@@ -35,11 +38,12 @@ export const Nux = forwardRef<NuxRef, NuxProps>(function Nux(
     localStorage.setItem(nuxKey, "viewed");
   };
 
+  const { asPath } = useRouter();
   useEffect(() => {
-    if (localStorage.getItem(nuxKey) !== "viewed") {
+    if (localStorage.getItem(nuxKey) !== "viewed" && shouldShowOnPage(asPath)) {
       setIsNuxOpen(true);
     }
-  }, [nuxKey]);
+  }, [nuxKey, asPath, shouldShowOnPage]);
 
   useImperativeHandle(ref, () => ({ closeNux }));
 

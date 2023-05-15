@@ -29,5 +29,12 @@ module.exports = {
     "linebreak-style": ["error", "unix"],
     quotes: ["error", "double"],
     semi: ["error", "never"],
+    "import/no-unresolved": [
+      // https://github.com/firebase/firebase-admin-node/discussions/1359
+      "error",
+      {
+        ignore: ["^firebase-functions/.+", "^firebase-admin/.+"],
+      },
+    ],
   },
 }

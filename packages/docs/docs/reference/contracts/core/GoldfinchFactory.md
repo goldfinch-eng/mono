@@ -33,10 +33,16 @@ event BorrowerCreated(address borrower, address owner)
 event PoolCreated(contract ITranchedPool pool, address borrower)
 ```
 
+### CallableLoanCreated
+
+```solidity
+event CallableLoanCreated(contract ICallableLoan loan, address borrower)
+```
+
 ### CreditLineCreated
 
 ```solidity
-event CreditLineCreated(contract IV2CreditLine creditLine)
+event CreditLineCreated(contract ICreditLine creditLine)
 ```
 
 ### initialize
@@ -48,7 +54,7 @@ function initialize(address owner, contract GoldfinchConfig _config) public
 ### createCreditLine
 
 ```solidity
-function createCreditLine() external returns (contract IV2CreditLine)
+function createCreditLine() external returns (contract ICreditLine)
 ```
 
 Allows anyone to create a CreditLine contract instance
@@ -73,25 +79,36 @@ Allows anyone to create a Borrower contract instance
 ### createPool
 
 ```solidity
-function createPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (contract ITranchedPool)
+function createPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, contract ISchedule _schedule, uint256 _lateFeeApr, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (contract ITranchedPool pool)
 ```
 
 Allows anyone to create a new TranchedPool for a single borrower
+Requirements:
+ You are the admin or a borrower
 
-#### Parameters
+### createCallableLoan
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _borrower | address | The borrower for whom the CreditLine will be created |
-| _juniorFeePercent | uint256 | The percent of senior interest allocated to junior investors, expressed as  integer percents. eg. 20% is simply 20 |
-| _limit | uint256 | The maximum amount a borrower can drawdown from this CreditLine |
-| _interestApr | uint256 | The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.  We assume 18 digits of precision. For example, to submit 15.34%, you would pass up 153400000000000000,  and 5.34% would be 53400000000000000 |
-| _paymentPeriodInDays | uint256 | How many days in each payment period.  ie. the frequency with which they need to make payments. |
-| _termInDays | uint256 | Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown. |
-| _lateFeeApr | uint256 | The additional interest you will pay if you are late. For example, if this is 3%, and your  normal rate is 15%, then you will pay 18% while you are late. Also expressed as an 18 decimal precision integer Requirements:  You are the admin |
-| _principalGracePeriodInDays | uint256 |  |
-| _fundableAt | uint256 |  |
-| _allowedUIDTypes | uint256[] |  |
+```solidity
+function createCallableLoan(address _borrower, uint256 _limit, uint256 _interestApr, uint256 _numLockupPeriods, contract ISchedule _schedule, uint256 _lateFeeApr, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (contract ICallableLoan loan)
+```
+
+Allows anyone to create a new CallableLoan for a single borrower
+Requirements:
+ You are the admin or a borrower
+
+### createCallableLoanWithProxyOwner
+
+```solidity
+function createCallableLoanWithProxyOwner(address _proxyOwner, address _borrower, uint256 _limit, uint256 _interestApr, uint256 _numLockupPeriods, contract ISchedule _schedule, uint256 _lateFeeApr, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (contract ICallableLoan loan)
+```
+
+Create a callable loan where the proxy owner is different than the borrower
+
+### _createCallableLoanWithProxyOwner
+
+```solidity
+function _createCallableLoanWithProxyOwner(address _proxyOwner, address _borrower, uint256 _limit, uint256 _interestApr, uint256 _numLockupPeriods, contract ISchedule _schedule, uint256 _lateFeeApr, uint256 _fundableAt, uint256[] _allowedUIDTypes) internal returns (contract ICallableLoan loan)
+```
 
 ### _deployMinimal
 

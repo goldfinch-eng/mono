@@ -1,4 +1,5 @@
 import { Resolvers } from "@apollo/client";
+import { getAccount, getProvider, fetchSigner, watchSigner } from "@wagmi/core";
 import { BigNumber } from "ethers";
 
 import { TOKEN_LAUNCH_TIME } from "@/constants";
@@ -6,41 +7,37 @@ import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
 import { getEpochNumber } from "@/lib/membership";
 import { assertUnreachable } from "@/lib/utils";
-import { getProvider } from "@/lib/wallet";
+import { getSignatureForKyc, fetchKycStatus } from "@/lib/verify";
 
 import {
   Viewer,
   SupportedCrypto,
   IndirectGfiGrant,
   DirectGfiGrant,
+  KycStatus,
 } from "../generated";
 
 async function erc20Balance(
   token: SupportedCrypto
 ): Promise<CryptoAmount | null> {
-  try {
-    const provider = await getProvider();
-    const account = await provider.getSigner().getAddress();
-
-    const contract = await getContract({
-      name:
-        token === "GFI"
-          ? "GFI"
-          : token === "USDC"
-          ? "USDC"
-          : token === "FIDU"
-          ? "Fidu"
-          : token === "CURVE_LP"
-          ? "CurveLP"
-          : assertUnreachable(token),
-      provider,
-    });
-    const balance = await contract.balanceOf(account);
-    return { token, amount: balance };
-  } catch (e) {
-    // This will execute if getAddress() above throws (which happens when a user wallet isn't connected)
+  const account = getAccount();
+  if (!account.address) {
     return null;
   }
+  const contract = await getContract({
+    name:
+      token === "GFI"
+        ? "GFI"
+        : token === "USDC"
+        ? "USDC"
+        : token === "FIDU"
+        ? "Fidu"
+        : token === "CURVE_LP"
+        ? "CurveLP"
+        : assertUnreachable(token),
+  });
+  const balance = await contract.balanceOf(account.address);
+  return { token, amount: balance };
 }
 
 export const viewerResolvers: Resolvers[string] = {
@@ -116,12 +113,13 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async claimableMembershipRewards(): Promise<CryptoAmount | null> {
     try {
-      const provider = await getProvider();
-      const account = await provider.getSigner().getAddress();
+      const { address: account } = getAccount();
+      if (!account) {
+        return null;
+      }
 
       const membershipContract = await getContract({
         name: "MembershipOrchestrator",
-        provider,
       });
       const availableRewards = await membershipContract.claimableRewards(
         account
@@ -136,16 +134,17 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async accruedMembershipRewardsThisEpoch(): Promise<CryptoAmount | null> {
     try {
-      const provider = await getProvider();
-      const account = await provider.getSigner().getAddress();
+      const provider = getProvider();
+      const { address: account } = getAccount();
+      if (!account) {
+        return null;
+      }
 
       const membershipContract = await getContract({
         name: "MembershipOrchestrator",
-        provider,
       });
       const membershipVaultContract = await getContract({
         name: "MembershipVault",
-        provider,
       });
 
       const currentBlock = await provider.getBlock("latest");
@@ -164,5 +163,40 @@ export const viewerResolvers: Resolvers[string] = {
     } catch (e) {
       return null;
     }
+  },
+  async kycStatus(): Promise<KycStatus | null> {
+    const { address } = getAccount();
+    const provider = getProvider();
+    if (!address || !provider) {
+      return null;
+    }
+
+    let signer = await fetchSigner();
+    if (!signer) {
+      // Need to make this wait for the signer to come online.
+      // await fetchSigner() can actually return null, even when an account is connected. This may or may not be a bug in Wagmi, but we have to work around it here.
+      const signerAvailablePromise = new Promise<void>((resolve, reject) => {
+        watchSigner({}, (provider) =>
+          provider?._isSigner ? resolve() : reject()
+        );
+      });
+      await signerAvailablePromise;
+      signer = await fetchSigner();
+      if (!signer) {
+        throw new Error("Signer not available when expected");
+      }
+    }
+
+    const signature = await getSignatureForKyc(provider, signer);
+    const kycStatus = await fetchKycStatus(address, signature);
+    return {
+      __typename: "KycStatus",
+      status: kycStatus.status ?? null,
+      identityStatus: kycStatus.identityStatus ?? null,
+      accreditationStatus: kycStatus.accreditationStatus ?? null,
+      kycProvider: kycStatus.kycProvider ?? null,
+      countryCode: kycStatus.countryCode ?? null,
+      type: kycStatus.type ?? null,
+    };
   },
 };

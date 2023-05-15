@@ -380,7 +380,7 @@ contract ImplementationRepositoryTest is BaseTest {
     bool isAlreadyAContract = nBytes > 0;
     if (isAlreadyAContract) return;
 
-    vm.assume(x != address(0));
+    vm.assume(x > address(10));
     vm.etch(x, bytes("SUPER SECRET CODE"));
   }
 

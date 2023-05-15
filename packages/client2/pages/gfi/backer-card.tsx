@@ -13,15 +13,12 @@ import { useWallet } from "@/lib/wallet";
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
 export const BACKER_CARD_TOKEN_FIELDS = gql`
-  fragment BackerCardTokenFields on TranchedPoolToken {
+  fragment BackerCardTokenFields on PoolToken {
     id
-    tranchedPool {
+    loan {
       id
       name @client
-      creditLine {
-        id
-        isLate @client
-      }
+      delinquency @client
       isPaused
     }
     mintedAt
@@ -43,7 +40,7 @@ export function BackerCard({
   vaultedCapitalPositionId,
 }: BackerCardProps) {
   const vaulted = !!vaultedCapitalPositionId;
-  const { provider } = useWallet();
+  const { signer } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
@@ -55,17 +52,17 @@ export function BackerCard({
 
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
-    !token.tranchedPool.creditLine.isLate &&
-    !token.tranchedPool.isPaused;
+    token.loan.delinquency === "CURRENT" &&
+    !token.loan.isPaused;
 
   const handleClaim = async () => {
-    if (!provider) {
+    if (!signer) {
       return;
     }
     if (vaulted) {
       const membershipOrchestratorContract = await getContract({
         name: "MembershipOrchestrator",
-        provider,
+        signer,
       });
       const transaction = membershipOrchestratorContract.harvest([
         vaultedCapitalPositionId,
@@ -74,7 +71,7 @@ export function BackerCard({
     } else {
       const backerRewardsContract = await getContract({
         name: "BackerRewards",
-        provider,
+        signer,
       });
       const transaction = backerRewardsContract.withdraw(token.id);
       await toastTransaction({ transaction });
@@ -85,7 +82,7 @@ export function BackerCard({
 
   return (
     <RewardCardScaffold
-      heading={`Backer of ${token.tranchedPool.name}`}
+      heading={`Backer of ${token.loan.name}`}
       subheading={`${formatCrypto(
         { token: "GFI", amount: totalAmount },
         { includeToken: true }
@@ -143,9 +140,9 @@ export function BackerCard({
         </>
       }
       warning={
-        token.tranchedPool.creditLine.isLate
+        !(token.loan.delinquency === "CURRENT")
           ? "Claiming is disabled because a repayment is due"
-          : token.tranchedPool.isPaused
+          : token.loan.isPaused
           ? "Claiming is disabled because this pool is paused"
           : undefined
       }

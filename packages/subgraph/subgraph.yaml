@@ -93,6 +93,7 @@ dataSources:
       file: ./src/mappings/goldfinch_factory.ts
       entities:
         - TranchedPool
+        - CallableLoan
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -106,11 +107,17 @@ dataSources:
           file: ./abis/SeniorPool.json
         - name: FixedLeverageRatioStrategy
           file: ./abis/FixedLeverageRatioStrategy.json
+        - name: CallableLoan
+          file: ./abis/CallableLoan.json
+        - name: Schedule
+          file: ./abis/Schedule.json
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address)
           handler: handlePoolCreated
         - event: BorrowerCreated(indexed address,indexed address)
           handler: handleBorrowerCreated
+        - event: CallableLoanCreated(indexed address,indexed address)
+          handler: handleCallableLoanCreated
 
   - kind: ethereum/contract
     name: PoolTokens
@@ -132,6 +139,8 @@ dataSources:
           file: ./abis/PoolTokens.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: CallableLoan
+          file: ./abis/CallableLoan.json
         - name: GoldfinchConfig
           file: ./abis/GoldfinchConfig.json
         - name: SeniorPool
@@ -150,6 +159,52 @@ dataSources:
         - event: TokenPrincipalWithdrawn(indexed address,indexed address,indexed uint256,uint256,uint256)
           handler: handleTokenPrincipalWithdrawn
       file: ./src/mappings/pool_tokens.ts
+
+  - kind: ethereum/contract
+    name: Pool
+    network: mainnet
+    source:
+      address: "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
+      abi: Pool
+      startBlock: 11370642
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Pool
+      abis:
+        - name: Pool
+          file: ./abis/Pool.json
+      eventHandlers:
+        - event: PrincipalCollected(indexed address,uint256)
+          handler: handlePrincipalCollected
+        - event: InterestCollected(indexed address,uint256,uint256)
+          handler: handleInterestCollected
+        - event: PrincipalWrittendown(indexed address,int256)
+          handler: handlePrincipalWrittendown
+      file: ./src/mappings/pool.ts
+
+  - kind: ethereum/contract
+    name: CreditDesk
+    network: mainnet
+    source:
+      address: "0xD52dc1615c843c30F2e4668E101c0938e6007220"
+      abi: CreditDesk
+      startBlock: 11370661
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - CreditDesk
+      abis:
+        - name: CreditDesk
+          file: ./abis/CreditDesk.json
+      eventHandlers:
+        - event: DrawdownMade(indexed address,indexed address,uint256)
+          handler: handleDrawdownMade
+      file: ./src/mappings/credit_desk.ts
 
   - kind: ethereum/contract
     name: StakingRewards
@@ -310,6 +365,8 @@ dataSources:
           handler: handleRewardPaid
         - event: GrantRevoked(indexed uint256,uint256)
           handler: handleGrantRevoked
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
       file: ./src/mappings/community_rewards.ts
 
   - kind: ethereum/contract
@@ -551,6 +608,7 @@ templates:
         - TranchedPoolToken
         - Transaction
         - Zap
+        - ScheduledRepayment
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -568,6 +626,8 @@ templates:
           file: ./abis/BackerRewards.json
         - name: Zapper
           file: ./abis/Zapper.json
+        - name: Schedule
+          file: ./abis/Schedule.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
@@ -591,3 +651,45 @@ templates:
           handler: handlePaymentApplied
         - event: TranchedPoolAssessed(indexed address)
           handler: handleTranchedPoolAssessed
+
+  - name: CallableLoan
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CallableLoan
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/callable_loan/callable_loan.ts
+      entities:
+        - CallableLoan
+        - PoolToken
+      abis:
+        - name: CallableLoan
+          file: ./abis/CallableLoan.json
+        - name: Schedule
+          file: ./abis/Schedule.json
+      eventHandlers:
+        - event: CallRequestSubmitted(indexed uint256,indexed uint256,indexed uint256,uint256)
+          handler: handleCallRequestSubmitted
+        - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
+          handler: handleDepositMade
+        # - event: DepositsLocked(indexed address)
+        - event: DrawdownMade(indexed address,uint256)
+          handler: handleDrawdownMade
+        - event: DrawdownsPaused(indexed address)
+          handler: handleDrawdownsPaused
+        - event: DrawdownsUnpaused(indexed address)
+          handler: handleDrawdownsUnpaused
+        # - event: EmergencyShutdown(indexed address)
+        # - event: Paused(address)
+        - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePaymentApplied
+        # - event: ReserveFundsCollected(indexed address,uint256)
+        # - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+        # - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+        # - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+        # - event: Unpaused(address)
+        - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handleWithdrawalMade

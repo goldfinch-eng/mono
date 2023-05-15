@@ -7,8 +7,6 @@ https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
 This contract stores mappings of useful "protocol config state", giving a central place
  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
  are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
- Note: While this inherits from BaseUpgradeablePausable, it is not deployed as an upgradeable contract (this
-   is mostly to save gas costs of having each call go through a proxy)
 
 ### GO_LISTER_ROLE
 
@@ -116,6 +114,12 @@ function setBorrowerImplementation(address newAddress) public
 
 ```solidity
 function setGoldfinchConfig(address newAddress) public
+```
+
+### setMonthlyScheduleRepo
+
+```solidity
+function setMonthlyScheduleRepo(address newAddress) public
 ```
 
 ### initializeFromOtherConfig

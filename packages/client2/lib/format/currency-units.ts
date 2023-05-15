@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 
 import {
   USDC_DECIMALS,
@@ -91,13 +91,22 @@ const tokenMap: Record<SupportedCrypto, string> = {
   CURVE_LP: "FIDU-USDC-F",
 };
 
-export function stringToCryptoAmount(
+export function stringToCryptoAmount<T extends SupportedCrypto>(
   s: string | null | undefined,
-  token: SupportedCrypto
-): CryptoAmount {
+  token: T
+): CryptoAmount<T> {
   const amount = utils.parseUnits(
     !s ? "0" : s === "" ? "0" : s,
     cryptoPrecision[token]
   );
   return { token, amount };
+}
+
+export function roundToPrecision(amount: BigNumber, precision: number) {
+  const incremented = amount.add(precision - 1);
+  return incremented.sub(incremented.mod(precision));
+}
+
+export function roundUpUsdcPenny(usdcAmount: BigNumber) {
+  return roundToPrecision(usdcAmount, 10000);
 }

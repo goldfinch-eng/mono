@@ -1,6 +1,7 @@
 /* global web3 */
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {expectEvent} from "@openzeppelin/test-helpers"
+import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import hre from "hardhat"
 import {FIDU_DECIMALS, interestAprAsBN, OWNER_ROLE, TRANCHES} from "../blockchain_scripts/deployHelpers"
@@ -9,31 +10,30 @@ import {
   ERC20Instance,
   GFIInstance,
   GoldfinchConfigInstance,
-  GoldfinchFactoryInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
+  TestBackerRewardsInstance,
   TranchedPoolInstance,
 } from "../typechain/truffle"
-import {TestBackerRewardsInstance} from "../typechain/truffle/contracts/test/TestBackerRewards"
 import {DepositMade} from "../typechain/truffle/contracts/protocol/core/TranchedPool"
 import {
   advanceTime,
   bigVal,
-  createPoolWithCreditLine,
   decodeLogs,
   erc20Approve,
   erc20Transfer,
   expect,
+  fiduTolerance,
   fiduToUSDC,
+  getCurrentTimestamp,
   getFirstLog,
-  getTruffleContractAtAddress,
-  SECONDS_PER_YEAR,
+  getTranchedPoolAndCreditLine,
   usdcVal,
   USDC_DECIMALS,
   ZERO_ADDRESS,
 } from "./testHelpers"
-import {deployBaseFixture} from "./util/fixtures"
+import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "./util/fixtures"
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const BackerRewards = artifacts.require("BackerRewards")
 
@@ -50,7 +50,6 @@ describe("BackerRewards", function () {
     investor: string,
     anotherUser: string,
     anotherAnotherUser: string,
-    goldfinchFactory: GoldfinchFactoryInstance,
     goldfinchConfig: GoldfinchConfigInstance,
     gfi: GFIInstance,
     usdc: ERC20Instance,
@@ -68,6 +67,10 @@ describe("BackerRewards", function () {
       await backerRewards._setSender("0x0000000000000000000000000000000000000000")
       return res
     })
+  }
+
+  async function pay(pool: TranchedPoolInstance, amount: BN) {
+    return pool.methods["pay(uint256)"](amount, {from: borrower})
   }
 
   const testCalcAccRewardsPerPrincipalDollar = ({
@@ -138,7 +141,7 @@ describe("BackerRewards", function () {
     await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
   }
 
-  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
+  const testSetup = deployments.createFixture(async () => {
     const [_owner, _borrower, _investor, _anotherUser, _anotherAnotherUser] = await web3.eth.getAccounts()
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
@@ -146,7 +149,7 @@ describe("BackerRewards", function () {
     const anotherUser = asNonNullable(_anotherUser)
     const anotherAnotherUser = asNonNullable(_anotherAnotherUser)
 
-    const {goldfinchConfig, gfi, backerRewards, seniorPool, stakingRewards, usdc, goldfinchFactory, poolTokens} =
+    const {goldfinchConfig, gfi, backerRewards, seniorPool, stakingRewards, usdc, poolTokens} =
       await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, borrower, anotherUser, anotherAnotherUser])
 
@@ -156,24 +159,21 @@ describe("BackerRewards", function () {
 
     const limit = usdcVal(1_000_000)
     const interestApr = interestAprAsBN("5.00")
-    const paymentPeriodInDays = new BN(30)
-    const termInDays = new BN(365)
     const lateFeeApr = new BN(0)
     const juniorFeePercent = new BN(20)
-    const {tranchedPool, creditLine} = await createPoolWithCreditLine({
-      people: {owner, borrower},
-      goldfinchFactory,
+    const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("BackerRewards")({
+      borrower,
       juniorFeePercent,
       limit,
       interestApr,
-      paymentPeriodInDays,
-      termInDays,
       lateFeeApr,
-      usdc,
+      usdcAddress: usdc.address,
     })
+
+    ;({tranchedPool, creditLine} = await getTranchedPoolAndCreditLine(poolAddress, clAddress))
+
     return {
       owner,
-      goldfinchFactory,
       borrower,
       investor,
       anotherUser,
@@ -198,17 +198,65 @@ describe("BackerRewards", function () {
       investor,
       anotherUser,
       anotherAnotherUser,
-      goldfinchFactory,
       goldfinchConfig,
       gfi,
       backerRewards,
       seniorPool,
       stakingRewards,
-      tranchedPool,
-      creditLine,
       usdc,
       poolTokens,
+      tranchedPool,
+      creditLine,
     } = await testSetup())
+  })
+
+  describe("perverse scenario in which borrower would drawdown interest they'd previously repaid, to get duplicative rewards from their next repayment", () => {
+    let pool: TranchedPoolInstance
+    let cl: CreditLineInstance
+
+    beforeEach(async () => {
+      const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("1.0.0 only tests")({
+        borrower,
+        usdcAddress: usdc.address,
+        juniorFeePercent: new BN(20),
+        limit: usdcVal(100_000),
+        interestApr: interestAprAsBN("100.00"),
+        lateFeeApr: new BN(0),
+      })
+      const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
+      pool = contracts.tranchedPool as TranchedPoolInstance
+      cl = contracts.creditLine as CreditLineInstance
+    })
+
+    it("should be impossible", async () => {
+      // Establish that it is impossible for the borrower to drawdown interest they'd previously repaid.
+      const juniorTranchePrincipal = usdcVal(10000)
+      await pool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+      await pool.lockJuniorCapital({from: borrower})
+      await pool.lockPool({from: borrower})
+
+      const limit = await cl.limit()
+      expect(limit).to.bignumber.equal(juniorTranchePrincipal)
+
+      await pool.drawdown(juniorTranchePrincipal, {from: borrower})
+
+      const balance1 = await cl.balance()
+      expect(balance1).to.bignumber.equal(juniorTranchePrincipal)
+      const interestOwed1 = await cl.interestOwed()
+      expect(interestOwed1).to.bignumber.equal(new BN(0))
+
+      await advanceTime({toSecond: await cl.nextDueTime()})
+
+      const interestOwed3 = await cl.interestOwedAt(await cl.nextDueTime())
+      await erc20Approve(usdc, pool.address, interestOwed3, [borrower])
+      await pay(pool, interestOwed3)
+
+      const interestOwed4 = await cl.interestOwed()
+      expect(interestOwed4).to.bignumber.equal(new BN(0))
+
+      const interestDrawdown = pool.drawdown(new BN(1), {from: borrower})
+      await expect(interestDrawdown).to.be.rejectedWith(/IF/)
+    })
   })
 
   describe("initialization", () => {
@@ -405,967 +453,6 @@ describe("BackerRewards", function () {
     })
   })
 
-  describe("tranchedPool interest repayment", () => {
-    // 100% repayment with all tokens distributed
-    const maxRepaymentTestCases = [
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 0,
-        totalGFISupply: 100_000_000,
-        maxInterestDollarsEligible: 100_000,
-        totalRewards: 3_000_000,
-        interestPaymentAmount: 5_000,
-      },
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 0,
-        totalGFISupply: 114_285_714,
-        maxInterestDollarsEligible: 100_000,
-        totalRewards: 2_285_714.28,
-        interestPaymentAmount: 5_000,
-      },
-    ]
-
-    maxRepaymentTestCases.forEach(
-      async ({
-        juniorTranchePrincipal,
-        previousInterestReceived,
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-      }) => {
-        it(`should handle a MAX 100% apy full repayment totalRewards:${totalRewards}, totalGFISupply:${totalGFISupply}`, async () => {
-          await setupBackerRewardsContract({
-            totalGFISupply,
-            maxInterestDollarsEligible,
-            totalRewards,
-            previousInterestReceived,
-          })
-          const {tranchedPool: tranchedPoolMax} = await createPoolWithCreditLine({
-            people: {owner, borrower},
-            goldfinchFactory,
-            juniorFeePercent: new BN(20),
-            limit: usdcVal(100_000),
-            interestApr: interestAprAsBN("100.00"),
-            paymentPeriodInDays: new BN(30),
-            termInDays: new BN(365),
-            lateFeeApr: new BN(0),
-            usdc,
-          })
-          const response = await tranchedPoolMax.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPoolMax, "DepositMade")
-          const firstLog = getFirstLog(logs)
-          const tokenId = firstLog.args.tokenId
-          await tranchedPoolMax.lockJuniorCapital({from: borrower})
-          await tranchedPoolMax.lockPool({from: borrower})
-          await tranchedPoolMax.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-          await advanceTime({days: new BN(365).toNumber()})
-          const payAmount = usdcVal(juniorTranchePrincipal)
-          await erc20Approve(usdc, tranchedPoolMax.address, payAmount, [borrower])
-          await tranchedPoolMax.pay(payAmount, {from: borrower})
-
-          const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-            interestPaymentAmount: juniorTranchePrincipal,
-            maxInterestDollarsEligible,
-            totalRewards,
-            totalGFISupply,
-            juniorTranchePrincipal,
-            previousInterestReceived,
-          })
-
-          const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-          expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(testPoolTokenClaimableRewards)
-        })
-      }
-    )
-
-    it("should handle not allocating any rewards if backerrewards is not yet configured", async () => {
-      const juniorTranchePrincipal = 100_000
-      const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-      const firstLog = getFirstLog(logs)
-      const tokenId = firstLog.args.tokenId
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      // verify accRewardsPerPrincipalDollar
-      const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
-      expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
-
-      // verify claimable rewards
-      const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
-    })
-
-    // set a pool to $1 below it's max interest dollar limit
-    // have a $5000 interest payment come in
-    // expect only the last $1 of gfi rewards earned
-    it("should handle interest payments that exceed maxInterestDollarsEligible", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = maxInterestDollarsEligible - 1
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-
-      const juniorTranchePrincipal = 100_000
-      const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-      const firstLog = getFirstLog(logs)
-      const tokenId = firstLog.args.tokenId
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
-        maxInterestDollarsEligible,
-        totalRewards,
-        totalGFISupply,
-        juniorTranchePrincipal,
-        previousInterestReceived,
-      })
-
-      // verify accRewardsPerPrincipalDollar
-      const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
-      expect(accRewardsPerPrincipalDollar).to.bignumber.equal(testAccRewardsPerPrincipalDollar)
-
-      // verify pool token principal
-      const {principalAmount: poolTokenPrincipalAmount} = await poolTokens.getTokenInfo(tokenId)
-      expect(poolTokenPrincipalAmount).to.bignumber.eq(usdcVal(juniorTranchePrincipal))
-
-      // verify claimable rewards
-      const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards)
-    })
-
-    // Create a pool with $100,000
-    // $5,000 interest payment comes in, $4500 to jr pool
-    // previous protocol total interest received is 0
-    const testCases = [
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 0,
-        percent: 3,
-        totalGFISupply: 100_000_000,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards: 3_000_000,
-        interestPaymentAmount: 5_000,
-      },
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 5000,
-        percent: 3,
-        totalGFISupply: 100_000_000,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards: 3_000_000,
-        interestPaymentAmount: 5_000,
-      },
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 0,
-        percent: 2,
-        totalGFISupply: 114_285_714,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards: 2_285_714.28,
-        interestPaymentAmount: 5_000,
-      },
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 5_000,
-        percent: 2,
-        totalGFISupply: 114_285_714,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards: 2_285_714.28,
-        interestPaymentAmount: 5_000,
-      },
-      {
-        juniorTranchePrincipal: 100_000,
-        previousInterestReceived: 150_000,
-        percent: 2,
-        totalGFISupply: 114_285_714,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards: 2_285_714.28,
-        interestPaymentAmount: 5_000,
-      },
-    ]
-
-    testCases.forEach(
-      async ({
-        juniorTranchePrincipal,
-        previousInterestReceived,
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        interestPaymentAmount,
-      }) => {
-        it(`calculate accRewardsPerPrincipalDollar for protocol interest deposits totalGFISupply:${totalGFISupply}, totalRewards:${totalRewards}, previousInterestReceived:${previousInterestReceived}`, async () => {
-          await setupBackerRewardsContract({
-            totalGFISupply,
-            maxInterestDollarsEligible,
-            totalRewards,
-            previousInterestReceived,
-          })
-          const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-          const firstLog = getFirstLog(logs)
-          const tokenId = firstLog.args.tokenId
-          await tranchedPool.lockJuniorCapital({from: borrower})
-          await tranchedPool.lockPool({from: borrower})
-          await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-          await advanceTime({days: new BN(365).toNumber()})
-          const payAmount = usdcVal(juniorTranchePrincipal)
-          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-          await tranchedPool.pay(payAmount, {from: borrower})
-
-          const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} =
-            testCalcAccRewardsPerPrincipalDollar({
-              interestPaymentAmount,
-              maxInterestDollarsEligible,
-              totalGFISupply,
-              totalRewards,
-              juniorTranchePrincipal,
-              previousInterestReceived,
-            })
-
-          // verify accRewardsPerPrincipalDollar
-          const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
-
-          expect(accRewardsPerPrincipalDollar).to.bignumber.equal(testAccRewardsPerPrincipalDollar)
-
-          // verify pool token principal
-          const {principalAmount: poolTokenPrincipalAmount} = await poolTokens.getTokenInfo(tokenId)
-          expect(poolTokenPrincipalAmount).to.bignumber.eq(usdcVal(juniorTranchePrincipal))
-
-          // verify claimable rewards
-          const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-          expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(testPoolTokenClaimableRewards)
-        })
-      }
-    )
-
-    it("should increment totalInterestReceived when a interest payment comes in", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = 0
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-      const juniorTranchePrincipal = 100_000
-      const totalInterestReceived = 0
-
-      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(new BN(totalInterestReceived))
-      await backerRewards.setTotalInterestReceived(fiduToUSDC(totalInterestReceived))
-      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(fiduToUSDC(totalInterestReceived))
-
-      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(100_000), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(100_000)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-
-      await tranchedPool.pay(payAmount, {from: borrower})
-      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(new BN(100_000 * 0.05 * 10 ** 6)) // 5% interest
-    })
-
-    context("All rewards exhausted", () => {
-      // put the interest received at 999_999_999
-      it("should succeed when maxInterestDollarsEligible-1", async () => {
-        const maxInterestDollarsEligible = 1_000_000_000
-        const totalRewards = 3_000_000 // 3% of 100m
-        await mintGFI(totalRewards)
-        const totalInterestReceived = maxInterestDollarsEligible - 1
-        const juniorTranchePrincipal = 100_000
-        await backerRewards.setTotalInterestReceived(fiduToUSDC(totalInterestReceived))
-        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(20), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(20)
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await expect(tranchedPool.pay(payAmount, {from: borrower})).to.be.fulfilled
-
-        // TODO: need to add a check to make sure only $1 of rewards got distributed
-      })
-
-      // borrow $20 for a $1 payback to push total interest received over threshold
-      it("should return and make no changes when totalInterestReceived is >= maxInterestDollarsEligible", async () => {
-        const maxInterestDollarsEligible = bigVal(1_000_000_000)
-        await backerRewards.setMaxInterestDollarsEligible(maxInterestDollarsEligible)
-        await backerRewards.setTotalInterestReceived(fiduToUSDC(maxInterestDollarsEligible))
-        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000))
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(20), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(20)
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-
-        const beforeAccRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
-        const beforeTotalInterestReceived = await backerRewards.totalInterestReceived()
-
-        await expect(tranchedPool.pay(payAmount, {from: borrower})).to.be.fulfilled
-
-        const afterAccRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
-        const afterTotalInterestReceived = await backerRewards.totalInterestReceived()
-
-        expect(beforeAccRewardsPerPrincipalDollar).to.bignumber.equal(afterAccRewardsPerPrincipalDollar)
-        expect(beforeTotalInterestReceived).to.bignumber.equal(afterTotalInterestReceived)
-      })
-    })
-
-    describe("perverse scenario regarding total junior deposits", () => {
-      const previousInterestReceived = 0
-      const totalGFISupply = 100_000_000
-      const maxInterestDollarsEligible = 100_000
-      const totalRewards = 3_000_000
-
-      let tranchedPool: TranchedPoolInstance
-
-      beforeEach(async () => {
-        await setupBackerRewardsContract({
-          totalGFISupply,
-          maxInterestDollarsEligible,
-          totalRewards,
-          previousInterestReceived,
-        })
-        const created = await createPoolWithCreditLine({
-          people: {owner, borrower},
-          goldfinchFactory,
-          juniorFeePercent: new BN(20),
-          limit: usdcVal(100_000),
-          interestApr: interestAprAsBN("100.00"),
-          paymentPeriodInDays: new BN(30),
-          termInDays: new BN(365),
-          lateFeeApr: new BN(0),
-          usdc,
-        })
-        tranchedPool = created.tranchedPool
-      })
-
-      context("total junior deposits are greater than or equal to 1", () => {
-        it("should allocate some rewards", async () => {
-          const juniorTranchePrincipal = usdcVal(1)
-
-          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
-          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-          const firstLog = getFirstLog(logs)
-          const tokenId = firstLog.args.tokenId
-          await tranchedPool.lockJuniorCapital({from: borrower})
-          await tranchedPool.lockPool({from: borrower})
-          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
-          await advanceTime({days: new BN(365).toNumber()})
-          const payAmount = juniorTranchePrincipal
-          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-          await tranchedPool.pay(payAmount, {from: borrower})
-
-          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-          expect(poolTokenClaimableRewards.gt(new BN(0))).to.be.true
-        })
-      })
-
-      context("total junior deposits are less than 1", () => {
-        it("should allocate no rewards", async () => {
-          const juniorTranchePrincipal = usdcVal(1).div(new BN(2))
-
-          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
-          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-          const firstLog = getFirstLog(logs)
-          const tokenId = firstLog.args.tokenId
-          await tranchedPool.lockJuniorCapital({from: borrower})
-          await tranchedPool.lockPool({from: borrower})
-          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
-          await advanceTime({days: new BN(365).toNumber()})
-          const payAmount = juniorTranchePrincipal
-          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-          await tranchedPool.pay(payAmount, {from: borrower})
-
-          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-          expect(poolTokenClaimableRewards).to.bignumber.equal(new BN(0))
-        })
-      })
-    })
-
-    describe("perverse scenario where backer withdraws early", async () => {
-      const previousInterestReceived = 0
-      const totalGFISupply = 100_000_000
-      const maxInterestDollarsEligible = 100_000
-      const totalRewards = 3_000_000
-
-      let tranchedPool: TranchedPoolInstance
-
-      beforeEach(async () => {
-        await setupBackerRewardsContract({
-          totalGFISupply,
-          maxInterestDollarsEligible,
-          totalRewards,
-          previousInterestReceived,
-        })
-        const created = await createPoolWithCreditLine({
-          people: {owner, borrower},
-          goldfinchFactory,
-          juniorFeePercent: new BN(20),
-          limit: usdcVal(100_000),
-          interestApr: interestAprAsBN("100.00"),
-          paymentPeriodInDays: new BN(30),
-          termInDays: new BN(365),
-          lateFeeApr: new BN(0),
-          usdc,
-        })
-        tranchedPool = created.tranchedPool
-      })
-
-      context("backer withdraws before pool is locked", () => {
-        it("should not give them rewards", async () => {
-          const juniorTranchePrincipal = usdcVal(10000)
-
-          // Deposit
-          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
-          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-          const firstLog = getFirstLog(logs)
-          const tokenId = firstLog.args.tokenId
-
-          // Withdraw before pool is locked
-          await tranchedPool.withdrawMax(tokenId)
-
-          // Some other deposit happens that funds the pool
-          await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
-
-          // Borrower draws down and pays back
-          await tranchedPool.lockJuniorCapital({from: borrower})
-          await tranchedPool.lockPool({from: borrower})
-          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
-          await advanceTime({days: new BN(365).toNumber()})
-          const payAmount = juniorTranchePrincipal
-          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-          await tranchedPool.pay(payAmount, {from: borrower})
-
-          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
-          expect(poolTokenClaimableRewards).to.bignumber.eq(new BN(0))
-        })
-      })
-    })
-
-    describe("perverse scenario in which borrower would drawdown interest they'd previously repaid, to get duplicative rewards from their next repayment", () => {
-      // Currently the tranched pool contract does not behave exactly like one would expect for a term loan,
-      // in that it allows a borrower to drawdown again principal they've previously repaid. (For a term loan, unlike a
-      // revolving loan, one would expect principal not to be able to be borrowed again once repaid.)
-      // This behavior does not pose a problem for the earning of backer rewards; however much interest the
-      // tranched pool calculates the borrower owes, based on whatever drawdown -> repay -> drawdown -> ...
-      // sequence the borrower does, will earn backer rewards.
-      //
-      // What we do want to want to double-check here, though, is that it's not possible for a borrower
-      // to drawdown *interest* they've already repaid. If they could, that *would* be a problem, because it
-      // would enable them to earn duplicative rewards on their interest payments, because the BackerRewards
-      // contract maintains no understanding of how much interest in total it should give rewards for, for a
-      // given pool, so the contract would have no means to "de-duplicate" such payments in its allocation
-      // of rewards.
-
-      let tranchedPool: TranchedPoolInstance
-      const paymentPeriodInDays = new BN(30)
-
-      beforeEach(async () => {
-        const created = await createPoolWithCreditLine({
-          people: {owner, borrower},
-          goldfinchFactory,
-          juniorFeePercent: new BN(20),
-          limit: usdcVal(100_000),
-          interestApr: interestAprAsBN("100.00"),
-          paymentPeriodInDays,
-          termInDays: new BN(365),
-          lateFeeApr: new BN(0),
-          usdc,
-        })
-        tranchedPool = created.tranchedPool
-      })
-
-      it("should be impossible", async () => {
-        // Establish that it is impossible for the borrower to drawdown interest they'd previously repaid.
-        const juniorTranchePrincipal = usdcVal(10000)
-        await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-
-        const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
-          "CreditLine",
-          await tranchedPool.creditLine()
-        )
-        const limit = await creditLine.limit()
-        expect(limit).to.bignumber.equal(juniorTranchePrincipal)
-
-        await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
-
-        const balance1 = await creditLine.balance()
-        expect(balance1).to.bignumber.equal(juniorTranchePrincipal)
-        const interestOwed1 = await creditLine.interestOwed()
-        expect(interestOwed1).to.bignumber.equal(new BN(0))
-
-        await advanceTime({days: paymentPeriodInDays.toNumber()})
-
-        const interestPaymentAmount = new BN(821917808)
-        const interestOwed2 = await creditLine.interestOwed()
-        expect(interestOwed2).to.bignumber.equal(new BN(0))
-
-        await tranchedPool.assess()
-
-        const interestOwed3 = await creditLine.interestOwed()
-        expect(interestOwed3).to.bignumber.equal(interestPaymentAmount)
-        await erc20Approve(usdc, tranchedPool.address, interestPaymentAmount, [borrower])
-        await tranchedPool.pay(interestPaymentAmount, {from: borrower})
-
-        const interestOwed4 = await creditLine.interestOwed()
-        expect(interestOwed4).to.bignumber.equal(new BN(0))
-
-        const interestDrawdown = tranchedPool.drawdown(new BN(1), {from: borrower})
-        await expect(interestDrawdown).to.be.rejectedWith(/IF/)
-      })
-    })
-  })
-
-  describe("poolTokenClaimableRewards()", () => {
-    context("Senior-tranche pool token", () => {
-      it("returns 0", async () => {
-        const maxInterestDollarsEligible = 1_000_000_000
-        const totalGFISupply = 100_000_000
-        const totalRewards = 3_000_000 // 3% of 100m
-        const previousInterestReceived = 5000
-
-        await setupBackerRewardsContract({
-          totalGFISupply,
-          maxInterestDollarsEligible,
-          totalRewards,
-          previousInterestReceived,
-        })
-        const totalPrincipal = 100_000
-
-        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(25_000), [anotherUser])
-        const juniorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(25_000), {from: anotherUser})
-        const juniorLogs = decodeLogs<DepositMade>(juniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstJuniorLog = getFirstLog(juniorLogs)
-        const juniorTokenId = firstJuniorLog.args.tokenId
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [investor])
-        const seniorRole = await tranchedPool.SENIOR_ROLE()
-        await tranchedPool.grantRole(seniorRole, investor)
-        const seniorResponse = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(75_000), {from: investor})
-        const seniorLogs = decodeLogs<DepositMade>(seniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstSeniorLog = getFirstLog(seniorLogs)
-        const seniorTokenId = firstSeniorLog.args.tokenId
-
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(totalPrincipal)
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
-
-        const juniorClaimable = await backerRewards.poolTokenClaimableRewards(juniorTokenId)
-        expect(juniorClaimable.gt(new BN(0))).to.be.true
-
-        const seniorClaimable = await backerRewards.poolTokenClaimableRewards(seniorTokenId)
-        expect(seniorClaimable).to.bignumber.equal(new BN(0))
-      })
-    })
-
-    // two users each having 50% of the pool principal
-    it("Distributes 50%/50% rewards", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = 5000
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-      const juniorTranchePrincipal = 100_000
-
-      let logs, firstLog
-      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-      // AnotherUser deposits 50% of $100k
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
-      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
-      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const anotherUserTokenId = firstLog.args.tokenId
-
-      // AnotherUser deposits 50% of $100k
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
-      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
-      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const investorTokenId = firstLog.args.tokenId
-
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards,
-        totalGFISupply: 100_000_000,
-        juniorTranchePrincipal,
-        previousInterestReceived,
-      })
-
-      // ensure each user gets 50% of the pool
-      // total rewards = 2,778.629048005770000000
-      let expectedPoolTokenClaimableRewards
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
-
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
-    })
-
-    // two users, one with 75k principal, the other with 25k principal
-    it("Distributes 75%/25% rewards", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = 5000
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-      const juniorTranchePrincipal = 100_000
-
-      let logs, firstLog
-      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [anotherUser])
-      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(75_000), {from: anotherUser})
-      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const anotherUserTokenId = firstLog.args.tokenId
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(25_000), [investor])
-      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(25_000), {from: investor})
-      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const investorTokenId = firstLog.args.tokenId
-
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards,
-        totalGFISupply: 100_000_000,
-        juniorTranchePrincipal,
-        previousInterestReceived,
-      })
-
-      // investor gets 25% of the pool
-      // total rewards = 2,778.629048005770000000
-      let expectedPoolTokenClaimableRewards
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(4)))
-
-      // anotherUser gets 75% of pool
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-        testPoolTokenClaimableRewards.div(new BN(4)).mul(new BN(3))
-      )
-    })
-
-    it("Distributes 1%/99% rewards", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = 5000
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-      const juniorTranchePrincipal = 100_000
-
-      let logs, firstLog
-      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(99_000), [anotherUser])
-      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(99_000), {from: anotherUser})
-      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const anotherUserTokenId = firstLog.args.tokenId
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(1_000), [investor])
-      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1_000), {from: investor})
-      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const investorTokenId = firstLog.args.tokenId
-
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards,
-        totalGFISupply: 100_000_000,
-        juniorTranchePrincipal,
-        previousInterestReceived,
-      })
-
-      // investor gets 1% of the pool
-      let expectedPoolTokenClaimableRewards
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-        testPoolTokenClaimableRewards.div(new BN(100))
-      )
-
-      // anotherUser gets 99% of pool
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-        testPoolTokenClaimableRewards.div(new BN(100)).mul(new BN(99))
-      )
-    })
-
-    it("Distributes 33.3%/33.3%/33.3% rewards", async () => {
-      const maxInterestDollarsEligible = 1_000_000_000
-      const totalGFISupply = 100_000_000
-      const totalRewards = 3_000_000 // 3% of 100m
-      const previousInterestReceived = 5000
-      const juniorTranchePrincipal = 99_999
-
-      await setupBackerRewardsContract({
-        totalGFISupply,
-        maxInterestDollarsEligible,
-        totalRewards,
-        previousInterestReceived,
-      })
-
-      let logs, firstLog
-      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [anotherUser])
-      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {from: anotherUser})
-      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const anotherUserTokenId = firstLog.args.tokenId
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [anotherAnotherUser])
-      const anotherAnotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {
-        from: anotherAnotherUser,
-      })
-      logs = decodeLogs<DepositMade>(anotherAnotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const anotherAnotherUserTokenId = firstLog.args.tokenId
-
-      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [investor])
-      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {from: investor})
-      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-      firstLog = getFirstLog(logs)
-      const investorTokenId = firstLog.args.tokenId
-
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
-
-      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: juniorTranchePrincipal * 0.05,
-        maxInterestDollarsEligible: 1_000_000_000,
-        totalRewards,
-        totalGFISupply: 100_000_000,
-        juniorTranchePrincipal,
-        previousInterestReceived,
-      })
-
-      // investor gets 33% of the pool
-      let expectedPoolTokenClaimableRewards
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-      console.log("expectedPoolTokenClaimableRewards", expectedPoolTokenClaimableRewards.toString())
-      console.log("testPoolTokenClaimableRewards", testPoolTokenClaimableRewards.toString())
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(3)))
-
-      // anotherUser gets 34% of pool
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(3)))
-
-      // anotherAnotherUser gets 33% of pool
-      expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherAnotherUserTokenId)
-      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(3)))
-    })
-
-    context("When tranche is oversubscribed", () => {
-      it("Handles proportionately 50%/50%", async () => {
-        const maxInterestDollarsEligible = 1_000_000_000
-        const totalGFISupply = 100_000_000
-        const totalRewards = 3_000_000 // 3% of 100m
-        const previousInterestReceived = 5000
-
-        await setupBackerRewardsContract({
-          totalGFISupply,
-          maxInterestDollarsEligible,
-          totalRewards,
-          previousInterestReceived,
-        })
-        const juniorTranchePrincipal = 100_000
-
-        let logs, firstLog
-        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {from: anotherUser})
-        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        firstLog = getFirstLog(logs)
-        const anotherUserTokenId = firstLog.args.tokenId
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [investor])
-        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {from: investor})
-        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        firstLog = getFirstLog(logs)
-        const investorTokenId = firstLog.args.tokenId
-
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
-
-        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
-          maxInterestDollarsEligible: 1_000_000_000,
-          totalRewards,
-          totalGFISupply: 100_000_000,
-          juniorTranchePrincipal,
-          previousInterestReceived,
-        })
-
-        // investor gets 50% of the pool
-        // total rewards = 2,778.629048005770000000
-        let expectedPoolTokenClaimableRewards
-        expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-          testPoolTokenClaimableRewards.div(new BN(2))
-        )
-
-        // anotherUser gets 50% of pool
-        expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-          testPoolTokenClaimableRewards.div(new BN(2))
-        )
-      })
-
-      it("Handles proportionately 66%/33%", async () => {
-        const maxInterestDollarsEligible = 1_000_000_000
-        const totalGFISupply = 100_000_000
-        const totalRewards = 3_000_000 // 3% of 100m
-        const previousInterestReceived = 5000
-        const juniorTranchePrincipal = 100_000
-
-        await setupBackerRewardsContract({
-          totalGFISupply,
-          maxInterestDollarsEligible,
-          totalRewards,
-          previousInterestReceived,
-        })
-
-        let logs, firstLog
-        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {from: anotherUser})
-        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        firstLog = getFirstLog(logs)
-        const anotherUserTokenId = firstLog.args.tokenId
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
-        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
-        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        firstLog = getFirstLog(logs)
-        const investorTokenId = firstLog.args.tokenId
-
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
-
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
-
-        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
-          maxInterestDollarsEligible: 1_000_000_000,
-          totalRewards,
-          totalGFISupply: 100_000_000,
-          juniorTranchePrincipal,
-          previousInterestReceived,
-        })
-
-        // investor gets 33.333% of the pool
-        let expectedPoolTokenClaimableRewards
-        expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(investorTokenId)
-        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-          testPoolTokenClaimableRewards.div(new BN(3))
-        )
-
-        // anotherUser gets 66.666% of pool
-        expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)
-        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
-          testPoolTokenClaimableRewards.div(new BN(3)).mul(new BN(2))
-        )
-      })
-    })
-  })
-
   describe("withdraw()", () => {
     const maxInterestDollarsEligible = 1_000_000_000
     const totalGFISupply = 100_000_000
@@ -1409,13 +496,14 @@ describe("BackerRewards", function () {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(juniorTranchePrincipal)
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmount)
 
       const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
+        interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
         maxInterestDollarsEligible: 1_000_000_000,
         totalRewards,
         totalGFISupply: 100_000_000,
@@ -1459,10 +547,15 @@ describe("BackerRewards", function () {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      const payAmount = usdcVal(totalPrincipal)
+
+      // May pay interest + principal for it to be a full payment
+      const termEndTime = await creditLine.termEndTime()
+      const payAmount = (await creditLine.interestOwedAt(termEndTime)).add(
+        await creditLine.principalOwedAt(termEndTime)
+      )
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+      await advanceTime({toSecond: termEndTime})
+      await pay(tranchedPool, payAmount)
 
       const juniorClaimable = await backerRewards.poolTokenClaimableRewards(juniorTokenId)
       expect(juniorClaimable.gt(new BN(0))).to.be.true
@@ -1485,7 +578,9 @@ describe("BackerRewards", function () {
         await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {
+          from: anotherUser,
+        })
         logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
         firstLog = getFirstLog(logs)
         const anotherUserTokenId = firstLog.args.tokenId
@@ -1499,14 +594,15 @@ describe("BackerRewards", function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
         await tranchedPool.pause()
 
         const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
           maxInterestDollarsEligible: 1_000_000_000,
           totalRewards,
           totalGFISupply: 100_000_000,
@@ -1543,7 +639,9 @@ describe("BackerRewards", function () {
         await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {
+          from: anotherUser,
+        })
         logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
         firstLog = getFirstLog(logs)
         const anotherUserTokenId = firstLog.args.tokenId
@@ -1557,13 +655,14 @@ describe("BackerRewards", function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
 
         const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
           maxInterestDollarsEligible: 1_000_000_000,
           totalRewards,
           totalGFISupply: 100_000_000,
@@ -1597,7 +696,9 @@ describe("BackerRewards", function () {
 
         // AnotherUser deposits 50% of $100k
         await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {
+          from: anotherUser,
+        })
         logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
         firstLog = getFirstLog(logs)
         const anotherUserTokenId = firstLog.args.tokenId
@@ -1612,13 +713,14 @@ describe("BackerRewards", function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
 
         const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
           maxInterestDollarsEligible,
           totalRewards,
           totalGFISupply,
@@ -1675,7 +777,9 @@ describe("BackerRewards", function () {
 
         // AnotherUser deposits 50% of $100k
         await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
-        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {
+          from: anotherUser,
+        })
         logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
         firstLog = getFirstLog(logs)
         const anotherUserTokenId = firstLog.args.tokenId
@@ -1690,13 +794,14 @@ describe("BackerRewards", function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-        await advanceTime({days: new BN(365).toNumber()})
-        const payAmount = usdcVal(juniorTranchePrincipal)
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
 
         const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
-          interestPaymentAmount: 5000,
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
           maxInterestDollarsEligible,
           totalRewards,
           totalGFISupply,
@@ -1757,7 +862,886 @@ describe("BackerRewards", function () {
     })
   })
 
-  context("Changing rewards or total supply gfi", () => {
+  describe("tranchedPool interest repayment", () => {
+    // 100% repayment with all tokens distributed
+    const maxRepaymentTestCases = [
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 0,
+        totalGFISupply: 100_000_000,
+        maxInterestDollarsEligible: 100_000,
+        totalRewards: 3_000_000,
+        interestPaymentAmount: 5_000,
+      },
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 0,
+        totalGFISupply: 114_285_714,
+        maxInterestDollarsEligible: 100_000,
+        totalRewards: 2_285_714.28,
+        interestPaymentAmount: 5_000,
+      },
+    ]
+
+    maxRepaymentTestCases.forEach(
+      async ({
+        juniorTranchePrincipal,
+        previousInterestReceived,
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+      }) => {
+        it(`should handle a MAX 100% apy full repayment totalRewards:${totalRewards}, totalGFISupply:${totalGFISupply}`, async () => {
+          await setupBackerRewardsContract({
+            totalGFISupply,
+            maxInterestDollarsEligible,
+            totalRewards,
+            previousInterestReceived,
+          })
+          const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("maxRepaymentTestCase")({
+            borrower,
+            usdcAddress: usdc.address,
+            juniorFeePercent: new BN(20),
+            limit: usdcVal(100_000),
+            interestApr: interestAprAsBN("100.00"),
+            lateFeeApr: new BN(0),
+          })
+          const {tranchedPool: tranchedPoolMax} = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
+          const response = await tranchedPoolMax.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPoolMax, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await tranchedPoolMax.lockJuniorCapital({from: borrower})
+          await tranchedPoolMax.lockPool({from: borrower})
+          await tranchedPoolMax.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = usdcVal(juniorTranchePrincipal)
+          await erc20Approve(usdc, tranchedPoolMax.address, payAmount, [borrower])
+          await pay(tranchedPoolMax, payAmount)
+
+          const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+            interestPaymentAmount: juniorTranchePrincipal,
+            maxInterestDollarsEligible,
+            totalRewards,
+            totalGFISupply,
+            juniorTranchePrincipal,
+            previousInterestReceived,
+          })
+
+          const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(testPoolTokenClaimableRewards)
+        })
+      }
+    )
+
+    it("should handle not allocating any rewards if backerrewards is not yet configured", async () => {
+      const juniorTranchePrincipal = 100_000
+      const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      const tokenId = firstLog.args.tokenId
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      await advanceTime({days: new BN(365).toNumber()})
+      const payAmount = usdcVal(juniorTranchePrincipal)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await pay(tranchedPool, payAmount)
+
+      // verify accRewardsPerPrincipalDollar
+      const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+      expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+      // verify claimable rewards
+      const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
+    })
+
+    // set a pool to $1 below it's max interest dollar limit
+    // have a $5000 interest payment come in
+    // expect only the last $1 of gfi rewards earned
+    it("should handle interest payments that exceed maxInterestDollarsEligible", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = maxInterestDollarsEligible - 1
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+
+      const juniorTranchePrincipal = 100_000
+      const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      const tokenId = firstLog.args.tokenId
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      await advanceTime({days: new BN(365).toNumber()})
+      const payAmount = usdcVal(juniorTranchePrincipal)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await pay(tranchedPool, payAmount)
+
+      const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} = testCalcAccRewardsPerPrincipalDollar({
+        interestPaymentAmount: 5000,
+        maxInterestDollarsEligible,
+        totalRewards,
+        totalGFISupply,
+        juniorTranchePrincipal,
+        previousInterestReceived,
+      })
+
+      // verify accRewardsPerPrincipalDollar
+      const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+      expect(accRewardsPerPrincipalDollar).to.bignumber.equal(testAccRewardsPerPrincipalDollar)
+
+      // verify pool token principal
+      const {principalAmount: poolTokenPrincipalAmount} = await poolTokens.getTokenInfo(tokenId)
+      expect(poolTokenPrincipalAmount).to.bignumber.eq(usdcVal(juniorTranchePrincipal))
+
+      // verify claimable rewards
+      const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(testPoolTokenClaimableRewards)
+    })
+
+    // Create a pool with $100,000
+    // $5,000 interest payment comes in, $4500 to jr pool
+    // previous protocol total interest received is 0
+    const testCases = [
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 0,
+        percent: 3,
+        totalGFISupply: 100_000_000,
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards: 3_000_000,
+      },
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 5000,
+        percent: 3,
+        totalGFISupply: 100_000_000,
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards: 3_000_000,
+      },
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 0,
+        percent: 2,
+        totalGFISupply: 114_285_714,
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards: 2_285_714.28,
+      },
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 5_000,
+        percent: 2,
+        totalGFISupply: 114_285_714,
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards: 2_285_714.28,
+      },
+      {
+        juniorTranchePrincipal: 100_000,
+        previousInterestReceived: 150_000,
+        percent: 2,
+        totalGFISupply: 114_285_714,
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards: 2_285_714.28,
+      },
+    ]
+
+    testCases.forEach(
+      async ({
+        juniorTranchePrincipal,
+        previousInterestReceived,
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+      }) => {
+        it(`calculate accRewardsPerPrincipalDollar for protocol interest deposits totalGFISupply:${totalGFISupply}, totalRewards:${totalRewards}, previousInterestReceived:${previousInterestReceived}`, async () => {
+          await setupBackerRewardsContract({
+            totalGFISupply,
+            maxInterestDollarsEligible,
+            totalRewards,
+            previousInterestReceived,
+          })
+          const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await tranchedPool.lockPool({from: borrower})
+          await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+          const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+          const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+          await advanceTime({toSecond: await creditLine.termEndTime()})
+          await pay(tranchedPool, payAmount)
+
+          const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} =
+            testCalcAccRewardsPerPrincipalDollar({
+              interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+              maxInterestDollarsEligible,
+              totalGFISupply,
+              totalRewards,
+              juniorTranchePrincipal,
+              previousInterestReceived,
+            })
+
+          // verify accRewardsPerPrincipalDollar
+          const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+
+          expect(accRewardsPerPrincipalDollar).to.bignumber.equal(testAccRewardsPerPrincipalDollar)
+
+          // verify pool token principal
+          const {principalAmount: poolTokenPrincipalAmount} = await poolTokens.getTokenInfo(tokenId)
+          expect(poolTokenPrincipalAmount).to.bignumber.eq(usdcVal(juniorTranchePrincipal))
+
+          // verify claimable rewards
+          const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(testPoolTokenClaimableRewards)
+        })
+      }
+    )
+
+    it("should increment totalInterestReceived when a interest payment comes in", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = 0
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+      const juniorTranchePrincipal = 100_000
+      const totalInterestReceived = 0
+
+      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(new BN(totalInterestReceived))
+      await backerRewards.setTotalInterestReceived(fiduToUSDC(totalInterestReceived))
+      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(fiduToUSDC(totalInterestReceived))
+
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100_000), {from: borrower})
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      await erc20Approve(usdc, tranchedPool.address, interestOwed, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+
+      await pay(tranchedPool, interestOwed)
+      expect(await backerRewards.totalInterestReceived()).to.bignumber.equal(interestOwed)
+    })
+
+    context("All rewards exhausted", () => {
+      // put the interest received at 999_999_999
+      it("should succeed when maxInterestDollarsEligible-1", async () => {
+        const maxInterestDollarsEligible = 1_000_000_000
+        const totalRewards = 3_000_000 // 3% of 100m
+        await mintGFI(totalRewards)
+        const totalInterestReceived = maxInterestDollarsEligible - 1
+        const juniorTranchePrincipal = 100_000
+        await backerRewards.setTotalInterestReceived(fiduToUSDC(totalInterestReceived))
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(20), {from: borrower})
+        await advanceTime({days: new BN(365).toNumber()})
+        const payAmount = usdcVal(20)
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await pay(tranchedPool, payAmount)
+
+        // TODO: need to add a check to make sure only $1 of rewards got distributed
+      })
+
+      // borrow $20 for a $1 payback to push total interest received over threshold
+      it("should return and make no changes when totalInterestReceived is >= maxInterestDollarsEligible", async () => {
+        const maxInterestDollarsEligible = bigVal(1_000_000_000)
+        await backerRewards.setMaxInterestDollarsEligible(maxInterestDollarsEligible)
+        await backerRewards.setTotalInterestReceived(fiduToUSDC(maxInterestDollarsEligible))
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(20), {from: borrower})
+        await advanceTime({days: new BN(365).toNumber()})
+        const payAmount = usdcVal(20)
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+
+        const beforeAccRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+        const beforeTotalInterestReceived = await backerRewards.totalInterestReceived()
+
+        await pay(tranchedPool, payAmount)
+
+        const afterAccRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+        const afterTotalInterestReceived = await backerRewards.totalInterestReceived()
+
+        expect(beforeAccRewardsPerPrincipalDollar).to.bignumber.equal(afterAccRewardsPerPrincipalDollar)
+        expect(beforeTotalInterestReceived).to.bignumber.equal(afterTotalInterestReceived)
+      })
+    })
+
+    describe("perverse scenario regarding total junior deposits", () => {
+      const previousInterestReceived = 0
+      const totalGFISupply = 100_000_000
+      const maxInterestDollarsEligible = 100_000
+      const totalRewards = 3_000_000
+
+      let pool: TranchedPoolInstance
+
+      beforeEach(async () => {
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(
+          "perverse junior scenario"
+        )({
+          borrower,
+          usdcAddress: usdc.address,
+          juniorFeePercent: new BN(20),
+          limit: usdcVal(100_000),
+          interestApr: interestAprAsBN("100.00"),
+          lateFeeApr: new BN(0),
+        })
+        const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
+        pool = contracts.tranchedPool as TranchedPoolInstance
+      })
+
+      context("total junior deposits are greater than or equal to 1", () => {
+        it("should allocate some rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(1)
+
+          const response = await pool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, pool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await pool.lockJuniorCapital({from: borrower})
+          await pool.lockPool({from: borrower})
+          await pool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, pool.address, payAmount, [borrower])
+          await pay(pool, payAmount)
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards.gt(new BN(0))).to.be.true
+        })
+      })
+
+      context("total junior deposits are less than 1", () => {
+        it("should allocate no rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(1).div(new BN(2))
+
+          const response = await pool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, pool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await pool.lockJuniorCapital({from: borrower})
+          await pool.lockPool({from: borrower})
+          await pool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, pool.address, payAmount, [borrower])
+          await pay(pool, payAmount)
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards).to.bignumber.equal(new BN(0))
+        })
+      })
+    })
+
+    describe("perverse scenario where backer withdraws early", async () => {
+      const previousInterestReceived = 0
+      const totalGFISupply = 100_000_000
+      const maxInterestDollarsEligible = 100_000
+      const totalRewards = 3_000_000
+
+      let pool: TranchedPoolInstance
+
+      beforeEach(async () => {
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture(
+          "perverse scenario early withdraw"
+        )({
+          borrower,
+          usdcAddress: usdc.address,
+          juniorFeePercent: new BN(20),
+          limit: usdcVal(100_000),
+          interestApr: interestAprAsBN("100.00"),
+          lateFeeApr: new BN(0),
+        })
+        const contracts = await getTranchedPoolAndCreditLine(poolAddress, clAddress)
+        pool = contracts.tranchedPool as TranchedPoolInstance
+      })
+
+      context("backer withdraws before pool is locked", () => {
+        it("shuld not give them rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(10000)
+
+          // Deposit
+          const response = await pool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, pool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+
+          // Withdraw before pool is locked
+          await pool.withdrawMax(tokenId)
+
+          // Some other deposit happens that funds the pool
+          await pool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+
+          // Borrower draws down and pays back
+          await pool.lockJuniorCapital({from: borrower})
+          await pool.lockPool({from: borrower})
+          await pool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, pool.address, payAmount, [borrower])
+          await pay(pool, payAmount)
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards).to.bignumber.eq(new BN(0))
+        })
+      })
+    })
+  })
+
+  describe("poolTokenClaimableRewards()", () => {
+    context("Senior-tranche pool token", () => {
+      it("returns 0", async () => {
+        const maxInterestDollarsEligible = 1_000_000_000
+        const totalGFISupply = 100_000_000
+        const totalRewards = 3_000_000 // 3% of 100m
+        const previousInterestReceived = 5000
+
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const totalPrincipal = 100_000
+
+        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(25_000), [anotherUser])
+        const juniorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(25_000), {from: anotherUser})
+        const juniorLogs = decodeLogs<DepositMade>(juniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstJuniorLog = getFirstLog(juniorLogs)
+        const juniorTokenId = firstJuniorLog.args.tokenId
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [investor])
+        const seniorRole = await tranchedPool.SENIOR_ROLE()
+        await tranchedPool.grantRole(seniorRole, investor)
+        const seniorResponse = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(75_000), {from: investor})
+        const seniorLogs = decodeLogs<DepositMade>(seniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstSeniorLog = getFirstLog(seniorLogs)
+        const seniorTokenId = firstSeniorLog.args.tokenId
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
+        await advanceTime({days: new BN(365).toNumber()})
+        const payAmount = usdcVal(totalPrincipal)
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await pay(tranchedPool, payAmount)
+
+        const juniorClaimable = await backerRewards.poolTokenClaimableRewards(juniorTokenId)
+        expect(juniorClaimable.gt(new BN(0))).to.be.true
+
+        const seniorClaimable = await backerRewards.poolTokenClaimableRewards(seniorTokenId)
+        expect(seniorClaimable).to.bignumber.equal(new BN(0))
+      })
+    })
+
+    // two users each having 50% of the pool principal
+    it("Distributes 50%/50% rewards", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = 5000
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+      const juniorTranchePrincipal = 100_000
+
+      let logs, firstLog
+      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+      // AnotherUser deposits 50% of $100k
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
+      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const anotherUserTokenId = firstLog.args.tokenId
+
+      // AnotherUser deposits 50% of $100k
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
+      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
+      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const investorTokenId = firstLog.args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const principalOwed = await creditLine.principalOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(principalOwed)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmount)
+
+      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+        interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+        maxInterestDollarsEligible,
+        totalRewards,
+        totalGFISupply,
+        juniorTranchePrincipal,
+        previousInterestReceived,
+      })
+
+      expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.eq(
+        testPoolTokenClaimableRewards.div(new BN(2))
+      )
+
+      expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(2))
+      )
+    })
+
+    // two users, one with 75k principal, the other with 25k principal
+    it("Distributes 75%/25% rewards", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = 5000
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+      const juniorTranchePrincipal = 100_000
+
+      let logs, firstLog
+      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [anotherUser])
+      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(75_000), {from: anotherUser})
+      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const anotherUserTokenId = firstLog.args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(25_000), [investor])
+      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(25_000), {from: investor})
+      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const investorTokenId = firstLog.args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmount)
+
+      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+        interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards,
+        totalGFISupply: 100_000_000,
+        juniorTranchePrincipal,
+        previousInterestReceived,
+      })
+
+      // investor gets 25% of the pool
+      expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(4))
+      )
+
+      // anotherUser gets 75% of pool
+      expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(4)).mul(new BN(3))
+      )
+    })
+
+    it("Distributes 1%/99% rewards", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = 5000
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+      const juniorTranchePrincipal = 100_000
+
+      let logs, firstLog
+      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(99_000), [anotherUser])
+      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(99_000), {from: anotherUser})
+      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const anotherUserTokenId = firstLog.args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(1_000), [investor])
+      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1_000), {from: investor})
+      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const investorTokenId = firstLog.args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmount)
+
+      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+        interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards,
+        totalGFISupply: 100_000_000,
+        juniorTranchePrincipal,
+        previousInterestReceived,
+      })
+
+      // investor gets 1% of the pool
+      expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(100))
+      )
+
+      // anotherUser gets 99% of pool
+      expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(100)).mul(new BN(99))
+      )
+    })
+
+    it("Distributes 33.3%/33.3%/33.3% rewards", async () => {
+      const maxInterestDollarsEligible = 1_000_000_000
+      const totalGFISupply = 100_000_000
+      const totalRewards = 3_000_000 // 3% of 100m
+      const previousInterestReceived = 5000
+      const juniorTranchePrincipal = 99_999
+
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived,
+      })
+
+      let logs, firstLog
+      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [anotherUser])
+      const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {from: anotherUser})
+      logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const anotherUserTokenId = firstLog.args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [anotherAnotherUser])
+      const anotherAnotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {
+        from: anotherAnotherUser,
+      })
+      logs = decodeLogs<DepositMade>(anotherAnotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const anotherAnotherUserTokenId = firstLog.args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(33_333), [investor])
+      const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(33_333), {from: investor})
+      logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstLog = getFirstLog(logs)
+      const investorTokenId = firstLog.args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmount)
+
+      const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+        interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+        maxInterestDollarsEligible: 1_000_000_000,
+        totalRewards,
+        totalGFISupply: 100_000_000,
+        juniorTranchePrincipal,
+        previousInterestReceived,
+      })
+
+      // investor gets 33% of the pool
+      expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(3))
+      )
+
+      // anotherUser gets 34% of pool
+      expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(3))
+      )
+
+      // anotherAnotherUser gets 33% of pool
+      expect(await backerRewards.poolTokenClaimableRewards(anotherAnotherUserTokenId)).to.bignumber.equal(
+        testPoolTokenClaimableRewards.div(new BN(3))
+      )
+    })
+
+    context("When tranche is oversubscribed", () => {
+      it("Handles proportionately 50%/50%", async () => {
+        const maxInterestDollarsEligible = 1_000_000_000
+        const totalGFISupply = 100_000_000
+        const totalRewards = 3_000_000 // 3% of 100m
+        const previousInterestReceived = 5000
+
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const juniorTranchePrincipal = 100_000
+
+        let logs, firstLog
+        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [anotherUser])
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {
+          from: anotherUser,
+        })
+        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const anotherUserTokenId = firstLog.args.tokenId
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [investor])
+        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {from: investor})
+        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const investorTokenId = firstLog.args.tokenId
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
+
+        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+          maxInterestDollarsEligible: 1_000_000_000,
+          totalRewards,
+          totalGFISupply: 100_000_000,
+          juniorTranchePrincipal,
+          previousInterestReceived,
+        })
+
+        // investor gets 50% of the pool
+        expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(2))
+        )
+
+        // anotherUser gets 50% of pool
+        expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(2))
+        )
+      })
+
+      it("Handles proportionately 66%/33%", async () => {
+        const maxInterestDollarsEligible = 1_000_000_000
+        const totalGFISupply = 100_000_000
+        const totalRewards = 3_000_000 // 3% of 100m
+        const previousInterestReceived = 5000
+        const juniorTranchePrincipal = 100_000
+
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+
+        let logs, firstLog
+        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [anotherUser])
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {
+          from: anotherUser,
+        })
+        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const anotherUserTokenId = firstLog.args.tokenId
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
+        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
+        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const investorTokenId = firstLog.args.tokenId
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+        const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+        const payAmount = interestOwed.add(await creditLine.principalOwedAt(await creditLine.termEndTime()))
+
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await pay(tranchedPool, payAmount)
+
+        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+          interestPaymentAmount: new BigNumber(interestOwed.toString()).div(USDC_DECIMALS.toString()).toNumber(),
+          maxInterestDollarsEligible: 1_000_000_000,
+          totalRewards,
+          totalGFISupply: 100_000_000,
+          juniorTranchePrincipal,
+          previousInterestReceived,
+        })
+
+        // investor gets 33.333% of the pool
+        expect(await backerRewards.poolTokenClaimableRewards(investorTokenId)).to.bignumber.closeTo(
+          testPoolTokenClaimableRewards.div(new BN(3)),
+          fiduTolerance
+        )
+
+        // anotherUser gets 66.666% of pool
+        expect(await backerRewards.poolTokenClaimableRewards(anotherUserTokenId)).to.bignumber.closeTo(
+          testPoolTokenClaimableRewards.div(new BN(3)).mul(new BN(2)),
+          fiduTolerance
+        )
+      })
+    })
+  })
+
+  context(`Changing rewards or total supply gfi`, () => {
     it("changing total rewards or max interest dollars after interest has been received", async () => {
       const maxInterestDollarsEligible = 1_000_000_000
       const totalGFISupply = 100_000_000
@@ -1778,13 +1762,16 @@ describe("BackerRewards", function () {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      let payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+      const interestOwedFirstPool = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const payAmountFirstPool = interestOwedFirstPool.add(
+        await creditLine.principalOwedAt(await creditLine.termEndTime())
+      )
+      await erc20Approve(usdc, tranchedPool.address, payAmountFirstPool, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await pay(tranchedPool, payAmountFirstPool)
 
       const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 5000,
+        interestPaymentAmount: new BigNumber(interestOwedFirstPool.toString()).div(USDC_DECIMALS.toString()).toNumber(),
         maxInterestDollarsEligible,
         totalGFISupply,
         totalRewards,
@@ -1816,17 +1803,18 @@ describe("BackerRewards", function () {
       await backerRewards.setTotalRewards(bigVal(Math.round(newTotalRewards * 100)).div(new BN(100)))
 
       // make a new trancehed pool & interest payment
-      const {tranchedPool: tranchedPoolMax} = await createPoolWithCreditLine({
-        people: {owner, borrower},
-        goldfinchFactory,
+      const {poolAddress, clAddress} = await deployTranchedPoolWithGoldfinchFactoryFixture("changing total rewards")({
+        borrower,
+        usdcAddress: usdc.address,
         juniorFeePercent: new BN(20),
         limit: usdcVal(100_000),
         interestApr: interestAprAsBN("100.00"),
-        paymentPeriodInDays: new BN(30),
-        termInDays: new BN(365),
         lateFeeApr: new BN(0),
-        usdc,
       })
+      const {tranchedPool: tranchedPoolMax, creditLine: creditLineMax} = await getTranchedPoolAndCreditLine(
+        poolAddress,
+        clAddress
+      )
       response = await tranchedPoolMax.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
       logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPoolMax, "DepositMade")
       firstLog = getFirstLog(logs)
@@ -1834,21 +1822,28 @@ describe("BackerRewards", function () {
       await tranchedPoolMax.lockJuniorCapital({from: borrower})
       await tranchedPoolMax.lockPool({from: borrower})
       await tranchedPoolMax.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-      await advanceTime({days: new BN(365).toNumber()})
-      payAmount = usdcVal(juniorTranchePrincipal)
-      await erc20Approve(usdc, tranchedPoolMax.address, payAmount, [borrower])
-      await tranchedPoolMax.pay(payAmount, {from: borrower})
+      const interestOwedSecondPool = await creditLineMax.interestOwedAt(await creditLineMax.termEndTime())
+      const payAmountSecondPool = interestOwedSecondPool.add(
+        await creditLineMax.principalOwedAt(await creditLineMax.termEndTime())
+      )
+      await erc20Approve(usdc, tranchedPoolMax.address, payAmountSecondPool, [borrower])
+      await advanceTime({toSecond: await creditLineMax.termEndTime()})
+      await pay(tranchedPoolMax, payAmountSecondPool)
 
       const {
         testPoolTokenClaimableRewards: newTestPoolTokenClaimableRewards,
         testAccRewardsPerPrincipalDollar: newTestAccRewardsPerPrincipalDollar,
       } = testCalcAccRewardsPerPrincipalDollar({
-        interestPaymentAmount: 100_000,
+        interestPaymentAmount: new BigNumber(interestOwedSecondPool.toString())
+          .div(USDC_DECIMALS.toString())
+          .toNumber(),
         maxInterestDollarsEligible,
         totalGFISupply: newTotalGFISupply,
         totalRewards: newTotalRewards,
         juniorTranchePrincipal,
-        previousInterestReceived: 5000,
+        previousInterestReceived: new BigNumber(interestOwedFirstPool.toString())
+          .div(USDC_DECIMALS.toString())
+          .toNumber(),
       })
 
       // verify accRewardsPerPrincipalDollar
@@ -1861,7 +1856,7 @@ describe("BackerRewards", function () {
     }).timeout(LONG_TEST_TIMEOUT)
   })
 
-  describe("Staking-rewards-related view functions", () => {
+  describe(`Staking-rewards-related view functions`, () => {
     const maxInterestDollarsEligible = 1_000_000_000
     const totalGFISupply = 100_000_000
     const totalBackerRewards = totalGFISupply / 2
@@ -1901,6 +1896,7 @@ describe("BackerRewards", function () {
     const juniorPrincipal = usdcVal(25_000)
     let sharePrice: BN
     let currentEarnRate: BN
+    let drawdownTime: BN
 
     beforeEach(async () => {
       await testSetup()
@@ -1931,26 +1927,21 @@ describe("BackerRewards", function () {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
+      drawdownTime = await getCurrentTimestamp()
 
-      const payAmount = usdcVal(
-        // Principal plus interest
-        totalPrincipal * 1.05
-      )
+      const interestOwed = await creditLine.interestOwedAt(await creditLine.termEndTime())
+      const principalOwed = await creditLine.principalOwedAt(await creditLine.termEndTime())
+      const payAmount = interestOwed.add(principalOwed)
+
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await advanceTime({toSecond: await creditLine.termEndTime()})
-      await tranchedPool.pay(payAmount, {from: borrower})
+      await pay(tranchedPool, payAmount)
     })
 
     describe("stakingRewardsEarnedSinceLastWithdraw", () => {
-      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
+      it("Junior-tranche pool token returns 0", async () => {
         const juniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(juniorTokenId)
-        const expectedJuniorStakingRewardsEarned = juniorPrincipal
-          .mul(FIDU_DECIMALS)
-          .div(USDC_DECIMALS)
-          .div(sharePrice)
-          .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
-        expect(expectedJuniorStakingRewardsEarned).to.bignumber.equal("14191200000000000000000000")
-        expect(juniorStakingRewardsEarned).to.bignumber.equal(expectedJuniorStakingRewardsEarned)
+        expect(juniorStakingRewardsEarned).to.bignumber.equal(new BN(0))
       })
       it("Senior-tranched pool token returns 0", async () => {
         const seniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(seniorTokenId)
@@ -1959,17 +1950,11 @@ describe("BackerRewards", function () {
     })
 
     describe("stakingRewardsClaimed", () => {
-      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
+      it("Junior-tranche pool token returns 0", async () => {
         const juniorStakingRewardsEarnedBefore = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(
           juniorTokenId
         )
-        const expectedJuniorStakingRewardsEarnedBefore = juniorPrincipal
-          .mul(FIDU_DECIMALS)
-          .div(USDC_DECIMALS)
-          .div(sharePrice)
-          .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
-        expect(expectedJuniorStakingRewardsEarnedBefore).to.bignumber.equal("14191200000000000000000000")
-        expect(juniorStakingRewardsEarnedBefore).to.bignumber.equal(expectedJuniorStakingRewardsEarnedBefore)
+        expect(juniorStakingRewardsEarnedBefore).to.bignumber.equal(new BN(0))
 
         const juniorStakingRewardsClaimedBefore = await backerRewards.stakingRewardsClaimed(juniorTokenId)
         expect(juniorStakingRewardsClaimedBefore).to.bignumber.equal(new BN(0))
@@ -1981,6 +1966,7 @@ describe("BackerRewards", function () {
         const juniorStakingRewardsClaimedAfter = await backerRewards.stakingRewardsClaimed(juniorTokenId)
         expect(juniorStakingRewardsClaimedAfter).to.bignumber.equal(juniorStakingRewardsEarnedBefore)
       })
+
       it("Senior-tranche pool token returns 0", async () => {
         const seniorStakingRewardsClaimed = await backerRewards.stakingRewardsClaimed(seniorTokenId)
         expect(seniorStakingRewardsClaimed).to.bignumber.equal(new BN(0))

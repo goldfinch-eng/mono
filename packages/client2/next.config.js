@@ -1,12 +1,21 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+// These are managed by Defiance Analytics, our marketing partner
+const gtmThirdPartyOrigins = [
+  "https://www.googletagmanager.com",
+  "https://googleads.g.doubleclick.net",
+  "https://contentdsp.com",
+  "https://s.rtpapp.net",
+  "https://js.hs-scripts.com",
+];
+
 // Guidance for security headers: https://nextjs.org/docs/advanced-features/security-headers
 // Note: we attempted to have a very restrictive connect-src and image-src, but the various third-party modules we use have so many external dependencies that it was difficult to list them all out (and they're subject to change without warning)
 // ! script-src unsafe-inline is required for MetaMask to work. On FireFox the MetaMask extension is considered an inline script. Perplexingly, this is not the case on Chrome.
 const ContentSecurityPolicy = `
-  script-src 'self' 'unsafe-inline' https://www.googletagmanager.com ${
-    process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "" // Next.js devtools (like fast refresh) are eval'd scripts
-  };
+  script-src 'self' 'unsafe-inline' ${gtmThirdPartyOrigins.join(" ")} ${
+  process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "" // Next.js devtools (like fast refresh) are eval'd scripts
+};
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
   font-src 'self' https://fonts.gstatic.com/;
   frame-src 'self' https://withpersona.com/;
@@ -93,6 +102,11 @@ const nextConfig = {
         destination: "/earn",
         permanent: false,
       },
+      {
+        source: "/verify",
+        destination: "/account",
+        permanent: false,
+      },
     ];
   },
   async headers() {
@@ -106,7 +120,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   // Note that this function can have more arguments. See https://nextjs.org/docs/api-reference/next.config.js/custom-webpack-config
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // Allows SVGs to be imported as plain URLs if written as follows: import svg from './assets/file.svg?url'
     // See https://react-svgr.com/docs/webpack/#use-svgr-and-asset-svg-in-the-same-project
     config.module.rules.push({
@@ -136,6 +150,16 @@ const nextConfig = {
       issuer: /\.[jt]sx?$/,
       type: "asset/source",
     });
+
+    // Has to be added because the WalletConnect legacy client package causes build failures otherwise
+    //* This can be removed when we move to WalletConnect v2 (which will happen when Impersonator and MetaMask mobile support it)
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
 
     return config;
   },

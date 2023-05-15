@@ -20,7 +20,8 @@
     "services:destroy": "docker compose down -v",
     "start:dev": "yarn services:start && yarn dev",
     "start:prod": "yarn build && yarn serve",
-    "seed:localhost": "PAYLOAD_CONFIG_PATH=src/payload.config.ts SEEDING_DB=true yarn ts-node src/scripts/seed-localhost.ts"
+    "seed:localhost": "PAYLOAD_CONFIG_PATH=src/payload.config.ts SEEDING_DB=true yarn ts-node src/scripts/seed-localhost.ts",
+    "seed:borrower-page": "PAYLOAD_CONFIG_PATH=src/payload.config.ts SEEDING_DB=true yarn ts-node src/scripts/seed-localhost-borrow-page.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.4.2",

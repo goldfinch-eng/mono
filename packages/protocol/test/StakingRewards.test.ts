@@ -2241,6 +2241,56 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("removeReward", async () => {
+    it("reverts when not owner", async () => {
+      const [, , , , , notOwner] = await hre.getUnnamedAccounts()
+      assertNonNullable(notOwner)
+      const ownerRole = await stakingRewards.OWNER_ROLE()
+      expect(await stakingRewards.hasRole(ownerRole, notOwner)).to.be.false
+
+      await expect(stakingRewards.removeRewards("1000", {from: notOwner})).to.be.rejectedWith("AD")
+    })
+
+    describe("with rewards loaded", async () => {
+      const rewardsToLoad = "100000000000000000000"
+      const setup = deployments.createFixture(async () => {
+        await gfi.mint(owner, rewardsToLoad)
+        await gfi.approve(stakingRewards.address, rewardsToLoad)
+        await stakingRewards.loadRewards(rewardsToLoad)
+      })
+
+      beforeEach(async () => {
+        await setup()
+      })
+
+      it("checkpoints when called", async () => {
+        await stakingRewards.removeRewards("1000")
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        const currentTime = await getCurrentTimestamp()
+        expect(lastUpdateTime).to.eq(currentTime)
+      })
+
+      it("reverts if removing more rewards than are loaded", async () => {
+        const rewardsToRemove = "100000000000000000001"
+        expect(new BN(rewardsToRemove)).to.bignumber.greaterThan(new BN(rewardsToLoad))
+        await expect(stakingRewards.removeRewards(rewardsToRemove)).to.be.rejectedWith("f")
+      })
+
+      it("succesfully removes rewards and emits an event", async () => {
+        const rewardsToRemove = rewardsToLoad
+        const gfiBalanceBefore = await gfi.balanceOf(stakingRewards.address)
+        const rewardsAvailableBefore = await stakingRewards.rewardsAvailable()
+        const receipt = await stakingRewards.removeRewards(rewardsToRemove)
+        expectEvent(receipt, "RewardRemoved", {reward: rewardsToRemove})
+        const gfiBalanceAfer = await gfi.balanceOf(stakingRewards.address)
+        const rewardsAvailableAfter = await stakingRewards.rewardsAvailable()
+        expect(gfiBalanceAfer).to.bignumber.eq(gfiBalanceBefore.sub(new BN(rewardsToRemove)))
+        expect(rewardsAvailableAfter).to.bignumber.eq(rewardsAvailableBefore.sub(new BN(rewardsToRemove)))
+      })
+    })
+  })
+
   describe("loadRewards", async () => {
     it("transfers rewards into contract", async () => {
       const amount = bigVal(1000)

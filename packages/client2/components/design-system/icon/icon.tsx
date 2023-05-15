@@ -5,6 +5,7 @@ import { forwardRef } from "react";
 import Curve from "./raster/curve.png";
 import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
+import ArrowLeft from "./svg/arrow-left.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUpCircle from "./svg/arrow-up-circle-solid.svg";
@@ -15,15 +16,19 @@ import ChevronDown from "./svg/chevron-down.svg";
 import Clock from "./svg/clock.svg";
 import Copy from "./svg/copy.svg";
 import Discord from "./svg/discord.svg";
+import DollarSolid from "./svg/dollar-solid.svg";
 import DotsHorizontal from "./svg/dots-horizontal.svg";
 import ExclamationCircleSolid from "./svg/exclamation-circle-solid.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
+import Globe from "./svg/globe.svg";
+import GoldfinchInverted from "./svg/goldfinch-inverted.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
 import LinkedIn from "./svg/linkedin.svg";
 import LockClosed from "./svg/lock-closed.svg";
+import Logout from "./svg/logout.svg";
 import Menu from "./svg/menu.svg";
 import Twitter from "./svg/twitter.svg";
 import Usdc from "./svg/usdc.svg";
@@ -33,6 +38,7 @@ import X from "./svg/x.svg";
 export const iconManifest = {
   ArrowDown,
   ArrowDownCircle,
+  ArrowLeft,
   ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
@@ -44,15 +50,19 @@ export const iconManifest = {
   Copy,
   Curve,
   Discord,
+  DollarSolid,
   DotsHorizontal,
   Exclamation,
   ExclamationCircleSolid,
   Gfi,
+  Globe,
+  GoldfinchInverted,
   InfoCircle,
   LightningBolt,
   Link,
   LinkedIn,
   LockClosed,
+  Logout,
   Menu,
   Twitter,
   Usdc,

@@ -19,6 +19,7 @@ import {Test, stdError, StdCheats} from "forge-std/Test.sol";
 import {CakeHelper} from "../../cake/helpers/CakeHelper.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
+import {ILoan} from "../../../interfaces/ILoan.sol";
 import {IGo} from "../../../interfaces/IGo.sol";
 import {BaseTest} from "../../core/BaseTest.t.sol";
 
@@ -337,8 +338,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -391,8 +390,6 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
-
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
       abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
@@ -420,7 +417,7 @@ contract CapitalLedgerTest is BaseTest {
     assertEq(context.gfi().balanceOf(owner), 0);
   }
 
-  function test_harvest_poolToken_onlyInterest(
+  function test_harvest_poolToken_noBackerRewards(
     address owner,
     uint256 id,
     uint256 poolTokenAmount
@@ -429,7 +426,38 @@ contract CapitalLedgerTest is BaseTest {
     StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
     StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
-    IPoolTokens.TokenInfo memory initialInfo = IPoolTokens(POOL_TOKENS_ADDRESS).getTokenInfo(id);
+    vm.mockCall(
+      TRANCHED_POOL_ADDRESS,
+      abi.encodeWithSelector(bytes4(keccak256("withdrawMax(uint256)")), id),
+      abi.encode(10, 10)
+    );
+
+    // BackerRewards is not mocked and will throw
+    // The test should still pass successfully
+
+    assertEq(context.usdc().balanceOf(owner), 0);
+    assertEq(context.gfi().balanceOf(owner), 0);
+
+    vm.expectEmit(true, false, false, true);
+    emit CapitalERC721Harvest(1, POOL_TOKENS_ADDRESS);
+
+    vm.expectEmit(true, false, false, true);
+    emit CapitalPositionAdjustment(1, POOL_TOKENS_ADDRESS, poolTokenAmount);
+
+    ledger.harvest(1);
+
+    assertEq(context.usdc().balanceOf(owner), 20);
+    assertEq(context.gfi().balanceOf(owner), 0);
+  }
+
+  function test_harvest_poolToken_onlyInterest(
+    address owner,
+    uint256 id,
+    uint256 poolTokenAmount
+  ) public onlyAllowListed(owner) withDeposit_poolToken(owner, id, poolTokenAmount) {
+    // Give assets to CapitalLedger as if they were returned for pool tokens
+    StdCheats.deal(address(context.usdc()), address(ledger), uint256(100));
+    StdCheats.deal(address(context.gfi()), address(ledger), uint256(100));
 
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
@@ -861,7 +889,7 @@ contract CapitalLedgerTest is BaseTest {
     allowedTypes[1] = 1;
     vm.mockCall(
       TRANCHED_POOL_ADDRESS,
-      abi.encodeWithSelector(ITranchedPool.getAllowedUIDTypes.selector),
+      abi.encodeWithSelector(ILoan.getAllowedUIDTypes.selector),
       abi.encode(allowedTypes)
     );
 

@@ -1,22 +1,19 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
 import {fake} from "sinon"
 
-import {FirebaseConfig, getDestroyedUsers, getUsers, setEnvForTest} from "../../src/db"
 import {destroyUser} from "../../src"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
 chai.use(chaiSubset)
 const expect = chai.expect
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {ethers} from "ethers"
-import {expectResponse, expectSize} from "../utils"
+import {expectResponse, expectSize, initializeFirebaseTestEnv} from "../utils"
 
 type FakeBlock = {
   number: number
@@ -33,12 +30,11 @@ describe("destroyUser", () => {
     privateKey: "0x50f9c471e3c454b506f39536c06bde77233144784297a95d35896b3be3dfc9d8",
   }
   const testWallet = new ethers.Wallet(testAccount.privateKey)
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
-  const projectId = "goldfinch-frontend-test"
-  let users: firestore.CollectionReference<firestore.DocumentData>
-  let destroyedUsers: firestore.CollectionReference<firestore.DocumentData>
+
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
+  let destroyedUsers: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
   const currentBlockNum = 84
   const fiveMinAgoBlockNum = 80
@@ -68,16 +64,10 @@ describe("destroyUser", () => {
     mockGetBlockchain(mock)
   })
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    config = {
-      kyc: {allowed_origins: "http://localhost:3000"},
-      persona: {allowed_ips: ""},
-    }
-    setEnvForTest(testFirestore, config)
-    users = getUsers(testFirestore)
-    destroyedUsers = getDestroyedUsers(testFirestore)
+  beforeEach(async () => {
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test"))
+    users = testContext.firestore().collection("test_users")
+    destroyedUsers = testContext.firestore().collection("test_destroyedUsers")
   })
 
   after(() => {
@@ -85,7 +75,7 @@ describe("destroyUser", () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generateDestroyUserRequest = (

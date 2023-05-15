@@ -72,13 +72,7 @@ describe("V2.2 & v2.3 migration", async function () {
 
   expectOwnerRole({
     toBe: async () => getProtocolOwner(),
-    forContracts: [
-      "StakingRewards",
-      "CommunityRewards",
-      "GoldfinchConfig",
-      "MerkleDirectDistributor",
-      "DynamicLeverageRatioStrategy",
-    ],
+    forContracts: ["StakingRewards", "CommunityRewards", "GoldfinchConfig", "MerkleDirectDistributor"],
   })
 
   describe("v2.3.1 migration", async () => {

@@ -1,12 +1,5 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
-import {
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  TranchedPool,
-  CreditLine,
-  Transaction,
-  TranchedPoolRoster,
-} from "../../generated/schema"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
 import {MAINNET_METADATA} from "../metadata"
@@ -37,8 +30,8 @@ export function getTotalDeposited(
   let totalDeposited = new BigInt(0)
 
   for (let i = 0, k = juniorTranches.length; i < k; ++i) {
-    let jrTranche = juniorTranches[i]
-    let srTranche = seniorTranches[i]
+    const jrTranche = juniorTranches[i]
+    const srTranche = seniorTranches[i]
 
     if (!jrTranche || !srTranche) {
       throw new Error(`Missing tranche information for ${address.toHexString()}`)
@@ -92,15 +85,15 @@ export function isV1StyleDeal(address: Address): boolean {
   return false
 }
 
-export function getCreatedAtOverride(address: Address): BigInt | null {
+export function getCreatedAtOverride(address: Address): i32 {
   const poolMetadata = MAINNET_METADATA.get(address.toHexString())
   if (poolMetadata != null) {
     const createdAt = poolMetadata.toObject().get("createdAt")
     if (createdAt != null) {
-      return createdAt.toBigInt()
+      return createdAt.toBigInt().toI32()
     }
   }
-  return null
+  return 0
 }
 
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
@@ -130,21 +123,21 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
-  let seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
-  let juniorFraction = leverageRatio
+  const seniorFraction = leverageRatio ? leverageRatio.div(ONE.toBigDecimal().plus(leverageRatio)) : ONE.toBigDecimal()
+  const juniorFraction = leverageRatio
     ? ONE.toBigDecimal().div(ONE.toBigDecimal().plus(leverageRatio))
     : ZERO.toBigDecimal()
-  let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
-  let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
-  let reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
+  const interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
+  const juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
+  const reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
 
-  let grossSeniorInterest = balance.toBigDecimal().times(interestRateFraction).times(seniorFraction)
-  let grossJuniorInterest = balance.toBigDecimal().times(interestRateFraction).times(juniorFraction)
+  const grossSeniorInterest = balance.toBigDecimal().times(interestRateFraction).times(seniorFraction)
+  const grossJuniorInterest = balance.toBigDecimal().times(interestRateFraction).times(juniorFraction)
   const juniorFee = grossSeniorInterest.times(juniorFeeFraction)
 
   const juniorReserveFeeOwed = grossJuniorInterest.times(reserveFeeFraction)
-  let netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
-  let juniorTranche = balance.toBigDecimal().times(juniorFraction)
+  const netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
+  const juniorTranche = balance.toBigDecimal().times(juniorFraction)
   return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
 }
 
@@ -156,7 +149,7 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
  * @returns Instance of a Transaction entity.
  */
 export function createTransactionFromEvent(event: ethereum.Event, category: string, userAddress: Address): Transaction {
-  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  const transaction = new Transaction(`${event.transaction.hash.toHexString()}-${event.logIndex.toString()}`)
   transaction.transactionHash = event.transaction.hash
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
@@ -164,23 +157,4 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
   return transaction
-}
-
-function getOrInitTranchedPoolRoster(): TranchedPoolRoster {
-  let tranchedPoolRoster = TranchedPoolRoster.load("1")
-  if (!tranchedPoolRoster) {
-    tranchedPoolRoster = new TranchedPoolRoster("1")
-    tranchedPoolRoster.tranchedPools = []
-  }
-  return tranchedPoolRoster
-}
-
-export function getListOfAllTranchedPoolAddresses(): string[] {
-  return getOrInitTranchedPoolRoster().tranchedPools
-}
-
-export function addToListOfAllTranchedPools(tranchedPoolAddress: Address): void {
-  const tranchedPoolRoster = getOrInitTranchedPoolRoster()
-  tranchedPoolRoster.tranchedPools = tranchedPoolRoster.tranchedPools.concat([tranchedPoolAddress.toHexString()])
-  tranchedPoolRoster.save()
 }

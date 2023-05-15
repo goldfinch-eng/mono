@@ -7,11 +7,14 @@ import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {ISeniorPoolEpochWithdrawals} from "../../../interfaces/ISeniorPoolEpochWithdrawals.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {TestSeniorPoolCaller} from "../../../test/TestSeniorPoolCaller.sol";
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
 import {ConfigOptions} from "../../../protocol/core/ConfigOptions.sol";
+import {MonthlyPeriodMapper} from "../../../protocol/core/schedule/MonthlyPeriodMapper.sol";
+import {Schedule} from "../../../protocol/core/schedule/Schedule.sol";
+import {ISchedule} from "../../../interfaces/ISchedule.sol";
 
 contract SeniorPoolTest is SeniorPoolBaseTest {
   /*================================================================================
@@ -52,7 +55,7 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
     requestWithdrawalFrom(user2, fiduVal(3000));
 
     // Invest in a tranched pool to suck up the $4000 liquidity
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(1000), tp);
     lockJuniorCap(tp);
     sp.invest(tp);
@@ -230,16 +233,14 @@ contract SeniorPoolTest is SeniorPoolBaseTest {
   ================================================================================*/
 
   function testEstimateInvestmentRevertsForInvalidPool() public {
-    TestTranchedPool tp = new TestTranchedPool();
-    uint256[] memory ids = new uint256[](1);
-    tp.initialize(address(gfConfig), GF_OWNER, 1, 1, 1, 1, 1, 1, 1, block.timestamp, ids);
+    TranchedPool tp = new TranchedPool();
     vm.expectRevert("Pool must be valid");
     sp.estimateInvestment(tp);
   }
 
   function testEstimateInvestmentReturnsStrategysInvestmentAmount(uint256 juniorAmount) public {
     juniorAmount = bound(juniorAmount, usdcVal(1), usdcVal(1_000_000));
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, juniorAmount, tp);
     lockJuniorCap(tp);
 

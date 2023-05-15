@@ -52,7 +52,9 @@ enum Addresses {
   StakingRewards,
   FiduUSDCCurveLP,
   TranchedPoolImplementationRepository,
-  WithdrawalRequestToken
+  WithdrawalRequestToken,
+  MonthlyScheduleRepo,
+  CallableLoanImplementationRepository
 }
 ```
 

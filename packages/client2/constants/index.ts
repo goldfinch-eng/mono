@@ -18,10 +18,62 @@ export const FIDU_DECIMALS = 18;
 export const CURVE_LP_DECIMALS = 18;
 export const CURVE_LP_MANTISSA = BigNumber.from(10).pow(CURVE_LP_DECIMALS);
 
+const PARALLEL_MARKETS_API_URL =
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "https://demo-api.parallelmarkets.com/v1"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://api.parallelmarkets.com/v1"
+    : "";
+
+if (PARALLEL_MARKETS_API_URL === "") {
+  throw new Error("Could not determine Parallel Markets API URL");
+}
+
+const PARALLEL_MARKETS_CLIENT_ID = process.env
+  .NEXT_PUBLIC_PARALLEL_MARKETS_CLIENT_ID as string;
+
+if (!PARALLEL_MARKETS_CLIENT_ID) {
+  throw new Error("Parallel Markets Client ID was not provided");
+}
+
+export const PARALLEL_MARKETS = {
+  API_URL: PARALLEL_MARKETS_API_URL,
+  CLIENT_ID: PARALLEL_MARKETS_CLIENT_ID,
+  SCOPE: "accreditation_status profile identity",
+  STATE_KEY: "parallel_markets_state_key",
+};
+
+export const SETUP_UID_BANNER_TEXT =
+  "Unique Identity (UID) is a non-transferrable NFT representing KYC-verification on-chain. A UID is required to participate in the Goldfinch lending protocol. No personal information is stored on-chain.";
+
 export const TRANCHES = {
   Senior: 1,
   Junior: 2,
 };
+
+export const SUBGRAPH_API_URL =
+  typeof process.env.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_GRAPHQL_URL
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:8000/subgraphs/name/goldfinch-subgraph"
+    : "";
+if (SUBGRAPH_API_URL === "") {
+  throw new Error("Could not determine GraphQL API URL");
+}
+
+export const CMS_API_URL =
+  typeof process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "http://cms.goldfinch.finance/api/graphql"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:3010/api/graphql"
+    : "";
+if (CMS_API_URL === "") {
+  throw new Error("Could not determine CMS API URL");
+}
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL
   ? process.env.NEXT_PUBLIC_GCLOUD_FUNCTIONS_URL

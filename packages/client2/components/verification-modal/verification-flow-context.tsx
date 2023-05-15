@@ -1,12 +1,11 @@
 import { createContext, ReactNode, useContext, useState } from "react";
 
-import { getSignatureForKyc } from "@/lib/verify";
+import { KycSignature } from "@/lib/verify";
 
 type Entity = "individual" | "entity";
 type Residency = "us" | "non-us";
 type IdIssuer = "us" | "non-us";
 type Accredited = "accredited" | "non-accredited";
-type Signature = Awaited<ReturnType<typeof getSignatureForKyc>>;
 
 interface VerificationFlowContextInterface {
   entity?: Entity;
@@ -17,8 +16,8 @@ interface VerificationFlowContextInterface {
   setIdIssuer: (i: IdIssuer) => void;
   accredited?: Accredited;
   setAccredited: (a: Accredited) => void;
-  signature?: Awaited<ReturnType<typeof getSignatureForKyc>>;
-  setSignature: (s: Signature) => void;
+  signature?: KycSignature;
+  setSignature: (s: KycSignature) => void;
   uidVersion?: number;
   setUidVersion: (v: number) => void;
 }
@@ -42,7 +41,7 @@ export function VerificationFlowContext({ children }: { children: ReactNode }) {
   const [residency, setResidency] = useState<Residency>();
   const [idIssuer, setIdIssuer] = useState<IdIssuer>();
   const [accredited, setAccredited] = useState<Accredited>();
-  const [signature, setSignature] = useState<Signature>();
+  const [signature, setSignature] = useState<KycSignature>();
   const [uidVersion, setUidVersion] = useState<number>();
 
   return (

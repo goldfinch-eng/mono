@@ -4,14 +4,17 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SeniorPoolBaseTest} from "../BaseSeniorPool.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 
 contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
+  uint256 internal constant SECONDS_IN_30_DAY_MONTH = 2_592_000;
+  uint256 internal constant SECONDS_IN_DAY = 60 * 60 * 24;
+
   function testWritedownCallableByNonGovernance(
     address user
   ) public goListed(user) impersonating(user) {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     vm.assume(fuzzHelper.isAllowed(user));
     depositToTpFrom(GF_OWNER, usdcVal(100), tp);
     lockJuniorCap(tp);
@@ -24,7 +27,9 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownBeforeLoanEndsWritesDownPrincipalAndDistributesLosses() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -32,11 +37,18 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     lock(tp);
     drawdownTp(usdcVal(100), tp);
 
-    // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    // The first period ends Jan 31st and the second period ends Feb 28th. If we advance to March 1st
+    // then we will trigger two interest periods worth of interestOwed. In this case that's 31 + 28
+    // ~= 59 days of interest
+    vm.warp(cl.nextDueTime());
+    vm.warp(cl.nextDueTime());
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
-    uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
+    // Max days late is 120. If we advance two payment periods ahead, this makes us ~59 days late.
+    // The grace period is 30 days. Expected writedown percent is (days late - grace period) / max days late
+    // = (59 - 30) / 120 = 24.1666666667 %
+    // uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
+    uint256 expectedWritedown = (usdcVal(80) * 241666666667) / 1000000000000;
     uint256 assetsBefore = sp.assets();
     uint256 sharePriceBefore = sp.sharePrice();
     uint256 totalSharesBefore = fidu.totalSupply();
@@ -56,7 +68,9 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   }
 
   function testWritedownShouldDecreaseWritedownAmountForPartialRepayments() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -64,11 +78,17 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     lock(tp);
     drawdownTp(usdcVal(100), tp);
 
-    // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    // The first period ends Jan 31st and the second period ends Feb 28th. If we advance to March 1st
+    // then we will trigger two interest periods worth of interestOwed. In this case that's 31 + 28
+    // ~= 59 days of interest
+    vm.warp(cl.nextDueTime());
+    vm.warp(cl.nextDueTime());
 
     // So writedown is 2 periods late - 1 grace period / 4 max = 25%
-    uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
+    // Max days late is 120. If we advance two payment periods ahead, this makes us ~59 days late.
+    // The grace period is 30 days. Expected writedown percent is (days late - grace period) / max days late
+    // = (59 - 30) / 120 = 24.1666666667 %
+    uint256 expectedWritedown = (usdcVal(80) * 241666666667) / 1000000000000;
     uint256 assetsBefore = sp.assets();
     uint256 originalSharePrice = sp.sharePrice();
     uint256 originalTotalShares = fidu.totalSupply();
@@ -79,9 +99,10 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertApproxEqAbs(sp.totalWritedowns(), expectedWritedown, thresholdUsdc());
     assertApproxEqAbs(sp.assets(), assetsBefore - expectedWritedown, thresholdUsdc());
 
-    // Pay back half of one period
-    // tp.assess();
-    uint256 interestToPay = cl.interestOwed() / 4; // interestOwed is 2 periods, so 1/4 of that is half-period interest
+    // interestOwed covers 2 periods, so paying back 1/4 of that is approximately half a period
+    // of interest (approximate because periods are calendar months, which are not the exact
+    // same length)
+    uint256 interestToPay = cl.interestOwed() / 4;
     uint256 newExpectedWritedown = expectedWritedown / 2;
     payTp(interestToPay, tp);
 
@@ -90,12 +111,12 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertApproxEqAbs(
       sp.totalWritedowns(),
       expectedWritedown - newExpectedWritedown,
-      thresholdUsdc()
+      usdcVal(1) / 2
     );
     assertApproxEqAbs(
       sp.assets(),
       assetsBefore - (expectedWritedown - newExpectedWritedown),
-      thresholdUsdc()
+      usdcVal(1) / 2
     );
 
     uint256 finalSharePrice = sp.sharePrice();
@@ -108,34 +129,8 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertApproxEqAbs(sp.sharePrice(), originalSharePrice - deltaExpected, thresholdFidu());
   }
 
-  function testWritedownShouldApplyUsdcInTheCreditLineBeforeWritedown() public {
-    // We expect the senior pool to assess the pool before writing it down. This prevents
-    // accidentally writing down a pool that has received a payment that is still unapplied
-
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
-    depositToTpFrom(GF_OWNER, usdcVal(20), tp);
-    lockJuniorCap(tp);
-    depositToSpFrom(GF_OWNER, usdcVal(100));
-    uint256 poolToken = sp.invest(tp);
-    lock(tp);
-    drawdownTp(usdcVal(100), tp);
-
-    // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
-
-    fundAddress(address(cl), usdcVal(100));
-
-    uint256 assetsBefore = sp.assets();
-    uint256 writedownsBefore = sp.totalWritedowns();
-
-    sp.writedown(poolToken);
-
-    assertEq(sp.assets(), assetsBefore);
-    assertEq(sp.totalWritedowns(), writedownsBefore);
-  }
-
   function testWritedownShouldResetTo0IfFullyPaidBack() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -144,7 +139,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     drawdownTp(usdcVal(100), tp);
 
     // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     uint256 sharePriceBefore = sp.sharePrice();
     uint256 assetsBefore = sp.assets();
@@ -155,10 +150,20 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertTrue(sp.sharePrice() < sharePriceBefore);
     assertTrue(sp.assets() < assetsBefore);
     assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+
+    // Fully pay back pool
+    uint256 interestToPay = cl.interestOwed();
+    payTp(interestToPay, tp);
+
+    sp.writedown(poolToken);
+
+    assertEq(sp.sharePrice(), sharePriceBefore);
   }
 
-  function testWritedownEmitsEvent() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+  function testWritedownPostTermShouldResetTo0IfFullyPaidBack() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -166,34 +171,158 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     lock(tp);
     drawdownTp(usdcVal(100), tp);
 
-    // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    // Advance to the end of the loan + out of the grace period + 1 day
+    // Added 1 day as writedowns are applied gradually over time, so 1 day provides some amount of writedown
+    vm.warp(cl.termEndTime() + (gfConfig.getLatenessGracePeriodInDays() + 1) * SECONDS_IN_DAY);
 
-    // So writedown is 2 periods late - 1 grace period / 4 max = 25%
-    uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
-    // We need the actual writedown to test the event emission because the API
-    // doesn't allow asserting approximate values in the events.
-    int256 actualWritedown = -19999960;
+    uint256 sharePriceBefore = sp.sharePrice();
+    uint256 assetsBefore = sp.assets();
+    uint256 totalWritedownsBefore = sp.totalWritedowns();
+
+    // Writedown
+    {
+      sp.writedown(poolToken);
+
+      assertTrue(sp.sharePrice() < sharePriceBefore);
+      assertTrue(sp.assets() < assetsBefore);
+      assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+    }
+
+    uint256 postWritedownShareprice = sp.sharePrice();
+    uint256 postWritedownAssets = sp.assets();
+
+    // Pay back interest
+    uint256 interestToPay = cl.interestOwed();
+    uint256 interestRedeemedExpected = (interestToPay * 56) / 100;
+
+    {
+      payTp(interestToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertTrue(sp.sharePrice() > postWritedownShareprice);
+      assertTrue(sp.assets() > postWritedownAssets);
+      assertTrue(sp.totalWritedowns() > totalWritedownsBefore);
+    }
+
+    // Pay back principal
+    {
+      uint256 principalToPay = cl.principalOwed();
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertTrue(principalToPay > 0);
+      assertEq(sp.sharePrice(), sharePriceBefore + interestRedeemedExpected * 1e10);
+    }
+  }
+
+  function testCompleteWritedownPostTermShouldResetTo0IfFullyPaidBack() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(20), tp);
+    lockJuniorCap(tp);
+    depositToSpFrom(GF_OWNER, usdcVal(100));
+    uint256 poolToken = sp.invest(tp);
+    lock(tp);
+    drawdownTp(usdcVal(100), tp);
+
+    // Advance to the end of the loan + past maximum late days + 1 day
+    vm.warp(
+      cl.termEndTime() +
+        (gfConfig.getLatenessGracePeriodInDays() + gfConfig.getLatenessMaxDays() + 1) *
+        SECONDS_IN_DAY
+    );
+
+    uint256 sharePriceBefore = sp.sharePrice();
+    uint256 assetsBefore = sp.assets();
+
+    // Writedown - PoolToken value is completely removed
+    {
+      sp.writedown(poolToken);
+
+      assertEq(sp.sharePrice(), 20e16);
+      assertEq(sp.assets(), usdcVal(20));
+      assertEq(sp.totalWritedowns(), usdcVal(80));
+    }
+
+    // Pay back interest
+    uint256 interestToPay = cl.interestOwed();
+    uint256 interestRedeemedExpected = (interestToPay * 56) / 100;
+
+    {
+      payTp(interestToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      assertEq(sp.sharePrice(), 20e16 + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), usdcVal(20) + interestRedeemedExpected);
+      // total writedowns doesn't change, only interest has been repaid
+      assertEq(sp.totalWritedowns(), usdcVal(80));
+    }
+
+    // Pay back part principal - all goes to senior pool
+    {
+      uint256 principalToPay = usdcVal(60);
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      // Share price is the current 20 + interest + 60 paid principal
+      assertEq(sp.sharePrice(), 80e16 + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), usdcVal(80) + interestRedeemedExpected);
+      assertEq(sp.totalWritedowns(), usdcVal(20));
+    }
+
+    // Pay back remaining principal
+    {
+      uint256 principalToPay = usdcVal(20);
+      payTp(principalToPay, tp);
+      sp.redeem(poolToken);
+      sp.writedown(poolToken);
+
+      // Share price is the original + interest
+      assertEq(sp.sharePrice(), sharePriceBefore + (interestRedeemedExpected * 1e10));
+      assertEq(sp.assets(), assetsBefore + interestRedeemedExpected);
+      assertEq(sp.totalWritedowns(), 0);
+    }
+  }
+
+  function testWritedownEmitsEvent() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
+    depositToTpFrom(GF_OWNER, usdcVal(20), tp);
+    lockJuniorCap(tp);
+    depositToSpFrom(GF_OWNER, usdcVal(100));
+    uint256 poolToken = sp.invest(tp);
+    lock(tp);
+    drawdownTp(usdcVal(100), tp);
+
+    vm.warp(cl.nextDueTime());
+    vm.warp(cl.nextDueTime());
+
+    int256 expectedWritedown = int256(sp.calculateWritedown(poolToken));
 
     vm.expectEmit(true, false, false, true);
-    emit PrincipalWrittenDown(address(tp), actualWritedown);
+    emit PrincipalWrittenDown(address(tp), -expectedWritedown);
 
     sp.writedown(poolToken);
-
-    assertEq(uint256(actualWritedown * -1), sp.totalWritedowns());
-    assertApproxEqAbs(uint256(actualWritedown * -1), expectedWritedown, thresholdUsdc());
   }
 
   function testWritedownRevertsIfSpNotTokenOwner() public {
-    (TestTranchedPool tp, ) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     uint256 juniorToken = depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     vm.expectRevert("Only tokens owned by the senior pool can be written down");
     sp.writedown(juniorToken);
   }
 
   function testWritedownAfterTermEndTimeShouldHaveDaysLateProportionalToFormula() public {
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
     // Should be proportional to seconds after termEndTime + totalOwed / totalOwedPerDay
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -208,7 +337,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     assertZero(sp.totalWritedowns());
 
     // Advance two payment periods past the term end time
-    vm.warp(cl.termEndTime() + 2 * (1 days) * cl.paymentPeriodInDays());
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
 
     // 60 days past termEndTime + ~1 days late on
     // (interestOwed + principalOwed) / (interestOwedPerDay and principalOwedPerDay)
@@ -225,7 +354,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     uint256 shares = depositToSpFrom(GF_OWNER, usdcVal(10_000));
     uint256 requestToken = requestWithdrawalFrom(GF_OWNER, shares);
 
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    (TranchedPool tp, ) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(80));
@@ -235,7 +364,7 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     uint256 sharePriceBefore = sp.sharePrice();
 
     // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
+    vm.warp(block.timestamp + SECONDS_IN_30_DAY_MONTH * 2);
     sp.writedown(poolToken);
     assertTrue(sp.sharePrice() < sharePriceBefore);
 
@@ -251,7 +380,9 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
   ================================================================================*/
 
   function testCalculateWritedownReturnsWritedownAmount() public {
-    (TestTranchedPool tp, CreditLine cl) = defaultTp();
+    vm.warp(1672531143); // December 31st 11:59:59. Minimize the stub period
+
+    (TranchedPool tp, CreditLine cl) = defaultTp();
     depositToTpFrom(GF_OWNER, usdcVal(20), tp);
     lockJuniorCap(tp);
     depositToSpFrom(GF_OWNER, usdcVal(100));
@@ -259,12 +390,17 @@ contract SeniorPoolWritedownTest is SeniorPoolBaseTest {
     lock(tp);
     drawdownTp(usdcVal(100), tp);
 
-    // Two payment periods ahead
-    vm.warp(block.timestamp + 1 + 2 * cl.paymentPeriodInDays() * (1 days));
-    tp.assess();
+    // The first period ends Jan 31st and the second period ends Feb 28th. If we advance to March 1st
+    // then we will trigger two interest periods worth of interestOwed. In this case that's 31 + 28
+    // ~= 59 days of interest
+    vm.warp(cl.nextDueTime());
+    vm.warp(cl.nextDueTime());
 
-    // So writedown is 2 periods late - 1 grace period / 4 max = 25%
-    uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
+    // Max days late is 120. If we advance two payment periods ahead, this makes us ~59 days late.
+    // The grace period is 30 days. Expected writedown percent is (days late - grace period) / max days late
+    // = (59 - 30) / 120 = 24.1666666667 %
+    // uint256 expectedWritedown = usdcVal(80) / 4; // 25% of 80 = 204
+    uint256 expectedWritedown = (usdcVal(80) * 241666666667) / 1000000000000;
 
     assertApproxEqAbs(sp.calculateWritedown(poolToken), expectedWritedown, thresholdUsdc());
   }

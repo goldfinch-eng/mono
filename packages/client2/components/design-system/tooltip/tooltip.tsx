@@ -13,7 +13,7 @@ import {
   safePolygon,
   autoUpdate,
   FloatingPortal,
-} from "@floating-ui/react-dom-interactions";
+} from "@floating-ui/react";
 import { Transition } from "@headlessui/react";
 import clsx from "clsx";
 import {
@@ -118,13 +118,13 @@ export function Tooltip({
           getReferenceProps({ ref: reference, ...children.props })
         )
       )}
-      <FloatingPortal>
+      <FloatingPortal preserveTabOrder>
         <div
           ref={floating}
           {...getFloatingProps({
             ref: floating,
             style: {
-              zIndex: 11,
+              zIndex: 999,
               position: strategy,
               top: y ?? "",
               left: x ?? "",

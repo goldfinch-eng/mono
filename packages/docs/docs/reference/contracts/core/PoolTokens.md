@@ -37,16 +37,6 @@ bytes4 _INTERFACE_ID_ERC165
 contract GoldfinchConfig config
 ```
 
-### PoolInfo
-
-```solidity
-struct PoolInfo {
-  uint256 totalMinted;
-  uint256 totalPrincipalRedeemed;
-  bool created;
-}
-```
-
 ### tokens
 
 ```solidity
@@ -56,49 +46,13 @@ mapping(uint256 => struct IPoolTokens.TokenInfo) tokens
 ### pools
 
 ```solidity
-mapping(address => struct PoolTokens.PoolInfo) pools
+mapping(address => struct IPoolTokens.PoolInfo) pools
 ```
 
 ### royaltyParams
 
 ```solidity
 struct ConfigurableRoyaltyStandard.RoyaltyParams royaltyParams
-```
-
-### TokenMinted
-
-```solidity
-event TokenMinted(address owner, address pool, uint256 tokenId, uint256 amount, uint256 tranche)
-```
-
-### TokenRedeemed
-
-```solidity
-event TokenRedeemed(address owner, address pool, uint256 tokenId, uint256 principalRedeemed, uint256 interestRedeemed, uint256 tranche)
-```
-
-### TokenPrincipalWithdrawn
-
-```solidity
-event TokenPrincipalWithdrawn(address owner, address pool, uint256 tokenId, uint256 principalWithdrawn, uint256 tranche)
-```
-
-### TokenBurned
-
-```solidity
-event TokenBurned(address owner, address pool, uint256 tokenId)
-```
-
-### GoldfinchConfigUpdated
-
-```solidity
-event GoldfinchConfigUpdated(address who, address configAddress)
-```
-
-### RoyaltyParamsSet
-
-```solidity
-event RoyaltyParamsSet(address sender, address newReceiver, uint256 newRoyaltyPercent)
 ```
 
 ### __initialize__
@@ -126,7 +80,7 @@ Called by pool to create a debt position in a particular tranche and amount
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | uint256 | The token ID (auto-incrementing integer across all pools) |
+| tokenId | uint256 | tokenId The token ID (auto-incrementing integer across all pools) |
 
 ### redeem
 
@@ -134,15 +88,16 @@ Called by pool to create a debt position in a particular tranche and amount
 function redeem(uint256 tokenId, uint256 principalRedeemed, uint256 interestRedeemed) external virtual
 ```
 
-Updates a token to reflect the principal and interest amounts that have been redeemed.
+Redeem principal and interest on a pool token. Called by valid pools as part of their redemption
+ flow
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | uint256 | The token id to update (must be owned by the pool calling this function) |
-| principalRedeemed | uint256 | The incremental amount of principal redeemed (cannot be more than principal deposited) |
-| interestRedeemed | uint256 | The incremental amount of interest redeemed |
+| tokenId | uint256 | pool token id |
+| principalRedeemed | uint256 | principal to redeem. This cannot exceed the token's principal amount, and  the redemption cannot cause the pool's total principal redeemed to exceed the pool's total minted  principal |
+| interestRedeemed | uint256 | interest to redeem. |
 
 ### reducePrincipalAmount
 
@@ -166,15 +121,15 @@ reduce a given pool token's principalAmount and principalRedeemed by a specified
 function withdrawPrincipal(uint256 tokenId, uint256 principalAmount) external virtual
 ```
 
-Decrement a token's principal amount. This is different from `redeem`, which captures changes to
-  principal and/or interest that occur when a loan is in progress.
+Withdraw a pool token's principal up to the token's principalAmount. Called by valid pools
+ as part of their withdraw flow before the pool is locked (i.e. before the principal is committed)
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | uint256 | The token id to update (must be owned by the pool calling this function) |
-| principalAmount | uint256 | The incremental amount of principal redeemed (cannot be more than principal deposited) |
+| tokenId | uint256 | pool token id |
+| principalAmount | uint256 | principal to withdraw |
 
 ### burn
 
@@ -182,7 +137,8 @@ Decrement a token's principal amount. This is different from `redeem`, which cap
 function burn(uint256 tokenId) external virtual
 ```
 
-_Burns a specific ERC721 token, and removes the data from our mappings_
+Burns a specific ERC721 token and removes deletes the token metadata for PoolTokens, BackerReards,
+ and BackerStakingRewards
 
 #### Parameters
 
@@ -194,6 +150,12 @@ _Burns a specific ERC721 token, and removes the data from our mappings_
 
 ```solidity
 function getTokenInfo(uint256 tokenId) external view virtual returns (struct IPoolTokens.TokenInfo)
+```
+
+### getPoolInfo
+
+```solidity
+function getPoolInfo(address pool) external view returns (struct IPoolTokens.PoolInfo)
 ```
 
 ### onPoolCreated
@@ -232,22 +194,85 @@ Returns a boolean representing whether the spender is the owner or the approved 
 | ---- | ---- | ----------- |
 | [0] | bool | True if approved to redeem/transfer/burn the token, false if not |
 
+### splitToken
+
+```solidity
+function splitToken(uint256 tokenId, uint256 newPrincipal1) external returns (uint256 tokenId1, uint256 tokenId2)
+```
+
+Splits a pool token into two smaller positions. The original token is burned and all
+its associated data is deleted.
+
+_NA: Not Authorized
+IA: Invalid Amount - newPrincipal1 not in range (0, principalAmount)_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | uint256 | id of the token to split. |
+| newPrincipal1 | uint256 | principal amount for the first token in the split. The principal amount for the  second token in the split is implicitly the original token's principal amount less newPrincipal1 |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId1 | uint256 | id of the first token in the split |
+| tokenId2 | uint256 | id of the second token in the split |
+
+### _setBackerRewardsForSplitTokens
+
+```solidity
+function _setBackerRewardsForSplitTokens(struct IPoolTokens.TokenInfo tokenInfo, struct IBackerRewards.BackerRewardsTokenInfo backerRewardsTokenInfo, struct IBackerRewards.StakingRewardsTokenInfo stakingRewardsTokenInfo, uint256 newTokenId1, uint256 newTokenId2, uint256 newPrincipal1) internal
+```
+
+Initialize the backer rewards metadata for split tokens
+
+### _createSplitTokens
+
+```solidity
+function _createSplitTokens(struct IPoolTokens.TokenInfo tokenInfo, address tokenOwner, uint256 newPrincipal1) internal returns (uint256 newTokenId1, uint256 newTokenId2)
+```
+
+Split tokenId into two new tokens. Assumes that newPrincipal1 is valid for the token's principalAmount
+
 ### validPool
 
 ```solidity
 function validPool(address sender) public view virtual returns (bool)
 ```
 
+Query if `pool` is a valid pool. A pool is valid if it was created by the Goldfinch Factory
+
 ### _createToken
 
 ```solidity
-function _createToken(struct IPoolTokens.MintParams params, address poolAddress) internal returns (uint256 tokenId)
+function _createToken(uint256 principalAmount, uint256 tranche, uint256 principalRedeemed, uint256 interestRedeemed, address poolAddress, address mintTo) internal returns (uint256 tokenId)
 ```
+
+Mint the token and save its metadata to storage
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| principalAmount | uint256 | token principal |
+| tranche | uint256 | tranche of the pool to which the token belongs |
+| principalRedeemed | uint256 | amount of principal already redeemed for the token. This is  0 for tokens created from a deposit, and could be non-zero for tokens created from a split |
+| interestRedeemed | uint256 | amount of interest already redeemed for the token. This is  0 for tokens created from a deposit, and could be non-zero for tokens created from a split |
+| poolAddress | address | pool to which the token belongs |
+| mintTo | address | the token owner |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | uint256 | id of the created token |
 
 ### _destroyAndBurn
 
 ```solidity
-function _destroyAndBurn(uint256 tokenId) internal
+function _destroyAndBurn(address owner, address pool, uint256 tokenId) internal
 ```
 
 ### _validPool

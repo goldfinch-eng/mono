@@ -1,32 +1,22 @@
 import chai, {expect} from "chai"
 import chaiSubset from "chai-subset"
-import * as admin from "firebase-admin"
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
 chai.use(chaiSubset)
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {Request} from "express"
-import {
-  assertNonNullable,
-  presignedMintToMessage,
-  presignedMintMessage,
-  NonUSEntitiesList,
-  USAccreditedEntitiesList,
-  USAccreditedIndividualsList,
-} from "@goldfinch-eng/utils"
+import {assertNonNullable, presignedMintToMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BaseProvider} from "@ethersproject/providers"
 import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import {setEnvForTest, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
 import _ from "lodash"
+import {HttpsFunction} from "firebase-functions/v1"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
@@ -55,21 +45,29 @@ const UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT = {
 
 const projectId = "goldfinch-frontend-test"
 
-const USER_DATA = {
+const PERSONA_USER_DATA = {
   countryCode: "ID",
+  kycProvider: "persona",
   persona: {
     id: "inq_aaaaaaaaaaaaaaaaaaaaaaaa",
     status: "approved",
   },
 }
 
-const config = {
-  kyc: {allowed_origins: "http://localhost:3000"},
-  persona: {allowed_ips: ""},
+const PARALLEL_MARKEYS_USER_DATA = {
+  countryCode: "US",
+  kycProvider: "parallelMarkets",
+  parallelMarkets: {
+    id: "v249dDfj==",
+    type: "individual",
+    identityStatus: "approved",
+    accreditationStatus: "approved",
+  },
 }
 
 const uidType = BigNumber.from(1)
 const nonce = BigNumber.from(0)
+
 describe("linkUserToUid", () => {
   let mainUserAddress: string
   let otherUserAddress: string
@@ -79,9 +77,6 @@ describe("linkUserToUid", () => {
   let signer: Wallet
   let testLinkKycToUid: HttpsFunction
   let uniqueIdentity: {address: string}
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let users: firestore.CollectionReference<firestore.DocumentData>
   let expiresAt: number
   let validMintPresigMessage: BytesLike
   let validMintSignature: string
@@ -89,6 +84,9 @@ describe("linkUserToUid", () => {
   let validMintToSignature: string
   let mintRequest: Request
   let mintToRequest: Request
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
   let currentBlockNum: number
   let currentBlockTimestamp: number
@@ -140,7 +138,6 @@ describe("linkUserToUid", () => {
 
   const expectSuccessfulMintToLink = async (fromAddress: string, recipientAddress: string, customExpiresAt: number) => {
     const startedAt = Date.now()
-    console.log(`customExpiresAt: ${customExpiresAt}`)
     const presigMintToMessage = presignedMintToMessage(
       fromAddress,
       recipientAddress,
@@ -187,10 +184,8 @@ describe("linkUserToUid", () => {
     const block = await web3.eth.getBlock("latest")
     currentBlockNum = block.number
     currentBlockTimestamp = block.timestamp as number
-
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
-    setEnvForTest(testFirestore, config)
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontends-test"))
+    users = testContext.firestore().collection("test_users")
 
     chainId = await hardhat.getChainId()
     testLinkKycToUid = genLinkKycWithUidDeployment({address: uniqueIdentity.address, abi: UniqueIdentityAbi})
@@ -236,19 +231,18 @@ describe("linkUserToUid", () => {
     } as unknown as Request
   })
 
-  afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
-  })
-
-  context("with an existing user in firestore", () => {
+  describe("with an existing parallel markets user in firestore", () => {
     beforeEach(async () => {
       mainUser = {
-        ...USER_DATA,
+        ...PARALLEL_MARKEYS_USER_DATA,
         address: mainUserAddress,
         updatedAt: Date.now(),
       }
-      users = getUsers(testFirestore)
       await users.doc(mainUserAddress).set(mainUser)
+    })
+
+    afterEach(async () => {
+      await testEnv.clearFirestore()
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
@@ -378,38 +372,147 @@ describe("linkUserToUid", () => {
     })
   })
 
-  context(
-    "when the user is on the parallel markets isApprovedNonUSEntity, isApprovedUSAccreditedEntity, or isApprovedUSAccreditedIndividual list",
-    () => {
-      const nonUSEntityUserAddress = NonUSEntitiesList[0].toLowerCase()
-      const usAccreditedEntityUserAddress = USAccreditedEntitiesList[0].toLowerCase()
-      const usAccreditedIndividualUserAddress = USAccreditedIndividualsList[0].toLowerCase()
+  describe("with an existing persona user in firestore", () => {
+    beforeEach(async () => {
+      mainUser = {
+        ...PERSONA_USER_DATA,
+        address: mainUserAddress,
+        updatedAt: Date.now(),
+      }
+      await users.doc(mainUserAddress).set(mainUser)
+    })
 
-      const nonUsEntityMintToAddress = "0x0000000000000000000000000000000000000004"
-      const usAccreditedEntityMintToAddress = "0x0000000000000000000000000000000000000005"
-      const usAccreditedIndividualMintToAddress = "0x0000000000000000000000000000000000000006"
+    afterEach(async () => {
+      await testEnv.clearFirestore()
+    })
 
-      context("mint", () => {
-        it("can successfully create a new user & add the uid recipient to the user data for a mint request", async () => {
-          await expectSuccessfulMintLink(nonUSEntityUserAddress, expiresAt)
-          await expectSuccessfulMintLink(usAccreditedEntityUserAddress, expiresAt)
-          await expectSuccessfulMintLink(usAccreditedIndividualUserAddress, expiresAt)
-        })
+    it("links a user to a UID recipient address for a valid mintTo operation", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress, expiresAt)
+    })
+
+    it("links a user to a UID recipient address for a valid mint operation", async () => {
+      await expectSuccessfulMintLink(mainUserAddress, expiresAt)
+    })
+
+    it("links a user to a UID recipient address for a valid mintTo operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintLink(mainUserAddress, expiresAt)
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime + 1,
+      ])
+      await ethers.provider.send("evm_mine", [])
+      await expectSuccessfulMintToLink(
+        mainUserAddress,
+        mintToAddress,
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime,
+      )
+    })
+
+    it("links a user to a UID recipient address for a valid mint operation if a preexisting signature has already expired", async () => {
+      await expectSuccessfulMintToLink(mainUserAddress, mintToAddress, expiresAt)
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime + 1,
+      ])
+      await ethers.provider.send("evm_mine", [])
+      await expectSuccessfulMintLink(
+        mainUserAddress,
+        (await ethers.provider.getBlock("latest")).timestamp + uniqueIdentitySignatureExpiryTime,
+      )
+    })
+
+    it("throws a 400 error when the user already received a signature to mint a UID of tokenId linked to a different UID recipient", async () => {
+      let userDoc = await users.doc(mainUserAddress).get()
+      await expectSuccessfulMintToLink(mainUserAddress, otherUserAddress, expiresAt)
+      await testLinkKycToUid(
+        mintToRequest,
+        expectResponse(400, {
+          status: "error",
+          message: `Address ${mainUserAddress} has already been linked to a different UID recipient address ${otherUserAddress}. Can link a different UID recipient address when the original signature expires.`,
+        }),
+      )
+      userDoc = await users.doc(mainUserAddress).get()
+      expect(userDoc.exists).to.be.true
+      expect(userDoc.data()).to.containSubset(_.omit(mainUser, "updatedAt"))
+      const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
+      expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(otherUserAddress)
+      expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
+    })
+
+    it("throws a 400 error when a uidRecipient already owns a UID of tokenId", async () => {
+      await uniqueIdentity._mintForTest(mintToAddress, uidType, BigNumber.from(1), web3.utils.asciiToHex(""), {
+        from: uidContractOwnerAddress,
       })
-
-      context("mintTo", () => {
-        it("can successfully create a new user & add the uid recipient to the user data for a mintTo request", async () => {
-          await expectSuccessfulMintToLink(nonUSEntityUserAddress, nonUsEntityMintToAddress, expiresAt)
-          await expectSuccessfulMintToLink(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress, expiresAt)
-          await expectSuccessfulMintToLink(
-            usAccreditedIndividualUserAddress,
-            usAccreditedIndividualMintToAddress,
-            expiresAt,
-          )
-        })
+      await testLinkKycToUid(
+        mintToRequest,
+        expectResponse(400, {
+          status: "error",
+          message: `UID recipient address ${mintToAddress} already owns a UID of type ${uidType}`,
+        }),
+      )
+      await uniqueIdentity._mintForTest(mainUserAddress, uidType, BigNumber.from(1), web3.utils.asciiToHex(""), {
+        from: uidContractOwnerAddress,
       })
-    },
-  )
+      await testLinkKycToUid(
+        mintRequest,
+        expectResponse(400, {
+          status: "error",
+          message: `UID recipient address ${mainUserAddress} already owns a UID of type ${uidType}`,
+        }),
+      )
+    })
+
+    it("throws a 400 error when a msg sender already owns a UID of tokenId", async () => {
+      await uniqueIdentity._mintForTest(mainUserAddress, uidType, BigNumber.from(1), web3.utils.asciiToHex(""), {
+        from: uidContractOwnerAddress,
+      })
+      await testLinkKycToUid(
+        mintRequest,
+        expectResponse(400, {
+          status: "error",
+          message: `UID recipient address ${mainUserAddress} already owns a UID of type ${uidType}`,
+        }),
+      )
+      await testLinkKycToUid(
+        mintToRequest,
+        expectResponse(400, {
+          status: "error",
+          message: `User with address ${mainUserAddress} already owns a UID of type ${uidType}`,
+        }),
+      )
+    })
+
+    it("throws a 400 error when the signature has expired", async () => {
+      const modifiedRequest = mintRequest
+      modifiedRequest.body.expiresAt = 0
+      await testLinkKycToUid(
+        modifiedRequest,
+        expectResponse(400, {
+          status: "error",
+          message: "Signature has expired",
+        }),
+      )
+    })
+
+    it("throws a 401 error when an invalid presigned message was used to generate the signature", async () => {
+      const modifiedRequest = mintRequest
+      modifiedRequest.headers["x-goldfinch-signature-plaintext"] = "invalid presigned message"
+      await testLinkKycToUid(
+        modifiedRequest,
+        expectResponse(401, {
+          error: "Invalid address or signature.",
+        }),
+      )
+    })
+    it("throws a 401 error when another signer signed the signature in the headers", async () => {
+      const modifiedRequest = mintRequest
+      modifiedRequest.headers["x-goldfinch-address"] = otherUserAddress
+      await testLinkKycToUid(
+        modifiedRequest,
+        expectResponse(401, {
+          error: "Invalid address or signature.",
+        }),
+      )
+    })
+  })
 
   it("throws an error when the requested user to link does not exist and the user is not on a KYC'ed user list", async () => {
     await testLinkKycToUid(

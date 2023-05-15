@@ -1,9 +1,10 @@
+import * as Sentry from "@sentry/serverless"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getUsers} from "../db"
+import {getUsers} from "../db/db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
-import * as admin from "firebase-admin"
 
+// Called as the first step in the Persona KYC flow
 export const setUserKYCData = genRequestHandler({
   requireAuth: "signature",
   cors: true,
@@ -19,19 +20,22 @@ export const setUserKYCData = genRequestHandler({
 
     const address = verificationResult.address.toLowerCase()
 
+    Sentry.setUser({id: verificationResult.address})
+
     const {residency} = req.body
 
     if (!residency) {
       return res.status(403).send({error: "Invalid KYC details"})
     }
 
-    const users = getUsers(admin.firestore())
+    const users = getUsers()
     const userRef = users.doc(`${address}`)
 
     await userRef.set(
       {
         address: address,
         updatedAt: Date.now(),
+        kycProvider: "persona",
         kyc: {
           residency,
         },

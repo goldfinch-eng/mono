@@ -42,12 +42,29 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
   const deals = getDeals(newBorrower);
 
   // Add deal to borrower if it is not there
-  if (deals.includes(doc.id)) {
+  if (!deals.includes(doc.id)) {
     await payload.update({
       collection: "borrowers",
       id: newBorrower.id,
       data: {
         deals: [...deals, doc.id],
+      },
+    });
+  }
+
+  const hasDuplicates = deals.some(
+    (deal, index, array) => array.indexOf(deal) !== index
+  );
+  if (hasDuplicates) {
+    console.log("dupes detected, fixing");
+    const uniqueDeals = deals.filter(
+      (deal, index, array) => array.indexOf(deal) === index
+    );
+    await payload.update({
+      collection: "borrowers",
+      id: newBorrower.id,
+      data: {
+        deals: uniqueDeals,
       },
     });
   }
@@ -78,17 +95,9 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
 
 export const revalidateDeal: CollectionAfterChangeHook<Deal> = async ({
   doc,
-  previousDoc,
-  operation,
 }) => {
   revalidate(`/pools/${doc.id}`);
-  if (
-    operation === "create" ||
-    (operation === "update" &&
-      (doc.name !== previousDoc.name || doc.category !== previousDoc.category))
-  ) {
-    revalidate("/earn");
-  }
+  revalidate("/earn");
 };
 
 export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({

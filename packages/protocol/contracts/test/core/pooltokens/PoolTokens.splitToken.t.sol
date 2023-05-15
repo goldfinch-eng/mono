@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 
 contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
   uint256 private tokenId;
   IPoolTokens.TokenInfo private tokenInfo;
@@ -70,7 +70,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
     // Make a junior deposit
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
     tokenId = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -81,7 +81,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testRevertsForNonOwnerNonApprovedOperator(address caller) public impersonating(caller) {
-    vm.assume(caller != address(this));
+    vm.assume(fuzzHelper.isAllowed(caller));
     vm.expectRevert(bytes("NA"));
     poolTokens.splitToken(tokenId, usdcVal(5) / 2);
   }
@@ -337,6 +337,14 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
   }
 
   function testUsesAccRewardsPerPrincipalDollarAtMintForSplitTokens() public {
+    // We need a tp with a non-zero principalGracePeriod. Otherwise we can't initialize a second slice
+    (tp, cl) = tpWithSchedule(12, 1, 6, 1);
+    fundAddress(address(this), usdcVal(10_000));
+    usdc.approve(address(tp), type(uint256).max);
+    tokenId = tp.deposit(2, usdcVal(5));
+    tokenInfo = poolTokens.getTokenInfo(tokenId);
+    grantRole(address(tp), TestConstants.SENIOR_ROLE, GF_OWNER);
+
     _startImpersonation(GF_OWNER);
     tp.lockJuniorCapital();
     usdc.approve(address(tp), usdcVal(20));
@@ -397,7 +405,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     uint256 accRewardsPerTokenAtLastWithdraw = backerRewards
       .getStakingRewardsTokenInfo(tokenId)
       .accumulatedRewardsPerTokenAtLastWithdraw;
-    assertTrue(accRewardsPerTokenAtLastWithdraw > 0);
+    assertEq(accRewardsPerTokenAtLastWithdraw, 0);
 
     (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, usdcVal(5) / 2);
 
@@ -440,15 +448,16 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     backerRewards.withdraw(tokenId);
 
     tokenInfo = poolTokens.getTokenInfo(tokenId);
-    assertTrue(tokenInfo.principalRedeemed > 0);
-    assertTrue(tokenInfo.interestRedeemed > 0);
+    assertGt(tokenInfo.principalRedeemed, 0);
+    assertGt(tokenInfo.interestRedeemed, 0);
 
     IBackerRewards.BackerRewardsTokenInfo memory backerRewardsTokenInfo = backerRewards
       .getTokenInfo(tokenId);
-    assertTrue(backerRewardsTokenInfo.rewardsClaimed > 0);
+    assertGt(backerRewardsTokenInfo.rewardsClaimed, 0);
 
-    assertTrue(
-      backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw > 0
+    assertEq(
+      backerRewards.getStakingRewardsTokenInfo(tokenId).accumulatedRewardsPerTokenAtLastWithdraw,
+      0
     );
 
     poolTokens.splitToken(tokenId, tokenInfo.principalAmount / 2);
@@ -564,7 +573,7 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     usdc.approve(address(tp), cl.interestOwed());
     tp.pay(cl.interestOwed());
 
-    assertTrue(backerRewards.poolTokenClaimableRewards(tokenId) > 0);
+    assertGt(backerRewards.poolTokenClaimableRewards(tokenId), 0);
     backerRewards.withdraw(tokenId);
     assertZero(backerRewards.poolTokenClaimableRewards(tokenId));
 
@@ -627,8 +636,8 @@ contract PoolTokensSplitTokenTest is PoolTokensBaseTest {
     uint256 principal1 = tokenInfo.principalAmount / 8;
     (uint256 newToken1, uint256 newToken2) = poolTokens.splitToken(tokenId, principal1);
 
-    assertTrue(backerRewards.poolTokenClaimableRewards(newToken1) > 0);
-    assertTrue(backerRewards.poolTokenClaimableRewards(newToken2) > 0);
+    assertGt(backerRewards.poolTokenClaimableRewards(newToken1), 0);
+    assertGt(backerRewards.poolTokenClaimableRewards(newToken2), 0);
     backerRewards.withdraw(newToken1);
     backerRewards.withdraw(newToken2);
     assertZero(backerRewards.poolTokenClaimableRewards(newToken1));

@@ -55,9 +55,12 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 16550649, // Feb-03-2023 08:29:11 PM +UTC
+            blockNumber: 17224402, // May-09-2023 05:34:35 PM +UTC (After Fazz Callable payment + call submission upgrade)
           }
         : undefined,
+    },
+    ngrok: {
+      url: "https://chain.warbler.ngrok.io",
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
@@ -105,6 +108,19 @@ export default {
           optimizer: {
             enabled: true,
             runs: 100,
+          },
+        },
+      },
+      {
+        version: "0.8.18",
+        settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+            details: {
+              yul: true,
+            },
           },
         },
       },

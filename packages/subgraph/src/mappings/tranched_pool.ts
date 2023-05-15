@@ -1,6 +1,6 @@
-import {Address} from "@graphprotocol/graph-ts"
+import {Address, log} from "@graphprotocol/graph-ts"
 
-import {TranchedPool, TranchedPoolToken, VaultedPoolToken} from "../../generated/schema"
+import {TranchedPool, PoolToken, VaultedPoolToken} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
   TranchedPool as TranchedPoolContract,
@@ -19,12 +19,21 @@ import {
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {
+  updateTotalDrawdowns,
+  updateTotalInterestCollected,
+  updateTotalPrincipalCollected,
+  updateTotalReserveCollected,
+} from "../entities/protocol"
+import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
   getLeverageRatioFromConfig,
+  deleteTranchedPoolRepaymentSchedule,
+  generateRepaymentScheduleForTranchedPool,
+  calculateApyFromGfiForAllPools,
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
@@ -32,15 +41,21 @@ import {getAddressFromConfig} from "../utils"
 import {handleCreditLineBalanceChanged} from "./senior_pool/helpers"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
-  initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  const tranchedPool = initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+  const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+  tranchedPool.numRepayments = schedulingResult.repaymentIds.length
+  tranchedPool.termInSeconds = schedulingResult.termInSeconds // This is actually relevant for Alma 1
+  tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
+  tranchedPool.save()
 }
 
 export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentAmount = event.params.amount
   transaction.sentToken = "USDC"
   transaction.receivedNftId = event.params.tokenId.toString()
@@ -64,7 +79,9 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
   const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
-  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
+  poolToken.interestRedeemable = poolToken.interestRedeemable.minus(event.params.interestWithdrawn)
+  poolToken.save()
   let underlyingOwner = poolToken.user
   if (poolToken.vaultedAsset) {
     const vaultedPoolToken = assert(VaultedPoolToken.load(poolToken.vaultedAsset as string))
@@ -77,7 +94,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     Address.fromString(underlyingOwner)
   )
   transaction.transactionHash = event.transaction.hash
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.sentNftId = event.params.tokenId.toString()
   transaction.sentNftType = "POOL_TOKEN"
   transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
@@ -119,14 +136,30 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updatePoolTokensRedeemable(tranchedPool)
+  deleteTranchedPoolRepaymentSchedule(tranchedPool)
+  const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+  tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+  tranchedPool.numRepayments = schedulingResult.repaymentIds.length
+  tranchedPool.termInSeconds = schedulingResult.termInSeconds
+  tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
+  tranchedPool.save()
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
-  transaction.tranchedPool = event.address.toHexString()
+  transaction.loan = event.address.toHexString()
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "USDC"
   transaction.save()
 
   handleCreditLineBalanceChanged()
+
+  updateTotalDrawdowns(event.params.amount)
+
+  if (event.address.toHexString() == "0x4998214436fa51defbf3c5334205e2468a036776") {
+    log.info("handling drawdown for 0x4998214436fa51defbf3c5334205e2468a036776, block no: {}", [
+      event.block.number.toString(),
+    ])
+  }
+  calculateApyFromGfiForAllPools()
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
@@ -135,18 +168,27 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
 
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
-  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
-  tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
+  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principal)
+  tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interest)
+  if (!event.params.principal.isZero()) {
+    deleteTranchedPoolRepaymentSchedule(tranchedPool)
+    const schedulingResult = generateRepaymentScheduleForTranchedPool(tranchedPool)
+    tranchedPool.repaymentSchedule = schedulingResult.repaymentIds
+  }
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)
   updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
-  transaction.tranchedPool = event.address.toHexString()
-  transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.loan = event.address.toHexString()
+  transaction.sentAmount = event.params.principal.plus(event.params.interest)
   transaction.sentToken = "USDC"
   transaction.save()
+
+  updateTotalPrincipalCollected(event.params.principal)
+  updateTotalInterestCollected(event.params.interest)
+  updateTotalReserveCollected(event.params.reserve)
 
   handleCreditLineBalanceChanged()
 }

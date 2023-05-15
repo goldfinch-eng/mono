@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/serverless"
 import * as admin from "firebase-admin"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {getDb, getDestroyedUsers, getUsers} from "../db"
+import {getDb, getDestroyedUsers, getUsers} from "../db/db"
 import {genRequestHandler} from "../helpers"
 import {ethers} from "ethers"
 import firestore = admin.firestore
@@ -57,8 +57,6 @@ export const destroyUser = genRequestHandler({
       : [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS],
   cors: false,
   handler: async (_, res, verificationResult): Promise<Response> => {
-    console.log("destroyUser start")
-
     let addressToDestroy: string
     let burnedUidType: number
     try {
@@ -68,14 +66,14 @@ export const destroyUser = genRequestHandler({
       return res.status(400).send({status: "error", message: "Bad plaintext"})
     }
 
-    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
-
     // Having verified the request, we can set the Sentry user context accordingly.
     Sentry.setUser({id: addressToDestroy})
 
-    const db = getDb(admin.firestore())
-    const userRef = getUsers(admin.firestore()).doc(`${addressToDestroy.toLowerCase()}`)
-    const destroyedUserRef = getDestroyedUsers(admin.firestore()).doc(`${addressToDestroy.toLowerCase()}`)
+    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
+
+    const db = getDb()
+    const userRef = getUsers().doc(`${addressToDestroy.toLowerCase()}`)
+    const destroyedUserRef = getDestroyedUsers().doc(`${addressToDestroy.toLowerCase()}`)
 
     try {
       // The firestore web SDK uses optimistic locking for rows involved in a transaction so we don't have
@@ -90,7 +88,17 @@ export const destroyUser = genRequestHandler({
           return
         }
 
-        const personaData = user.data()?.persona
+        const userData = user.data()
+        if (!userData) {
+          throw new Error(`User data for ${addressToDestroy} was blank`)
+        }
+
+        if (userData.kycProvider === "parallelMarkets") {
+          // This function isn't setup to delete users who were KYC'd by Parallel Markets
+          throw new Error("Cannot delete users who were KYC'd by Parallel Markets")
+        }
+
+        const personaData = userData.persona
 
         // The only valid use of this function is to delete a user who was already approved by persona
         // and minted a UID. If their status is not approved then something's wrong here.
@@ -102,7 +110,7 @@ export const destroyUser = genRequestHandler({
 
         // Build document data for destroyedUsers entry
         const newDeletion = {
-          countryCode: user.data()?.countryCode,
+          countryCode: user.data()?.countryCode || "",
           burnedUidType: burnedUidType.toString(),
           persona: {
             id: personaData.id,
@@ -132,7 +140,7 @@ export const destroyUser = genRequestHandler({
             address: addressToDestroy,
             deletions,
           }
-          t.create(destroyedUserRef, updatedDocument)
+          t.set(destroyedUserRef, updatedDocument)
         }
       })
     } catch (e) {
@@ -144,7 +152,6 @@ export const destroyUser = genRequestHandler({
       return res.status(errorStatus).send({status: "error", message: (e as Error).message})
     }
 
-    console.log("destroyUser end")
     return res.status(200).send({status: "success"})
   },
 })

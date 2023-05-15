@@ -400,6 +400,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   }
 
   function setBaseURI(string calldata baseURI_) external onlyAdmin {
+    // TODO - consider moving metadata stuff to a superclass
     _setBaseURI(baseURI_);
   }
 

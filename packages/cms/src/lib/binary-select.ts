@@ -1,4 +1,8 @@
-export function generateBinarySelect(name: string, label?: string) {
+export function generateBinarySelect(
+  name: string,
+  label?: string,
+  options?: { label: string; value: string }[]
+) {
   return {
     name,
     label,
@@ -6,9 +10,11 @@ export function generateBinarySelect(name: string, label?: string) {
     admin: {
       isClearable: true,
     },
-    options: [
-      { label: "Yes", value: "yes" },
-      { label: "No", value: "no" },
-    ],
+    options: options
+      ? options
+      : [
+          { label: "Yes", value: "yes" },
+          { label: "No", value: "no" },
+        ],
   };
 }

@@ -3,34 +3,36 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {BaseTest} from "./BaseTest.t.sol";
-import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
-import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";
-import {CreditLine} from "../../protocol/core/CreditLine.sol";
-import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
 import {Accountant} from "../../protocol/core/Accountant.sol";
-import {TranchedPoolImplementationRepository} from "../../protocol/core/TranchedPoolImplementationRepository.sol";
-import {Go} from "../../protocol/core/Go.sol";
-import {ITestUniqueIdentity0612} from "../../test/ITestUniqueIdentity0612.t.sol";
-import {TestSeniorPool} from "../../test/TestSeniorPool.sol";
-import {WithdrawalRequestToken} from "../../protocol/core/WithdrawalRequestToken.sol";
-import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
-import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
+import {TranchedPool} from "../../protocol/core/TranchedPool.sol";
+import {BackerRewards} from "../../rewards/BackerRewards.sol";
+import {BaseTest} from "./BaseTest.t.sol";
 import {ConfigHelper} from "../../protocol/core/ConfigHelper.sol";
-import {LeverageRatioStrategy} from "../../protocol/core/LeverageRatioStrategy.sol";
-import {FixedLeverageRatioStrategy} from "../../protocol/core/FixedLeverageRatioStrategy.sol";
-import {TestConstants} from "./TestConstants.t.sol";
-import {TestTranchedPool} from "../TestTranchedPool.sol";
+import {ConfigOptions} from "../../protocol/core/ConfigOptions.sol";
+import {CreditLine} from "../../protocol/core/CreditLine.sol";
 import {DepositWithPermitHelpers} from "../helpers/DepositWithPermitHelpers.t.sol";
-import {TranchedPoolBuilder} from "../helpers/TranchedPoolBuilder.t.sol";
+import {Fidu} from "../../protocol/core/Fidu.sol";
+import {FixedLeverageRatioStrategy} from "../../protocol/core/FixedLeverageRatioStrategy.sol";
+import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
+import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
+import {Go} from "../../protocol/core/Go.sol";
+import {ISeniorPoolEpochWithdrawals} from "../../interfaces/ISeniorPoolEpochWithdrawals.sol";
+import {IERC20WithName} from "../../interfaces/IERC20WithName.sol";
+import {ITestUniqueIdentity0612} from "../../test/ITestUniqueIdentity0612.t.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {ISchedule} from "../../interfaces/ISchedule.sol";
+import {LeverageRatioStrategy} from "../../protocol/core/LeverageRatioStrategy.sol";
+import {Schedule} from "../../protocol/core/schedule/Schedule.sol";
 import {PoolTokens} from "../../protocol/core/PoolTokens.sol";
 import {StakingRewards} from "../../rewards/StakingRewards.sol";
-import {BackerRewards} from "../../rewards/BackerRewards.sol";
+import {TestConstants} from "./TestConstants.t.sol";
 import {TestERC20} from "../../test/TestERC20.sol";
-import {GoldfinchConfig} from "../../protocol/core/GoldfinchConfig.sol";
+import {TestSeniorPool} from "../../test/TestSeniorPool.sol";
+import {TranchedPoolBuilder} from "../helpers/TranchedPoolBuilder.t.sol";
+import {TranchedPoolImplementationRepository} from "../../protocol/core/TranchedPoolImplementationRepository.sol";
 import {TranchingLogic} from "../../protocol/core/TranchingLogic.sol";
-import {Fidu} from "../../protocol/core/Fidu.sol";
-import {GoldfinchFactory} from "../../protocol/core/GoldfinchFactory.sol";
+import {WithdrawalRequestToken} from "../../protocol/core/WithdrawalRequestToken.sol";
+import {MonthlyScheduleRepo} from "../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 
 contract SeniorPoolBaseTest is BaseTest {
   using ConfigHelper for GoldfinchConfig;
@@ -92,13 +94,22 @@ contract SeniorPoolBaseTest is BaseTest {
     uniqueIdentity.setSupportedUIDTypes(supportedUids, supportedUidValues);
 
     // TranchedPool and CreditLine setup
-    TestTranchedPool tpImpl = new TestTranchedPool();
+    TranchedPool tpImpl = new TranchedPool();
     TranchedPoolImplementationRepository tpImplRepo = new TranchedPoolImplementationRepository();
     tpImplRepo.initialize(GF_OWNER, address(tpImpl));
 
     CreditLine clImpl = new CreditLine();
 
-    tpBuilder = new TranchedPoolBuilder(address(gfFactory), address(sp));
+    // MonthlyScheduleRepository setup
+    MonthlyScheduleRepo monthlyScheduleRepo = new MonthlyScheduleRepo();
+    gfConfig.setAddress(
+      uint256(ConfigOptions.Addresses.MonthlyScheduleRepo),
+      address(monthlyScheduleRepo)
+    );
+    fuzzHelper.exclude(address(monthlyScheduleRepo));
+    fuzzHelper.exclude(address(monthlyScheduleRepo.periodMapper()));
+
+    tpBuilder = new TranchedPoolBuilder(gfFactory, sp, monthlyScheduleRepo);
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
 
     // PoolTokens setup
@@ -141,8 +152,8 @@ contract SeniorPoolBaseTest is BaseTest {
 
     // Exclude known addresses from fuzzed inputs. This prevents flakey errors like
     // "Error sent ERC1155 to non-receiver"
-    fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(0));
+    fuzzHelper.exclude(gfConfig.protocolAdminAddress());
     fuzzHelper.exclude(address(sp));
     fuzzHelper.exclude(address(strat));
     fuzzHelper.exclude(address(go));
@@ -173,10 +184,12 @@ contract SeniorPoolBaseTest is BaseTest {
     return (fiduAmount * gfConfig.getSeniorPoolWithdrawalCancelationFeeInBps()) / 10_000;
   }
 
-  function defaultTp() internal impersonating(GF_OWNER) returns (TestTranchedPool, CreditLine) {
-    (TestTranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
+  function defaultTp() internal impersonating(GF_OWNER) returns (TranchedPool, CreditLine) {
+    (TranchedPool tp, CreditLine cl) = tpBuilder.build(GF_OWNER);
     fuzzHelper.exclude(address(tp));
     fuzzHelper.exclude(address(tp.creditLine()));
+    (ISchedule schedule, ) = cl.schedule();
+    fuzzHelper.exclude(address(schedule));
     tp.grantRole(tp.SENIOR_ROLE(), address(sp));
     return (tp, cl);
   }
@@ -184,29 +197,29 @@ contract SeniorPoolBaseTest is BaseTest {
   function depositToTpFrom(
     address user,
     uint256 amount,
-    TestTranchedPool tp
+    TranchedPool tp
   ) internal impersonating(user) returns (uint256) {
     usdc.approve(address(tp), amount);
     return tp.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
   }
 
-  function payTp(uint256 amount, TestTranchedPool tp) internal impersonating(GF_OWNER) {
+  function payTp(uint256 amount, TranchedPool tp) internal impersonating(GF_OWNER) {
     usdc.approve(address(tp), type(uint256).max);
     tp.pay(amount);
   }
 
   function drawdownTp(
     uint256 amount,
-    TestTranchedPool tp
+    TranchedPool tp
   ) internal impersonating(tp.creditLine().borrower()) {
     tp.drawdown(amount);
   }
 
-  function lockJuniorCap(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lockJuniorCap(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockJuniorCapital();
   }
 
-  function lock(TestTranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
+  function lock(TranchedPool tp) internal impersonating(tp.creditLine().borrower()) {
     tp.lockPool();
   }
 
@@ -288,7 +301,7 @@ contract SeniorPoolBaseTest is BaseTest {
     uint256 deadline = type(uint256).max;
     // Get signature for permit
     bytes32 digest = DepositWithPermitHelpers.approvalDigest(
-      usdc,
+      IERC20WithName(address(usdc)),
       user,
       address(sp),
       amount,

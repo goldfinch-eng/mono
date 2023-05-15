@@ -72,4 +72,5 @@ export type SignatureVerificationResult = SignatureVerificationFailureResult | S
 export enum KycProvider {
   Persona = "persona",
   ParallelMarkets = "parallelMarkets",
+  None = "none",
 }

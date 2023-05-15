@@ -15,6 +15,7 @@
   body,
   #__next {
     height: 100%;
+    @apply scroll-smooth;
   }
   body {
     @apply font-sans font-normal text-sand-700;
@@ -43,59 +44,20 @@
     background-image: conic-gradient(rgba(0, 0, 0, 0), currentColor);
   }
 
-  .pool-card {
-    grid-template-columns: 48px 1fr;
-    grid-template-areas:
-      "icon title1"
-      "icon title2"
-      ". data1"
-      ". data2"
-      ". chip";
-  }
-  @media screen(sm) {
-    .pool-card {
-      grid-template-columns: 48px 1fr auto;
-      grid-template-areas:
-        "icon title1 chip"
-        "icon title2 ."
-        ". data1 ."
-        ". data2 .";
-    }
-  }
-  @media screen(md) {
-    .pool-card {
-      grid-template-columns: 48px 2fr 1fr auto;
-      grid-template-areas:
-        "icon title1 data1 chip"
-        "icon title2 data2 chip";
-    }
-  }
-  @media screen(xl) {
-    .pool-card {
-      grid-template-columns: 48px 2fr 1fr 1fr auto;
-      grid-template-areas:
-        "icon title1 data1 data2 chip"
-        "icon title2 data1 data2 chip";
-    }
-  }
-
   .pool-layout {
     @apply grid gap-y-12 gap-x-10;
     grid-template-columns: 100%;
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      "heading"
       "widgets"
       "info";
   }
   @media screen(lg) {
     .pool-layout {
-      grid-template-columns: calc(65% - theme(spacing.5)) calc(
-          35% - theme(spacing.5)
+      grid-template-columns: calc(45% - theme(spacing.5)) calc(
+          55% - theme(spacing.5)
         );
-      grid-template-areas:
-        "heading widgets"
-        "info widgets";
+      grid-template-areas: "widgets info";
     }
   }
 }

@@ -166,6 +166,23 @@ Completely withdraw a position
 | ---- | ---- | ----------- |
 | positionId | uint256 | id of the position |
 
+### harvest
+
+```solidity
+function harvest(uint256 positionId) external
+```
+
+Harvests the associated rewards, interest, and other accrued assets
+ associated with the asset token. For example, if given a PoolToken asset,
+ this will collect the GFI rewards (if available), redeemable interest, and
+ redeemable principal, and send that to the `owner`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| positionId | uint256 | id of the position |
+
 ### assetAddressOf
 
 ```solidity
@@ -329,4 +346,19 @@ The selector can be obtained in Solidity with `IERC721.onERC721Received.selector
 ```solidity
 function _mintPosition(address owner, address assetAddress, uint256 usdcEquivalent) private returns (uint256 positionId)
 ```
+
+### _kick
+
+```solidity
+function _kick(uint256 positionId) internal
+```
+
+Update the USDC equivalent value of the position, based on the current,
+ point-in-time valuation of the underlying asset.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| positionId | uint256 | id of the position |
 

@@ -4,14 +4,14 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {PoolTokensBaseTest} from "./PoolTokensBase.t.sol";
-import {TestTranchedPool} from "../../TestTranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
+import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {IPoolTokens} from "../../../interfaces/IPoolTokens.sol";
 import {IBackerRewards} from "../../../interfaces/IBackerRewards.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 
 contract PoolTokensBurnTest is PoolTokensBaseTest {
-  TestTranchedPool private tp;
+  TranchedPool private tp;
   CreditLine private cl;
   uint256 private tokenId;
   IPoolTokens.TokenInfo private tokenInfo;
@@ -65,7 +65,7 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
     (tp, cl) = defaultTp();
     // Make a junior deposit
     fundAddress(address(this), usdcVal(10_000));
-    usdc.approve(address(tp), uint256(-1));
+    usdc.approve(address(tp), type(uint256).max);
     tokenId = tp.deposit(2, usdcVal(5));
     tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -136,10 +136,10 @@ contract PoolTokensBurnTest is PoolTokensBaseTest {
       .getStakingRewardsTokenInfo(tokenId)
       .accumulatedRewardsPerTokenAtLastWithdraw;
 
-    assertTrue(tokenInfoBeforeBurn.principalRedeemed > 0);
-    assertTrue(tokenInfoBeforeBurn.interestRedeemed > 0);
-    assertTrue(backerRewardsInfoBeforeBurn.rewardsClaimed > 0);
-    assertTrue(accRewardsPerTokenAtLastWithdrawBeforeBurn > 0);
+    assertGt(tokenInfoBeforeBurn.principalRedeemed, 0);
+    assertGt(tokenInfoBeforeBurn.interestRedeemed, 0);
+    assertGt(backerRewardsInfoBeforeBurn.rewardsClaimed, 0);
+    assertEq(accRewardsPerTokenAtLastWithdrawBeforeBurn, 0);
 
     poolTokens.burn(tokenId);
 

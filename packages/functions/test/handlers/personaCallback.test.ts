@@ -1,22 +1,21 @@
 import chai from "chai"
 import chaiSubset from "chai-subset"
 import {BaseProvider} from "@ethersproject/providers"
-import * as firebaseTesting from "@firebase/rules-unit-testing"
-import * as admin from "firebase-admin"
 import {fake} from "sinon"
 import {Request} from "firebase-functions"
 
 import crypto from "crypto"
-import {FirebaseConfig, getUsers, setEnvForTest} from "../../src/db"
 import {personaCallback} from "../../src"
+
+import {RulesTestEnvironment, RulesTestContext} from "@firebase/rules-unit-testing"
+import firebase from "firebase/compat/app"
 
 chai.use(chaiSubset)
 const expect = chai.expect
-import firestore = admin.firestore
-import Firestore = firestore.Firestore
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
-import {expectResponse} from "../utils"
+import {expectResponse, initializeFirebaseTestEnv} from "../utils"
+import {FirebaseConfig} from "../../src/config"
 
 type FakeBlock = {
   number: number
@@ -24,12 +23,11 @@ type FakeBlock = {
 }
 
 describe("persona callback", async () => {
-  let testFirestore: Firestore
-  let testApp: admin.app.App
-  let config: Omit<FirebaseConfig, "sentry">
-  const projectId = "goldfinch-frontend-test"
   const address = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
-  let users: firestore.CollectionReference<firestore.DocumentData>
+  let config: Omit<FirebaseConfig, "sentry" | "parallelmarkets">
+  let testEnv: RulesTestEnvironment
+  let testContext: RulesTestContext
+  let users: firebase.firestore.CollectionReference<firebase.firestore.DocumentData>
 
   const currentBlockNum = 84
   const yesterdayBlockNum = 80
@@ -58,15 +56,14 @@ describe("persona callback", async () => {
     mockGetBlockchain(mock)
   })
 
-  beforeEach(() => {
-    testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
-    testFirestore = testApp.firestore()
+  beforeEach(async () => {
     config = {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
+      slack: {token: ""},
     }
-    setEnvForTest(testFirestore, config)
-    users = getUsers(testFirestore)
+    ;({testEnv, testContext} = await initializeFirebaseTestEnv("goldfinch-frontend-test", config))
+    users = testContext.firestore().collection("test_users")
   })
 
   after(async () => {
@@ -74,7 +71,7 @@ describe("persona callback", async () => {
   })
 
   afterEach(async () => {
-    await firebaseTesting.clearFirestoreData({projectId})
+    await testEnv.clearFirestore()
   })
 
   const generatePersonaCallbackRequest = (
@@ -92,6 +89,7 @@ describe("persona callback", async () => {
       body: {
         data: {
           attributes: {
+            name: "inquiry.failed",
             payload: {
               data: {id: personaCallbackId, type: "inquiry", attributes: attributes},
               included: [

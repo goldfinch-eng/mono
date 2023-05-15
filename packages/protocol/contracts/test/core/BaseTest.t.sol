@@ -50,6 +50,7 @@ abstract contract BaseTest is Test {
     fuzzHelper.exclude(address(protocol.fidu()));
     fuzzHelper.exclude(address(protocol.gfi()));
     fuzzHelper.exclude(address(protocol.gfConfig()));
+    fuzzHelper.exclude(address(protocol.stakingRewards()));
     // Forge VM
     fuzzHelper.exclude(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // Forge Create2Deployer
@@ -127,6 +128,13 @@ abstract contract BaseTest is Test {
       abi.encodeWithSignature("grantRole(bytes32,address)", role, recipient)
     );
     require(success, "Failed to grant role");
+  }
+
+  /**
+   * @dev Wraps bound in uint128 cast. Better to be declarative than rely on implicit conversions.
+   */
+  function boundUint128(uint128 x, uint128 min, uint128 max) internal view returns (uint128) {
+    return uint128(bound(uint256(x), uint256(min), uint256(max)));
   }
 
   function assertZero(uint256 x) internal {

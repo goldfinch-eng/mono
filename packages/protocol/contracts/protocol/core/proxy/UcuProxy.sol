@@ -3,10 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ImplementationRepository as Repo} from "./ImplementationRepository.sol";
+import {IImplementationRepository as IRepo} from "../../../interfaces/IImplementationRepository.sol";
 import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC173} from "../../../interfaces/IERC173.sol";
+import {IUcuProxy} from "../../../interfaces/IUcuProxy.sol";
 
 /// @title User Controlled Upgrade (UCU) Proxy
 ///
@@ -15,7 +16,7 @@ import {IERC173} from "../../../interfaces/IERC173.sol";
 /// determined by an externally controlled {ImplementationRepository} contract that
 /// specifices the upgrade path. A user is able to upgrade their proxy as many
 /// times as is available until they're reached the most up to date version
-contract UcuProxy is IERC173, Proxy {
+contract UcuProxy is IUcuProxy, Proxy {
   /// @dev Storage slot with the address of the current implementation.
   /// This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1
   bytes32 private constant _IMPLEMENTATION_SLOT =
@@ -32,20 +33,25 @@ contract UcuProxy is IERC173, Proxy {
 
   // ///////////////////// EXTERNAL ///////////////////////////////////////////////////////////////////////////
 
+  /// @notice Instantiate a proxy pointing to the current implementation in `_repository` of lineage `_lineageId`.
   /// @param _repository repository used for sourcing upgrades
   /// @param _owner owner of proxy
-  /// @dev reverts if either `_repository` or `_owner` is null
-  constructor(Repo _repository, address _owner) public {
+  /// @param _lineageId id of the lineage whose current implementation to set as the proxy's implementation.
+  /// @dev Reverts if either `_repository` or `_owner` is null
+  /// @dev Double check your lineageId because it can't be changed. In most cases you'll want the repository's
+  ///   currentLineageId
+  constructor(IRepo _repository, address _owner, uint256 _lineageId) public {
     require(_owner != address(0), "bad owner");
     _setOwner(_owner);
     _setRepository(_repository);
     // this will validate that the passed in repo is a contract
-    _upgradeToAndCall(_repository.currentImplementation(), "");
+    address currentImpl = _repository.currentImplementation(_lineageId);
+    _upgradeToAndCall(currentImpl, "");
   }
 
   /// @notice upgrade the proxy implementation
   /// @dev reverts if the repository has not been initialized or if there is no following version
-  function upgradeImplementation() external onlyOwner {
+  function upgradeImplementation() external override onlyOwner {
     _upgradeImplementation();
   }
 
@@ -61,14 +67,14 @@ contract UcuProxy is IERC173, Proxy {
 
   /// @notice Returns the associated {Repo}
   ///   contract used for fetching implementations to upgrade to
-  function getRepository() external view returns (Repo) {
+  function getRepository() external view override returns (IRepo) {
     return _getRepository();
   }
 
   // ///////////////////////// INTERNAL //////////////////////////////////////////////////////////////////////
 
   function _upgradeImplementation() internal {
-    Repo repo = _getRepository();
+    IRepo repo = _getRepository();
     address nextImpl = repo.nextImplementationOf(_implementation());
     bytes memory data = repo.upgradeDataFor(nextImpl);
     _upgradeToAndCall(nextImpl, data);
@@ -112,7 +118,7 @@ contract UcuProxy is IERC173, Proxy {
     }
   }
 
-  function _setRepository(Repo newRepository) internal {
+  function _setRepository(IRepo newRepository) internal {
     require(Address.isContract(address(newRepository)), "bad repo");
     // solhint-disable-next-line security/no-inline-assembly
     assembly {
@@ -120,7 +126,7 @@ contract UcuProxy is IERC173, Proxy {
     }
   }
 
-  function _getRepository() internal view returns (Repo repo) {
+  function _getRepository() internal view returns (IRepo repo) {
     // solhint-disable-next-line security/no-inline-assembly
     assembly {
       repo := sload(_REPOSITORY_SLOT)

@@ -14,37 +14,21 @@ error UnsupportedAssetAddress(address addr)
 
 Thrown when anything is called with an unsupported asset
 
-### CannotWithdrawUnownedAsset
+### RequiresValidInput
 
 ```solidity
-error CannotWithdrawUnownedAsset(address nonOwner)
+error RequiresValidInput()
 ```
 
-Thrown when a non-owner attempts to withdraw an asset
+Thrown when calling a method with invalid input
 
-### MustWithdrawSomething
+### CannotOperateOnUnownedAsset
 
 ```solidity
-error MustWithdrawSomething()
+error CannotOperateOnUnownedAsset(address nonOwner)
 ```
 
-Thrown when attempting to withdraw nothing
-
-### CannotWithdrawForMultipleOwners
-
-```solidity
-error CannotWithdrawForMultipleOwners()
-```
-
-Thrown when withdrawing for multiple owners
-
-### CannotWithdrawForAddress0
-
-```solidity
-error CannotWithdrawForAddress0()
-```
-
-Thrown when withdrawing for a position held by address 0
+Thrown when operating on an unowned asset
 
 ### constructor
 
@@ -109,6 +93,23 @@ Collect all membership rewards for the caller.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | how many rewards were collected and sent to caller |
+
+### harvest
+
+```solidity
+function harvest(uint256[] capitalPositionIds) external
+```
+
+Harvest the rewards, interest, redeemable principal, or other assets
+ associated with the underlying capital asset. For example, if given a PoolToken,
+ this will collect the GFI rewards (if available), redeemable interest, and
+ redeemable principal, and send that to the owner of the capital position.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| capitalPositionIds | uint256[] | id of the capital position to harvest the underlying asset of |
 
 ### claimableRewards
 

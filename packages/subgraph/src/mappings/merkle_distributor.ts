@@ -1,9 +1,10 @@
 import {CommunityRewardsToken} from "../../generated/schema"
 import {GrantAccepted} from "../../generated/MerkleDistributor/MerkleDistributor"
+import {getOrInitUser} from "../entities/user"
 
 export function handleGrantAccepted(event: GrantAccepted): void {
   const communityRewardsToken = assert(CommunityRewardsToken.load(event.params.tokenId.toString()))
-  communityRewardsToken.user = event.params.account.toHexString()
+  communityRewardsToken.user = getOrInitUser(event.params.account).id
   communityRewardsToken.source = "MERKLE_DISTRIBUTOR"
   communityRewardsToken.index = event.params.index.toI32()
   communityRewardsToken.totalGranted = event.params.amount
