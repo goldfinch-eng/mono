@@ -10,7 +10,7 @@ import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {HasAdmin} from "./HasAdmin.sol";
 import {ConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.sol";
-import {IERC2981} from "../../interfaces/IERC2981.sol";
+import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
 import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
 import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -21,7 +21,12 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
  *  junior tranche or senior tranche shares of any of the borrower pools.
  * @author Goldfinch
  */
-contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin, IERC2981 {
+contract PoolTokens is
+  IPoolTokens,
+  ERC721PresetMinterPauserAutoIdUpgradeSafe,
+  HasAdmin,
+  IERC2981Upgradeable
+{
   using Strings for uint256;
   using Counters for Counters.Counter;
   using SafeMathUpgradeable for uint256;

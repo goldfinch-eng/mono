@@ -2,12 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import "../protocol/core/ConfigurableRoyaltyStandard.sol";
-import "../protocol/core/HasAdmin.sol";
-import "../interfaces/IERC2981.sol";
+import {ConfigurableRoyaltyStandard} from "../protocol/core/ConfigurableRoyaltyStandard.sol";
+import {HasAdmin} from "../protocol/core/HasAdmin.sol";
 
-contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
+contract TestConfigurableRoyaltyStandard is IERC2981Upgradeable, HasAdmin {
   using ConfigurableRoyaltyStandard for ConfigurableRoyaltyStandard.RoyaltyParams;
 
   ConfigurableRoyaltyStandard.RoyaltyParams public royaltyParams;
@@ -16,23 +18,18 @@ contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
   // don't get confused. See https://medium.com/aragondec/library-driven-development-in-solidity-2bebcaf88736#7ed4
   event RoyaltyParamsSet(address indexed sender, address newReceiver, uint256 newRoyaltyPercent);
 
-  constructor(address owner) public initializer {
+  constructor(address owner) initializer {
     __AccessControl_init_unchained();
     _setupRole(OWNER_ROLE, owner);
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
-  /// @notice Called with the sale price to determine how much royalty
-  //    is owed and to whom.
-  /// @param _tokenId The NFT asset queried for royalty information
-  /// @param _salePrice The sale price of the NFT asset specified by _tokenId
-  /// @return receiver Address that should receive royalties
-  /// @return royaltyAmount The royalty payment amount for _salePrice
+  /// @inheritdoc IERC2981Upgradeable
   function royaltyInfo(
-    uint256 _tokenId,
-    uint256 _salePrice
+    uint256 tokenId,
+    uint256 salePrice
   ) external view override returns (address, uint256) {
-    return royaltyParams.royaltyInfo(_tokenId, _salePrice);
+    return royaltyParams.royaltyInfo(tokenId, salePrice);
   }
 
   /// @notice Set royalty params used in `royaltyInfo`. This function is only callable by
@@ -44,7 +41,11 @@ contract TestConfigurableRoyaltyStandard is HasAdmin, IERC2981 {
     royaltyParams.setRoyaltyParams(newReceiver, newRoyaltyPercent);
   }
 
-  function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-    return interfaceId == ConfigurableRoyaltyStandard._INTERFACE_ID_ERC2981;
+  function supportsInterface(
+    bytes4 interfaceId
+  ) public view override(IERC165Upgradeable, AccessControlUpgradeable) returns (bool) {
+    return
+      interfaceId == ConfigurableRoyaltyStandard._INTERFACE_ID_ERC2981 ||
+      super.supportsInterface(interfaceId);
   }
 }
