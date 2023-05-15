@@ -21,7 +21,7 @@ import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
 import {TestERC20} from "../../TestERC20.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
+import {TestUniqueIdentity} from "../../../test/TestUniqueIdentity.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 contract TranchedPoolBaseTest is BaseTest {
@@ -35,7 +35,7 @@ contract TranchedPoolBaseTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   GoldfinchFactory internal gfFactory;
   TestERC20 internal usdc;
-  ITestUniqueIdentity0612 internal uid;
+  TestUniqueIdentity internal uid;
   TranchedPoolBuilder internal poolBuilder;
   PoolTokens internal poolTokens;
   Go internal go;
@@ -57,7 +57,7 @@ contract TranchedPoolBaseTest is BaseTest {
     approveTokensMaxAmount(GF_OWNER);
 
     // UniqueIdentity setup
-    uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
+    uid = new TestUniqueIdentity();
     uid.initialize(GF_OWNER, "UNIQUE-IDENTITY");
     uint256[] memory supportedUids = new uint256[](5);
     bool[] memory supportedUidValues = new bool[](5);
@@ -76,7 +76,7 @@ contract TranchedPoolBaseTest is BaseTest {
 
     // Go setup
     go = new Go();
-    go.initialize(GF_OWNER, gfConfig, address(uid));
+    go.initialize(GF_OWNER, gfConfig, uid);
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
     fuzzHelper.exclude(address(go));
 

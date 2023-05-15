@@ -8,7 +8,6 @@ import {InvariantTest} from "forge-std/InvariantTest.sol";
 import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
-import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
 import {CallableLoanFundingHandler} from "./CallableLoanFundingHandler.t.sol";
 import {CallableLoanRandoHandler} from "./CallableLoanRandoHandler.t.sol";
 import {CallableLoanFundingMultiUserInvariantTest} from "./CallableLoan.invariant.funding.multiUser.t.sol";

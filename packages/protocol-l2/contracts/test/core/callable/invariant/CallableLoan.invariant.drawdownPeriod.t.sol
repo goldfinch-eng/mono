@@ -9,7 +9,6 @@ import {CallableLoanBaseTest} from "../BaseCallableLoan.t.sol";
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
-import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
 import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {IBorrower} from "../../../../interfaces/IBorrower.sol";

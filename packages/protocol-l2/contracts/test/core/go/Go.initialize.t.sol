@@ -6,6 +6,7 @@ import {GoBaseTest} from "./BaseGo.t.sol";
 import {TestConstants} from "../TestConstants.t.sol";
 import {Go} from "../../../protocol/core/Go.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
+import {IUniqueIdentity} from "../../../interfaces/IUniqueIdentity.sol";
 
 contract GoInitializeTest is GoBaseTest {
   function testInitializeRevertsIfOwnerIsZeroAddress(address config, address uid) public {
@@ -14,7 +15,7 @@ contract GoInitializeTest is GoBaseTest {
 
     Go newGo = new Go();
     vm.expectRevert("Owner and config and UniqueIdentity addresses cannot be empty");
-    newGo.initialize(address(0), GoldfinchConfig(config), uid);
+    newGo.initialize(address(0), GoldfinchConfig(config), IUniqueIdentity(uid));
   }
 
   function testInitializeRevertsIfConfigIsZeroAddress(address owner, address uid) public {
@@ -23,7 +24,7 @@ contract GoInitializeTest is GoBaseTest {
 
     Go newGo = new Go();
     vm.expectRevert("Owner and config and UniqueIdentity addresses cannot be empty");
-    newGo.initialize(owner, GoldfinchConfig(address(0)), uid);
+    newGo.initialize(owner, GoldfinchConfig(address(0)), IUniqueIdentity(uid));
   }
 
   function testInitializeRevertsIfUidIsZeroAddress(address owner, address config) public {
@@ -32,7 +33,7 @@ contract GoInitializeTest is GoBaseTest {
 
     Go newGo = new Go();
     vm.expectRevert("Owner and config and UniqueIdentity addresses cannot be empty");
-    newGo.initialize(owner, GoldfinchConfig(config), address(0));
+    newGo.initialize(owner, GoldfinchConfig(config), IUniqueIdentity(address(0)));
   }
 
   function testInitializeGrantsOwnerAndPauserRoles() public {
@@ -52,6 +53,6 @@ contract GoInitializeTest is GoBaseTest {
 
   function testCannotBeCalledTwice() public {
     vm.expectRevert("Initializable: contract is already initialized");
-    go.initialize(GF_OWNER, gfConfig, address(uid));
+    go.initialize(GF_OWNER, gfConfig, uid);
   }
 }

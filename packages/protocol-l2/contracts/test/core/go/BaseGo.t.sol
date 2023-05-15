@@ -4,13 +4,13 @@ pragma solidity ^0.8.19;
 
 import {Go} from "../../../protocol/core/Go.sol";
 import {GoldfinchConfig} from "../../../protocol/core/GoldfinchConfig.sol";
-import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
+import {TestUniqueIdentity} from "../../../test/TestUniqueIdentity.sol";
 import {BaseTest} from "../BaseTest.t.sol";
 
 contract GoBaseTest is BaseTest {
   GoldfinchConfig internal gfConfig;
   Go internal go;
-  ITestUniqueIdentity0612 internal uid;
+  TestUniqueIdentity internal uid;
 
   function setUp() public virtual override {
     super.setUp();
@@ -18,7 +18,7 @@ contract GoBaseTest is BaseTest {
 
     gfConfig = GoldfinchConfig(address(protocol.gfConfig()));
 
-    uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
+    uid = new TestUniqueIdentity();
     uid.initialize(GF_OWNER, "UNIQUE-IDENTITY");
     uint256[] memory supportedUids = new uint256[](5);
     bool[] memory supportedUidValues = new bool[](5);
@@ -29,7 +29,7 @@ contract GoBaseTest is BaseTest {
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
 
     go = new Go();
-    go.initialize(GF_OWNER, gfConfig, address(uid));
+    go.initialize(GF_OWNER, gfConfig, uid);
 
     fuzzHelper.exclude(address(gfConfig));
     fuzzHelper.exclude(address(go));

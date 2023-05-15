@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.19;
 
+import {IUniqueIdentity} from "./IUniqueIdentity.sol";
+
 abstract contract IGo {
   uint256 public constant ID_TYPE_0 = 0;
   uint256 public constant ID_TYPE_1 = 1;
@@ -16,7 +18,7 @@ abstract contract IGo {
   uint256 public constant ID_TYPE_10 = 10;
 
   /// @notice Returns the address of the UniqueIdentity contract.
-  function uniqueIdentity() external virtual returns (address);
+  function uniqueIdentity() external virtual returns (IUniqueIdentity);
 
   function go(address account) public view virtual returns (bool);
 

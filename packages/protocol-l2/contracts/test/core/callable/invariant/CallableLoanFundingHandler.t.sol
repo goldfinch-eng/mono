@@ -7,7 +7,7 @@ import {CallableLoanActorInfo, CallableLoanActorSet, CallableLoanActorSetLib} fr
 import {CallableLoan} from "../../../../protocol/core/callable/CallableLoan.sol";
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {LoanPhase} from "../../../../interfaces/ICallableLoan.sol";
-import {ITestUniqueIdentity0612} from "../../../ITestUniqueIdentity0612.t.sol";
+import {TestUniqueIdentity} from "../../../../test/TestUniqueIdentity.sol";
 import {IPoolTokens} from "../../../../interfaces/IPoolTokens.sol";
 import {ICreditLine} from "../../../../interfaces/ICreditLine.sol";
 import {IBorrower} from "../../../../interfaces/IBorrower.sol";
@@ -22,7 +22,7 @@ contract CallableLoanFundingHandler is Test {
   uint256 public sumDrawndown;
   uint256 public numDeposits;
   IERC20 private usdc;
-  ITestUniqueIdentity0612 private uid;
+  TestUniqueIdentity private uid;
   IPoolTokens private poolTokens;
   CallableLoanActorSet private actorSet;
   address private currentActor;
@@ -34,7 +34,7 @@ contract CallableLoanFundingHandler is Test {
   uint256 public callableLoanBalanceBeforeFirstDrawdown;  
   uint256 public borrowerBalanceBeforeFirstDrawdown;
 
-  constructor(CallableLoan _loan, IERC20 _usdc, ITestUniqueIdentity0612 _uid, IPoolTokens _poolTokens, address _borrower, uint256 _drawdownPeriod) {
+  constructor(CallableLoan _loan, IERC20 _usdc, TestUniqueIdentity _uid, IPoolTokens _poolTokens, address _borrower, uint256 _drawdownPeriod) {
     loan = _loan;
     usdc = _usdc;
     uid = _uid;

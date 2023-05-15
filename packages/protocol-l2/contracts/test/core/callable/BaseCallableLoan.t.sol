@@ -23,7 +23,7 @@ import {CallableLoanAccountant} from "../../../protocol/core/callable/CallableLo
 import {CallableLoanBuilder} from "../../helpers/CallableLoanBuilder.t.sol";
 import {BaseTest} from "../BaseTest.t.sol";
 import {TestConstants} from "../TestConstants.t.sol";
-import {ITestUniqueIdentity0612} from "../../ITestUniqueIdentity0612.t.sol";
+import {TestUniqueIdentity} from "../../../test/TestUniqueIdentity.sol";
 import {ITestUSDC} from "../../ITestUSDC.t.sol";
 import {console2 as console} from "forge-std/console2.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -43,7 +43,7 @@ contract CallableLoanBaseTest is BaseTest {
   IGoldfinchConfig internal gfConfig;
   IGoldfinchFactory internal gfFactory;
   ITestUSDC internal usdc;
-  ITestUniqueIdentity0612 internal uid;
+  TestUniqueIdentity internal uid;
   CallableLoanBuilder internal callableLoanBuilder;
   IPoolTokens internal poolTokens;
   IGo internal go;
@@ -63,7 +63,7 @@ contract CallableLoanBaseTest is BaseTest {
     usdc = ITestUSDC(address(protocol.usdc()));
 
     // UniqueIdentity setup
-    uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
+    uid = new TestUniqueIdentity();
     uid.initialize(GF_OWNER, "UNIQUE-IDENTITY");
     uint256[] memory supportedUids = new uint256[](5);
     bool[] memory supportedUidValues = new bool[](5);

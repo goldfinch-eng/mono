@@ -7,12 +7,12 @@ import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
 import {ConfigHelper} from "./ConfigHelper.sol";
 import {GoldfinchConfig} from "./GoldfinchConfig.sol";
 import {IGo} from "../../interfaces/IGo.sol";
-import {IUniqueIdentity0612} from "../../interfaces/IUniqueIdentity0612.sol";
+import {IUniqueIdentity} from "../../interfaces/IUniqueIdentity.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
-  address public override uniqueIdentity;
+  IUniqueIdentity public override uniqueIdentity;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -24,10 +24,10 @@ contract Go is IGo, BaseUpgradeablePausable {
   function initialize(
     address owner,
     GoldfinchConfig _config,
-    address _uniqueIdentity
+    IUniqueIdentity _uniqueIdentity
   ) public initializer {
     require(
-      owner != address(0) && address(_config) != address(0) && _uniqueIdentity != address(0),
+      owner != address(0) && address(_config) != address(0) && address(_uniqueIdentity) != address(0),
       "Owner and config and UniqueIdentity addresses cannot be empty"
     );
     __BaseUpgradeablePausable__init(owner);
@@ -96,7 +96,7 @@ contract Go is IGo, BaseUpgradeablePausable {
         return true;
       }
 
-      uint256 accountIdBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, idType);
+      uint256 accountIdBalance = uniqueIdentity.balanceOf(account, idType);
       if (accountIdBalance > 0) {
         return true;
       }
@@ -110,9 +110,9 @@ contract Go is IGo, BaseUpgradeablePausable {
        * WARNING: If tx.origin is 0x0 (e.g. in blockchain explorers such as Etherscan) this function will
        * throw an error if the account is not go listed.
       /* solhint-disable avoid-tx-origin */
-      uint256 txOriginIdBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(tx.origin, idType);
+      uint256 txOriginIdBalance = uniqueIdentity.balanceOf(tx.origin, idType);
       if (txOriginIdBalance > 0) {
-        return IUniqueIdentity0612(uniqueIdentity).isApprovedForAll(tx.origin, account);
+        return uniqueIdentity.isApprovedForAll(tx.origin, account);
       }
       /* solhint-enable avoid-tx-origin */
     }

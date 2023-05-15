@@ -13,7 +13,7 @@ import {TranchedPoolBuilder} from "../../helpers/TranchedPoolBuilder.t.sol";
 import {TranchedPool} from "../../../protocol/core/TranchedPool.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
 import {Go} from "../../../protocol/core/Go.sol";
-import {ITestUniqueIdentity0612} from "../../../test/ITestUniqueIdentity0612.t.sol";
+import {TestUniqueIdentity} from "../../../test/TestUniqueIdentity.sol";
 import {ITranchedPool} from "../../../interfaces/ITranchedPool.sol";
 import {MonthlyScheduleRepo} from "../../../protocol/core/schedule/MonthlyScheduleRepo.sol";
 import {CreditLine} from "../../../protocol/core/CreditLine.sol";
@@ -26,7 +26,7 @@ contract PoolTokensBaseTest is BaseTest {
   TestPoolTokens internal poolTokens;
   TranchedPoolBuilder internal tpBuilder;
   Go internal go;
-  ITestUniqueIdentity0612 internal uid;
+  TestUniqueIdentity internal uid;
 
   function setUp() public virtual override {
     super.setUp();
@@ -56,7 +56,7 @@ contract PoolTokensBaseTest is BaseTest {
     });
     gfFactory.grantRole(gfFactory.OWNER_ROLE(), address(tpBuilder)); // Allows the builder to create pools
 
-    uid = ITestUniqueIdentity0612(deployCode("TestUniqueIdentity.sol"));
+    uid = new TestUniqueIdentity();
     uid.initialize(GF_OWNER, "UNIQUE-IDENTITY");
     uint256[] memory supportedUids = new uint256[](5);
     bool[] memory supportedUidValues = new bool[](5);
@@ -67,7 +67,7 @@ contract PoolTokensBaseTest is BaseTest {
     uid.setSupportedUIDTypes(supportedUids, supportedUidValues);
 
     go = new Go();
-    go.initialize(GF_OWNER, gfConfig, address(uid));
+    go.initialize(GF_OWNER, gfConfig, uid);
     gfConfig.setAddress(uint256(ConfigOptions.Addresses.Go), address(go));
 
     // TranchedPool setup
