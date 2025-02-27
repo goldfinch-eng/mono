@@ -1,0 +1,6 @@
+contracts/external
+contracts/test
+cache
+node_modules/@openzeppelin
+lib/forge-std
+*.t.sol
