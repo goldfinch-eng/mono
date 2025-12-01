@@ -156,7 +156,7 @@ See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
 
 ## Security
 
-See the [`SECURITY.MD`](./SECURITY.MD)
+See the [`SECURITY.md`](./SECURITY.md)
 
 ## Deployment
 ### Local deployment
